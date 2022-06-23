@@ -108,6 +108,25 @@ public class PackstreamBufAssertions extends AbstractAssert<PackstreamBufAsserti
         return this;
     }
 
+    public PackstreamBufAssertions containsString(Consumer<String> assertions) {
+        String actual;
+        try {
+            actual = this.actual.readString();
+        } catch (UnexpectedTypeException ex) {
+            fail(ex);
+            return this;
+        } catch (LimitExceededException ex) {
+            fail(ex);
+            return this;
+        } catch (PackstreamReaderException ex) {
+            fail(ex);
+            return this;
+        }
+
+        assertions.accept(actual);
+        return this;
+    }
+
     public PackstreamBufAssertions containsString(String expected) {
         String actual;
         try {
@@ -194,6 +213,26 @@ public class PackstreamBufAssertions extends AbstractAssert<PackstreamBufAsserti
         if (header.length() != length) {
             failWithActualExpectedAndMessage(
                     header.length(), length, "Expected message with length <%d> but got <%d>", length, header.length());
+        }
+
+        return this;
+    }
+
+    public PackstreamBufAssertions containsListHeader(long expected) {
+        long actual;
+        try {
+            actual = this.actual.readLengthPrefixMarker(Type.LIST, -1);
+        } catch (UnexpectedTypeException ex) {
+            fail(ex);
+            return this;
+        } catch (LimitExceededException ex) {
+            fail(ex);
+            return this;
+        }
+
+        if (actual != expected) {
+            failWithActualExpectedAndMessage(
+                    actual, expected, "Expected list with length <%d> but got <%d>", expected, actual);
         }
 
         return this;

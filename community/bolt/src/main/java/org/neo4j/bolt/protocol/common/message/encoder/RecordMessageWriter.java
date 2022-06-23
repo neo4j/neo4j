@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 import org.neo4j.bolt.protocol.common.message.result.BoltResult;
 import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
 import org.neo4j.bolt.protocol.common.signal.MessageSignal;
-import org.neo4j.bolt.protocol.io.BoltValueWriter;
+import org.neo4j.bolt.protocol.io.LegacyBoltValueWriter;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.values.AnyValue;
@@ -36,10 +36,13 @@ public class RecordMessageWriter implements BoltResult.RecordConsumer {
 
     private final Channel channel;
     private final ResponseHandler parent;
+    private final LegacyBoltValueWriter.Factory valueWriterFactory;
 
-    public RecordMessageWriter(Channel channel, ResponseHandler parent) {
+    public RecordMessageWriter(
+            Channel channel, ResponseHandler parent, LegacyBoltValueWriter.Factory valueWriterFactory) {
         this.channel = channel;
         this.parent = parent;
+        this.valueWriterFactory = valueWriterFactory;
     }
 
     private void write(Consumer<PackstreamBuf> consumer) throws IOException {
@@ -56,7 +59,7 @@ public class RecordMessageWriter implements BoltResult.RecordConsumer {
 
     @Override
     public void consumeField(AnyValue value) throws IOException {
-        this.write(b -> value.writeTo(new BoltValueWriter(b)));
+        this.write(b -> value.writeTo(this.valueWriterFactory.create(b)));
     }
 
     @Override

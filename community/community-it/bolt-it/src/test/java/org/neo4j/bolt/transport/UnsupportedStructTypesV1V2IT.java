@@ -32,7 +32,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.bolt.AbstractBoltTransportsTest;
-import org.neo4j.bolt.protocol.io.BoltValueWriter;
+import org.neo4j.bolt.protocol.io.LegacyBoltValueWriter;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.testing.messages.BoltV40Wire;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -109,8 +109,8 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest {
         properties.add("the_answer", longValue(42));
         properties.add("one_does_not_simply", stringValue("break_decoding"));
 
-        this.sendRun(buf -> new BoltValueWriter(buf)
-                .writeNode(42, Values.stringArray("Broken", "Dreams"), properties.build(), false));
+        this.sendRun(buf -> new LegacyBoltValueWriter(buf)
+                .writeNode("42", 42, Values.stringArray("Broken", "Dreams"), properties.build(), false));
 
         assertThat(this.connection)
                 .receivesFailure(
@@ -127,8 +127,9 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest {
         properties.add("the_answer", longValue(42));
         properties.add("one_does_not_simply", stringValue("break_decoding"));
 
-        this.sendRun(buf -> new BoltValueWriter(buf)
-                .writeRelationship(42, 21, 84, stringValue("RUINS_EXPECTATIONS"), properties.build(), false));
+        this.sendRun(buf -> new LegacyBoltValueWriter(buf)
+                .writeRelationship(
+                        "42", 42, "21", 21, "84", 84, stringValue("RUINS_EXPECTATIONS"), properties.build(), false));
 
         assertThat(this.connection)
                 .receivesFailure(
@@ -141,7 +142,7 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest {
         this.initConnection(connectionFactory);
 
         for (PathValue path : ALL_PATHS) {
-            this.sendRun(buf -> path.writeTo(new BoltValueWriter(buf)));
+            this.sendRun(buf -> path.writeTo(new LegacyBoltValueWriter(buf)));
 
             assertThat(connection)
                     .receivesFailure(

@@ -40,6 +40,7 @@ import org.neo4j.bolt.protocol.common.connection.BoltConnection;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.response.SuccessMessage;
 import org.neo4j.bolt.protocol.common.message.result.BoltResult;
+import org.neo4j.bolt.protocol.io.DefaultBoltValueWriter;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
@@ -58,7 +59,7 @@ public class ResultHandlerTest {
         var connection = mock(BoltConnection.class);
         when(connection.channel()).thenReturn(ch);
 
-        var handler = new ResultHandler(connection, mock(Log.class));
+        var handler = new ResultHandler(connection, mock(Log.class), DefaultBoltValueWriter::new);
 
         // When
         handler.onFinish();
@@ -128,7 +129,7 @@ public class ResultHandlerTest {
         var channel = mock(Channel.class);
         var connection = mock(BoltConnection.class);
         when(connection.channel()).thenReturn(channel);
-        var handler = new ResultHandler(connection, NullLog.getInstance());
+        var handler = new ResultHandler(connection, NullLog.getInstance(), DefaultBoltValueWriter::new);
 
         BoltResult result = mock(BoltResult.class);
 
@@ -144,7 +145,7 @@ public class ResultHandlerTest {
         var channel = mock(Channel.class);
         var connection = mock(BoltConnection.class);
         when(connection.channel()).thenReturn(channel);
-        var handler = new ResultHandler(connection, NullLog.getInstance());
+        var handler = new ResultHandler(connection, NullLog.getInstance(), DefaultBoltValueWriter::new);
 
         BoltResult result = mock(BoltResult.class);
 
@@ -184,7 +185,8 @@ public class ResultHandlerTest {
 
         doReturn(channel).when(connection).channel();
 
-        var handler = new ResultHandler(connection, logProvider.getLog(ResultHandler.class));
+        var handler =
+                new ResultHandler(connection, logProvider.getLog(ResultHandler.class), DefaultBoltValueWriter::new);
 
         handler.markFailed(error);
         handler.onFinish();

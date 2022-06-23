@@ -97,7 +97,16 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
             if (id() < 0) {
                 writer.writeVirtualRelationshipHack(relationship);
             }
-            writer.writeRelationship(id(), startNode().id(), endNode().id(), type(), p, isDeleted);
+            writer.writeRelationship(
+                    elementId(),
+                    id(),
+                    startNode().elementId(),
+                    startNode().id(),
+                    endNode().elementId(),
+                    endNode().id(),
+                    type(),
+                    p,
+                    isDeleted);
         }
     }
 

@@ -44,7 +44,16 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
         if (writer.entityMode() == REFERENCE) {
             writer.writeRelationshipReference(id);
         } else {
-            writer.writeRelationship(id, startNode().id(), endNode().id(), type(), properties(), isDeleted());
+            writer.writeRelationship(
+                    elementId(),
+                    id,
+                    startNodeElementId(),
+                    startNode().id(),
+                    endNodeElementId(),
+                    endNode().id(),
+                    type(),
+                    properties(),
+                    isDeleted());
         }
     }
 

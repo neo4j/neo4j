@@ -52,13 +52,34 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E> {
 
     void writeNodeReference(long nodeId) throws E;
 
-    void writeNode(long nodeId, TextArray labels, MapValue properties, boolean isDeleted) throws E;
+    default void writeNode(String elementId, long nodeId, TextArray labels, MapValue properties, boolean isDeleted)
+            throws E {
+        this.writeNode(nodeId, labels, properties, isDeleted);
+    }
+
+    @Deprecated // TODO: Remove when HTTP moves to elementId
+    default void writeNode(long nodeId, TextArray labels, MapValue properties, boolean isDeleted) throws E {}
 
     void writeRelationshipReference(long relId) throws E;
 
-    void writeRelationship(
+    default void writeRelationship(
+            String elementId,
+            long relId,
+            String startNodeElementId,
+            long startNodeId,
+            String endNodeElementId,
+            long endNodeId,
+            TextValue type,
+            MapValue properties,
+            boolean isDeleted)
+            throws E {
+        this.writeRelationship(relId, startNodeId, endNodeId, type, properties, isDeleted);
+    }
+
+    @Deprecated // TODO: Remove when HTTP moves to elementId
+    default void writeRelationship(
             long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean isDeleted)
-            throws E;
+            throws E {}
 
     void beginMap(int size) throws E;
 

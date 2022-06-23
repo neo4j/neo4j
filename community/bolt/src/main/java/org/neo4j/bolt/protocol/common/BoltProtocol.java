@@ -27,6 +27,7 @@ import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.response.ResponseMessage;
+import org.neo4j.bolt.protocol.io.LegacyBoltValueWriter;
 import org.neo4j.packstream.signal.FrameSignal;
 import org.neo4j.packstream.struct.StructRegistry;
 
@@ -58,6 +59,19 @@ public interface BoltProtocol {
     }
 
     StateMachine createStateMachine(BoltChannel boltChannel);
+
+    /**
+     * Retrieves a factory capable of creating a protocol specific value writer for a given buffer.
+     *
+     * @return a result handler.
+     * @deprecated Will be removed in 6.0 - Required for legacy id support.
+     */
+    // TODO: Deprecation: Intermediate LegacyBoltValueWriter will be merged with DefaultBoltValueWriter in 6.0
+    @SuppressWarnings("removal")
+    @Deprecated(forRemoval = true)
+    default LegacyBoltValueWriter.Factory valueWriterFactory() {
+        return LegacyBoltValueWriter::new;
+    }
 
     /**
      * Retrieves the struct registry which provides read capabilities for request messages.

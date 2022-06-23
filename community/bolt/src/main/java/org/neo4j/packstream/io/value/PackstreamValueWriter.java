@@ -173,7 +173,7 @@ public class PackstreamValueWriter implements AnyValueWriter<RuntimeException> {
     }
 
     @Override
-    public void writeNode(long nodeId, TextArray labels, MapValue properties, boolean isDeleted) {
+    public void writeNode(String elementId, long nodeId, TextArray labels, MapValue properties, boolean isDeleted) {
         throw new UnsupportedOperationException("Unsupported data type: Node");
     }
 
@@ -184,7 +184,15 @@ public class PackstreamValueWriter implements AnyValueWriter<RuntimeException> {
 
     @Override
     public void writeRelationship(
-            long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean isDeleted) {
+            String elementId,
+            long relId,
+            String startNodeElementId,
+            long startNodeId,
+            String endNodeElementId,
+            long endNodeId,
+            TextValue type,
+            MapValue properties,
+            boolean isDeleted) {
         throw new UnsupportedOperationException("Unsupported data type: Relationship");
     }
 

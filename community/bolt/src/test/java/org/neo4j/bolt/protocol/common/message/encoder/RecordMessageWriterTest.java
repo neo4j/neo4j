@@ -41,6 +41,7 @@ import org.junit.jupiter.api.TestFactory;
 import org.mockito.ArgumentCaptor;
 import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
 import org.neo4j.bolt.protocol.common.signal.MessageSignal;
+import org.neo4j.bolt.protocol.io.DefaultBoltValueWriter;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.io.Type;
 import org.neo4j.packstream.io.value.PackstreamValues;
@@ -61,7 +62,7 @@ class RecordMessageWriterTest {
         when(channel.alloc()).thenReturn(ByteBufAllocator.DEFAULT);
         when(channel.write(captor.capture())).thenReturn(mock(ChannelPromise.class));
 
-        var writer = new RecordMessageWriter(channel, parent);
+        var writer = new RecordMessageWriter(channel, parent, DefaultBoltValueWriter::new);
 
         writer.beginRecord(42);
 
@@ -98,7 +99,7 @@ class RecordMessageWriterTest {
                     when(channel.alloc()).thenReturn(ByteBufAllocator.DEFAULT);
                     when(channel.write(captor.capture())).thenReturn(mock(ChannelPromise.class));
 
-                    var writer = new RecordMessageWriter(channel, parent);
+                    var writer = new RecordMessageWriter(channel, parent, DefaultBoltValueWriter::new);
 
                     writer.consumeField(expected);
 
@@ -118,7 +119,7 @@ class RecordMessageWriterTest {
         var channel = mock(Channel.class, RETURNS_MOCKS);
         var parent = mock(ResponseHandler.class);
 
-        var writer = new RecordMessageWriter(channel, parent);
+        var writer = new RecordMessageWriter(channel, parent, DefaultBoltValueWriter::new);
 
         writer.endRecord();
 
@@ -130,7 +131,7 @@ class RecordMessageWriterTest {
         var channel = mock(Channel.class, RETURNS_MOCKS);
         var parent = mock(ResponseHandler.class);
 
-        var writer = new RecordMessageWriter(channel, parent);
+        var writer = new RecordMessageWriter(channel, parent, DefaultBoltValueWriter::new);
 
         writer.onError();
 
@@ -141,7 +142,7 @@ class RecordMessageWriterTest {
     void shouldInvokeParentWhenMetadataIsPassed() {
         var channel = mock(Channel.class);
         var parent = mock(ResponseHandler.class);
-        var child = new RecordMessageWriter(channel, parent);
+        var child = new RecordMessageWriter(channel, parent, DefaultBoltValueWriter::new);
 
         child.addMetadata("the_answer", Values.longValue(42));
         child.addMetadata("foo", Values.stringValue("bar"));

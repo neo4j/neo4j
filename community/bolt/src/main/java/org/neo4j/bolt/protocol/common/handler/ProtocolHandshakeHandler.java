@@ -83,6 +83,7 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
     }
 
     @Override
+    @SuppressWarnings("removal") // TODO: Required for legacy id support - Scheduled for removal in 6.0
     protected void channelRead0(ChannelHandlerContext ctx, ProtocolNegotiationRequest request) throws Exception {
         // ensure we've received the correct magic number - otherwise just close the connection immediately as we
         // cannot verify that we are talking to a bolt compatible client
@@ -170,7 +171,10 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
 
         ctx.pipeline()
                 .addLast("outboundPayloadAccumulator", new RecordResponseAccumulator())
-                .addLast("requestHandler", new RequestHandler(connection, new ResultHandler(connection, log)))
+                .addLast(
+                        "requestHandler",
+                        new RequestHandler(
+                                connection, new ResultHandler(connection, log, protocol.valueWriterFactory())))
                 .addLast("housekeeper", new HouseKeeperHandler(connection, logging.getLog(HouseKeeperHandler.class)))
                 .remove(this);
 

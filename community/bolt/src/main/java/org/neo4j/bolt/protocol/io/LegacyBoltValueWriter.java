@@ -36,9 +36,10 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
 
-public class BoltValueWriter extends PackstreamValueWriter {
+@Deprecated(since = "5.0", forRemoval = true)
+public class LegacyBoltValueWriter extends PackstreamValueWriter {
 
-    public BoltValueWriter(PackstreamBuf target) {
+    public LegacyBoltValueWriter(PackstreamBuf target) {
         super(target);
     }
 
@@ -47,14 +48,11 @@ public class BoltValueWriter extends PackstreamValueWriter {
     }
 
     protected void writeHeader(BoltStructType type) {
-        this.writeHeader(type.getDefaultSize(), type);
+        this.writeHeader(type.getLegacySize(), type);
     }
 
     @Override
-    public void writeNodeReference(long nodeId) throws RuntimeException {}
-
-    @Override
-    public void writeNode(long nodeId, TextArray labels, MapValue properties, boolean isDeleted) {
+    public void writeNode(String elementId, long nodeId, TextArray labels, MapValue properties, boolean isDeleted) {
         this.writeHeader(NODE);
         this.buf.writeInt(nodeId);
 
@@ -66,7 +64,15 @@ public class BoltValueWriter extends PackstreamValueWriter {
 
     @Override
     public void writeRelationship(
-            long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean isDeleted) {
+            String elementId,
+            long relId,
+            String startNodeElementId,
+            long startNodeId,
+            String endNodeElementId,
+            long endNodeId,
+            TextValue type,
+            MapValue properties,
+            boolean isDeleted) {
         this.writeHeader(RELATIONSHIP);
 
         this.buf.writeInt(relId).writeInt(startNodeId).writeInt(endNodeId).writeString(type.stringValue());
@@ -82,7 +88,7 @@ public class BoltValueWriter extends PackstreamValueWriter {
      * @param properties a set of properties.
      */
     @VisibleForTesting
-    void writeUnboundRelationship(long relId, String type, MapValue properties) {
+    void writeUnboundRelationship(String elementId, long relId, String type, MapValue properties) {
         writeHeader(UNBOUND_RELATIONSHIP);
 
         this.buf.writeInt(relId).writeString(type);
@@ -165,7 +171,8 @@ public class BoltValueWriter extends PackstreamValueWriter {
         buf.writeList(reducedNodes, (b, node) -> node.writeTo(this));
         buf.writeList(
                 reducedRelationships,
-                (b, rel) -> this.writeUnboundRelationship(rel.id(), rel.type().stringValue(), rel.properties()));
+                (b, rel) -> this.writeUnboundRelationship(
+                        rel.elementId(), rel.id(), rel.type().stringValue(), rel.properties()));
 
         buf.writeListHeader(relationships.length * 2);
         var currentOrigin = nodes[0];
@@ -189,5 +196,17 @@ public class BoltValueWriter extends PackstreamValueWriter {
             buf.writeInt(targetIndex);
             currentOrigin = reducedNodes.get(targetIndex);
         }
+    }
+
+    /**
+     * Creates Bolt value writers for a given target buffer.
+     *
+     * @deprecated Required for legacy id support - Scheduled for removal in 6.0
+     */
+    @FunctionalInterface
+    @Deprecated(since = "5.0", forRemoval = true)
+    public interface Factory {
+
+        LegacyBoltValueWriter create(PackstreamBuf buf);
     }
 }

@@ -34,7 +34,9 @@ import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
 
-class BoltValueWriterTest {
+// TODO: Remove along with merge of DefaultBoltValueWriter and LegacyBoltValueWriter - Coverage in remaining tests
+@Deprecated(since = "5.0", forRemoval = true)
+class LegacyBoltValueWriterTest {
 
     @Test
     void shouldWriteNode() throws PackstreamReaderException {
@@ -45,7 +47,8 @@ class BoltValueWriterTest {
         propertyBuilder.add(
                 "some_unrelated_string", Values.stringValue("What do you get when you multiply six by nine"));
 
-        new BoltValueWriter(buf).writeNode(42, stringArray("foo", "bar", "baz"), propertyBuilder.build(), false);
+        new LegacyBoltValueWriter(buf)
+                .writeNode("42", 42, stringArray("foo", "bar", "baz"), propertyBuilder.build(), false);
 
         var header = buf.readStructHeader();
         var nodeId = buf.readInt();
@@ -74,8 +77,17 @@ class BoltValueWriterTest {
         propertyBuilder.add(
                 "some_unrelated_string", Values.stringValue("What do you get when you multiply six by nine"));
 
-        new BoltValueWriter(buf)
-                .writeRelationship(42, 21, 84, stringValue("LIKES_WORKING_WITH"), propertyBuilder.build(), false);
+        new LegacyBoltValueWriter(buf)
+                .writeRelationship(
+                        "42",
+                        42,
+                        "21",
+                        21,
+                        "84",
+                        84,
+                        stringValue("LIKES_WORKING_WITH"),
+                        propertyBuilder.build(),
+                        false);
 
         var header = buf.readStructHeader();
         var relationshipId = buf.readInt();
@@ -107,7 +119,8 @@ class BoltValueWriterTest {
         propertyBuilder.add(
                 "some_unrelated_string", Values.stringValue("What do you get when you multiply six by nine"));
 
-        new BoltValueWriter(buf).writeUnboundRelationship(42, "LIKES_WORKING_WITH", propertyBuilder.build());
+        new LegacyBoltValueWriter(buf)
+                .writeUnboundRelationship("42", 42, "LIKES_WORKING_WITH", propertyBuilder.build());
 
         var header = buf.readStructHeader();
         var relationshipId = buf.readInt();
@@ -141,7 +154,7 @@ class BoltValueWriterTest {
             var nodes = new NodeValue[] {person, computer, vendor};
             var rels = new RelationshipValue[] {owns, makes};
 
-            new BoltValueWriter(buf).writePath(nodes, rels);
+            new LegacyBoltValueWriter(buf).writePath(nodes, rels);
         }
 
         var header = buf.readStructHeader();
@@ -195,7 +208,7 @@ class BoltValueWriterTest {
             var nodes = new NodeValue[] {person, computer, cpu};
             var rels = new RelationshipValue[] {owns, makes};
 
-            new BoltValueWriter(buf).writePath(nodes, rels);
+            new LegacyBoltValueWriter(buf).writePath(nodes, rels);
         }
 
         var header = buf.readStructHeader();

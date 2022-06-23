@@ -51,6 +51,7 @@ import org.neo4j.bolt.protocol.v41.BoltProtocolV41;
 import org.neo4j.bolt.protocol.v42.BoltProtocolV42;
 import org.neo4j.bolt.protocol.v43.BoltProtocolV43;
 import org.neo4j.bolt.protocol.v44.BoltProtocolV44;
+import org.neo4j.bolt.protocol.v50.BoltProtocolV50;
 import org.neo4j.bolt.runtime.scheduling.BoltSchedulerProvider;
 import org.neo4j.bolt.runtime.scheduling.CachedThreadPoolExecutorFactory;
 import org.neo4j.bolt.runtime.scheduling.ExecutorBoltSchedulerProvider;
@@ -207,6 +208,13 @@ public class BoltServer extends LifecycleAdapter {
                         transactionManager,
                         clock))
                 .register(new BoltProtocolV44(
+                        bookmarksParser,
+                        logService,
+                        boltGraphDatabaseManagementServiceSPI,
+                        defaultDatabaseResolver,
+                        transactionManager,
+                        clock))
+                .register(new BoltProtocolV50(
                         bookmarksParser,
                         logService,
                         boltGraphDatabaseManagementServiceSPI,

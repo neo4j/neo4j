@@ -23,17 +23,25 @@ package org.neo4j.bolt.protocol.io;
  * Provides a listing of recognized
  */
 public enum BoltStructType {
-    NODE('N', 3),
-    RELATIONSHIP('R', 5),
-    UNBOUND_RELATIONSHIP('r', 3),
+    NODE('N', 4, 3),
+    RELATIONSHIP('R', 8, 5),
+    UNBOUND_RELATIONSHIP('r', 4, 3),
     PATH('P', 3);
 
     private final short tag;
     private final short defaultSize;
 
-    BoltStructType(char tag, int defaultSize) {
+    @Deprecated(since = "5.0", forRemoval = true)
+    private final short legacySize;
+
+    BoltStructType(char tag, int defaultSize, @Deprecated(since = "5.0", forRemoval = true) int legacySize) {
         this.tag = (short) tag;
         this.defaultSize = (short) defaultSize;
+        this.legacySize = (short) legacySize;
+    }
+
+    BoltStructType(char tag, int defaultSize) {
+        this(tag, defaultSize, defaultSize);
     }
 
     public short getTag() {
@@ -42,5 +50,10 @@ public enum BoltStructType {
 
     public short getDefaultSize() {
         return defaultSize;
+    }
+
+    @Deprecated(since = "5.0", forRemoval = true)
+    public short getLegacySize() {
+        return legacySize;
     }
 }

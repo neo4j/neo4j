@@ -30,10 +30,13 @@ import static org.neo4j.bolt.testing.messages.BoltV44Wire.reset;
 import static org.neo4j.bolt.testing.messages.BoltV44Wire.rollback;
 import static org.neo4j.bolt.testing.messages.BoltV44Wire.route;
 import static org.neo4j.bolt.testing.messages.BoltV44Wire.run;
+import static org.neo4j.packstream.testing.PackstreamBufAssertions.assertThat;
 import static org.neo4j.values.storable.Values.longValue;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -42,11 +45,13 @@ import org.neo4j.bolt.protocol.v40.bookmark.BookmarkWithDatabaseId;
 import org.neo4j.bolt.protocol.v44.BoltProtocolV44;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
+import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
 public class BoltV44TransportIT extends AbstractBoltITBase {
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("argumentsProvider")
     public void shouldReturnTheRoutingTableInTheSuccessMessageWhenItReceivesTheRouteMessage(
@@ -318,6 +323,104 @@ public class BoltV44TransportIT extends AbstractBoltITBase {
         // commit the transaction
         connection.send(commit());
         assertThat(connection).receivesSuccess();
+    }
+
+    private static void assertLegacyNode(
+            PackstreamBuf buf, long nodeId, String label, Consumer<Map<String, Object>> propertyAssertions) {
+        assertThat(buf)
+                .containsStruct(0x4E, 3)
+                .containsInt(nodeId)
+                .containsList(labels -> Assertions.assertThat(labels).containsExactly(label))
+                .containsMap(propertyAssertions);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("argumentsProvider")
+    void shouldReturnLegacyIdForNodes(TransportConnection.Factory connectionFactory) throws Exception {
+        this.init(connectionFactory);
+
+        connection.send(run("CREATE (m:Movie{title:\"The Matrix\"}) RETURN m")).send(pull());
+
+        assertThat(connection)
+                .receivesSuccess()
+                .packstreamSatisfies(stream -> stream.receivesMessage()
+                        .containsStruct(0x71, 1)
+                        .containsListHeader(1)
+                        .satisfies(
+                                buf -> assertLegacyNode(buf, 0, "Movie", properties -> Assertions.assertThat(properties)
+                                        .hasSize(1)
+                                        .containsEntry("title", "The Matrix")))
+                        .asBuffer()
+                        .hasNoRemainingReadableBytes())
+                .receivesSuccess();
+    }
+
+    private static void assertLegacyIdRelationship(PackstreamBuf buf, Consumer<PackstreamBuf> nodeIdAssertions) {
+        assertThat(buf)
+                .containsInt(0)
+                .satisfies(nodeIdAssertions)
+                .containsString("PLAYED_IN")
+                .containsMap(properties ->
+                        Assertions.assertThat(properties).hasSize(1).containsEntry("year", 2021L));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("argumentsProvider")
+    void shouldReturnElementIdForRelationships(TransportConnection.Factory connectionFactory) throws Exception {
+        this.init(connectionFactory);
+
+        connection
+                .send(
+                        run(
+                                "CREATE (:Actor{name: \"Greg\"})-[r:PLAYED_IN{year: 2021}]->(:Movie{title:\"The Matrix\"}) RETURN r"))
+                .send(pull());
+
+        assertThat(connection)
+                .receivesSuccess()
+                .packstreamSatisfies(stream -> stream.receivesMessage()
+                        .containsStruct(0x71, 1)
+                        .containsListHeader(1)
+                        .containsStruct(0x52, 5)
+                        .satisfies(buf -> assertLegacyIdRelationship(
+                                buf, b -> assertThat(b).containsInt(0).containsInt(1)))
+                        .asBuffer()
+                        .hasNoRemainingReadableBytes())
+                .receivesSuccess();
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("argumentsProvider")
+    void shouldReturnElementIdForPaths(TransportConnection.Factory connectionFactory) throws Exception {
+        this.init(connectionFactory);
+
+        connection
+                .send(
+                        run(
+                                "CREATE p=(:Actor{name: \"Greg\"})-[:PLAYED_IN{year: 2021}]->(:Movie{title:\"The Matrix\"}) RETURN p"))
+                .send(pull());
+
+        assertThat(connection)
+                .receivesSuccess()
+                .packstreamSatisfies(stream -> stream.receivesMessage()
+                        .containsStruct(0x71, 1)
+                        .containsListHeader(1)
+                        .containsStruct(0x50, 3)
+                        .containsListHeader(2)
+                        .satisfies(
+                                buf -> assertLegacyNode(buf, 0, "Actor", properties -> Assertions.assertThat(properties)
+                                        .hasSize(1)
+                                        .containsEntry("name", "Greg")))
+                        .satisfies(
+                                buf -> assertLegacyNode(buf, 1, "Movie", properties -> Assertions.assertThat(properties)
+                                        .hasSize(1)
+                                        .containsEntry("title", "The Matrix")))
+                        .containsListHeader(1)
+                        .containsStruct(0x72, 3)
+                        .satisfies(buf -> assertLegacyIdRelationship(buf, b -> {}))
+                        .containsList(indices -> Assertions.assertThat(indices).containsExactly(1L, 1L))
+                        .asBuffer()
+                        .hasNoRemainingReadableBytes())
+                .receivesSuccess();
     }
 
     @Override

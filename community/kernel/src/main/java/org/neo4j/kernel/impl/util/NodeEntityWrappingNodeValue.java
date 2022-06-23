@@ -76,7 +76,7 @@ public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEn
                 writer.writeVirtualNodeHack(node);
             }
 
-            writer.writeNode(node.getId(), l, p, isDeleted);
+            writer.writeNode(node.getElementId(), node.getId(), l, p, isDeleted);
         }
     }
 

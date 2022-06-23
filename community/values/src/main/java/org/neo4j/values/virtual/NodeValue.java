@@ -42,7 +42,7 @@ public abstract class NodeValue extends VirtualNodeReference {
         if (writer.entityMode() == REFERENCE) {
             writer.writeNodeReference(id);
         } else {
-            writer.writeNode(id, labels(), properties(), isDeleted());
+            writer.writeNode(elementId(), id, labels(), properties(), isDeleted());
         }
     }
 
