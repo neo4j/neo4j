@@ -474,7 +474,12 @@ class CachingExpandIntoTest {
             assertThat(cursor.next()).isFalse();
 
             cursor = expandInto.connectingRelationships(nodeCursor, traversalCursor, nodeA, relTypes, nodeB);
-            assertThat(cursor.getClass().getSimpleName()).contains("FromCachedSelectionCursor");
+            // Depending on the storage engine the returned cursor is a cached cursor or not.
+            // If the storage engine can retrieve this information almost as fast as the cache that is
+            // preferred by the cache implementation.
+            if (!nodeCursor.supportsFastRelationshipsTo()) {
+                assertThat(cursor.getClass().getSimpleName()).contains("FromCachedSelectionCursor");
+            }
             assertThat(cursor.next()).isTrue();
             testNodeReferences(cursor, nodeA, nodeB, nodeA);
             assertThat(cursor.next()).isFalse();
@@ -489,7 +494,9 @@ class CachingExpandIntoTest {
             assertThat(cursor.next()).isFalse();
 
             cursor = expandInto.connectingRelationships(nodeCursor, traversalCursor, nodeB, relTypes, nodeA);
-            assertThat(cursor.getClass().getSimpleName()).contains("FromCachedSelectionCursor");
+            if (!nodeCursor.supportsFastRelationshipsTo()) {
+                assertThat(cursor.getClass().getSimpleName()).contains("FromCachedSelectionCursor");
+            }
             assertThat(cursor.next()).isTrue();
             testNodeReferences(cursor, nodeA, nodeB, nodeB);
             assertThat(cursor.next()).isFalse();
