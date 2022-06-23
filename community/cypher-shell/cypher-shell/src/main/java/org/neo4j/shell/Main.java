@@ -20,7 +20,6 @@
 package org.neo4j.shell;
 
 import static org.neo4j.shell.ShellRunner.shouldBeInteractive;
-import static org.neo4j.shell.log.Logger.setupLogging;
 import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilder;
 import static org.neo4j.shell.util.Versions.isPasswordChangeRequiredException;
 
@@ -116,7 +115,7 @@ public class Main {
             System.exit(1);
         }
 
-        setupLogging(cliArgs.logLevel().javaLevel());
+        Logger.setupLogging(cliArgs);
 
         System.exit(new Main(cliArgs).startShell());
     }

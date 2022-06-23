@@ -33,14 +33,19 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.shell.test.Util.asArray;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.FileHandler;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -327,5 +332,26 @@ class CliArgHelperTest extends LocaleDependentTestBase {
         CliArgs arguments = parser.parse("--impersonate", "some-user");
         assertNotNull(arguments);
         assertEquals(Optional.of("some-user"), arguments.connectionConfig().impersonatedUser());
+    }
+
+    @Test
+    void defaultLogHandler() {
+        CliArgs arguments = parse();
+        assertEquals(Optional.empty(), arguments.logHandler());
+    }
+
+    @Test
+    void defaultEmptyLogHandler() {
+        CliArgs arguments = parse("--log");
+        assertTrue(arguments.logHandler().get() instanceof ConsoleHandler);
+    }
+
+    @Test
+    void fileLogHandler() throws IOException {
+        final var dir = Files.createTempDirectory("temp-dir");
+        final var file = new File(dir.toFile(), "shell.log");
+        CliArgs arguments = parse("--log", file.getAbsolutePath());
+        assertTrue(arguments.logHandler().get() instanceof FileHandler);
+        file.delete();
     }
 }

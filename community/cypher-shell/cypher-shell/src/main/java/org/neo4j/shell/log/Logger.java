@@ -19,9 +19,10 @@
  */
 package org.neo4j.shell.log;
 
-import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
 import java.util.logging.LogManager;
 import java.util.logging.SimpleFormatter;
+import org.neo4j.shell.cli.CliArgs;
 
 /**
  * Cypher Shell logger, logs things that should not be visible for users (unless they specifically ask to see logs).
@@ -44,29 +45,39 @@ public interface Logger {
     }
 
     /**
-     * Setup logging. We do this in runtime because we have a command to change log level while running.
+     * Setup logging. We do this in runtime because we have an argument to change log handler.
      */
-    static void setupLogging(java.util.logging.Level level) {
+    static void setupLogging(CliArgs args) {
+        args.logHandler().ifPresentOrElse(Logger::setupLogging, Logger::disableLogging);
+    }
+
+    private static void setupLogging(Handler handler) {
+        disableLogging(); // Start fresh
+
+        final var level = java.util.logging.Level.ALL;
+
         System.setProperty(
                 "java.util.logging.SimpleFormatter.format",
                 "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS %4$-6s %2$s %5$s%6$s%n");
 
-        // We always disable jline logging
-        java.util.logging.Logger.getLogger("org.jline").setLevel(java.util.logging.Level.OFF);
-
         var rootLogger = LogManager.getLogManager().getLogger("");
-
         rootLogger.setLevel(level);
 
-        for (var handler : rootLogger.getHandlers()) {
-            handler.setLevel(level);
-            rootLogger.removeHandler(handler);
-        }
-
-        var handler = new ConsoleHandler(); // Logs to System.err
         handler.setLevel(level);
         handler.setFormatter(new SimpleFormatter());
         rootLogger.addHandler(handler);
+    }
+
+    private static void disableLogging() {
+        java.util.logging.Logger.getLogger("org.jline").setLevel(java.util.logging.Level.OFF);
+        final var rootLogger = LogManager.getLogManager().getLogger("");
+
+        rootLogger.setLevel(java.util.logging.Level.OFF);
+
+        for (var h : rootLogger.getHandlers()) {
+            h.setLevel(java.util.logging.Level.OFF);
+            rootLogger.removeHandler(h);
+        }
     }
 
     enum Level {

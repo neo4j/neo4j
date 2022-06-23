@@ -25,9 +25,9 @@ import java.io.File;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Handler;
 import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.Historian;
-import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parameter.ParameterService.RawParameter;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -55,7 +55,7 @@ public class CliArgs {
     private List<RawParameter> parameters;
     private boolean changePassword;
     private File historyFile = Historian.defaultHistoryFile();
-    private Logger.Level logLevel = Logger.Level.OFF;
+    private Handler logHandler;
 
     /**
      * Set the username to the primary value, or if null, the fallback value.
@@ -227,19 +227,19 @@ public class CliArgs {
         this.historyFile = historyFile;
     }
 
-    public void setLogLevel(Logger.Level logLevel) {
-        this.logLevel = logLevel;
-    }
-
-    public Logger.Level logLevel() {
-        return logLevel;
-    }
-
     public URI getUri() {
         return uri;
     }
 
     public void setUri(URI uri) {
         this.uri = uri;
+    }
+
+    public Optional<Handler> logHandler() {
+        return Optional.ofNullable(logHandler);
+    }
+
+    public void setLogHandler(Handler handler) {
+        this.logHandler = handler;
     }
 }

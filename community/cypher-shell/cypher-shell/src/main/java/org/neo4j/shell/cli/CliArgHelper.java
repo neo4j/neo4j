@@ -20,7 +20,6 @@
 package org.neo4j.shell.cli;
 
 import static java.lang.String.format;
-import static java.util.Arrays.stream;
 import static java.util.Optional.ofNullable;
 import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 import static org.neo4j.shell.cli.CliArgs.DEFAULT_HOST;
@@ -29,12 +28,14 @@ import static org.neo4j.shell.cli.CliArgs.DEFAULT_SCHEME;
 import static org.neo4j.shell.cli.FailBehavior.FAIL_AT_END;
 import static org.neo4j.shell.cli.FailBehavior.FAIL_FAST;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.stream.Stream;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.FileHandler;
+import java.util.logging.Handler;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.impl.action.StoreConstArgumentAction;
@@ -165,7 +166,7 @@ public class CliArgHelper {
 
         cliArgs.setChangePassword(ns.getBoolean("change-password"));
 
-        cliArgs.setLogLevel(ns.get("log-level"));
+        cliArgs.setLogHandler(ns.get("log-file"));
 
         return cliArgs;
     }
@@ -325,20 +326,14 @@ public class CliArgHelper {
                 .help("change neo4j user password and exit");
 
         parser.addArgument("--log")
-                .choices(new CollectionArgumentChoice<>(logChoices()))
                 .nargs("?")
-                .action(new LogLevelArgumentAction())
-                .dest("log-level")
-                .help("Enable logging to standard error output stream.\n" + LogLevelArgumentAction.usage())
-                .setDefault(Logger.Level.OFF)
-                .setConst(Logger.Level.defaultActiveLevel());
+                .type(new LogHandlerType())
+                .dest("log-file")
+                .help("enable logging to the specified file, or standard error if the file is omitted")
+                .setDefault((LogHandlerType) null)
+                .setConst(new ConsoleHandler());
 
         return parser;
-    }
-
-    private static Collection<String> logChoices() {
-        final var levels = stream(Logger.Level.values()).map(l -> l.name().toLowerCase());
-        return Stream.concat(Stream.of(""), levels).toList();
     }
 
     private static class PositiveIntegerType implements ArgumentType<Integer> {
@@ -351,8 +346,21 @@ public class CliArgHelper {
                 }
                 return result;
             } catch (NumberFormatException nfe) {
-                log.error(nfe);
                 throw new ArgumentParserException("Invalid value: " + value, parser);
+            }
+        }
+    }
+
+    private static class LogHandlerType implements ArgumentType<Handler> {
+        private static final int MAX_BYTES = 100_000_000;
+        private static final int LOG_FILE_COUNT = 1;
+
+        @Override
+        public Handler convert(ArgumentParser parser, Argument arg, String value) throws ArgumentParserException {
+            try {
+                return new FileHandler(value, MAX_BYTES, LOG_FILE_COUNT, false);
+            } catch (IOException e) {
+                throw new ArgumentParserException("Failed to open log file: " + e.getMessage(), parser);
             }
         }
     }

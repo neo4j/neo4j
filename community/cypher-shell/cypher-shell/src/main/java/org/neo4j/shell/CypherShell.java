@@ -88,6 +88,8 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
      * @param cypher non-empty cypher text to executeLine
      */
     private void executeCypher(final String cypher) throws CommandException {
+        log.info("Executing cypher: " + cypher);
+
         if (!isConnected()) {
             throw new CommandException("Not connected to Neo4j");
         }
@@ -112,6 +114,7 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     }
 
     private void executeCommand(final CommandStatement statement) throws CommandException {
+        log.info("Executing command: " + statement.statement());
         var command = commandHelper.getCommand(statement.name());
         if (command == null) {
             throw new CommandException(

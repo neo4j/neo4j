@@ -30,6 +30,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.shell.DatabaseManager.DEFAULT_DEFAULT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.SYSTEM_DB_NAME;
@@ -37,10 +38,13 @@ import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilde
 import static org.neo4j.shell.test.Util.testConnectionConfig;
 import static org.neo4j.shell.util.Versions.majorVersion;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
@@ -52,6 +56,7 @@ import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parser.StatementParser.CypherStatement;
 import org.neo4j.shell.prettyprint.PrettyConfig;
@@ -992,6 +997,21 @@ class MainIntegrationTest {
                         endsWithInteractiveExit);
     }
 
+    @Test
+    void logToFile() throws Exception {
+        final var tempFile = Files.createTempFile("temp-log", null);
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--log", tempFile.toString())
+                .userInputLines("return 1;", ":exit")
+                .run()
+                .assertSuccess();
+
+        assertFileContains(tempFile, "Executing cypher: return 1");
+        assertFileContains(tempFile, "org.neo4j.driver.internal.logging");
+
+        Files.delete(tempFile);
+    }
+
     private static CypherStatement cypher(String cypher) {
         return CypherStatement.complete(cypher);
     }
@@ -1119,9 +1139,22 @@ class MainIntegrationTest {
                     .interactive(!args.getNonInteractive())
                     .logger(logger)
                     .build();
+            Logger.setupLogging(args);
             var main = new Main(args, outPrintStream, errPrintStream, isOutputInteractive, terminal);
             var exitCode = main.startShell();
             return new AssertableMain(exitCode, out, err, main.getCypherShell());
         }
+    }
+
+    private static void assertFileContains(Path file, String find) throws IOException {
+        try (var reader = new BufferedReader(new FileReader(file.toFile()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.contains(find)) {
+                    return;
+                }
+            }
+        }
+        fail("Could not find '" + find + "' in file " + file);
     }
 }
