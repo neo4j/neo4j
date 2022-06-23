@@ -36,8 +36,8 @@ public class FormatOverrideMigrator implements SettingMigrator {
     public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
         String overrideStoreFormat = System.getProperty(OVERRIDE_STORE_FORMAT_KEY);
         if (overrideStoreFormat != null && !values.containsKey(db_format.name())) {
-            values.put(db_format.name(), overrideStoreFormat);
-            values.put(include_versions_under_development.name(), TRUE);
+            defaultValues.put(db_format.name(), overrideStoreFormat);
+            defaultValues.put(include_versions_under_development.name(), TRUE);
         }
     }
 }
