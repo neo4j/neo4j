@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.HasALabel
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.Property
@@ -389,10 +390,15 @@ trait UpdateGraph {
     def overlapWithLabelsFunction = qgWithInfo.folder.treeExists {
       case f: FunctionInvocation => f.function == Labels
     }
+    def overlapWithWildcard = qgWithInfo.folder.treeExists {
+      case _: HasALabel => true
+    }
 
     if (overlapWithKnownLabels.nonEmpty)
       overlapWithKnownLabels.toSeq.map(EagernessReason.LabelReadSetConflict)
     else if (labelsToSet.nonEmpty && overlapWithLabelsFunction)
+      labelsToSet.toSeq.map(EagernessReason.LabelReadSetConflict)
+    else if (labelsToSet.nonEmpty && overlapWithWildcard)
       labelsToSet.toSeq.map(EagernessReason.LabelReadSetConflict)
     else
       Seq.empty
@@ -528,10 +534,13 @@ trait UpdateGraph {
     lazy val overlapWithLabelsFunction = qgWithInfo.folder.treeExists {
       case f: FunctionInvocation => f.function == Labels
     }
+    lazy val overlapWithWildcard = qgWithInfo.folder.treeExists {
+      case _: HasALabel => true
+    }
 
     val overlappingLabels: Seq[LabelName] = removeLabelPatterns.collect {
-      case RemoveLabelPattern(_, labelsToRemove) if overlapWithLabelsFunction => labelsToRemove
-      case RemoveLabelPattern(_, labelsToRemove)                              =>
+      case RemoveLabelPattern(_, labelsToRemove) if overlapWithLabelsFunction || overlapWithWildcard => labelsToRemove
+      case RemoveLabelPattern(_, labelsToRemove)                                                     =>
         // does any other identifier match on the labels I am deleting?
         // MATCH (a:BAR)..(b) REMOVE b:BAR
         labelsToRemove.filter(l => {
