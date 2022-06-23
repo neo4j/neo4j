@@ -38,7 +38,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -526,7 +525,7 @@ public class ProcedureJarLoaderTest {
         return JarBuilder.createJarFor(testDirectory.createFile(new Random().nextInt() + ".jar"), targets);
     }
 
-    private URL createMrJarFor(Runtime.Version version, Class<?>... targets) throws IOException {
+    private URL createMrJarFor(Runtime.Version version, Class<?>... targets) throws IOException, URISyntaxException {
         String versionPrefix = String.format("META-INF/versions/%d/", version.feature());
         var manifest = new Manifest();
         // need to set a version, otherwise no main attributes will be written
@@ -554,7 +553,7 @@ public class ProcedureJarLoaderTest {
             }
 
             Path previousJarFile =
-                    testDirectory.file(Paths.get(jar.getPath()).getFileName().toString());
+                    testDirectory.file(Path.of(jar.toURI()).getFileName().toString());
             Files.deleteIfExists(previousJarFile);
         }
 
