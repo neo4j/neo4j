@@ -93,7 +93,7 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
         }
 
         try {
-            final Optional<BoltResult> result = boltStateHandler.runCypher(cypher, parameters.parameterValues());
+            final Optional<BoltResult> result = boltStateHandler.runUserCypher(cypher, parameters.parameterValues());
             result.ifPresent(boltResult -> {
                 prettyPrinter.format(boltResult, linePrinter);
                 boltStateHandler.updateActualDbName(boltResult.getSummary());
@@ -196,8 +196,14 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     }
 
     @Override
-    public Optional<BoltResult> runCypher(String cypher, Map<String, Object> queryParams) throws CommandException {
-        return boltStateHandler.runCypher(cypher, queryParams);
+    public Optional<BoltResult> runUserCypher(String cypher, Map<String, Object> queryParams) throws CommandException {
+        return boltStateHandler.runUserCypher(cypher, queryParams);
+    }
+
+    @Override
+    public Optional<BoltResult> runCypher(String cypher, Map<String, Object> queryParams, TransactionType type)
+            throws CommandException {
+        return boltStateHandler.runCypher(cypher, queryParams, type);
     }
 
     public void setCommandHelper(CommandHelper commandHelper) {

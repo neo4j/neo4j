@@ -148,7 +148,7 @@ class CypherShellTest {
         BoltStateHandler boltStateHandler = mock(BoltStateHandler.class);
 
         when(boltStateHandler.isConnected()).thenReturn(true);
-        when(boltStateHandler.runCypher(anyString(), anyMap())).thenReturn(Optional.of(result));
+        when(boltStateHandler.runUserCypher(anyString(), anyMap())).thenReturn(Optional.of(result));
         doAnswer(a -> {
                     ((LinePrinter) a.getArguments()[1]).printOut("999");
                     return null;

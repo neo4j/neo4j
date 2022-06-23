@@ -68,9 +68,8 @@ import org.neo4j.shell.log.Logger;
 public class BoltStateHandler implements TransactionHandler, Connector, DatabaseManager {
     private static final Logger log = Logger.create();
     private static final String USER_AGENT = "neo4j-cypher-shell/v" + Build.version();
-    private static final TransactionConfig TRANSACTION_CONFIG = TransactionConfig.builder()
-            .withMetadata(Map.of("type", "system", "app", "cypher-shell_v" + Build.version()))
-            .build();
+    private static final TransactionConfig USER_DIRECT_TX_CONF = txConfig(TransactionType.USER_DIRECT);
+    private static final TransactionConfig SYSTEM_TX_CONF = txConfig(TransactionType.SYSTEM);
     private final TriFunction<URI, AuthToken, Config, Driver> driverProvider;
     private final boolean isInteractive;
     private final Map<String, Bookmark> bookmarks = new HashMap<>();
@@ -136,7 +135,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         if (isTransactionOpen()) {
             throw new CommandException("There is already an open transaction");
         }
-        tx = session.beginTransaction(TRANSACTION_CONFIG);
+        tx = session.beginTransaction(USER_DIRECT_TX_CONF);
     }
 
     @Override
@@ -319,7 +318,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     private ThrowingAction<CommandException> getPing() {
         return () -> {
             try {
-                Result run = session.run("CALL db.ping()", TRANSACTION_CONFIG);
+                Result run = session.run("CALL db.ping()", SYSTEM_TX_CONF);
                 ResultSummary summary = run.consume();
                 BoltStateHandler.this.protocolVersion = summary.server().protocolVersion();
                 updateActualDbName(summary);
@@ -327,7 +326,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
                 log.warn("Ping failed", e);
                 // In older versions there is no db.ping procedure, use legacy method.
                 if (procedureNotFound(e)) {
-                    Result run = session.run(isSystemDb() ? "CALL db.indexes()" : "RETURN 1", TRANSACTION_CONFIG);
+                    Result run = session.run(isSystemDb() ? "CALL db.indexes()" : "RETURN 1", SYSTEM_TX_CONF);
                     ResultSummary summary = run.consume();
                     BoltStateHandler.this.protocolVersion = summary.server().protocolVersion();
                     updateActualDbName(summary);
@@ -341,7 +340,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     @Override
     public String getServerVersion() {
         try {
-            return runCypher("CALL dbms.components() YIELD versions", Collections.emptyMap())
+            return runCypher("CALL dbms.components() YIELD versions", Collections.emptyMap(), SYSTEM_TX_CONF)
                     .flatMap(recordOpt -> recordOpt.getRecords().stream().findFirst())
                     .map(record -> record.get("versions"))
                     .filter(value -> !value.isNull())
@@ -383,25 +382,36 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     }
 
     @Override
-    public Optional<BoltResult> runCypher(String cypher, Map<String, Object> queryParams) throws CommandException {
+    public Optional<BoltResult> runUserCypher(String cypher, Map<String, Object> queryParams) throws CommandException {
+        return runCypher(cypher, queryParams, USER_DIRECT_TX_CONF);
+    }
+
+    @Override
+    public Optional<BoltResult> runCypher(String cypher, Map<String, Object> queryParams, TransactionType type)
+            throws CommandException {
+        return runCypher(cypher, queryParams, txConfig(type));
+    }
+
+    private Optional<BoltResult> runCypher(String cypher, Map<String, Object> queryParams, TransactionConfig config)
+            throws CommandException {
         if (!isConnected()) {
             throw new CommandException("Not connected to Neo4j");
         }
         if (isTransactionOpen()) {
             // If this fails, don't try any funny business - just let it die
-            return getBoltResult(cypher, queryParams);
+            return getBoltResult(cypher, queryParams, config);
         } else {
             try {
                 // Note that CALL IN TRANSACTIONS can't execute in an explicit transaction, so if the user has not typed
                 // BEGIN, then
                 // the statement should NOT be executed in a transaction.
-                return getBoltResult(cypher, queryParams);
+                return getBoltResult(cypher, queryParams, config);
             } catch (SessionExpiredException e) {
                 log.warn("Failed to execute query, re-trying", e);
                 // Server is no longer accepting writes, reconnect and try again.
                 // If it still fails, leave it up to the user
                 reconnectAndPing(activeDatabaseNameAsSetByUser, activeDatabaseNameAsSetByUser);
-                return getBoltResult(cypher, queryParams);
+                return getBoltResult(cypher, queryParams, config);
             }
         }
     }
@@ -426,7 +436,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
             try {
                 String command = "ALTER CURRENT USER SET PASSWORD FROM $o TO $n";
                 Value parameters = Values.parameters("o", connectionConfig.password(), "n", newPassword);
-                Result run = session.run(new Query(command, parameters), TRANSACTION_CONFIG);
+                Result run = session.run(new Query(command, parameters), txConfig(TransactionType.USER_ACTION));
                 run.consume();
             } catch (Neo4jException e) {
                 if (isPasswordChangeRequiredException(e)) {
@@ -434,7 +444,8 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
                     // In < 4.0 versions use legacy method.
                     String oldCommand = "CALL dbms.security.changePassword($n)";
                     Value oldParameters = Values.parameters("n", newPassword);
-                    Result run = session.run(new Query(oldCommand, oldParameters), TRANSACTION_CONFIG);
+                    Result run =
+                            session.run(new Query(oldCommand, oldParameters), txConfig(TransactionType.USER_ACTION));
                     run.consume();
                 } else {
                     throw e;
@@ -460,14 +471,14 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     /**
      * @throws SessionExpiredException when server no longer serves writes anymore
      */
-    private Optional<BoltResult> getBoltResult(String cypher, Map<String, Object> queryParams)
+    private Optional<BoltResult> getBoltResult(String cypher, Map<String, Object> queryParams, TransactionConfig config)
             throws SessionExpiredException {
         Result statementResult;
 
         if (isTransactionOpen()) {
             statementResult = tx.run(new Query(cypher, queryParams));
         } else {
-            statementResult = session.run(new Query(cypher, queryParams), TRANSACTION_CONFIG);
+            statementResult = session.run(new Query(cypher, queryParams), config);
         }
 
         if (statementResult == null) {
@@ -557,5 +568,11 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
             return config.withImpersonatedUser(null);
         }
         return config;
+    }
+
+    private static TransactionConfig txConfig(TransactionType type) {
+        return TransactionConfig.builder()
+                .withMetadata(Map.of("type", type.value(), "app", "cypher-shell_v" + Build.version()))
+                .build();
     }
 }

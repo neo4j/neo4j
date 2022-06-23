@@ -30,6 +30,8 @@ import org.neo4j.shell.state.BoltResult;
 public interface TransactionHandler {
 
     /**
+     * Open a transaction for user submitted queries. Note, don't use for other purposes, like system queries.
+     *
      * @throws CommandException if a new transaction could not be started
      */
     void beginTransaction() throws CommandException;
@@ -49,5 +51,28 @@ public interface TransactionHandler {
      */
     boolean isTransactionOpen();
 
-    Optional<BoltResult> runCypher(String cypher, Map<String, Object> queryParams) throws CommandException;
+    /**
+     * Run a cypher query directly submitted by the user.
+     */
+    Optional<BoltResult> runUserCypher(String cypher, Map<String, Object> queryParams) throws CommandException;
+
+    Optional<BoltResult> runCypher(String cypher, Map<String, Object> queryParams, TransactionType type)
+            throws CommandException;
+
+    enum TransactionType {
+        SYSTEM("system"),
+        USER_DIRECT("user-direct"),
+        USER_ACTION("user-action"),
+        USER_TRANSPILED("user-transpiled");
+
+        private final String value;
+
+        TransactionType(String value) {
+            this.value = value;
+        }
+
+        public String value() {
+            return value;
+        }
+    }
 }

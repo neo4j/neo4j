@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.shell.TransactionHandler.TransactionType.USER_TRANSPILED;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
 
 import java.time.Duration;
@@ -83,7 +84,7 @@ class ShellParameterServiceTest {
         when(mockRecord.get("result")).thenReturn(new IntegerValue(6));
         var mockBoltResult = mock(BoltResult.class);
         when(mockBoltResult.iterate()).thenReturn(List.of(mockRecord).iterator());
-        when(transactionHandler.runCypher(eq("RETURN 1 + 2 + 3 AS `result`;"), any()))
+        when(transactionHandler.runCypher(eq("RETURN 1 + 2 + 3 AS `result`;"), any(), eq(USER_TRANSPILED)))
                 .thenReturn(Optional.of(mockBoltResult));
 
         assertEvaluate("1 + 2 + 3", 6L);

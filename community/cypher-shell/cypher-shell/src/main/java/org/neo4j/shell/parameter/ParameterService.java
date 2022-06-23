@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.parameter;
 
+import static org.neo4j.shell.TransactionHandler.TransactionType.USER_TRANSPILED;
 import static org.neo4j.shell.prettyprint.CypherVariablesFormatter.unescapedCypherVariable;
 
 import java.util.HashMap;
@@ -192,7 +193,7 @@ class ShellParameterService implements ParameterService {
                 // Feels very wrong to execute user data unescaped...
                 var query = "RETURN " + parameter.expression() + " AS `result`;";
 
-                return db.runCypher(query, parameterValues())
+                return db.runCypher(query, parameterValues(), USER_TRANSPILED)
                         .map(r -> r.iterate().next().get("result").asObject());
             } catch (Exception e) {
                 log.error("Failed to evaluate expression " + parameter.expression() + " online", e);
