@@ -25,10 +25,12 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 
 class LogicalPlanTreeRendererTest extends CypherFunSuite {
 
   implicit val idGen: SameId = SameId(Id(0))
+  implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe
 
   test("Should render plan with depth 0") {
     val plan = ProduceResult(
