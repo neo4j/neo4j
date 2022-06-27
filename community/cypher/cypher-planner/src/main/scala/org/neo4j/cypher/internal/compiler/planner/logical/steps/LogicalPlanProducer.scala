@@ -1287,7 +1287,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   def planSemiApplyInHorizon(
     left: LogicalPlan,
     right: LogicalPlan,
-    expr: ExistsSubClause,
+    expr: Expression,
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.updateHorizon {

@@ -256,7 +256,7 @@ trait SelectPatternPredicates extends SelectionCandidateGenerator {
 
   protected def rhsPlanner: RhsPatternPlanner
 
-  protected def rhsPlan(
+  def rhsPlan(
     lhs: LogicalPlan,
     subquery: ExistsIRExpression,
     context: LogicalPlanningContext
