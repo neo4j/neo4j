@@ -157,6 +157,20 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
     )
   }
 
+  test("Nodes that are needed in the projection are also added to the WITH in a list comprehension") {
+    assertRewrite(
+      "MATCH (v:player)--(n:team) return [x in collect(v.age) where x>40| x+n.age] as res",
+      "MATCH (v:player)--(n:team) WITH collect(v.age) AS `  UNNAMED0`, n as `  UNNAMED1` return [x in `  UNNAMED0` where x>40| x+`  UNNAMED1`.age] as res"
+    )
+  }
+
+  test("Nodes that are needed in the projection are also added to the WITH in a reduce expression") {
+    assertRewrite(
+      "MATCH (k:player) RETURN reduce(totalAge = 0, n IN collect(k.age) | totalAge + k.age) AS reduction",
+      "MATCH (k:player) WITH collect(k.age) AS `  UNNAMED0`, k as `  UNNAMED1` RETURN reduce(totalAge = 0, n IN `  UNNAMED0` | totalAge + `  UNNAMED1`.age) AS reduction"
+    )
+  }
+
   test("MATCH (n) WITH 60/60/count(*) AS x RETURN x AS x") {
     assertRewrite(
       "MATCH (n) WITH 60/60/count(*) AS x RETURN x AS x",
