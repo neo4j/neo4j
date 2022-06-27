@@ -225,12 +225,7 @@ public class LocalMemoryTracker implements LimitedMemoryTracker {
     @Override
     public void reset() {
         try {
-            if (allocatedBytesNative != 0) {
-                monitor.potentialNativeMemoryLeak(allocatedBytesNative);
-            }
-            assert allocatedBytesNative == 0
-                    : "Potential direct memory leak. Expecting all allocated direct memory to be released, but still has "
-                            + allocatedBytesNative;
+            checkAllocatedNativeBytes();
         } finally {
             memoryPool.releaseHeap(localHeapPool);
             localHeapPool = 0;
@@ -238,6 +233,15 @@ public class LocalMemoryTracker implements LimitedMemoryTracker {
             allocatedBytesNative = 0;
             heapHighWaterMark = 0;
         }
+    }
+
+    public void checkAllocatedNativeBytes() {
+        if (allocatedBytesNative != 0) {
+            monitor.potentialNativeMemoryLeak(allocatedBytesNative);
+        }
+        assert allocatedBytesNative == 0
+                : "Potential direct memory leak. Expecting all allocated direct memory to be released, but still has "
+                        + allocatedBytesNative;
     }
 
     @Override

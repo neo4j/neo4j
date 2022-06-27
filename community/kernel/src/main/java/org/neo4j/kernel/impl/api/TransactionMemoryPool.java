@@ -45,7 +45,7 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
     private final Config config;
     private final BooleanSupplier openCheck;
     private final LogProvider logProvider;
-    private final Set<MemoryTracker> memoryTrackers = ConcurrentHashMap.newKeySet();
+    private final Set<LocalMemoryTracker> memoryTrackers = ConcurrentHashMap.newKeySet();
     private final LocalMemoryTracker transactionTracker;
 
     public TransactionMemoryPool(
@@ -139,8 +139,13 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
 
     public void reset() {
         transactionTracker.reset();
-        for (MemoryTracker memoryTracker : memoryTrackers) {
-            memoryTracker.reset();
+        if (!memoryTrackers.isEmpty()) {
+            for (LocalMemoryTracker memoryTracker : memoryTrackers) {
+                memoryTracker.checkAllocatedNativeBytes();
+            }
+            releaseHeap(usedHeap());
+
+            memoryTrackers.clear();
         }
 
         assert usedNative() == 0
