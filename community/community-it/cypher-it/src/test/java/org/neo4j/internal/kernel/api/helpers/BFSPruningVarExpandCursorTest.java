@@ -28,8 +28,10 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import org.eclipse.collections.impl.block.factory.primitive.LongPredicates;
 import org.junit.jupiter.api.Test;
@@ -91,10 +93,11 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a5, rel, b5);
 
             // then
-            assertThat(asList(outgoingExpander(start, true, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(start, a1, a2, a3, a4, a5, b1, b2, b3, b4, b5));
-            assertThat(asList(outgoingExpander(start, false, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(a1, a2, a3, a4, a5, b1, b2, b3, b4, b5));
+            assertThat(asDepthMap(outgoingExpander(start, true, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .containsOnlyKeys(start, a1, a2, a3, a4, a5, b1, b2, b3, b4, b5);
+            assertThat(asDepthMap(
+                            outgoingExpander(start, false, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .containsOnlyKeys(a1, a2, a3, a4, a5, b1, b2, b3, b4, b5);
         }
     }
 
@@ -139,10 +142,10 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a5, rel, b5);
 
             // then
-            assertThat(asList(allExpander(start, true, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(start, a1, a2, a3, a4, a5, b1, b2, b3, b4, b5));
-            assertThat(asList(allExpander(start, false, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(a1, a2, a3, a4, a5, b1, b2, b3, b4, b5));
+            assertThat(asDepthMap(allExpander(start, false, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(Map.of(a1, 0, a2, 0, a3, 0, a4, 0, a5, 0, b1, 1, b2, 1, b3, 1, b4, 1, b5, 1));
+            assertThat(asDepthMap(allExpander(start, true, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .containsOnlyKeys(List.of(start, a1, a2, a3, a4, a5, b1, b2, b3, b4, b5));
         }
     }
 
@@ -187,7 +190,7 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a5, rel, b5);
 
             // then
-            assertThat(asList(outgoingExpander(
+            assertThat(asDepthMap(outgoingExpander(
                             start,
                             true,
                             26,
@@ -197,8 +200,8 @@ class BFSPruningVarExpandCursorTest {
                             n -> n != a3,
                             Predicates.alwaysTrue(),
                             NO_TRACKING)))
-                    .isEqualTo(List.of(start, a1, a2, a4, a5, b1, b2, b4, b5));
-            assertThat(asList(outgoingExpander(
+                    .containsOnlyKeys(start, a1, a2, a4, a5, b1, b2, b4, b5);
+            assertThat(asDepthMap(outgoingExpander(
                             start,
                             false,
                             26,
@@ -208,7 +211,7 @@ class BFSPruningVarExpandCursorTest {
                             n -> n != a3,
                             Predicates.alwaysTrue(),
                             NO_TRACKING)))
-                    .isEqualTo(List.of(a1, a2, a4, a5, b1, b2, b4, b5));
+                    .containsOnlyKeys(a1, a2, a4, a5, b1, b2, b4, b5);
         }
     }
 
@@ -253,7 +256,7 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a5, rel, b5);
 
             // then
-            assertThat(asList(allExpander(
+            assertThat(asDepthMap(allExpander(
                             start,
                             true,
                             26,
@@ -263,8 +266,8 @@ class BFSPruningVarExpandCursorTest {
                             n -> n != a3,
                             Predicates.alwaysTrue(),
                             NO_TRACKING)))
-                    .isEqualTo(List.of(start, a1, a2, a4, a5, b1, b2, b4, b5));
-            assertThat(asList(allExpander(
+                    .containsOnlyKeys(List.of(start, a1, a2, a4, a5, b1, b2, b4, b5));
+            assertThat(asDepthMap(allExpander(
                             start,
                             false,
                             26,
@@ -274,7 +277,7 @@ class BFSPruningVarExpandCursorTest {
                             n -> n != a3,
                             Predicates.alwaysTrue(),
                             NO_TRACKING)))
-                    .isEqualTo(List.of(a1, a2, a4, a5, b1, b2, b4, b5));
+                    .containsOnlyKeys(List.of(a1, a2, a4, a5, b1, b2, b4, b5));
         }
     }
 
@@ -319,7 +322,7 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a5, rel, b5);
 
             // then
-            assertThat(asList(outgoingExpander(
+            assertThat(asDepthMap(outgoingExpander(
                             start,
                             true,
                             26,
@@ -330,8 +333,8 @@ class BFSPruningVarExpandCursorTest {
                             cursor -> cursor.relationshipReference() != filterThis
                                     && cursor.relationshipReference() != andFilterThat,
                             NO_TRACKING)))
-                    .isEqualTo(List.of(start, a1, a2, a3, a5, b1, b3, b5));
-            assertThat(asList(outgoingExpander(
+                    .containsOnlyKeys(List.of(start, a1, a2, a3, a5, b1, b3, b5));
+            assertThat(asDepthMap(outgoingExpander(
                             start,
                             false,
                             26,
@@ -342,7 +345,7 @@ class BFSPruningVarExpandCursorTest {
                             cursor -> cursor.relationshipReference() != filterThis
                                     && cursor.relationshipReference() != andFilterThat,
                             NO_TRACKING)))
-                    .isEqualTo(List.of(a1, a2, a3, a5, b1, b3, b5));
+                    .containsOnlyKeys(List.of(a1, a2, a3, a5, b1, b3, b5));
         }
     }
 
@@ -387,7 +390,7 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a5, rel, b5);
 
             // then
-            assertThat(asList(allExpander(
+            assertThat(asDepthMap(allExpander(
                             start,
                             true,
                             26,
@@ -398,8 +401,8 @@ class BFSPruningVarExpandCursorTest {
                             cursor -> cursor.relationshipReference() != filterThis
                                     && cursor.relationshipReference() != andFilterThat,
                             NO_TRACKING)))
-                    .isEqualTo(List.of(start, a1, a2, a3, a5, b1, b3, b5));
-            assertThat(asList(allExpander(
+                    .containsOnlyKeys(List.of(start, a1, a2, a3, a5, b1, b3, b5));
+            assertThat(asDepthMap(allExpander(
                             start,
                             false,
                             26,
@@ -410,7 +413,7 @@ class BFSPruningVarExpandCursorTest {
                             cursor -> cursor.relationshipReference() != filterThis
                                     && cursor.relationshipReference() != andFilterThat,
                             NO_TRACKING)))
-                    .isEqualTo(List.of(a1, a2, a3, a5, b1, b3, b5));
+                    .containsOnlyKeys(List.of(a1, a2, a3, a5, b1, b3, b5));
         }
     }
 
@@ -493,23 +496,23 @@ class BFSPruningVarExpandCursorTest {
             // then
             assertThat(asList(
                             allExpander(graph.startNode(), true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(
+                    .containsExactlyInAnyOrder(
                             graph.startNode(),
                             graph.nodes.get(9),
                             graph.nodes.get(1),
                             graph.nodes.get(2),
                             graph.nodes.get(8),
                             graph.nodes.get(3),
-                            graph.nodes.get(7)));
+                            graph.nodes.get(7));
             assertThat(asList(allExpander(
                             graph.startNode(), false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(
+                    .containsExactlyInAnyOrder(
                             graph.nodes.get(9),
                             graph.nodes.get(1),
                             graph.nodes.get(2),
                             graph.nodes.get(8),
                             graph.nodes.get(3),
-                            graph.nodes.get(7)));
+                            graph.nodes.get(7));
         }
     }
 
@@ -1500,16 +1503,16 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(b3, rel, c9);
 
             // then
-            assertThat(asList(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asDepthMap(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
-            assertThat(asList(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b1, b2, b3));
-            assertThat(asList(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b1, b2, b3, c1, c2, c3, c4, c5, c6, c7, c8, c9));
-            assertThat(asList(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b1, b2, b3, c1, c2, c3, c4, c5, c6, c7, c8, c9));
-            assertThat(asList(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b1, b2, b3, c1, c2, c3, c4, c5, c6, c7, c8, c9));
+            assertThat(asDepthMap(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .containsOnlyKeys(List.of(b1, b2, b3));
+            assertThat(asDepthMap(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .containsOnlyKeys(List.of(b1, b2, b3, c1, c2, c3, c4, c5, c6, c7, c8, c9));
+            assertThat(asDepthMap(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .containsOnlyKeys(List.of(b1, b2, b3, c1, c2, c3, c4, c5, c6, c7, c8, c9));
+            assertThat(asDepthMap(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .containsOnlyKeys(List.of(b1, b2, b3, c1, c2, c3, c4, c5, c6, c7, c8, c9));
         }
     }
 
@@ -1632,5 +1635,16 @@ class BFSPruningVarExpandCursorTest {
             found.add(expander.endNode());
         }
         return found;
+    }
+
+    private Map<Long, Integer> asDepthMap(BFSPruningVarExpandCursor expander) {
+        Map<Long, Integer> depth = new HashMap<>();
+        int prevDepth = -1;
+        while (expander.next()) {
+            assertThat(prevDepth).as("Ensure BFS").isLessThanOrEqualTo(expander.currentDepth());
+            assertThat(depth).as("Ensure visited once").doesNotContainKey(expander.endNode());
+            depth.put(expander.endNode(), expander.currentDepth());
+        }
+        return depth;
     }
 }

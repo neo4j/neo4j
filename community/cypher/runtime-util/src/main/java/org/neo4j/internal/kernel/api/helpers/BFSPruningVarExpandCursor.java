@@ -384,6 +384,8 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
 
     protected abstract void closeMore();
 
+    abstract int currentDepth();
+
     @Override
     public void setTracer(KernelReadTracer tracer) {
         nodeCursor.setTracer(tracer);
@@ -474,6 +476,11 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                     return false;
                 }
             }
+        }
+
+        @Override
+        int currentDepth() {
+            return currentDepth;
         }
 
         @Override
@@ -693,6 +700,11 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         }
 
         @Override
+        int currentDepth() {
+            return currentDepth;
+        }
+
+        @Override
         public long endNode() {
             return loopCounter == EMIT_START_NODE ? startNode : selectionCursor.otherNodeReference();
         }
@@ -811,6 +823,11 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             }
 
             return false;
+        }
+
+        @Override
+        int currentDepth() {
+            return currentDepth;
         }
 
         @Override
