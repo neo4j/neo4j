@@ -22,6 +22,7 @@ package org.neo4j.values;
 import org.neo4j.memory.Measurable;
 import org.neo4j.values.storable.FloatingPointValue;
 import org.neo4j.values.storable.NumberValue;
+import org.neo4j.values.storable.Values;
 
 public abstract class AnyValue implements Measurable
 {
@@ -31,6 +32,17 @@ public abstract class AnyValue implements Measurable
     public boolean equals( Object other )
     {
         return this == other || other != null && equalTo( other );
+    }
+
+    // In Cypher RETURN null = null; returns null. Therefore, in a binary equals we
+    // sometimes need to return false when matching e.g CASE null WHEN null THEN... shouldn't match on null
+    public boolean equalsWithNoValueCheck( Object other )
+    {
+        if ( this == Values.NO_VALUE && other == Values.NO_VALUE )
+        {
+            return false;
+        }
+        return this == other || other != null && equalTo(other);
     }
 
     @Override
