@@ -302,7 +302,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       // otherwise
       case seq => seq.last match {
           case _: UpdateClause | _: Return | _: CommandClause                   => None
-          case subquery: SubqueryCall if !subquery.part.isReturning              => None
+          case subquery: SubqueryCall if !subquery.part.isReturning             => None
           case call: CallClause if call.returnColumns.isEmpty && !call.yieldAll => None
           case call: CallClause =>
             Some(SemanticError(s"Query cannot conclude with ${call.name} together with YIELD", call.position))

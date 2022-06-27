@@ -1538,7 +1538,8 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
 
     expectErrorMessagesFrom(
       query,
-      Set("Variable `name` not defined"))
+      Set("Variable `name` not defined")
+    )
   }
 
   // ------- Helpers ------------------------------

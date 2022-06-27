@@ -40,6 +40,7 @@ import org.neo4j.fabric.util.PrettyPrinting
 import org.neo4j.graphdb.ExecutionPlanDescription
 
 import java.util
+
 import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.jdk.CollectionConverters.SetHasAsJava
 
