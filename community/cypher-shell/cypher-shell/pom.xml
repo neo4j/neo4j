@@ -66,8 +66,7 @@
 
         <dependency>
             <groupId>org.neo4j.driver</groupId>
-            <artifactId>neo4j-java-driver-slim</artifactId>
-            <version>4.4.5</version>
+            <artifactId>neo4j-java-driver</artifactId>
             <scope>compile</scope>
         </dependency>
         <dependency>

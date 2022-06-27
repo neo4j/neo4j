@@ -9,7 +9,7 @@ Apache Software License, Version 2.0
   jansi
   Java Native Access
   LZ4 and xxHash
-  Neo4j Java Driver (Slim package)
+  Neo4j Java Driver
   Netty/Buffer
   Netty/Codec
   Netty/Common

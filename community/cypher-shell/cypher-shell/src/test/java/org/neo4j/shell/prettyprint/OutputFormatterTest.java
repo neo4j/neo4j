@@ -31,11 +31,10 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
+import org.neo4j.driver.internal.messaging.v5.BoltProtocolV5;
 import org.neo4j.driver.internal.summary.InternalDatabaseInfo;
 import org.neo4j.driver.internal.summary.InternalResultSummary;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
-import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.summary.ProfiledPlan;
@@ -52,11 +51,7 @@ class OutputFormatterTest {
         ProfiledPlan plan = PROFILED_PLAN_FROM_VALUE.apply(planMap);
         ResultSummary summary = new InternalResultSummary(
                 new Query("PROFILE MATCH (n:LABEL) WHERE 20 < n.age < 35 return n"),
-                new InternalServerInfo(
-                        "agent",
-                        new BoltServerAddress("localhost:7687"),
-                        ServerVersion.vInDev,
-                        BoltProtocolV43.VERSION),
+                new InternalServerInfo("agent", new BoltServerAddress("localhost:7687"), BoltProtocolV5.VERSION),
                 new InternalDatabaseInfo("neo4j"),
                 QueryType.READ_ONLY,
                 null,

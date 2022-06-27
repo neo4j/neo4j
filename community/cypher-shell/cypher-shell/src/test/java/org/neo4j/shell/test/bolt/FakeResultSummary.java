@@ -96,12 +96,6 @@ class FakeResultSummary implements ResultSummary {
             }
 
             @Override
-            @SuppressWarnings({"deprecation", "RedundantSuppression"}) // Not redundant, IntelliJ is lying
-            public String version() {
-                return null;
-            }
-
-            @Override
             public String protocolVersion() {
                 return null;
             }

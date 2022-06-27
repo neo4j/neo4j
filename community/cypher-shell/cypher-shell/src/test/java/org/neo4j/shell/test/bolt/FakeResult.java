@@ -156,4 +156,9 @@ class FakeResult implements Result {
     public ResultSummary consume() {
         return new FakeResultSummary();
     }
+
+    @Override
+    public boolean isOpen() {
+        throw new Util.NotImplementedYetException("Not implemented yet");
+    }
 }

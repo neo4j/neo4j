@@ -20,15 +20,18 @@
 package org.neo4j.shell.test.bolt;
 
 import java.util.Map;
+import java.util.Set;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
+import org.neo4j.driver.TransactionCallback;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.Value;
+import org.neo4j.shell.test.Util;
 
 /**
  * A fake session which returns fake StatementResults
@@ -87,10 +90,6 @@ public class FakeSession implements Session {
     }
 
     @Override
-    @SuppressWarnings({"deprecation", "RedundantSuppression"}) // Not redundant, IntelliJ is lying
-    public void reset() {}
-
-    @Override
     public boolean isOpen() {
         return open;
     }
@@ -123,5 +122,20 @@ public class FakeSession implements Session {
     @Override
     public Result run(Query query) {
         return FakeResult.fromQuery(query);
+    }
+
+    @Override
+    public Set<Bookmark> lastBookmarks() {
+        throw new Util.NotImplementedYetException("Not implemented yet");
+    }
+
+    @Override
+    public <T> T executeWrite(TransactionCallback<T> transactionCallback, TransactionConfig transactionConfig) {
+        throw new Util.NotImplementedYetException("Not implemented yet");
+    }
+
+    @Override
+    public <T> T executeRead(TransactionCallback<T> transactionCallback, TransactionConfig transactionConfig) {
+        throw new Util.NotImplementedYetException("Not implemented yet");
     }
 }
