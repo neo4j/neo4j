@@ -42,39 +42,6 @@ public final class UserFunctionSignature {
     private final boolean isBuiltIn;
     private final boolean internal;
 
-    // TODO: this is used by APOC and can be removed when
-    // https://trello.com/c/4ajvjBZP/137-update-apoc-dev-to-use-latest-userfunctionsignature is done
-    @Deprecated(forRemoval = true)
-    @SuppressWarnings("unused")
-    public UserFunctionSignature(
-            QualifiedName name,
-            List<FieldSignature> inputSignature,
-            Neo4jTypes.AnyType type,
-            String deprecated,
-            String[] allowed,
-            String description,
-            String category,
-            boolean caseInsensitive) {
-        this(name, inputSignature, type, deprecated, description, category, caseInsensitive, false, false);
-    }
-
-    // TODO: this is used by APOC and can be removed when
-    // https://trello.com/c/4ajvjBZP/137-update-apoc-dev-to-use-latest-userfunctionsignature is done
-    @Deprecated(forRemoval = true)
-    @SuppressWarnings("unused")
-    public UserFunctionSignature(
-            QualifiedName name,
-            List<FieldSignature> inputSignature,
-            Neo4jTypes.AnyType type,
-            String deprecated,
-            String[] allowed,
-            String description,
-            String category,
-            boolean caseInsensitive,
-            boolean isBuiltIn) {
-        this(name, inputSignature, type, deprecated, description, category, caseInsensitive, isBuiltIn, false);
-    }
-
     public UserFunctionSignature(
             QualifiedName name,
             List<FieldSignature> inputSignature,
