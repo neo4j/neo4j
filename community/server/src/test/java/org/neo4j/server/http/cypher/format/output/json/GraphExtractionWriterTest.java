@@ -22,12 +22,11 @@ package org.neo4j.server.http.cypher.format.output.json;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.test.mockito.mock.GraphMock.labels;
 import static org.neo4j.test.mockito.mock.GraphMock.path;
 import static org.neo4j.test.mockito.mock.Link.link;
-import static org.neo4j.test.mockito.mock.Properties.properties;
 import static org.neo4j.test.mockito.mock.Property.property;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -50,20 +49,19 @@ import org.neo4j.server.http.cypher.entity.HttpRelationship;
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.test.mockito.mock.Properties;
 import org.neo4j.test.mockito.mock.Property;
 
 class GraphExtractionWriterTest {
-    private final Node n1 = new HttpNode(17, List.of(label("Foo")), Map.of("name", "n1"), false);
-    private final Node n2 = new HttpNode(666, emptyList(), Map.of("name", "n2"), false);
-    private final Node n3 = new HttpNode(42, List.of(label("Foo"), label("Bar")), Map.of("name", "n3"), false);
+    private final Node n1 = new HttpNode("17", 17, List.of(label("Foo")), Map.of("name", "n1"), false);
+    private final Node n2 = new HttpNode("666", 666, emptyList(), Map.of("name", "n2"), false);
+    private final Node n3 = new HttpNode("42", 42, List.of(label("Foo"), label("Bar")), Map.of("name", "n3"), false);
 
     private final Map<Long, Node> nodes = Map.of(n1.getId(), n1, n2.getId(), n2, n3.getId(), n3);
 
     private final Relationship r1 =
-            new HttpRelationship(7, 17, 666, "ONE", Map.of("name", "r1"), false, this::getNodeById);
+            new HttpRelationship("7", 7, "17", 17, "666", 666, "ONE", Map.of("name", "r1"), false, this::getNodeById);
     private final Relationship r2 =
-            new HttpRelationship(8, 17, 42, "TWO", Map.of("name", "r2"), false, this::getNodeById);
+            new HttpRelationship("8", 8, "17", 17, "42", 42, "TWO", Map.of("name", "r2"), false, this::getNodeById);
     private final JsonFactory jsonFactory = new JsonFactory();
 
     @Test
@@ -206,22 +204,25 @@ class GraphExtractionWriterTest {
     private static void assertNodes(JsonNode result) {
         JsonNode nodes = result.get("graph").get("nodes");
         assertEquals(3, nodes.size(), "there should be 3 nodes");
-        assertNode("17", nodes, asList("Foo"), property("name", "n1"));
-        assertNode("666", nodes, Arrays.asList(), property("name", "n2"));
-        assertNode("42", nodes, asList("Foo", "Bar"), property("name", "n3"));
+        assertNode("17", "17", nodes, asList("Foo"), property("name", "n1"));
+        assertNode("666", "666", nodes, Arrays.asList(), property("name", "n2"));
+        assertNode("42", "42", nodes, asList("Foo", "Bar"), property("name", "n3"));
     }
 
     private static void assertRelationships(JsonNode result) {
         JsonNode relationships = result.get("graph").get("relationships");
         assertEquals(2, relationships.size(), "there should be 2 relationships");
-        assertRelationship("7", relationships, "17", "ONE", "666", property("name", "r1"));
-        assertRelationship("8", relationships, "17", "TWO", "42", property("name", "r2"));
+        assertRelationship("7", "7", relationships, "17", "17", "ONE", "666", "666", property("name", "r1"));
+        assertRelationship("8", "8", relationships, "17", "17", "TWO", "42", "42", property("name", "r2"));
     }
 
     // Helpers
 
-    private static void assertNode(String id, JsonNode nodes, List<String> labels, Property... properties) {
-        JsonNode node = get(nodes, id);
+    private static void assertNode(
+            String id, String elementId, JsonNode nodes, List<String> labels, Property... properties) {
+        JsonNode node = get(nodes, elementId);
+        assertThat(node.get("id").asText()).isEqualTo(id);
+        assertThat(node.get("elementId").asText()).isEqualTo(elementId);
         assertListEquals("Node[" + id + "].labels", labels, node.get("labels"));
         JsonNode props = node.get("properties");
         assertEquals(properties.length, props.size(), "length( Node[" + id + "].properties )");
@@ -233,12 +234,21 @@ class GraphExtractionWriterTest {
 
     private static void assertRelationship(
             String id,
+            String elementId,
             JsonNode relationships,
             String startNodeId,
+            String startNodeElementId,
             String type,
             String endNodeId,
+            String endNodeElementId,
             Property... properties) {
-        JsonNode relationship = get(relationships, id);
+        JsonNode relationship = get(relationships, elementId);
+        assertThat(relationship.get("id").asText()).isEqualTo(id);
+        assertThat(relationship.get("elementId").asText()).isEqualTo(elementId);
+        assertThat(relationship.get("startNode").asText()).isEqualTo(startNodeId);
+        assertThat(relationship.get("startNodeElementId").asText()).isEqualTo(startNodeElementId);
+        assertThat(relationship.get("endNode").asText()).isEqualTo(endNodeId);
+        assertThat(relationship.get("endNodeElementId").asText()).isEqualTo(endNodeElementId);
         assertEquals(type, relationship.get("type").asText(), "Relationship[" + id + "].labels");
         assertEquals(startNodeId, relationship.get("startNode").asText(), "Relationship[" + id + "].startNode");
         assertEquals(endNodeId, relationship.get("endNode").asText(), "Relationship[" + id + "].endNode");
@@ -273,22 +283,13 @@ class GraphExtractionWriterTest {
         assertEquals(expected, actual, what);
     }
 
-    private static JsonNode get(Iterable<JsonNode> jsonNodes, String id) {
+    private static JsonNode get(Iterable<JsonNode> jsonNodes, String elementId) {
         for (JsonNode jsonNode : jsonNodes) {
-            if (id.equals(jsonNode.get("id").asText())) {
+            if (elementId.equals(jsonNode.get("elementId").asText())) {
                 return jsonNode;
             }
         }
         return null;
-    }
-
-    private HttpNode node(long id, Properties properties, String... labels) {
-        return new HttpNode(id, asList(labels(labels)), properties.getProperties(), false);
-    }
-
-    private HttpRelationship relationship(long id, Node start, String type, Node end, Property... properties) {
-        return new HttpRelationship(
-                id, start.getId(), end.getId(), type, properties(properties).getProperties(), false, this::getNodeById);
     }
 
     private Optional<Node> getNodeById(Long id, Boolean isDeleted) {

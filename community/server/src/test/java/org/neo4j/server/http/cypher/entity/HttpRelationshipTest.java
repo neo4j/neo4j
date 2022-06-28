@@ -34,7 +34,9 @@ import org.neo4j.graphdb.Node;
 
 class HttpRelationshipTest {
     private static final long START_NODE_ID = 1245L;
+    private static final String START_NODE_ELEMENT_ID = String.valueOf(START_NODE_ID);
     private static final long END_NODE_ID = 54321L;
+    private static final String END_NODE_ELEMENT_ID = String.valueOf(END_NODE_ID);
 
     @Test
     void getStartNodeId_shouldReturnStartNodeIdWithoutCallGetStartNode() {
@@ -59,7 +61,7 @@ class HttpRelationshipTest {
     @Test
     void getStartNode_whenSupplierReturnsEmpty_shouldReturnNodeCreatedOnlyWithNodeId() {
         var subject = setupSubject();
-        var expectedNode = new HttpNode(START_NODE_ID);
+        var expectedNode = new HttpNode(START_NODE_ELEMENT_ID, START_NODE_ID);
 
         var startNode = subject.getStartNode();
 
@@ -68,7 +70,7 @@ class HttpRelationshipTest {
 
     @Test
     void getStartNode_whenSupplierReturnsTheNode_shouldReturnIt() {
-        var expectedNode = new HttpNode(START_NODE_ID, List.of(), Map.of(), false);
+        var expectedNode = new HttpNode(START_NODE_ELEMENT_ID, START_NODE_ID, List.of(), Map.of(), false);
         var subject = setupSubject((ignoredA, ignoredB) -> Optional.of(expectedNode));
 
         var startNode = subject.getStartNode();
@@ -79,7 +81,7 @@ class HttpRelationshipTest {
     @Test
     void getEndNode_whenSupplierReturnsEmpty_shouldReturnNodeCreatedOnlyWithNodeId() {
         var subject = setupSubject();
-        var expectedNode = new HttpNode(END_NODE_ID);
+        var expectedNode = new HttpNode(END_NODE_ELEMENT_ID, END_NODE_ID);
 
         var endNode = subject.getEndNode();
 
@@ -88,7 +90,7 @@ class HttpRelationshipTest {
 
     @Test
     void getEndNode_whenSupplierReturnsTheNode_shouldReturnIt() {
-        var expectedNode = new HttpNode(END_NODE_ID, List.of(), Map.of(), false);
+        var expectedNode = new HttpNode(END_NODE_ELEMENT_ID, END_NODE_ID, List.of(), Map.of(), false);
         var subject = setupSubject((ignoredA, ignoredB) -> Optional.of(expectedNode));
 
         var endNode = subject.getEndNode();
@@ -101,8 +103,17 @@ class HttpRelationshipTest {
     }
 
     private HttpRelationship setupSubject(BiFunction<Long, Boolean, Optional<Node>> getNodeById) {
-        var httpRelationship =
-                new HttpRelationship(1, START_NODE_ID, END_NODE_ID, "KNOWS", Map.of(), false, getNodeById);
+        var httpRelationship = new HttpRelationship(
+                "1",
+                1,
+                START_NODE_ELEMENT_ID,
+                START_NODE_ID,
+                END_NODE_ELEMENT_ID,
+                END_NODE_ID,
+                "KNOWS",
+                Map.of(),
+                false,
+                getNodeById);
         return spy(httpRelationship);
     }
 }

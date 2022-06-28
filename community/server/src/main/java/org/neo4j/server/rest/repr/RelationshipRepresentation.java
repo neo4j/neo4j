@@ -84,10 +84,16 @@ public final class RelationshipRepresentation extends ObjectRepresentation
     @Mapping("metadata")
     public MapRepresentation metadata() {
         if (isDeleted()) {
-            return new MapRepresentation(map("id", rel.getId(), "deleted", Boolean.TRUE));
-        } else {
             return new MapRepresentation(
-                    map("id", rel.getId(), "type", rel.getType().name()));
+                    map("id", rel.getId(), "elementId", rel.getElementId(), "deleted", Boolean.TRUE));
+        } else {
+            return new MapRepresentation(map(
+                    "id",
+                    rel.getId(),
+                    "elementId",
+                    rel.getElementId(),
+                    "type",
+                    rel.getType().name()));
         }
     }
 

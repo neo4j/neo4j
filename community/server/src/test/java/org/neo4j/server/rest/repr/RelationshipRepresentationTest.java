@@ -73,7 +73,16 @@ class RelationshipRepresentationTest {
 
     private static RelationshipRepresentation relrep(long id) {
         return new RelationshipRepresentation(new HttpRelationship(
-                0, 0, 1, "LOVES", Collections.emptyMap(), false, (ignoredA, ignoredB) -> Optional.empty()));
+                "0",
+                0,
+                "0",
+                0,
+                "0",
+                1,
+                "LOVES",
+                Collections.emptyMap(),
+                false,
+                (ignoredA, ignoredB) -> Optional.empty()));
     }
 
     static void verifySerialisation(Map<String, Object> relrep) {

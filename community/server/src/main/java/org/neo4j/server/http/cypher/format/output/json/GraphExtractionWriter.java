@@ -66,6 +66,7 @@ class GraphExtractionWriter implements ResultDataContentWriter {
                 try {
                     long nodeId = node.getId();
                     out.writeStringField("id", Long.toString(nodeId));
+                    out.writeStringField("elementId", node.getElementId());
                     if (isDeleted(node)) {
                         markDeleted(out);
                     } else {
@@ -100,12 +101,18 @@ class GraphExtractionWriter implements ResultDataContentWriter {
                 try {
                     long relationshipId = relationship.getId();
                     out.writeStringField("id", Long.toString(relationshipId));
+                    out.writeStringField("elementId", relationship.getElementId());
                     if (isDeleted(relationship)) {
                         markDeleted(out);
                     } else {
                         out.writeStringField("type", relationship.getType().name());
                         out.writeStringField("startNode", Long.toString(relationship.getStartNodeId()));
+                        out.writeStringField(
+                                "startNodeElementId",
+                                relationship.getStartNode().getElementId());
                         out.writeStringField("endNode", Long.toString(relationship.getEndNodeId()));
+                        out.writeStringField(
+                                "endNodeElementId", relationship.getEndNode().getElementId());
                         writeProperties(out, relationship);
                     }
                 } finally {

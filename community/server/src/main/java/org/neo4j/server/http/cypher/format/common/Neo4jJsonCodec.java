@@ -231,10 +231,15 @@ public class Neo4jJsonCodec extends ObjectMapper {
 
     public void writeMeta(JsonGenerator out, Object value) throws IOException {
         if (value instanceof Node node) {
-            writeNodeOrRelationshipMeta(out, node.getId(), Neo4jJsonMetaType.NODE, isDeleted(node));
+            writeNodeOrRelationshipMeta(
+                    out, node.getId(), node.getElementId(), Neo4jJsonMetaType.NODE, isDeleted(node));
         } else if (value instanceof Relationship relationship) {
             writeNodeOrRelationshipMeta(
-                    out, relationship.getId(), Neo4jJsonMetaType.RELATIONSHIP, isDeleted(relationship));
+                    out,
+                    relationship.getId(),
+                    relationship.getElementId(),
+                    Neo4jJsonMetaType.RELATIONSHIP,
+                    isDeleted(relationship));
         } else if (value instanceof Path) {
             writeMetaPath(out, (Path) value);
         } else if (value instanceof Iterable) {
@@ -312,11 +317,13 @@ public class Neo4jJsonCodec extends ObjectMapper {
     }
 
     private static void writeNodeOrRelationshipMeta(
-            JsonGenerator out, long id, Neo4jJsonMetaType type, boolean isDeleted) throws IOException {
+            JsonGenerator out, long id, String elementId, Neo4jJsonMetaType type, boolean isDeleted)
+            throws IOException {
         requireNonNull(type, "The meta type could not be null for node or relationship.");
         out.writeStartObject();
         try {
             out.writeNumberField("id", id);
+            out.writeStringField("elementId", elementId);
             out.writeStringField("type", type.code());
             out.writeBooleanField("deleted", isDeleted);
         } finally {

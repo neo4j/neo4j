@@ -25,30 +25,25 @@ import java.util.Map;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
-import org.neo4j.server.http.cypher.format.jolt.v1.JoltV1Codec;
+import org.neo4j.server.http.cypher.format.jolt.v2.JoltV2Codec;
 
 @Provider
-@Produces({
-    LineDelimitedEventSourceJoltMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE_WITH_QUALITY,
-    LineDelimitedEventSourceJoltMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE_WITH_QUALITY_V1
-})
-public class LineDelimitedEventSourceJoltMessageBodyWriter extends AbstractEventSourceJoltMessageBodyWriter {
+@Produces({LineDelimitedEventSourceJoltV2MessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE_WITH_QUALITY_V2})
+public class LineDelimitedEventSourceJoltV2MessageBodyWriter extends AbstractEventSourceJoltMessageBodyWriter {
 
-    public static final String JSON_JOLT_MIME_TYPE_VALUE = "application/vnd.neo4j.jolt";
-    public static final String JSON_JOLT_MIME_TYPE_VALUE_V1 = "application/vnd.neo4j.jolt-v1";
-    public static final String JSON_JOLT_MIME_TYPE_VALUE_WITH_QUALITY = JSON_JOLT_MIME_TYPE_VALUE + ";qs=0.5";
-    public static final String JSON_JOLT_MIME_TYPE_VALUE_WITH_QUALITY_V1 = JSON_JOLT_MIME_TYPE_VALUE_V1 + ";qs=0.5";
-    public static final MediaType JSON_JOLT_MIME_TYPE = MediaType.valueOf(JSON_JOLT_MIME_TYPE_VALUE);
+    public static final String JSON_JOLT_MIME_TYPE_VALUE_V2 = "application/vnd.neo4j.jolt-v2";
+    public static final String JSON_JOLT_MIME_TYPE_VALUE_WITH_QUALITY_V2 = JSON_JOLT_MIME_TYPE_VALUE_V2 + ";qs=0.5";
+    public static final MediaType JSON_JOLT_V2_MIME_TYPE = MediaType.valueOf(JSON_JOLT_MIME_TYPE_VALUE_V2);
 
     @Override
     protected MediaType getMediaType() {
-        return JSON_JOLT_MIME_TYPE;
+        return JSON_JOLT_V2_MIME_TYPE;
     }
 
     @Override
     protected LineDelimitedEventSourceJoltSerializer createSerializer(
             OutputStream outputStream, JsonFactory jsonFactory, Map<String, Object> parameters, boolean strict) {
         return new LineDelimitedEventSourceJoltSerializer(
-                parameters, JoltV1Codec.class, strict, jsonFactory, outputStream, true);
+                parameters, JoltV2Codec.class, strict, jsonFactory, outputStream, false);
     }
 }

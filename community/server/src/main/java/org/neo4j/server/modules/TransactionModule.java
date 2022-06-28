@@ -25,7 +25,9 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.http.cypher.CypherResource;
 import org.neo4j.server.http.cypher.format.input.json.JsonMessageBodyReader;
 import org.neo4j.server.http.cypher.format.output.eventsource.LineDelimitedEventSourceJoltMessageBodyWriter;
+import org.neo4j.server.http.cypher.format.output.eventsource.LineDelimitedEventSourceJoltV2MessageBodyWriter;
 import org.neo4j.server.http.cypher.format.output.eventsource.SequentialEventSourceJoltMessageBodyWriter;
+import org.neo4j.server.http.cypher.format.output.eventsource.SequentialEventSourceJoltV2MessageBodyWriter;
 import org.neo4j.server.http.cypher.format.output.json.JsonMessageBodyWriter;
 import org.neo4j.server.web.Injectable;
 import org.neo4j.server.web.WebServer;
@@ -66,6 +68,8 @@ public class TransactionModule implements ServerModule {
                 JsonMessageBodyReader.class,
                 JsonMessageBodyWriter.class,
                 LineDelimitedEventSourceJoltMessageBodyWriter.class,
-                SequentialEventSourceJoltMessageBodyWriter.class);
+                SequentialEventSourceJoltMessageBodyWriter.class,
+                LineDelimitedEventSourceJoltV2MessageBodyWriter.class,
+                SequentialEventSourceJoltV2MessageBodyWriter.class);
     }
 }

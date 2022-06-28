@@ -17,47 +17,48 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.http.cypher.format.jolt;
+package org.neo4j.server.http.cypher.format.jolt.v2;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Optional;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Relationship;
+import org.neo4j.server.http.cypher.format.jolt.Sigil;
 
-final class JoltPathSerializer extends StdSerializer<Path> {
-    JoltPathSerializer() {
-        super(Path.class);
+final class JoltNodeSerializerV2 extends StdSerializer<Node> {
+    JoltNodeSerializerV2() {
+        super(Node.class);
     }
 
     @Override
-    public void serialize(Path path, JsonGenerator generator, SerializerProvider provider) throws IOException {
-        generator.writeStartObject(path);
-        generator.writeFieldName(Sigil.PATH.getValue());
+    public void serialize(Node node, JsonGenerator generator, SerializerProvider provider) throws IOException {
+        generator.writeStartObject(node);
+        generator.writeFieldName(Sigil.NODE.getValue());
 
         generator.writeStartArray();
 
-        var it = path.iterator();
-        var lastNodeId = 0L;
+        generator.writeString(node.getElementId());
 
-        while (it.hasNext()) {
-            var entity = it.next();
-            if (entity instanceof Node node) {
-                lastNodeId = node.getId();
-
-                generator.writeObject(node);
-            } else if (entity instanceof Relationship rel) {
-
-                if (rel.getStartNodeId() != lastNodeId) {
-                    // we want a reversed relationship here so the path flows correctly
-                    generator.writeObject(JoltRelationship.fromRelationshipReversed(rel));
-                } else {
-                    generator.writeObject(rel);
-                }
-            }
+        generator.writeStartArray();
+        for (Label label : node.getLabels()) {
+            generator.writeString(label.name());
         }
+        generator.writeEndArray();
+
+        var properties = Optional.ofNullable(node.getAllProperties()).orElseGet(Collections::emptyMap);
+
+        generator.writeStartObject();
+
+        for (var entry : properties.entrySet()) {
+            generator.writeFieldName(entry.getKey());
+            generator.writeObject(entry.getValue());
+        }
+
+        generator.writeEndObject();
 
         generator.writeEndArray();
 

@@ -19,6 +19,7 @@
  */
 package org.neo4j.test.mockito.mock;
 
+import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -105,6 +106,7 @@ public final class GraphMock {
     private static Node mockNode(long id, Label[] labels, Properties properties) {
         Node node = mockEntity(Node.class, properties);
         when(node.getId()).thenReturn(id);
+        when(node.getElementId()).thenReturn(valueOf(id));
         when(node.getLabels()).thenReturn(Iterables.asResourceIterable(asList(labels)));
         return node;
     }

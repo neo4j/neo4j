@@ -25,15 +25,18 @@ import java.util.Map;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
-import org.neo4j.server.http.cypher.format.jolt.JoltCodec;
+import org.neo4j.server.http.cypher.format.jolt.v1.JoltV1Codec;
 
 @Provider
 @Produces({
     SequentialEventSourceJoltMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE_WITH_QUALITY,
+    SequentialEventSourceJoltMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE_WITH_QUALITY_V1
 })
 public class SequentialEventSourceJoltMessageBodyWriter extends AbstractEventSourceJoltMessageBodyWriter {
     public static final String JSON_JOLT_MIME_TYPE_VALUE = "application/vnd.neo4j.jolt+json-seq";
+    public static final String JSON_JOLT_MIME_TYPE_VALUE_V1 = "application/vnd.neo4j.jolt-v1+json-seq";
     public static final String JSON_JOLT_MIME_TYPE_VALUE_WITH_QUALITY = JSON_JOLT_MIME_TYPE_VALUE + ";qs=0.5";
+    public static final String JSON_JOLT_MIME_TYPE_VALUE_WITH_QUALITY_V1 = JSON_JOLT_MIME_TYPE_VALUE_V1 + ";qs=0.5";
     public static final MediaType JSON_JOLT_MIME_TYPE = MediaType.valueOf(JSON_JOLT_MIME_TYPE_VALUE);
 
     @Override
@@ -44,6 +47,7 @@ public class SequentialEventSourceJoltMessageBodyWriter extends AbstractEventSou
     @Override
     protected EventSourceSerializer createSerializer(
             OutputStream outputStream, JsonFactory jsonFactory, Map<String, Object> parameters, boolean strict) {
-        return new SequentialEventSourceJoltSerializer(parameters, JoltCodec.class, strict, jsonFactory, outputStream);
+        return new SequentialEventSourceJoltSerializer(
+                parameters, JoltV1Codec.class, strict, jsonFactory, outputStream, true);
     }
 }

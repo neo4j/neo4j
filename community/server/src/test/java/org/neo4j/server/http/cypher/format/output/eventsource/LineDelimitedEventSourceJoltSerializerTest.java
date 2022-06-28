@@ -84,7 +84,7 @@ import org.neo4j.server.http.cypher.TransitionalTxManagementKernelTransaction;
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
 import org.neo4j.server.http.cypher.format.api.TransactionInfoEvent;
 import org.neo4j.server.http.cypher.format.api.TransactionNotificationState;
-import org.neo4j.server.http.cypher.format.jolt.JoltCodec;
+import org.neo4j.server.http.cypher.format.jolt.v1.JoltV1Codec;
 import org.neo4j.server.http.cypher.format.output.json.ResultDataContent;
 import org.neo4j.test.mockito.mock.SpatialMocks;
 import org.neo4j.values.storable.DurationValue;
@@ -754,6 +754,37 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
     }
 
     @Test
+    void shouldReturnDeprecationNotification() {
+        // given
+        var joltV2Serializer = new LineDelimitedEventSourceJoltSerializer(
+                Collections.emptyMap(), JoltV1Codec.class, true, JSON_FACTORY, output, true);
+        var row = Map.of(
+                "column1", "value1",
+                "column2", "value2");
+
+        // when
+        writeStatementStart(joltV2Serializer, "column1", "column2");
+        writeRecord(joltV2Serializer, row, "column1", "column2");
+        writeStatementEnd(joltV2Serializer, null, Collections.emptyList());
+        writeTransactionInfo(joltV2Serializer, "commit/uri/1");
+
+        // then
+        String result = output.toString(UTF_8);
+
+        assertEquals(
+                "{\"header\":{\"fields\":[\"column1\",\"column2\"]}}\n"
+                        + "{\"data\":[{\"U\":\"value1\"},{\"U\":\"value2\"}]}\n"
+                        + "{\"summary\":{}}\n"
+                        + "{\"info\":{\"notifications\":[{\"code\":\"Neo.ClientError.Request.DeprecatedFormat\","
+                        + "\"severity\":\"WARNING\",\"title\":\"The client made a request for a format which has "
+                        + "been deprecated.\","
+                        + "\"description\":\"The requested format has been deprecated. ('application/vnd.neo4j.jolt' "
+                        + "and 'application/vnd.neo4j.jolt-v1' have been deprecated and will be removed in a future version. "
+                        + "Please use 'application/vnd.neo4j.jolt-v2'.)\"}],\"commit\":\"commit/uri/1\"}}\n",
+                result);
+    }
+
+    @Test
     void shouldNotReturnPositionWhenEmptyPosition() {
         // given
         var row = Map.of(
@@ -790,6 +821,6 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
 
     protected static LineDelimitedEventSourceJoltSerializer getSerializerWith(OutputStream output) {
         return new LineDelimitedEventSourceJoltSerializer(
-                Collections.emptyMap(), JoltCodec.class, true, JSON_FACTORY, output);
+                Collections.emptyMap(), JoltV1Codec.class, true, JSON_FACTORY, output, false);
     }
 }

@@ -32,7 +32,7 @@ import java.util.Map;
 import org.assertj.core.util.Lists;
 import org.junit.jupiter.api.Test;
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
-import org.neo4j.server.http.cypher.format.jolt.JoltCodec;
+import org.neo4j.server.http.cypher.format.jolt.v1.JoltV1Codec;
 import org.neo4j.server.http.cypher.format.output.json.ResultDataContentWriter;
 import org.neo4j.server.rest.domain.JsonParseException;
 
@@ -40,7 +40,7 @@ class EventSourceWriterTest {
     @Test
     void shouldWriteSimpleRecord() throws Exception {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        JsonGenerator json = new JoltCodec(true).createGenerator(out);
+        JsonGenerator json = new JoltV1Codec(true).createGenerator(out);
 
         JsonNode row = serialize(out, json, new EventSourceWriter(), Map.of("value", Map.of("country", "France")));
 
@@ -53,7 +53,7 @@ class EventSourceWriterTest {
     void shouldWriteNestedMaps() throws Exception {
         // Given
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        JsonGenerator json = new JoltCodec(true).createGenerator(out);
+        JsonGenerator json = new JoltV1Codec(true).createGenerator(out);
 
         Map<String, Object> data = map("ColumnA", map("one", map("two", asList(true, map("three", 42)))));
 

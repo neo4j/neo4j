@@ -331,6 +331,7 @@ class ExecutionResultSerializerTest {
     void shouldSerializeNodeAsMapOfProperties() throws JsonParseException {
         // given
         var node = new HttpNode(
+                "1",
                 1,
                 emptyList(),
                 Map.of(
@@ -359,7 +360,7 @@ class ExecutionResultSerializerTest {
         assertEquals(
                 row, jsonNode("{\"b\":true,\"c\":[1,0,1,2],\"d\":[1,0,1,2],\"e\":[\"a\",\"b\",\"ääö\"],\"a\":12}"));
         var meta = results.get("data").get(0).get("meta");
-        assertEquals(meta, jsonNode("[{\"id\":1,\"type\":\"node\",\"deleted\":false}]"));
+        assertEquals(meta, jsonNode("[{\"id\":1,\"elementId\":\"1\",\"type\":\"node\",\"deleted\":false}]"));
     }
 
     @Test
@@ -369,7 +370,7 @@ class ExecutionResultSerializerTest {
         // Therefore, the JSON Factory must not be reused respectively the codec used on a factory cannot be changed
         // Otherwise, we will end up with transaction handles belonging to other threads.
 
-        Function<Integer, Node> selectNode = i -> new HttpNode(1, emptyList(), Map.of("i", i), false);
+        Function<Integer, Node> selectNode = i -> new HttpNode("1", 1, emptyList(), Map.of("i", i), false);
         Function<Integer, Callable<String>> callableProvider = selectNode.andThen(node -> () -> {
 
             // given
@@ -405,7 +406,8 @@ class ExecutionResultSerializerTest {
             int i = 0;
             for (Future<String> request : calledRequests) {
                 var expectedResult = "{\"results\":[{\"columns\":[\"node\"]," + "\"data\":[{\"row\":[{\"i\":"
-                        + i + "}]," + "\"meta\":[{\"id\":1,\"type\":\"node\",\"deleted\":false}]}]}],"
+                        + i + "}],"
+                        + "\"meta\":[{\"id\":1,\"elementId\":\"1\",\"type\":\"node\",\"deleted\":false}]}]}],"
                         + "\"errors\":[]}";
                 try {
                     var result = request.get();
@@ -424,10 +426,19 @@ class ExecutionResultSerializerTest {
     @Test
     void shouldSerializeNestedEntities() {
         // given
-        var a = new HttpNode(1, List.of(), Map.of("foo", 12), false);
-        var b = new HttpNode(2, List.of(), Map.of("bar", false), false);
+        var a = new HttpNode("1", 1, List.of(), Map.of("foo", 12), false);
+        var b = new HttpNode("2", 2, List.of(), Map.of("bar", false), false);
         var r = new HttpRelationship(
-                1, 1, 2, "FRAZZLE", Map.of("baz", "quux"), false, (ignoredA, ignoredB) -> Optional.empty());
+                "1",
+                1,
+                "1",
+                1,
+                "2",
+                2,
+                "FRAZZLE",
+                Map.of("baz", "quux"),
+                false,
+                (ignoredA, ignoredB) -> Optional.empty());
         var row = Map.of("nested", new TreeMap<>(Map.of("node", a, "edge", r, "path", path(a, link(r, b)))));
 
         // when
@@ -442,9 +453,9 @@ class ExecutionResultSerializerTest {
                 "{\"results\":[{\"columns\":[\"nested\"],"
                         + "\"data\":[{\"row\":[{\"edge\":{\"baz\":\"quux\"},\"node\":{\"foo\":12},"
                         + "\"path\":[{\"foo\":12},{\"baz\":\"quux\"},{\"bar\":false}]}],"
-                        + "\"meta\":[{\"id\":1,\"type\":\"relationship\",\"deleted\":false},"
-                        + "{\"id\":1,\"type\":\"node\",\"deleted\":false},[{\"id\":1,\"type\":\"node\",\"deleted\":false},"
-                        + "{\"id\":1,\"type\":\"relationship\",\"deleted\":false},{\"id\":2,\"type\":\"node\",\"deleted\":false}]]}]}],"
+                        + "\"meta\":[{\"id\":1,\"elementId\":\"1\",\"type\":\"relationship\",\"deleted\":false},"
+                        + "{\"id\":1,\"elementId\":\"1\",\"type\":\"node\",\"deleted\":false},[{\"id\":1,\"elementId\":\"1\",\"type\":\"node\",\"deleted\":false},"
+                        + "{\"id\":1,\"elementId\":\"1\",\"type\":\"relationship\",\"deleted\":false},{\"id\":2,\"elementId\":\"2\",\"type\":\"node\",\"deleted\":false}]]}]}],"
                         + "\"errors\":[]}",
                 result);
     }
@@ -467,8 +478,8 @@ class ExecutionResultSerializerTest {
         assertEquals(
                 "{\"results\":[{\"columns\":[\"path\"],"
                         + "\"data\":[{\"row\":[[{\"key1\":\"value1\"},{\"key2\":\"value2\"},{\"key3\":\"value3\"}]],"
-                        + "\"meta\":[[{\"id\":1,\"type\":\"node\",\"deleted\":false},"
-                        + "{\"id\":1,\"type\":\"relationship\",\"deleted\":false},{\"id\":2,\"type\":\"node\",\"deleted\":false}]]}]}],"
+                        + "\"meta\":[[{\"id\":1,\"elementId\":\"1\",\"type\":\"node\",\"deleted\":false},"
+                        + "{\"id\":1,\"elementId\":\"1\",\"type\":\"relationship\",\"deleted\":false},{\"id\":2,\"elementId\":\"2\",\"type\":\"node\",\"deleted\":false}]]}]}],"
                         + "\"errors\":[]}",
                 result);
     }
@@ -613,16 +624,34 @@ class ExecutionResultSerializerTest {
     void shouldProduceResultStreamWithGraphEntries() {
         // given
         Node[] node = {
-            new HttpNode(0, List.of(label("Node")), Map.of("name", "node0"), false),
-            new HttpNode(1, emptyList(), Map.of("name", "node1"), false),
-            new HttpNode(2, List.of(label("This"), label("That")), Map.of("name", "node2"), false),
-            new HttpNode(3, List.of(label("Other")), Map.of("name", "node3"), false)
+            new HttpNode("0", 0, List.of(label("Node")), Map.of("name", "node0"), false),
+            new HttpNode("1", 1, emptyList(), Map.of("name", "node1"), false),
+            new HttpNode("2", 2, List.of(label("This"), label("That")), Map.of("name", "node2"), false),
+            new HttpNode("3", 3, List.of(label("Other")), Map.of("name", "node3"), false)
         };
         Relationship[] rel = {
             new HttpRelationship(
-                    0, 0, 1, "KNOWS", Map.of("name", "rel0"), false, (i, b) -> Optional.of(node[Math.toIntExact(i)])),
+                    "0",
+                    0,
+                    "0",
+                    0,
+                    "1",
+                    1,
+                    "KNOWS",
+                    Map.of("name", "rel0"),
+                    false,
+                    (i, b) -> Optional.of(node[Math.toIntExact(i)])),
             new HttpRelationship(
-                    1, 2, 3, "LOVES", Map.of("name", "rel1"), false, (i, b) -> Optional.of(node[Math.toIntExact(i)]))
+                    "1",
+                    1,
+                    "2",
+                    2,
+                    "3",
+                    3,
+                    "LOVES",
+                    Map.of("name", "rel1"),
+                    false,
+                    (i, b) -> Optional.of(node[Math.toIntExact(i)]))
         };
 
         when(internalTransaction.getRelationshipById(anyLong())).thenAnswer((Answer<Relationship>)
@@ -649,20 +678,25 @@ class ExecutionResultSerializerTest {
         String result = output.toString(UTF_8);
 
         // Nodes and relationships form sets, so we cannot test for a fixed string, since we don't know the order.
-        String node0 = "{\"id\":\"0\",\"labels\":[\"Node\"],\"properties\":{\"name\":\"node0\"}}";
-        String node1 = "{\"id\":\"1\",\"labels\":[],\"properties\":{\"name\":\"node1\"}}";
-        String node2 = "{\"id\":\"2\",\"labels\":[\"This\",\"That\"],\"properties\":{\"name\":\"node2\"}}";
-        String node3 = "{\"id\":\"3\",\"labels\":[\"Other\"],\"properties\":{\"name\":\"node3\"}}";
-        String rel0 = "\"relationships\":[{\"id\":\"0\",\"type\":\"KNOWS\","
-                + "\"startNode\":\"0\",\"endNode\":\"1\",\"properties\":{\"name\":\"rel0\"}}]}";
-        String rel1 = "\"relationships\":[{\"id\":\"1\",\"type\":\"LOVES\","
-                + "\"startNode\":\"2\",\"endNode\":\"3\",\"properties\":{\"name\":\"rel1\"}}]}";
+        String node0 = "{\"id\":\"0\",\"elementId\":\"0\",\"labels\":[\"Node\"],\"properties\":{\"name\":\"node0\"}}";
+        String node1 = "{\"id\":\"1\",\"elementId\":\"1\",\"labels\":[],\"properties\":{\"name\":\"node1\"}}";
+        String node2 =
+                "{\"id\":\"2\",\"elementId\":\"2\",\"labels\":[\"This\",\"That\"],\"properties\":{\"name\":\"node2\"}}";
+        String node3 = "{\"id\":\"3\",\"elementId\":\"3\",\"labels\":[\"Other\"],\"properties\":{\"name\":\"node3\"}}";
+
+        String rel0 = "\"relationships\":[{\"id\":\"0\",\"elementId\":\"0\",\"type\":\"KNOWS\","
+                + "\"startNode\":\"0\",\"startNodeElementId\":\"0\",\"endNode\":\"1\",\"endNodeElementId\":\"1\",\"properties\":{\"name\":\"rel0\"}}]}";
+
+        String rel1 = "\"relationships\":[{\"id\":\"1\",\"elementId\":\"1\",\"type\":\"LOVES\","
+                + "\"startNode\":\"2\",\"startNodeElementId\":\"2\",\"endNode\":\"3\",\"endNodeElementId\":\"3\",\"properties\":{\"name\":\"rel1\"}}]}";
+
         String row0 = "{\"row\":[{\"name\":\"node0\"},{\"name\":\"rel0\"}],"
-                + "\"meta\":[{\"id\":0,\"type\":\"node\",\"deleted\":false},"
-                + "{\"id\":0,\"type\":\"relationship\",\"deleted\":false}],\"graph\":{\"nodes\":[";
+                + "\"meta\":[{\"id\":0,\"elementId\":\"0\",\"type\":\"node\",\"deleted\":false},"
+                + "{\"id\":0,\"elementId\":\"0\",\"type\":\"relationship\",\"deleted\":false}],\"graph\":{\"nodes\":[";
+
         String row1 = "{\"row\":[{\"name\":\"node2\"},{\"name\":\"rel1\"}],"
-                + "\"meta\":[{\"id\":2,\"type\":\"node\",\"deleted\":false},"
-                + "{\"id\":1,\"type\":\"relationship\",\"deleted\":false}],\"graph\":{\"nodes\":[";
+                + "\"meta\":[{\"id\":2,\"elementId\":\"2\",\"type\":\"node\",\"deleted\":false},"
+                + "{\"id\":1,\"elementId\":\"1\",\"type\":\"relationship\",\"deleted\":false}],\"graph\":{\"nodes\":[";
         int n0 = result.indexOf(node0);
         int n1 = result.indexOf(node1);
         int n2 = result.indexOf(node2);
@@ -685,15 +719,33 @@ class ExecutionResultSerializerTest {
     void shouldProduceResultStreamWithLegacyRestFormat() throws Exception {
         // given
         Node[] node = {
-            new HttpNode(0, emptyList(), Map.of("name", "node0"), false),
-            new HttpNode(1, emptyList(), Map.of("name", "node1"), false),
-            new HttpNode(2, emptyList(), Map.of("name", "node2"), false)
+            new HttpNode("0", 0, emptyList(), Map.of("name", "node0"), false),
+            new HttpNode("1", 1, emptyList(), Map.of("name", "node1"), false),
+            new HttpNode("2", 2, emptyList(), Map.of("name", "node2"), false)
         };
         Relationship[] rel = {
             new HttpRelationship(
-                    0, 0, 1, "KNOWS", Map.of("name", "rel0"), false, (ignoredA, ignoredB) -> Optional.empty()),
+                    "0",
+                    0,
+                    "0",
+                    0,
+                    "1",
+                    1,
+                    "KNOWS",
+                    Map.of("name", "rel0"),
+                    false,
+                    (ignoredA, ignoredB) -> Optional.empty()),
             new HttpRelationship(
-                    1, 2, 1, "LOVES", Map.of("name", "rel1"), false, (ignoredA, ignoredB) -> Optional.empty())
+                    "1",
+                    1,
+                    "2",
+                    2,
+                    "1",
+                    1,
+                    "LOVES",
+                    Map.of("name", "rel1"),
+                    false,
+                    (ignoredA, ignoredB) -> Optional.empty())
         };
         Path path = GraphMock.path(node[0], link(rel[0], node[1]), link(rel[1], node[2]));
 
@@ -1095,10 +1147,19 @@ class ExecutionResultSerializerTest {
             Map<String, Object> startNodeProperties,
             Map<String, Object> relationshipProperties,
             Map<String, Object> endNodeProperties) {
-        Node startNode = new HttpNode(1, emptyList(), startNodeProperties, false);
-        Node endNode = new HttpNode(2, emptyList(), endNodeProperties, false);
+        Node startNode = new HttpNode("1", 1, emptyList(), startNodeProperties, false);
+        Node endNode = new HttpNode("2", 2, emptyList(), endNodeProperties, false);
         Relationship relationship = new HttpRelationship(
-                1, 1, 2, "RELATED", relationshipProperties, false, (ignoredA, ignoredB) -> Optional.empty());
+                "1",
+                1,
+                "1",
+                1,
+                "2",
+                2,
+                "RELATED",
+                relationshipProperties,
+                false,
+                (ignoredA, ignoredB) -> Optional.empty());
         return path(startNode, Link.link(relationship, endNode));
     }
 }

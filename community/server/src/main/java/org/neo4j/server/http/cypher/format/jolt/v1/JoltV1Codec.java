@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.http.cypher.format.jolt;
+package org.neo4j.server.http.cypher.format.jolt.v1;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -26,25 +26,25 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * Jolt typically produces results in the format: {@code {<type> : <value>} }.
  * For example: {@code {"Z": 1}} where "Z" indicates the value is an integer.
  */
-public class JoltCodec extends ObjectMapper {
+public class JoltV1Codec extends ObjectMapper {
     /**
      * Construct a codec with strict mode enabled/disabled depending on {@code strictModeEnabled}. When strict
      * mode is enabled, values are <em>always</em> paired with their type whereas when disabled some type information
      * is omitted for brevity.
      * @param strictModeEnabled {@code true} to enable strict mode, {@code false} to disable strict mode.
      */
-    public JoltCodec(boolean strictModeEnabled) {
+    public JoltV1Codec(boolean strictModeEnabled) {
         if (strictModeEnabled) {
-            registerModules(JoltModule.STRICT.getInstance());
+            registerModules(JoltModuleV1.STRICT.getInstance());
         } else {
-            registerModules(JoltModule.DEFAULT.getInstance());
+            registerModules(JoltModuleV1.DEFAULT.getInstance());
         }
     }
 
     /**
      * Constuct a codec with strict mode disabled.
      */
-    public JoltCodec() {
-        registerModules(JoltModule.DEFAULT.getInstance());
+    public JoltV1Codec() {
+        registerModules(JoltModuleV1.DEFAULT.getInstance());
     }
 }

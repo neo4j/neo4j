@@ -127,7 +127,8 @@ public final class NodeRepresentation extends ObjectRepresentation
     @Mapping("metadata")
     public MapRepresentation metadata() {
         if (isDeleted()) {
-            return new MapRepresentation(map("id", node.getId(), "deleted", Boolean.TRUE));
+            return new MapRepresentation(
+                    map("id", node.getId(), "elementId", node.getElementId(), "deleted", Boolean.TRUE));
         } else {
             Collection<String> labels = Iterables.asCollection(new IterableWrapper<>(node.getLabels()) {
                 @Override
@@ -135,7 +136,7 @@ public final class NodeRepresentation extends ObjectRepresentation
                     return label.name();
                 }
             });
-            return new MapRepresentation(map("id", node.getId(), "labels", labels));
+            return new MapRepresentation(map("id", node.getId(), "elementId", node.getElementId(), "labels", labels));
         }
     }
 

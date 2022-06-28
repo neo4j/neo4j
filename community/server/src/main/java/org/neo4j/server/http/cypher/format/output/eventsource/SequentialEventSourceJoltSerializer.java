@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.ObjectCodec;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
+import org.neo4j.graphdb.Notification;
 import org.neo4j.server.http.cypher.format.api.ConnectionException;
 import org.neo4j.server.http.cypher.format.api.OutputEvent;
 import org.neo4j.server.http.cypher.format.api.OutputEventSource;
@@ -45,8 +46,9 @@ public class SequentialEventSourceJoltSerializer extends LineDelimitedEventSourc
             Class<? extends ObjectCodec> classOfCodec,
             boolean isStrictMode,
             JsonFactory jsonFactory,
-            OutputStream output) {
-        super(parameters, classOfCodec, isStrictMode, jsonFactory, output);
+            OutputStream output,
+            boolean isDeprecatedFormat) {
+        super(parameters, classOfCodec, isStrictMode, jsonFactory, output, isDeprecatedFormat);
     }
 
     private void writeRecordSeparator() {
@@ -94,5 +96,13 @@ public class SequentialEventSourceJoltSerializer extends LineDelimitedEventSourc
         writeRecordSeparator();
 
         super.writeErrorWrapper();
+    }
+
+    @Override
+    protected Notification deprecationWarning() {
+        return deprecationWarning(
+                SequentialEventSourceJoltMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE,
+                SequentialEventSourceJoltMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE_V1,
+                SequentialEventSourceJoltV2MessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE_V2);
     }
 }

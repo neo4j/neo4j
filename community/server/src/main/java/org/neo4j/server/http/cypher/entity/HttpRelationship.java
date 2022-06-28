@@ -29,24 +29,33 @@ import org.neo4j.graphdb.RelationshipType;
 
 public class HttpRelationship implements Relationship {
     private final long relId;
+    private final String relElementId;
     private final long startNodeId;
+    private final String startNodeElementId;
     private final long endNodeId;
+    private final String endNodeElementId;
     private final String type;
     private final Map<String, Object> properties;
     private final boolean isDeleted;
     private final BiFunction<Long, Boolean, Optional<Node>> getNodeById;
 
     public HttpRelationship(
+            String relElementId,
             long relId,
+            String startNodeElementId,
             long startNodeId,
+            String endNodeElementId,
             long endNodeId,
             String type,
             Map<String, Object> properties,
             boolean isDeleted,
             BiFunction<Long, Boolean, Optional<Node>> getNodeById) {
         this.relId = relId;
+        this.relElementId = relElementId;
         this.startNodeId = startNodeId;
+        this.startNodeElementId = startNodeElementId;
         this.endNodeId = endNodeId;
+        this.endNodeElementId = endNodeElementId;
         this.type = type;
         this.properties = properties;
         this.isDeleted = isDeleted;
@@ -60,7 +69,7 @@ public class HttpRelationship implements Relationship {
 
     @Override
     public String getElementId() {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return relElementId;
     }
 
     @Override
@@ -116,12 +125,12 @@ public class HttpRelationship implements Relationship {
 
     @Override
     public Node getStartNode() {
-        return getNodeById.apply(startNodeId, isDeleted).orElseGet(() -> new HttpNode(startNodeId));
+        return getNodeById.apply(startNodeId, isDeleted).orElseGet(() -> new HttpNode(startNodeElementId, startNodeId));
     }
 
     @Override
     public Node getEndNode() {
-        return getNodeById.apply(endNodeId, isDeleted).orElseGet(() -> new HttpNode(endNodeId));
+        return getNodeById.apply(endNodeId, isDeleted).orElseGet(() -> new HttpNode(endNodeElementId, endNodeId));
     }
 
     @Override

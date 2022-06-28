@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.http.cypher.format.output.eventsource;
 
+import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_FORMAT;
+import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.message;
 import static org.neo4j.server.http.cypher.format.api.TransactionNotificationState.OPEN;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -58,6 +60,7 @@ class LineDelimitedEventSourceJoltSerializer implements EventSourceSerializer {
     protected final List<Notification> notifications = new ArrayList<>();
     protected final List<FailureEvent> errors = new ArrayList<>();
     protected final OutputStream output;
+    private final boolean isDeprecatedFormat;
 
     /**
      * The original parameters from the {@link org.neo4j.server.http.cypher.format.api.OutputEventSource}.
@@ -72,10 +75,12 @@ class LineDelimitedEventSourceJoltSerializer implements EventSourceSerializer {
             Class<? extends ObjectCodec> classOfCodec,
             boolean isStrictMode,
             JsonFactory jsonFactory,
-            OutputStream output) {
+            OutputStream output,
+            boolean isDeprecatedFormat) {
         this.parameters = parameters;
         this.output = output;
         this.writer = new EventSourceWriter();
+        this.isDeprecatedFormat = isDeprecatedFormat;
 
         ObjectCodec codec = instantiateCodec(isStrictMode, classOfCodec);
         this.jsonGenerator = createGenerator(jsonFactory, codec, output);
@@ -185,6 +190,11 @@ class LineDelimitedEventSourceJoltSerializer implements EventSourceSerializer {
             jsonGenerator.writeEndObject();
 
             statementEndEvent.getNotifications().forEach(notifications::add);
+
+            if (isDeprecatedFormat) {
+                notifications.add(deprecationWarning());
+            }
+
             flush();
         } catch (JsonGenerationException e) {
             throw new IllegalStateException(e);
@@ -409,5 +419,24 @@ class LineDelimitedEventSourceJoltSerializer implements EventSourceSerializer {
         jsonGenerator.flush();
         output.flush();
         output.write("\n".getBytes());
+    }
+
+    protected Notification deprecationWarning() {
+        return deprecationWarning(
+                LineDelimitedEventSourceJoltMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE,
+                LineDelimitedEventSourceJoltMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE_V1,
+                LineDelimitedEventSourceJoltV2MessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE_V2);
+    }
+
+    public static Notification deprecationWarning(
+            String deprecatedFormatA, String deprecatedFormatB, String newFormat) {
+        return DEPRECATED_FORMAT.notification(
+                InputPosition.empty,
+                message(
+                        "",
+                        String.format(
+                                "'%s' and '%s' have been deprecated and will be removed in a future version. "
+                                        + "Please use '%s'.",
+                                deprecatedFormatA, deprecatedFormatB, newFormat)));
     }
 }

@@ -80,6 +80,8 @@ public enum NotificationCode {
                     + "For example, in 'RETURN n.a, n.a + n.b + count(*)' the aggregation expression 'n.a + n.b + count(*)' includes the implicit grouping key 'n.b', "
                     + "and this expression is now deprecated. "
                     + "It may be possible to rewrite the query by extracting these grouping/aggregation expressions into a preceding WITH clause."),
+    DEPRECATED_FORMAT(
+            SeverityLevel.WARNING, Status.Request.DeprecatedFormat, "The requested format has been deprecated."),
     EAGER_LOAD_CSV(
             SeverityLevel.WARNING,
             Status.Statement.EagerOperatorWarning,

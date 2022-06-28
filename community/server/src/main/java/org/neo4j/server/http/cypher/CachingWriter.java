@@ -61,10 +61,21 @@ public class CachingWriter extends BaseToObjectValueWriter<IOException> {
 
     @Override
     public void writeRelationship(
-            long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean isDeleted) {
+            String elementId,
+            long relId,
+            String startNodeElementId,
+            long startNodeId,
+            String endNodeElementId,
+            long endNodeId,
+            TextValue type,
+            MapValue properties,
+            boolean isDeleted) {
         cachedObject = new HttpRelationship(
+                elementId,
                 relId,
+                startNodeElementId,
                 startNodeId,
+                endNodeElementId,
                 endNodeId,
                 type.stringValue(),
                 processProperties(properties),
@@ -81,12 +92,11 @@ public class CachingWriter extends BaseToObjectValueWriter<IOException> {
     }
 
     @Override
-    public void writeNode(long nodeId, TextArray labels, MapValue properties, boolean isDeleted) {
+    public void writeNode(String elementId, long nodeId, TextArray labels, MapValue properties, boolean isDeleted) {
         var labelList = Arrays.stream((String[]) labels.asObjectCopy())
                 .map(Label::label)
                 .collect(Collectors.toList());
-
-        cachedObject = new HttpNode(nodeId, labelList, processProperties(properties), isDeleted);
+        cachedObject = new HttpNode(elementId, nodeId, labelList, processProperties(properties), isDeleted);
     }
 
     @Override
@@ -119,7 +129,12 @@ public class CachingWriter extends BaseToObjectValueWriter<IOException> {
     private List<Node> convertNodeValues(NodeValue[] nodeValues) {
         var nodeArrayList = new ArrayList<Node>();
         for (NodeValue nodeValue : nodeValues) {
-            writeNode(nodeValue.id(), nodeValue.labels(), nodeValue.properties(), nodeValue.isDeleted());
+            writeNode(
+                    nodeValue.elementId(),
+                    nodeValue.id(),
+                    nodeValue.labels(),
+                    nodeValue.properties(),
+                    nodeValue.isDeleted());
             nodeArrayList.add((HttpNode) cachedObject);
         }
         return nodeArrayList;
@@ -129,8 +144,11 @@ public class CachingWriter extends BaseToObjectValueWriter<IOException> {
         var relArrayList = new ArrayList<Relationship>();
         for (RelationshipValue relationship : relationships) {
             writeRelationship(
+                    relationship.elementId(),
                     relationship.id(),
+                    relationship.startNodeElementId(),
                     relationship.startNodeId(),
+                    relationship.endNodeElementId(),
                     relationship.endNodeId(),
                     relationship.type(),
                     relationship.properties(),

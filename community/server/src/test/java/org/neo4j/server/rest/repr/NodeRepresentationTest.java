@@ -19,7 +19,9 @@
  */
 package org.neo4j.server.rest.repr;
 
+import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
@@ -108,7 +110,8 @@ class NodeRepresentationTest {
     }
 
     private static NodeRepresentation noderep(long id) {
-        return new NodeRepresentation(new HttpNode(id, List.of(label("Label")), Collections.emptyMap(), false));
+        return new NodeRepresentation(
+                new HttpNode(valueOf(id), id, List.of(label("Label")), Collections.emptyMap(), false));
     }
 
     static void verifySerialisation(Map<String, Object> noderep) {
@@ -139,5 +142,6 @@ class NodeRepresentationTest {
         List labels = (List) metadata.get("labels");
         assertTrue(labels.isEmpty() || labels.equals(asList("Label")));
         assertTrue(((Number) metadata.get("id")).longValue() >= 0);
+        assertThat(((String) metadata.get("elementId"))).isNotEmpty();
     }
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.http.cypher.format.jolt;
 
-enum Sigil {
+public enum Sigil {
     INTEGER("Z"),
     REAL("R"),
     UNICODE("U"),

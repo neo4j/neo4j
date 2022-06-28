@@ -33,12 +33,14 @@ import org.neo4j.graphdb.ResourceIterable;
 
 public class HttpNode implements Node {
     private final long nodeId;
+    private final String elementId;
     private final Map<String, Object> propertyMap;
     private final List<Label> labels;
     private final boolean isDeleted;
     private final boolean isFullNode;
 
-    public HttpNode(long id, List<Label> labels, Map<String, Object> propertyMap, boolean isDeleted) {
+    public HttpNode(String elementId, long id, List<Label> labels, Map<String, Object> propertyMap, boolean isDeleted) {
+        this.elementId = elementId;
         this.nodeId = id;
         this.labels = labels;
         this.propertyMap = propertyMap;
@@ -46,7 +48,8 @@ public class HttpNode implements Node {
         this.isFullNode = true;
     }
 
-    public HttpNode(long id) {
+    public HttpNode(String elementId, long id) {
+        this.elementId = elementId;
         this.nodeId = id;
         this.labels = new ArrayList<>();
         this.propertyMap = new HashMap<>();
@@ -61,7 +64,7 @@ public class HttpNode implements Node {
 
     @Override
     public String getElementId() {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return elementId;
     }
 
     @Override

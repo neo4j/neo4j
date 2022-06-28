@@ -57,7 +57,7 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E> {
         this.writeNode(nodeId, labels, properties, isDeleted);
     }
 
-    @Deprecated // TODO: Remove when HTTP moves to elementId
+    @Deprecated
     default void writeNode(long nodeId, TextArray labels, MapValue properties, boolean isDeleted) throws E {}
 
     void writeRelationshipReference(long relId) throws E;
@@ -76,7 +76,7 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E> {
         this.writeRelationship(relId, startNodeId, endNodeId, type, properties, isDeleted);
     }
 
-    @Deprecated // TODO: Remove when HTTP moves to elementId
+    @Deprecated
     default void writeRelationship(
             long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean isDeleted)
             throws E {}

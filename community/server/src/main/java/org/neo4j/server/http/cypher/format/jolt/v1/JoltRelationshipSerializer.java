@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.http.cypher.format.jolt;
+package org.neo4j.server.http.cypher.format.jolt.v1;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -25,20 +25,19 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.server.http.cypher.format.jolt.Sigil;
 
-/**
- * Custom relationship serializer to flip the relationship sigil when use with {@link JoltPathSerializer} to allow flowing paths.
- */
-final class JoltRelationshipReversedSerializer extends StdSerializer<JoltRelationship> {
-    JoltRelationshipReversedSerializer() {
-        super(JoltRelationship.class);
+final class JoltRelationshipSerializer extends StdSerializer<Relationship> {
+    JoltRelationshipSerializer() {
+        super(Relationship.class);
     }
 
     @Override
-    public void serialize(JoltRelationship relationship, JsonGenerator generator, SerializerProvider provider)
+    public void serialize(Relationship relationship, JsonGenerator generator, SerializerProvider provider)
             throws IOException {
         generator.writeStartObject(relationship);
-        generator.writeFieldName(Sigil.RELATIONSHIP_REVERSED.getValue());
+        generator.writeFieldName(Sigil.RELATIONSHIP.getValue());
 
         generator.writeStartArray();
 

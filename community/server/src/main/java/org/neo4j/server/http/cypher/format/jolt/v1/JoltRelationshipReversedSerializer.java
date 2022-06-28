@@ -17,39 +17,42 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.http.cypher.format.jolt;
+package org.neo4j.server.http.cypher.format.jolt.v1;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
-import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
+import org.neo4j.server.http.cypher.format.jolt.JoltRelationship;
+import org.neo4j.server.http.cypher.format.jolt.Sigil;
 
-final class JoltNodeSerializer extends StdSerializer<Node> {
-    JoltNodeSerializer() {
-        super(Node.class);
+/**
+ * Custom relationship serializer to flip the relationship sigil when use with {@link JoltPathSerializer} to allow flowing paths.
+ */
+final class JoltRelationshipReversedSerializer extends StdSerializer<JoltRelationship> {
+    JoltRelationshipReversedSerializer() {
+        super(JoltRelationship.class);
     }
 
     @Override
-    public void serialize(Node node, JsonGenerator generator, SerializerProvider provider) throws IOException {
-        generator.writeStartObject(node);
-        generator.writeFieldName(Sigil.NODE.getValue());
+    public void serialize(JoltRelationship relationship, JsonGenerator generator, SerializerProvider provider)
+            throws IOException {
+        generator.writeStartObject(relationship);
+        generator.writeFieldName(Sigil.RELATIONSHIP_REVERSED.getValue());
 
         generator.writeStartArray();
 
-        generator.writeNumber(node.getId());
+        generator.writeNumber(relationship.getId());
 
-        generator.writeStartArray();
-        for (Label label : node.getLabels()) {
-            generator.writeString(label.name());
-        }
-        generator.writeEndArray();
+        generator.writeNumber(relationship.getStartNodeId());
 
-        var properties = Optional.ofNullable(node.getAllProperties()).orElseGet(Collections::emptyMap);
+        generator.writeString(relationship.getType().name());
 
+        generator.writeNumber(relationship.getEndNodeId());
+
+        var properties = Optional.ofNullable(relationship.getAllProperties()).orElseGet(Map::of);
         generator.writeStartObject();
 
         for (var entry : properties.entrySet()) {
@@ -60,7 +63,6 @@ final class JoltNodeSerializer extends StdSerializer<Node> {
         generator.writeEndObject();
 
         generator.writeEndArray();
-
         generator.writeEndObject();
     }
 }

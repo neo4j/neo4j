@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.http.cypher.format.jolt;
+package org.neo4j.server.http.cypher.format.jolt.v2;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -26,9 +26,10 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.server.http.cypher.format.jolt.Sigil;
 
-final class JoltRelationshipSerializer extends StdSerializer<Relationship> {
-    JoltRelationshipSerializer() {
+final class JoltRelationshipSerializerV2 extends StdSerializer<Relationship> {
+    JoltRelationshipSerializerV2() {
         super(Relationship.class);
     }
 
@@ -40,13 +41,13 @@ final class JoltRelationshipSerializer extends StdSerializer<Relationship> {
 
         generator.writeStartArray();
 
-        generator.writeNumber(relationship.getId());
+        generator.writeString(relationship.getElementId());
 
-        generator.writeNumber(relationship.getStartNodeId());
+        generator.writeString(relationship.getStartNode().getElementId());
 
         generator.writeString(relationship.getType().name());
 
-        generator.writeNumber(relationship.getEndNodeId());
+        generator.writeString(relationship.getEndNode().getElementId());
 
         var properties = Optional.ofNullable(relationship.getAllProperties()).orElseGet(Map::of);
         generator.writeStartObject();

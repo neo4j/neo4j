@@ -49,7 +49,7 @@ class RestRepresentationWriterIT {
 
     @Test
     void canFormatNode() throws IOException {
-        final Node n = new HttpNode(0);
+        final Node n = new HttpNode("0", 0);
         RecordEvent recordEvent = new RecordEvent(Collections.singletonList("key"), k -> n);
         jsonGenerator.writeStartObject();
         this.contentWriter.write(jsonGenerator, recordEvent);

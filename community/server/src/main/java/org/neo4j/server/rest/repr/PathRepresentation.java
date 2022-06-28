@@ -91,7 +91,8 @@ public class PathRepresentation<P extends Path> extends ObjectRepresentation // 
             rel = relationshipIterator.next();
             startNode = endNode;
             endNode = nodeIterator.next();
-            if (rel.getStartNodeId() == startNode.getId() && rel.getEndNodeId() == endNode.getId()) {
+            if (rel.getStartNode().getElementId().equals(startNode.getElementId())
+                    && rel.getEndNode().getElementId().equals(endNode.getElementId())) {
                 directionStrings.add("->");
             } else {
                 directionStrings.add("<-");
