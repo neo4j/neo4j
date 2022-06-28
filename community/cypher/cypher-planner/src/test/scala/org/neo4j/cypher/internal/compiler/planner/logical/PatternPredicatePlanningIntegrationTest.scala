@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.GetDegree
@@ -56,8 +56,8 @@ import org.neo4j.graphdb.schema.IndexType
 import scala.collection.immutable.ListSet
 
 class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
-    with LogicalPlanningTestSupport2
-    with LogicalPlanningIntegrationTestSupport {
+    with LogicalPlanningIntegrationTestSupport
+    with AstConstructionTestSupport {
 
   private val planner = plannerBuilder()
     .setAllNodesCardinality(100)
@@ -212,7 +212,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with SemiApply for a single pattern predicate with 0 < COUNT") {
-    val logicalPlan = planFor("MATCH (a) WHERE 0<COUNT{(a)-[:X]->()} RETURN a", stripProduceResults = false)._1
+    val logicalPlan = planner.plan("MATCH (a) WHERE 0<COUNT{(a)-[:X]->()} RETURN a")
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -225,7 +225,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with AntiSemiApply for a single pattern predicate with 0=COUNT") {
-    val logicalPlan = planFor("MATCH (a) WHERE 0=COUNT{(a)-[:X]->()} RETURN a", stripProduceResults = false)._1
+    val logicalPlan = planner.plan("MATCH (a) WHERE 0=COUNT{(a)-[:X]->()} RETURN a")
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -239,7 +239,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
   test("should build plans with RollUpApply for a pattern predicate with 0=COUNT with WHERE inside") {
     val logicalPlan =
-      planFor("MATCH (a) WHERE 0=COUNT{(a)-[:X]->() WHERE a.prop = 'c'} RETURN a", stripProduceResults = false)._1
+      planner.plan("MATCH (a) WHERE 0=COUNT{(a)-[:X]->() WHERE a.prop = 'c'} RETURN a")
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -266,7 +266,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
   test("should build plans with RollUpApply for a pattern predicate with 0<COUNT with WHERE inside") {
     val logicalPlan =
-      planFor("MATCH (a) WHERE 0<COUNT{(a)-[:X]->(b) WHERE b.prop = 'c'} RETURN a", stripProduceResults = false)._1
+      planner.plan("MATCH (a) WHERE 0<COUNT{(a)-[:X]->(b) WHERE b.prop = 'c'} RETURN a")
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -289,7 +289,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with SemiApply for a single pattern predicate with COUNT > 0 with Label on other node") {
-    val logicalPlan = planFor("MATCH (a) WHERE COUNT{(a)-[:X]->(:Foo)}>0 RETURN a", stripProduceResults = false)._1
+    val logicalPlan = planner.plan("MATCH (a) WHERE COUNT{(a)-[:X]->(:Foo)}>0 RETURN a")
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -305,7 +305,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   test(
     "should build plans with AntiSemiApply for a single pattern predicate with COUNT = 0 with Label on other node"
   ) {
-    val logicalPlan = planFor("MATCH (a) WHERE COUNT{(a)-[:X]->(:Foo)}=0 RETURN a", stripProduceResults = false)._1
+    val logicalPlan = planner.plan("MATCH (a) WHERE COUNT{(a)-[:X]->(:Foo)}=0 RETURN a")
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -320,7 +320,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
   test("should build plans with SemiApply for a single pattern in a pattern comprehension, with 0 < size(pt)") {
     val logicalPlan =
-      planFor("MATCH (a) WHERE 0 < size([pt = (a)-[:X]->() | pt]) RETURN a", stripProduceResults = false)._1
+      planner.plan("MATCH (a) WHERE 0 < size([pt = (a)-[:X]->() | pt]) RETURN a")
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -334,7 +334,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
   test("should build plans with AntiSemiApply for a single negated pattern in a pattern comprehension, 0 < size(pt)") {
     val logicalPlan =
-      planFor("MATCH (a) WHERE 0=size([pt = (a)-[:X]->() | pt]) RETURN a", stripProduceResults = false)._1
+      planner.plan("MATCH (a) WHERE 0=size([pt = (a)-[:X]->() | pt]) RETURN a")
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -350,7 +350,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     "should build plans with SemiApply for a single pattern in a pattern comprehension, size(pt) > 0, with Label on other node"
   ) {
     val logicalPlan =
-      planFor("MATCH (a) WHERE size([pt = (a)-[:X]->(:Foo) | pt]) > 0 RETURN a", stripProduceResults = false)._1
+      planner.plan("MATCH (a) WHERE size([pt = (a)-[:X]->(:Foo) | pt]) > 0 RETURN a")
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -367,7 +367,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     "should build plans with AntiSemiApply for a single negated pattern in a pattern comprehension, size(pt) = 0, with Label on other node"
   ) {
     val logicalPlan =
-      planFor("MATCH (a) WHERE size([pt = (a)-[:X]->(:Foo) | pt]) = 0 RETURN a", stripProduceResults = false)._1
+      planner.plan("MATCH (a) WHERE size([pt = (a)-[:X]->(:Foo) | pt]) = 0 RETURN a")
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -924,7 +924,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN n
       """.stripMargin
 
-    val plan = planFor(q)._1
+    val plan = planner.plan(q).stripProduceResults
 
     plan should equal(
       planner.subPlanBuilder()
@@ -947,7 +947,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN n
       """.stripMargin
 
-    val plan = planFor(q)._1
+    val plan = planner.plan(q).stripProduceResults
 
     plan should equal(
       planner.subPlanBuilder()
