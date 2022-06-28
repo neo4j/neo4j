@@ -41,16 +41,4 @@ trait LogicalPlanTestOps {
     def asLogicalPlanBuilderString(): String =
       LogicalPlanToPlanBuilderString(plan)
   }
-
-  // Gives asLogicalPlanBuilderString:s in ScalaTest error messages
-  implicit val logicalPlanScalaTestPrettifier: Prettifier = {
-
-    case plan: LogicalPlan =>
-      plan.asLogicalPlanBuilderString()
-        .linesIterator.map("  " + _)
-        .mkString("\n", "\n", "\n")
-
-    case other =>
-      Prettifier.default(other)
-  }
 }
