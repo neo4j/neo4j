@@ -566,7 +566,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
           "(a)-[r*1..]->(b)",
           expandMode = ExpandAll,
           projectedDir = OUTGOING,
-          nodePredicate = Predicate("r_NODES", "r_NODES.prop = 1337")
+          nodePredicates = Seq(Predicate("n", "n.prop = 1337"))
         )
         .allNodeScan("a")
         .build()
@@ -589,7 +589,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
           "(a)-[r*1..]->(b)",
           expandMode = ExpandAll,
           projectedDir = OUTGOING,
-          nodePredicate = Predicate("r_NODES", "NOT(r_NODES.prop = 1337)")
+          nodePredicates = Seq(Predicate("n", "NOT(n.prop = 1337)"))
         )
         .allNodeScan("a")
         .build()

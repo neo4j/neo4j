@@ -24,12 +24,10 @@ import org.mockito.Mockito
 import org.mockito.invocation.InvocationOnMock
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
-import org.neo4j.cypher.internal.physicalplanning.VariablePredicates
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.RelationshipIterator
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerTypes
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -113,10 +111,8 @@ class VarLengthExpandSlottedPipeTest extends CypherFunSuite {
       None,
       shouldExpandAll = true,
       slots,
-      VariablePredicates.NO_PREDICATE_OFFSET,
-      VariablePredicates.NO_PREDICATE_OFFSET,
-      True(),
-      True(),
+      Seq(),
+      Seq(),
       SlotConfiguration.Size(0, 0)
     )()
     // exhaust
@@ -159,10 +155,8 @@ class VarLengthExpandSlottedPipeTest extends CypherFunSuite {
       None,
       shouldExpandAll = true,
       slots,
-      VariablePredicates.NO_PREDICATE_OFFSET,
-      VariablePredicates.NO_PREDICATE_OFFSET,
-      True(),
-      True(),
+      Seq(),
+      Seq(),
       SlotConfiguration.Size(0, 0)
     )()
     val result = pipe.createResults(state)

@@ -70,14 +70,14 @@ abstract class AbstractVarExpand(
   val from: String,
   val types: Seq[RelTypeName],
   val to: String,
-  val nodePredicate: Option[VariablePredicate],
-  val relationshipPredicate: Option[VariablePredicate],
+  val nodePredicates: Seq[VariablePredicate],
+  val relationshipPredicates: Seq[VariablePredicate],
   idGen: IdGen
 ) extends LogicalUnaryPlan(idGen) {
 
   def withNewPredicates(
-    newNodePredicate: Option[VariablePredicate],
-    newRelationshipPredicate: Option[VariablePredicate]
+    newNodePredicates: Seq[VariablePredicate],
+    newRelationshipPredicates: Seq[VariablePredicate]
   )(idGen: IdGen): AbstractVarExpand
 }
 
@@ -99,17 +99,17 @@ case class VarExpand(
   relName: String,
   length: VarPatternLength,
   mode: ExpansionMode = ExpandAll,
-  override val nodePredicate: Option[VariablePredicate] = None,
-  override val relationshipPredicate: Option[VariablePredicate] = None
-)(implicit idGen: IdGen) extends AbstractVarExpand(from, types, to, nodePredicate, relationshipPredicate, idGen) {
+  override val nodePredicates: Seq[VariablePredicate] = Seq.empty,
+  override val relationshipPredicates: Seq[VariablePredicate] = Seq.empty
+)(implicit idGen: IdGen) extends AbstractVarExpand(from, types, to, nodePredicates, relationshipPredicates, idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override val availableSymbols: Set[String] = source.availableSymbols + relName + to
 
   override def withNewPredicates(
-    newNodePredicate: Option[VariablePredicate],
-    newRelationshipPredicate: Option[VariablePredicate]
+    newNodePredicates: Seq[VariablePredicate],
+    newRelationshipPredicates: Seq[VariablePredicate]
   )(idGen: IdGen): VarExpand =
-    copy(nodePredicate = newNodePredicate, relationshipPredicate = newRelationshipPredicate)(idGen)
+    copy(nodePredicates = newNodePredicates, relationshipPredicates = newRelationshipPredicates)(idGen)
 
 }
 
@@ -129,18 +129,18 @@ case class PruningVarExpand(
   override val to: String,
   minLength: Int,
   maxLength: Int,
-  override val nodePredicate: Option[VariablePredicate] = None,
-  override val relationshipPredicate: Option[VariablePredicate] = None
+  override val nodePredicates: Seq[VariablePredicate] = Seq.empty,
+  override val relationshipPredicates: Seq[VariablePredicate] = Seq.empty
 )(implicit idGen: IdGen)
-    extends AbstractVarExpand(from, types, to, nodePredicate, relationshipPredicate, idGen) {
+    extends AbstractVarExpand(from, types, to, nodePredicates, relationshipPredicates, idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override val availableSymbols: Set[String] = source.availableSymbols + to
 
   override def withNewPredicates(
-    newNodePredicate: Option[VariablePredicate],
-    newRelationshipPredicate: Option[VariablePredicate]
+    newNodePredicates: Seq[VariablePredicate],
+    newRelationshipPredicates: Seq[VariablePredicate]
   )(idGen: IdGen): PruningVarExpand =
-    copy(nodePredicate = newNodePredicate, relationshipPredicate = newRelationshipPredicate)(idGen)
+    copy(nodePredicates = newNodePredicates, relationshipPredicates = newRelationshipPredicates)(idGen)
 }
 
 /**
@@ -159,19 +159,19 @@ case class BFSPruningVarExpand(
   override val to: String,
   includeStartNode: Boolean,
   maxLength: Int,
-  override val nodePredicate: Option[VariablePredicate] = None,
-  override val relationshipPredicate: Option[VariablePredicate] = None
+  override val nodePredicates: Seq[VariablePredicate] = Seq.empty,
+  override val relationshipPredicates: Seq[VariablePredicate] = Seq.empty
 )(implicit idGen: IdGen)
-    extends AbstractVarExpand(from, types, to, nodePredicate, relationshipPredicate, idGen) {
+    extends AbstractVarExpand(from, types, to, nodePredicates, relationshipPredicates, idGen) {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override val availableSymbols: Set[String] = source.availableSymbols + to
 
   override def withNewPredicates(
-    newNodePredicate: Option[VariablePredicate],
-    newRelationshipPredicate: Option[VariablePredicate]
+    newNodePredicates: Seq[VariablePredicate],
+    newRelationshipPredicates: Seq[VariablePredicate]
   )(idGen: IdGen): BFSPruningVarExpand =
-    copy(nodePredicate = newNodePredicate, relationshipPredicate = newRelationshipPredicate)(idGen)
+    copy(nodePredicates = newNodePredicates, relationshipPredicates = newRelationshipPredicates)(idGen)
 
 }
 

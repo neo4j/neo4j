@@ -265,14 +265,14 @@ object LogicalPlanToPlanBuilderString {
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
         s""" "($from)$dirStrA[$relName$typeStr]$dirStrB($to)" """.trim
-      case VarExpand(_, from, dir, pDir, types, to, relName, length, mode, nodePredicate, relationshipPredicate) =>
+      case VarExpand(_, from, dir, pDir, types, to, relName, length, mode, nodePredicates, relationshipPredicates) =>
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
         val lenStr = s"${length.min}..${length.max.getOrElse("")}"
         val modeStr = s", expandMode = ${objectName(mode)}"
         val pDirStr = s", projectedDir = ${objectName(pDir)}"
-        val nPredStr = variablePredicate(nodePredicate, "nodePredicate")
-        val rPredStr = variablePredicate(relationshipPredicate, "relationshipPredicate")
+        val nPredStr = variablePredicates(nodePredicates, "nodePredicates")
+        val rPredStr = variablePredicates(relationshipPredicates, "relationshipPredicates")
         s""" "($from)$dirStrA[$relName$typeStr*$lenStr]$dirStrB($to)"$modeStr$pDirStr$nPredStr$rPredStr """.trim
       case FindShortestPaths(_, shortestPath, predicates, withFallBack, disallowSameNode) =>
         val fbStr = if (withFallBack) ", withFallback = true" else ""
@@ -296,12 +296,12 @@ object LogicalPlanToPlanBuilderString {
               else ", predicates = Seq(" + wrapInQuotationsAndMkString(predicates.map(expressionStringifier(_))) + ")"
             s""" "($from)$dirStrA[$relName$typeStr$lenStr]$dirStrB($to)"$pNameStr$allStr$predStr$fbStr$dsnStr """.trim
         }
-      case PruningVarExpand(_, from, dir, types, to, minLength, maxLength, nodePredicate, relationshipPredicate) =>
+      case PruningVarExpand(_, from, dir, types, to, minLength, maxLength, nodePredicates, relationshipPredicates) =>
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
         val lenStr = s"$minLength..$maxLength"
-        val nPredStr = variablePredicate(nodePredicate, "nodePredicate")
-        val rPredStr = variablePredicate(relationshipPredicate, "relationshipPredicate")
+        val nPredStr = variablePredicates(nodePredicates, "nodePredicates")
+        val rPredStr = variablePredicates(relationshipPredicates, "relationshipPredicates")
         s""" "($from)$dirStrA[$typeStr*$lenStr]$dirStrB($to)"$nPredStr$rPredStr """.trim
       case BFSPruningVarExpand(
           _,
@@ -311,15 +311,15 @@ object LogicalPlanToPlanBuilderString {
           to,
           includeStartNode,
           maxLength,
-          nodePredicate,
-          relationshipPredicate
+          nodePredicates,
+          relationshipPredicates
         ) =>
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
         val minLength = if (includeStartNode) 0 else 1
         val lenStr = s"$minLength..$maxLength"
-        val nPredStr = variablePredicate(nodePredicate, "nodePredicate")
-        val rPredStr = variablePredicate(relationshipPredicate, "relationshipPredicate")
+        val nPredStr = variablePredicates(nodePredicates, "nodePredicates")
+        val rPredStr = variablePredicates(relationshipPredicates, "relationshipPredicates")
         s""" "($from)$dirStrA[$typeStr*$lenStr]$dirStrB($to)"$nPredStr$rPredStr """.trim
       case Limit(_, count) =>
         integerString(count)
@@ -1267,10 +1267,11 @@ object LogicalPlanToPlanBuilderString {
     s"$prefix.$suffix"
   }
 
-  private def variablePredicate(nodePredicate: Option[VariablePredicate], name: String) = {
-    nodePredicate.map(vp =>
-      s""", $name = Predicate("${vp.variable.name}", "${expressionStringifier(vp.predicate)}") """.trim
-    ).getOrElse("")
+  private def variablePredicates(predicates: Seq[VariablePredicate], name: String): String = {
+    val predStrs = predicates.map(vp =>
+      s"""Predicate("${vp.variable.name}", "${expressionStringifier(vp.predicate)}") """.trim
+    ).mkString(", ")
+    s", $name = Seq(" + predStrs + ")"
   }
 
   private def relTypeStr(types: Seq[RelTypeName]) = {

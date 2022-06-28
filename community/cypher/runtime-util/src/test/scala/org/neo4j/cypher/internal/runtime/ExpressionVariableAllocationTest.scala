@@ -406,8 +406,8 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
       "r",
       VarPatternLength(2, Some(10)),
       ExpandAll,
-      Some(VariablePredicate(tempNode, nodePred)),
-      Some(VariablePredicate(tempEdge, edgePred))
+      Seq(VariablePredicate(tempNode, nodePred)),
+      Seq(VariablePredicate(tempEdge, edgePred))
     )
   }
 
@@ -425,8 +425,8 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
       "b",
       2,
       10,
-      Some(VariablePredicate(tempNode, nodePred)),
-      Some(VariablePredicate(tempEdge, edgePred))
+      Seq(VariablePredicate(tempNode, nodePred)),
+      Seq(VariablePredicate(tempEdge, edgePred))
     )
   }
 

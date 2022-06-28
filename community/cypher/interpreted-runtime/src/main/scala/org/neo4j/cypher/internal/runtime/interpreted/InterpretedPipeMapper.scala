@@ -857,10 +857,10 @@ case class InterpretedPipeMapper(
           relName,
           VarPatternLength(min, max),
           expansionMode,
-          nodePredicate,
-          relationshipPredicate
+          nodePredicates,
+          relationshipPredicates
         ) =>
-        val predicate = varLengthPredicate(id, nodePredicate, relationshipPredicate)
+        val predicate = varLengthPredicates(id, nodePredicates, relationshipPredicates)
 
         val nodeInScope = expansionMode match {
           case ExpandAll  => false
@@ -885,7 +885,7 @@ case class InterpretedPipeMapper(
         OptionalPipe(inner.availableSymbols -- protectedSymbols, source)(id = id)
 
       case PruningVarExpand(_, from, dir, types, toName, minLength, maxLength, nodePredicate, relationshipPredicate) =>
-        val predicate = varLengthPredicate(id, nodePredicate, relationshipPredicate)
+        val predicate = varLengthPredicates(id, nodePredicate, relationshipPredicate)
         PruningVarLengthExpandPipe(
           source,
           from,
@@ -898,7 +898,7 @@ case class InterpretedPipeMapper(
         )(id = id)
 
       case BFSPruningVarExpand(_, from, dir, types, to, includeStartNode, max, nodePredicate, relationshipPredicate) =>
-        val predicate = varLengthPredicate(id, nodePredicate, relationshipPredicate)
+        val predicate = varLengthPredicates(id, nodePredicate, relationshipPredicate)
         BFSPruningVarLengthExpandPipe(
           source,
           from,
@@ -1298,41 +1298,34 @@ case class InterpretedPipeMapper(
     }
   }
 
-  private def varLengthPredicate(
+  private def varLengthPredicates(
     id: Id,
-    nodePredicate: Option[VariablePredicate],
-    relationshipPredicate: Option[VariablePredicate]
+    nodePredicates: Seq[VariablePredicate],
+    relationshipPredicates: Seq[VariablePredicate]
   ): VarLengthPredicate = {
 
     // Creates commands out of the predicates
-    def asCommand(maybeVariablePredicate: Option[VariablePredicate])
-      : ((CypherRow, QueryState, AnyValue) => Boolean, Option[Predicate]) =
-      maybeVariablePredicate match {
-        case None => ((_: CypherRow, _: QueryState, _: AnyValue) => true, None)
-        case Some(VariablePredicate(variable, astPredicate)) =>
-          val command = buildPredicate(id, astPredicate)
-          val ev = ExpressionVariable.cast(variable)
-          (
-            (context: CypherRow, state: QueryState, entity: AnyValue) => {
-              state.expressionVariables(ev.offset) = entity
-              command.isTrue(context, state)
-            },
-            Some(command)
-          )
-      }
+    def asCommand(variablePredicate: VariablePredicate): (CypherRow, QueryState, AnyValue) => Boolean = {
+      val command = buildPredicate(id, variablePredicate.predicate)
+      val ev = ExpressionVariable.cast(variablePredicate.variable)
 
-    (nodePredicate, relationshipPredicate) match {
-      case (None, None) => VarLengthPredicate.NONE
+      (context: CypherRow, state: QueryState, entity: AnyValue) => {
+        state.expressionVariables(ev.offset) = entity
+        command.isTrue(context, state)
+      }
+    }
+
+    (nodePredicates, relationshipPredicates) match {
+      case (Seq(), Seq()) => VarLengthPredicate.NONE
       case _ =>
-        val (nodeCommand, maybeNodeCommandPred) = asCommand(nodePredicate)
-        val (relCommand, maybeRelCommandPred) = asCommand(relationshipPredicate)
+        val nodeCommands = nodePredicates.map(asCommand)
+        val relCommands = relationshipPredicates.map(asCommand)
 
         new VarLengthPredicate {
           override def filterNode(row: CypherRow, state: QueryState)(node: VirtualNodeValue): Boolean =
-            nodeCommand(row, state, node)
+            nodeCommands.forall(nodeCommand => nodeCommand(row, state, node))
           override def filterRelationship(row: CypherRow, state: QueryState)(rel: VirtualRelationshipValue): Boolean =
-            relCommand(row, state, rel)
-          override def predicateExpressions: Seq[Predicate] = maybeNodeCommandPred.toSeq ++ maybeRelCommandPred
+            relCommands.forall(relCommand => relCommand(row, state, rel))
         }
     }
   }

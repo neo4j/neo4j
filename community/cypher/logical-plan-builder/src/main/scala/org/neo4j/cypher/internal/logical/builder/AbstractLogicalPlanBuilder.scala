@@ -405,8 +405,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     pattern: String,
     expandMode: ExpansionMode = ExpandAll,
     projectedDir: SemanticDirection = OUTGOING,
-    nodePredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE,
-    relationshipPredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE
+    nodePredicates: Seq[Predicate] = Seq.empty,
+    relationshipPredicates: Seq[Predicate] = Seq.empty
   ): IMPL = {
     val p = patternParser.parse(pattern)
     newRelationship(varFor(p.relName))
@@ -431,8 +431,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             p.relName,
             varPatternLength,
             expandMode,
-            nodePredicate.asVariablePredicate,
-            relationshipPredicate.asVariablePredicate
+            nodePredicates.map(_.asVariablePredicate),
+            relationshipPredicates.map(_.asVariablePredicate)
           )(_)
         ))
     }
@@ -513,8 +513,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def pruningVarExpand(
     pattern: String,
-    nodePredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE,
-    relationshipPredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE
+    nodePredicates: Seq[Predicate] = Seq.empty,
+    relationshipPredicates: Seq[Predicate] = Seq.empty
   ): IMPL = {
     val p = patternParser.parse(pattern)
     newRelationship(varFor(p.relName))
@@ -530,8 +530,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             p.to,
             min,
             max,
-            nodePredicate.asVariablePredicate,
-            relationshipPredicate.asVariablePredicate
+            nodePredicates.map(_.asVariablePredicate),
+            relationshipPredicates.map(_.asVariablePredicate)
           )(_)
         ))
       case _ =>
@@ -542,8 +542,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def bfsPruningVarExpand(
     pattern: String,
-    nodePredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE,
-    relationshipPredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE
+    nodePredicates: Seq[Predicate] = Seq.empty,
+    relationshipPredicates: Seq[Predicate] = Seq.empty
   ): IMPL = {
     val p = patternParser.parse(pattern)
     newRelationship(varFor(p.relName))
@@ -559,8 +559,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             p.to,
             min == 0,
             max,
-            nodePredicate.asVariablePredicate,
-            relationshipPredicate.asVariablePredicate
+            nodePredicates.map(_.asVariablePredicate),
+            relationshipPredicates.map(_.asVariablePredicate)
           )(_)
         ))
       case _ =>
@@ -1945,17 +1945,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
 object AbstractLogicalPlanBuilder {
   val pos: InputPosition = new InputPosition(0, 1, 0)
-  val NO_PREDICATE: Predicate = Predicate("", "")
 
   case class Predicate(entity: String, predicate: String) {
 
-    def asVariablePredicate: Option[VariablePredicate] = {
-      if (entity == "") {
-        None
-      } else {
-        Some(VariablePredicate(Variable(entity)(pos), Parser.parseExpression(predicate)))
-      }
-    }
+    def asVariablePredicate: VariablePredicate =
+      VariablePredicate(Variable(entity)(pos), Parser.parseExpression(predicate))
   }
 
   def createPattern(

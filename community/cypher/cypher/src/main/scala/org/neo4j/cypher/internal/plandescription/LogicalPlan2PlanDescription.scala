@@ -1395,13 +1395,12 @@ case class LogicalPlan2PlanDescription(
           toName,
           min,
           max,
-          maybeNodePredicate,
-          maybeRelationshipPredicate
+          nodePredicates,
+          relationshipPredicates
         ) =>
-        val maybeRelName = maybeRelationshipPredicate.map(_.variable.name)
         val expandInfo = expandExpressionDescription(
           fromName,
-          maybeRelName,
+          None,
           types.map(_.name),
           toName,
           dir,
@@ -1409,15 +1408,13 @@ case class LogicalPlan2PlanDescription(
           maxLength = Some(max),
           maybeProperties = None
         )
-        val predicatesDescription = buildPredicatesDescription(maybeNodePredicate, maybeRelationshipPredicate) match {
-          case Some(predicateInfo) => pretty" WHERE $predicateInfo"
-          case _                   => pretty""
-        }
+        val (expandDescriptionPrefix, predicatesDescription) =
+          varExpandPredicateDescriptions(nodePredicates, relationshipPredicates)
         PlanDescriptionImpl(
           id,
           s"VarLengthExpand(Pruning)",
           children,
-          Seq(Details(pretty"$expandInfo$predicatesDescription")),
+          Seq(Details(pretty"$expandDescriptionPrefix$expandInfo$predicatesDescription")),
           variables,
           withRawCardinalities
         )
@@ -1430,13 +1427,12 @@ case class LogicalPlan2PlanDescription(
           toName,
           includeStartNode,
           max,
-          maybeNodePredicate,
-          maybeRelationshipPredicate
+          nodePredicates,
+          relationshipPredicates
         ) =>
-        val maybeRelName = maybeRelationshipPredicate.map(_.variable.name)
         val expandInfo = expandExpressionDescription(
           fromName,
-          maybeRelName,
+          None,
           types.map(_.name),
           toName,
           dir,
@@ -1444,15 +1440,13 @@ case class LogicalPlan2PlanDescription(
           maxLength = Some(max),
           maybeProperties = None
         )
-        val predicatesDescription = buildPredicatesDescription(maybeNodePredicate, maybeRelationshipPredicate) match {
-          case Some(predicateInfo) => pretty" WHERE $predicateInfo"
-          case _                   => pretty""
-        }
+        val (expandDescriptionPrefix, predicatesDescription) =
+          varExpandPredicateDescriptions(nodePredicates, relationshipPredicates)
         PlanDescriptionImpl(
           id,
           s"VarLengthExpand(Pruning,BFS)",
           children,
-          Seq(Details(pretty"$expandInfo$predicatesDescription")),
+          Seq(Details(pretty"$expandDescriptionPrefix$expandInfo$predicatesDescription")),
           variables,
           withRawCardinalities
         )
@@ -1575,8 +1569,8 @@ case class LogicalPlan2PlanDescription(
           relName,
           length,
           mode,
-          maybeNodePredicate,
-          maybeRelationshipPredicate
+          nodePredicates,
+          relationshipPredicates
         ) =>
         val expandDescription = expandExpressionDescription(
           fromName,
@@ -1588,10 +1582,8 @@ case class LogicalPlan2PlanDescription(
           maxLength = length.max,
           maybeProperties = None
         )
-        val predicatesDescription = buildPredicatesDescription(maybeNodePredicate, maybeRelationshipPredicate) match {
-          case Some(predicateInfo) => pretty" WHERE $predicateInfo"
-          case _                   => pretty""
-        }
+        val (expandDescriptionPrefix, predicatesDescription) =
+          varExpandPredicateDescriptions(nodePredicates, relationshipPredicates)
         val modeDescr = mode match {
           case ExpandAll  => "All"
           case ExpandInto => "Into"
@@ -1600,7 +1592,7 @@ case class LogicalPlan2PlanDescription(
           id,
           s"VarLengthExpand($modeDescr)",
           children,
-          Seq(Details(pretty"$expandDescription$predicatesDescription")),
+          Seq(Details(pretty"$expandDescriptionPrefix$expandDescription$predicatesDescription")),
           variables,
           withRawCardinalities
         )
@@ -1989,17 +1981,39 @@ case class LogicalPlan2PlanDescription(
     runtimeOperatorMetadata(plan.id).foldLeft(description)((acc, x) => acc.addArgument(x))
   }
 
-  private def buildPredicatesDescription(
-    maybeNodePredicate: Option[VariablePredicate],
-    maybeRelationshipPredicate: Option[VariablePredicate]
-  ): Option[PrettyString] = {
-    val nodePredicateInfo = maybeNodePredicate.map(_.predicate).map(asPrettyString(_))
-    val relationshipPredicateInfo = maybeRelationshipPredicate.map(_.predicate).map(asPrettyString(_))
+  /**
+   * @return (a prefix to put before the expand description, a description of the predicates to put after the expand description)
+   */
+  private def varExpandPredicateDescriptions(
+    nodePredicates: Seq[VariablePredicate],
+    relationshipPredicates: Seq[VariablePredicate]
+  ): (PrettyString, PrettyString) = {
+    val pathName = pretty"p"
+    val predicateStrings = nodePredicates.map(buildNodePredicatesDescription(_, pathName)) ++
+      relationshipPredicates.map(buildRelationshipPredicatesDescription(_, pathName))
 
-    (nodePredicateInfo ++ relationshipPredicateInfo) match {
-      case predicates if predicates.nonEmpty => Some(predicates.mkPrettyString(" AND "))
-      case _                                 => None
-    }
+    val (expandDescriptionPrefix, predicatesDescription) =
+      if (predicateStrings.isEmpty) {
+        (pretty"", pretty"")
+      } else {
+        (pretty"$pathName = ", predicateStrings.mkPrettyString(" WHERE ", " AND ", ""))
+      }
+    (expandDescriptionPrefix, predicatesDescription)
+  }
+
+  private def buildNodePredicatesDescription(nodePredicate: VariablePredicate, pathName: PrettyString): PrettyString = {
+    val nodePredicateInfo = asPrettyString(nodePredicate.predicate)
+    val predVar = asPrettyString(nodePredicate.variable)
+    pretty"all($predVar IN nodes($pathName) WHERE $nodePredicateInfo)"
+  }
+
+  private def buildRelationshipPredicatesDescription(
+    relPredicate: VariablePredicate,
+    pathName: PrettyString
+  ): PrettyString = {
+    val relPredicateInfo = asPrettyString(relPredicate.predicate)
+    val predVar = asPrettyString(relPredicate.variable)
+    pretty"all($predVar IN relationships($pathName) WHERE $relPredicateInfo)"
   }
 
   private def getNodeIndexDescriptions(

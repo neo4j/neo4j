@@ -19,17 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
-import org.eclipse.collections.impl.block.factory.primitive.LongPredicates
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.physicalplanning.Slot
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
 import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor
-import org.neo4j.cypher.internal.physicalplanning.VariablePredicates.NO_PREDICATE_OFFSET
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
 import org.neo4j.cypher.internal.runtime.ReadableRow
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.BFSPruningVarLengthExpandPipe.bfsIterator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeWithSource
@@ -38,9 +35,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipTypes
 import org.neo4j.cypher.internal.runtime.slotted.SlottedRow
 import org.neo4j.cypher.internal.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.runtime.slotted.pipes.BFSPruningVarLengthExpandSlottedPipe.createPredicates
+import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPipe.SlottedVariablePredicate
 import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPipe.predicateIsTrue
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.function.Predicates
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 
 import java.util.function.LongPredicate
@@ -55,10 +52,8 @@ case class BFSPruningVarLengthExpandSlottedPipe(
   includeStartNode: Boolean,
   max: Int,
   slots: SlotConfiguration,
-  tempNodeOffset: Int,
-  tempRelationshipOffset: Int,
-  nodePredicateExpression: Expression,
-  relationshipPredicateExpression: Expression
+  nodePredicates: Seq[SlottedVariablePredicate],
+  relationshipPredicates: Seq[SlottedVariablePredicate]
 )(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with Pipe {
   self =>
 
@@ -76,16 +71,22 @@ case class BFSPruningVarLengthExpandSlottedPipe(
             ClosingIterator.empty
           } else {
             if (
-              predicateIsTrue(inputRow, state, tempNodeOffset, nodePredicateExpression, state.query.nodeById(fromNode))
+              nodePredicates.forall(nodePred =>
+                predicateIsTrue(
+                  inputRow,
+                  state,
+                  nodePred.tempOffset,
+                  nodePred.predicate,
+                  state.query.nodeById(fromNode)
+                )
+              )
             ) {
-              val (nodePredicate, relationshipPredicate) =
+              val (nP, rP) =
                 createPredicates(
                   state,
                   inputRow,
-                  tempNodeOffset,
-                  tempRelationshipOffset,
-                  nodePredicateExpression,
-                  relationshipPredicateExpression
+                  nodePredicates,
+                  relationshipPredicates
                 )
 
               val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
@@ -96,8 +97,8 @@ case class BFSPruningVarLengthExpandSlottedPipe(
                 dir,
                 includeStartNode,
                 max,
-                nodePredicate,
-                relationshipPredicate,
+                nP,
+                rP,
                 memoryTracker
               )
 
@@ -125,39 +126,35 @@ object BFSPruningVarLengthExpandSlottedPipe {
   def createPredicates(
     state: QueryState,
     row: ReadableRow,
-    tempNodeOffset: Int,
-    tempRelationshipOffset: Int,
-    nodePredicate: Expression,
-    relationshipPredicate: Expression
+    nodePredicates: Seq[SlottedVariablePredicate],
+    relationshipPredicates: Seq[SlottedVariablePredicate]
   ): (LongPredicate, Predicate[RelationshipTraversalCursor]) = {
+
     def toLongPredicate(f: Long => Boolean): LongPredicate = (value: Long) => f(value)
     def createNodePredicate =
-      toLongPredicate(n => predicateIsTrue(row, state, tempNodeOffset, nodePredicate, state.query.nodeById(n)))
+      toLongPredicate(n =>
+        nodePredicates.forall(nodePredicate =>
+          predicateIsTrue(row, state, nodePredicate.tempOffset, nodePredicate.predicate, state.query.nodeById(n))
+        )
+      )
 
     def createRelationshipPredicate: Predicate[RelationshipTraversalCursor] =
       (t: RelationshipTraversalCursor) =>
-        predicateIsTrue(
-          row,
-          state,
-          tempRelationshipOffset,
-          relationshipPredicate,
-          state.query.relationshipById(
-            t.relationshipReference(),
-            t.sourceNodeReference(),
-            t.targetNodeReference(),
-            t.`type`()
+        relationshipPredicates.forall(relPredicate =>
+          predicateIsTrue(
+            row,
+            state,
+            relPredicate.tempOffset,
+            relPredicate.predicate,
+            state.query.relationshipById(
+              t.relationshipReference(),
+              t.sourceNodeReference(),
+              t.targetNodeReference(),
+              t.`type`()
+            )
           )
         )
 
-    (tempNodeOffset, tempRelationshipOffset) match {
-      case (NO_PREDICATE_OFFSET, NO_PREDICATE_OFFSET) =>
-        (LongPredicates.alwaysTrue(), Predicates.alwaysTrue[RelationshipTraversalCursor]())
-      case (NO_PREDICATE_OFFSET, _) =>
-        (LongPredicates.alwaysTrue(), createRelationshipPredicate)
-      case (_, NO_PREDICATE_OFFSET) =>
-        (createNodePredicate, Predicates.alwaysTrue[RelationshipTraversalCursor]())
-      case _ =>
-        (createNodePredicate, createRelationshipPredicate)
-    }
+    (createNodePredicate, createRelationshipPredicate)
   }
 }

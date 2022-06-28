@@ -748,7 +748,36 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
-      .expand("(x)-[r:*1..2]-(y)", nodePredicate = Predicate("n", "id(n) <> " + g.middle.getId))
+      .expand("(x)-[r:*1..2]-(y)", nodePredicates = Seq(Predicate("n", "id(n) <> " + g.middle.getId)))
+      .nodeByLabelScan("x", "START", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("y").withRows(Array(
+      Array(g.sa1),
+      Array(g.sb1),
+      Array(g.sb2),
+      Array(g.sc1),
+      Array(g.sc2)
+    ))
+  }
+
+  test("should filter on two node predicates") {
+    // given
+    val g = given { sineGraph() }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .expand(
+        "(x)-[r:*1..3]-(y)",
+        nodePredicates = Seq(
+          Predicate("n", "id(n) <> " + g.middle.getId),
+          Predicate("n2", "id(n2) <> " + g.sc3.getId)
+        )
+      )
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -771,7 +800,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
-      .expand("(x)-[r:*1..2]-(y)", nodePredicate = Predicate("n", "id(n) <> " + g.start.getId))
+      .expand("(x)-[r:*1..2]-(y)", nodePredicates = Seq(Predicate("n", "id(n) <> " + g.start.getId)))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -788,7 +817,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
-      .expand("(X)-[r:*1..2]-(y)", nodePredicate = Predicate("n", "id(n) <> " + g.start.getId))
+      .expand("(X)-[r:*1..2]-(y)", nodePredicates = Seq(Predicate("n", "id(n) <> " + g.start.getId)))
       .projection("x AS X")
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
@@ -806,7 +835,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
-      .expand("(x)-[r:*1..2]->(y)", relationshipPredicate = Predicate("r", "id(r) <> " + g.startMiddle.getId))
+      .expand("(x)-[r:*1..2]->(y)", relationshipPredicates = Seq(Predicate("r", "id(r) <> " + g.startMiddle.getId)))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -821,6 +850,43 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     ))
   }
 
+  test("should filter on two relationship predicates") {
+    // given
+    val g = given { sineGraph() }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .expand(
+        "(x)-[r:*1..3]-(y)",
+        relationshipPredicates = Seq(
+          Predicate("r", "id(r) <> " + g.startMiddle.getId),
+          Predicate("r2", "id(r2) <> " + g.endMiddle.getId)
+        )
+      )
+      .nodeByLabelScan("x", "START", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("y").withRows(Array(
+      Array(g.sa1),
+      Array(g.sb1),
+      Array(g.sc1),
+      Array(g.middle),
+      Array(g.sb2),
+      Array(g.sc2),
+      Array(g.ea1),
+      Array(g.eb1),
+      Array(g.ec1),
+      Array(g.sc3),
+      Array(g.sb2),
+      Array(g.middle),
+      Array(g.sc3)
+    ))
+  }
+
   test("should filter on node and relationship predicate") {
     // given
     val g = given { sineGraph() }
@@ -830,8 +896,8 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .expand(
         "(x)-[r:*2..2]-(y)",
-        nodePredicate = Predicate("n", "id(n) <> " + g.sa1.getId),
-        relationshipPredicate = Predicate("r", "id(r) <> " + g.startMiddle.getId)
+        nodePredicates = Seq(Predicate("n", "id(n) <> " + g.sa1.getId)),
+        relationshipPredicates = Seq(Predicate("r", "id(r) <> " + g.startMiddle.getId))
       )
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
@@ -853,7 +919,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .expand("(x)-[*]->(y)", nodePredicate = Predicate("n", "'START' IN labels(x)"))
+      .expand("(x)-[*]->(y)", nodePredicates = Seq(Predicate("n", "'START' IN labels(x)")))
       .input(nodes = Seq("x"))
       .build()
 
@@ -877,7 +943,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .expand("(x)-[*0..]->(y)", nodePredicate = Predicate("n", "'START' IN labels(x)"))
+      .expand("(x)-[*0..]->(y)", nodePredicates = Seq(Predicate("n", "'START' IN labels(x)")))
       .input(nodes = Seq("x"))
       .build()
 
@@ -901,7 +967,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .expand("(x)-[*]->(y)", expandMode = ExpandInto, nodePredicate = Predicate("n", "'END' IN labels(y)"))
+      .expand("(x)-[*]->(y)", expandMode = ExpandInto, nodePredicates = Seq(Predicate("n", "'END' IN labels(y)")))
       .input(nodes = Seq("x", "y"))
       .build()
 
@@ -921,7 +987,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .expand("(x)-[*]->(y)", nodePredicate = Predicate("n", "'START' IN labels(x)"))
+      .expand("(x)-[*]->(y)", nodePredicates = Seq(Predicate("n", "'START' IN labels(x)")))
       .input(variables = Seq("x"))
       .build()
 
@@ -945,7 +1011,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .expand("(x)-[*0..]->(y)", nodePredicate = Predicate("n", "'START' IN labels(x)"))
+      .expand("(x)-[*0..]->(y)", nodePredicates = Seq(Predicate("n", "'START' IN labels(x)")))
       .input(variables = Seq("x"))
       .build()
 
@@ -969,7 +1035,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .expand("(x)-[*]->(y)", expandMode = ExpandInto, nodePredicate = Predicate("n", "'END' IN labels(y)"))
+      .expand("(x)-[*]->(y)", expandMode = ExpandInto, nodePredicates = Seq(Predicate("n", "'END' IN labels(y)")))
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -989,7 +1055,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .expand("(x)-[*]->(y)", nodePredicate = Predicate("n", "id(n) >= zero"))
+      .expand("(x)-[*]->(y)", nodePredicates = Seq(Predicate("n", "id(n) >= zero")))
       .projection("0 AS zero")
       .input(nodes = Seq("x"))
       .build()
@@ -1014,7 +1080,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .expand("(x)-[*0..]->(y)", nodePredicate = Predicate("n", "id(n) >= zero"))
+      .expand("(x)-[*0..]->(y)", nodePredicates = Seq(Predicate("n", "id(n) >= zero")))
       .projection("0 AS zero")
       .input(nodes = Seq("x"))
       .build()
@@ -1039,7 +1105,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .expand("(x)-[*]->(y)", nodePredicate = Predicate("n", "id(other) >= 0"))
+      .expand("(x)-[*]->(y)", nodePredicates = Seq(Predicate("n", "id(other) >= 0")))
       .projection("0 AS zero")
       .input(nodes = Seq("x", "other"))
       .build()
@@ -1064,7 +1130,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .expand("(x)-[*0..]->(y)", nodePredicate = Predicate("n", "id(other) >= 0"))
+      .expand("(x)-[*0..]->(y)", nodePredicates = Seq(Predicate("n", "id(other) >= 0")))
       .projection("0 AS zero")
       .input(nodes = Seq("x", "other"))
       .build()
@@ -1103,7 +1169,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("b", "c")
-      .expand("(b)-[*]->(c)", nodePredicate = Predicate("n", "n.prop > cache[a.prop]"))
+      .expand("(b)-[*]->(c)", nodePredicates = Seq(Predicate("n", "n.prop > cache[a.prop]")))
       .expandAll("(a)-[:TO]->(b)")
       .nodeByLabelScan("a", "START", IndexOrderNone)
       .build()
@@ -1143,7 +1209,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("b", "c")
-      .expand("(b)-[*0..]->(c)", nodePredicate = Predicate("n", "n.prop > cache[a.prop]"))
+      .expand("(b)-[*0..]->(c)", nodePredicates = Seq(Predicate("n", "n.prop > cache[a.prop]")))
       .expandAll("(a)-[:TO]->(b)")
       .nodeByLabelScan("a", "START", IndexOrderNone)
       .build()

@@ -29,13 +29,14 @@ import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("()-[*]->()") {
-    val (nodePredicates: Seq[Expression], relationshipPredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
-      extractPredicates(Seq(), "r", "r-relationship", "r-node", "n", "  UNNAMED2")
+    val (nodePredicates, relationshipPredicates, solvedPredicates) =
+      extractPredicates(Seq(), "r", "n", "  UNNAMED2")
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe empty
@@ -48,15 +49,18 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
       varFor("r")
     )(pos)
 
-    val (nodePredicates: Seq[Expression], relationshipPredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
-      extractPredicates(Seq(rewrittenPredicate), "r", "r-relationship", "r-node", "n", "  UNNAMED0")
+    val (nodePredicates, relationshipPredicates, solvedPredicates) =
+      extractPredicates(Seq(rewrittenPredicate), "r", "n", "  UNNAMED0")
 
     nodePredicates shouldBe empty
-    relationshipPredicates shouldBe List(propEquality("r-relationship", "prop", 42))
+    relationshipPredicates shouldBe List(VariablePredicate(
+      varFor("  FRESHID15"),
+      propEquality("  FRESHID15", "prop", 42)
+    ))
     solvedPredicates shouldBe List(rewrittenPredicate)
   }
 
-  test("(n)-[x*]->(m) WHERE ALL(r in x WHERE r.prop < 4)") {
+  test("(n)-[x*]->(m) WHERE ALL(r in x WHERE  r.prop < 4)") {
     val rewrittenPredicate = AllIterablePredicate(
       FilterScope(varFor("r"), Some(propLessThan("r", "prop", 4)))(pos),
       function(
@@ -72,11 +76,11 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
       )
     )(pos)
 
-    val (nodePredicates: Seq[Expression], relationshipPredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
-      extractPredicates(Seq(rewrittenPredicate), "x", "x-relationship", "x-node", "n", "m")
+    val (nodePredicates, relationshipPredicates, solvedPredicates) =
+      extractPredicates(Seq(rewrittenPredicate), "x", "n", "m")
 
     nodePredicates shouldBe empty
-    relationshipPredicates shouldBe List(propLessThan("x-relationship", "prop", 4))
+    relationshipPredicates shouldBe List(VariablePredicate(varFor("r"), propLessThan("r", "prop", 4)))
     solvedPredicates shouldBe List(rewrittenPredicate)
   }
 
@@ -114,11 +118,11 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
       )
     )(pos)
 
-    val (nodePredicates: Seq[Expression], relationshipPredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
-      extractPredicates(Seq(rewrittenRelPredicate, rewrittenNodePredicate), "x", "x-relationship", "x-node", "n", "o")
+    val (nodePredicates, relationshipPredicates, solvedPredicates) =
+      extractPredicates(Seq(rewrittenRelPredicate, rewrittenNodePredicate), "x", "n", "o")
 
-    nodePredicates shouldBe List(isNotNull(prop("x-node", "prop")))
-    relationshipPredicates shouldBe List(not(propLessThan("x-relationship", "prop", 4)))
+    nodePredicates shouldBe List(VariablePredicate(varFor("m"), isNotNull(prop("m", "prop"))))
+    relationshipPredicates shouldBe List(VariablePredicate(varFor("r"), not(propLessThan("r", "prop", 4))))
     solvedPredicates shouldBe List(rewrittenRelPredicate, rewrittenNodePredicate)
   }
 
@@ -136,10 +140,10 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
       function("nodes", pathExpression)
     )(pos)
 
-    val (nodePredicates: Seq[Expression], relationshipPredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
-      extractPredicates(Seq(rewrittenPredicate), "r", "r-relationship", "r-node", "n", "m")
+    val (nodePredicates, relationshipPredicates, solvedPredicates) =
+      extractPredicates(Seq(rewrittenPredicate), "r", "n", "m")
 
-    nodePredicates shouldBe List(equals(prop("r-node", "prop"), prop("n", "prop")))
+    nodePredicates shouldBe List(VariablePredicate(varFor("x"), equals(prop("x", "prop"), prop("n", "prop"))))
     relationshipPredicates shouldBe empty
     solvedPredicates shouldBe List(rewrittenPredicate)
   }
@@ -157,8 +161,8 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
       function("nodes", pathExpression)
     )(pos)
 
-    val (nodePredicates: Seq[Expression], relationshipPredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
-      extractPredicates(Seq(rewrittenPredicate), "r", "r-relationship", "r-node", "n", "m")
+    val (nodePredicates, relationshipPredicates, solvedPredicates) =
+      extractPredicates(Seq(rewrittenPredicate), "r", "n", "m")
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe empty
@@ -178,8 +182,8 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
       function("relationships", pathExpression)
     )(pos)
 
-    val (nodePredicates: Seq[Expression], relationshipPredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
-      extractPredicates(Seq(rewrittenPredicate), "r", "r-relationship", "r-node", "n", "  UNNAMED0")
+    val (nodePredicates, relationshipPredicates, solvedPredicates) =
+      extractPredicates(Seq(rewrittenPredicate), "r", "n", "  UNNAMED0")
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe empty
@@ -199,8 +203,8 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
       function("nodes", pathExpression)
     )(pos)
 
-    val (nodePredicates: Seq[Expression], relationshipPredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
-      extractPredicates(Seq(rewrittenPredicate), "r", "r-relationship", "r-node", "n", "  UNNAMED0")
+    val (nodePredicates, relationshipPredicates, solvedPredicates) =
+      extractPredicates(Seq(rewrittenPredicate), "r", "n", "  UNNAMED0")
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe empty
@@ -220,8 +224,8 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
       function("relationships", pathExpression)
     )(pos)
 
-    val (nodePredicates: Seq[Expression], relationshipPredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
-      extractPredicates(Seq(rewrittenPredicate), "r", "r-relationship", "r-node", "n", "m")
+    val (nodePredicates, relationshipPredicates, solvedPredicates) =
+      extractPredicates(Seq(rewrittenPredicate), "r", "n", "m")
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe empty
@@ -250,8 +254,8 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
       varFor("r")
     )(pos)
 
-    val (nodePredicates: Seq[Expression], relationshipPredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
-      extractPredicates(Seq(rewrittenPredicate), "r", "r-relationship", "r-node", "a", "b")
+    val (nodePredicates, relationshipPredicates, solvedPredicates) =
+      extractPredicates(Seq(rewrittenPredicate), "r", "a", "b")
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe empty
@@ -292,11 +296,13 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
       dependingAllPredicate
     )
 
-    val (nodePredicates: Seq[Expression], relationshipPredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
-      extractPredicates(rewrittenPredicates, "r", "r-relationship", "r-node", "a", "b")
+    val (nodePredicates, relationshipPredicates, solvedPredicates) =
+      extractPredicates(rewrittenPredicates, "r", "a", "b")
 
     nodePredicates shouldBe empty
-    relationshipPredicates shouldBe Seq(equals(prop("r-relationship", "aProp"), prop("a", "prop")))
+    relationshipPredicates shouldBe Seq(
+      VariablePredicate(varFor("x"), equals(prop("x", "aProp"), prop("a", "prop")))
+    )
     solvedPredicates shouldBe Seq(solvableAllPredicate)
   }
 }

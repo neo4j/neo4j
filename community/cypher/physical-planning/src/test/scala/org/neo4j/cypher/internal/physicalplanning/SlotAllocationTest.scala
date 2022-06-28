@@ -370,8 +370,8 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
       "r",
       varLength,
       ExpandAll,
-      Some(VariablePredicate(exprVar(0, "r_NODES"), trueLiteral)),
-      Some(VariablePredicate(exprVar(1, "r_EDGES"), trueLiteral))
+      Seq(VariablePredicate(exprVar(0, "r_NODES"), trueLiteral)),
+      Seq(VariablePredicate(exprVar(1, "r_EDGES"), trueLiteral))
     )
 
     // when
@@ -415,8 +415,8 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
       "r2",
       varLength,
       ExpandInto,
-      Some(VariablePredicate(exprVar(0, "r_NODES"), trueLiteral)),
-      Some(VariablePredicate(exprVar(1, "r_EDGES"), trueLiteral))
+      Seq(VariablePredicate(exprVar(0, "r_NODES"), trueLiteral)),
+      Seq(VariablePredicate(exprVar(1, "r_EDGES"), trueLiteral))
     )
 
     // when

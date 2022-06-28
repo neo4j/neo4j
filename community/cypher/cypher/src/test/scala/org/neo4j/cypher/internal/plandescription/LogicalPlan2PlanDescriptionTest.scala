@@ -4035,6 +4035,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("VarExpand") {
     val predicate = (varName: String) => Equals(prop(varName, "prop"), parameter("  AUTODOUBLE1", CTFloat))(pos)
     val nodePredicate = VariablePredicate(varFor("x"), predicate("x"))
+    val nodePredicate2 = VariablePredicate(varFor("x2"), predicate("x2"))
     val relationshipPredicate = VariablePredicate(varFor("r"), predicate("r"))
 
     // -- PruningVarExpand --
@@ -4050,8 +4051,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           "y",
           1,
           4,
-          Some(nodePredicate),
-          Some(relationshipPredicate)
+          Seq(nodePredicate),
+          Seq(relationshipPredicate)
         ),
         1.0
       ),
@@ -4059,7 +4060,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "VarLengthExpand(Pruning)",
         SingleChild(lhsPD),
-        Seq(details("(a)-[r:R*..4]->(y) WHERE x.prop = $autodouble_1 AND r.prop = $autodouble_1")),
+        Seq(details(
+          "p = (a)-[:R*..4]->(y) WHERE all(x IN nodes(p) WHERE x.prop = $autodouble_1) AND all(r IN relationships(p) WHERE r.prop = $autodouble_1)"
+        )),
         Set("a", "y")
       )
     )
@@ -4075,8 +4078,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           "y",
           2,
           4,
-          Some(nodePredicate),
-          None
+          Seq(nodePredicate),
+          Seq()
         ),
         1.0
       ),
@@ -4084,14 +4087,41 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "VarLengthExpand(Pruning)",
         SingleChild(lhsPD),
-        Seq(details("(a)-[:R*2..4]->(y) WHERE x.prop = $autodouble_1")),
+        Seq(details("p = (a)-[:R*2..4]->(y) WHERE all(x IN nodes(p) WHERE x.prop = $autodouble_1)")),
+        Set("a", "y")
+      )
+    )
+
+    // With 2 nodePredicates, without relationshipPredicate
+    assertGood(
+      attach(
+        PruningVarExpand(
+          lhsLP,
+          "a",
+          SemanticDirection.OUTGOING,
+          Seq(relType("R")),
+          "y",
+          2,
+          4,
+          Seq(nodePredicate, nodePredicate2),
+          Seq()
+        ),
+        1.0
+      ),
+      planDescription(
+        id,
+        "VarLengthExpand(Pruning)",
+        SingleChild(lhsPD),
+        Seq(details(
+          "p = (a)-[:R*2..4]->(y) WHERE all(x IN nodes(p) WHERE x.prop = $autodouble_1) AND all(x2 IN nodes(p) WHERE x2.prop = $autodouble_1)"
+        )),
         Set("a", "y")
       )
     )
 
     // Without predicates, without relationship type
     assertGood(
-      attach(PruningVarExpand(lhsLP, "a", SemanticDirection.OUTGOING, Seq(), "y", 2, 4, None, None), 1.0),
+      attach(PruningVarExpand(lhsLP, "a", SemanticDirection.OUTGOING, Seq(), "y", 2, 4, Seq(), Seq()), 1.0),
       planDescription(
         id,
         "VarLengthExpand(Pruning)",
@@ -4114,8 +4144,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           "y",
           includeStartNode = false,
           maxLength = 4,
-          nodePredicate = Some(nodePredicate),
-          relationshipPredicate = Some(relationshipPredicate)
+          nodePredicates = Seq(nodePredicate),
+          relationshipPredicates = Seq(relationshipPredicate)
         ),
         1.0
       ),
@@ -4123,7 +4153,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "VarLengthExpand(Pruning,BFS)",
         SingleChild(lhsPD),
-        Seq(details("(a)-[r:R*..4]->(y) WHERE x.prop = $autodouble_1 AND r.prop = $autodouble_1")),
+        Seq(details(
+          "p = (a)-[:R*..4]->(y) WHERE all(x IN nodes(p) WHERE x.prop = $autodouble_1) AND all(r IN relationships(p) WHERE r.prop = $autodouble_1)"
+        )),
         Set("a", "y")
       )
     )
@@ -4139,8 +4171,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           "y",
           includeStartNode = true,
           4,
-          Some(nodePredicate),
-          None
+          Seq(nodePredicate),
+          Seq()
         ),
         1.0
       ),
@@ -4148,7 +4180,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "VarLengthExpand(Pruning,BFS)",
         SingleChild(lhsPD),
-        Seq(details("(a)-[:R*0..4]->(y) WHERE x.prop = $autodouble_1")),
+        Seq(details("p = (a)-[:R*0..4]->(y) WHERE all(x IN nodes(p) WHERE x.prop = $autodouble_1)")),
         Set("a", "y")
       )
     )
@@ -4164,8 +4196,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           "y",
           includeStartNode = false,
           4,
-          None,
-          None
+          Seq(),
+          Seq()
         ),
         1.0
       ),
@@ -4218,8 +4250,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           "rel",
           VarPatternLength(1, Some(1)),
           ExpandAll,
-          Some(nodePredicate),
-          Some(relationshipPredicate)
+          Seq(nodePredicate),
+          Seq(relationshipPredicate)
         ),
         1.0
       ),
@@ -4227,7 +4259,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "VarLengthExpand(All)",
         SingleChild(lhsPD),
-        Seq(details("(a)<-[rel:LIKES|LOVES]-(to) WHERE x.prop = $autodouble_1 AND r.prop = $autodouble_1")),
+        Seq(details(
+          "p = (a)<-[rel:LIKES|LOVES]-(to) WHERE all(x IN nodes(p) WHERE x.prop = $autodouble_1) AND all(r IN relationships(p) WHERE r.prop = $autodouble_1)"
+        )),
         Set("a", "to", "rel")
       )
     )
@@ -4245,7 +4279,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           "rel",
           VarPatternLength(2, Some(3)),
           ExpandAll,
-          Some(nodePredicate)
+          Seq(nodePredicate)
         ),
         1.0
       ),
@@ -4253,7 +4287,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "VarLengthExpand(All)",
         SingleChild(lhsPD),
-        Seq(details("(a)<-[rel:LIKES|LOVES*2..3]-(to) WHERE x.prop = $autodouble_1")),
+        Seq(details("p = (a)<-[rel:LIKES|LOVES*2..3]-(to) WHERE all(x IN nodes(p) WHERE x.prop = $autodouble_1)")),
         Set("a", "to", "rel")
       )
     )

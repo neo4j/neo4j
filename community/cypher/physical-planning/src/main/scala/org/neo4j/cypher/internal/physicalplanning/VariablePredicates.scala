@@ -25,13 +25,10 @@ import org.neo4j.exceptions.InternalException
 
 object VariablePredicates {
 
-  val NO_PREDICATE_OFFSET: Int = -1
-
-  def expressionSlotForPredicate(predicate: Option[VariablePredicate]): Int =
+  def expressionSlotForPredicate(predicate: VariablePredicate): Int =
     predicate match {
-      case None                                                      => NO_PREDICATE_OFFSET
-      case Some(VariablePredicate(ExpressionVariable(offset, _), _)) => offset
-      case Some(VariablePredicate(v, _)) =>
+      case VariablePredicate(ExpressionVariable(offset, _), _) => offset
+      case VariablePredicate(v, _) =>
         throw new InternalException(
           s"Failure during physical planning: the expression slot of variable $v has not been allocated."
         )

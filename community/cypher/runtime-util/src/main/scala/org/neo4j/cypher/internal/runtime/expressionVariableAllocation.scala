@@ -85,17 +85,17 @@ object expressionVariableAllocation {
 
       case x: VarExpand =>
         outerVars =>
-          val innerVars = allocateVariables(outerVars, (x.nodePredicate ++ x.relationshipPredicate).map(_.variable))
+          val innerVars = allocateVariables(outerVars, (x.nodePredicates ++ x.relationshipPredicates).map(_.variable))
           TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
 
       case x: PruningVarExpand =>
         outerVars =>
-          val innerVars = allocateVariables(outerVars, (x.nodePredicate ++ x.relationshipPredicate).map(_.variable))
+          val innerVars = allocateVariables(outerVars, (x.nodePredicates ++ x.relationshipPredicates).map(_.variable))
           TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
 
       case x: BFSPruningVarExpand =>
         outerVars =>
-          val innerVars = allocateVariables(outerVars, (x.nodePredicate ++ x.relationshipPredicate).map(_.variable))
+          val innerVars = allocateVariables(outerVars, (x.nodePredicates ++ x.relationshipPredicates).map(_.variable))
           TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
 
       case x: NestedPlanExpression =>

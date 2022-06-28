@@ -748,8 +748,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     dir: SemanticDirection,
     to: String,
     pattern: PatternRelationship,
-    relationshipPredicate: Option[VariablePredicate],
-    nodePredicate: Option[VariablePredicate],
+    relationshipPredicates: Seq[VariablePredicate],
+    nodePredicates: Seq[VariablePredicate],
     solvedPredicates: Seq[Expression],
     mode: ExpansionMode,
     context: LogicalPlanningContext
@@ -764,15 +764,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       val solver = PatternExpressionSolver.solverFor(source, context)
 
       /**
-       * There are multiple considerations about this strange method.
-       * a) If we solve PatternExpressions before `extractPredicates` in `expandStepSolver`, then the `replaceVariable` rewriter
-       *    does not properly recurse into NestedPlanExpressions. It is thus easier to first rewrite the predicates and then
-       *    let the PatternExpressionSolver solve any PatternExpressions in them.
-       * b) `extractPredicates` extracts the Predicates ouf of the FilterScopes they are inside. The PatternExpressionSolver needs
-       *    to know if things are inside a different scope to work correctly. Otherwise it will plan RollupApply when not allowed,
-       *    or plan the wrong `NestedPlanExpression`. Since extracting the scope instead of the inner predicate is not straightforward
-       *    either, the easiest solution is this one: we wrap each predicate in a FilterScope, give it the the PatternExpressionSolver,
-       *    and then extract it from the FilterScope again.
+       * `extractPredicates` extracts the Predicates ouf of the FilterScopes they are inside. The PatternExpressionSolver needs
+       * to know if things are inside a different scope to work correctly. Otherwise it will plan RollupApply when not allowed,
+       * or plan the wrong `NestedPlanExpression`. Since extracting the scope instead of the inner predicate is not straightforward,
+       * the easiest solution is this one: we wrap each predicate in a FilterScope, give it to the PatternExpressionSolver,
+       * and then extract it from the FilterScope again.
        */
       def solveVariablePredicate(variablePredicate: VariablePredicate): VariablePredicate = {
         val filterScope = FilterScope(variablePredicate.variable, Some(variablePredicate.predicate))(
@@ -782,8 +778,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
         VariablePredicate(rewrittenFilterScope.variable, rewrittenFilterScope.innerPredicate.get)
       }
 
-      val rewrittenRelationshipPredicate = relationshipPredicate.map(solveVariablePredicate)
-      val rewrittenNodePredicate = nodePredicate.map(solveVariablePredicate)
+      val rewrittenRelationshipPredicates = relationshipPredicates.map(solveVariablePredicate)
+      val rewrittenNodePredicates = nodePredicates.map(solveVariablePredicate)
       val rewrittenSource = solver.rewrittenPlan()
       annotate(
         VarExpand(
@@ -796,8 +792,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
           relName = pattern.name,
           length = l,
           mode = mode,
-          nodePredicate = rewrittenNodePredicate,
-          relationshipPredicate = rewrittenRelationshipPredicate
+          nodePredicates = rewrittenNodePredicates,
+          relationshipPredicates = rewrittenRelationshipPredicates
         ),
         solved,
         providedOrders.get(source.id).fromLeft,

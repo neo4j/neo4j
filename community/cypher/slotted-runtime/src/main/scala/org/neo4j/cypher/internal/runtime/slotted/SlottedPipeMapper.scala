@@ -157,7 +157,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Aggreg
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.DeleteOperation
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SideEffect
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerAggregationPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EmptyResultPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexSeekModeFactory
@@ -267,6 +266,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.UnionSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.UnwindSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.ValueHashJoinSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPipe
+import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPipe.SlottedVariablePredicate
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
@@ -796,8 +796,8 @@ class SlottedPipeMapper(
           relName,
           VarPatternLength(min, max),
           expansionMode,
-          nodePredicate,
-          relationshipPredicate
+          nodePredicates,
+          relationshipPredicates
         ) =>
         val shouldExpandAll = expansionMode match {
           case ExpandAll  => true
@@ -809,8 +809,19 @@ class SlottedPipeMapper(
 
         // The node/relationship predicates are evaluated on the source pipeline, not the produced one
         val sourceSlots = physicalPlan.slotConfigurations(sourcePlan.id)
-        val tempNodeOffset = expressionSlotForPredicate(nodePredicate)
-        val tempRelationshipOffset = expressionSlotForPredicate(relationshipPredicate)
+        val nodeSlottedPredicates = nodePredicates.map(nodePred =>
+          SlottedVariablePredicate(
+            expressionSlotForPredicate(nodePred),
+            expressionConverters.toCommandExpression(id, nodePred.predicate)
+          )
+        )
+        val relSlottedPredicates = relationshipPredicates.map(relPred =>
+          SlottedVariablePredicate(
+            expressionSlotForPredicate(relPred),
+            expressionConverters.toCommandExpression(id, relPred.predicate)
+          )
+        )
+
         argumentSize = SlotConfiguration.Size(sourceSlots.numberOfLongs, sourceSlots.numberOfReferences)
         VarLengthExpandSlottedPipe(
           source,
@@ -824,23 +835,40 @@ class SlottedPipeMapper(
           max,
           shouldExpandAll,
           slots,
-          tempNodeOffset = tempNodeOffset,
-          tempRelationshipOffset = tempRelationshipOffset,
-          nodePredicate =
-            nodePredicate.map(x => expressionConverters.toCommandExpression(id, x.predicate)).getOrElse(True()),
-          relationshipPredicate =
-            relationshipPredicate.map(x => expressionConverters.toCommandExpression(id, x.predicate)).getOrElse(True()),
+          nodePredicates = nodeSlottedPredicates,
+          relationshipPredicates = relSlottedPredicates,
           argumentSize = argumentSize
         )(id)
 
-      case BFSPruningVarExpand(_, from, dir, types, to, includeStartNode, max, nodePredicate, relationshipPredicate) =>
+      case BFSPruningVarExpand(
+          _,
+          from,
+          dir,
+          types,
+          to,
+          includeStartNode,
+          max,
+          nodePredicates,
+          relationshipPredicates
+        ) =>
         val fromSlot = slots(from)
         val toOffset = slots.getLongOffsetFor(to)
 
         // The node/relationship predicates are evaluated on the source pipeline, not the produced one
         val sourceSlots = physicalPlan.slotConfigurations(source.id)
-        val tempNodeOffset = expressionSlotForPredicate(nodePredicate)
-        val tempRelationshipOffset = expressionSlotForPredicate(relationshipPredicate)
+        val nodeSlottedPredicates = nodePredicates.map(nodePred =>
+          SlottedVariablePredicate(
+            expressionSlotForPredicate(nodePred),
+            expressionConverters.toCommandExpression(id, nodePred.predicate)
+          )
+        )
+        val relSlottedPredicates = relationshipPredicates.map(relPred =>
+          SlottedVariablePredicate(
+            expressionSlotForPredicate(relPred),
+            expressionConverters.toCommandExpression(id, relPred.predicate)
+          )
+        )
+
         argumentSize = SlotConfiguration.Size(sourceSlots.numberOfLongs, sourceSlots.numberOfReferences)
         BFSPruningVarLengthExpandSlottedPipe(
           source,
@@ -851,10 +879,8 @@ class SlottedPipeMapper(
           includeStartNode,
           max,
           slots,
-          tempNodeOffset,
-          tempRelationshipOffset,
-          nodePredicate.map(x => expressionConverters.toCommandExpression(id, x.predicate)).getOrElse(True()),
-          relationshipPredicate.map(x => expressionConverters.toCommandExpression(id, x.predicate)).getOrElse(True())
+          nodePredicates = nodeSlottedPredicates,
+          relationshipPredicates = relSlottedPredicates
         )(id = id)
 
       case Optional(inner, symbols) =>

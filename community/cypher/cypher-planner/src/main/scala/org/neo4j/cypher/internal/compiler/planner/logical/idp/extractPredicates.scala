@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.ExpressionWithOuterScope
 import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
@@ -32,22 +31,18 @@ import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.PathExpression
-import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 
 object extractPredicates {
 
   // Using type predicates to make this more readable.
-  type NodePredicates = List[Expression]
-  type RelationshipPredicates = List[Expression]
+  type NodePredicates = List[VariablePredicate]
+  type RelationshipPredicates = List[VariablePredicate]
   type SolvedPredicates = List[Expression] // for marking predicates as solved
 
   def apply(
     availablePredicates: collection.Seq[Expression],
     originalRelationshipName: String,
-    tempRelationship: String,
-    tempNode: String,
     originalNodeName: String,
     targetNodeName: String
   ): (NodePredicates, RelationshipPredicates, SolvedPredicates) = {
@@ -79,50 +74,41 @@ object extractPredicates {
       // MATCH ()-[r* {prop:1337}]->()
       case ((n, e, s), p @ AllRelationships(variable, `originalRelationshipName`, innerPredicate))
         if !innerPredicate.dependencies.exists(_.name == targetNodeName) =>
-        val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempRelationship))
-        (n, e :+ rewrittenPredicate, s :+ p)
+        val predicate = VariablePredicate(variable, innerPredicate)
+        (n, e :+ predicate, s :+ p)
 
       // MATCH p = (a)-[x*]->(b) WHERE ALL(r in relationships(p) WHERE r.prop > 5)
       case (
           (n, e, s),
           p @ AllRelationshipsInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate)
         ) if !pathDependent(innerPredicate) =>
-        val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempRelationship))
-        (n, e :+ rewrittenPredicate, s :+ p)
+        val predicate = VariablePredicate(variable, innerPredicate)
+        (n, e :+ predicate, s :+ p)
 
       // MATCH p = ()-[*]->() WHERE NONE(r in relationships(p) WHERE <innerPredicate>)
       case (
           (n, e, s),
           p @ NoRelationshipInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate)
         ) if !pathDependent(innerPredicate) =>
-        val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempRelationship))
-        val negatedPredicate = Not(rewrittenPredicate)(innerPredicate.position)
-        (n, e :+ negatedPredicate, s :+ p)
+        val predicate = VariablePredicate(variable, Not(innerPredicate)(innerPredicate.position))
+        (n, e :+ predicate, s :+ p)
 
       // MATCH p = ()-[*]->() WHERE ALL(r in nodes(p) WHERE <innerPredicate>)
       case ((n, e, s), p @ AllNodesInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate))
         if !pathDependent(innerPredicate) =>
-        val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempNode))
-        (n :+ rewrittenPredicate, e, s :+ p)
+        val predicate = VariablePredicate(variable, innerPredicate)
+        (n :+ predicate, e, s :+ p)
 
       // MATCH p = ()-[*]->() WHERE NONE(r in nodes(p) WHERE <innerPredicate>)
       case ((n, e, s), p @ NoNodeInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate))
         if !pathDependent(innerPredicate) =>
-        val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempNode))
-        val negatedPredicate = Not(rewrittenPredicate)(innerPredicate.position)
-        (n :+ negatedPredicate, e, s :+ p)
+        val predicate = VariablePredicate(variable, Not(innerPredicate)(innerPredicate.position))
+        (n :+ predicate, e, s :+ p)
 
       case (acc, _) =>
         acc
     }
   }
-
-  private def replaceVariable(from: LogicalVariable, to: String): Rewriter =
-    bottomUp(Rewriter.lift {
-      case v: Variable if v == from => Variable(to)(v.position)
-      case p: ExpressionWithOuterScope =>
-        p.withOuterScope(p.outerScope.map(v => if (v == from) Variable(to)(v.position) else v))
-    })
 
   object AllRelationships {
 

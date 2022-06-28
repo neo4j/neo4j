@@ -191,13 +191,25 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
         "(x)-[r*1..2]->(y)",
         expandMode = ExpandAll,
         projectedDir = BOTH,
-        nodePredicate = Predicate("n", "id(n) <> 5")
+        nodePredicates = Seq(Predicate("n", "id(n) <> 5"))
       )
       .expand(
         "(x)-[r*1..3]->(y)",
         expandMode = ExpandAll,
         projectedDir = BOTH,
-        relationshipPredicate = Predicate("r", "id(r) <> 5")
+        relationshipPredicates = Seq(Predicate("r", "id(r) <> 5"))
+      )
+      .expand(
+        "(x)-[r*1..2]->(y)",
+        expandMode = ExpandAll,
+        projectedDir = BOTH,
+        nodePredicates = Seq(Predicate("n", "id(n) <> 5"), Predicate("n2", "id(n2) > 5"))
+      )
+      .expand(
+        "(x)-[r*1..3]->(y)",
+        expandMode = ExpandAll,
+        projectedDir = BOTH,
+        relationshipPredicates = Seq(Predicate("r", "id(r) <> 5"), Predicate("r2", "id(r2) > 5"))
       )
       .argument()
       .build()
@@ -238,8 +250,16 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .pruningVarExpand("(x)-[*1..2]-(y)")
       .pruningVarExpand("(x)-[*1..2]->(y)")
       .pruningVarExpand("(x)-[*1..2]->(y)")
-      .pruningVarExpand("(x)-[*1..2]->(y)", nodePredicate = Predicate("n", "id(n) <> 5"))
-      .pruningVarExpand("(x)-[*1..3]->(y)", relationshipPredicate = Predicate("r", "id(r) <> 5"))
+      .pruningVarExpand("(x)-[*1..2]->(y)", nodePredicates = Seq(Predicate("n", "id(n) <> 5")))
+      .pruningVarExpand("(x)-[*1..3]->(y)", relationshipPredicates = Seq(Predicate("r", "id(r) <> 5")))
+      .pruningVarExpand(
+        "(x)-[*1..2]->(y)",
+        nodePredicates = Seq(Predicate("n", "id(n) <> 5"), Predicate("n2", "id(n2) > 5"))
+      )
+      .pruningVarExpand(
+        "(x)-[*1..3]->(y)",
+        relationshipPredicates = Seq(Predicate("r", "id(r) <> 5"), Predicate("r2", "id(r2) > 5"))
+      )
       .argument()
       .build()
   )
@@ -255,8 +275,16 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .bfsPruningVarExpand("(x)<-[:REL|LER*1..2]-(y)")
       .bfsPruningVarExpand("(x)-[*1..2]->(y)")
       .bfsPruningVarExpand("(x)-[*1..2]->(y)")
-      .bfsPruningVarExpand("(x)-[*1..2]->(y)", nodePredicate = Predicate("n", "id(n) <> 5"))
-      .bfsPruningVarExpand("(x)-[*1..3]->(y)", relationshipPredicate = Predicate("r", "id(r) <> 5"))
+      .bfsPruningVarExpand("(x)-[*1..2]->(y)", nodePredicates = Seq(Predicate("n", "id(n) <> 5")))
+      .bfsPruningVarExpand("(x)-[*1..3]->(y)", relationshipPredicates = Seq(Predicate("r", "id(r) <> 5")))
+      .bfsPruningVarExpand(
+        "(x)-[*1..2]->(y)",
+        nodePredicates = Seq(Predicate("n", "id(n) <> 5"), Predicate("n2", "id(n2) > 5"))
+      )
+      .bfsPruningVarExpand(
+        "(x)-[*1..3]->(y)",
+        relationshipPredicates = Seq(Predicate("r", "id(r) <> 5"), Predicate("r2", "id(r2) > 5"))
+      )
       .argument()
       .build()
   )

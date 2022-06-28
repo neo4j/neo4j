@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.RelationshipContainer
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.VarLengthExpandPipe.projectBackwards
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
@@ -36,7 +35,6 @@ import org.neo4j.values.virtual.VirtualValues
 trait VarLengthPredicate {
   def filterNode(row: CypherRow, state: QueryState)(node: VirtualNodeValue): Boolean
   def filterRelationship(row: CypherRow, state: QueryState)(rel: VirtualRelationshipValue): Boolean
-  def predicateExpressions: Seq[Predicate]
 }
 
 object VarLengthPredicate {
@@ -44,7 +42,6 @@ object VarLengthPredicate {
   val NONE: VarLengthPredicate = new VarLengthPredicate {
     override def filterNode(row: CypherRow, state: QueryState)(node: VirtualNodeValue): Boolean = true
     override def filterRelationship(row: CypherRow, state: QueryState)(rel: VirtualRelationshipValue): Boolean = true
-    override def predicateExpressions: Seq[Predicate] = Seq.empty
   }
 }
 

@@ -22,9 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSinglePatternSide
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSingleProjectEndpoints
-import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
@@ -35,7 +33,6 @@ import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
-import org.neo4j.cypher.internal.util.InputPosition
 
 case class expandSolverStep(qg: QueryGraph)
     extends IDPSolverStep[NodeConnection, LogicalPlan, LogicalPlanningContext] {
@@ -141,18 +138,14 @@ object expandSolverStep {
       case _: VarPatternLength =>
         val availablePredicates: collection.Seq[Expression] =
           qg.selections.predicatesGiven(availableSymbols + patternRel.name + otherSide)
-        val tempNode = patternRel.name + "_NODES"
-        val tempRelationship = patternRel.name + "_RELS"
         val (
-          nodePredicates: Seq[Expression],
-          relationshipPredicates: Seq[Expression],
+          nodePredicates: Seq[VariablePredicate],
+          relationshipPredicates: Seq[VariablePredicate],
           solvedPredicates: Seq[Expression]
         ) =
           extractPredicates(
             availablePredicates,
             originalRelationshipName = patternRel.name,
-            tempRelationship = tempRelationship,
-            tempNode = tempNode,
             originalNodeName = nodeId,
             targetNodeName = otherSide
           )
@@ -163,19 +156,12 @@ object expandSolverStep {
           dir = dir,
           to = otherSide,
           pattern = patternRel,
-          nodePredicate = variablePredicate(tempNode, nodePredicates),
-          relationshipPredicate = variablePredicate(tempRelationship, relationshipPredicates),
+          nodePredicates = nodePredicates,
+          relationshipPredicates = relationshipPredicates,
           solvedPredicates = solvedPredicates,
           mode = mode,
           context = context
         )
     }
   }
-
-  private def variablePredicate(tempVariableName: String, predicates: Seq[Expression]): Option[VariablePredicate] =
-    if (predicates.isEmpty)
-      None
-    else
-      Some(VariablePredicate(Variable(tempVariableName)(InputPosition.NONE), Ands.create(predicates)))
-
 }

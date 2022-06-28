@@ -63,7 +63,6 @@ import org.neo4j.cypher.internal.physicalplanning.RefSlot
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.Size
 import org.neo4j.cypher.internal.physicalplanning.SlottedIndexedProperty
-import org.neo4j.cypher.internal.physicalplanning.VariablePredicates
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -512,10 +511,8 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
       varLength.max,
       shouldExpandAll = true,
       varExpandSlots,
-      -1,
-      -1,
-      commands.predicates.True(),
-      commands.predicates.True(),
+      Seq(),
+      Seq(),
       Size(1, 0)
     )())
   }
@@ -581,10 +578,8 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
         varLength.max,
         shouldExpandAll = false,
         varExpandSlots,
-        VariablePredicates.NO_PREDICATE_OFFSET, // no node predicate
-        VariablePredicates.NO_PREDICATE_OFFSET, // no relationship predicate
-        commands.predicates.True(),
-        commands.predicates.True(),
+        Seq(), // no node predicate
+        Seq(), // no relationship predicate
         Size(3, 0)
       )()
     )
