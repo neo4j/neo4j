@@ -1317,11 +1317,6 @@
         <artifactId>zstd-jni</artifactId>
         <version>1.5.0-4</version>
       </dependency>
-
-      <!--
-       - Please note that when updating this dependency (i.e. due to a security vulnerability or bug) that the corresponding driver dependency also
-       - needs updating.
-       -->
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
