@@ -177,6 +177,9 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
             if (diffSets.getAdded().contains(label)) {
                 return true;
             }
+            if (currentNodeIsAddedInTx()) {
+                return false;
+            }
             if (diffSets.getRemoved().contains(label) || currentAddedInTx != NO_ID) {
                 return false;
             }
@@ -197,7 +200,9 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
             if (diffSets.getAdded().notEmpty()) {
                 return true;
             }
-
+            if (currentNodeIsAddedInTx()) {
+                return false;
+            }
             // If we remove labels in the transaction we need to do a full check so that we don't remove all of the
             // nodes
             if (diffSets.getRemoved().notEmpty()) {
