@@ -68,6 +68,37 @@
                 <module>graph-counts</module>
             </modules>
         </profile>
+        <profile>
+            <id>test-freki</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>NEO4J_OVERRIDE_STORE_FORMAT</name>
+                    <value>freki</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.neo4j</groupId>
+                    <artifactId>neo4j-freki-storage-engine</artifactId>
+                    <version>${project.version}</version>
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.neo4j.build.plugins</groupId>
+                            <artifactId>licensing-maven-plugin</artifactId>
+                            <configuration>
+                                <skip>true</skip>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
     </profiles>
 
     <build>
