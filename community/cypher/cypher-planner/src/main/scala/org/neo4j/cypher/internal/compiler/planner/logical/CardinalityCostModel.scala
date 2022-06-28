@@ -93,6 +93,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
@@ -321,6 +322,7 @@ object CardinalityCostModel {
        */
 
       case _: NodeByLabelScan |
+        _: UnionNodeByLabelsScan |
         _: NodeIndexScan => INDEX_SCAN_COST_PER_ROW
 
       case _: ProjectEndpoints => STORE_LOOKUP_COST_PER_ROW

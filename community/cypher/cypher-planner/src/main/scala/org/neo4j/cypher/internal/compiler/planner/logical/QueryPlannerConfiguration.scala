@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.relationshipType
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectCovered
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectHasLabelWithJoin
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.triadicSelectionFinder
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.unionLabelScanLeafPlanner
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
@@ -76,6 +77,9 @@ object QueryPlannerConfiguration {
 
     // MATCH (n:Person) RETURN n
     labelScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
+
+    // MATCH (n:Person|Bird) RETURN n
+    unionLabelScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
 
     // MATCH ()-[r:R]->()
     relationshipTypeScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners)

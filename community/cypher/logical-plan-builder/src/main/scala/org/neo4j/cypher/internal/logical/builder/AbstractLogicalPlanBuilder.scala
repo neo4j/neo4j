@@ -829,6 +829,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     )(_)))
   }
 
+  def unionNodeByLabelsScan(node: String, labels: Seq[String], args: String*): IMPL = {
+    unionNodeByLabelsScan(node, labels, IndexOrderNone, args: _*)
+  }
+
   def unionNodeByLabelsScan(node: String, labels: Seq[String], indexOrder: IndexOrder, args: String*): IMPL = {
     val n = VariableParser.unescaped(node)
     newNode(varFor(n))

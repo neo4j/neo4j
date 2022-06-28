@@ -44,10 +44,10 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .stripProduceResults
 
     plan should (equal(new LogicalPlanBuilder(wholePlan = false)
-      .unionNodeByLabelsScan("m", Seq("A", "B"), IndexOrderAscending)
+      .unionNodeByLabelsScan("m", Seq("A", "B"))
       .build())
       or equal(new LogicalPlanBuilder(wholePlan = false)
-        .unionNodeByLabelsScan("m", Seq("B", "A"), IndexOrderAscending)
+        .unionNodeByLabelsScan("m", Seq("B", "A"))
         .build()))
   }
 
@@ -103,12 +103,12 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     plan should (equal(new LogicalPlanBuilder(wholePlan = false)
       .filter("o.prop = 0")
       .expand("(m)-[r]-(o)")
-      .unionNodeByLabelsScan("m", Seq("A", "B"), IndexOrderAscending)
+      .unionNodeByLabelsScan("m", Seq("A", "B"))
       .build())
       or equal(new LogicalPlanBuilder(wholePlan = false)
         .filter("o.prop = 0")
         .expand("(m)-[r]-(o)")
-        .unionNodeByLabelsScan("m", Seq("B", "A"), IndexOrderAscending)
+        .unionNodeByLabelsScan("m", Seq("B", "A"))
         .build()))
   }
 
@@ -124,10 +124,10 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .stripProduceResults
 
     plan should (equal(new LogicalPlanBuilder(wholePlan = false)
-      .unionNodeByLabelsScan("m", Seq("A", "B"), IndexOrderAscending)
+      .unionNodeByLabelsScan("m", Seq("A", "B"))
       .build())
       or equal(new LogicalPlanBuilder(wholePlan = false)
-        .unionNodeByLabelsScan("m", Seq("B", "A"), IndexOrderAscending)
+        .unionNodeByLabelsScan("m", Seq("B", "A"))
         .build()))
   }
 
@@ -144,15 +144,13 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     plan should (equal(new LogicalPlanBuilder(wholePlan = false)
       .apply()
-      .|.orderedDistinct(Seq("m"), "n AS n", "m AS m")
-      .|.unionNodeByLabelsScan("m", Seq("A", "B"), IndexOrderAscending, "n")
+      .|.unionNodeByLabelsScan("m", Seq("A", "B"), "n")
       .limit(1)
       .allNodeScan("n")
       .build())
       or equal(new LogicalPlanBuilder(wholePlan = false)
         .apply()
-        .|.orderedDistinct(Seq("m"), "n AS n", "m AS m")
-        .|.unionNodeByLabelsScan("m", Seq("B", "A"), IndexOrderAscending, "n")
+        .|.unionNodeByLabelsScan("m", Seq("B", "A"), "n")
         .limit(1)
         .allNodeScan("n")
         .build()))
@@ -171,11 +169,11 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     plan should (equal(new LogicalPlanBuilder(wholePlan = false)
       .optional()
-      .unionNodeByLabelsScan("m", Seq("A", "B"), IndexOrderAscending)
+      .unionNodeByLabelsScan("m", Seq("A", "B"))
       .build())
       or equal(new LogicalPlanBuilder(wholePlan = false)
         .optional()
-        .unionNodeByLabelsScan("m", Seq("B", "A"), IndexOrderAscending)
+        .unionNodeByLabelsScan("m", Seq("B", "A"))
         .build()))
   }
 

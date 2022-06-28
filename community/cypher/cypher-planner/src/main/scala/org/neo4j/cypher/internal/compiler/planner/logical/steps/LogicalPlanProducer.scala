@@ -223,6 +223,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
@@ -850,6 +851,30 @@ case class LogicalPlanProducer(
     )
     annotate(
       NodeByLabelScan(variable.name, label, argumentIds, toIndexOrder(providedOrder)),
+      solved,
+      providedOrder,
+      context
+    )
+  }
+
+  def planUnionNodeByLabelsScan(
+    variable: Variable,
+    labels: Seq[LabelName],
+    solvedPredicates: Seq[Expression],
+    solvedHints: Seq[UsingScanHint] = Seq.empty,
+    argumentIds: Set[String],
+    providedOrder: ProvidedOrder,
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+    val solved = RegularSinglePlannerQuery(queryGraph =
+      QueryGraph.empty
+        .addPatternNodes(variable.name)
+        .addPredicates(solvedPredicates: _*)
+        .addHints(solvedHints)
+        .addArgumentIds(argumentIds.toIndexedSeq)
+    )
+    annotate(
+      UnionNodeByLabelsScan(variable.name, labels, argumentIds, toIndexOrder(providedOrder)),
       solved,
       providedOrder,
       context

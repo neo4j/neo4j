@@ -152,6 +152,26 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
+    test(s"$cypherToken-$orderCapability: Order by variable from union label scan should plan with provided order") {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(100)
+        .setLabelCardinality("A", 10)
+        .setLabelCardinality("B", 10)
+        .build()
+
+      val plan = planner.plan(
+        s"MATCH (n:A|B) RETURN n ORDER BY n $cypherToken"
+      )
+
+      plan should equal(
+        planner.planBuilder()
+          .produceResults("n")
+          .unionNodeByLabelsScan("n", Seq("A", "B"), plannedOrder)
+          .build()
+      )
+    }
+
     test(
       s"$cypherToken-$orderCapability: Order by variable from relationship type scan should plan with provided order"
     ) {

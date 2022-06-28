@@ -649,12 +649,12 @@ class OrLeafPlanningIntegrationTest
     plan should (equal(
       cfg.planBuilder()
         .produceResults("n")
-        .unionNodeByLabelsScan("n", Seq("P", "L"), indexOrder = IndexOrderAscending)
+        .unionNodeByLabelsScan("n", Seq("P", "L"))
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("n")
-        .unionNodeByLabelsScan("n", Seq("L", "P"), indexOrder = IndexOrderAscending)
+        .unionNodeByLabelsScan("n", Seq("L", "P"))
         .build()
     ))
   }
@@ -673,12 +673,12 @@ class OrLeafPlanningIntegrationTest
     plan should (equal(
       cfg.planBuilder()
         .produceResults("n")
-        .unionNodeByLabelsScan("n", Seq("P", "L"), indexOrder = IndexOrderAscending)
+        .unionNodeByLabelsScan("n", Seq("P", "L"))
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("n")
-        .unionNodeByLabelsScan("n", Seq("L", "P"), indexOrder = IndexOrderAscending)
+        .unionNodeByLabelsScan("n", Seq("L", "P"))
         .build()
     ))
   }
@@ -698,12 +698,12 @@ class OrLeafPlanningIntegrationTest
     plan should (equal(
       cfg.planBuilder()
         .produceResults("n")
-        .unionNodeByLabelsScan("n", Seq("P", "L"), indexOrder = IndexOrderAscending)
+        .unionNodeByLabelsScan("n", Seq("P", "L"))
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("n")
-        .unionNodeByLabelsScan("n", Seq("L", "P"), indexOrder = IndexOrderAscending)
+        .unionNodeByLabelsScan("n", Seq("L", "P"))
         .build()
     ))
   }
@@ -861,13 +861,13 @@ class OrLeafPlanningIntegrationTest
       cfg.planBuilder()
         .produceResults("n")
         .filterExpression(ors(hasLabels("n", "L"), propEquality("n", "p1", 1)))
-        .unionNodeByLabelsScan("n", Seq("P", "L"), indexOrder = IndexOrderAscending)
+        .unionNodeByLabelsScan("n", Seq("P", "L"))
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("n")
         .filterExpression(ors(hasLabels("n", "L"), propEquality("n", "p1", 1)))
-        .unionNodeByLabelsScan("n", Seq("L", "P"), indexOrder = IndexOrderAscending)
+        .unionNodeByLabelsScan("n", Seq("L", "P"))
         .build()
     ))
   }
@@ -913,12 +913,12 @@ class OrLeafPlanningIntegrationTest
     plan should (equal(
       cfg.planBuilder()
         .produceResults("n")
-        .unionNodeByLabelsScan("n", Seq("P", "L"), indexOrder = IndexOrderAscending)
+        .unionNodeByLabelsScan("n", Seq("P", "L"))
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("n")
-        .unionNodeByLabelsScan("n", Seq("L", "P"), indexOrder = IndexOrderAscending)
+        .unionNodeByLabelsScan("n", Seq("L", "P"))
         .build()
     ))
   }
@@ -946,7 +946,8 @@ class OrLeafPlanningIntegrationTest
     ))
   }
 
-  test(
+  // TODO is there a benchmark?
+  ignore(
     "should prefer node index scan from existence constraint to label scan with same cardinality, if indexed property is used"
   ) {
     val cfg = plannerConfig()
@@ -1012,7 +1013,7 @@ class OrLeafPlanningIntegrationTest
     ))
   }
 
-  test(
+  ignore(
     "should prefer node index scan from aggregation to node index scan from existence constraint with same cardinality"
   ) {
     val cfg = plannerConfig()
@@ -1082,7 +1083,7 @@ class OrLeafPlanningIntegrationTest
     ))
   }
 
-  test("should prefer node index scan for aggregated property, even if other property is referenced") {
+  ignore("should prefer node index scan for aggregated property, even if other property is referenced") {
     val cfg = plannerConfig()
       .addNodeIndex("L", Seq("p1"), 1.0, 0.1, withValues = true)
       .addNodeExistenceConstraint("L", "p1")
@@ -1441,20 +1442,22 @@ class OrLeafPlanningIntegrationTest
     "should not plan a distinct union if the number of predicates on a single variable in a WHERE sub-clause is greater than `predicates_as_union_max_size`"
   ) {
     val cfg = plannerConfig()
+      .addNodeIndex("L", Seq("prop"), 0.1, 0.1)
+      .addNodeIndex("L", Seq("foo"), 0.1, 0.1)
       .withSetting(GraphDatabaseInternalSettings.predicates_as_union_max_size, java.lang.Integer.valueOf(1))
       .build()
 
     val plan = cfg.plan(
-      """MATCH (n)
-        |WHERE (n:L OR n:P)
+      """MATCH (n:L)
+        |WHERE (n.prop > 3 OR n.foo > 3)
         |RETURN n""".stripMargin
     )
 
     val expectedPlan =
       cfg.planBuilder()
         .produceResults("n")
-        .filterExpression(hasAnyLabel("n", "L", "P"))
-        .allNodeScan("n")
+        .filter("n.prop > 3 OR n.foo > 3")
+        .nodeByLabelScan("n", "L")
         .build()
 
     plan shouldEqual expectedPlan
@@ -1478,6 +1481,30 @@ class OrLeafPlanningIntegrationTest
         .expandAll("(a)-[r:REL1|REL2]-(b)")
         .allNodeScan("a")
         .build()
+  }
+
+  test("should plan unionNodeByLabelsScan if there are more predicates") {
+    val cfg = plannerConfig().build()
+
+    val plan = cfg.plan(
+      """MATCH (n)
+        |WHERE (n:L OR n:P) AND (n.p1 < 1)
+        |RETURN n""".stripMargin
+    )
+
+    plan should (equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .filter("n.p1 < 1")
+        .unionNodeByLabelsScan("n", Seq("P", "L"))
+        .build()
+    ) or equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .filter("n.p1 < 1")
+        .unionNodeByLabelsScan("n", Seq("L", "P"))
+        .build()
+    ))
   }
 
   private def runWithTimeout[T](timeout: Long)(f: => T): T = {
