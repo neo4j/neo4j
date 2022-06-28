@@ -223,7 +223,10 @@ public interface TopologyGraphDbmsModel {
     String INSTANCE_NAME_PROPERTY = "name";
     String INSTANCE_STATUS_PROPERTY = "status";
     String INSTANCE_DISCOVERED_AT_PROPERTY = "discovered_at";
+
+    @Deprecated
     String INSTANCE_MODE_PROPERTY = "mode";
+
     String INSTANCE_ALLOWED_DATABASES_PROPERTY = "allowedDatabases";
     String INSTANCE_DENIED_DATABASES_PROPERTY = "deniedDatabases";
     String INSTANCE_MODE_CONSTRAINT_PROPERTY = "modeConstraint";
