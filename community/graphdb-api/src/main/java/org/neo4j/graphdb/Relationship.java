@@ -200,6 +200,7 @@ public interface Relationship extends Entity {
      * @throws RuntimeException if the given node id is not the id of either the start or end
      *             node of this relationship.
      */
+    @Deprecated(since = "5.0", forRemoval = true)
     default long getOtherNodeId(long id) {
         long start = getStartNodeId();
         long end = getEndNodeId();
