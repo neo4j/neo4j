@@ -20,17 +20,19 @@
 package org.neo4j.consistency;
 
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
-import static picocli.CommandLine.ArgGroup;
 import static picocli.CommandLine.Command;
+import static picocli.CommandLine.Help.Visibility.NEVER;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
+import org.apache.commons.lang3.NotImplementedException;
 import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters.DatabaseNameConverter;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.cli.ExitCode;
+import org.neo4j.cli.PathOptions;
 import org.neo4j.commandline.Util;
 import org.neo4j.commandline.dbms.CannotWriteException;
 import org.neo4j.commandline.dbms.LockChecker;
@@ -38,7 +40,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.locker.FileLockException;
@@ -47,45 +48,76 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.util.VisibleForTesting;
+import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
 
 @Command(
         name = "check",
         header = "Check the consistency of a database.",
         description =
                 """
-                This command allows for checking the consistency of a database or a backup thereof.
+                This command allows for checking the consistency of a database, or a dump or backup thereof.
                 It cannot be used with a database which is currently in use.
 
-                All checks except 'check-graph' can be quite expensive so it may be useful to turn them off
+                Some checks can be quite expensive, so it may be useful to turn some of them off
                 for very large databases. Increasing the heap size can also be a good idea.
-                See 'neo4j-admin help' for details.""")
+                See 'neo4j-admin help' for details.""",
+        sortOptions = false)
 public class CheckCommand extends AbstractAdminCommand {
     private final ConsistencyCheckService consistencyCheckService;
 
-    @ArgGroup(multiplicity = "1")
-    private TargetOption target = new TargetOption();
+    @Parameters(index = "0", description = "Name of the database to check.", converter = DatabaseNameConverter.class)
+    private NormalizedDatabaseName database;
 
-    private static class TargetOption {
-        @Option(
-                names = "--database",
-                description = "Name of the database to check.",
-                converter = DatabaseNameConverter.class)
-        private NormalizedDatabaseName database;
-
-        @Option(
-                names = "--backup",
-                paramLabel = "<path>",
-                description = "Path to backup to check consistency of. Cannot be used together with --database.")
-        private Path backup;
-    }
+    @Option(
+            names = "--force",
+            fallbackValue = "true",
+            description = "Force a consistency check to be run, despite resources, and may run a more thorough check.")
+    private boolean force;
 
     @Mixin
     private ConsistencyCheckOptions options;
 
+    @ArgGroup
+    private SourceOptions sourceOptions;
+
     protected Config config;
     private ConsistencyFlags flags;
+
+    private static final class SourceOptions {
+        @ArgGroup(exclusive = false)
+        private PathOptions.SourceOptions sourceOptions;
+
+        @ArgGroup(exclusive = false)
+        private FromAndTemp fromAndTemp;
+
+        private static final class FromAndTemp {
+            @Option(
+                    names = "--from-path",
+                    paramLabel = "<path>",
+                    required = true,
+                    description = "Path to directory containing dump/backup artifacts to check the consistency of.")
+            private Path fromPath;
+
+            public Path fromPath() {
+                return fromPath.toAbsolutePath().normalize();
+            }
+
+            @Option(
+                    names = "--temp-path",
+                    paramLabel = "<path>",
+                    showDefaultValue = NEVER, // manually handled
+                    description = "Path to directory to be used as a staging area to extract dump/backup artifacts, "
+                            + "if needed.%n  Default:  <from-path>")
+            private Path tempPath;
+
+            public Path tempPath() {
+                return tempPath != null ? tempPath.toAbsolutePath().normalize() : fromPath();
+            }
+        }
+    }
 
     public CheckCommand(ExecutionContext ctx) {
         this(ctx, new ConsistencyCheckService(null));
@@ -116,15 +148,6 @@ public class CheckCommand extends AbstractAdminCommand {
     protected void validateAndConstructArgs() {
         config = configBuilder().build();
         flags = options.toFlags();
-
-        if (target.backup != null) {
-            target.backup = target.backup.toAbsolutePath();
-
-            if (!ctx.fs().isDirectory(target.backup)) {
-                throw new CommandFailedException(
-                        "Report directory path doesn't exist or not a directory: " + target.backup);
-            }
-        }
     }
 
     protected Config.Builder configBuilder() {
@@ -132,24 +155,19 @@ public class CheckCommand extends AbstractAdminCommand {
     }
 
     protected ConsistencyCheckService.Result checkWith(Config config, MemoryTracker memoryTracker) {
+        if (sourceOptions != null) {
+            throw new NotImplementedException("new source options have yet to be implemented");
+        }
+
         final DatabaseLayout layout;
         {
-            final Neo4jLayout neo4jLayout;
-            final String database;
-            if (target.database != null) {
-                neo4jLayout = Neo4jLayout.of(config);
-                database = target.database.name();
-            } else {
-                final var backup = FileUtils.getCanonicalFile(target.backup);
-                neo4jLayout = Neo4jLayout.ofFlat(backup.getParent());
-                database = backup.getFileName().toString();
-            }
-
-            final var storageEngineFactory = StorageEngineFactory.selectStorageEngine(ctx.fs(), neo4jLayout, database)
+            final var neo4jLayout = Neo4jLayout.of(config);
+            final var storageEngineFactory = StorageEngineFactory.selectStorageEngine(
+                            ctx.fs(), neo4jLayout, database.name())
                     .orElseThrow(() ->
                             new IllegalArgumentException("No storage engine found for '%s' with database name '%s'"
-                                    .formatted(neo4jLayout, database)));
-            layout = storageEngineFactory.databaseLayout(neo4jLayout, database);
+                                    .formatted(neo4jLayout, database.name())));
+            layout = storageEngineFactory.databaseLayout(neo4jLayout, database.name());
         }
 
         try (var ignored = LockChecker.checkDatabaseLock(layout)) {
@@ -165,7 +183,7 @@ public class CheckCommand extends AbstractAdminCommand {
                         .with(logProvider)
                         .with(ctx.fs())
                         .verbose(verbose)
-                        .with(options.getReportDir().normalize())
+                        .with(options.reportPath())
                         .with(flags)
                         .runFullConsistencyCheck();
             } catch (ConsistencyCheckIncompleteException e) {

@@ -96,7 +96,7 @@ class AdminCommandsIT {
         assertSuccess(new SetInitialPasswordCommand(context), "--expand-commands", "pass");
         assertSuccess(new SetDefaultAdminCommand(context), "--expand-commands", "admin");
         assertSuccess(new StoreInfoCommand(context), "--expand-commands", "path");
-        assertSuccess(new CheckCommand(context), "--expand-commands", "--database", "neo4j");
+        assertSuccess(new CheckCommand(context), "--expand-commands", "neo4j");
         assertSuccess(new DiagnosticsReportCommand(context), "--expand-commands");
         assertSuccess(
                 new LoadCommand(context, new Loader(fs)),
@@ -118,7 +118,7 @@ class AdminCommandsIT {
         assertExpansionError(new SetInitialPasswordCommand(context), "pass");
         assertExpansionError(new SetDefaultAdminCommand(context), "user");
         assertExpansionError(new StoreInfoCommand(context), "path");
-        assertExpansionError(new CheckCommand(context), "--database", "neo4j");
+        assertExpansionError(new CheckCommand(context), "neo4j");
         assertExpansionError(new DiagnosticsReportCommand(context));
         assertExpansionError(
                 new LoadCommand(context, new Loader(fs)),

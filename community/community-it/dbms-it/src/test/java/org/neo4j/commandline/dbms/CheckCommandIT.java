@@ -21,21 +21,19 @@ package org.neo4j.commandline.dbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.cli.AbstractAdminCommand.COMMAND_CONFIG_FILE_NAME_PATTERN;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.consistency.checking.ConsistencyFlags.DEFAULT;
 
 import java.io.ByteArrayOutputStream;
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.cli.CommandFailedException;
@@ -45,11 +43,9 @@ import org.neo4j.consistency.CheckCommand;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
-import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.locker.FileLockException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -60,7 +56,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.utils.TestDirectory;
 import picocli.CommandLine;
-import picocli.CommandLine.MutuallyExclusiveArgsException;
 
 @Neo4jLayoutExtension
 class CheckCommandIT {
@@ -68,24 +63,30 @@ class CheckCommandIT {
     private TestDirectory testDirectory;
 
     @Inject
+    private FileSystemAbstraction filesytem;
+
+    @Inject
     private Neo4jLayout neo4jLayout;
 
     private Path homeDir;
     private Path confPath;
+    private String dbName;
 
     @BeforeEach
     void setUp() {
         homeDir = testDirectory.homePath();
         confPath = testDirectory.directory("conf");
-        prepareDatabase(neo4jLayout.databaseLayout("mydb"));
+        dbName = "mydb";
+        prepareDatabase(neo4jLayout.databaseLayout(dbName));
     }
 
     @Test
     void printUsageHelp() {
         final var baos = new ByteArrayOutputStream();
-        final var command = new CheckCommand(new ExecutionContext(Path.of("."), Path.of(".")));
+        final var checkCommand = new CheckCommand(new ExecutionContext(Path.of("."), Path.of(".")));
+        final var cmd = new CommandLine(checkCommand).setUsageHelpWidth(120);
         try (var out = new PrintStream(baos)) {
-            CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
+            cmd.usage(new PrintStream(out), CommandLine.Help.Ansi.OFF);
         }
         assertThat(baos.toString().trim())
                 .isEqualToIgnoringNewLines(
@@ -94,145 +95,151 @@ class CheckCommandIT {
 
                         USAGE
 
-                        check [-h] [--expand-commands] [--verbose] [--additional-config=<file>]
-                              [--check-graph=<true/false>] [--check-index-structure=<true/false>]
-                              [--check-indexes=<true/false>] [--report-dir=<path>]
-                              (--database=<database> | --backup=<path>)
+                        check [-h] [--expand-commands] [--force] [--verbose] [--check-counts[=true|false]] [--check-graph[=true|false]]
+                              [--check-indexes[=true|false]] [--check-property-owners[=true|false]] [--additional-config=<file>]
+                              [--report-path=<path>] [[--from-path-data=<path> --from-path-txn=<path>] | [--from-path=<path>
+                              [--temp-path=<path>]]] <database>
 
                         DESCRIPTION
 
-                        This command allows for checking the consistency of a database or a backup
-                        thereof. It cannot be used with a database which is currently in use.
+                        This command allows for checking the consistency of a database, or a dump or backup thereof.
+                        It cannot be used with a database which is currently in use.
 
-                        All checks except 'check-graph' can be quite expensive so it may be useful to
-                        turn them off for very large databases. Increasing the heap size can also be a
-                        good idea. See 'neo4j-admin help' for details.
+                        Some checks can be quite expensive, so it may be useful to turn some of them off
+                        for very large databases. Increasing the heap size can also be a good idea.
+                        See 'neo4j-admin help' for details.
+
+                        PARAMETERS
+
+                              <database>             Name of the database to check.
 
                         OPTIONS
 
+                              --verbose              Enable verbose output.
+                          -h, --help                 Show this help message and exit.
+                              --expand-commands      Allow command expansion in config value evaluation.
                               --additional-config=<file>
-                                                    Configuration file with additional configuration.
-                              --backup=<path>       Path to backup to check consistency of. Cannot be
-                                                      used together with --database.
-                              --check-graph=<true/false>
-                                                    Perform consistency checks between nodes,
-                                                      relationships, properties, types and tokens.
-                                                      Default: true
-                              --check-index-structure=<true/false>
-                                                    Perform structure checks on indexes.
-                                                      Default: true
-                              --check-indexes=<true/false>
-                                                    Perform consistency checks on indexes.
-                                                      Default: true
-                              --database=<database> Name of the database to check.
-                              --expand-commands     Allow command expansion in config value evaluation.
-                          -h, --help                Show this help message and exit.
-                              --report-dir=<path>   Directory where consistency report will be written.
-                                                      Default: .
-                              --verbose             Enable verbose output.""");
+                                                     Configuration file with additional configuration.
+                              --force                Force a consistency check to be run, despite resources, and may run a more thorough check.
+                              --check-indexes[=true|false]
+                                                     Perform consistency checks on indexes.
+                                                       Default: true
+                              --check-graph[=true|false]
+                                                     Perform consistency checks between nodes, relationships, properties, types, and tokens.
+                                                       Default: true
+                              --check-counts[=true|false]
+                                                     Perform consistency checks on the counts. Requires <check-graph>, and may implicitly
+                                                       enable <check-graph> if it were not explicitly disabled.
+                                                       Default: <check-graph>
+                              --check-property-owners[=true|false]
+                                                     Perform consistency checks on the ownership of properties. Requires <check-graph>, and may
+                                                       implicitly enable <check-graph> if it were not explicitly disabled.
+                                                       Default: false
+                              --report-path=<path>   Path to where a consistency report will be written. Interpreted as a directory, unless it
+                                                       has an extension of '.report'
+                                                       Default: .
+                              --from-path-data=<path>
+                                                     Path to the databases directory, containing the database directory to source from.
+                                                       Default: <config: server.directories.data>/databases
+                              --from-path-txn=<path> Path to the transactions directory, containing the transaction directory for the database
+                                                       to source from.
+                                                       Default: <config: server.directories.transaction.logs.root>
+                              --from-path=<path>     Path to directory containing dump/backup artifacts to check the consistency of.
+                              --temp-path=<path>     Path to directory to be used as a staging area to extract dump/backup artifacts, if needed.
+                                                       Default:  <from-path>""");
     }
 
     @Test
     void runsConsistencyChecker() {
-        TrackingConsistencyCheckService consistencyCheckService =
+        final var databaseLayout = neo4jLayout.databaseLayout(dbName);
+
+        final var consistencyCheckService =
                 new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
 
-        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
-
-        RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.of(neo4jLayout, "mydb");
-
-        CommandLine.populateCommand(checkCommand, "--database=mydb");
+        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CommandLine.populateCommand(checkCommand, dbName);
         checkCommand.execute();
 
-        consistencyCheckService.verifyArgument(DatabaseLayout.class, databaseLayout);
+        verifyCheckableLayout(consistencyCheckService, databaseLayout);
     }
 
     @Test
     void consistencyCheckerRespectDatabaseLock() throws CannotWriteException, IOException {
-        TrackingConsistencyCheckService consistencyCheckService =
+        final var databaseLayout = neo4jLayout.databaseLayout(dbName);
+        filesytem.mkdirs(databaseLayout.databaseDirectory());
+
+        final var consistencyCheckService =
                 new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
 
-        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
-        RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.of(neo4jLayout, "mydb");
+        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CommandLine.populateCommand(checkCommand, "--verbose", dbName);
 
-        testDirectory.getFileSystem().mkdirs(databaseLayout.databaseDirectory());
-
-        try (Closeable ignored = LockChecker.checkDatabaseLock(databaseLayout)) {
-            CommandLine.populateCommand(checkCommand, "--database=mydb", "--verbose");
-            CommandFailedException exception = assertThrows(CommandFailedException.class, checkCommand::execute);
-            assertThat(exception.getCause()).isInstanceOf(FileLockException.class);
-            assertThat(exception.getMessage()).isEqualTo("The database is in use. Stop database 'mydb' and try again.");
+        try (var ignored = LockChecker.checkDatabaseLock(databaseLayout)) {
+            final var assertFailure =
+                    assertThatThrownBy(checkCommand::execute).isInstanceOf(CommandFailedException.class);
+            assertFailure.getCause().isInstanceOf(FileLockException.class);
+            assertFailure.hasMessageContainingAll("The database is in use", "Stop database", dbName, "and try again");
         }
     }
 
     @Test
     void enablesVerbosity() {
-        TrackingConsistencyCheckService consistencyCheckService =
+        final var consistencyCheckService =
                 new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
 
-        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
-
-        RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.of(neo4jLayout, "mydb");
-
-        CommandLine.populateCommand(checkCommand, "--database=mydb", "--verbose");
+        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CommandLine.populateCommand(checkCommand, "--verbose", dbName);
         checkCommand.execute();
 
-        consistencyCheckService.verifyArgument(DatabaseLayout.class, databaseLayout);
         consistencyCheckService.verifyArgument(Boolean.class, true);
     }
 
     @Test
     void failsWhenInconsistenciesAreFound() {
-        TrackingConsistencyCheckService consistencyCheckService =
-                new TrackingConsistencyCheckService(ConsistencyCheckService.Result.failure(
-                        Path.of("/the/report/path"), new ConsistencySummaryStatistics()));
+        final var reportPath = Path.of("/the/report/path");
 
-        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        final var consistencyCheckService = new TrackingConsistencyCheckService(
+                ConsistencyCheckService.Result.failure(reportPath, new ConsistencySummaryStatistics()));
 
-        CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> {
-            CommandLine.populateCommand(checkCommand, "--database=mydb", "--verbose");
-            checkCommand.execute();
-        });
-        assertThat(commandFailed.getMessage())
-                .contains(Path.of("/the/report/path").toString());
+        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CommandLine.populateCommand(checkCommand, "--verbose", dbName);
+
+        assertThatThrownBy(checkCommand::execute)
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContaining(reportPath.toString());
     }
 
     @Test
     void shouldWriteReportFileToCurrentDirectoryByDefault() throws CommandFailedException {
-
-        TrackingConsistencyCheckService consistencyCheckService =
+        final var consistencyCheckService =
                 new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
 
-        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
-
-        CommandLine.populateCommand(checkCommand, "--database=mydb");
+        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CommandLine.populateCommand(checkCommand, dbName);
         checkCommand.execute();
 
         consistencyCheckService.verifyArgument(Path.class, Path.of(""));
     }
 
     @Test
-    void shouldWriteReportFileToSpecifiedDirectory() throws CommandFailedException {
-
-        TrackingConsistencyCheckService consistencyCheckService =
+    void shouldWriteReportFileToSpecifiedPath() throws CommandFailedException {
+        final var consistencyCheckService =
                 new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
 
-        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
-
-        CommandLine.populateCommand(checkCommand, "--database=mydb", "--report-dir=some-dir-or-other");
+        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CommandLine.populateCommand(checkCommand, "--report-path=some-dir-or-other", dbName);
         checkCommand.execute();
 
         consistencyCheckService.verifyArgument(Path.class, Path.of("some-dir-or-other"));
     }
 
     @Test
-    void shouldCanonicalizeReportDirectory() throws CommandFailedException {
-        TrackingConsistencyCheckService consistencyCheckService =
+    void shouldCanonicalizeReportPath() throws CommandFailedException {
+        final var consistencyCheckService =
                 new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
 
-        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
-
-        CommandLine.populateCommand(checkCommand, "--database=mydb", "--report-dir=" + Paths.get("..", "bar"));
+        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CommandLine.populateCommand(checkCommand, "--report-path=" + Path.of("..", "bar"), dbName);
         checkCommand.execute();
 
         consistencyCheckService.verifyArgument(Path.class, Path.of("../bar"));
@@ -240,86 +247,39 @@ class CheckCommandIT {
 
     @Test
     void passesOnCheckParameters() {
-        TrackingConsistencyCheckService consistencyCheckService =
+        final var consistencyCheckService =
                 new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
 
-        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
-
-        CommandLine.populateCommand(
-                checkCommand,
-                "--database=mydb",
-                "--check-graph=false",
-                "--check-indexes=false",
-                "--check-index-structure=true");
+        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CommandLine.populateCommand(checkCommand, "--check-indexes=false", "--check-graph=false", dbName);
         checkCommand.execute();
 
         consistencyCheckService.verifyArgument(
-                ConsistencyFlags.class, DEFAULT.withoutCheckGraph().withoutCheckIndexes());
-    }
-
-    @Test
-    void databaseAndBackupAreMutuallyExclusive() {
-        TrackingConsistencyCheckService consistencyCheckService =
-                new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
-
-        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
-
-        MutuallyExclusiveArgsException incorrectUsage = assertThrows(MutuallyExclusiveArgsException.class, () -> {
-            CommandLine.populateCommand(checkCommand, "--database=foo", "--backup=bar");
-            checkCommand.execute();
-        });
-        assertThat(incorrectUsage.getMessage())
-                .contains("--database=<database>, --backup=<path> are mutually exclusive (specify only one)");
-    }
-
-    @Test
-    void backupNeedsToBePath() {
-        TrackingConsistencyCheckService consistencyCheckService =
-                new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
-
-        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
-
-        Path backupPath = homeDir.resolve("dir/does/not/exist");
-
-        CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> {
-            CommandLine.populateCommand(checkCommand, "--backup=" + backupPath);
-            checkCommand.execute();
-        });
-        assertThat(commandFailed.getMessage()).contains("Report directory path doesn't exist or not a directory");
-    }
-
-    @Test
-    void canRunOnBackup() throws Exception {
-        TrackingConsistencyCheckService consistencyCheckService =
-                new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
-
-        RecordDatabaseLayout backupLayout = RecordDatabaseLayout.ofFlat(testDirectory.directory("backup"));
-        prepareBackupDatabase(backupLayout);
-        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
-
-        CommandLine.populateCommand(checkCommand, "--backup=" + backupLayout.databaseDirectory());
-        checkCommand.execute();
-
-        consistencyCheckService.verifyArgument(DatabaseLayout.class, backupLayout);
+                ConsistencyFlags.class,
+                ConsistencyFlags.DEFAULT.withoutCheckIndexes().withoutCheckGraph());
     }
 
     @Test
     void shouldUseCheckCommandConfigIfAvailable() throws Exception {
         // Checking that the command is unhappy about an invalid value is enough to verify
         // that the command-specific config is being taken into account.
-        Files.writeString(
-                confPath.resolve("neo4j-admin-database-check.conf"), pagecache_memory.name() + "=some nonsense");
 
-        assertThatThrownBy(() -> {
-                    TrackingConsistencyCheckService consistencyCheckService =
-                            new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
-                    CheckCommand checkCommand =
-                            new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
-                    CommandLine.populateCommand(checkCommand, "--database=mydb");
-                    checkCommand.execute();
-                })
+        final var nonsense = "some nonsense";
+        final var commandConfigFile = confPath.resolve(COMMAND_CONFIG_FILE_NAME_PATTERN.formatted("database-check"));
+        try (var outputStream = filesytem.openAsOutputStream(commandConfigFile, true);
+                var out = new PrintStream(outputStream)) {
+            out.printf("%s=%s%n", pagecache_memory.name(), nonsense);
+        }
+
+        final var consistencyCheckService =
+                new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
+
+        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CommandLine.populateCommand(checkCommand, dbName);
+
+        assertThatThrownBy(checkCommand::execute)
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("'some nonsense' is not a valid size");
+                .hasMessageContainingAll(nonsense, "is not a valid size");
     }
 
     private void prepareBackupDatabase(DatabaseLayout backupLayout) throws IOException {
@@ -328,8 +288,25 @@ class CheckCommandIT {
     }
 
     private static void prepareDatabase(DatabaseLayout databaseLayout) {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
+        final var managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
         managementService.shutdown();
+    }
+
+    private void verifyCheckableLayout(TrackingConsistencyCheckService service, DatabaseLayout plainLayout) {
+        final var neo4jLayout = plainLayout.getNeo4jLayout();
+
+        final var assertPlainLayout = service.assertArgument(DatabaseLayout.class);
+        assertPlainLayout
+                .extracting(DatabaseLayout::getDatabaseName, InstanceOfAssertFactories.STRING)
+                .isEqualTo(plainLayout.getDatabaseName());
+
+        final var assertNeo4jLayout = assertPlainLayout.extracting(DatabaseLayout::getNeo4jLayout);
+        assertNeo4jLayout
+                .extracting(Neo4jLayout::databasesDirectory, InstanceOfAssertFactories.PATH)
+                .isEqualTo(neo4jLayout.databasesDirectory());
+        assertNeo4jLayout
+                .extracting(Neo4jLayout::transactionLogsRootDirectory, InstanceOfAssertFactories.PATH)
+                .isEqualTo(neo4jLayout.transactionLogsRootDirectory());
     }
 
     private static class TrackingConsistencyCheckService extends ConsistencyCheckService {
@@ -405,9 +382,9 @@ class CheckCommandIT {
         }
 
         @Override
-        public ConsistencyCheckService with(Path reportDir) {
-            arguments.put(Path.class, reportDir);
-            super.with(reportDir);
+        public ConsistencyCheckService with(Path reportPath) {
+            arguments.put(Path.class, reportPath);
+            super.with(reportPath);
             return new TrackingConsistencyCheckService(this);
         }
 
@@ -437,9 +414,14 @@ class CheckCommandIT {
             return result;
         }
 
+        <T> ObjectAssert<T> assertArgument(Class<T> type) {
+            final var arg = arguments.get(type);
+            assertThat(arg).isInstanceOf(type);
+            return assertThat((T) arg);
+        }
+
         void verifyArgument(Class<?> type, Object expectedValue) {
-            Object actualValue = arguments.get(type);
-            assertThat(actualValue).isEqualTo(expectedValue);
+            assertArgument(type).isEqualTo(expectedValue);
         }
     }
 }

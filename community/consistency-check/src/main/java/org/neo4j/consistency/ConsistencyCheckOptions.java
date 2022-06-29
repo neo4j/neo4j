@@ -20,62 +20,101 @@
 package org.neo4j.consistency;
 
 import static picocli.CommandLine.Help.Visibility.ALWAYS;
+import static picocli.CommandLine.Help.Visibility.NEVER;
 
 import java.nio.file.Path;
 import org.neo4j.consistency.checking.ConsistencyFlags;
 import picocli.CommandLine.Option;
 
-@SuppressWarnings("FieldMayBeFinal")
 public class ConsistencyCheckOptions {
     @Option(
-            names = "--report-dir",
-            paramLabel = "<path>",
-            description = "Directory where consistency report will be written.",
-            defaultValue = ".")
-    private Path reportDir;
-
-    @Option(
-            names = "--check-graph",
-            arity = "1",
-            showDefaultValue = ALWAYS,
-            paramLabel = "<true/false>",
-            description = "Perform consistency checks between nodes, relationships, properties, types and tokens.")
-    private boolean checkGraph = ConsistencyFlags.DEFAULT.checkGraph();
-
-    @Option(
             names = "--check-indexes",
-            arity = "1",
+            arity = "0..1",
             showDefaultValue = ALWAYS,
-            paramLabel = "<true/false>",
+            paramLabel = "true|false",
+            fallbackValue = "true",
             description = "Perform consistency checks on indexes.")
     private boolean checkIndexes = ConsistencyFlags.DEFAULT.checkIndexes();
 
     @Option(
-            names = "--check-index-structure",
-            arity = "1",
+            names = "--check-graph",
+            arity = "0..1",
+            showDefaultValue = NEVER, // manually handled,
+            paramLabel = "true|false",
+            fallbackValue = "true",
+            description = "Perform consistency checks between nodes, relationships, properties, types, and tokens."
+                    + "%n  Default: true")
+    private Boolean checkGraph;
+
+    private boolean checkGraph() {
+        // if not explicitly enabled, then set via default or related checks
+        return checkGraph == null
+                ? ConsistencyFlags.DEFAULT.checkGraph() || checkCounts || checkPropertyOwners
+                : checkGraph;
+    }
+
+    @Option(
+            names = "--check-counts",
+            arity = "0..1",
+            showDefaultValue = NEVER, // manually handled
+            paramLabel = "true|false",
+            fallbackValue = "true",
+            description = "Perform consistency checks on the counts. Requires <check-graph>, and may implicitly "
+                    + "enable <check-graph> if it were not explicitly disabled."
+                    + "%n  Default: <check-graph>")
+    private boolean checkCounts = ConsistencyFlags.DEFAULT.checkCounts();
+
+    @Option(
+            names = "--check-property-owners",
+            arity = "0..1",
             showDefaultValue = ALWAYS,
-            paramLabel = "<true/false>",
-            description = "Perform structure checks on indexes.")
-    private boolean checkIndexStructure = ConsistencyFlags.DEFAULT.checkIndexStructure();
+            paramLabel = "true|false",
+            fallbackValue = "true",
+            description = "Perform consistency checks on the ownership of properties. Requires <check-graph>, and "
+                    + "may implicitly enable <check-graph> if it were not explicitly disabled.")
+    private boolean checkPropertyOwners = false;
 
-    public Path getReportDir() {
-        return reportDir;
+    @Option(
+            names = "--report-path",
+            paramLabel = "<path>",
+            showDefaultValue = ALWAYS,
+            description = "Path to where a consistency report will be written. "
+                    + "Interpreted as a directory, unless it has an extension of '.report'")
+    private Path reportPath = Path.of(".");
+
+    public Path reportPath() {
+        return reportPath.normalize();
     }
 
-    public boolean isCheckGraph() {
-        return checkGraph;
-    }
+    private IllegalArgumentException validateGraphOptions() {
+        if (checkGraph == null || checkGraph) {
+            return null;
+        }
 
-    public boolean isCheckIndexes() {
-        return checkIndexes;
-    }
+        final var sb = new StringBuilder();
+        final var error = "<%%s> cannot be %%s if <%s> is explicitly set to %s".formatted("check-graph", false);
 
-    public boolean isCheckIndexStructure() {
-        return checkIndexStructure;
+        if (checkCounts) {
+            sb.append(error.formatted("check-counts", true));
+        }
+        if (checkPropertyOwners) {
+            sb.append(error.formatted("check-property-owners", true));
+        }
+
+        return !sb.isEmpty() ? new IllegalArgumentException(sb.toString()) : null;
     }
 
     public ConsistencyFlags toFlags() {
-        // counts and big property checks are not exposed via API
-        return ConsistencyFlags.create(checkGraph, checkIndexes, checkIndexStructure);
+        return toFlags(false);
+    }
+
+    public ConsistencyFlags toFlags(boolean force) {
+        final var invalidGraphOptions = validateGraphOptions();
+        if (!force && invalidGraphOptions != null) {
+            throw invalidGraphOptions;
+        }
+
+        final var checkGraphForce = force || checkGraph();
+        return ConsistencyFlags.create(checkGraphForce, checkIndexes, true);
     }
 }
