@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWith
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.DirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Expand
@@ -81,6 +82,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
+import org.neo4j.cypher.internal.logical.plans.RelationshipLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleFromRightLogicalPlan
@@ -92,6 +94,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWi
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
@@ -299,6 +302,22 @@ object CardinalityCostModel {
       DEFAULT_COST_PER_ROW
   }
 
+  def hackyRelTypeScanCost(
+    propertyAccess: Set[PropertyAccess],
+    plan: RelationshipLogicalLeafPlan,
+    directed: Boolean,
+    allNodeScanCostMultiplier: Double
+  ): Double = {
+    // A workaround for cases where we might get value from an index scan instead. Using the same cost means we will use leaf plan heuristic to decide.
+    if (propertyAccess.exists(_.variableName == plan.idName)) {
+      // If undirected only every second row needs to access the index and the store
+      val multiplier = if (directed) 1.0 else 0.5
+      DIRECTED_RELATIONSHIP_INDEX_SCAN_COST_PER_ROW * multiplier
+    } else {
+      ALL_NODES_SCAN_COST_PER_ROW * allNodeScanCostMultiplier
+    }
+  }
+
   /**
    * @param plan the plan
    * @param cardinality the outgoing cardinality of the plan ???
@@ -354,19 +373,16 @@ object CardinalityCostModel {
         => STORE_LOOKUP_COST_PER_ROW / 2
 
       case plan: DirectedRelationshipTypeScan =>
-        // A workaround for cases where we might get value from an index scan instead. Using the same cost means we will use leaf plan heuristic to decide.
-        if (propertyAccess.exists(_.variableName == plan.idName))
-          DIRECTED_RELATIONSHIP_INDEX_SCAN_COST_PER_ROW
-        else
-          ALL_NODES_SCAN_COST_PER_ROW * 2.2
+        hackyRelTypeScanCost(propertyAccess, plan, directed = true, 2.2)
 
       case plan: UndirectedRelationshipTypeScan =>
-        // A workaround for cases where we might get value from an index scan instead. Using the same cost means we will use leaf plan heuristic to decide.
-        if (propertyAccess.exists(_.variableName == plan.idName))
-          // Only every second row needs to access the index and the store
-          DIRECTED_RELATIONSHIP_INDEX_SCAN_COST_PER_ROW / 2
-        else
-          ALL_NODES_SCAN_COST_PER_ROW * 1.3
+        hackyRelTypeScanCost(propertyAccess, plan, directed = false, 1.3)
+
+      case plan: DirectedUnionRelationshipTypesScan =>
+        hackyRelTypeScanCost(propertyAccess, plan, directed = true, 2.2)
+
+      case plan: UndirectedUnionRelationshipTypesScan =>
+        hackyRelTypeScanCost(propertyAccess, plan, directed = false, 1.3)
 
       case _: DirectedRelationshipIndexScan => DIRECTED_RELATIONSHIP_INDEX_SCAN_COST_PER_ROW
 

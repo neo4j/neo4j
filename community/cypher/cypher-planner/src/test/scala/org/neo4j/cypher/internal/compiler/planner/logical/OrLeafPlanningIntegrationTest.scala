@@ -720,12 +720,12 @@ class OrLeafPlanningIntegrationTest
     plan should (equal(
       cfg.planBuilder()
         .produceResults("r")
-        .unionRelationshipTypesScan("(a)-[r:REL1|REL2]-(b)", indexOrder = IndexOrderAscending)
+        .unionRelationshipTypesScan("(a)-[r:REL1|REL2]-(b)")
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("r")
-        .unionRelationshipTypesScan("(a)-[r:REL2|REL1]-(b)", indexOrder = IndexOrderAscending)
+        .unionRelationshipTypesScan("(a)-[r:REL2|REL1]-(b)")
         .build()
     ))
   }
@@ -740,18 +740,19 @@ class OrLeafPlanningIntegrationTest
          |RETURN r""".stripMargin
     )
 
-    plan() should (equal(
+    val thePlan = plan()
+    thePlan should (equal(
       cfg.planBuilder()
         .produceResults("r")
-        .unionRelationshipTypesScan("(a)-[r:REL1|REL2]-(b)", indexOrder = IndexOrderAscending)
+        .unionRelationshipTypesScan("(a)-[r:REL1|REL2]-(b)")
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("r")
-        .unionRelationshipTypesScan("(a)-[r:REL2|REL1]-(b)", indexOrder = IndexOrderAscending)
+        .unionRelationshipTypesScan("(a)-[r:REL2|REL1]-(b)")
         .build()
     ))
-    plan() should not equal plan(withHint = false)
+    thePlan should not equal plan(withHint = false)
   }
 
   test("should work with relationship type scans of relationship type disjunctions only and solve two scan hint") {
@@ -765,18 +766,19 @@ class OrLeafPlanningIntegrationTest
          |RETURN r""".stripMargin
     )
 
-    plan() should (equal(
+    val thePlan = plan()
+    thePlan should (equal(
       cfg.planBuilder()
         .produceResults("r")
-        .unionRelationshipTypesScan("(a)-[r:REL1|REL2]-(b)", indexOrder = IndexOrderAscending)
+        .unionRelationshipTypesScan("(a)-[r:REL1|REL2]-(b)")
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("r")
-        .unionRelationshipTypesScan("(a)-[r:REL2|REL1]-(b)", indexOrder = IndexOrderAscending)
+        .unionRelationshipTypesScan("(a)-[r:REL2|REL1]-(b)")
         .build()
     ))
-    plan() should not equal plan(withHint = false)
+    thePlan should not equal plan(withHint = false)
   }
 
   test("should work with relationship type scans of inlined relationship type disjunctions only") {
@@ -790,12 +792,12 @@ class OrLeafPlanningIntegrationTest
     plan should (equal(
       cfg.planBuilder()
         .produceResults("r")
-        .unionRelationshipTypesScan("(a)-[r:REL1|REL2]-(b)", indexOrder = IndexOrderAscending)
+        .unionRelationshipTypesScan("(a)-[r:REL1|REL2]-(b)")
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("r")
-        .unionRelationshipTypesScan("(a)-[r:REL2|REL1]-(b)", indexOrder = IndexOrderAscending)
+        .unionRelationshipTypesScan("(a)-[r:REL2|REL1]-(b)")
         .build()
     ))
   }
@@ -889,13 +891,13 @@ class OrLeafPlanningIntegrationTest
       cfg.planBuilder()
         .produceResults("r")
         .filterExpression(ors(hasTypes("r", "REL1"), propEquality("r", "p1", 1)))
-        .unionRelationshipTypesScan("(a)-[r:REL1|REL2]-(b)", indexOrder = IndexOrderAscending)
+        .unionRelationshipTypesScan("(a)-[r:REL1|REL2]-(b)")
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("r")
         .filterExpression(ors(hasTypes("r", "REL1"), propEquality("r", "p1", 1)))
-        .unionRelationshipTypesScan("(a)-[r:REL2|REL1]-(b)", indexOrder = IndexOrderAscending)
+        .unionRelationshipTypesScan("(a)-[r:REL2|REL1]-(b)")
         .build()
     ))
   }
@@ -936,12 +938,12 @@ class OrLeafPlanningIntegrationTest
     plan should (equal(
       cfg.planBuilder()
         .produceResults("r")
-        .unionRelationshipTypesScan("(a)-[r:REL1|REL2]->(b)", indexOrder = IndexOrderAscending)
+        .unionRelationshipTypesScan("(a)-[r:REL1|REL2]->(b)")
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("r")
-        .unionRelationshipTypesScan("(a)-[r:REL2|REL1]->(b)", indexOrder = IndexOrderAscending)
+        .unionRelationshipTypesScan("(a)-[r:REL2|REL1]->(b)")
         .build()
     ))
   }
@@ -980,7 +982,7 @@ class OrLeafPlanningIntegrationTest
     ))
   }
 
-  test(
+  ignore(
     "should prefer relationship index scan from existence constraint to type scan with same cardinality, if indexed property is used"
   ) {
     val cfg = plannerConfig()
@@ -1048,7 +1050,7 @@ class OrLeafPlanningIntegrationTest
     ))
   }
 
-  test(
+  ignore(
     "should prefer relationship index scan from aggregation to relationship index scan from existence constraint with same cardinality"
   ) {
     val cfg = plannerConfig()
@@ -1120,7 +1122,7 @@ class OrLeafPlanningIntegrationTest
     ))
   }
 
-  test("should prefer relationship index scan for aggregated property, even if other property is referenced") {
+  ignore("should prefer relationship index scan for aggregated property, even if other property is referenced") {
     val cfg = plannerConfig()
       .addRelationshipIndex("REL1", Seq("p1"), 1.0, 0.01, withValues = true)
       .addRelationshipExistenceConstraint("REL1", "p1")
@@ -1461,26 +1463,6 @@ class OrLeafPlanningIntegrationTest
         .build()
 
     plan shouldEqual expectedPlan
-  }
-
-  test(
-    "should not plan a distinct union if the size of the relationship type disjunction is greater than `predicates_as_union_max_size`"
-  ) {
-    val cfg = plannerConfig()
-      .withSetting(GraphDatabaseInternalSettings.predicates_as_union_max_size, java.lang.Integer.valueOf(1))
-      .build()
-
-    val plan = cfg.plan(
-      """MATCH (a)-[r:REL1|REL2]-(b)
-        |RETURN r""".stripMargin
-    )
-
-    plan shouldEqual
-      cfg.planBuilder()
-        .produceResults("r")
-        .expandAll("(a)-[r:REL1|REL2]-(b)")
-        .allNodeScan("a")
-        .build()
   }
 
   test("should plan unionNodeByLabelsScan if there are more predicates") {

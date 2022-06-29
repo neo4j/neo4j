@@ -136,6 +136,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWith
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.DirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
@@ -222,6 +223,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWi
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
@@ -370,6 +372,62 @@ case class LogicalPlanProducer(
         patternForLeafPlan,
         Seq.empty,
         solvedHint,
+        argumentIds,
+        providedOrder,
+        context
+      )
+    }
+
+    planHiddenSelectionIfNeeded(planLeaf, hiddenSelections, context, originalPattern)
+  }
+
+  /**
+   * @param idName             the name of the relationship variable
+   * @param relTypes           the relTypes to scan
+   * @param patternForLeafPlan the pattern to use for the leaf plan
+   * @param originalPattern    the original pattern, as it appears in the query graph
+   * @param hiddenSelections   selections that make the leaf plan solve the originalPattern instead.
+   *                           Must not contain any pattern expressions or pattern comprehensions.
+   */
+  def planUnionRelationshipByTypeScan(
+    idName: String,
+    relTypes: Seq[RelTypeName],
+    patternForLeafPlan: PatternRelationship,
+    originalPattern: PatternRelationship,
+    hiddenSelections: Seq[Expression],
+    solvedHints: Seq[UsingScanHint],
+    argumentIds: Set[String],
+    providedOrder: ProvidedOrder,
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+    def planLeaf: LogicalPlan = {
+      val (firstNode, secondNode) = patternForLeafPlan.inOrder
+      val leafPlan: RelationshipLogicalLeafPlan =
+        if (patternForLeafPlan.dir == BOTH) {
+          UndirectedUnionRelationshipTypesScan(
+            idName,
+            firstNode,
+            relTypes,
+            secondNode,
+            argumentIds,
+            toIndexOrder(providedOrder)
+          )
+        } else {
+          DirectedUnionRelationshipTypesScan(
+            idName,
+            firstNode,
+            relTypes,
+            secondNode,
+            argumentIds,
+            toIndexOrder(providedOrder)
+          )
+        }
+
+      annotateRelationshipLeafPlan(
+        leafPlan,
+        patternForLeafPlan,
+        Seq.empty,
+        solvedHints,
         argumentIds,
         providedOrder,
         context
@@ -610,7 +668,7 @@ case class LogicalPlanProducer(
     leafPlan: RelationshipLogicalLeafPlan,
     patternForLeafPlan: PatternRelationship,
     solvedPredicates: Seq[Expression],
-    solvedHint: Option[Hint],
+    solvedHint: IterableOnce[Hint],
     argumentIds: Set[String],
     providedOrder: ProvidedOrder,
     context: LogicalPlanningContext

@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectCovered
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectHasLabelWithJoin
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.triadicSelectionFinder
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.unionLabelScanLeafPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.unionRelationshipTypeScanLeafPlanner
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
@@ -82,7 +83,10 @@ object QueryPlannerConfiguration {
     unionLabelScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
 
     // MATCH ()-[r:R]->()
-    relationshipTypeScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners)
+    relationshipTypeScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
+
+    // MATCH ()-[r:R|S]->()
+    unionRelationshipTypeScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners)
   )
 
   private def allLeafPlanners(restrictions: LeafPlanRestrictions): IndexedSeq[LeafPlanner] = {

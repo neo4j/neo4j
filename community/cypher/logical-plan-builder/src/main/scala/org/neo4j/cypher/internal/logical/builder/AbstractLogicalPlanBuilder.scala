@@ -844,6 +844,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     )(_)))
   }
 
+  def unionRelationshipTypesScan(pattern: String, args: String*): IMPL = {
+    unionRelationshipTypesScan(pattern, IndexOrderNone, args: _*)
+  }
+
   def unionRelationshipTypesScan(pattern: String, indexOrder: IndexOrder, args: String*): IMPL = {
     val p = patternParser.parse(pattern)
     newRelationship(varFor(p.relName))
