@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
+import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.Prober.Probe
 import org.neo4j.cypher.internal.runtime.spec.Edition
@@ -389,6 +390,80 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(Seq(1, 2)))
       .withStatistics(nodesCreated = 2, labelsAdded = 2, propertiesSet = 2, transactionsCommitted = 2)
+  }
+
+  test("should handle RHS with R/W dependencies - with Filter (cancels rows) under Apply") {
+    // given
+    val sizeHint = 16
+    val inputValsToCancel = (0 until sizeHint).map(_ => sizeHint).toArray
+    val inputValsToPassThrough = (0 until sizeHint).toArray
+    val inputVals = inputValsToCancel ++ inputValsToPassThrough ++ inputValsToCancel
+    val input = inputValues(inputVals.map(Array[Any](_)): _*)
+    val batchSize = sizeHint / 4
+
+    given {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionApply(batchSize)
+      .|.eager()
+      .|.create(createNode("n"))
+      .|.argument("x")
+      .filter(s"x <> $sizeHint")
+      .input(variables = Seq("x"))
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    consume(runtimeResult)
+
+    val expected = inputValsToPassThrough
+    val expectedTxCommitted = inputValsToPassThrough.length / batchSize + 1
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(
+      nodesCreated = expected.length,
+      transactionsCommitted = expectedTxCommitted
+    )
+  }
+
+  test("should handle RHS with R/W dependencies - with Filter under Apply and Sort on RHS") {
+    // given
+    val sizeHint = 16
+    val inputValsToCancel = (0 until sizeHint).map(_ => sizeHint).toArray
+    val inputValsToPassThrough = (0 until sizeHint).toArray
+    val inputVals = inputValsToCancel ++ inputValsToPassThrough ++ inputValsToCancel
+    val input = inputValues(inputVals.map(Array[Any](_)): _*)
+    val batchSize = sizeHint / 2
+
+    given {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionApply(batchSize)
+      .|.sort(Seq(Ascending("y")))
+      .|.create(createNode("n"))
+      .|.eager()
+      .|.allNodeScan("y", "x")
+      .filter(s"x <> $sizeHint")
+      .input(variables = Seq("x"))
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    consume(runtimeResult)
+
+    val expected = inputValsToPassThrough.flatMap(i => (0 until Math.pow(2, i).toInt).map(_ => i))
+    val expectedTxCommitted = inputValsToPassThrough.length / batchSize + 1
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(
+      nodesCreated = expected.length,
+      transactionsCommitted = expectedTxCommitted
+    )
   }
 
   protected def recordingProbe(

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
+import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -59,6 +60,112 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(nodesCreated = expected.length)
+  }
+
+  test("should handle RHS with R/W dependencies - with Filter (cancels rows) under Apply") {
+    // given
+    val sizeHint = 16
+    val inputValsToCancel = (0 until sizeHint).map(_ => sizeHint).toArray
+    val inputValsToPassThrough = (0 until sizeHint).toArray
+    val inputVals = inputValsToCancel ++ inputValsToPassThrough ++ inputValsToCancel
+    val input = inputValues(inputVals.map(Array[Any](_)): _*)
+
+    given {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply(fromSubquery = true)
+      .|.eager()
+      .|.create(createNode("n"))
+      .|.argument("x")
+      .filter(s"x <> $sizeHint")
+      .input(variables = Seq("x"))
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    consume(runtimeResult)
+
+    val expected = inputValsToPassThrough
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(nodesCreated = expected.length)
+  }
+
+  test("should handle RHS with R/W dependencies - with Filter under Apply and Sort on RHS") {
+    // given
+    val sizeHint = 16
+    val inputValsToCancel = (0 until sizeHint).map(_ => sizeHint).toArray
+    val inputValsToPassThrough = (0 until sizeHint).toArray
+    val inputVals = inputValsToCancel ++ inputValsToPassThrough ++ inputValsToCancel
+    val input = inputValues(inputVals.map(Array[Any](_)): _*)
+
+    given {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply(fromSubquery = true)
+      .|.sort(Seq(Ascending("y")))
+      .|.create(createNode("n"))
+      .|.eager()
+      .|.allNodeScan("y", "x")
+      .filter(s"x <> $sizeHint")
+      .input(variables = Seq("x"))
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    consume(runtimeResult)
+
+    val expected = inputValsToPassThrough.flatMap(i => (0 until Math.pow(2, i).toInt).map(_ => i))
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(nodesCreated = expected.length)
+  }
+
+  test("should handle node creation in nested apply - with Filter on RHS") {
+    // given
+    val sizeHint = 16
+    val inputValsToCancel = (0 until sizeHint).map(_ => sizeHint).toArray
+    val inputValsToPassThrough = (0 until sizeHint).toArray
+    val inputVals = inputValsToCancel ++ inputValsToPassThrough ++ inputValsToCancel
+    val input = inputValues(inputVals.map(Array[Any](_)): _*)
+
+    given {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply(fromSubquery = true)
+      .|.sort(Seq(Ascending("y")))
+      .|.apply(fromSubquery = true)
+      .|.|.top(Seq(Ascending("x")), 1)
+      .|.|.deleteNode("m")
+      .|.|.argument("x", "m")
+      .|.create(createNode("m"))
+      .|.create(createNode("n"))
+      .|.eager()
+      .|.allNodeScan("y", "x")
+      .filter(s"x <> $sizeHint")
+      .input(variables = Seq("x"))
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    consume(runtimeResult)
+
+    val expected = inputValsToPassThrough.flatMap(i => (0 until Math.pow(2, i).toInt).map(_ => i))
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(
+      nodesCreated = expected.length * 2,
+      nodesDeleted = expected.length
+    )
   }
 
   test("should handle RHS with R/W dependencies - with Argument on RHS") {
@@ -718,7 +825,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("c").withSingleRow(expected).withStatistics(nodesCreated = expected)
   }
 
-  test("should handle node creation in nested apply") {
+  test("should handle node creation in deeply nested apply") {
     val sizeHint = 4
     val nodes = given {
       nodeGraph(sizeHint)
