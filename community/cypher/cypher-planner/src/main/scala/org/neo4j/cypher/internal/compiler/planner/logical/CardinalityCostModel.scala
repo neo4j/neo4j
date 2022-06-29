@@ -238,6 +238,12 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
         effectiveCardinalities.lhs * PROBE_BUILD_COST +
         effectiveCardinalities.rhs * PROBE_SEARCH_COST
 
+    case _: Union | _: OrderedUnion =>
+      val inCardinality = effectiveCardinalities.lhs + effectiveCardinalities.rhs
+      val rowCost = costPerRow(plan, inCardinality, semanticTable, propertyAccess)
+      val costForThisPlan = inCardinality * rowCost
+      costForThisPlan + lhsCost + rhsCost
+
     case _ =>
       val rowCost = costPerRow(plan, effectiveCardinalities.inputCardinality, semanticTable, propertyAccess)
       val costForThisPlan = effectiveCardinalities.inputCardinality * rowCost
