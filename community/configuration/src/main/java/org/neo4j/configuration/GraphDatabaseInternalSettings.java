@@ -990,4 +990,9 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     "internal.cypher.predicates_as_union_max_size", INT, 255)
             .addConstraint(min(0))
             .build();
+
+    @Internal
+    @Description("A feature toggle behind which trigram index is developed")
+    public static final Setting<Boolean> trigram_index =
+            newBuilder("internal.dbms.trigram_index", BOOL, false).build();
 }

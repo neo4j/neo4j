@@ -32,6 +32,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
+import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
 import org.neo4j.kernel.impl.index.schema.PointIndexProvider;
@@ -47,12 +48,14 @@ class StaticIndexProviderMapTest {
         var fulltextIndexProvider = mockProvider(FulltextIndexProvider.class);
         var rangeIndexProvider = mockProvider(RangeIndexProvider.class);
         var pointIndexProvider = mockProvider(PointIndexProvider.class);
+        var trigramIndexProvider = mockProvider(TrigramIndexProvider.class);
         var map = new StaticIndexProviderMap(
                 tokenIndexProvider,
                 textIndexProvider,
                 fulltextIndexProvider,
                 rangeIndexProvider,
                 pointIndexProvider,
+                trigramIndexProvider,
                 new Dependencies());
         map.init();
 
@@ -70,12 +73,14 @@ class StaticIndexProviderMapTest {
         var fulltextIndexProvider = mockProvider(FulltextIndexProvider.class);
         var rangeIndexProvider = mockProvider(RangeIndexProvider.class);
         var pointIndexProvider = mockProvider(PointIndexProvider.class);
+        var trigramIndexProvider = mockProvider(TrigramIndexProvider.class);
         var map = new StaticIndexProviderMap(
                 tokenIndexProvider,
                 textIndexProvider,
                 fulltextIndexProvider,
                 rangeIndexProvider,
                 pointIndexProvider,
+                trigramIndexProvider,
                 new Dependencies());
         map.init();
 
@@ -93,12 +98,14 @@ class StaticIndexProviderMapTest {
         var fulltextIndexProvider = mockProvider(FulltextIndexProvider.class);
         var rangeIndexProvider = mockProvider(RangeIndexProvider.class);
         var pointIndexProvider = mockProvider(PointIndexProvider.class);
+        var trigramIndexProvider = mockProvider(TrigramIndexProvider.class);
         var map = new StaticIndexProviderMap(
                 tokenIndexProvider,
                 textIndexProvider,
                 fulltextIndexProvider,
                 rangeIndexProvider,
                 pointIndexProvider,
+                trigramIndexProvider,
                 new Dependencies());
         map.init();
 
@@ -111,6 +118,7 @@ class StaticIndexProviderMapTest {
                         textIndexProvider,
                         fulltextIndexProvider,
                         rangeIndexProvider,
+                        trigramIndexProvider,
                         pointIndexProvider);
     }
 
@@ -126,6 +134,7 @@ class StaticIndexProviderMapTest {
                 mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT),
                 rangeIndexProvider,
                 mockProvider(PointIndexProvider.class, IndexType.POINT),
+                mockProvider(TrigramIndexProvider.class, IndexType.TEXT),
                 dependencies);
         map.init();
 
@@ -146,6 +155,7 @@ class StaticIndexProviderMapTest {
                 mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT),
                 rangeIndexProvider,
                 mockProvider(PointIndexProvider.class), // <- No type
+                mockProvider(TrigramIndexProvider.class, IndexType.TEXT),
                 new Dependencies());
         map.init();
 

@@ -44,12 +44,9 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.api.impl.index.SearcherReference;
-import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
-import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
-import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.NodeIdsIndexReaderQueryAnswer;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.values.storable.Values;
@@ -61,11 +58,6 @@ class PartitionedValueIndexReaderTest {
     private final IndexDescriptor schemaIndexDescriptor = IndexPrototype.forSchema(forLabel(LABEL_ID, PROP_KEY))
             .withName("index")
             .materialise(0);
-    private final IndexSamplingConfig samplingConfig = mock(IndexSamplingConfig.class);
-    private final TaskCoordinator taskCoordinator = mock(TaskCoordinator.class);
-    private final PartitionSearcher partitionSearcher1 = mock(PartitionSearcher.class);
-    private final PartitionSearcher partitionSearcher2 = mock(PartitionSearcher.class);
-    private final PartitionSearcher partitionSearcher3 = mock(PartitionSearcher.class);
     private final SimpleValueIndexReader indexReader1 = mock(SimpleValueIndexReader.class);
     private final SimpleValueIndexReader indexReader2 = mock(SimpleValueIndexReader.class);
     private final SimpleValueIndexReader indexReader3 = mock(SimpleValueIndexReader.class);
@@ -76,9 +68,9 @@ class PartitionedValueIndexReaderTest {
 
         partitionedIndexReader.close();
 
-        verify(partitionSearcher1).close();
-        verify(partitionSearcher2).close();
-        verify(partitionSearcher3).close();
+        verify(indexReader1).close();
+        verify(indexReader2).close();
+        verify(indexReader3).close();
     }
 
     @Test
@@ -219,17 +211,12 @@ class PartitionedValueIndexReaderTest {
         return new PartitionedValueIndexReader(schemaIndexDescriptor, getPartitionReaders());
     }
 
-    private List<SimpleValueIndexReader> getPartitionReaders() {
+    private List<ValueIndexReader> getPartitionReaders() {
         return Arrays.asList(indexReader1, indexReader2, indexReader3);
     }
 
     private PartitionedValueIndexReader createPartitionedReader() {
-        return new PartitionedValueIndexReader(
-                getPartitionSearchers(), schemaIndexDescriptor, samplingConfig, taskCoordinator);
-    }
-
-    private List<SearcherReference> getPartitionSearchers() {
-        return Arrays.asList(partitionSearcher1, partitionSearcher2, partitionSearcher3);
+        return new PartitionedValueIndexReader(schemaIndexDescriptor, getPartitionReaders());
     }
 
     private static class SimpleSampler implements IndexSampler {

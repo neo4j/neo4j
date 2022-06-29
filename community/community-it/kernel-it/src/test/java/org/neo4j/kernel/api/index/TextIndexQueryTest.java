@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.index;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.graphdb.schema.IndexType.TEXT;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.allEntries;
@@ -39,9 +38,11 @@ import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
@@ -49,9 +50,19 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
+import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.newapi.KernelAPIReadTestBase;
 import org.neo4j.kernel.impl.newapi.ReadTestSupport;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -75,19 +86,30 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport> {
     @Override
     public void createTestGraph(GraphDatabaseService db) {
         try (var tx = db.beginTx()) {
-            tx.schema()
-                    .indexFor(PERSON)
-                    .on(NAME)
-                    .withName(NODE_INDEX_NAME)
-                    .withIndexType(TEXT)
-                    .create();
-            tx.schema()
-                    .indexFor(FRIEND)
-                    .on(SINCE)
-                    .withName(REL_INDEX_NAME)
-                    .withIndexType(TEXT)
-                    .create();
+            TokenWrite tokenWrite = getTokenWrite(tx);
+            tokenWrite.labelGetOrCreateForName(PERSON.name());
+            tokenWrite.relationshipTypeGetOrCreateForName(FRIEND.name());
+            tokenWrite.propertyKeyGetOrCreateForName(NAME);
+            tokenWrite.propertyKeyGetOrCreateForName(SINCE);
             tx.commit();
+        } catch (KernelException e) {
+            throw new RuntimeException(e);
+        }
+
+        try (var tx = db.beginTx()) {
+            TokenRead tokenRead = getTokenRead(tx);
+            SchemaWrite schemaWrite = getSchemaWrite(tx);
+            schemaWrite.indexCreate(IndexPrototype.forSchema(asSchemaDescriptor(tokenRead, PERSON, NAME))
+                    .withName(NODE_INDEX_NAME)
+                    .withIndexType(IndexType.TEXT)
+                    .withIndexProvider(getIndexProviderDescriptor()));
+            schemaWrite.indexCreate(IndexPrototype.forSchema(asSchemaDescriptor(tokenRead, FRIEND, SINCE))
+                    .withName(REL_INDEX_NAME)
+                    .withIndexType(IndexType.TEXT)
+                    .withIndexProvider(getIndexProviderDescriptor()));
+            tx.commit();
+        } catch (KernelException e) {
+            throw new RuntimeException(e);
         }
 
         try (var tx = db.beginTx()) {
@@ -250,6 +272,10 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport> {
                         getIndex(REL_INDEX_NAME).getIndexProvider().getKey(), since);
     }
 
+    protected IndexProviderDescriptor getIndexProviderDescriptor() {
+        return TextIndexProvider.DESCRIPTOR;
+    }
+
     private long indexedNodes(PropertyIndexQuery... query) throws Exception {
         return indexedNodes(unconstrained(), query);
     }
@@ -282,6 +308,39 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport> {
 
     private IndexDescriptor getIndex(String indexName) {
         return schemaRead.indexGetForName(indexName);
+    }
+
+    private SchemaDescriptor asSchemaDescriptor(TokenRead tokenRead, Label label, String prop) {
+        var labelId = tokenRead.nodeLabel(label.name());
+        var propId = tokenRead.propertyKey(prop);
+        return SchemaDescriptors.forLabel(labelId,propId);
+    }
+
+    private SchemaDescriptor asSchemaDescriptor(TokenRead tokenRead, RelationshipType relType, String prop) {
+        var labelId = tokenRead.relationshipType(relType.name());
+        var propId = tokenRead.propertyKey(prop);
+        return SchemaDescriptors.forRelType(labelId,propId);
+    }
+
+    private TokenRead getTokenRead(Transaction tx) {
+        var ktx = ((TransactionImpl) tx).kernelTransaction();
+        return ktx.tokenRead();
+    }
+
+    private TokenWrite getTokenWrite(Transaction tx) {
+        var ktx = ((TransactionImpl) tx).kernelTransaction();
+        return ktx.tokenWrite();
+    }
+
+    private SchemaWrite getSchemaWrite(Transaction tx) {
+        var ktx = ((TransactionImpl) tx).kernelTransaction();
+        SchemaWrite schemaWrite;
+        try {
+            schemaWrite = ktx.schemaWrite();
+        } catch (InvalidTransactionTypeKernelException e) {
+            throw new RuntimeException(e);
+        }
+        return schemaWrite;
     }
 
     private static class IndexAccessMonitor extends IndexMonitor.MonitorAdapter {

@@ -30,14 +30,12 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.sampler.AggregatingIndexSampler;
-import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.index.AbstractValueIndexReader;
 import org.neo4j.kernel.api.index.BridgingIndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
-import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 import org.neo4j.values.storable.Value;
 
@@ -48,22 +46,9 @@ import org.neo4j.values.storable.Value;
  * @see SimpleValueIndexReader
  */
 public class PartitionedValueIndexReader extends AbstractValueIndexReader {
-    private final List<SimpleValueIndexReader> indexReaders;
+    private final List<ValueIndexReader> indexReaders;
 
-    public PartitionedValueIndexReader(
-            List<SearcherReference> partitionSearchers,
-            IndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig,
-            TaskCoordinator taskCoordinator) {
-        this(
-                descriptor,
-                partitionSearchers.stream()
-                        .map(partitionSearcher -> new SimpleValueIndexReader(
-                                partitionSearcher, descriptor, samplingConfig, taskCoordinator))
-                        .collect(Collectors.toList()));
-    }
-
-    PartitionedValueIndexReader(IndexDescriptor descriptor, List<SimpleValueIndexReader> readers) {
+    public PartitionedValueIndexReader(IndexDescriptor descriptor, List<ValueIndexReader> readers) {
         super(descriptor);
         this.indexReaders = readers;
     }
@@ -121,7 +106,7 @@ public class PartitionedValueIndexReader extends AbstractValueIndexReader {
     @Override
     public IndexSampler createSampler() {
         List<IndexSampler> indexSamplers = indexReaders.parallelStream()
-                .map(SimpleValueIndexReader::createSampler)
+                .map(ValueIndexReader::createSampler)
                 .collect(Collectors.toList());
         return new AggregatingIndexSampler(indexSamplers);
     }

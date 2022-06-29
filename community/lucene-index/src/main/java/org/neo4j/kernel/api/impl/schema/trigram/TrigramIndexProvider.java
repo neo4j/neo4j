@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.schema;
+package org.neo4j.kernel.api.impl.schema.trigram;
 
 import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
 
@@ -31,31 +31,35 @@ import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexQuery;
-import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.impl.schema.populator.NonUniqueLuceneIndexPopulator;
+import org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
 
-public class TextIndexProvider extends AbstractLuceneIndexProvider {
-    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("text", "1.0");
-    public static final IndexCapability CAPABILITY = new TextIndexCapability();
+public class TrigramIndexProvider extends AbstractLuceneIndexProvider {
+    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("text-trigram", "1.0");
+    public static final IndexCapability CAPABILITY = new TrigramIndexCapability();
 
     private final FileSystemAbstraction fileSystem;
     private final Config config;
     private final DatabaseReadOnlyChecker readOnlyChecker;
 
-    public TextIndexProvider(
+    public TrigramIndexProvider(
             FileSystemAbstraction fileSystem,
             DirectoryFactory directoryFactory,
             IndexDirectoryStructure.Factory directoryStructureFactory,
@@ -82,11 +86,6 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider {
     }
 
     @Override
-    public IndexType getIndexType() {
-        return IndexType.TEXT;
-    }
-
-    @Override
     public IndexPopulator getPopulator(
             IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
@@ -94,7 +93,7 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider {
             MemoryTracker memoryTracker,
             TokenNameLookup tokenNameLookup,
             ImmutableSet<OpenOption> openOptions) {
-        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create(descriptor, readOnlyChecker, config)
+        var luceneIndex = TrigramIndexBuilder.create(descriptor, readOnlyChecker, config)
                 .withFileSystem(fileSystem)
                 .withSamplingConfig(samplingConfig)
                 .withIndexStorage(getIndexStorage(descriptor.getId()))
@@ -104,7 +103,7 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider {
         if (luceneIndex.isReadOnly()) {
             throw new UnsupportedOperationException("Can't create populator for read only index");
         }
-        return new NonUniqueLuceneIndexPopulator(luceneIndex, UPDATE_IGNORE_STRATEGY);
+        return new TrigramIndexPopulator(luceneIndex, UPDATE_IGNORE_STRATEGY);
     }
 
     @Override
@@ -114,15 +113,30 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider {
             TokenNameLookup tokenNameLookup,
             ImmutableSet<OpenOption> openOptions)
             throws IOException {
-        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create(descriptor, readOnlyChecker, config)
+        var luceneIndex = TrigramIndexBuilder.create(descriptor, readOnlyChecker, config)
                 .withSamplingConfig(samplingConfig)
                 .withIndexStorage(getIndexStorage(descriptor.getId()))
                 .build();
         luceneIndex.open();
-        return new LuceneIndexAccessor(luceneIndex, descriptor, tokenNameLookup, UPDATE_IGNORE_STRATEGY);
+        return new TrigramIndexAccessor(luceneIndex, descriptor, UPDATE_IGNORE_STRATEGY);
     }
 
-    public static class TextIndexCapability implements IndexCapability {
+    @Override
+    public IndexType getIndexType() {
+        return IndexType.TEXT;
+    }
+
+    @Override
+    public StoreMigrationParticipant storeMigrationParticipant(
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
+            StorageEngineFactory storageEngineFactory,
+            CursorContextFactory contextFactory) {
+        return null;
+    }
+
+    public static class TrigramIndexCapability implements IndexCapability {
         @Override
         public boolean supportsOrdering() {
             return false;
@@ -141,9 +155,8 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider {
         }
 
         @Override
-        public boolean isQuerySupported(IndexQueryType queryType, ValueCategory valueCategory) {
-
-            if (queryType == IndexQueryType.ALL_ENTRIES) {
+        public boolean isQuerySupported(IndexQuery.IndexQueryType queryType, ValueCategory valueCategory) {
+            if (queryType == IndexQuery.IndexQueryType.ALL_ENTRIES) {
                 return true;
             }
 
@@ -152,24 +165,17 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider {
             }
 
             return switch (queryType) {
-                case EXACT, RANGE, STRING_PREFIX, STRING_CONTAINS, STRING_SUFFIX -> true;
+                case EXACT, STRING_PREFIX, STRING_CONTAINS, STRING_SUFFIX -> true;
                 default -> false;
             };
         }
 
         @Override
-        public double getCostMultiplier(IndexQueryType... queryTypes) {
-            // for now, just make the operations which are more efficiently supported by
-            // btree-based indexes slightly more expensive so the planner would choose a
-            // btree-based index instead of lucene-based index if there is a choice
-
-            var preferBTreeBasedIndex = false;
-            for (int i = 0; i < queryTypes.length && !preferBTreeBasedIndex; i++) {
-                preferBTreeBasedIndex = switch (queryTypes[i]) {
-                    case EXACT, RANGE, STRING_PREFIX -> true;
-                    default -> false;};
-            }
-            return preferBTreeBasedIndex ? 1.1 : 1.0;
+        public double getCostMultiplier(IndexQuery.IndexQueryType... queryTypes) {
+            // Trigram index is superior only for 'CONTAINS' and 'ENDS WITH' operations
+            // which are currently not supported by any other type of index,
+            // so if there are other choices, it is better not to use trigram index.
+            return 1.1;
         }
 
         @Override

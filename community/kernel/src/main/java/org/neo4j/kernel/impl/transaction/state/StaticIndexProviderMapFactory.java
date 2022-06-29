@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.state;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -30,11 +31,13 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.PointIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.TextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.TrigramIndexProviderFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
@@ -172,12 +175,32 @@ public class StaticIndexProviderMapFactory {
                         contextFactory,
                         pageCacheTracer));
 
+        TrigramIndexProvider trigramIndexProvider = null;
+        if (databaseConfig.get(GraphDatabaseInternalSettings.trigram_index)) {
+            trigramIndexProvider = life.add(new TrigramIndexProviderFactory()
+                    .create(
+                            pageCache,
+                            fs,
+                            logService,
+                            monitors,
+                            databaseConfig,
+                            readOnlyChecker,
+                            mode,
+                            recoveryCleanupWorkCollector,
+                            databaseLayout,
+                            tokenHolders,
+                            scheduler,
+                            contextFactory,
+                            pageCacheTracer));
+        }
+
         return new StaticIndexProviderMap(
                 tokenIndexProvider,
                 textIndexProvider,
                 fulltextIndexProvider,
                 rangeIndexProvider,
                 pointIndexProvider,
+                trigramIndexProvider,
                 dependencies);
     }
 }

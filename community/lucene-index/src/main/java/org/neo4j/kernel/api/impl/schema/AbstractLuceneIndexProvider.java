@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -34,30 +33,23 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.index.DroppableIndex;
 import org.neo4j.kernel.api.impl.index.DroppableLuceneIndex;
-import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.LuceneMinimalIndexAccessor;
 import org.neo4j.kernel.api.impl.index.SchemaIndexMigrator;
 import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.impl.schema.populator.NonUniqueLuceneIndexPopulator;
-import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
-import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
@@ -123,42 +115,6 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider {
     }
 
     @Override
-    public IndexPopulator getPopulator(
-            IndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig,
-            ByteBufferFactory bufferFactory,
-            MemoryTracker memoryTracker,
-            TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions) {
-        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create(descriptor, readOnlyChecker, config)
-                .withFileSystem(fileSystem)
-                .withSamplingConfig(samplingConfig)
-                .withIndexStorage(getIndexStorage(descriptor.getId()))
-                .withWriterConfig(() -> IndexWriterConfigs.population(config))
-                .build();
-
-        if (luceneIndex.isReadOnly()) {
-            throw new UnsupportedOperationException("Can't create populator for read only index");
-        }
-        return new NonUniqueLuceneIndexPopulator(luceneIndex, UPDATE_IGNORE_STRATEGY);
-    }
-
-    @Override
-    public IndexAccessor getOnlineAccessor(
-            IndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig,
-            TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions)
-            throws IOException {
-        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create(descriptor, readOnlyChecker, config)
-                .withSamplingConfig(samplingConfig)
-                .withIndexStorage(getIndexStorage(descriptor.getId()))
-                .build();
-        luceneIndex.open();
-        return new LuceneIndexAccessor(luceneIndex, descriptor, tokenNameLookup, UPDATE_IGNORE_STRATEGY);
-    }
-
-    @Override
     public InternalIndexState getInitialState(
             IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions) {
         PartitionedIndexStorage indexStorage = getIndexStorage(descriptor.getId());
@@ -198,7 +154,7 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider {
         return defaultIfEmpty(getIndexStorage(descriptor.getId()).getStoredIndexFailure(), StringUtils.EMPTY);
     }
 
-    private PartitionedIndexStorage getIndexStorage(long indexId) {
+    protected PartitionedIndexStorage getIndexStorage(long indexId) {
         return indexStorageFactory.indexStorageOf(indexId);
     }
 

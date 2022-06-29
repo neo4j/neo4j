@@ -32,6 +32,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
+import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
@@ -49,6 +50,7 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
     private final IndexProvider fulltextIndexProvider;
     private final IndexProvider rangeIndexProvider;
     private final IndexProvider pointIndexProvider;
+    private final IndexProvider trigramIndexProvider;
     private final DependencyResolver dependencies;
 
     public StaticIndexProviderMap(
@@ -57,12 +59,14 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
             FulltextIndexProvider fulltextIndexProvider,
             RangeIndexProvider rangeIndexProvider,
             PointIndexProvider pointIndexProvider,
+            TrigramIndexProvider trigramIndexProvider,
             DependencyResolver dependencies) {
         this.tokenIndexProvider = tokenIndexProvider;
         this.textIndexProvider = textIndexProvider;
         this.fulltextIndexProvider = fulltextIndexProvider;
         this.rangeIndexProvider = rangeIndexProvider;
         this.pointIndexProvider = pointIndexProvider;
+        this.trigramIndexProvider = trigramIndexProvider;
         this.dependencies = dependencies;
     }
 
@@ -73,6 +77,9 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
         add(fulltextIndexProvider);
         add(rangeIndexProvider);
         add(pointIndexProvider);
+        if (trigramIndexProvider != null) {
+            add(trigramIndexProvider);
+        }
         dependencies.resolveTypeDependencies(IndexProvider.class).forEach(this::add);
     }
 
