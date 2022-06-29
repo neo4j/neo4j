@@ -152,7 +152,7 @@ public interface TopologyGraphDbmsModel {
             } else if (mode == HostedOnMode.replica) {
                 return this == SECONDARY;
             } else if (mode == HostedOnMode.single) {
-                return this == SINGLE;
+                return this == SINGLE || this == PRIMARY;
             } else {
                 throw new IllegalArgumentException(mode + " is not supported");
             }

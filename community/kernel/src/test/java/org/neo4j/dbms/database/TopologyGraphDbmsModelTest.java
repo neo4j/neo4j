@@ -42,7 +42,7 @@ public class TopologyGraphDbmsModelTest {
         assertFalse(SINGLE.allowsMode(TopologyGraphDbmsModel.HostedOnMode.replica));
         assertTrue(NONE.allowsMode(TopologyGraphDbmsModel.HostedOnMode.replica));
 
-        assertFalse(PRIMARY.allowsMode(TopologyGraphDbmsModel.HostedOnMode.single));
+        assertTrue(PRIMARY.allowsMode(TopologyGraphDbmsModel.HostedOnMode.single));
         assertFalse(SECONDARY.allowsMode(TopologyGraphDbmsModel.HostedOnMode.single));
         assertTrue(SINGLE.allowsMode(TopologyGraphDbmsModel.HostedOnMode.single));
         assertTrue(NONE.allowsMode(TopologyGraphDbmsModel.HostedOnMode.single));
