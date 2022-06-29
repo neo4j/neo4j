@@ -77,6 +77,12 @@ case class simplifyPredicates(semanticState: SemanticState) extends Rewriter {
         simplifyToInnerExpression(p, nonFalse.head)
       else
         Ors(nonFalse)(p.position)
+    case p@Ors(conditions) =>
+      val distinctConditions = conditions.distinct
+      if (distinctConditions eq conditions) p else p.copy(distinctConditions)(p.position)
+    case p@Ands(conditions) =>
+      val distinctConditions = conditions.distinct
+      if (distinctConditions eq conditions) p else p.copy(distinctConditions)(p.position)
 
     // technically, this is not simplification but it helps addressing the separate predicates in the conjunction
     case all@AllIterablePredicate(fs@FilterScope(variable, Some(Ands(preds))), expression) =>
