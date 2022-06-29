@@ -112,7 +112,7 @@ class LogFilesBuilderTest {
                 .buildContext();
         assertEquals(fileSystem, context.getFileSystem());
         assertNotNull(context.getCommandReaderFactory());
-        assertEquals(ByteUnit.mebiBytes(250), context.getRotationThreshold().get());
+        assertEquals(ByteUnit.mebiBytes(256), context.getRotationThreshold().get());
         assertEquals(1, context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId(null));
         assertEquals(
                 2,
@@ -157,7 +157,7 @@ class LogFilesBuilderTest {
 
         assertEquals(fileSystem, context.getFileSystem());
         assertNotNull(context.getCommandReaderFactory());
-        assertEquals(ByteUnit.mebiBytes(250), context.getRotationThreshold().get());
+        assertEquals(ByteUnit.mebiBytes(256), context.getRotationThreshold().get());
         assertEquals(databaseHealth, context.getDatabaseHealth());
         assertEquals(1, context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId(null));
         assertEquals(

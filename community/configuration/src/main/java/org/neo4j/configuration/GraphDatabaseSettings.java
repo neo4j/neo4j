@@ -584,7 +584,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     @Description("Specifies at which file size the logical log will auto-rotate. Minimum accepted value is 128 KiB. ")
     public static final Setting<Long> logical_log_rotation_threshold = newBuilder(
-                    "db.tx_log.rotation.size", BYTES, mebiBytes(250))
+                    "db.tx_log.rotation.size", BYTES, mebiBytes(256))
             .addConstraint(min(kibiBytes(128)))
             .dynamic()
             .build();
