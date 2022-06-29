@@ -763,7 +763,7 @@ public class SingleFilePageSwapper implements PageSwapper
             {
                 if ( access.errorTranslator().isOutOfDiskSpace( result ) )
                 {
-                    throw new IOException( "System is out of dist space for store file at: " + path + ". " +
+                    throw new IOException( "System is out of disk space for store file at: " + path + ". " +
                             "To be able to proceed please allocate more disk space for the database and restart." + "Requested file size: " + newFileSize +
                             ". Call error: " + result );
                 }
