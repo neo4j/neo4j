@@ -20,7 +20,6 @@
 package org.neo4j.configuration;
 
 import static java.time.Duration.ofDays;
-import static java.time.Duration.ofHours;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
@@ -109,38 +108,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     + "If the value is zero, all inconsistencies will be reported")
     public static final Setting<Integer> consistency_checker_fail_fast_threshold = newBuilder(
                     "internal.consistency_checker.fail_fast_threshold", INT, 0)
-            .addConstraint(min(0))
-            .build();
-
-    @Internal
-    @Description("Defines whether the dbms may retry reconciling a database to its desired state.")
-    public static final Setting<Boolean> reconciler_may_retry =
-            newBuilder("internal.dbms.reconciler.retry_enabled", BOOL, false).build();
-
-    @Internal
-    @Description(
-            "Defines the maximum amount of time to wait before retrying after the dbms fails to reconcile a database to its desired state.")
-    public static final Setting<Duration> reconciler_maximum_backoff = newBuilder(
-                    "internal.dbms.reconciler.max_backoff", DURATION, ofHours(1))
-            .addConstraint(min(ofMinutes(1)))
-            .build();
-
-    @Internal
-    @Description(
-            "Defines the minimum amount of time to wait before retrying after the dbms fails to reconcile a database to its desired state.")
-    public static final Setting<Duration> reconciler_minimum_backoff = newBuilder(
-                    "internal.dbms.reconciler.min_backoff", DURATION, ofSeconds(2))
-            .addConstraint(min(Duration.ofSeconds(1)))
-            .build();
-
-    @Internal
-    @Description(
-            "Defines the level of parallelism employed by the reconciler. By default the parallelism equals the number of available processors or 8 "
-                    + "(whichever is smaller). If configured as 0, the parallelism of the reconciler will be unbounded.")
-    public static final Setting<Integer> reconciler_maximum_parallelism = newBuilder(
-                    "internal.dbms.reconciler.max_parallelism",
-                    INT,
-                    Math.min(Runtime.getRuntime().availableProcessors(), 8))
             .addConstraint(min(0))
             .build();
 

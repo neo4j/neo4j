@@ -287,8 +287,8 @@ public final class SettingConstraints {
     };
 
     public static <T, U> SettingConstraint<T> dependency(
-            SettingConstraint<T> ifconstraint,
-            SettingConstraint<T> elseconstraint,
+            SettingConstraint<T> ifConstraint,
+            SettingConstraint<T> elseConstraint,
             Setting<U> dependency,
             SettingConstraint<U> condition) {
         return new SettingConstraint<>() {
@@ -298,10 +298,10 @@ public final class SettingConstraints {
                 try {
                     condition.validate(depValue, config);
                 } catch (IllegalArgumentException e) {
-                    elseconstraint.validate(value, config);
+                    elseConstraint.validate(value, config);
                     return;
                 }
-                ifconstraint.validate(value, config);
+                ifConstraint.validate(value, config);
             }
 
             @Override
@@ -311,15 +311,15 @@ public final class SettingConstraints {
                         dependency.name(),
                         dependency.name(),
                         condition.getDescription(),
-                        ifconstraint.getDescription(),
-                        elseconstraint.getDescription());
+                        ifConstraint.getDescription(),
+                        elseConstraint.getDescription());
             }
 
             @Override
             void setParser(SettingValueParser<T> parser) {
                 super.setParser(parser);
-                ifconstraint.setParser(parser);
-                elseconstraint.setParser(parser);
+                ifConstraint.setParser(parser);
+                elseConstraint.setParser(parser);
                 condition.setParser(((SettingImpl<U>) dependency).parser());
             }
         };
@@ -414,63 +414,6 @@ public final class SettingConstraints {
 
     public static SettingConstraint<Integer> lessThanOrEqual(Setting<Integer> other) {
         return lessThanOrEqual(Long::valueOf, other);
-    }
-
-    public static <T> SettingConstraint<T> ifCluster(SettingConstraint<T> settingConstraint) {
-        return ifMode(
-                settingConstraint,
-                ifStandaloneClusterEnabled(settingConstraint),
-                GraphDatabaseSettings.Mode.CORE,
-                GraphDatabaseSettings.Mode.READ_REPLICA);
-    }
-
-    public static <T> SettingConstraint<T> ifPrimary(SettingConstraint<T> settingConstraint) {
-        return ifMode(
-                settingConstraint, ifStandaloneClusterEnabled(settingConstraint), GraphDatabaseSettings.Mode.CORE);
-    }
-
-    public static <T> SettingConstraint<T> ifClusterCore(SettingConstraint<T> settingConstraint) {
-        return ifMode(settingConstraint, unconstrained(), GraphDatabaseSettings.Mode.CORE);
-    }
-
-    private static <T> SettingConstraint<T> ifStandaloneClusterEnabled(SettingConstraint<T> settingConstraint) {
-        return ifMode(
-                dependency(
-                        settingConstraint,
-                        unconstrained(),
-                        GraphDatabaseSettings.enable_clustering_in_standalone,
-                        is(true)),
-                unconstrained(),
-                GraphDatabaseSettings.Mode.SINGLE);
-    }
-
-    private static <T> SettingConstraint<T> ifMode(
-            SettingConstraint<T> modeConstraint,
-            SettingConstraint<T> nonModeConstraint,
-            GraphDatabaseSettings.Mode... modes) {
-        return dependency(modeConstraint, nonModeConstraint, GraphDatabaseSettings.mode, isOneOf(modes));
-    }
-
-    private static <T> SettingConstraint<T> isOneOf(T[] acceptedValues) {
-        if (acceptedValues == null || acceptedValues.length == 0) {
-            throw new IllegalArgumentException("Accepted values must contain at least one object");
-        }
-        return new SettingConstraint<>() {
-            @Override
-            public void validate(T value, Configuration config) {
-
-                if (!ArrayUtil.contains(acceptedValues, value)) {
-                    throw new IllegalArgumentException("is not " + getDescription());
-                }
-            }
-
-            @Override
-            public String getDescription() {
-                return String.format(
-                        "one of `%s`",
-                        stream(acceptedValues).map(this::valueToString).collect(joining(", ", "[", "]")));
-            }
-        };
     }
 
     public static <T, C extends Collection<T>> SettingConstraint<C> shouldNotContain(

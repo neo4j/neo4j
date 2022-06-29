@@ -209,8 +209,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
         JobScheduler jobScheduler = globalDependencies.resolveDependency(JobScheduler.class);
         Clock clock = Clocks.systemClock();
         Duration transactionTimeout = getTransactionTimeout();
-        var readByDefault = config.get(GraphDatabaseSettings.mode) != GraphDatabaseSettings.Mode.SINGLE
-                && !config.get(GraphDatabaseSettings.routing_enabled);
+        var routingEnabled = config.get(GraphDatabaseSettings.routing_enabled);
         return new HttpTransactionManager(
                 databaseManagementService,
                 transactionMemoryPool,
@@ -221,7 +220,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
                 transactionManager,
                 boltSPI,
                 authManagerSupplier.get(),
-                readByDefault);
+                routingEnabled);
     }
 
     /**

@@ -30,9 +30,7 @@ import static org.neo4j.configuration.SettingConstraints.HOSTNAME_ONLY;
 import static org.neo4j.configuration.SettingConstraints.NO_ALL_INTERFACES_ADDRESS;
 import static org.neo4j.configuration.SettingConstraints.POWER_OF_2;
 import static org.neo4j.configuration.SettingConstraints.any;
-import static org.neo4j.configuration.SettingConstraints.ifPrimary;
 import static org.neo4j.configuration.SettingConstraints.is;
-import static org.neo4j.configuration.SettingConstraints.max;
 import static org.neo4j.configuration.SettingConstraints.min;
 import static org.neo4j.configuration.SettingConstraints.range;
 import static org.neo4j.configuration.SettingConstraints.shouldNotContain;
@@ -51,7 +49,6 @@ import static org.neo4j.configuration.SettingValueParsers.TIMEZONE;
 import static org.neo4j.configuration.SettingValueParsers.listOf;
 import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 import static org.neo4j.configuration.SettingValueParsers.setOf;
-import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 
@@ -198,13 +195,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
                     + "or 'READ_REPLICA' for operating as a read replica member of a Causal Cluster. Only SINGLE mode is allowed in Community")
     public static final Setting<Mode> mode =
             newBuilder("dbms.mode", ofEnum(Mode.class), Mode.SINGLE).build();
-
-    @Description(
-            "Enable discovery service and a catchup server to be started on an Enterprise Standalone Instance 'dbms.mode=SINGLE', "
-                    + "and with that allow for Read Replicas to connect and pull transaction from it. "
-                    + "When 'dbms.mode' is clustered (CORE, READ_REPLICA) this setting is not recognized.")
-    public static final Setting<Boolean> enable_clustering_in_standalone =
-            newBuilder("dbms.clustering.enable", BOOL, false).build();
 
     @Description("Use server side routing by default for neo4j:// protocol connections")
     public static final Setting<RoutingMode> routing_default_router = newBuilder(
@@ -986,11 +976,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     @Description(
             "Limit the amount of memory that a single transaction can consume, in bytes (or kilobytes with the 'k' "
-                    + "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'largest possible value'. "
-                    + "When `dbms.mode=CORE` or `dbms.mode=SINGLE` and `dbms.clustering.enable=true` this is '2G', in other cases this is 'unlimited'.")
+                    + "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'largest possible value'.")
     public static final Setting<Long> memory_transaction_max_size = newBuilder("db.memory.transaction.max", BYTES, 0L)
             .addConstraint(any(min(mebiBytes(1)), is(0L)))
-            .addConstraint(ifPrimary(max(gibiBytes(2))))
             .dynamic()
             .build();
 

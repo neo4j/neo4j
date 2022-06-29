@@ -30,10 +30,6 @@ import static org.neo4j.configuration.BootloaderSettings.lib_directory;
 import static org.neo4j.configuration.BootloaderSettings.max_heap_size;
 import static org.neo4j.configuration.BootloaderSettings.run_directory;
 import static org.neo4j.configuration.BootloaderSettings.windows_service_name;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.reconciler_maximum_backoff;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.reconciler_maximum_parallelism;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.reconciler_may_retry;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.reconciler_minimum_backoff;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.upgrade_processors;
 import static org.neo4j.configuration.GraphDatabaseSettings.bookmark_ready_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_time;
@@ -142,6 +138,7 @@ public final class SettingMigrators {
         private static final Pattern SUPPORTED_CONNECTOR_PATTERN = Pattern.compile("(.+)\\.(bolt|http|https)\\.(.+)");
         private static final List<String> REMOVED_SETTINGS = List.of(
                 "dbms.allow_upgrade",
+                "dbms.clustering.enable",
                 "dbms.record_format",
                 "dbms.backup.incremental.strategy",
                 "dbms.directories.tx_log",
@@ -566,15 +563,6 @@ public final class SettingMigrators {
             migrateJvmAdditional(values, defaultValues, log);
             migrateSamplingSettings(values, defaultValues, log);
             migratePageCacheAndMemorySettings(values, defaultValues, log);
-            migrateReconcilerSettings(values, defaultValues, log);
-        }
-
-        private void migrateReconcilerSettings(
-                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migrateSettingNameChange(values, log, "dbms.reconciler.may_retry", reconciler_may_retry);
-            migrateSettingNameChange(values, log, "dbms.reconciler.max_backoff", reconciler_maximum_backoff);
-            migrateSettingNameChange(values, log, "dbms.reconciler.min_backoff", reconciler_minimum_backoff);
-            migrateSettingNameChange(values, log, "dbms.reconciler.max_parallelism", reconciler_maximum_parallelism);
         }
 
         private void migratePageCacheAndMemorySettings(

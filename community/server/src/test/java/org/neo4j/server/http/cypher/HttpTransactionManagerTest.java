@@ -39,6 +39,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -70,7 +71,7 @@ class HttpTransactionManagerTest {
                 transactionManager,
                 boltSPI,
                 authManager,
-                true);
+                false);
 
         long runEvery = Math.round(Duration.ofMinutes(1).toMillis() / 2.0);
         verify(jobScheduler)
@@ -101,7 +102,7 @@ class HttpTransactionManagerTest {
                 transactionManager,
                 boltSPI,
                 authManager,
-                true);
+                false);
 
         assertNotNull(manager.getTransactionRegistry());
     }
@@ -155,6 +156,7 @@ class HttpTransactionManagerTest {
         var manager = newTransactionManager(managementService, memoryPool);
 
         when(graphDatabase.getDependencyResolver()).thenReturn(dependencyResolver);
+        when(graphDatabase.dbmsInfo()).thenReturn(DbmsInfo.ENTERPRISE);
         when(dependencyResolver.resolveDependency(QueryExecutionEngine.class)).thenReturn(queryExecutionEngine);
 
         var facade = manager.createTransactionFacade(graphDatabase, memoryTracker, "neo4j");
@@ -193,7 +195,7 @@ class HttpTransactionManagerTest {
                 transactionManager,
                 boltSPI,
                 authManager,
-                true);
+                false);
     }
 
     private static GraphDatabaseFacade graphWithName(String name) {

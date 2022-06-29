@@ -31,7 +31,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
-import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 import java.io.IOException;
@@ -45,8 +44,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
@@ -310,25 +307,5 @@ class GraphDatabaseSettingsTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> Config.defaults(default_advertised_address, new SocketAddress(456)));
-    }
-
-    @Test
-    void shouldLimitTxSizeIfCore() {
-        assertThrows(IllegalArgumentException.class, () -> Config.newBuilder()
-                .set(GraphDatabaseSettings.mode, GraphDatabaseSettings.Mode.CORE)
-                .set(GraphDatabaseSettings.memory_transaction_max_size, gibiBytes(3))
-                .build());
-    }
-
-    @ParameterizedTest
-    @EnumSource(
-            value = GraphDatabaseSettings.Mode.class,
-            mode = EnumSource.Mode.EXCLUDE,
-            names = {"CORE"})
-    void shouldNotLimitTxSizeIfNotCore(GraphDatabaseSettings.Mode mode) {
-        Config.newBuilder()
-                .set(GraphDatabaseSettings.mode, mode)
-                .set(GraphDatabaseSettings.memory_transaction_max_size, gibiBytes(3))
-                .build();
     }
 }

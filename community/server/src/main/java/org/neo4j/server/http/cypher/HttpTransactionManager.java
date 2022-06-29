@@ -31,6 +31,7 @@ import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.InternalLogProvider;
@@ -51,7 +52,7 @@ public class HttpTransactionManager {
     private final InternalLogProvider userLogProvider;
     private final AuthManager authManager;
     private final Clock clock;
-    private final boolean readByDefault;
+    private final boolean routingEnabled;
 
     public HttpTransactionManager(
             DatabaseManagementService managementService,
@@ -63,7 +64,7 @@ public class HttpTransactionManager {
             TransactionManager transactionManager,
             BoltGraphDatabaseManagementServiceSPI boltSPI,
             AuthManager authManager,
-            boolean readByDefault) {
+            boolean routingEnabled) {
         this.managementService = managementService;
         this.jobScheduler = jobScheduler;
         this.transactionManager = transactionManager;
@@ -71,7 +72,7 @@ public class HttpTransactionManager {
         this.userLogProvider = userLogProvider;
         this.authManager = authManager;
         this.clock = clock;
-        this.readByDefault = readByDefault;
+        this.routingEnabled = routingEnabled;
 
         transactionRegistry = new TransactionHandleRegistry(clock, transactionTimeout, userLogProvider, memoryPool);
         scheduleTransactionTimeout(transactionTimeout);
@@ -100,6 +101,8 @@ public class HttpTransactionManager {
     public TransactionFacade createTransactionFacade(
             GraphDatabaseAPI databaseAPI, MemoryTracker memoryTracker, String databaseName) {
         var dependencyResolver = databaseAPI.getDependencyResolver();
+
+        var readByDefault = databaseAPI.dbmsInfo().operationalMode != OperationalMode.SINGLE && !routingEnabled;
 
         memoryTracker.allocateHeap(TransactionFacade.SHALLOW_SIZE);
         return new TransactionFacade(
