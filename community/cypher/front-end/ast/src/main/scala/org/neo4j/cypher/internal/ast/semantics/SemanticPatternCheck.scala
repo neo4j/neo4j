@@ -130,7 +130,10 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
           predicate.position
         )
       } chain pattern.length.foldSemanticCheck { _ =>
-        error("Relationship pattern predicates are not allowed when a path length is specified", predicate.position)
+        error(
+          "Relationship pattern predicates are not supported for variable-length relationships.",
+          predicate.position
+        )
       } ifOkChain withScopedState {
         Where.checkExpression(predicate)
       }
