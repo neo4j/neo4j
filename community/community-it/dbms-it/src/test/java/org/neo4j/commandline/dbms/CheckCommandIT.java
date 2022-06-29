@@ -41,7 +41,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
-import org.neo4j.consistency.CheckConsistencyCommand;
+import org.neo4j.consistency.CheckCommand;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
@@ -63,7 +63,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.MutuallyExclusiveArgsException;
 
 @Neo4jLayoutExtension
-class CheckConsistencyCommandIT {
+class CheckCommandIT {
     @Inject
     private TestDirectory testDirectory;
 
@@ -83,7 +83,7 @@ class CheckConsistencyCommandIT {
     @Test
     void printUsageHelp() {
         final var baos = new ByteArrayOutputStream();
-        final var command = new CheckConsistencyCommand(new ExecutionContext(Path.of("."), Path.of(".")));
+        final var command = new CheckCommand(new ExecutionContext(Path.of("."), Path.of(".")));
         try (var out = new PrintStream(baos)) {
             CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
         }
@@ -137,13 +137,12 @@ class CheckConsistencyCommandIT {
         TrackingConsistencyCheckService consistencyCheckService =
                 new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
 
-        CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
 
         RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.of(neo4jLayout, "mydb");
 
-        CommandLine.populateCommand(checkConsistencyCommand, "--database=mydb");
-        checkConsistencyCommand.execute();
+        CommandLine.populateCommand(checkCommand, "--database=mydb");
+        checkCommand.execute();
 
         consistencyCheckService.verifyArgument(DatabaseLayout.class, databaseLayout);
     }
@@ -153,16 +152,14 @@ class CheckConsistencyCommandIT {
         TrackingConsistencyCheckService consistencyCheckService =
                 new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
 
-        CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
         RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.of(neo4jLayout, "mydb");
 
         testDirectory.getFileSystem().mkdirs(databaseLayout.databaseDirectory());
 
         try (Closeable ignored = LockChecker.checkDatabaseLock(databaseLayout)) {
-            CommandLine.populateCommand(checkConsistencyCommand, "--database=mydb", "--verbose");
-            CommandFailedException exception =
-                    assertThrows(CommandFailedException.class, checkConsistencyCommand::execute);
+            CommandLine.populateCommand(checkCommand, "--database=mydb", "--verbose");
+            CommandFailedException exception = assertThrows(CommandFailedException.class, checkCommand::execute);
             assertThat(exception.getCause()).isInstanceOf(FileLockException.class);
             assertThat(exception.getMessage()).isEqualTo("The database is in use. Stop database 'mydb' and try again.");
         }
@@ -173,13 +170,12 @@ class CheckConsistencyCommandIT {
         TrackingConsistencyCheckService consistencyCheckService =
                 new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
 
-        CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
 
         RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.of(neo4jLayout, "mydb");
 
-        CommandLine.populateCommand(checkConsistencyCommand, "--database=mydb", "--verbose");
-        checkConsistencyCommand.execute();
+        CommandLine.populateCommand(checkCommand, "--database=mydb", "--verbose");
+        checkCommand.execute();
 
         consistencyCheckService.verifyArgument(DatabaseLayout.class, databaseLayout);
         consistencyCheckService.verifyArgument(Boolean.class, true);
@@ -191,12 +187,11 @@ class CheckConsistencyCommandIT {
                 new TrackingConsistencyCheckService(ConsistencyCheckService.Result.failure(
                         Path.of("/the/report/path"), new ConsistencySummaryStatistics()));
 
-        CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
 
         CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> {
-            CommandLine.populateCommand(checkConsistencyCommand, "--database=mydb", "--verbose");
-            checkConsistencyCommand.execute();
+            CommandLine.populateCommand(checkCommand, "--database=mydb", "--verbose");
+            checkCommand.execute();
         });
         assertThat(commandFailed.getMessage())
                 .contains(Path.of("/the/report/path").toString());
@@ -208,11 +203,10 @@ class CheckConsistencyCommandIT {
         TrackingConsistencyCheckService consistencyCheckService =
                 new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
 
-        CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
 
-        CommandLine.populateCommand(checkConsistencyCommand, "--database=mydb");
-        checkConsistencyCommand.execute();
+        CommandLine.populateCommand(checkCommand, "--database=mydb");
+        checkCommand.execute();
 
         consistencyCheckService.verifyArgument(Path.class, Path.of(""));
     }
@@ -223,11 +217,10 @@ class CheckConsistencyCommandIT {
         TrackingConsistencyCheckService consistencyCheckService =
                 new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
 
-        CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
 
-        CommandLine.populateCommand(checkConsistencyCommand, "--database=mydb", "--report-dir=some-dir-or-other");
-        checkConsistencyCommand.execute();
+        CommandLine.populateCommand(checkCommand, "--database=mydb", "--report-dir=some-dir-or-other");
+        checkCommand.execute();
 
         consistencyCheckService.verifyArgument(Path.class, Path.of("some-dir-or-other"));
     }
@@ -237,12 +230,10 @@ class CheckConsistencyCommandIT {
         TrackingConsistencyCheckService consistencyCheckService =
                 new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
 
-        CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
 
-        CommandLine.populateCommand(
-                checkConsistencyCommand, "--database=mydb", "--report-dir=" + Paths.get("..", "bar"));
-        checkConsistencyCommand.execute();
+        CommandLine.populateCommand(checkCommand, "--database=mydb", "--report-dir=" + Paths.get("..", "bar"));
+        checkCommand.execute();
 
         consistencyCheckService.verifyArgument(Path.class, Path.of("../bar"));
     }
@@ -252,16 +243,15 @@ class CheckConsistencyCommandIT {
         TrackingConsistencyCheckService consistencyCheckService =
                 new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
 
-        CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
 
         CommandLine.populateCommand(
-                checkConsistencyCommand,
+                checkCommand,
                 "--database=mydb",
                 "--check-graph=false",
                 "--check-indexes=false",
                 "--check-index-structure=true");
-        checkConsistencyCommand.execute();
+        checkCommand.execute();
 
         consistencyCheckService.verifyArgument(
                 ConsistencyFlags.class, DEFAULT.withoutCheckGraph().withoutCheckIndexes());
@@ -272,12 +262,11 @@ class CheckConsistencyCommandIT {
         TrackingConsistencyCheckService consistencyCheckService =
                 new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
 
-        CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
 
         MutuallyExclusiveArgsException incorrectUsage = assertThrows(MutuallyExclusiveArgsException.class, () -> {
-            CommandLine.populateCommand(checkConsistencyCommand, "--database=foo", "--backup=bar");
-            checkConsistencyCommand.execute();
+            CommandLine.populateCommand(checkCommand, "--database=foo", "--backup=bar");
+            checkCommand.execute();
         });
         assertThat(incorrectUsage.getMessage())
                 .contains("--database=<database>, --backup=<path> are mutually exclusive (specify only one)");
@@ -288,14 +277,13 @@ class CheckConsistencyCommandIT {
         TrackingConsistencyCheckService consistencyCheckService =
                 new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
 
-        CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
 
         Path backupPath = homeDir.resolve("dir/does/not/exist");
 
         CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> {
-            CommandLine.populateCommand(checkConsistencyCommand, "--backup=" + backupPath);
-            checkConsistencyCommand.execute();
+            CommandLine.populateCommand(checkCommand, "--backup=" + backupPath);
+            checkCommand.execute();
         });
         assertThat(commandFailed.getMessage()).contains("Report directory path doesn't exist or not a directory");
     }
@@ -307,11 +295,10 @@ class CheckConsistencyCommandIT {
 
         RecordDatabaseLayout backupLayout = RecordDatabaseLayout.ofFlat(testDirectory.directory("backup"));
         prepareBackupDatabase(backupLayout);
-        CheckConsistencyCommand checkConsistencyCommand =
-                new CheckConsistencyCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CheckCommand checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
 
-        CommandLine.populateCommand(checkConsistencyCommand, "--backup=" + backupLayout.databaseDirectory());
-        checkConsistencyCommand.execute();
+        CommandLine.populateCommand(checkCommand, "--backup=" + backupLayout.databaseDirectory());
+        checkCommand.execute();
 
         consistencyCheckService.verifyArgument(DatabaseLayout.class, backupLayout);
     }
@@ -326,10 +313,10 @@ class CheckConsistencyCommandIT {
         assertThatThrownBy(() -> {
                     TrackingConsistencyCheckService consistencyCheckService =
                             new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
-                    CheckConsistencyCommand checkConsistencyCommand = new CheckConsistencyCommand(
-                            new ExecutionContext(homeDir, confPath), consistencyCheckService);
-                    CommandLine.populateCommand(checkConsistencyCommand, "--database=mydb");
-                    checkConsistencyCommand.execute();
+                    CheckCommand checkCommand =
+                            new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+                    CommandLine.populateCommand(checkCommand, "--database=mydb");
+                    checkCommand.execute();
                 })
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("'some nonsense' is not a valid size");
