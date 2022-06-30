@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema;
+package org.neo4j.io.memory;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -25,10 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.neo4j.internal.unsafe.NativeMemoryAllocationRefusedError;
 import org.neo4j.internal.unsafe.UnsafeUtil;
-import org.neo4j.io.memory.ByteBufferFactory;
-import org.neo4j.io.memory.HeapScopedBuffer;
-import org.neo4j.io.memory.NativeScopedBuffer;
-import org.neo4j.io.memory.ScopedBuffer;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 
