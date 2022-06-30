@@ -318,6 +318,11 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
                   "Quantified path patterns are not allowed to be nested.",
                   quant.position
                 ))
+            case shortestPaths: ShortestPaths => acc =>
+                SkipChildren(acc chain SemanticError(
+                  "shortestPath is only allowed as a top-level element and not inside a quantified path pattern",
+                  shortestPaths.position
+                ))
             case rel @ RelationshipPattern(_, _, Some(_), _, _, _) => acc =>
                 SkipChildren(acc chain SemanticError(
                   "Variable length relationships cannot be part of a quantified path pattern.",
@@ -342,6 +347,11 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
       case ParenthesizedPath(NamedPatternPart(variable, _)) =>
         error("Sub-path assignment is currently not supported outside quantified path patterns.", variable.position)
+      case ParenthesizedPath(path @ ShortestPaths(_, _)) =>
+        error(
+          "shortestPath is only allowed as a top-level element and not inside a parenthesized path pattern",
+          path.position
+        )
       case ParenthesizedPath(pattern) =>
         check(ctx, pattern.element)
     }

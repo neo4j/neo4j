@@ -100,6 +100,20 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
     )
   }
 
+  // nested shortest path
+  test("MATCH (p = shortestPath((a)-[]->(b)))+ RETURN p") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+      "shortestPath is only allowed as a top-level element and not inside a quantified path pattern"
+    )
+  }
+
+  test("MATCH (shortestPath((a)-[]->(b))) RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages.toSet shouldEqual Set(
+      // this is the error message that we ultimately expect
+      "shortestPath is only allowed as a top-level element and not inside a parenthesized path pattern"
+    )
+  }
+
   // minimum node count
   test("MATCH ((a)-[]->(b)){0,} RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
