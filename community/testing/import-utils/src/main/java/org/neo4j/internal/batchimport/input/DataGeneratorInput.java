@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.internal.batchimport.InputIterable;
@@ -97,7 +98,7 @@ public class DataGeneratorInput implements Input {
                 0,
                 0,
                 1,
-                20,
+                new DefaultPropertyValueGenerator(20),
                 null);
     }
 
@@ -231,7 +232,7 @@ public class DataGeneratorInput implements Input {
             float factorBadNodeData,
             float factorBadRelationshipData,
             float relationshipDistribution,
-            int maxStringLength,
+            BiFunction<Entry, RandomValues, Object> propertyValueGenerator,
             String name) {
         // Basic idea is that there'll be a 1-relationshipDistribution chance that a relationship gets connected to one
         // of the relationshipDistribution nodes
@@ -247,7 +248,7 @@ public class DataGeneratorInput implements Input {
                     factorBadNodeData,
                     factorBadRelationshipData,
                     relationshipDistribution,
-                    maxStringLength,
+                    propertyValueGenerator,
                     name);
         }
 
@@ -261,7 +262,7 @@ public class DataGeneratorInput implements Input {
                     factorBadNodeData,
                     factorBadRelationshipData,
                     relationshipDistribution,
-                    maxStringLength,
+                    propertyValueGenerator,
                     name);
         }
 
@@ -275,7 +276,7 @@ public class DataGeneratorInput implements Input {
                     factorBadNodeData,
                     factorBadRelationshipData,
                     relationshipDistribution,
-                    maxStringLength,
+                    propertyValueGenerator,
                     name);
         }
 
@@ -290,7 +291,7 @@ public class DataGeneratorInput implements Input {
                     factorBadNodeData,
                     factorBadRelationshipData,
                     relationshipDistribution,
-                    maxStringLength,
+                    propertyValueGenerator,
                     name);
         }
 
@@ -304,7 +305,7 @@ public class DataGeneratorInput implements Input {
                     factorBadNodeData,
                     factorBadRelationshipData,
                     relationshipDistribution,
-                    maxStringLength,
+                    propertyValueGenerator,
                     name);
         }
 
@@ -318,7 +319,7 @@ public class DataGeneratorInput implements Input {
                     factorBadNodeData,
                     factorBadRelationshipData,
                     relationshipDistribution,
-                    maxStringLength,
+                    propertyValueGenerator,
                     name);
         }
 
@@ -332,7 +333,7 @@ public class DataGeneratorInput implements Input {
                     factorBadNodeData,
                     factorBadRelationshipData,
                     relationshipDistribution,
-                    maxStringLength,
+                    propertyValueGenerator,
                     name);
         }
 
@@ -346,7 +347,7 @@ public class DataGeneratorInput implements Input {
                     factorBadNodeData,
                     factorBadRelationshipData,
                     relationshipDistribution,
-                    maxStringLength,
+                    propertyValueGenerator,
                     name);
         }
 
@@ -360,7 +361,7 @@ public class DataGeneratorInput implements Input {
                     factorBadNodeData,
                     factorBadRelationshipData,
                     relationshipDistribution,
-                    maxStringLength,
+                    new DefaultPropertyValueGenerator(maxStringLength),
                     name);
         }
 
@@ -374,7 +375,22 @@ public class DataGeneratorInput implements Input {
                     factorBadNodeData,
                     factorBadRelationshipData,
                     relationshipDistribution,
-                    maxStringLength,
+                    propertyValueGenerator,
+                    name);
+        }
+
+        public DataDistribution withPropertyValueGenerator(
+                BiFunction<Entry, RandomValues, Object> propertyValueGenerator) {
+            return new DataDistribution(
+                    nodeCount,
+                    relationshipCount,
+                    labelsGenerator,
+                    relationshipTypeGenerator,
+                    startNodeId,
+                    factorBadNodeData,
+                    factorBadRelationshipData,
+                    relationshipDistribution,
+                    propertyValueGenerator,
                     name);
         }
 
@@ -388,8 +404,8 @@ public class DataGeneratorInput implements Input {
                     + relationshipTypeGenerator + ", startNodeId=" + startNodeId + ", factorBadNodeData="
                     + factorBadNodeData + ", factorBadRelationshipData="
                     + factorBadRelationshipData + ", relationshipDistribution=" + relationshipDistribution
-                    + ", maxStringLength="
-                    + maxStringLength + '}';
+                    + ", propertyValueGenerator="
+                    + propertyValueGenerator + '}';
         }
     }
 
@@ -426,7 +442,6 @@ public class DataGeneratorInput implements Input {
             return "DefaultLabelsGenerator{" + distribution.length() + '}';
         }
     }
-    ;
 
     public static class DefaultRelationshipTypeGenerator implements Function<RandomValues, String> {
         private final Distribution<String> distribution;
@@ -449,5 +464,23 @@ public class DataGeneratorInput implements Input {
             return "DefaultRelationshipTypeGenerator{" + distribution.length() + '}';
         }
     }
-    ;
+
+    public static class DefaultPropertyValueGenerator implements BiFunction<Entry, RandomValues, Object> {
+        private final int maxStringLength;
+
+        public DefaultPropertyValueGenerator(int maxStringLength) {
+            this.maxStringLength = maxStringLength;
+        }
+
+        @Override
+        public Object apply(Entry entry, RandomValues random) {
+            return switch (entry.extractor().name()) {
+                case "String" -> random.nextAlphaNumericTextValue(5, maxStringLength)
+                        .stringValue();
+                case "long" -> random.nextInt(Integer.MAX_VALUE);
+                case "int" -> random.nextInt(20);
+                default -> throw new IllegalArgumentException("" + entry);
+            };
+        }
+    }
 }

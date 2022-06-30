@@ -56,7 +56,8 @@ public class RandomEntityDataGenerator extends GeneratingInputIterator<RandomVal
                                 }
                             }
                             case PROPERTY -> visitor.property(
-                                    entry.name(), randomProperty(entry, randoms, dataDistribution.maxStringLength()));
+                                    entry.name(),
+                                    dataDistribution.propertyValueGenerator().apply(entry, randoms));
                             case LABEL -> visitor.labels(
                                     dataDistribution.labelsGenerator().apply(randoms));
                             case START_ID, END_ID -> {
@@ -100,16 +101,6 @@ public class RandomEntityDataGenerator extends GeneratingInputIterator<RandomVal
             case "String" -> Long.toString(id);
             case "long" -> id;
             default -> throw new IllegalArgumentException(entry.name());
-        };
-    }
-
-    private static Object randomProperty(Entry entry, RandomValues random, int maxLStringength) {
-        return switch (entry.extractor().name()) {
-            case "String" -> random.nextAlphaNumericTextValue(5, maxLStringength)
-                    .stringValue();
-            case "long" -> random.nextInt(Integer.MAX_VALUE);
-            case "int" -> random.nextInt(20);
-            default -> throw new IllegalArgumentException("" + entry);
         };
     }
 
