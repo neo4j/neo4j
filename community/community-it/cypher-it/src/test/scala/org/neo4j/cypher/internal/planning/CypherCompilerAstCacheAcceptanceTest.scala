@@ -150,7 +150,6 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       cypherCompiler.compile(
         preParsedQuery,
         noTracing,
-        Set.empty,
         context,
         ValueUtils.asParameterMapValue(asJavaMapDeep(params))
       )

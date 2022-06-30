@@ -68,9 +68,6 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     @Test
     void shouldWarnOnPotentiallyCachedQueries() {
         assertNotifications("explain match (a)-->(b), (c)-->(d) return *", containsItem(cartesianProductWarning));
-
-        // no warning without explain
-        shouldNotNotifyInStream("match (a)-->(b), (c)-->(d) return *");
     }
 
     @Test
@@ -323,8 +320,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     }
 
     @Test
-    void shouldNotNotifyOnCartesianProductWithoutExplain() {
-        shouldNotNotifyInStream(" match (a)-->(b), (c)-->(d) return *");
+    void shouldNotifyOnCartesianProductWithoutExplain() {
+        assertNotifications("match (a)-->(b), (c)-->(d) return *", containsItem(cartesianProductWarning));
     }
 
     @Test
@@ -451,5 +448,10 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
             assertThat(cachedNotification.getPosition(), equalTo(new InputPosition(17, 1, 18)));
             assertThat(nonCachedNotication.getPosition(), equalTo(new InputPosition(17, 1, 18)));
         }
+    }
+
+    @Test
+    void shouldWarnOnExecute() {
+        assertNotifications("MATCH (a {NO_SUCH_THING: 1337}) RETURN a", containsItem(unknownPropertyKeyWarning));
     }
 }

@@ -68,7 +68,6 @@ import org.neo4j.cypher.internal.util.TaskCloser
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.ExecutionPlanDescription
-import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.api.query.CompilerInfo
 import org.neo4j.kernel.api.query.LookupIndexUsage
 import org.neo4j.kernel.api.query.QueryObfuscator
@@ -109,7 +108,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
    *
    * @param query                   query to convert
    * @param tracer                  compilation tracer to which events of the compilation process are reported
-   * @param preParsingNotifications notifications from pre-parsing
    * @param transactionalContext    transactional context to use during compilation (in logical and physical planning)
    * @throws org.neo4j.exceptions.Neo4jException public cypher exceptions on compilation problems
    * @return a compiled and executable query
@@ -117,7 +115,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
   override def compile(
     query: InputQuery,
     tracer: CompilationPhaseTracer,
-    preParsingNotifications: Set[Notification],
     transactionalContext: TransactionalContext,
     params: MapValue
   ): ExecutableQuery = {
@@ -153,7 +150,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       logicalPlanResult.plannerContext.debugOptions.rawCardinalitiesEnabled,
       attributes.providedOrders,
       executionPlan,
-      preParsingNotifications,
       logicalPlanResult.notifications.toIndexedSeq,
       logicalPlanResult.reusability,
       logicalPlanResult.paramNames.toArray,
@@ -298,7 +294,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
     rawCardinalitiesInPlanDescription: Boolean,
     providedOrders: ProvidedOrders,
     executionPlan: ExecutionPlan,
-    preParsingNotifications: Set[Notification],
     planningNotifications: IndexedSeq[InternalNotification],
     reusabilityState: ReusabilityState,
     override val paramNames: Array[String],
@@ -416,19 +411,18 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       val monitor = if (isOutermostQuery) queryMonitor else QueryExecutionMonitor.NO_OP
       monitor.startExecution(transactionalContext.executingQuery())
 
+      val allNotifications = (planningNotifications ++ executionPlan.notifications)
+        .map(asKernelNotification(Some(queryOptions.offset)))
       val inner =
         if (innerExecutionMode == ExplainMode) {
           taskCloser.close(success = true)
           val columns = columnNames(logicalPlan)
 
-          val allNotifications =
-            preParsingNotifications ++ (planningNotifications ++ executionPlan.notifications)
-              .map(asKernelNotification(Some(queryOptions.offset)))
           new ExplainExecutionResult(
             columns,
             planDescriptionBuilder.explain(),
             internalQueryType,
-            allNotifications,
+            allNotifications.toSet,
             subscriber
           )
         } else {
@@ -448,7 +442,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
             innerExecutionMode,
             planDescriptionBuilder,
             subscriber,
-            executionPlan.notifications.toSeq
+            allNotifications
           )
         }
 

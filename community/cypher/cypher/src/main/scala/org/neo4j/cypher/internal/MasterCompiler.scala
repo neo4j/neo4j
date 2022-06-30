@@ -20,10 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings.CypherReplanAlgorithm
-import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.util.RecordingNotificationLogger
-import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 
@@ -73,10 +70,6 @@ class MasterCompiler(compilerLibrary: CompilerLibrary) {
     params: MapValue
   ): ExecutableQuery = {
 
-    val logger = new RecordingNotificationLogger(Some(query.options.offset))
-
-    def notificationsSoFar(): Set[Notification] = logger.notifications.map(asKernelNotification(None))
-
     // Do the compilation
     val compiler = compilerLibrary.selectCompiler(
       query.options.queryOptions.planner,
@@ -84,6 +77,6 @@ class MasterCompiler(compilerLibrary: CompilerLibrary) {
       query.options.queryOptions.updateStrategy
     )
 
-    compiler.compile(query, tracer, notificationsSoFar(), transactionalContext, params)
+    compiler.compile(query, tracer, transactionalContext, params)
   }
 }

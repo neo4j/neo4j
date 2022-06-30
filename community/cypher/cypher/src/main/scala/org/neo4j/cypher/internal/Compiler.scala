@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.exceptions.Neo4jException
-import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 
@@ -35,7 +34,6 @@ trait Compiler {
    *
    * @param query                   query to convert
    * @param tracer                  compilation tracer to which events of the compilation process are reported
-   * @param preParsingNotifications notifications from pre-parsing
    * @param transactionalContext    transactional context to use during compilation (in logical and physical planning)
    * @throws Neo4jException public cypher exceptions on compilation problems
    * @return a compiled and executable query
@@ -44,7 +42,6 @@ trait Compiler {
   def compile(
     query: InputQuery,
     tracer: CompilationPhaseTracer,
-    preParsingNotifications: Set[Notification],
     transactionalContext: TransactionalContext,
     params: MapValue
   ): ExecutableQuery

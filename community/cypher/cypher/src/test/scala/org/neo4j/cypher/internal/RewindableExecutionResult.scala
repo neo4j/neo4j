@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.cypher.internal.runtime.RuntimeScalaValueConverter
 import org.neo4j.cypher.internal.runtime.isGraphKernelResultValue
-import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Notification
@@ -38,6 +37,7 @@ import org.neo4j.kernel.impl.query.QuerySubscription
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 
 import scala.collection.mutable.ArrayBuffer
+import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.ListHasAsScala
 
@@ -97,7 +97,7 @@ object RewindableExecutionResult {
         NormalMode,
         in.getExecutionPlanDescription.asInstanceOf[InternalPlanDescription],
         QueryStatistics(in.getQueryStatistics),
-        Seq.empty
+        in.getNotifications.asScala.toSeq
       )
     } finally in.close()
   }
@@ -125,7 +125,7 @@ object RewindableExecutionResult {
     result: QueryExecution,
     queryContext: QueryContext,
     subscriber: RecordingQuerySubscriber,
-    internalNotification: Seq[InternalNotification] = Seq.empty
+    internalNotification: Seq[Notification] = Seq.empty
   ): RewindableExecutionResult = {
     try {
       val (executionMode, notifications) = result match {
@@ -154,7 +154,7 @@ object RewindableExecutionResult {
     executionMode: ExecutionMode,
     planDescription: () => InternalPlanDescription,
     notifications: Set[Notification],
-    internalNotifications: Seq[InternalNotification]
+    internalNotifications: Seq[Notification]
   ): RewindableExecutionResult = {
     try {
       subscription.request(Long.MaxValue)
@@ -177,7 +177,7 @@ object RewindableExecutionResult {
         executionMode,
         planDescription(),
         QueryStatistics(subscriber.queryStatistics()),
-        notifications ++ internalNotifications.map(NotificationWrapping.asKernelNotification(None))
+        notifications ++ internalNotifications
       )
     } finally subscription.cancel()
   }
