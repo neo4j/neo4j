@@ -110,8 +110,14 @@ public class CheckCommand extends AbstractAdminCommand {
         }
 
         final var config = loadConfig();
-        final var memoryTracker = EmptyMemoryTracker.INSTANCE;
+        final var result = checkWith(config, EmptyMemoryTracker.INSTANCE);
+        if (!result.isSuccessful()) {
+            throw new CommandFailedException(
+                    "Inconsistencies found. See '%s' for details.".formatted(result.reportFile()), ExitCode.FAIL);
+        }
+    }
 
+    protected ConsistencyCheckService.Result checkWith(Config config, MemoryTracker memoryTracker) {
         final var layout = Optional.ofNullable(target.backup) // Consistency checker only supports Record format for now
                 .map(RecordDatabaseLayout::ofFlat)
                 .orElseGet(() -> RecordDatabaseLayout.of(Neo4jLayout.of(config), target.database.name()));
@@ -122,9 +128,8 @@ public class CheckCommand extends AbstractAdminCommand {
             // Only output progress indicator if a console receives the output
             final var processOut = System.console() != null ? System.out : null;
 
-            final ConsistencyCheckService.Result result;
             try (var logProvider = Util.configuredLogProvider(ctx.out(), verbose)) {
-                result = consistencyCheckService
+                return consistencyCheckService
                         .with(layout)
                         .with(config)
                         .with(processOut)
@@ -137,11 +142,6 @@ public class CheckCommand extends AbstractAdminCommand {
             } catch (ConsistencyCheckIncompleteException e) {
                 throw new CommandFailedException(
                         "Consistency checking failed. " + e.getMessage(), e, ExitCode.SOFTWARE);
-            }
-
-            if (!result.isSuccessful()) {
-                throw new CommandFailedException(
-                        "Inconsistencies found. See '%s' for details.".formatted(result.reportFile()), ExitCode.FAIL);
             }
 
         } catch (FileLockException e) {
