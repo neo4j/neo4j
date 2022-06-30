@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTest
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
-import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
@@ -948,9 +947,8 @@ class OrLeafPlanningIntegrationTest
     ))
   }
 
-  // TODO is there a benchmark?
-  ignore(
-    "should prefer node index scan from existence constraint to label scan with same cardinality, if indexed property is used"
+  test(
+    "should prefer union label scan to node index scan from existence constraint with same cardinality, if indexed property is used"
   ) {
     val cfg = plannerConfig()
       .addNodeIndex("L", Seq("p1"), 1.0, 0.1, withValues = true)
@@ -964,26 +962,21 @@ class OrLeafPlanningIntegrationTest
     plan should (equal(
       cfg.planBuilder()
         .produceResults("p")
-        .projection("cacheN[n.p1] AS p")
-        .distinct("n AS n")
-        .union()
-        .|.nodeIndexOperator("n:L(p1)", getValue = _ => GetValue, indexType = IndexType.RANGE)
-        .nodeIndexOperator("n:P(p1)", getValue = _ => GetValue, indexType = IndexType.RANGE)
+        .projection("n.p1 AS p")
+        .unionNodeByLabelsScan("n", Seq("L", "P"))
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("p")
-        .projection("cacheN[n.p1] AS p")
-        .distinct("n AS n")
-        .union()
-        .|.nodeIndexOperator("n:P(p1)", getValue = _ => GetValue, indexType = IndexType.RANGE)
-        .nodeIndexOperator("n:L(p1)", getValue = _ => GetValue, indexType = IndexType.RANGE)
+        .projection("n.p1 AS p")
+        .unionNodeByLabelsScan("n", Seq("P", "L"))
         .build()
     ))
   }
 
-  ignore(
-    "should prefer relationship index scan from existence constraint to type scan with same cardinality, if indexed property is used"
+  test(
+    "should prefer union relationship type scan " +
+      "to relationship index scan from existence constraint with same cardinality, if indexed property is used"
   ) {
     val cfg = plannerConfig()
       .addRelationshipIndex("REL1", Seq("p1"), 1.0, 0.1, withValues = true)
@@ -997,26 +990,22 @@ class OrLeafPlanningIntegrationTest
     plan should (equal(
       cfg.planBuilder()
         .produceResults("p")
-        .projection("cacheR[r.p1] AS p")
-        .distinct("r AS r", "a AS a", "b AS b")
-        .union()
-        .|.relationshipIndexOperator("(a)-[r:REL1(p1)]->(b)", getValue = _ => GetValue, indexType = IndexType.RANGE)
-        .relationshipIndexOperator("(a)-[r:REL2(p1)]->(b)", getValue = _ => GetValue, indexType = IndexType.RANGE)
+        .projection("r.p1 AS p")
+        .unionRelationshipTypesScan("(a)-[r:REL1|REL2]->(b)")
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("p")
-        .projection("cacheR[r.p1] AS p")
-        .distinct("r AS r", "a AS a", "b AS b")
-        .union()
-        .|.relationshipIndexOperator("(a)-[r:REL2(p1)]->(b)", getValue = _ => GetValue, indexType = IndexType.RANGE)
-        .relationshipIndexOperator("(a)-[r:REL1(p1)]->(b)", getValue = _ => GetValue, indexType = IndexType.RANGE)
+        .projection("r.p1 AS p")
+        .unionRelationshipTypesScan("(a)-[r:REL2|REL1]->(b)")
         .build()
     ))
   }
 
-  ignore(
-    "should prefer node index scan from aggregation to node index scan from existence constraint with same cardinality"
+  test(
+    "should prefer union label scan " +
+      "to node index scan from aggregation and " +
+      "to node index scan from existence constraint with same cardinality"
   ) {
     val cfg = plannerConfig()
       .addNodeIndex("L", Seq("p1"), 1.0, 0.1, withValues = true)
@@ -1032,26 +1021,22 @@ class OrLeafPlanningIntegrationTest
     plan should (equal(
       cfg.planBuilder()
         .produceResults("c")
-        .aggregation(Seq(), Seq("count(cacheN[n.p2]) AS c"))
-        .distinct("n AS n")
-        .union()
-        .|.nodeIndexOperator("n:L(p2)", getValue = _ => GetValue, indexType = IndexType.RANGE)
-        .nodeIndexOperator("n:P(p2)", getValue = _ => GetValue, indexType = IndexType.RANGE)
+        .aggregation(Seq(), Seq("count(n.p2) AS c"))
+        .unionNodeByLabelsScan("n", Seq("L", "P"))
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("c")
-        .aggregation(Seq(), Seq("count(cacheN[n.p2]) AS c"))
-        .distinct("n AS n")
-        .union()
-        .|.nodeIndexOperator("n:P(p2)", getValue = _ => GetValue, indexType = IndexType.RANGE)
-        .nodeIndexOperator("n:L(p2)", getValue = _ => GetValue, indexType = IndexType.RANGE)
+        .aggregation(Seq(), Seq("count(n.p2) AS c"))
+        .unionNodeByLabelsScan("n", Seq("P", "L"))
         .build()
     ))
   }
 
-  ignore(
-    "should prefer relationship index scan from aggregation to relationship index scan from existence constraint with same cardinality"
+  test(
+    "should prefer union relationship type scan " +
+      "to relationship index scan from aggregation and " +
+      "to relationship index scan from existence constraint with same cardinality"
   ) {
     val cfg = plannerConfig()
       .addRelationshipIndex("REL1", Seq("p1"), 1.0, 0.1, withValues = true)
@@ -1067,25 +1052,19 @@ class OrLeafPlanningIntegrationTest
     plan should (equal(
       cfg.planBuilder()
         .produceResults("c")
-        .aggregation(Seq(), Seq("count(cacheR[r.p2]) AS c"))
-        .distinct("r AS r", "a AS a", "b AS b")
-        .union()
-        .|.relationshipIndexOperator("(a)-[r:REL1(p2)]->(b)", getValue = _ => GetValue, indexType = IndexType.RANGE)
-        .relationshipIndexOperator("(a)-[r:REL2(p2)]->(b)", getValue = _ => GetValue, indexType = IndexType.RANGE)
+        .aggregation(Seq(), Seq("count(r.p2) AS c"))
+        .unionRelationshipTypesScan("(a)-[r:REL1|REL2]->(b)")
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("c")
-        .aggregation(Seq(), Seq("count(cacheR[r.p2]) AS c"))
-        .distinct("r AS r", "a AS a", "b AS b")
-        .union()
-        .|.relationshipIndexOperator("(a)-[r:REL2(p2)]->(b)", getValue = _ => GetValue, indexType = IndexType.RANGE)
-        .relationshipIndexOperator("(a)-[r:REL1(p2)]->(b)", getValue = _ => GetValue, indexType = IndexType.RANGE)
+        .aggregation(Seq(), Seq("count(r.p2) AS c"))
+        .unionRelationshipTypesScan("(a)-[r:REL2|REL1]->(b)")
         .build()
     ))
   }
 
-  ignore("should prefer node index scan for aggregated property, even if other property is referenced") {
+  test("should prefer union label scan for aggregated property, even if other property is referenced") {
     val cfg = plannerConfig()
       .addNodeIndex("L", Seq("p1"), 1.0, 0.1, withValues = true)
       .addNodeExistenceConstraint("L", "p1")
@@ -1100,29 +1079,21 @@ class OrLeafPlanningIntegrationTest
     plan should (equal(
       cfg.planBuilder()
         .produceResults("c")
-        .aggregation(Seq(), Seq("count(cacheN[n.p2]) AS c"))
-        .distinct("n AS n")
-        .union()
-        .|.filter("not n.p1 = 1")
-        .|.nodeIndexOperator("n:L(p2)", getValue = _ => GetValue, indexType = IndexType.RANGE)
+        .aggregation(Seq(), Seq("count(n.p2) AS c"))
         .filter("not n.p1 = 1")
-        .nodeIndexOperator("n:P(p2)", getValue = _ => GetValue, indexType = IndexType.RANGE)
+        .unionNodeByLabelsScan("n", Seq("L", "P"))
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("c")
-        .aggregation(Seq(), Seq("count(cacheN[n.p2]) AS c"))
-        .distinct("n AS n")
-        .union()
-        .|.filter("not n.p1 = 1")
-        .|.nodeIndexOperator("n:P(p2)", getValue = _ => GetValue, indexType = IndexType.RANGE)
+        .aggregation(Seq(), Seq("count(n.p2) AS c"))
         .filter("not n.p1 = 1")
-        .nodeIndexOperator("n:L(p2)", getValue = _ => GetValue, indexType = IndexType.RANGE)
+        .unionNodeByLabelsScan("n", Seq("P", "L"))
         .build()
     ))
   }
 
-  ignore("should prefer relationship index scan for aggregated property, even if other property is referenced") {
+  test("should prefer union relationship type scan for aggregated property, even if other property is referenced") {
     val cfg = plannerConfig()
       .addRelationshipIndex("REL1", Seq("p1"), 1.0, 0.01, withValues = true)
       .addRelationshipExistenceConstraint("REL1", "p1")
@@ -1137,24 +1108,16 @@ class OrLeafPlanningIntegrationTest
     plan should (equal(
       cfg.planBuilder()
         .produceResults("c")
-        .aggregation(Seq(), Seq("count(cacheR[r.p2]) AS c"))
-        .distinct("r AS r", "a AS a", "b AS b")
-        .union()
-        .|.filter("not r.p1 = 1")
-        .|.relationshipIndexOperator("(a)-[r:REL1(p2)]->(b)", getValue = _ => GetValue, indexType = IndexType.RANGE)
+        .aggregation(Seq(), Seq("count(r.p2) AS c"))
         .filter("not r.p1 = 1")
-        .relationshipIndexOperator("(a)-[r:REL2(p2)]->(b)", getValue = _ => GetValue, indexType = IndexType.RANGE)
+        .unionRelationshipTypesScan("(a)-[r:REL1|REL2]->(b)")
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("c")
-        .aggregation(Seq(), Seq("count(cacheR[r.p2]) AS c"))
-        .distinct("r AS r", "a AS a", "b AS b")
-        .union()
-        .|.filter("not r.p1 = 1")
-        .|.relationshipIndexOperator("(a)-[r:REL2(p2)]->(b)", getValue = _ => GetValue, indexType = IndexType.RANGE)
+        .aggregation(Seq(), Seq("count(r.p2) AS c"))
         .filter("not r.p1 = 1")
-        .relationshipIndexOperator("(a)-[r:REL1(p2)]->(b)", getValue = _ => GetValue, indexType = IndexType.RANGE)
+        .unionRelationshipTypesScan("(a)-[r:REL2|REL1]->(b)")
         .build()
     ))
   }
