@@ -103,11 +103,11 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     .build()
 
   private val reduceExpr = reduce(
-    varFor("sum", pos),
-    literalInt(0, pos),
-    varFor("x", pos),
-    varFor("anon_1", pos),
-    add(varFor("sum", pos), varFor("x", pos))
+    varFor("sum"),
+    literalInt(0),
+    varFor("x"),
+    varFor("anon_1"),
+    add(varFor("sum"), varFor("x"))
   )
 
   test("should consider variables introduced by outer list comprehensions when planning pattern predicates") {
@@ -1948,6 +1948,49 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         .|.expandAll("(m)-[r3]->(q)")
         .|.argument("m")
         .allNodeScan("m")
+        .build()
+    )
+  }
+
+  test(
+    "in an expression with 2 PatternComprehensions, use RollupApply for one and NestedPlanExpression for the other"
+  ) {
+    // Here we have an expression that contains 2 PatternComprehensions. One of them can be solved with RollUpApply, the other cannot.
+    val q =
+      """
+        |MATCH (a)
+        |RETURN [[(a)<--(b) | b.prop4 = true][2], [(a)<--(b) | b.prop4 = true]] AS list
+      """.stripMargin
+
+    val plan = planner.plan(q)
+
+    val expectedNestedPlan = planner.subPlanBuilder()
+      .limit(add(literalInt(1), literalInt(2)))
+      .projection("b.prop4 = true AS anon_0")
+      .expandAll("(a)<-[anon_4]-(b)")
+      .argument("a")
+      .build()
+
+    val expectedExpression = listOf(
+      containerIndex(
+        NestedPlanCollectExpression(
+          expectedNestedPlan,
+          varFor("anon_0"),
+          "[(a)<-[`anon_4`]-(`b`) | `b`.prop4 IN [true]]"
+        )(pos),
+        literalInt(2)
+      ),
+      varFor("anon_3")
+    )
+
+    plan.stripProduceResults should equal(
+      planner.subPlanBuilder()
+        .projection(Map("list" -> expectedExpression))
+        .rollUpApply("anon_3", "anon_2")
+        .|.projection("b.prop4 = true AS anon_2")
+        .|.expandAll("(a)<-[anon_5]-(b)")
+        .|.argument("a")
+        .allNodeScan("a")
         .build()
     )
   }

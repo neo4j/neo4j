@@ -227,53 +227,65 @@ object SubqueryExpressionSolver {
     val subqueryExpressions: Seq[IRExpression] =
       expression.folder(context.cancellationChecker).findAllByClass[IRExpression]
 
-    subqueryExpressions.foldLeft(RewriteResult(plan, expression, Set.empty)) {
-      case (RewriteResult(currentPlan, currentExpression, introducedVariables), irExpression) =>
-        var newPlan: LogicalPlan = null
-        var newVariable: Variable = null
-        val inner = Rewriter.lift {
-          case listIRExpression: ListIRExpression if listIRExpression == irExpression =>
-            val (p, v) = solveUsingRollUpApply(currentPlan, listIRExpression, None, context)
-            newPlan = p
-            newVariable = v
-            v
-        }
-        /*
-         * It's important to not go use RollUpApply if the expression we are working with is:
-         *
-         * a) inside a loop. If that is not honored, it will produce the wrong results by not having the correct scope.
-         * b) inside a conditional expression. Otherwise it can be executed even when not strictly needed.
-         * c) inside an expression that accessed only part of the list. Otherwise we do too much work. To avoid that we inject a Limit into the
-         * NestedPlanExpression.
-         */
-        val rewriter = topDown(
-          rewriter = inner,
-          stopper = {
-            case _: ListIRExpression => false
-            // Loops
-            case _: ScopeExpression => true
-            // Conditionals & List accesses
-            case _: CaseExpression     => true
-            case _: ContainerIndex     => true
-            case _: ListSlice          => true
-            case f: FunctionInvocation => f.function == Exists || f.function == Coalesce || f.function == Head
-            case _: ExistsIRExpression => true
-            case _                     => false
-          },
-          cancellation = context.cancellationChecker
-        )
-        val rewrittenExpression = currentExpression.endoRewrite(rewriter)
+    // First rewrite all IR expressions with RollupApply, where it is possible.
+    val RewriteResult(finalPlan, expressionAfterRollupApply, finalIntroducedVariables) = {
+      subqueryExpressions.foldLeft(RewriteResult(plan, expression, Set.empty)) {
+        case (RewriteResult(currentPlan, currentExpression, introducedVariables), irExpression) =>
+          var newPlan: LogicalPlan = null
+          var newVariable: Variable = null
+          val inner = Rewriter.lift {
+            case listIRExpression: ListIRExpression if listIRExpression == irExpression =>
+              val (p, v) = solveUsingRollUpApply(currentPlan, listIRExpression, None, context)
+              newPlan = p
+              newVariable = v
+              v
 
-        if (rewrittenExpression == currentExpression) {
-          RewriteResult(
-            currentPlan,
-            currentExpression.endoRewrite(irExpressionRewriter(context)),
-            introducedVariables
+          }
+          /*
+           * It's important to not go use RollUpApply if the expression we are working with is:
+           *
+           * a) inside a loop. If that is not honored, it will produce the wrong results by not having the correct scope.
+           * b) inside a conditional expression. Otherwise it can be executed even when not strictly needed.
+           * c) inside an expression that accessed only part of the list. Otherwise we do too much work. To avoid that we inject a Limit into the
+           * NestedPlanExpression.
+           */
+          val rewriter = topDown(
+            rewriter = inner,
+            stopper = {
+              case _: ListIRExpression => false
+              // Loops
+              case _: ScopeExpression => true
+              // Conditionals & List accesses
+              case _: CaseExpression     => true
+              case _: ContainerIndex     => true
+              case _: ListSlice          => true
+              case f: FunctionInvocation => f.function == Exists || f.function == Coalesce || f.function == Head
+              case _: ExistsIRExpression => true
+              case _                     => false
+            },
+            cancellation = context.cancellationChecker
           )
-        } else {
-          RewriteResult(newPlan, rewrittenExpression, introducedVariables + newVariable.name)
-        }
+          val rewrittenExpression = currentExpression.endoRewrite(rewriter)
+
+          if (rewrittenExpression == currentExpression) {
+            RewriteResult(
+              currentPlan,
+              currentExpression,
+              introducedVariables
+            )
+          } else {
+            RewriteResult(newPlan, rewrittenExpression, introducedVariables + newVariable.name)
+          }
+      }
     }
+
+    // Second, rewrite all remaining IR expressions to NestedPlanExpressions
+    val finalExpression = expressionAfterRollupApply.endoRewrite(irExpressionRewriter(context))
+    RewriteResult(
+      finalPlan,
+      finalExpression,
+      finalIntroducedVariables
+    )
   }
 
   private def qualifiesForRewriting(exp: AnyRef, context: LogicalPlanningContext): Boolean =
