@@ -27,6 +27,7 @@ import java.io.PrintStream;
 import org.junit.jupiter.api.Test;
 import org.neo4j.cli.AdminTool;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.cli.ExitCode;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -43,7 +44,7 @@ public class AdminToolTest {
         try (PrintStream out = new PrintStream(outBuffer);
                 PrintStream err = new PrintStream(errBuffer)) {
             assertEquals(
-                    2,
+                    ExitCode.USAGE,
                     AdminTool.execute(new ExecutionContext(
                             directory.homePath(), directory.directory("conf"), out, err, directory.getFileSystem())));
         }

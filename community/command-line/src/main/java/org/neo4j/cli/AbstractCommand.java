@@ -25,17 +25,21 @@ import java.io.PrintStream;
 import java.util.concurrent.Callable;
 import org.neo4j.kernel.diagnostics.providers.SystemDiagnostics;
 import org.neo4j.kernel.internal.Version;
-import picocli.CommandLine;
+import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
 
-@CommandLine.Command(
+@Command(
         headerHeading = "%n",
         synopsisHeading = "%n@|bold,underline USAGE|@%n%n",
         descriptionHeading = "%n@|bold,underline DESCRIPTION|@%n%n",
         optionListHeading = "%n@|bold,underline OPTIONS|@%n%n",
         parameterListHeading = "%n@|bold,underline PARAMETERS|@%n%n",
+        exitCodeOnSuccess = ExitCode.OK,
+        exitCodeOnUsageHelp = ExitCode.OK,
+        exitCodeOnInvalidInput = ExitCode.USAGE,
+        exitCodeOnExecutionException = ExitCode.SOFTWARE,
         showDefaultValues = true)
 public abstract class AbstractCommand implements Callable<Integer> {
     @Option(names = "--verbose", description = "Enable verbose output.")
@@ -81,7 +85,7 @@ public abstract class AbstractCommand implements Callable<Integer> {
             }
             return e.getExitCode();
         }
-        return 0;
+        return ExitCode.OK;
     }
 
     private void printVerboseHeader() {

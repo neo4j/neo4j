@@ -48,6 +48,7 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.factory.Lists;
 import org.neo4j.cli.CommandFailedException;
+import org.neo4j.cli.ExitCode;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -67,8 +68,8 @@ import org.neo4j.util.VisibleForTesting;
  */
 abstract class Bootloader implements AutoCloseable {
 
-    static final int EXIT_CODE_OK = 0;
-    static final int EXIT_CODE_RUNNING = 1;
+    static final int EXIT_CODE_OK = ExitCode.OK;
+    static final int EXIT_CODE_RUNNING = ExitCode.FAIL;
     static final int EXIT_CODE_NOT_RUNNING = 3;
 
     static final String ENV_NEO4J_HOME = "NEO4J_HOME";

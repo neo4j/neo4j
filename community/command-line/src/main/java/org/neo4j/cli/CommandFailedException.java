@@ -20,7 +20,7 @@
 package org.neo4j.cli;
 
 public class CommandFailedException extends RuntimeException {
-    private static final int DEFAULT_ERROR_EXIT_CODE = 1;
+    private static final int DEFAULT_ERROR_EXIT_CODE = ExitCode.FAIL;
 
     private final int exitCode;
 
