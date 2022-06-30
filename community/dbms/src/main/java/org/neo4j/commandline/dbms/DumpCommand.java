@@ -181,8 +181,6 @@ public class DumpCommand extends AbstractAdminCommand {
                         failedDumps.add(new FailedDump(databaseName, e));
                     }
                 }
-            } catch (IOException e) {
-                wrapIOException(e);
             }
 
             if (failedDumps.isEmpty()) {

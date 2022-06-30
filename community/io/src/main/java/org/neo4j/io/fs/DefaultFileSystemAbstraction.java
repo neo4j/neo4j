@@ -229,7 +229,7 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         // nothing
     }
 

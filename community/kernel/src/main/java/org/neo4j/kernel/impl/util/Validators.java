@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.util;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -75,12 +73,10 @@ public final class Validators {
     }
 
     public static final Validator<Path> CONTAINS_EXISTING_DATABASE = dbDir -> {
-        try (FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction()) {
+        try (var fileSystem = new DefaultFileSystemAbstraction()) {
             if (!isExistingDatabase(fileSystem, DatabaseLayout.ofFlat(dbDir))) {
                 throw new IllegalArgumentException("Directory '" + dbDir + "' does not contain a database");
             }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
         }
     };
 
