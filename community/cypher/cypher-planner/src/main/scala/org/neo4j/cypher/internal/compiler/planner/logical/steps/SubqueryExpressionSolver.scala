@@ -199,7 +199,7 @@ object SubqueryExpressionSolver {
   ): (LogicalPlan, Variable) = {
 
     val collectionName = maybeKey.getOrElse(expr.collectionName)
-    val subQueryPlan = plannerQueryPartPlanner.planSubquery(expr, context)
+    val subQueryPlan = plannerQueryPartPlanner.planSubqueryWithLabelInfo(source, expr, context)
     val producedPlan = context.logicalPlanProducer.ForSubqueryExpressionSolver.planRollup(
       source,
       subQueryPlan,
@@ -280,7 +280,7 @@ object SubqueryExpressionSolver {
     }
 
     // Second, rewrite all remaining IR expressions to NestedPlanExpressions
-    val finalExpression = expressionAfterRollupApply.endoRewrite(irExpressionRewriter(context))
+    val finalExpression = expressionAfterRollupApply.endoRewrite(irExpressionRewriter(finalPlan, context))
     RewriteResult(
       finalPlan,
       finalExpression,

@@ -91,8 +91,8 @@ class irExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
     // given
     val TestableIRExpression(expr, expected) = listIrExpr1
 
-    new given().withLogicalPlanningContext { (_, context) =>
-      val rewriter = irExpressionRewriter(context)
+    new given().withLogicalPlanningContextWithFakeAttributes { (_, context) =>
+      val rewriter = irExpressionRewriter(dummyPlan, context)
       // when
       val result = rewriter(expr)
 
@@ -105,8 +105,8 @@ class irExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
     // given
     val TestableIRExpression(expr, expected) = existsIrExpr
 
-    new given().withLogicalPlanningContext { (_, context) =>
-      val rewriter = irExpressionRewriter(context)
+    new given().withLogicalPlanningContextWithFakeAttributes { (_, context) =>
+      val rewriter = irExpressionRewriter(dummyPlan, context)
       // when
       val result = rewriter(expr)
 
@@ -120,8 +120,8 @@ class irExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
     val TestableIRExpression(expr2, expected2) = listIrExpr2
     val expr = and(expr1, expr2)
 
-    new given().withLogicalPlanningContext { (_, context) =>
-      val rewriter = irExpressionRewriter(context)
+    new given().withLogicalPlanningContextWithFakeAttributes { (_, context) =>
+      val rewriter = irExpressionRewriter(dummyPlan, context)
       // when
       val result = rewriter(expr)
 
@@ -136,8 +136,8 @@ class irExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
     // given
     val expr = NestedPlanExpression.collect(dummyPlan, listIrExpr1.expression, listIrExpr2.expression)(pos)
 
-    new given().withLogicalPlanningContext { (_, context) =>
-      val rewriter = irExpressionRewriter(context)
+    new given().withLogicalPlanningContextWithFakeAttributes { (_, context) =>
+      val rewriter = irExpressionRewriter(dummyPlan, context)
       // when
       val result = rewriter(expr)
 
@@ -154,8 +154,8 @@ class irExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
       .build()
     val expr = NestedPlanExpression.collect(plan, varFor("x"), varFor("y"))(pos)
 
-    new given().withLogicalPlanningContext { (_, context) =>
-      val rewriter = irExpressionRewriter(context)
+    new given().withLogicalPlanningContextWithFakeAttributes { (_, context) =>
+      val rewriter = irExpressionRewriter(dummyPlan, context)
       // when
       val result = rewriter(expr)
 

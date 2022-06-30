@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
@@ -34,16 +35,16 @@ import org.neo4j.cypher.internal.util.topDown
  *   i) There is no way of expressing order within a ListIRExpressions
  *   ii) It can lead to endless recursion in case the sort expression contains the subquery we are solving
  */
-case class irExpressionRewriter(context: LogicalPlanningContext) extends Rewriter {
+case class irExpressionRewriter(outerPlan: LogicalPlan, context: LogicalPlanningContext) extends Rewriter {
 
   private val instance = topDown(
     Rewriter.lift {
       case expr: ExistsIRExpression =>
-        val subQueryPlan = plannerQueryPartPlanner.planSubquery(expr, context)
+        val subQueryPlan = plannerQueryPartPlanner.planSubqueryWithLabelInfo(outerPlan, expr, context)
         NestedPlanExpression.exists(subQueryPlan, expr)(expr.position)
 
       case expr @ ListIRExpression(_, variableToCollectName, _, _) =>
-        val subQueryPlan = plannerQueryPartPlanner.planSubquery(expr, context)
+        val subQueryPlan = plannerQueryPartPlanner.planSubqueryWithLabelInfo(outerPlan, expr, context)
         val variableToCollect = Variable(variableToCollectName)(expr.position)
         NestedPlanExpression.collect(subQueryPlan, variableToCollect, expr)(expr.position)
     },

@@ -21,7 +21,10 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
+import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
+import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.GetDegree
@@ -43,6 +46,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
+import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
@@ -50,6 +54,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
+import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 
@@ -60,7 +65,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     with AstConstructionTestSupport {
 
   private val planner = plannerBuilder()
-    .setAllNodesCardinality(100)
+    .setAllNodesCardinality(1000)
     .setLabelCardinality("B", 10)
     .setLabelCardinality("C", 10)
     .setLabelCardinality("D", 1)
@@ -73,6 +78,9 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     .setLabelCardinality("TextLabel", 10)
     .setLabelCardinality("M", 10)
     .setLabelCardinality("O", 10)
+    .setLabelCardinality("FewProps", 100)
+    .setLabelCardinality("SomeProps", 100)
+    .setLabelCardinality("ManyProps", 100)
     .setAllRelationshipsCardinality(100)
     .setRelationshipCardinality("()-[:REL]-()", 10)
     .setRelationshipCardinality("()-[:X]-()", 10)
@@ -88,18 +96,24 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     .setRelationshipCardinality("(:ComedyClub)-[:WORKS_AT]-()", 10)
     .setRelationshipCardinality("()-[:FOLLOWS]-()", 10)
     .setRelationshipCardinality("(:User)-[:FOLLOWS]-()", 10)
+    .setRelationshipCardinality("(:User)-[:FOLLOWS]->(:User)", 10)
     .setRelationshipCardinality("()-[:FOO]->()", 10)
     .setRelationshipCardinality("()-[:R]->()", 10)
     .setRelationshipCardinality("()-[:TextRel]->()", 10)
     .setRelationshipCardinality("()-[:R]->(:M)", 10)
     .setRelationshipCardinality("()-[:Q]->()", 10)
     .setRelationshipCardinality("()-[:Q]->(:O)", 10)
+    .setRelationshipCardinality("(:FewProps)-[]-(:SomeProps)", 10)
+    .setRelationshipCardinality("(:SomeProps)-[]-(:ManyProps)", 10)
     .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
     .addRelationshipIndex("TextRel", Seq("prop"), 1.0, 0.01, indexType = IndexType.TEXT)
     .addNodeIndex("Label", Seq("prop"), 1.0, 0.1, indexType = IndexType.RANGE)
     .addNodeIndex("UniqueLabel", Seq("prop"), 1.0, 0.01, isUnique = true, indexType = IndexType.RANGE)
     .addNodeIndex("TextLabel", Seq("prop"), 1.0, 0.01, indexType = IndexType.TEXT)
     .addNodeIndex("D", Seq("prop"), 1.0, 0.01)
+    .addNodeIndex("FewProps", Seq("prop"), 1.0, 0.01)
+    .addNodeIndex("SomeProps", Seq("prop"), 1.0, 0.1)
+    .addNodeIndex("ManyProps", Seq("prop"), 1.0, 1.0)
     .build()
 
   private val reduceExpr = reduce(
@@ -1896,6 +1910,134 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     )
   }
 
+  test("Subquery plan with SemiApply should plan predicates in the right order according to LabelInfo") {
+    val logicalPlan = planner.plan(
+      """MATCH (a:ManyProps), (b:SomeProps), (c:FewProps)
+        |WHERE (a {prop: 0})--(b {prop: 0})--(c {prop: 0})
+        |RETURN *
+        |""".stripMargin
+    )
+
+    // There are 2 filters in the plan, we are interested in the 2nd
+    val filter = logicalPlan.folder.findAllByClass[Selection].apply(1)
+
+    val aProp = equals(cachedNodeProp("a", "prop"), literalInt(0))
+    val bProp = equals(cachedNodeProp("b", "prop"), literalInt(0))
+    val cProp = equals(cachedNodeProp("c", "prop"), literalInt(0))
+
+    // Should filter in best order according to selectivity: c.prop, b.prop, a.prop
+    filter should beLike {
+      // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
+      // But unapply takes the order into account for [[Ands]].
+      case Selection(
+          Ands(SetExtractor(
+            `cProp`,
+            `bProp`,
+            `aProp`
+          )),
+          Argument(SetExtractor("a", "b", "c"))
+        ) => ()
+    }
+  }
+
+  test("Subquery plan with RollUpApply should plan predicates in the right order according to LabelInfo") {
+    val logicalPlan = planner.plan(
+      """MATCH (a:ManyProps), (b:SomeProps), (c:FewProps)
+        |RETURN [(a {prop: 0})--(b {prop: 0})--(c {prop: 0}) | 1] AS foo
+        |""".stripMargin
+    )
+
+    // There are 2 filters in the plan, we are interested in the 2nd:
+    //  .filter("not anon_2 = anon_3")
+    //  .expandInto("(a)-[anon_2]-(b)")
+    //  .expandInto("(b)-[anon_3]-(c)")
+    //  .filter("cacheN[c.prop] = 0", "cacheN[b.prop] = 0", "cacheN[a.prop] = 0") <- this one
+    val filter = logicalPlan.folder.findAllByClass[Selection].apply(1)
+
+    val aProp = equals(cachedNodeProp("a", "prop"), literalInt(0))
+    val bProp = equals(cachedNodeProp("b", "prop"), literalInt(0))
+    val cProp = equals(cachedNodeProp("c", "prop"), literalInt(0))
+
+    // Should filter in best order according to selectivity: c.prop, b.prop, a.prop
+    filter should beLike {
+      // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
+      // But unapply takes the order into account for [[Ands]].
+      case Selection(
+          Ands(SetExtractor(
+            `cProp`,
+            `bProp`,
+            `aProp`
+          )),
+          Argument(SetExtractor("a", "b", "c"))
+        ) => ()
+    }
+  }
+
+  test("Subquery plan with NestedPlanExpression should plan predicates in the right order according to LabelInfo") {
+    val logicalPlan = planner.plan(
+      """MATCH (a:ManyProps), (b:SomeProps), (c:FewProps)
+        |RETURN [(a {prop: 0})--(b {prop: 0})--(c {prop: 0}) | 1][1] AS foo
+        |""".stripMargin
+    )
+
+    // There are 2 filters in the plan, we are interested in the 2nd:
+    // .filter("not anon_2 = anon_3")
+    // .expandInto("(a)-[anon_2]-(b)")
+    // .expandInto("(b)-[anon_3]-(c)")
+    // .filter("c.prop = 0", "b.prop = 0", "a.prop = 0")  <- this one
+    val filter = logicalPlan.folder.findAllByClass[Selection].apply(1)
+
+    val aProp = equals(prop("a", "prop"), literalInt(0))
+    val bProp = equals(prop("b", "prop"), literalInt(0))
+    val cProp = equals(prop("c", "prop"), literalInt(0))
+
+    // Should filter in best order according to selectivity: c.prop, b.prop, a.prop
+    filter should beLike {
+      // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
+      // But unapply takes the order into account for [[Ands]].
+      case Selection(
+          Ands(SetExtractor(
+            `cProp`,
+            `bProp`,
+            `aProp`
+          )),
+          Argument(SetExtractor("a", "b", "c"))
+        ) => ()
+    }
+  }
+
+  test("Extra horizon: Subquery plan with SemiApply should plan predicates in the right order according to LabelInfo") {
+    val logicalPlan = planner.plan(
+      """MATCH (a:ManyProps), (b:SomeProps), (c:FewProps)
+        |WITH * SKIP 0
+        |MATCH (n)
+        |WHERE (a {prop: 0})--(b {prop: 0})--(c {prop: 0})
+        |RETURN *
+        |""".stripMargin
+    )
+
+    // There are 2 filters in the plan, we are interested in the 2nd
+    val filter = logicalPlan.folder.findAllByClass[Selection].apply(1)
+
+    val aProp = equals(cachedNodeProp("a", "prop"), literalInt(0))
+    val bProp = equals(cachedNodeProp("b", "prop"), literalInt(0))
+    val cProp = equals(cachedNodeProp("c", "prop"), literalInt(0))
+
+    // Should filter in best order according to selectivity: c.prop, b.prop, a.prop
+    filter should beLike {
+      // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
+      // But unapply takes the order into account for [[Ands]].
+      case Selection(
+          Ands(SetExtractor(
+            `cProp`,
+            `bProp`,
+            `aProp`
+          )),
+          Argument(SetExtractor("a", "b", "c"))
+        ) => ()
+    }
+  }
+
   test("Should plan semiApply with projectEndPoints for ExistsSubClause with already bound variables") {
     val logicalPlan = planner.plan(
       "MATCH (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE EXISTS { (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE n.foo > 5} RETURN *"
@@ -1903,13 +2045,13 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("m", "n", "o", "q", "r", "r2", "r3")
+        .filter("not r = r3", "not r = r2")
         .semiApply()
         .|.projectEndpoints("(n)-[r]->(m)", startInScope = true, endInScope = true)
         .|.projectEndpoints("(o)-[r2]->(m)", startInScope = true, endInScope = true)
         .|.projectEndpoints("(m)-[r3]->(q)", startInScope = true, endInScope = true)
         .|.filter("n.foo > 5", "not r = r3", "not r = r2", "not r2 = r3")
         .|.argument("n", "m", "q", "r2", "r", "r3", "o")
-        .filter("not r = r3", "not r = r2")
         .expandAll("(m)<-[r]-(n)")
         .filter("not r2 = r3")
         .expandAll("(m)<-[r2]-(o)")
@@ -1924,13 +2066,13 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("m", "n", "r")
-        .expandAll("(m)<-[r]-(n)")
         .semiApply()
         .|.filter("not r2 = r3")
         .|.expandAll("(m)<-[r2]-(o)")
         .|.expandAll("(m)-[r3]->(q)")
         .|.argument("m")
-        .allNodeScan("m")
+        .expandAll("(n)-[r]->(m)")
+        .allNodeScan("n")
         .build()
     )
   }

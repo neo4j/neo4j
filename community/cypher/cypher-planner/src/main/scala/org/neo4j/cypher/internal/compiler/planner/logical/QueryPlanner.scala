@@ -208,6 +208,18 @@ case object plannerQueryPartPlanner {
     }
 
   /**
+   * Plan a subquery from an IRExpression, but change the context to include the latest labelInfo.
+   */
+  def planSubqueryWithLabelInfo(
+    outerPlan: LogicalPlan,
+    subqueryExpression: IRExpression,
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+    val labelInfo = context.planningAttributes.solveds.get(outerPlan.id).asSinglePlannerQuery.lastLabelInfo
+    planSubquery(subqueryExpression, context.withFusedLabelInfo(labelInfo))
+  }
+
+  /**
    * Plan a subquery from an IRExpression with the given context.
    */
   def planSubquery(subqueryExpression: IRExpression, context: LogicalPlanningContext): LogicalPlan =

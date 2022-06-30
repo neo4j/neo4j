@@ -184,9 +184,13 @@ trait SelectPatternPredicates extends SelectionCandidateGenerator {
     subquery: ExistsIRExpression,
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val arguments = lhs.availableSymbols.intersect(subquery.dependencies.map(_.name))
+    val arguments = subquery.dependencies.map(_.name)
+    // We compute LabelInfo here instead of using plannerQueryPartPlanner.planSubqueryWithLabelInfo
+    // This has the benefit of a smaller cache key (just the labelInfo, and not the whole plan).
     val labelInfo =
-      context.planningAttributes.solveds.get(lhs.id).asSinglePlannerQuery.lastLabelInfo.view.filterKeys(arguments).toMap
+      context.planningAttributes.solveds.get(lhs.id).asSinglePlannerQuery.lastLabelInfo
+        // We only retain the relevant label infos to get more cache hits.
+        .view.filterKeys(arguments).toMap
     rhsPlanner.plan(subquery, labelInfo, arguments, context)
   }
 
