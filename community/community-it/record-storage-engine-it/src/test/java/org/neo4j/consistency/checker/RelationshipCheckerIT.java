@@ -168,7 +168,7 @@ class RelationshipCheckerIT {
                     INSTANCE,
                     NullLog.getInstance(),
                     false,
-                    ConsistencyFlags.DEFAULT,
+                    ConsistencyFlags.ALL,
                     contextFactory);
             context.initialize();
         }

@@ -279,7 +279,7 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase {
         }
 
         // when
-        check(context(ConsistencyFlags.DEFAULT));
+        check(context(ConsistencyFlags.ALL));
 
         // then
         if (expectedCalls != null) {

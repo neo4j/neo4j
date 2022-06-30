@@ -22,6 +22,7 @@ package org.neo4j.consistency;
 import static picocli.CommandLine.Help.Visibility.ALWAYS;
 
 import java.nio.file.Path;
+import org.neo4j.consistency.checking.ConsistencyFlags;
 import picocli.CommandLine.Option;
 
 @SuppressWarnings("FieldMayBeFinal")
@@ -39,7 +40,7 @@ public class ConsistencyCheckOptions {
             showDefaultValue = ALWAYS,
             paramLabel = "<true/false>",
             description = "Perform consistency checks between nodes, relationships, properties, types and tokens.")
-    private boolean checkGraph = true;
+    private boolean checkGraph = ConsistencyFlags.DEFAULT.checkGraph();
 
     @Option(
             names = "--check-indexes",
@@ -47,7 +48,7 @@ public class ConsistencyCheckOptions {
             showDefaultValue = ALWAYS,
             paramLabel = "<true/false>",
             description = "Perform consistency checks on indexes.")
-    private boolean checkIndexes = true;
+    private boolean checkIndexes = ConsistencyFlags.DEFAULT.checkIndexes();
 
     @Option(
             names = "--check-index-structure",
@@ -55,7 +56,7 @@ public class ConsistencyCheckOptions {
             showDefaultValue = ALWAYS,
             paramLabel = "<true/false>",
             description = "Perform structure checks on indexes.")
-    private boolean checkIndexStructure = true;
+    private boolean checkIndexStructure = ConsistencyFlags.DEFAULT.checkIndexStructure();
 
     public Path getReportDir() {
         return reportDir;

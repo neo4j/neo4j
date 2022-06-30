@@ -113,7 +113,7 @@ class LabelScanStoreTxApplyRaceIT {
         assertTrue(new ConsistencyCheckService(dbLayout)
                 .with(defaults(GraphDatabaseSettings.neo4j_home, testDirectory.homePath()))
                 .with(new Log4jLogProvider(System.out))
-                .with(ConsistencyFlags.DEFAULT)
+                .with(ConsistencyFlags.ALL)
                 .runFullConsistencyCheck()
                 .isSuccessful());
     }

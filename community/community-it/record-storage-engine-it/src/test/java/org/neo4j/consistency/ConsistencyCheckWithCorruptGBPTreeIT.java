@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.consistency.checking.ConsistencyFlags.DEFAULT;
+import static org.neo4j.consistency.checking.ConsistencyFlags.ALL;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.GBPTreeCorruption.pageSpecificCorruption;
@@ -195,7 +195,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
                 },
                 indexFiles);
 
-        ConsistencyFlags flags = new ConsistencyFlags(true, false, false, true);
+        ConsistencyFlags flags = ConsistencyFlags.ALL.withoutCheckIndexes().withoutCheckIndexStructure();
         ConsistencyCheckService.Result result = runConsistencyCheck(NullLogProvider.getInstance(), flags);
 
         assertTrue(result.isSuccessful(), "Expected store to be consistent when not checking indexes.");
@@ -215,7 +215,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
                 },
                 indexFiles);
 
-        ConsistencyFlags flags = new ConsistencyFlags(true, false, true, true);
+        ConsistencyFlags flags = ConsistencyFlags.ALL.withoutCheckIndexes();
         ConsistencyCheckService.Result result = runConsistencyCheck(NullLogProvider.getInstance(), flags);
 
         assertFalse(result.isSuccessful(), "Expected store to be inconsistent when checking index structure.");
@@ -234,7 +234,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
                 },
                 indexFiles);
 
-        ConsistencyFlags flags = new ConsistencyFlags(true, true, false, true);
+        ConsistencyFlags flags = ConsistencyFlags.ALL.withoutCheckIndexStructure();
         ConsistencyCheckService.Result result = runConsistencyCheck(NullLogProvider.getInstance(), flags);
 
         assertTrue(result.isSuccessful(), "Expected store to be consistent when not checking indexes.");
@@ -774,7 +774,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
                 countsLayoutBootstrapper,
                 countsStoreFile);
 
-        ConsistencyFlags flags = new ConsistencyFlags(false, false, true, true);
+        ConsistencyFlags flags = ConsistencyFlags.NONE.withCheckIndexStructure().withCheckCounts();
         ConsistencyCheckService.Result result = runConsistencyCheck(NullLogProvider.getInstance(), flags);
         assertFalse(result.isSuccessful());
         assertResultContainsMessage(
@@ -800,7 +800,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
                 },
                 idStoreFiles);
 
-        ConsistencyFlags flags = new ConsistencyFlags(false, false, true, true);
+        ConsistencyFlags flags = ConsistencyFlags.NONE.withCheckIndexStructure();
         ConsistencyCheckService.Result result = runConsistencyCheck(NullLogProvider.getInstance(), flags);
         assertFalse(result.isSuccessful());
         assertResultContainsMessage(
@@ -845,7 +845,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
 
     private ConsistencyCheckService.Result runConsistencyCheck(
             InternalLogProvider logProvider, OutputStream progressOutput) throws ConsistencyCheckIncompleteException {
-        return runConsistencyCheck(logProvider, progressOutput, DEFAULT);
+        return runConsistencyCheck(logProvider, progressOutput, ALL);
     }
 
     private ConsistencyCheckService.Result runConsistencyCheck(

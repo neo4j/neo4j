@@ -114,7 +114,7 @@ public class ConsistencyCheckService {
                 null,
                 false,
                 null,
-                ConsistencyFlags.DEFAULT,
+                ConsistencyFlags.ALL,
                 PageCacheTracer.NULL,
                 new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
                 EmptyMemoryTracker.INSTANCE);

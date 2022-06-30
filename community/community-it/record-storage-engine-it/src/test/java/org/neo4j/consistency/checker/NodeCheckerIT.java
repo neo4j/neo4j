@@ -162,7 +162,7 @@ class NodeCheckerIT {
                     INSTANCE,
                     NullLog.getInstance(),
                     false,
-                    ConsistencyFlags.DEFAULT,
+                    ConsistencyFlags.ALL,
                     contextFactory);
             context.initialize();
         }

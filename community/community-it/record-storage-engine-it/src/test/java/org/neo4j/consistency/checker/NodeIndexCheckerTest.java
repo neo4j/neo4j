@@ -55,7 +55,7 @@ public class NodeIndexCheckerTest extends CheckerTestBase {
         // entries doesn't belong to nodes in the range.
         // The ordering of the created property values will give several empty partitions.
         ConsistencySummaryStatistics inconsistenciesSummary = new ConsistencySummaryStatistics();
-        CheckerContext context = context(4, ConsistencyFlags.DEFAULT, inconsistenciesSummary);
+        CheckerContext context = context(4, ConsistencyFlags.ALL, inconsistenciesSummary);
         NodeIndexChecker indexChecker = new NodeIndexChecker(context);
         indexChecker.check(LongRange.range(0L, 10L), true, false);
 

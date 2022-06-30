@@ -210,7 +210,7 @@ class CheckerTestBase {
     void initialData(KernelTransaction tx) throws KernelException {}
 
     CheckerContext context() throws Exception {
-        return context(NUMBER_OF_THREADS, ConsistencyFlags.DEFAULT);
+        return context(NUMBER_OF_THREADS, ConsistencyFlags.ALL);
     }
 
     CheckerContext context(ConsistencyFlags consistencyFlags) throws Exception {
@@ -218,7 +218,7 @@ class CheckerTestBase {
     }
 
     CheckerContext context(int numberOfThreads) throws Exception {
-        return context(numberOfThreads, ConsistencyFlags.DEFAULT);
+        return context(numberOfThreads, ConsistencyFlags.ALL);
     }
 
     CheckerContext context(int numberOfThreads, ConsistencyFlags consistencyFlags) throws Exception {

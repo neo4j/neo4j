@@ -2898,7 +2898,7 @@ public class FullCheckIntegrationTest {
                         4,
                         logProvider.getLog("test"),
                         false,
-                        ConsistencyFlags.DEFAULT,
+                        ConsistencyFlags.ALL,
                         memoryLimiter,
                         EmptyMemoryTracker.INSTANCE,
                         new CursorContextFactory(cacheTracer, EMPTY),

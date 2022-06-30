@@ -21,21 +21,39 @@ package org.neo4j.consistency.checking;
 
 public record ConsistencyFlags(
         boolean checkGraph, boolean checkIndexes, boolean checkIndexStructure, boolean checkCounts) {
-    public static final ConsistencyFlags DEFAULT = new ConsistencyFlags(true, true, true, true);
+    public static final ConsistencyFlags NONE = new ConsistencyFlags(false, false, false, false);
+    public static final ConsistencyFlags ALL = new ConsistencyFlags(true, true, true, true);
+    public static final ConsistencyFlags DEFAULT = ALL;
 
-    public ConsistencyFlags skipCheckGraph() {
+    public ConsistencyFlags withCheckGraph() {
+        return new ConsistencyFlags(true, checkIndexes, checkIndexStructure, checkCounts);
+    }
+
+    public ConsistencyFlags withoutCheckGraph() {
         return new ConsistencyFlags(false, checkIndexes, checkIndexStructure, checkCounts);
     }
 
-    public ConsistencyFlags skipCheckIndexes() {
+    public ConsistencyFlags withCheckIndexes() {
+        return new ConsistencyFlags(checkGraph, true, checkIndexStructure, checkCounts);
+    }
+
+    public ConsistencyFlags withoutCheckIndexes() {
         return new ConsistencyFlags(checkGraph, false, checkIndexStructure, checkCounts);
     }
 
-    public ConsistencyFlags skipCheckIndexStructure() {
+    public ConsistencyFlags withCheckIndexStructure() {
+        return new ConsistencyFlags(checkGraph, checkIndexes, true, checkCounts);
+    }
+
+    public ConsistencyFlags withoutCheckIndexStructure() {
         return new ConsistencyFlags(checkGraph, checkIndexes, false, checkCounts);
     }
 
-    public ConsistencyFlags skipCheckCounts() {
+    public ConsistencyFlags withCheckCounts() {
+        return new ConsistencyFlags(checkGraph, checkIndexes, checkIndexStructure, true);
+    }
+
+    public ConsistencyFlags withoutCheckCounts() {
         return new ConsistencyFlags(checkGraph, checkIndexes, checkIndexStructure, false);
     }
 }
