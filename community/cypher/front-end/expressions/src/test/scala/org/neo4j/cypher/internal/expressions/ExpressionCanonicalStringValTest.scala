@@ -34,16 +34,18 @@ class ExpressionCanonicalStringValTest extends CypherFunSuite {
   }
 
   test("get degree should render nicely") {
-    GetDegree(varFor("x"), None, OUTGOING)(pos).asCanonicalStringVal should equal("size((x)-->())")
-    GetDegree(varFor("x"), None, INCOMING)(pos).asCanonicalStringVal should equal("size((x)<--())")
-    GetDegree(varFor("x"), None, BOTH)(pos).asCanonicalStringVal should equal("size((x)--())")
+    GetDegree(varFor("x"), None, OUTGOING)(pos).asCanonicalStringVal should equal("getDegree((x)-->())")
+    GetDegree(varFor("x"), None, INCOMING)(pos).asCanonicalStringVal should equal("getDegree((x)<--())")
+    GetDegree(varFor("x"), None, BOTH)(pos).asCanonicalStringVal should equal("getDegree((x)--())")
     GetDegree(varFor("x"), Some(relTypeName("Rel")), OUTGOING)(pos).asCanonicalStringVal should equal(
-      "size((x)-[:Rel]->())"
+      "getDegree((x)-[:Rel]->())"
     )
     GetDegree(varFor("x"), Some(relTypeName("Rel")), INCOMING)(pos).asCanonicalStringVal should equal(
-      "size((x)<-[:Rel]-())"
+      "getDegree((x)<-[:Rel]-())"
     )
-    GetDegree(varFor("x"), Some(relTypeName("Rel")), BOTH)(pos).asCanonicalStringVal should equal("size((x)-[:Rel]-())")
+    GetDegree(varFor("x"), Some(relTypeName("Rel")), BOTH)(pos).asCanonicalStringVal should equal(
+      "getDegree((x)-[:Rel]-())"
+    )
   }
 
   test("has degree greater than should render nicely") {
