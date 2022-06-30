@@ -27,16 +27,20 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.function.LongPredicate;
+import org.eclipse.collections.api.block.function.primitive.LongToLongFunction;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -190,6 +194,46 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
      */
     long estimateNumberOfEntries(CursorContext cursorContext);
 
+    /**
+     * Inserts contents from another index. Any violations will be reported via the {@code conflictHandler}.
+     *
+     * @param other other index to validate contents from.
+     * @param entityIdConverter function for converting IDs from the {@code other} index into this index.
+     * @param valueUniqueness whether to include the values into uniqueness checks.
+     * @param conflictHandler handling violations between these indexes.
+     * @param entityFilter filter for which entities to include in the validation.
+     * @param threads number of threads to use for this validation.
+     * @param jobScheduler to run the jobs for this validation.
+     */
+    void insertFrom(
+            IndexAccessor other,
+            LongToLongFunction entityIdConverter,
+            boolean valueUniqueness,
+            IndexEntryConflictHandler conflictHandler,
+            LongPredicate entityFilter,
+            int threads,
+            JobScheduler jobScheduler)
+            throws IndexEntryConflictException;
+
+    /**
+     * Validates contents from another index and violations that would occur if inserting its contents
+     * into this index. Any violations will be reported via the {@code conflictHandler}.
+     *
+     * @param other other index to validate contents from.
+     * @param valueUniqueness whether to include the values into uniqueness checks.
+     * @param conflictHandler handling violations between these indexes.
+     * @param entityFilter filter for which entities to include in the validation.
+     * @param threads number of threads to use for this validation.
+     * @param jobScheduler to run the jobs for this validation.
+     */
+    void validate(
+            IndexAccessor other,
+            boolean valueUniqueness,
+            IndexEntryConflictHandler conflictHandler,
+            LongPredicate entityFilter,
+            int threads,
+            JobScheduler jobScheduler);
+
     class Adapter implements IndexAccessor {
         @Override
         public void drop() {}
@@ -246,6 +290,26 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         public long estimateNumberOfEntries(CursorContext cursorContext) {
             return UNKNOWN_NUMBER_OF_ENTRIES;
         }
+
+        @Override
+        public void insertFrom(
+                IndexAccessor other,
+                LongToLongFunction entityIdConverter,
+                boolean valueUniqueness,
+                IndexEntryConflictHandler conflictHandler,
+                LongPredicate entityFilter,
+                int threads,
+                JobScheduler jobScheduler)
+                throws IndexEntryConflictException {}
+
+        @Override
+        public void validate(
+                IndexAccessor other,
+                boolean valueUniqueness,
+                IndexEntryConflictHandler conflictHandler,
+                LongPredicate entityFilter,
+                int threads,
+                JobScheduler jobScheduler) {}
     }
 
     class Delegating implements IndexAccessor {
@@ -324,6 +388,31 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         @Override
         public long estimateNumberOfEntries(CursorContext cursorContext) {
             return delegate.estimateNumberOfEntries(cursorContext);
+        }
+
+        @Override
+        public void insertFrom(
+                IndexAccessor other,
+                LongToLongFunction entityIdConverter,
+                boolean valueUniqueness,
+                IndexEntryConflictHandler conflictHandler,
+                LongPredicate entityFilter,
+                int threads,
+                JobScheduler jobScheduler)
+                throws IndexEntryConflictException {
+            delegate.insertFrom(
+                    other, entityIdConverter, valueUniqueness, conflictHandler, entityFilter, threads, jobScheduler);
+        }
+
+        @Override
+        public void validate(
+                IndexAccessor other,
+                boolean valueUniqueness,
+                IndexEntryConflictHandler conflictHandler,
+                LongPredicate entityFilter,
+                int threads,
+                JobScheduler jobScheduler) {
+            delegate.validate(other, valueUniqueness, conflictHandler, entityFilter, threads, jobScheduler);
         }
     }
 }

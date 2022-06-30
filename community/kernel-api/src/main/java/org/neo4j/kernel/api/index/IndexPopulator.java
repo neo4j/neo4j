@@ -148,6 +148,15 @@ public interface IndexPopulator extends MinimalIndexAccessor {
 
     default void scanCompleted(
             PhaseTracker phaseTracker, PopulationWorkScheduler populationWorkScheduler, CursorContext cursorContext)
+            throws IndexEntryConflictException {
+        scanCompleted(phaseTracker, populationWorkScheduler, IndexEntryConflictHandler.THROW, cursorContext);
+    }
+
+    default void scanCompleted(
+            PhaseTracker phaseTracker,
+            PopulationWorkScheduler populationWorkScheduler,
+            IndexEntryConflictHandler conflictHandler,
+            CursorContext cursorContext)
             throws IndexEntryConflictException { // no-op by default
     }
 
@@ -191,7 +200,10 @@ public interface IndexPopulator extends MinimalIndexAccessor {
 
         @Override
         public void scanCompleted(
-                PhaseTracker phaseTracker, PopulationWorkScheduler jobScheduler, CursorContext cursorContext) {}
+                PhaseTracker phaseTracker,
+                PopulationWorkScheduler jobScheduler,
+                IndexEntryConflictHandler conflictHandler,
+                CursorContext cursorContext) {}
 
         @Override
         public void close(boolean populationCompletedSuccessfully, CursorContext cursorContext) {}
@@ -263,9 +275,12 @@ public interface IndexPopulator extends MinimalIndexAccessor {
 
         @Override
         public void scanCompleted(
-                PhaseTracker phaseTracker, PopulationWorkScheduler jobScheduler, CursorContext cursorContext)
+                PhaseTracker phaseTracker,
+                PopulationWorkScheduler jobScheduler,
+                IndexEntryConflictHandler conflictHandler,
+                CursorContext cursorContext)
                 throws IndexEntryConflictException {
-            delegate.scanCompleted(phaseTracker, jobScheduler, cursorContext);
+            delegate.scanCompleted(phaseTracker, jobScheduler, conflictHandler, cursorContext);
         }
 
         @Override

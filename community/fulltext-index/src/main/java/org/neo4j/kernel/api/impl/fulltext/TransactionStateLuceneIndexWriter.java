@@ -73,6 +73,11 @@ class TransactionStateLuceneIndexWriter implements LuceneIndexWriter, Closeable 
         writer.deleteDocuments(query);
     }
 
+    @Override
+    public void addDirectory(int count, Directory directory) throws IOException {
+        writer.addIndexes(directory);
+    }
+
     void resetWriterState() throws IOException {
         if (writer != null) {
             // Note that 'rollback' closes the writer.

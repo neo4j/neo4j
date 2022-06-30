@@ -29,6 +29,8 @@ import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.function.IntFunction;
+import java.util.function.LongPredicate;
+import org.eclipse.collections.api.block.function.primitive.LongToLongFunction;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.ResourceIterator;
@@ -38,11 +40,14 @@ import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexEntryConflictHandler;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.scheduler.JobScheduler;
 
 public class TokenIndexAccessor extends TokenIndex implements IndexAccessor {
     private final EntityType entityType;
@@ -74,6 +79,30 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    @Override
+    public void insertFrom(
+            IndexAccessor other,
+            LongToLongFunction entityIdConverter,
+            boolean valueUniqueness,
+            IndexEntryConflictHandler conflictHandler,
+            LongPredicate entityFilter,
+            int threads,
+            JobScheduler jobScheduler)
+            throws IndexEntryConflictException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void validate(
+            IndexAccessor other,
+            boolean valueUniqueness,
+            IndexEntryConflictHandler conflictHandler,
+            LongPredicate entityFilter,
+            int threads,
+            JobScheduler jobScheduler) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -25,9 +25,11 @@ import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.LongPredicate;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 import org.apache.lucene.document.Document;
+import org.eclipse.collections.api.block.function.primitive.LongToLongFunction;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
@@ -35,18 +37,22 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexReaderAcquisitionException;
 import org.neo4j.kernel.api.impl.schema.reader.LuceneAllEntriesIndexAccessorReader;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
+import org.neo4j.kernel.api.index.IndexEntryConflictHandler;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReader, INDEX extends DatabaseIndex<READER>>
         implements IndexAccessor {
@@ -69,6 +75,58 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
             throw new UnsupportedOperationException("Can't create index updater while database is in read only mode.");
         }
         return getIndexUpdater(mode);
+    }
+
+    @Override
+    public void insertFrom(
+            IndexAccessor other,
+            LongToLongFunction entityIdConverter,
+            boolean valueUniqueness,
+            IndexEntryConflictHandler conflictHandler,
+            LongPredicate entityFilter,
+            int threads,
+            JobScheduler jobScheduler)
+            throws IndexEntryConflictException {
+        if (entityIdConverter != null) {
+            throw new UnsupportedOperationException("Unable to modify document IDs");
+        }
+
+        var o = (AbstractLuceneIndexAccessor<READER, INDEX>) other;
+        try {
+            o.luceneIndex.accessClosedDirectories(writer::addDirectory);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        refresh();
+
+        if (entityFilter != null) {
+            // If there's a filter then merge the index and then remove those that should be filtered out
+            // TODO come on, make this parallel! Use the threads arg
+            try (var reader = newAllEntriesValueReader(1, CursorContext.NULL_CONTEXT)[0];
+                    var updater = newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
+                while (reader.hasNext()) {
+                    var candidate = reader.next();
+                    if (!entityFilter.test(candidate)) {
+                        var values = new Value[descriptor.schema().getPropertyIds().length];
+                        for (int i = 0; i < values.length; i++) {
+                            values[i] = Values.stringValue("");
+                        }
+                        updater.process(IndexEntryUpdate.remove(candidate, descriptor, values));
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void validate(
+            IndexAccessor other,
+            boolean valueUniqueness,
+            IndexEntryConflictHandler conflictHandler,
+            LongPredicate entityFilter,
+            int threads,
+            JobScheduler jobScheduler) {
+        throw new UnsupportedOperationException();
     }
 
     protected abstract IndexUpdater getIndexUpdater(IndexUpdateMode mode);

@@ -22,7 +22,12 @@ package org.neo4j.kernel.impl.index.schema;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
+import static org.neo4j.internal.kernel.api.security.AccessMode.Static.FULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
+import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -31,18 +36,32 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.function.LongPredicate;
+import org.eclipse.collections.api.block.function.primitive.LongToLongFunction;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.neo4j.common.Subject;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeInconsistencyException;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
+import org.neo4j.kernel.api.index.IndexEntryConflictHandler;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.values.storable.Value;
 
 public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> extends NativeIndex<KEY>
@@ -57,7 +76,8 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
             IndexDescriptor descriptor,
             ImmutableSet<OpenOption> openOptions) {
         super(databaseIndexContext, layout, indexFiles, descriptor, openOptions);
-        singleUpdater = new NativeIndexUpdater<>(layout.newKey(), indexUpdateIgnoreStrategy());
+        singleUpdater = new NativeIndexUpdater<>(
+                layout.newKey(), indexUpdateIgnoreStrategy(), new ThrowingConflictDetector<>(true));
         headerWriter = new NativeIndexHeaderWriter(BYTE_ONLINE);
     }
 
@@ -74,7 +94,8 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
         assertWritable();
         try {
             if (parallel) {
-                return new NativeIndexUpdater<>(layout.newKey(), indexUpdateIgnoreStrategy())
+                return new NativeIndexUpdater<>(
+                                layout.newKey(), indexUpdateIgnoreStrategy(), new ThrowingConflictDetector<>(true))
                         .initialize(tree.writer(cursorContext));
             } else {
                 return singleUpdater.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext));
@@ -82,6 +103,133 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    @Override
+    public void insertFrom(
+            IndexAccessor other,
+            LongToLongFunction entityIdConverter,
+            boolean valueUniqueness,
+            IndexEntryConflictHandler conflictHandler,
+            LongPredicate entityFilter,
+            int threads,
+            JobScheduler jobScheduler)
+            throws IndexEntryConflictException {
+        var o = (NativeIndexAccessor<KEY>) other;
+        var readers = o.newAllEntriesValueReader(threads, NULL_CONTEXT);
+        try {
+            List<JobHandle<?>> handles = new ArrayList<>();
+            var updaterFlags = readers.length == 1 ? W_BATCHED_SINGLE_THREADED : 0;
+            for (var reader : readers) {
+                handles.add(jobScheduler.schedule(
+                        Group.INDEX_POPULATION_WORK,
+                        new JobMonitoringParams(Subject.AUTH_DISABLED, databaseName, "insertFrom"),
+                        () -> {
+                            var merger = new ConflictDetectingValueMerger<KEY, Value[]>(!valueUniqueness) {
+                                @Override
+                                void doReportConflict(long existingNodeId, long addedNodeId, Value[] toReport)
+                                        throws IndexEntryConflictException {
+                                    switch (conflictHandler.indexEntryConflict(existingNodeId, addedNodeId, toReport)) {
+                                        case THROW -> throw new IndexEntryConflictException(
+                                                existingNodeId, addedNodeId, toReport);
+                                        case DELETE -> {
+                                            /*then just skip it*/
+                                        }
+                                    }
+                                }
+                            };
+                            try (var updater = new NativeIndexUpdater<>(
+                                            layout.newKey(), indexUpdateIgnoreStrategy(), merger)
+                                    .initialize(tree.writer(updaterFlags, NULL_CONTEXT))) {
+                                while (reader.hasNext()) {
+                                    var entityId = reader.next();
+                                    if (entityFilter == null || entityFilter.test(entityId)) {
+                                        if (entityIdConverter != null) {
+                                            entityId = entityIdConverter.applyAsLong(entityId);
+                                        }
+                                        updater.process(add(entityId, descriptor, reader.values()));
+                                    }
+                                }
+                            }
+                            return null;
+                        }));
+            }
+
+            var e = awaitCompletionOfAll(handles);
+            if (e instanceof IndexEntryConflictException exception) {
+                throw exception;
+            } else if (e instanceof RuntimeException exception) {
+                throw exception;
+            } else if (e != null) {
+                throw new RuntimeException(e);
+            }
+        } finally {
+            IOUtils.closeAllUnchecked(readers);
+        }
+    }
+
+    @Override
+    public void validate(
+            IndexAccessor other,
+            boolean valueUniqueness,
+            IndexEntryConflictHandler conflictHandler,
+            LongPredicate entityFilter,
+            int threads,
+            JobScheduler jobScheduler) {
+        var o = (NativeIndexAccessor<KEY>) other;
+        var readers = o.newAllEntriesValueReader(threads, NULL_CONTEXT);
+        try {
+            List<JobHandle<?>> handles = new ArrayList<>();
+            for (var fromReader : readers) {
+                handles.add(jobScheduler.schedule(
+                        Group.INDEX_POPULATION_WORK,
+                        new JobMonitoringParams(Subject.AUTH_DISABLED, databaseName, "insertFrom"),
+                        () -> {
+                            try (var reader = newValueReader()) {
+                                var propertyKeyIds = descriptor.schema().getPropertyIds();
+                                while (fromReader.hasNext()) {
+                                    var entityId = fromReader.next();
+                                    var values = fromReader.values();
+                                    var queries = new PropertyIndexQuery[values.length];
+                                    for (var i = 0; i < queries.length; i++) {
+                                        queries[i] = exact(propertyKeyIds[i], values[i]);
+                                    }
+                                    try (var client = new NodeValueIterator()) {
+                                        reader.query(client, QueryContext.NULL_CONTEXT, FULL, unconstrained(), queries);
+                                        if (client.hasNext()) {
+                                            var existingEntityId = client.next();
+                                            conflictHandler.indexEntryConflict(existingEntityId, entityId, values);
+                                        }
+                                    }
+                                }
+                            }
+                            return null;
+                        }));
+            }
+
+            var e = awaitCompletionOfAll(handles);
+            if (e instanceof RuntimeException exception) {
+                throw exception;
+            } else if (e != null) {
+                throw new RuntimeException(e);
+            }
+        } finally {
+            IOUtils.closeAllUnchecked(readers);
+        }
+    }
+
+    private Throwable awaitCompletionOfAll(List<JobHandle<?>> handles) {
+        Throwable e = null;
+        for (var handle : handles) {
+            try {
+                handle.get();
+            } catch (ExecutionException ex) {
+                e = Exceptions.chain(e, ex.getCause());
+            } catch (InterruptedException ex) {
+                e = Exceptions.chain(e, ex);
+            }
+        }
+        return e;
     }
 
     /**

@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
+import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 
@@ -80,4 +81,14 @@ public abstract class AbstractIndexPartition implements Closeable {
      * @throws IOException if any IO operation fails.
      */
     public abstract ResourceIterator<Path> snapshot() throws IOException;
+
+    /**
+     * Allows the visitor to access the underlying directory that makes up this partition.
+     * Any writer is closed during this access.
+     *
+     * @param visitor that gets access to the raw directories of the index.
+     * @throws IOException on I/O error.
+     */
+    public abstract void accessClosedDirectory(ThrowingBiConsumer<Integer, Directory, IOException> visitor)
+            throws IOException;
 }

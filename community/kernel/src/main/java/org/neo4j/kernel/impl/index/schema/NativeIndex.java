@@ -53,7 +53,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
     private final Monitors monitors;
     private final String monitorTag;
     private final DatabaseReadOnlyChecker readOnlyChecker;
-    private final String databaseName;
+    final String databaseName;
     private final CursorContextFactory contextFactory;
     private final ImmutableSet<OpenOption> openOptions;
     final PageCacheTracer pageCacheTracer;

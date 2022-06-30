@@ -23,6 +23,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import org.apache.lucene.store.Directory;
+import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.backup.WritableIndexSnapshotFileIterator;
@@ -122,6 +124,8 @@ public interface DatabaseIndex<READER extends ValueIndexReader> extends Closeabl
      * @return list of index partition
      */
     List<AbstractIndexPartition> getPartitions();
+
+    void accessClosedDirectories(ThrowingBiConsumer<Integer, Directory, IOException> visitor) throws IOException;
 
     LuceneIndexWriter getIndexWriter();
 

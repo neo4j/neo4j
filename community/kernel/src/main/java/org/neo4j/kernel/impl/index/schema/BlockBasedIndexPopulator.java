@@ -54,6 +54,7 @@ import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.memory.ByteBufferFactory.Allocator;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexEntryConflictHandler;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -225,7 +226,10 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
 
     @Override
     public void scanCompleted(
-            PhaseTracker phaseTracker, PopulationWorkScheduler populationWorkScheduler, CursorContext cursorContext)
+            PhaseTracker phaseTracker,
+            PopulationWorkScheduler populationWorkScheduler,
+            IndexEntryConflictHandler conflictHandler,
+            CursorContext cursorContext)
             throws IndexEntryConflictException {
         if (!markMergeStarted()) {
             // This populator has already been closed, either from an external cancel or drop call.
@@ -268,7 +272,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
                 if (descriptor.isUnique()) {
                     try (IndexKeyStorage.KeyEntryCursor<KEY> allConflictingKeys =
                             recordingConflictDetector.allConflicts()) {
-                        verifyUniqueKeys(allConflictingKeys, cursorContext);
+                        verifyUniqueKeys(allConflictingKeys, conflictHandler, cursorContext);
                     }
                 }
             }
@@ -348,27 +352,42 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
         }
     }
 
-    private void verifyUniqueKeys(IndexKeyStorage.KeyEntryCursor<KEY> allConflictingKeys, CursorContext cursorContext)
+    private void verifyUniqueKeys(
+            IndexKeyStorage.KeyEntryCursor<KEY> allConflictingKeys,
+            IndexEntryConflictHandler conflictHandler,
+            CursorContext cursorContext)
             throws IOException, IndexEntryConflictException {
         while (allConflictingKeys.next() && !cancellation.cancelled()) {
             KEY key = allConflictingKeys.key();
             key.setCompareId(false);
             try (var seeker = tree.seek(key, key, cursorContext)) {
-                verifyUniqueSeek(seeker);
+                verifyUniqueSeek(seeker, conflictHandler, cursorContext);
             }
         }
     }
 
-    private void verifyUniqueSeek(Seeker<KEY, NullValue> seek) throws IOException, IndexEntryConflictException {
+    private void verifyUniqueSeek(
+            Seeker<KEY, NullValue> seek, IndexEntryConflictHandler conflictHandler, CursorContext cursorContext)
+            throws IOException, IndexEntryConflictException {
         if (seek != null) {
             if (seek.next()) {
                 KEY key = seek.key();
                 long firstEntityId = key.getEntityId();
-                if (seek.next()) {
-                    long secondEntityId = key.getEntityId();
-                    throw new IndexEntryConflictException(firstEntityId, secondEntityId, key.asValues());
+                while (seek.next()) {
+                    long otherEntityId = key.getEntityId();
+                    var values = key.asValues();
+                    switch (conflictHandler.indexEntryConflict(firstEntityId, otherEntityId, values)) {
+                        case THROW -> throw new IndexEntryConflictException(firstEntityId, otherEntityId, values);
+                        case DELETE -> deleteConflict(seek.key(), cursorContext);
+                    }
                 }
             }
+        }
+    }
+
+    private void deleteConflict(KEY key, CursorContext cursorContext) throws IOException {
+        try (var writer = tree.writer(cursorContext)) {
+            writer.remove(key);
         }
     }
 

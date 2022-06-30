@@ -128,6 +128,7 @@ import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexEntryConflictHandler;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -1431,7 +1432,10 @@ class IndexingServiceTest {
 
         @Override
         public void scanCompleted(
-                PhaseTracker phaseTracker, PopulationWorkScheduler jobScheduler, CursorContext cursorContext) {
+                PhaseTracker phaseTracker,
+                PopulationWorkScheduler jobScheduler,
+                IndexEntryConflictHandler conflictHandler,
+                CursorContext cursorContext) {
             latch.waitForAllToStart();
         }
 

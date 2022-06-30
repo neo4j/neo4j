@@ -32,15 +32,18 @@ import org.neo4j.values.storable.Value;
 class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>> implements IndexUpdater {
     private final KEY treeKey;
     private final IndexUpdateIgnoreStrategy ignoreStrategy;
-    private final ConflictDetectingValueMerger<KEY, Value[]> conflictDetectingValueMerger =
-            new ThrowingConflictDetector<>(true);
+    private final ConflictDetectingValueMerger<KEY, Value[]> conflictDetectingValueMerger;
     private Writer<KEY, NullValue> writer;
 
     private boolean closed = true;
 
-    NativeIndexUpdater(KEY treeKey, IndexUpdateIgnoreStrategy ignoreStrategy) {
+    NativeIndexUpdater(
+            KEY treeKey,
+            IndexUpdateIgnoreStrategy ignoreStrategy,
+            ConflictDetectingValueMerger<KEY, Value[]> conflictDetectingValueMerger) {
         this.treeKey = treeKey;
         this.ignoreStrategy = ignoreStrategy;
+        this.conflictDetectingValueMerger = conflictDetectingValueMerger;
     }
 
     NativeIndexUpdater<KEY> initialize(Writer<KEY, NullValue> writer) {

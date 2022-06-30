@@ -37,6 +37,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.neo4j.configuration.Config;
+import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -395,4 +396,18 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader> {
     protected abstract READER createSimpleReader(List<AbstractIndexPartition> partitions) throws IOException;
 
     protected abstract READER createPartitionedReader(List<AbstractIndexPartition> partitions) throws IOException;
+
+    /**
+     * Allows the visitor to access the underlying directories that makes up this index.
+     * Any writer is closed during this access.
+     *
+     * @param visitor that gets access to the raw directories of the index.
+     * @throws IOException on I/O error.
+     */
+    protected void accessClosedDirectories(ThrowingBiConsumer<Integer, Directory, IOException> visitor)
+            throws IOException {
+        for (AbstractIndexPartition partition : getPartitions()) {
+            partition.accessClosedDirectory(visitor);
+        }
+    }
 }
