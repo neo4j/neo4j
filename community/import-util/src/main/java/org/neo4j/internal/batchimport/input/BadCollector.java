@@ -23,6 +23,7 @@ import static java.lang.String.format;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -63,6 +64,7 @@ public final class BadCollector implements Collector {
     static final int BAD_RELATIONSHIPS = 0x1;
     static final int DUPLICATE_NODES = 0x2;
     static final int EXTRA_COLUMNS = 0x4;
+    static final int VIOLATING_NODES = 0x8;
 
     static final int COLLECT_ALL = BAD_RELATIONSHIPS | DUPLICATE_NODES | EXTRA_COLUMNS;
     public static final long UNLIMITED_TOLERANCE = -1;
@@ -124,6 +126,11 @@ public final class BadCollector implements Collector {
     @Override
     public void collectDuplicateNode(final Object id, long actualId, final String group) {
         collect(new NodesProblemReporter(id, group));
+    }
+
+    @Override
+    public void collectNodeViolatingConstraint(long id, Map<String, Object> properties, String constraintDescription) {
+        collect(new NodeViolatingConstraintReporter(id, properties, constraintDescription));
     }
 
     @Override
@@ -286,6 +293,31 @@ public final class BadCollector implements Collector {
                         format("Extra column not present in header on line %d in %s with value %s", row, source, value);
             }
             return message;
+        }
+    }
+
+    private static class NodeViolatingConstraintReporter extends ProblemReporter {
+        private final long id;
+        private final Map<String, Object> properties;
+        private final String constraintDescription;
+
+        NodeViolatingConstraintReporter(long id, Map<String, Object> properties, String constraintDescription) {
+            super(VIOLATING_NODES);
+            this.id = id;
+            this.properties = properties;
+            this.constraintDescription = constraintDescription;
+        }
+
+        @Override
+        String message() {
+            return format(
+                    "Node %d would have violated constraint:%s with properties:%s",
+                    id, constraintDescription, properties);
+        }
+
+        @Override
+        InputException exception() {
+            return new InputException(message());
         }
     }
 }

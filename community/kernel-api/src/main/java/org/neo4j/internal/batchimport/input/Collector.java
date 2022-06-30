@@ -21,6 +21,8 @@ package org.neo4j.internal.batchimport.input;
 
 import static java.lang.String.format;
 
+import java.util.Map;
+
 /**
  * Collects items and is {@link #close() closed} after any and all items have been collected.
  * The {@link Collector} is responsible for closing whatever closeable resource received from the importer.
@@ -30,6 +32,8 @@ public interface Collector extends AutoCloseable {
             Object startId, String startIdGroup, String type, Object endId, String endIdGroup, Object specificValue);
 
     void collectDuplicateNode(Object id, long actualId, String group);
+
+    void collectNodeViolatingConstraint(long id, Map<String, Object> properties, String constraintDescription);
 
     void collectExtraColumns(String source, long row, String value);
 
@@ -68,6 +72,10 @@ public interface Collector extends AutoCloseable {
         public void collectDuplicateNode(Object id, long actualId, String group) {}
 
         @Override
+        public void collectNodeViolatingConstraint(
+                long id, Map<String, Object> properties, String constraintDescription) {}
+
+        @Override
         public boolean isCollectingBadRelationships() {
             return true;
         }
@@ -103,6 +111,13 @@ public interface Collector extends AutoCloseable {
         @Override
         public void collectDuplicateNode(Object id, long actualId, String group) {
             throw new IllegalStateException(format("Bad duplicate node %s:%s id:%d", id, group, actualId));
+        }
+
+        @Override
+        public void collectNodeViolatingConstraint(
+                long id, Map<String, Object> properties, String constraintDescription) {
+            throw new IllegalStateException(
+                    format("Bad node violating constraint %s %s id:%d", properties, constraintDescription, id));
         }
 
         @Override

@@ -44,18 +44,17 @@ public class Collectors {
         return badCollector(nullOutputStream(), tolerance, collect);
     }
 
-    public static Collector badCollector(OutputStream out, long unlimitedTolerance) {
-        return badCollector(out, unlimitedTolerance, COLLECT_ALL, false);
+    public static Collector badCollector(OutputStream out, long tolerance) {
+        return badCollector(out, tolerance, COLLECT_ALL, false);
     }
 
     public static Collector badCollector(OutputStream out, long tolerance, int collect) {
         return new BadCollector(out, tolerance, collect, DEFAULT_BACK_PRESSURE_THRESHOLD, false, NO_MONITOR);
     }
 
-    public static Collector badCollector(
-            OutputStream out, long unlimitedTolerance, int collect, boolean skipBadEntriesLogging) {
+    public static Collector badCollector(OutputStream out, long tolerance, int collect, boolean skipBadEntriesLogging) {
         return new BadCollector(
-                out, unlimitedTolerance, collect, DEFAULT_BACK_PRESSURE_THRESHOLD, skipBadEntriesLogging, NO_MONITOR);
+                out, tolerance, collect, DEFAULT_BACK_PRESSURE_THRESHOLD, skipBadEntriesLogging, NO_MONITOR);
     }
 
     public static Function<OutputStream, Collector> badCollector(final int tolerance) {
