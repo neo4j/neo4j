@@ -173,8 +173,8 @@ public class DataImporter {
             MemoryTracker memoryTracker,
             Supplier<SchemaMonitor> schemaMonitors)
             throws IOException {
-        Supplier<EntityImporter> importers =
-                () -> new NodeImporter(stores, idMapper, monitor, contextFactory, memoryTracker, schemaMonitors.get());
+        Supplier<EntityImporter> importers = () -> new NodeImporter(
+                stores, idMapper, monitor, badCollector, contextFactory, memoryTracker, schemaMonitors.get());
         importData(
                 NODE_IMPORT_NAME,
                 configuration,

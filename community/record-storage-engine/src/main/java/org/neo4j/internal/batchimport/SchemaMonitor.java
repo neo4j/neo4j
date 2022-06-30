@@ -22,7 +22,7 @@ package org.neo4j.internal.batchimport;
 public interface SchemaMonitor {
     SchemaMonitor NO_MONITOR = new SchemaMonitor() {
         @Override
-        public void propertyToken(int propertyKeyId) {}
+        public void property(int propertyKeyId, Object value) {}
 
         @Override
         public void entityToken(int entityTokenId) {}
@@ -31,14 +31,16 @@ public interface SchemaMonitor {
         public void entityTokens(int[] entityTokenIds) {}
 
         @Override
-        public void endOfEntity() {}
+        public boolean endOfEntity(long entityId) {
+            return true;
+        }
     };
 
-    void propertyToken(int propertyKeyId);
+    void property(int propertyKeyId, Object value);
 
     void entityToken(int entityTokenId);
 
     void entityTokens(int[] entityTokenIds);
 
-    void endOfEntity();
+    boolean endOfEntity(long entityId);
 }

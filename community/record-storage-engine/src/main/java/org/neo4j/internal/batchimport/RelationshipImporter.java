@@ -164,22 +164,33 @@ public class RelationshipImporter extends EntityImporter {
                 && relationshipRecord.getSecondNode() != IdMapper.ID_NOT_FOUND
                 && relationshipRecord.getType() != -1) {
             relationshipRecord.setId(relationshipIds.nextId(cursorContext));
-            if (doubleRecordUnits) {
-                // simply reserve one id for this relationship to grow during linking stage
-                relationshipIds.nextId(cursorContext);
-            }
-            relationshipRecord.setNextProp(createAndWritePropertyChain(cursorContext));
-            relationshipRecord.setFirstInFirstChain(false);
-            relationshipRecord.setFirstInSecondChain(false);
-            relationshipRecord.setFirstPrevRel(Record.NO_NEXT_RELATIONSHIP.intValue());
-            relationshipRecord.setSecondPrevRel(Record.NO_NEXT_RELATIONSHIP.intValue());
+            if (schemaMonitor.endOfEntity(relationshipRecord.getId())) {
+                if (doubleRecordUnits) {
+                    // simply reserve one id for this relationship to grow during linking stage
+                    relationshipIds.nextId(cursorContext);
+                }
+                relationshipRecord.setNextProp(createAndWritePropertyChain(cursorContext));
+                relationshipRecord.setFirstInFirstChain(false);
+                relationshipRecord.setFirstInSecondChain(false);
+                relationshipRecord.setFirstPrevRel(Record.NO_NEXT_RELATIONSHIP.intValue());
+                relationshipRecord.setSecondPrevRel(Record.NO_NEXT_RELATIONSHIP.intValue());
 
-            relationshipStore.prepareForCommit(
-                    relationshipRecord, prepareIdSequence.apply(relationshipRecord.getId()), cursorContext);
-            relationshipStore.updateRecord(
-                    relationshipRecord, IGNORE, relationshipUpdateCursor, cursorContext, storeCursors);
-            relationshipCount++;
-            typeCounts.increment(relationshipRecord.getType());
+                relationshipStore.prepareForCommit(
+                        relationshipRecord, prepareIdSequence.apply(relationshipRecord.getId()), cursorContext);
+                relationshipStore.updateRecord(
+                        relationshipRecord, IGNORE, relationshipUpdateCursor, cursorContext, storeCursors);
+                relationshipCount++;
+                typeCounts.increment(relationshipRecord.getType());
+            } else {
+                badCollector.collectBadRelationship(
+                        startId,
+                        group(startIdGroup).name(),
+                        type,
+                        endId,
+                        group(endIdGroup).name(),
+                        null);
+                freeUnusedId(relationshipStore, relationshipRecord.getId(), cursorContext);
+            }
         } else {
             if (validateRelationshipData) {
                 validateNode(startId, Type.START_ID);
@@ -207,10 +218,6 @@ public class RelationshipImporter extends EntityImporter {
         endIdGroup = null;
         type = null;
         super.endOfEntity();
-    }
-
-    private static Group group(Group group) {
-        return group != null ? group : Group.GLOBAL;
     }
 
     private void validateNode(Object id, Type fieldType) {

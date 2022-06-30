@@ -24,6 +24,7 @@ import static org.neo4j.storageengine.util.IdUpdateListener.IGNORE;
 import java.util.Arrays;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.DataImporter.Monitor;
+import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.internal.id.IdGenerator.Marker;
@@ -116,7 +117,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter {
         assert !hasPropertyId;
         encodeProperty(nextPropertyBlock(), propertyKeyId, value);
         entityPropertyCount++;
-        schemaMonitor.propertyToken(propertyKeyId);
+        schemaMonitor.property(propertyKeyId, value);
         return true;
     }
 
@@ -134,7 +135,6 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter {
         hasPropertyId = false;
         propertyCount += entityPropertyCount;
         entityPropertyCount = 0;
-        schemaMonitor.endOfEntity();
     }
 
     private PropertyBlock nextPropertyBlock() {
@@ -223,5 +223,15 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter {
         try (Marker marker = store.getIdGenerator().marker(cursorContext)) {
             idBatch.visitUnused(marker::markDeleted);
         }
+    }
+
+    static void freeUnusedId(CommonAbstractStore<?, ?> store, long id, CursorContext cursorContext) {
+        try (var marker = store.getIdGenerator().marker(cursorContext)) {
+            marker.markDeleted(id);
+        }
+    }
+
+    static Group group(Group group) {
+        return group != null ? group : Group.GLOBAL;
     }
 }

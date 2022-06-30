@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -847,6 +848,12 @@ public class EncodingIdMapperTest {
 
         @Override
         public void collectExtraColumns(String source, long row, String value) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void collectNodeViolatingConstraint(
+                long id, Map<String, Object> properties, String constraintDescription) {
             throw new UnsupportedOperationException();
         }
 

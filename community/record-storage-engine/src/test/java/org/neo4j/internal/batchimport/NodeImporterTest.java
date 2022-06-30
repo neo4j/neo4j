@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport;
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.internal.batchimport.SchemaMonitor.NO_MONITOR;
@@ -42,6 +43,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMappers;
+import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
@@ -112,7 +114,13 @@ class NodeImporterTest {
 
         // when
         try (NodeImporter importer = new NodeImporter(
-                stores, idMapper, new DataImporter.Monitor(), NULL_CONTEXT_FACTORY, INSTANCE, NO_MONITOR)) {
+                stores,
+                idMapper,
+                new DataImporter.Monitor(),
+                Collector.EMPTY,
+                NULL_CONTEXT_FACTORY,
+                INSTANCE,
+                NO_MONITOR)) {
             importer.id(nodeId);
             String[] labels = new String[numberOfLabels];
             for (int i = 0; i < labels.length; i++) {
@@ -140,7 +148,13 @@ class NodeImporterTest {
 
         // when
         try (NodeImporter importer = new NodeImporter(
-                stores, IdMappers.actual(), new DataImporter.Monitor(), contextFactory, INSTANCE, NO_MONITOR)) {
+                stores,
+                IdMappers.actual(),
+                new DataImporter.Monitor(),
+                Collector.EMPTY,
+                contextFactory,
+                INSTANCE,
+                NO_MONITOR)) {
             importer.id(nodeId);
             String[] labels = new String[numberOfLabels];
             for (int i = 0; i < labels.length; i++) {
@@ -175,6 +189,7 @@ class NodeImporterTest {
                 stores,
                 mock(IdMapper.class),
                 new DataImporter.Monitor(),
+                Collector.EMPTY,
                 NULL_CONTEXT_FACTORY,
                 INSTANCE,
                 schemaMonitor)) {
@@ -182,10 +197,10 @@ class NodeImporterTest {
         }
 
         // then
-        verify(schemaMonitor).propertyToken(keyIds("key2")[0]);
-        verify(schemaMonitor).propertyToken(keyIds("key3")[0]);
+        verify(schemaMonitor).property(keyIds("key2")[0], "value2");
+        verify(schemaMonitor).property(keyIds("key3")[0], "value3");
         verify(schemaMonitor).entityTokens(labelIds("label1", "label2"));
-        verify(schemaMonitor).endOfEntity();
+        verify(schemaMonitor).endOfEntity(anyLong());
     }
 
     private int[] labelIds(String... labels) throws KernelException {

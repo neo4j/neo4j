@@ -40,6 +40,7 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.token.TokenHolders;
 
 public class DefaultIndexProvidersAccess extends LifeContainer implements IndexProvidersAccess {
     private final StorageEngineFactory storageEngineFactory;
@@ -73,6 +74,15 @@ public class DefaultIndexProvidersAccess extends LifeContainer implements IndexP
             PageCache pageCache, DatabaseLayout layout, DatabaseReadOnlyChecker readOnlyChecker) {
         var tokenHolders = storageEngineFactory.loadReadOnlyTokens(
                 fileSystem, layout, databaseConfig, pageCache, pageCacheTracer, false, contextFactory);
+        return access(pageCache, layout, readOnlyChecker, tokenHolders);
+    }
+
+    @Override
+    public IndexProviderMap access(
+            PageCache pageCache,
+            DatabaseLayout layout,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            TokenHolders tokenHolders) {
         var monitors = new Monitors();
         var extensions = life.add(instantiateExtensions(
                 layout,

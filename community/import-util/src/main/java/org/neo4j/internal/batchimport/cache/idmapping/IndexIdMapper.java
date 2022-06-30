@@ -19,36 +19,56 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping;
 
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.index_populator_block_size;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.kernel.api.security.AccessMode.Static.FULL;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.OpenOption;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
+import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.neo4j.common.TokenNameLookup;
+import org.neo4j.configuration.Config;
+import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.internal.batchimport.PopulationWorkJobScheduler;
 import org.neo4j.internal.batchimport.PropertyValueLookup;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.memory.ByteBufferFactory;
+import org.neo4j.io.memory.UnsafeDirectByteBufferAllocator;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexEntryConflictHandler;
+import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.ValueIndexReader;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 /**
@@ -56,29 +76,63 @@ import org.neo4j.values.storable.Values;
  */
 public class IndexIdMapper implements IdMapper {
     private final Map<String, IndexAccessor> accessors;
-    private final Map<String, SchemaDescriptor> schemaDescriptors;
+    private final IndexProviderMap tempIndexes;
+    private final TokenNameLookup tokenNameLookup;
+    private final Map<String, IndexDescriptor> indexDescriptors;
+    private final PopulationWorkJobScheduler workScheduler;
+    private final ImmutableSet<OpenOption> openOptions;
+    private final Configuration configuration;
     private final PageCacheTracer pageCacheTracer;
     private final ThreadLocal<Map<String, Index>> threadLocal;
     private final List<Index> indexes = new CopyOnWriteArrayList<>();
+    private final Map<String, Populator> populators = new HashMap<>();
+    private final ByteBufferFactory bufferFactory;
+    private final MutableLongSet duplicateNodeIds = LongSets.mutable.empty();
 
     // key is groupName, and for some reason accessors doesn't expose which descriptor they're for, so pass that in too
     public IndexIdMapper(
             Map<String, IndexAccessor> accessors,
-            Map<String, SchemaDescriptor> schemaDescriptors,
-            PageCacheTracer pageCacheTracer) {
+            IndexProviderMap tempIndexes,
+            TokenNameLookup tokenNameLookup,
+            Map<String, IndexDescriptor> indexDescriptors,
+            PopulationWorkJobScheduler workScheduler,
+            ImmutableSet<OpenOption> openOptions,
+            Configuration configuration,
+            PageCacheTracer pageCacheTracer)
+            throws IOException {
         this.accessors = accessors;
-        this.schemaDescriptors = schemaDescriptors;
+        this.tempIndexes = tempIndexes;
+        this.tokenNameLookup = tokenNameLookup;
+        this.indexDescriptors = indexDescriptors;
+        this.workScheduler = workScheduler;
+        this.openOptions = openOptions;
+        this.configuration = configuration;
         this.pageCacheTracer = pageCacheTracer;
         this.threadLocal = ThreadLocal.withInitial(HashMap::new);
+        this.bufferFactory = new ByteBufferFactory(
+                UnsafeDirectByteBufferAllocator::new,
+                Config.defaults().get(index_populator_block_size).intValue());
+        for (var entry : accessors.entrySet()) {
+            var descriptor = indexDescriptors.get(entry.getKey());
+            var indexProvider = tempIndexes.lookup(descriptor.getIndexProvider());
+            var populator = indexProvider.getPopulator(
+                    descriptor,
+                    new IndexSamplingConfig(Config.defaults()),
+                    bufferFactory,
+                    EmptyMemoryTracker.INSTANCE,
+                    tokenNameLookup,
+                    openOptions);
+            populator.create();
+            populators.put(entry.getKey(), new Populator(populator, descriptor));
+        }
     }
 
     @Override
     public void put(Object inputId, long actualId, Group group) {
+        var populator = populators.get(group.name());
+        var update = IndexEntryUpdate.add(actualId, populator.descriptor, Values.of(inputId));
         try {
-            var schemaDescriptor = schemaDescriptors.get(group.name());
-            try (var updater = accessors.get(group.name()).newUpdater(ONLINE, CursorContext.NULL_CONTEXT, true)) {
-                updater.process(IndexEntryUpdate.add(actualId, () -> schemaDescriptor, Values.of(inputId)));
-            }
+            populator.populator.add(Collections.singleton(update), CursorContext.NULL_CONTEXT);
         } catch (IndexEntryConflictException e) {
             throw new RuntimeException(e);
         }
@@ -88,8 +142,8 @@ public class IndexIdMapper implements IdMapper {
         return threadLocal.get().computeIfAbsent(group.name(), groupName -> {
             var accessor = accessors.get(groupName);
             var reader = accessor.newValueReader();
-            var schemaDescriptor = schemaDescriptors.get(groupName);
-            var index = new Index(reader, schemaDescriptor);
+            var schemaDescriptor = indexDescriptors.get(groupName);
+            var index = new Index(reader, schemaDescriptor.schema());
             indexes.add(index);
             return index;
         });
@@ -97,11 +151,83 @@ public class IndexIdMapper implements IdMapper {
 
     @Override
     public boolean needsPreparation() {
-        return false;
+        return true;
+    }
+
+    /**
+     * Validates all added entries from {@link #put(Object, long, Group)} and collects duplicates into
+     * the {@code collector}, also returning the IDs of violating nodes.
+     * Must be run before {@link #prepare(PropertyValueLookup, Collector, ProgressListener)}.
+     *
+     * @param collector {@link Collector} to report violations into.
+     * @return the IDs of the violating nodes.
+     */
+    public LongSet validate(Collector collector) {
+        for (var entry : populators.entrySet()) {
+            var conflictHandler = new IndexEntryConflictHandler() {
+                @Override
+                public synchronized IndexEntryConflictAction indexEntryConflict(
+                        long firstEntityId, long otherEntityId, Value[] values) {
+                    duplicateNodeIds.add(otherEntityId);
+                    collector.collectDuplicateNode(values[0].asObjectCopy(), otherEntityId, entry.getKey());
+                    return IndexEntryConflictAction.DELETE;
+                }
+            };
+
+            try {
+                var populator = entry.getValue();
+                populator.populator.scanCompleted(
+                        PhaseTracker.nullInstance, workScheduler, conflictHandler, CursorContext.NULL_CONTEXT);
+                populator.populator.close(true, CursorContext.NULL_CONTEXT);
+                var indexProvider = tempIndexes.lookup(populator.descriptor.getIndexProvider());
+                try (var newNodesIndex = indexProvider.getOnlineAccessor(
+                        populator.descriptor,
+                        new IndexSamplingConfig(Config.defaults()),
+                        tokenNameLookup,
+                        openOptions)) {
+                    var accessor = accessors.get(entry.getKey());
+                    accessor.validate(
+                            newNodesIndex,
+                            true,
+                            conflictHandler,
+                            null,
+                            configuration.maxNumberOfWorkerThreads(),
+                            workScheduler.jobScheduler());
+                }
+            } catch (IndexEntryConflictException e) {
+                throw new RuntimeException(e);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        return duplicateNodeIds;
     }
 
     @Override
-    public void prepare(PropertyValueLookup inputIdLookup, Collector collector, ProgressListener progress) {}
+    public void prepare(PropertyValueLookup inputIdLookup, Collector collector, ProgressListener progress) {
+        for (var entry : populators.entrySet()) {
+            try {
+                var descriptor = entry.getValue().descriptor;
+                var indexProvider = tempIndexes.lookup(descriptor.getIndexProvider());
+                try (var newNodesIndex = indexProvider.getOnlineAccessor(
+                        descriptor, new IndexSamplingConfig(Config.defaults()), tokenNameLookup, openOptions)) {
+                    var accessor = accessors.get(entry.getKey());
+                    accessor.insertFrom(
+                            newNodesIndex,
+                            null,
+                            true,
+                            IndexEntryConflictHandler.THROW,
+                            id -> !duplicateNodeIds.contains(id),
+                            configuration.maxNumberOfWorkerThreads(),
+                            workScheduler.jobScheduler());
+                }
+            } catch (IndexEntryConflictException e) {
+                throw new RuntimeException(e);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+    }
 
     @Override
     public long get(Object inputId, Group group) {
@@ -134,12 +260,18 @@ public class IndexIdMapper implements IdMapper {
                         }
                     }
                 },
-                () -> closeAllUnchecked(accessors.values()));
+                () -> closeAllUnchecked(accessors.values()),
+                bufferFactory);
+    }
+
+    public void additionalViolatingNodes(LongSet violatingNodes) {
+        duplicateNodeIds.addAll(violatingNodes);
     }
 
     @Override
     public LongIterator leftOverDuplicateNodesIds() {
-        return ImmutableEmptyLongIterator.INSTANCE;
+        // TODO could be a memory overhead for large amounts of duplicates?
+        return duplicateNodeIds.toSortedList().longIterator();
     }
 
     @Override
@@ -156,4 +288,6 @@ public class IndexIdMapper implements IdMapper {
             IOUtils.closeAll(reader);
         }
     }
+
+    private record Populator(IndexPopulator populator, IndexDescriptor descriptor) {}
 }

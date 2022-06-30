@@ -31,6 +31,7 @@ import java.util.Set;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.DataImporter.Monitor;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
@@ -54,6 +55,7 @@ import org.neo4j.values.storable.Values;
 public class NodeImporter extends EntityImporter {
     private final TokenHolder labelTokenRepository;
     private final NodeStore nodeStore;
+    private final Collector badCollector;
     private final NodeRecord nodeRecord;
     private final IdMapper idMapper;
     private final BatchingIdGetter nodeIds;
@@ -67,11 +69,14 @@ public class NodeImporter extends EntityImporter {
     private long nodeCount;
     private long highestId = -1;
     private boolean hasLabelField;
+    private Object inputId;
+    private Group group;
 
     NodeImporter(
             BatchingNeoStores stores,
             IdMapper idMapper,
             Monitor monitor,
+            Collector badCollector,
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker,
             SchemaMonitor schemaMonitor) {
@@ -79,6 +84,7 @@ public class NodeImporter extends EntityImporter {
         this.labelTokenRepository = stores.getTokenHolders().labelTokens();
         this.idMapper = idMapper;
         this.nodeStore = stores.getNodeStore();
+        this.badCollector = badCollector;
         this.nodeRecord = nodeStore.newRecord();
         this.nodeIds = new BatchingIdGetter(nodeStore);
         this.idPropertyStore = stores.getTemporaryPropertyStore();
@@ -102,10 +108,11 @@ public class NodeImporter extends EntityImporter {
 
     @Override
     public boolean id(Object id, Group group, IdSequence idSequence) {
+        inputId = id;
+        this.group = group;
         long nodeId = idSequence.nextId(cursorContext);
         nodeRecord.setId(nodeId);
         highestId = max(highestId, nodeId);
-        idMapper.put(id, nodeId, group);
 
         // also store this id as property in temp property store
         if (id != null) {
@@ -166,13 +173,26 @@ public class NodeImporter extends EntityImporter {
         }
 
         // Write data to stores
-        nodeRecord.setNextProp(createAndWritePropertyChain(cursorContext));
-        nodeRecord.setInUse(true);
-        nodeStore.updateRecord(nodeRecord, IGNORE, nodeUpdateCursor, cursorContext, storeCursors);
-        nodeCount++;
+        if (schemaMonitor.endOfEntity(nodeRecord.getId())) {
+            nodeRecord.setNextProp(createAndWritePropertyChain(cursorContext));
+            nodeRecord.setInUse(true);
+            nodeStore.updateRecord(nodeRecord, IGNORE, nodeUpdateCursor, cursorContext, storeCursors);
+            if (inputId != null) {
+                idMapper.put(inputId, nodeRecord.getId(), group);
+            }
+            nodeCount++;
+        } else {
+            // TODO perhaps not report as duplicate, right?
+            badCollector.collectDuplicateNode(
+                    inputId, nodeRecord.getId(), group(group).name());
+            freeUnusedId(nodeStore, nodeRecord.getId(), cursorContext);
+        }
         nodeRecord.clear();
         nodeRecord.setId(NULL_REFERENCE.longValue());
         hasLabelField = false;
+        labels.clear();
+        inputId = null;
+        group = null;
         super.endOfEntity();
     }
 
