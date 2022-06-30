@@ -36,6 +36,7 @@ import org.neo4j.commandline.dbms.CannotWriteException;
 import org.neo4j.commandline.dbms.LockChecker;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
+import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -61,6 +62,8 @@ import picocli.CommandLine.Option;
                 for very large databases. Increasing the heap size can also be a good idea.
                 See 'neo4j-admin help' for details.""")
 public class CheckCommand extends AbstractAdminCommand {
+    private final ConsistencyCheckService consistencyCheckService;
+
     @ArgGroup(multiplicity = "1")
     private TargetOption target = new TargetOption();
 
@@ -81,7 +84,8 @@ public class CheckCommand extends AbstractAdminCommand {
     @Mixin
     private ConsistencyCheckOptions options;
 
-    private final ConsistencyCheckService consistencyCheckService;
+    protected Config config;
+    private ConsistencyFlags flags;
 
     public CheckCommand(ExecutionContext ctx) {
         this(ctx, new ConsistencyCheckService(null));
@@ -100,6 +104,19 @@ public class CheckCommand extends AbstractAdminCommand {
 
     @Override
     public void execute() {
+        validateAndConstructArgs();
+
+        final var result = checkWith(config, EmptyMemoryTracker.INSTANCE);
+        if (!result.isSuccessful()) {
+            throw new CommandFailedException(
+                    "Inconsistencies found. See '%s' for details.".formatted(result.reportFile()), ExitCode.FAIL);
+        }
+    }
+
+    protected void validateAndConstructArgs() {
+        config = configBuilder().build();
+        flags = options.toFlags();
+
         if (target.backup != null) {
             target.backup = target.backup.toAbsolutePath();
 
@@ -108,13 +125,10 @@ public class CheckCommand extends AbstractAdminCommand {
                         "Report directory path doesn't exist or not a directory: " + target.backup);
             }
         }
+    }
 
-        final var config = loadConfig();
-        final var result = checkWith(config, EmptyMemoryTracker.INSTANCE);
-        if (!result.isSuccessful()) {
-            throw new CommandFailedException(
-                    "Inconsistencies found. See '%s' for details.".formatted(result.reportFile()), ExitCode.FAIL);
-        }
+    protected Config.Builder configBuilder() {
+        return createPrefilledConfigBuilder();
     }
 
     protected ConsistencyCheckService.Result checkWith(Config config, MemoryTracker memoryTracker) {
@@ -137,7 +151,7 @@ public class CheckCommand extends AbstractAdminCommand {
                         .with(ctx.fs())
                         .verbose(verbose)
                         .with(options.getReportDir().normalize())
-                        .with(options.toFlags())
+                        .with(flags)
                         .runFullConsistencyCheck();
             } catch (ConsistencyCheckIncompleteException e) {
                 throw new CommandFailedException(
@@ -192,9 +206,5 @@ public class CheckCommand extends AbstractAdminCommand {
             throw new CommandFailedException(
                     "Failure when checking for recovery state: " + e.getMessage(), e, ExitCode.IOERR);
         }
-    }
-
-    private Config loadConfig() {
-        return createPrefilledConfigBuilder().build();
     }
 }
