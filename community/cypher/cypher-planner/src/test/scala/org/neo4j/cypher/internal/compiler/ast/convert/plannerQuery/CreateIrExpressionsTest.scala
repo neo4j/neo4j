@@ -21,12 +21,15 @@ package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.expressions.EveryPath
+import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunction
 import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.LabelExpression.Negation
 import org.neo4j.cypher.internal.expressions.LabelExpression.Wildcard
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.RelationshipChain
@@ -57,8 +60,10 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   private val n = varFor("n")
   private val m = varFor("m")
   private val o = varFor("o")
+  private val q = varFor("q")
   private val r = varFor("r")
   private val r2 = varFor("r2")
+  private val r3 = varFor("r3")
   private val path = varFor("p")
   private val variableToCollectName = "c"
   private val collectionName = "col"
@@ -112,6 +117,42 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
       Some(oPred)
     )(pos)
   )(pos))(pos)
+
+  //WHERE EXISTS { (n)-[r1]-(m), (o)-[r2]-(m)-[r3]-(q) }
+  private val n_r_m_r2_o_r3_q = Pattern(Seq(
+    EveryPath(RelationshipChain(
+      nodePat(Some("n")),
+      relPat(Some("r")),
+      nodePat(Some("m"))
+    )(pos)),
+    EveryPath(RelationshipChain(
+      RelationshipChain(
+        nodePat(Some("o")),
+        relPat(Some("r2")),
+        nodePat(Some("m"))
+      )(pos),
+      relPat(Some("r3")),
+      nodePat(Some("q"))
+    )(pos))
+  ))(pos)
+
+  //WHERE EXISTS { (n)--(m), (o)--(m)--(q) }
+  private val n_m_o_q = Pattern(Seq(
+    EveryPath(RelationshipChain(
+      nodePat(Some("n")),
+      relPat(),
+      nodePat(Some("m"))
+    )(pos)),
+    EveryPath(RelationshipChain(
+      RelationshipChain(
+        nodePat(Some("o")),
+        relPat(),
+        nodePat(Some("m"))
+      )(pos),
+      relPat(),
+      nodePat(Some("q"))
+    )(pos))
+  ))(pos)
 
   private def rewrite(e: Expression): Expression = {
     val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator
@@ -378,4 +419,65 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )
   }
 
+  //      EXISTS { MATCH (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE })
+  // MATCH (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE EXISTS { (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) }
+  test("Rewrites ExistsSubClause") {
+    val esc = ExistsSubClause(n_r_m_r2_o_r3_q, None)(pos, Set())//TODO: Fix the two points on the card.
+
+    val rewritten = rewrite(esc)
+
+    rewritten should equal(
+      ExistsIRExpression(
+        queryWith(
+          QueryGraph(
+            patternNodes = Set(n.name, m.name, o.name, q.name),
+            patternRelationships =
+              Set(
+                PatternRelationship(varFor("r").name, (n.name, m.name), OUTGOING, Seq.empty, SimplePatternLength),
+                PatternRelationship(varFor("r2").name, (o.name, m.name), OUTGOING, Seq.empty, SimplePatternLength),
+                PatternRelationship(varFor("r3").name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
+              ),
+            selections = Selections.from(Seq(
+              not(equals(r, r3)),
+              not(equals(r, r2)),
+              not(equals(r2, r3))
+            ))
+          ),
+          None
+        ),
+        "EXISTS { MATCH (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) }"
+      )(pos)
+    )
+  }
+
+  // MATCH (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE EXISTS { (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE r.foo > 5 }
+  test("Rewrites ExistsSubClause with where clause") {
+    val esc = ExistsSubClause(n_r_m_r2_o_r3_q, Some(rPred))(pos, Set())
+
+    val rewritten = rewrite(esc)
+
+    rewritten should equal(
+      ExistsIRExpression(
+        queryWith(
+          QueryGraph(
+            patternNodes = Set(n.name, m.name, o.name, q.name),
+            patternRelationships =
+              Set(
+                PatternRelationship(varFor("r").name, (n.name, m.name), OUTGOING, Seq.empty, SimplePatternLength),
+                PatternRelationship(varFor("r2").name, (o.name, m.name), OUTGOING, Seq.empty, SimplePatternLength),
+                PatternRelationship(varFor("r3").name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
+              ),
+            selections = Selections.from(Seq(
+              not(equals(r, r3)),
+              not(equals(r, r2)),
+              not(equals(r2, r3)),
+              rPred
+            ))
+          ),
+          None
+        ),
+        "EXISTS { MATCH (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE r.foo > 5 }"
+      )(pos)
+    )
+  }
 }

@@ -1912,4 +1912,41 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         .build()
     )
   }
+
+  test("Should plan semiApply with projectEndPoints for ExistsSubClause with already bound variables") {
+    val logicalPlan = planner.plan("MATCH (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE EXISTS { (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE n.foo > 5} RETURN *")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("m", "n", "o", "q", "r", "r2", "r3")
+        .semiApply()
+        .|.projectEndpoints("(n)-[r]->(m)", startInScope = true, endInScope = true)
+        .|.projectEndpoints("(o)-[r2]->(m)", startInScope = true, endInScope = true)
+        .|.projectEndpoints("(m)-[r3]->(q)", startInScope = true, endInScope = true)
+        .|.filter("n.foo > 5", "not r = r3", "not r = r2", "not r2 = r3")
+        .|.argument("n", "m", "q", "r2", "r", "r3", "o")
+        .filter("not r = r3", "not r = r2")
+        .expandAll("(m)<-[r]-(n)")
+        .filter("not r2 = r3")
+        .expandAll("(m)<-[r2]-(o)")
+        .expandAll("(m)-[r3]->(q)")
+        .allNodeScan("m")
+        .build()
+    )
+  }
+
+  test("Should plan semiApply with expands for ExistsSubClause with new variables") {
+    val logicalPlan = planner.plan("MATCH (n)-[r]->(m) WHERE EXISTS { (o)-[r2]->(m)-[r3]->(q) } RETURN *")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("m", "n", "r")
+        .expandAll("(m)<-[r]-(n)")
+        .semiApply()
+        .|.filter("not r2 = r3")
+        .|.expandAll("(m)<-[r2]-(o)")
+        .|.expandAll("(m)-[r3]->(q)")
+        .|.argument("m")
+        .allNodeScan("m")
+        .build()
+    )
+  }
 }
