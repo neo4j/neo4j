@@ -22,6 +22,7 @@ package org.neo4j.fabric.planning
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.UseGraph
+import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.fabric.planning.Fragment.Apply
@@ -60,7 +61,7 @@ class FabricFragmenter(
     part: ast.QueryPart,
   ): Fragment = part match {
     case sq: ast.SingleQuery => fragmentSingle(input, sq)
-    case uq: ast.Union       => Union(input, isDistinct(uq), fragmentPart(input, uq.part), fragmentSingle(input, uq.query))(uq.position)
+    case uq: ast.Union => Union(input, isDistinct(uq), fragmentPart(input, uq.part), fragmentSingle(input, uq.query))(uq.position)
   }
 
   private def fragmentSingle(
@@ -103,7 +104,7 @@ class FabricFragmenter(
     val clauses = sq.clausesExceptLeadingImportWith
     val (use, rest) = clauses.headOption match {
       case Some(u: ast.UseGraph) => (Some(u), clauses.tail)
-      case _                     => (None, clauses)
+      case _ => (None, clauses)
     }
 
     rest.filter(_.isInstanceOf[ast.UseGraph])
@@ -120,7 +121,7 @@ class FabricFragmenter(
 
   private def produced(clause: ast.Clause): Seq[String] = clause match {
     case r: ast.Return => r.returnColumns.map(_.name)
-    case c             => semantics.scope(c).get.symbolNames.toSeq
+    case c             => semantics.scope(c).getOrElse(Scope.empty).symbolNames.toSeq
   }
 
   /**
@@ -141,10 +142,10 @@ class FabricFragmenter(
    */
   private def partition[E, H, M](es: Seq[E])(pred: E => Either[H, M]): Seq[Either[H, Seq[M]]] = {
     es.map(pred).foldLeft(Seq[Either[H, Seq[M]]]()) {
-      case (seq, Left(hit))   => seq :+ Left(hit)
+      case (seq, Left(hit)) => seq :+ Left(hit)
       case (seq, Right(miss)) => seq.lastOption match {
-        case None            => seq :+ Right(Seq(miss))
-        case Some(Left(_))   => seq :+ Right(Seq(miss))
+        case None => seq :+ Right(Seq(miss))
+        case Some(Left(_)) => seq :+ Right(Seq(miss))
         case Some(Right(ms)) => seq.init :+ Right(ms :+ miss)
       }
     }

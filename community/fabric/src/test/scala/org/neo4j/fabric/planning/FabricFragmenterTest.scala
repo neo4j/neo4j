@@ -72,6 +72,47 @@ class FabricFragmenterTest
       frag.as[Fragment.Leaf].input.as[Fragment.Apply].input.as[Fragment.Leaf].use.shouldEqual(defaultUse)
     }
 
+    "declared without imported variable with a nested subquery" in {
+      val frag = fragment(
+        """UNWIND mega.graphIds() as g
+          |CALL {
+          |  USE x
+          |  CALL {
+          |    MATCH (n) RETURN n
+          |  }
+          |  RETURN n
+          |}
+          |RETURN n
+          |""".stripMargin
+      )
+
+      frag.as[Fragment.Leaf].use.shouldEqual(defaultUse)
+      frag.as[Fragment.Leaf].input.as[Fragment.Apply].input.as[Fragment.Leaf].use.shouldEqual(defaultUse)
+      frag.as[Fragment.Leaf].input.as[Fragment.Apply].inner.as[Fragment.Leaf].use.shouldEqual(Declared(use("x")))
+      frag.as[Fragment.Leaf].input.as[Fragment.Apply].inner.as[Fragment.Leaf].input.as[Fragment.Apply].inner.as[Fragment.Leaf].use.shouldEqual(Inherited(Declared(use("x")))(pos))
+    }
+
+    "declared with imported variable with a nested subquery" in {
+      val frag = fragment(
+        """UNWIND mega.graphIds() as g
+          |CALL {
+          |  WITH g
+          |  USE x
+          |  CALL {
+          |    MATCH (n) RETURN n
+          |  }
+          |  RETURN n
+          |}
+          |RETURN n
+          |""".stripMargin
+      )
+
+      frag.as[Fragment.Leaf].use.shouldEqual(defaultUse)
+      frag.as[Fragment.Leaf].input.as[Fragment.Apply].input.as[Fragment.Leaf].use.shouldEqual(defaultUse)
+      frag.as[Fragment.Leaf].input.as[Fragment.Apply].inner.as[Fragment.Leaf].use.shouldEqual(Declared(use("x")))
+      frag.as[Fragment.Leaf].input.as[Fragment.Apply].inner.as[Fragment.Leaf].input.as[Fragment.Apply].inner.as[Fragment.Leaf].use.shouldEqual(Inherited(Declared(use("x")))(pos))
+    }
+
     "inherited from default in subquery" in {
       val frag = fragment(
         """WITH 1 AS x
