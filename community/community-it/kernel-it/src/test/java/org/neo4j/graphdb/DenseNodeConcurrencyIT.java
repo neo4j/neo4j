@@ -23,6 +23,7 @@ import static java.lang.String.format;
 import static java.util.concurrent.ConcurrentHashMap.newKeySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
@@ -73,10 +74,11 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.MapUtil;
+import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
-import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -87,6 +89,7 @@ import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
@@ -140,9 +143,9 @@ class DenseNodeConcurrencyIT {
         try {
             DependencyResolver deps = database.getDependencyResolver();
             Config config = deps.resolveDependency(Config.class);
-            RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.cast(database.databaseLayout());
+            DatabaseLayout layout = database.databaseLayout();
             dbms.shutdown();
-            ConsistencyCheckService.Result result = new ConsistencyCheckService(databaseLayout)
+            ConsistencyCheckService.Result result = new ConsistencyCheckService(layout)
                     .with(config)
                     .with(deps.resolveDependency(FileSystemAbstraction.class))
                     .runFullConsistencyCheck();
@@ -549,6 +552,8 @@ class DenseNodeConcurrencyIT {
 
     @Test
     void shouldBlockOnCreateWithExistingTypeNewDirection() throws Throwable {
+        assumeThat(database.getDependencyResolver().resolveDependency(StorageEngine.class))
+                .isInstanceOf(RecordStorageEngine.class);
         // given
         Set<Relationship> relationships = new HashSet<>();
         long denseNodeId = createDenseNode(relationships);
