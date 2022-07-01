@@ -20,6 +20,7 @@
 package org.neo4j.commandline.dbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.cli.AbstractAdminCommand.COMMAND_CONFIG_FILE_NAME_PATTERN;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
@@ -251,12 +252,42 @@ class CheckCommandIT {
                 new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
 
         final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
-        CommandLine.populateCommand(checkCommand, "--check-indexes=false", "--check-graph=false", dbName);
+        CommandLine.populateCommand(
+                checkCommand, "--check-indexes=false", "--check-graph=false", "--check-counts=false", dbName);
         checkCommand.execute();
 
         consistencyCheckService.verifyArgument(
                 ConsistencyFlags.class,
-                ConsistencyFlags.DEFAULT.withoutCheckIndexes().withoutCheckGraph());
+                ConsistencyFlags.DEFAULT
+                        .withoutCheckIndexes()
+                        .withoutCheckGraph()
+                        .withoutCheckCounts());
+    }
+
+    @Test
+    void passesOnImplicitCheckGraph() {
+        final var consistencyCheckService =
+                new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
+
+        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CommandLine.populateCommand(checkCommand, "--check-counts=true", dbName);
+
+        assertThatCode(checkCommand::execute).doesNotThrowAnyException();
+        consistencyCheckService.verifyArgument(ConsistencyFlags.class, ConsistencyFlags.DEFAULT.withCheckCounts());
+    }
+
+    @Test
+    void failsOnExplicitNoCheckGraphWithAGraphCheck() {
+        final var consistencyCheckService =
+                new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
+
+        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CommandLine.populateCommand(checkCommand, "--check-graph=false", "--check-counts=true", dbName);
+
+        assertThatThrownBy(checkCommand::execute)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContainingAll(
+                        "check-counts", "cannot be true if", "check-graph", "is explicitly set to false");
     }
 
     @Test

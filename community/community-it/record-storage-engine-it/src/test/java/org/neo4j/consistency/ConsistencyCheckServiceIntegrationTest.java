@@ -195,12 +195,14 @@ public class ConsistencyCheckServiceIntegrationTest {
     @Test
     void shouldSucceedIfStoreIsConsistent() throws Exception {
         // when
-        ConsistencyCheckService.Result result = consistencyCheckService().runFullConsistencyCheck();
+        final var result = consistencyCheckService().runFullConsistencyCheck();
 
         // then
-        assertTrue(result.isSuccessful());
-        Path reportFile = result.reportFile();
-        assertFalse(exists(reportFile), "Unexpected generation of consistency check report file: " + reportFile);
+        assertThat(result.isSuccessful()).isTrue();
+        final var reportFile = result.reportFile();
+        assertThat(fs.fileExists(reportFile))
+                .as("Unexpected generation of consistency check report file: " + reportFile)
+                .isFalse();
     }
 
     @Test

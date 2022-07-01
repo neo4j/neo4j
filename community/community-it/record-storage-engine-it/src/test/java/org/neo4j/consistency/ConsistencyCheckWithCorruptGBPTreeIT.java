@@ -199,46 +199,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
                 },
                 indexFiles);
 
-        ConsistencyFlags flags = ConsistencyFlags.ALL.withoutCheckIndexes().withoutCheckIndexStructure();
-        ConsistencyCheckService.Result result = runConsistencyCheck(NullLogProvider.getInstance(), flags);
-
-        assertTrue(result.isSuccessful(), "Expected store to be consistent when not checking indexes.");
-    }
-
-    @Test
-    void shouldCheckIndexStructureEvenIfNotCheckingIndexes() throws Exception {
-        MutableObject<Long> targetNode = new MutableObject<>();
-        Path[] indexFiles = schemaIndexFiles();
-        corruptIndexes(
-                readOnly(),
-                (tree, inspection) -> {
-                    targetNode.setValue(inspection.single().rootNode());
-                    tree.unsafe(
-                            pageSpecificCorruption(targetNode.getValue(), GBPTreeCorruption.notATreeNode()),
-                            CursorContext.NULL_CONTEXT);
-                },
-                indexFiles);
-
         ConsistencyFlags flags = ConsistencyFlags.ALL.withoutCheckIndexes();
-        ConsistencyCheckService.Result result = runConsistencyCheck(NullLogProvider.getInstance(), flags);
-
-        assertFalse(result.isSuccessful(), "Expected store to be inconsistent when checking index structure.");
-        assertResultContainsMessage(result, "Page: " + targetNode.getValue() + " is not a tree node page");
-    }
-
-    @Test
-    void shouldNotCheckIndexStructureIfConfiguredNotToEvenIfCheckingIndexes() throws Exception {
-        MutableObject<Long> targetNode = new MutableObject<>();
-        Path[] indexFiles = schemaIndexFiles();
-        corruptIndexes(
-                readOnly(),
-                (tree, inspection) -> {
-                    targetNode.setValue(inspection.single().rootNode());
-                    tree.unsafe(GBPTreeCorruption.addFreelistEntry(5), CursorContext.NULL_CONTEXT);
-                },
-                indexFiles);
-
-        ConsistencyFlags flags = ConsistencyFlags.ALL.withoutCheckIndexStructure();
         ConsistencyCheckService.Result result = runConsistencyCheck(NullLogProvider.getInstance(), flags);
 
         assertTrue(result.isSuccessful(), "Expected store to be consistent when not checking indexes.");
@@ -778,7 +739,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
                 countsLayoutBootstrapper,
                 countsStoreFile);
 
-        ConsistencyFlags flags = ConsistencyFlags.NONE.withCheckIndexStructure().withCheckCounts();
+        ConsistencyFlags flags = ConsistencyFlags.NONE.withCheckCounts().withCheckStructure();
         ConsistencyCheckService.Result result = runConsistencyCheck(NullLogProvider.getInstance(), flags);
         assertFalse(result.isSuccessful());
         assertResultContainsMessage(
@@ -804,7 +765,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
                 },
                 idStoreFiles);
 
-        ConsistencyFlags flags = ConsistencyFlags.NONE.withCheckIndexStructure();
+        ConsistencyFlags flags = ConsistencyFlags.NONE.withCheckStructure();
         ConsistencyCheckService.Result result = runConsistencyCheck(NullLogProvider.getInstance(), flags);
         assertFalse(result.isSuccessful());
         assertResultContainsMessage(

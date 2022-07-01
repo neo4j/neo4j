@@ -90,7 +90,8 @@ import org.neo4j.token.api.TokenHolder;
  * designed to try to maximize both CPU and I/O to its full extent, or rather at least maxing out one of them.
  */
 public class RecordStorageConsistencyChecker implements AutoCloseable {
-    private static final String INDEX_STRUCTURE_CHECKER_TAG = "indexStructureChecker";
+    private static final String ID_GEN_CONSISTENCY_CHECKER_TAG = "idGeneratorConsistencyChecker";
+    private static final String INDEX_STRUCTURE_CONSISTENCY_CHECKER_TAG = "indexStructureConsistencyChecker";
     private static final String COUNT_STORE_CONSISTENCY_CHECKER_TAG = "countStoreConsistencyChecker";
     private static final String REL_GROUP_STORE_CONSISTENCY_CHECKER_TAG = "relGroupStoreConsistencyChecker";
     private static final String SCHEMA_CONSISTENCY_CHECKER_TAG = "schemaConsistencyChecker";
@@ -207,8 +208,15 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
     }
 
     public void check() throws ConsistencyCheckIncompleteException {
+        if (consistencyFlags.checkPropertyOwners()) {
+            System.err.println("The consistency checker has been configured to check property ownership. "
+                    + "This feature is currently unavailable for this database format. "
+                    + "The check will continue as if it were disabled.");
+        }
+
         assert !context.isCancelled();
         try {
+            consistencyCheckIdGenerator();
             consistencyCheckIndexes();
 
             context.initialize();
@@ -288,56 +296,68 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
         }
     }
 
+    private void consistencyCheckIdGenerator() {
+        if (!consistencyFlags.checkStructure()) {
+            return;
+        }
+
+        List<IdGenerator> idGenerators = new ArrayList<>();
+        idGeneratorFactory.visit(idGenerators::add);
+
+        try (var cursorContext = contextFactory.create(ID_GEN_CONSISTENCY_CHECKER_TAG)) {
+            ProgressListener progressListener =
+                    progressFactory.singlePart("ID Generator consistency check", idGenerators.size());
+
+            for (IdGenerator idGenerator : idGenerators) {
+                consistencyCheckSingleCheckable(
+                        report, progressListener, idGenerator, RecordType.ID_STORE, cursorContext);
+            }
+        }
+    }
+
     private void consistencyCheckIndexes() {
-        if (consistencyFlags.checkIndexStructure()) {
-            try (var cursorContext = contextFactory.create(INDEX_STRUCTURE_CHECKER_TAG)) {
-                List<IdGenerator> idGenerators = new ArrayList<>();
-                idGeneratorFactory.visit(idGenerators::add);
+        if (!(consistencyFlags.checkIndexes() && consistencyFlags.checkStructure())) {
+            return;
+        }
 
-                ProgressListener progressListener = progressFactory.singlePart(
-                        "Index structure consistency check",
-                        indexAccessors.onlineRules().size()
-                                + ((indexAccessors.nodeLabelIndex() != null) ? 1 : 0)
-                                + ((indexAccessors.relationshipTypeIndex() != null) ? 1 : 0)
-                                + idGenerators.size());
+        try (var cursorContext = contextFactory.create(INDEX_STRUCTURE_CONSISTENCY_CHECKER_TAG)) {
+            ProgressListener progressListener = progressFactory.singlePart(
+                    "Index structure consistency check",
+                    indexAccessors.onlineRules().size()
+                            + ((indexAccessors.nodeLabelIndex() != null) ? 1 : 0)
+                            + ((indexAccessors.relationshipTypeIndex() != null) ? 1 : 0));
 
-                if (indexAccessors.nodeLabelIndex() != null) {
-                    consistencyCheckSingleCheckable(
-                            report,
-                            progressListener,
-                            indexAccessors.nodeLabelIndex(),
-                            RecordType.LABEL_SCAN_DOCUMENT,
-                            cursorContext);
-                }
-                if (indexAccessors.relationshipTypeIndex() != null) {
-                    consistencyCheckSingleCheckable(
-                            report,
-                            progressListener,
-                            indexAccessors.relationshipTypeIndex(),
-                            RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT,
-                            cursorContext);
-                }
+            if (indexAccessors.nodeLabelIndex() != null) {
+                consistencyCheckSingleCheckable(
+                        report,
+                        progressListener,
+                        indexAccessors.nodeLabelIndex(),
+                        RecordType.LABEL_SCAN_DOCUMENT,
+                        cursorContext);
+            }
+            if (indexAccessors.relationshipTypeIndex() != null) {
+                consistencyCheckSingleCheckable(
+                        report,
+                        progressListener,
+                        indexAccessors.relationshipTypeIndex(),
+                        RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT,
+                        cursorContext);
+            }
 
-                List<IndexDescriptor> rulesToRemove = new ArrayList<>();
-                for (IndexDescriptor onlineRule : indexAccessors.onlineRules()) {
-                    ConsistencyReporter.FormattingDocumentedHandler handler =
-                            ConsistencyReporter.formattingHandler(report, RecordType.INDEX);
-                    ReporterFactory reporterFactory = new ReporterFactory(handler);
-                    IndexAccessor accessor = indexAccessors.accessorFor(onlineRule);
-                    if (!accessor.consistencyCheck(reporterFactory, cursorContext)) {
-                        rulesToRemove.add(onlineRule);
-                    }
-                    handler.updateSummary();
-                    progressListener.add(1);
+            List<IndexDescriptor> rulesToRemove = new ArrayList<>();
+            for (IndexDescriptor onlineRule : indexAccessors.onlineRules()) {
+                ConsistencyReporter.FormattingDocumentedHandler handler =
+                        ConsistencyReporter.formattingHandler(report, RecordType.INDEX);
+                ReporterFactory reporterFactory = new ReporterFactory(handler);
+                IndexAccessor accessor = indexAccessors.accessorFor(onlineRule);
+                if (!accessor.consistencyCheck(reporterFactory, cursorContext)) {
+                    rulesToRemove.add(onlineRule);
                 }
-                for (IndexDescriptor toRemove : rulesToRemove) {
-                    indexAccessors.remove(toRemove);
-                }
-
-                for (IdGenerator idGenerator : idGenerators) {
-                    consistencyCheckSingleCheckable(
-                            report, progressListener, idGenerator, RecordType.ID_STORE, cursorContext);
-                }
+                handler.updateSummary();
+                progressListener.add(1);
+            }
+            for (IndexDescriptor toRemove : rulesToRemove) {
+                indexAccessors.remove(toRemove);
             }
         }
     }
@@ -365,6 +385,10 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
     }
 
     private void checkCounts() {
+        if (!consistencyFlags.checkCounts()) {
+            return;
+        }
+
         try (var cursorContext = contextFactory.create(COUNT_STORE_CONSISTENCY_CHECKER_TAG);
                 var countsStore = new GBPTreeCountsStore(
                         pageCache,
@@ -395,11 +419,11 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
                         cacheTracer,
                         neoStores.getOpenOptions());
                 var checker = observedCounts.checker(reporter)) {
-            if (context.consistencyFlags.checkGraph()) {
-                countsStore.accept(checker, cursorContext);
+            if (consistencyFlags.checkStructure()) {
+                consistencyCheckSingleCheckable(
+                        report, ProgressListener.NONE, countsStore, RecordType.COUNTS, cursorContext);
             }
-            consistencyCheckSingleCheckable(
-                    report, ProgressListener.NONE, countsStore, RecordType.COUNTS, cursorContext);
+            countsStore.accept(checker, cursorContext);
         } catch (Exception e) {
             log.error("Counts store is missing, broken or of an older format and will not be consistency checked", e);
             summary.genericError("Counts store is missing, broken or of an older format");
@@ -407,6 +431,10 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
     }
 
     private void checkRelationshipGroupDegressStore() {
+        if (!consistencyFlags.checkCounts() || !consistencyFlags.checkStructure()) {
+            return;
+        }
+
         try (var cursorContext = contextFactory.create(REL_GROUP_STORE_CONSISTENCY_CHECKER_TAG);
                 var relationshipGroupDegrees = new GBPTreeRelationshipGroupDegreesStore(
                         pageCache,
@@ -442,6 +470,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
                     relationshipGroupDegrees,
                     RecordType.RELATIONSHIP_GROUP,
                     cursorContext);
+
         } catch (Exception e) {
             log.error(
                     "Relationship group degrees is missing, broken or of an older format and will not be consistency checked",
@@ -488,15 +517,13 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
             ConsistencyCheckable checkable,
             RecordType recordType,
             CursorContext cursorContext) {
-        if (consistencyFlags.checkIndexStructure()) {
-            ConsistencyReporter.FormattingDocumentedHandler handler =
-                    ConsistencyReporter.formattingHandler(report, recordType);
-            ReporterFactory proxyFactory = new ReporterFactory(handler);
+        ConsistencyReporter.FormattingDocumentedHandler handler =
+                ConsistencyReporter.formattingHandler(report, recordType);
+        ReporterFactory proxyFactory = new ReporterFactory(handler);
 
-            checkable.consistencyCheck(proxyFactory, cursorContext);
-            handler.updateSummary();
-            listener.add(1);
-        }
+        checkable.consistencyCheck(proxyFactory, cursorContext);
+        handler.updateSummary();
+        listener.add(1);
     }
 
     private static class SchemaRulesDescriptors implements IndexDescriptorProvider {

@@ -72,7 +72,7 @@ public class ConsistencyCheckOptions {
             fallbackValue = "true",
             description = "Perform consistency checks on the ownership of properties. Requires <check-graph>, and "
                     + "may implicitly enable <check-graph> if it were not explicitly disabled.")
-    private boolean checkPropertyOwners = false;
+    private boolean checkPropertyOwners = ConsistencyFlags.DEFAULT.checkPropertyOwners();
 
     @Option(
             names = "--report-path",
@@ -115,6 +115,8 @@ public class ConsistencyCheckOptions {
         }
 
         final var checkGraphForce = force || checkGraph();
-        return ConsistencyFlags.create(checkGraphForce, checkIndexes, true);
+        final var checkCountsForce = checkGraphForce && checkCounts;
+        final var checkPropertyOwnersForce = checkGraphForce && checkPropertyOwners;
+        return new ConsistencyFlags(checkIndexes, checkGraphForce, checkCountsForce, checkPropertyOwnersForce);
     }
 }

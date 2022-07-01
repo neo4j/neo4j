@@ -443,7 +443,7 @@ public class ConsistencyCheckService {
                     config.get(GraphDatabaseInternalSettings.consistency_check_memory_limit_factor);
             final var summary = new ConsistencySummaryStatistics();
 
-            if (consistencyFlags.checkIndexStructure()) {
+            if (consistencyFlags.checkIndexes() && consistencyFlags.checkStructure()) {
                 var openOptions =
                         storageEngineFactory.getStoreOpenOptions(fileSystem, pageCache, databaseLayout, contextFactory);
                 final var statisticsStore = new IndexStatisticsStore(
