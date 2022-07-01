@@ -26,8 +26,10 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NameValidator
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
+import org.neo4j.cypher.internal.procs.Continue
 import org.neo4j.cypher.internal.procs.InitAndFinallyFunctions
 import org.neo4j.cypher.internal.procs.QueryHandler
+import org.neo4j.cypher.internal.procs.ThrowException
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
 import org.neo4j.cypher.internal.security.SecureHasher
 import org.neo4j.cypher.internal.security.SystemGraphCredential
@@ -324,17 +326,17 @@ object AdministrationCommandRuntime {
             )
         }
         .handleResult((_, value, p) =>
-          maybePw.flatMap { newPw =>
+          maybePw.map { newPw =>
             val oldCredentials =
               SystemGraphCredential.deserialize(value.asInstanceOf[TextValue].stringValue(), secureHasher)
             val newValue = p.get(newPw.bytesKey).asInstanceOf[ByteArray].asObject()
             if (oldCredentials.matchesPassword(newValue))
-              Some(new InvalidArgumentException(
+              ThrowException(new InvalidArgumentException(
                 s"Failed to alter the specified user '${runtimeStringValue(userName, p)}': Old password and new password cannot be the same."
               ))
             else
-              None
-          }
+              Continue
+          }.getOrElse(Continue)
         ),
       sourcePlan,
       initAndFinally = InitAndFinallyFunctions(finallyFunction =

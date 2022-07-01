@@ -58,8 +58,7 @@ case class UpdatingSystemCommandExecutionPlan(
   initAndFinally: InitAndFinally = NoInitAndFinally,
   parameterGenerator: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY,
   parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p,
-  assertPrivilegeAction: Transaction => Unit = _ => {},
-  contextUpdates: MapValue => MapValue = _ => MapValue.EMPTY
+  assertPrivilegeAction: Transaction => Unit = _ => {}
 ) extends AdministrationChainedExecutionPlan(source) {
 
   override def runSpecific(
@@ -82,9 +81,8 @@ case class UpdatingSystemCommandExecutionPlan(
         parameterConverter(tx, safeMergeParameters(systemParams, params, parameterGenerator.apply(tx, securityContext)))
       val systemSubscriber =
         new SystemCommandQuerySubscriber(ctx, new RowDroppingQuerySubscriber(subscriber), queryHandler, updatedParams)
-      val newContext = ctx.withContextVars(contextUpdates(updatedParams))
       assertCanWrite(tc, systemSubscriber)
-      initAndFinally.execute(newContext, updatedParams) { () =>
+      initAndFinally.execute(ctx, updatedParams) { () =>
         val execution = normalExecutionEngine.executeSubquery(
           query,
           updatedParams,
@@ -105,7 +103,7 @@ case class UpdatingSystemCommandExecutionPlan(
         if (systemSubscriber.shouldIgnoreResult()) {
           IgnoredRuntimeResult
         } else {
-          UpdatingSystemCommandRuntimeResult(newContext)
+          UpdatingSystemCommandRuntimeResult(ctx.withContextVars(systemSubscriber.getContextUpdates()))
         }
       }
     }
@@ -147,23 +145,27 @@ class UpdatingSystemCommandExecutionResult(inner: InternalExecutionResult) exten
   override def fieldNames(): Array[String] = Array.empty
 }
 
-case class IgnoreResults()
+sealed trait QueryHandlerResult
+case object Continue extends QueryHandlerResult
+case object IgnoreResults extends QueryHandlerResult
+case class ThrowException(throwable: Throwable) extends QueryHandlerResult
+case class UpdateContextParams(params: MapValue) extends QueryHandlerResult
 
 class QueryHandler {
   def onError(t: Throwable, p: MapValue): Throwable = t
 
-  def onResult(offset: Int, value: AnyValue, p: MapValue): Option[Either[Throwable, IgnoreResults]] = None
+  def onResult(offset: Int, value: AnyValue, p: MapValue): QueryHandlerResult = Continue
 
-  def onNoResults(p: MapValue): Option[Either[Throwable, IgnoreResults]] = None
+  def onNoResults(p: MapValue): QueryHandlerResult = Continue
 }
 
 class QueryHandlerBuilder(parent: QueryHandler) extends QueryHandler {
   override def onError(t: Throwable, p: MapValue): Throwable = parent.onError(t, p)
 
-  override def onResult(offset: Int, value: AnyValue, params: MapValue): Option[Either[Throwable, IgnoreResults]] =
+  override def onResult(offset: Int, value: AnyValue, params: MapValue): QueryHandlerResult =
     parent.onResult(offset, value, params)
 
-  override def onNoResults(params: MapValue): Option[Either[Throwable, IgnoreResults]] = parent.onNoResults(params)
+  override def onNoResults(params: MapValue): QueryHandlerResult = parent.onNoResults(params)
 
   def handleError(f: (Throwable, MapValue) => Throwable): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
 
@@ -174,24 +176,25 @@ class QueryHandlerBuilder(parent: QueryHandler) extends QueryHandler {
   }
 
   def handleNoResult(f: MapValue => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
-    override def onNoResults(params: MapValue): Option[Either[Throwable, IgnoreResults]] = f(params).map(t => Left(t))
+
+    override def onNoResults(params: MapValue): QueryHandlerResult =
+      f(params).map(t => ThrowException(t)).getOrElse(Continue)
   }
 
   def ignoreNoResult(): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
-    override def onNoResults(params: MapValue): Option[Either[Throwable, IgnoreResults]] = Some(Right(IgnoreResults()))
+    override def onNoResults(params: MapValue): QueryHandlerResult = IgnoreResults
   }
 
-  def handleResult(handler: (Int, AnyValue, MapValue) => Option[Throwable]): QueryHandlerBuilder =
+  def handleResult(handler: (Int, AnyValue, MapValue) => QueryHandlerResult): QueryHandlerBuilder =
     new QueryHandlerBuilder(this) {
 
-      override def onResult(offset: Int, value: AnyValue, p: MapValue): Option[Either[Throwable, IgnoreResults]] =
-        handler(offset, value, p).map(t => Left(t))
+      override def onResult(offset: Int, value: AnyValue, p: MapValue): QueryHandlerResult =
+        handler(offset, value, p)
     }
 
   def ignoreOnResult(): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
 
-    override def onResult(offset: Int, value: AnyValue, p: MapValue): Option[Either[Throwable, IgnoreResults]] =
-      Some(Right(IgnoreResults()))
+    override def onResult(offset: Int, value: AnyValue, p: MapValue): QueryHandlerResult = IgnoreResults
   }
 }
 
@@ -205,7 +208,7 @@ object QueryHandler {
 
   def ignoreNoResult(): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).ignoreNoResult()
 
-  def handleResult(handler: (Int, AnyValue, MapValue) => Option[Throwable]): QueryHandlerBuilder =
+  def handleResult(handler: (Int, AnyValue, MapValue) => QueryHandlerResult): QueryHandlerBuilder =
     new QueryHandlerBuilder(new QueryHandler).handleResult(handler)
 
   def ignoreOnResult(): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).ignoreOnResult()

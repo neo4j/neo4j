@@ -127,6 +127,7 @@ class SystemCommandQuerySubscriber(
   @volatile private var empty = true
   @volatile private var ignore = false
   @volatile private var failed: Option[Throwable] = None
+  @volatile private var contextUpdates: MapValue = MapValue.EMPTY
 
   override def onResult(numberOfFields: Int): Unit = if (failed.isEmpty) {
     inner.onResult(numberOfFields)
@@ -134,12 +135,14 @@ class SystemCommandQuerySubscriber(
 
   override def onResultCompleted(statistics: QueryStatistics): Unit = {
     if (empty) {
-      queryHandler.onNoResults(params).foreach {
-        case Left(error) =>
+      queryHandler.onNoResults(params) match {
+        case ThrowException(error) =>
           inner.onError(error)
           failed = Some(error)
-        case Right(_) =>
+        case IgnoreResults =>
           ignore = true
+        case UpdateContextParams(params) => contextUpdates = contextUpdates.updatedWith(params)
+        case Continue                    => ()
       }
     }
     if (failed.isEmpty) {
@@ -162,12 +165,14 @@ class SystemCommandQuerySubscriber(
   }
 
   override def onField(offset: Int, value: AnyValue): Unit = {
-    queryHandler.onResult(offset, value, params).foreach {
-      case Left(error) =>
+    queryHandler.onResult(offset, value, params) match {
+      case ThrowException(error) =>
         inner.onError(error)
         failed = Some(error)
-      case Right(_) =>
+      case IgnoreResults =>
         ignore = true
+      case UpdateContextParams(params) => contextUpdates = contextUpdates.updatedWith(params)
+      case Continue                    => ()
     }
     if (failed.isEmpty) {
       inner.onField(offset, value)
@@ -186,6 +191,8 @@ class SystemCommandQuerySubscriber(
   }
 
   def shouldIgnoreResult(): Boolean = ignore
+
+  def getContextUpdates(): MapValue = contextUpdates
 
   override def equals(obj: Any): Boolean = inner.equals(obj)
 }

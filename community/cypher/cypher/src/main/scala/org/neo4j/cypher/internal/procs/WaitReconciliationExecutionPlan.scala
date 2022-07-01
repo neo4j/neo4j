@@ -32,6 +32,11 @@ import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.TARGETS
 import org.neo4j.graphdb.Transaction
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.api.KernelTransaction
@@ -58,6 +63,8 @@ case class WaitReconciliationExecutionPlan(
   parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p
 ) extends AdministrationChainedExecutionPlan(Some(source)) {
 
+  private val txIdParam = "__internal_transactionId"
+
   override def onSkip(ctx: SystemUpdateCountingQueryContext, subscriber: QuerySubscriber): RuntimeResult = {
     SingleRowRuntimeResult(
       Array("address", "state", "message", "success"),
@@ -81,7 +88,9 @@ case class WaitReconciliationExecutionPlan(
   ): RuntimeResult = {
 
     val query =
-      s"""CALL dbms.admin.wait($$`__internal_transactionId`, $$`__internal_databaseUuid`, $$`$databaseNameParamKey`, $timeoutInSeconds)
+      s"""OPTIONAL MATCH (d:$DATABASE_NAME {$DATABASE_NAME_PROPERTY: $$`$databaseNameParamKey`})-[:$TARGETS]-(db:$DATABASE)
+         |WITH coalesce(db.$DATABASE_UUID_PROPERTY,$$`__internal_databaseUuid`) as uuid, coalesce(db.$DATABASE_NAME_PROPERTY,$$`__internal_deletedDatabaseName`) as name
+         |CALL dbms.admin.wait($$`$txIdParam`, uuid, name, $timeoutInSeconds)
          |YIELD address, state, message, success RETURN address, state, message, success""".stripMargin
     val tc: TransactionalContext = ctx.kernelTransactionalContext
 
@@ -89,6 +98,7 @@ case class WaitReconciliationExecutionPlan(
     try {
       val updatedParams =
         parameterConverter(tc.transaction(), safeMergeParameters(systemParams, params, ctx.contextVars))
+
       // We can't wait for a transaction from the same transaction so commit the existing transaction
       // and start a new one like PERIODIC COMMIT does
       val oldTxId = tc.commitAndRestartTx()
@@ -98,7 +108,7 @@ case class WaitReconciliationExecutionPlan(
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullAccess)
 
       // Need to wait for the old transaction
-      val txParams = VirtualValues.map(Array("__internal_transactionId"), Array(Values.longValue(oldTxId)))
+      val txParams = VirtualValues.map(Array(txIdParam), Array(Values.longValue(oldTxId)))
       val paramsWithTxId = updatedParams.updatedWith(txParams)
 
       val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, queryHandler, params)

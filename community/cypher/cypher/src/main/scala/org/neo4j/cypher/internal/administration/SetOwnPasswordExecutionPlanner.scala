@@ -30,8 +30,10 @@ import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.procs.Continue
 import org.neo4j.cypher.internal.procs.InitAndFinallyFunctions
 import org.neo4j.cypher.internal.procs.QueryHandler
+import org.neo4j.cypher.internal.procs.ThrowException
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
 import org.neo4j.cypher.internal.security.SecureHasher
 import org.neo4j.cypher.internal.security.SystemGraphCredential
@@ -93,15 +95,15 @@ case class SetOwnPasswordExecutionPlanner(
           val newValue = p.get(newPw.bytesKey).asInstanceOf[ByteArray].asObject()
           val currentValue = p.get(currentKeyBytes).asInstanceOf[ByteArray].asObject()
           if (!oldCredentials.matchesPassword(currentValue))
-            Some(new InvalidArgumentException(
+            ThrowException(new InvalidArgumentException(
               s"User '${currentUser(p)}' failed to alter their own password: Invalid principal or credentials."
             ))
           else if (oldCredentials.matchesPassword(newValue))
-            Some(new InvalidArgumentException(
+            ThrowException(new InvalidArgumentException(
               s"User '${currentUser(p)}' failed to alter their own password: Old password and new password cannot be the same."
             ))
           else
-            None
+            Continue
         })
         .handleNoResult(p => {
           if (
