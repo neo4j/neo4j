@@ -40,6 +40,10 @@ object Pattern {
   }
 }
 
+/**
+ * Represents a comma-separated list of pattern parts. Therefore, this is known in the parser as PatternList.
+ * As we (in contrast to PatternParts) can use this to describe arbitrary shaped graph structures, GQL refers to these as graph patterns.
+ */
 case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) extends ASTNode {
 
   lazy val length: Int = this.folder.fold(0) {
@@ -50,6 +54,12 @@ case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) 
 
 case class RelationshipsPattern(element: RelationshipChain)(val position: InputPosition) extends ASTNode
 
+/**
+ * Represents one part in the comma-separated list of a pattern.
+ *
+ * In the parser, this is just referred to as Pattern.
+ * As we (in contrast to pattern lists) can only use this to describe linear graph structures, GQL refers to these as path patterns.
+ */
 sealed abstract class PatternPart extends ASTNode {
   def allVariables: Set[LogicalVariable]
   def element: PatternElement
@@ -110,7 +120,7 @@ case class QuantifiedPath(
   override def variable: Option[LogicalVariable] = None
 }
 
-// We can currently parse these but not plan them. Therefore, we represent them in the AST but disallow them in semantic checking when concatenated.
+// We can currently parse these but not plan them. Therefore, we represent them in the AST but disallow them in semantic checking when concatenated and unwrap them otherwise.
 case class ParenthesizedPath(
   part: PatternPart
 )(val position: InputPosition)
@@ -165,6 +175,9 @@ object RelationshipChain {
   }
 }
 
+/**
+ * Represents one node in a pattern.
+ */
 case class NodePattern(
   variable: Option[LogicalVariable],
   labelExpression: Option[LabelExpression],
@@ -178,6 +191,9 @@ case class NodePattern(
   override def isSingleNode = true
 }
 
+/**
+ * Represents one relationship (without its neighbouring nodes) in a pattern.
+ */
 case class RelationshipPattern(
   variable: Option[LogicalVariable],
   labelExpression: Option[LabelExpression],
