@@ -3919,7 +3919,7 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
                         if ( !isNode )
                         {
                             throw exceptionFactory.syntaxException(
-                                new ParseException( ASTExceptionFactory.relationshipPattternNotAllowed( constraintType ) ),
+                                new ParseException( ASTExceptionFactory.relationshipPatternNotAllowed( constraintType ) ),
                                 errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
                         }
                      }
@@ -3931,7 +3931,7 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
                         if ( !isNode )
                         {
                             throw exceptionFactory.syntaxException(
-                                new ParseException( ASTExceptionFactory.relationshipPattternNotAllowed( constraintType ) ),
+                                new ParseException( ASTExceptionFactory.relationshipPatternNotAllowed( constraintType ) ),
                                 errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
                         }
                     }
@@ -3990,7 +3990,7 @@ SCHEMA_COMMAND DropConstraint( Token start ) throws Exception:
                           if ( !isNode )
                           {
                               throw exceptionFactory.syntaxException(
-                                  new ParseException( ASTExceptionFactory.relationshipPattternNotAllowed( constraintType ) ),
+                                  new ParseException( ASTExceptionFactory.relationshipPatternNotAllowed( constraintType ) ),
                                   errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
                           }
                       }
@@ -4001,7 +4001,7 @@ SCHEMA_COMMAND DropConstraint( Token start ) throws Exception:
                           if ( !isNode )
                           {
                               throw exceptionFactory.syntaxException(
-                                  new ParseException( ASTExceptionFactory.relationshipPattternNotAllowed( constraintType ) ),
+                                  new ParseException( ASTExceptionFactory.relationshipPatternNotAllowed( constraintType ) ),
                                   errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
                           }
                       }

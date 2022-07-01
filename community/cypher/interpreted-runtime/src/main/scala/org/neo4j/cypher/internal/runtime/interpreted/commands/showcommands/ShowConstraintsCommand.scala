@@ -62,6 +62,8 @@ case class ShowConstraintsCommand(constraintType: ShowConstraintType, verbose: B
     val ctx = state.query
     ctx.assertShowConstraintAllowed()
     val constraints = ctx.getAllConstraints()
+    val indexIdToName = ctx.getAllIndexes()
+      .map { case (descriptor, _) => descriptor.getId -> descriptor.getName }
 
     val predicate: ConstraintDescriptor => Boolean = constraintType match {
       case UniqueConstraints    => c => c.`type`().equals(schema.ConstraintType.UNIQUE)
@@ -87,6 +89,12 @@ case class ShowConstraintsCommand(constraintType: ShowConstraintType, verbose: B
         val labels = constraintInfo.labelsOrTypes
         val properties = constraintInfo.properties
         val isIndexBacked = constraintDescriptor.isIndexBackedConstraint
+        val ownedIndex =
+          if (isIndexBacked)
+            indexIdToName.get(constraintDescriptor.asIndexBackedConstraint().ownedIndexId())
+              .map(Values.stringValue)
+              .getOrElse(Values.NO_VALUE)
+          else Values.NO_VALUE
         val entityType = constraintDescriptor.schema.entityType
         val constraintType = getConstraintType(constraintDescriptor.`type`, entityType)
 
@@ -103,11 +111,8 @@ case class ShowConstraintsCommand(constraintType: ShowConstraintType, verbose: B
           "labelsOrTypes" -> VirtualValues.fromList(labels.map(elem => Values.of(elem).asInstanceOf[AnyValue]).asJava),
           // The properties of this constraint, for example ["propKey", "propKey2"]
           "properties" -> VirtualValues.fromList(properties.map(prop => Values.of(prop).asInstanceOf[AnyValue]).asJava),
-          // The id of the index associated to the constraint
-          "ownedIndexId" -> {
-            if (isIndexBacked) Values.longValue(constraintDescriptor.asIndexBackedConstraint().ownedIndexId())
-            else Values.NO_VALUE
-          }
+          // The name of the index associated to the constraint
+          "ownedIndex" -> ownedIndex
         )
         if (verbose) {
           val (options, createString) =

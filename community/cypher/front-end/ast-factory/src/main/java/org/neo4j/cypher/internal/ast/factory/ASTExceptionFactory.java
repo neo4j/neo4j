@@ -32,12 +32,12 @@ public interface ASTExceptionFactory {
     // Exception messages
     String invalidDropCommand = "Unsupported drop constraint command: Please delete the constraint by name instead";
 
-    static String relationshipPattternNotAllowed(ConstraintType type) {
+    static String relationshipPatternNotAllowed(ConstraintType type) {
         return String.format("'%s' does not allow relationship patterns", type.description());
     }
 
     static String onlySinglePropertyAllowed(ConstraintType type) {
-        return String.format("'%s' does not allow multiple properties", type.description());
+        return String.format("Constraint type '%s' does not allow multiple properties", type.description());
     }
 
     static String invalidShowFilterType(String command, ShowCommandFilterTypes got) {

@@ -85,7 +85,9 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest {
             assertThat(result.getNumber("populationPercent"))
                     .as("populationPercent")
                     .isEqualTo(0.0);
-            assertThat(result.getString("uniqueness")).as("uniqueness").isEqualTo("NONUNIQUE");
+            assertThat(result.getString("owningConstraint"))
+                    .as("owningConstraint")
+                    .isEqualTo(null);
             assertThat(result.getString("type")).as("type").isEqualTo("RANGE");
             assertThat(result.getString("entityType")).as("entityType").isEqualTo("NODE");
             assertThat(result.get("labelsOrTypes")).asList().as("labelsOrTypes").containsExactly(labelName);

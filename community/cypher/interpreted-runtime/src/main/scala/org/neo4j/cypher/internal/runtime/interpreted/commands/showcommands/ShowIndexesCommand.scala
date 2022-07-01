@@ -31,8 +31,6 @@ import org.neo4j.cypher.internal.ast.TextIndexes
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IndexInfo
-import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand.Nonunique
-import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand.Unique
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand.createIndexStatement
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.asEscapedString
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.barStringJoiner
@@ -66,6 +64,8 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
   override def originalNameRows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]] = {
     val ctx = state.query
     ctx.assertShowIndexAllowed()
+    val constraintIdToName = ctx.getAllConstraints()
+      .map { case (descriptor, _) => descriptor.getId -> descriptor.getName }
     val indexes: Map[IndexDescriptor, IndexInfo] = ctx.getAllIndexes()
     val relevantIndexes = indexType match {
       case AllIndexes => indexes
@@ -96,7 +96,15 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
     val rows = sortedRelevantIndexes.map {
       case (indexDescriptor: IndexDescriptor, indexInfo: IndexInfo) =>
         val indexStatus = indexInfo.indexStatus
-        val uniqueness = if (indexDescriptor.isUnique) Unique.toString else Nonunique.toString
+
+        val maybeOwningConstraintId = indexDescriptor.getOwningConstraintId
+        val owningConstraint =
+          if (maybeOwningConstraintId.isPresent)
+            constraintIdToName.get(maybeOwningConstraintId.getAsLong)
+              .map(Values.stringValue)
+              .getOrElse(Values.NO_VALUE)
+          else Values.NO_VALUE
+
         val indexType = indexDescriptor.getIndexType
         val isLookupIndex = indexType.equals(IndexType.LOOKUP)
 
@@ -122,8 +130,6 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
           "state" -> Values.stringValue(indexStatus.state),
           // % of index population, for example 0.0, 100.0, or 75.1
           "populationPercent" -> Values.doubleValue(indexStatus.populationProgress),
-          // Tells if the index is only meant to allow one value per key, either "UNIQUE" or "NONUNIQUE"
-          "uniqueness" -> Values.stringValue(uniqueness),
           // The IndexType of this index, either "FULLTEXT", "TEXT", "RANGE", "POINT", "BTREE" or "LOOKUP"
           "type" -> Values.stringValue(indexType.name),
           // Type of entities this index represents, either "NODE" or "RELATIONSHIP"
@@ -133,7 +139,9 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
           // The properties of this constraint, for example ["propKey", "propKey2"], null for lookup indexes
           "properties" -> propertiesValue,
           // The index provider for this index, one of "fulltext-1.0", "range-1.0", "point-1.0", "text-1.0", "token-lookup-1.0"
-          "indexProvider" -> Values.stringValue(providerName)
+          "indexProvider" -> Values.stringValue(providerName),
+          // The name of the constraint associated to the index
+          "owningConstraint" -> owningConstraint
         )
         if (verbose) {
           val indexConfig = indexDescriptor.getIndexConfig

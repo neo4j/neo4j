@@ -628,12 +628,12 @@ object ShowIndexesClause {
       ShowColumn("name")(position),
       ShowColumn("state")(position),
       ShowColumn("populationPercent", CTFloat)(position),
-      ShowColumn("uniqueness")(position),
       ShowColumn("type")(position),
       ShowColumn("entityType")(position),
       ShowColumn("labelsOrTypes", CTList(CTString))(position),
       ShowColumn("properties", CTList(CTString))(position),
-      ShowColumn("indexProvider")(position)
+      ShowColumn("indexProvider")(position),
+      ShowColumn("owningConstraint")(position)
     )
     val verboseCols = List(
       ShowColumn("options", CTMap)(position),
@@ -697,7 +697,7 @@ object ShowConstraintsClause {
       ShowColumn("entityType")(position),
       ShowColumn("labelsOrTypes", CTList(CTString))(position),
       ShowColumn("properties", CTList(CTString))(position),
-      ShowColumn("ownedIndexId", CTInteger)(position)
+      ShowColumn("ownedIndex")(position)
     )
     val verboseCols = List(
       ShowColumn("options", CTMap)(position),

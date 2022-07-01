@@ -227,7 +227,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           test(s"CREATE CONSTRAINT $forOrOnString ()-[r1:REL]-() $requireOrAssertString (r2.prop) IS NODE KEY") {
             assertFailsWithMessageStart(
               testName,
-              ASTExceptionFactory.relationshipPattternNotAllowed(ConstraintType.NODE_KEY)
+              ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_KEY)
             )
           }
 
@@ -355,7 +355,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           test(s"CREATE CONSTRAINT $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS UNIQUE") {
             assertFailsWithMessageStart(
               testName,
-              ASTExceptionFactory.relationshipPattternNotAllowed(ConstraintType.UNIQUE)
+              ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.UNIQUE)
             )
           }
 
@@ -1003,6 +1003,18 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           ) {
             failsToParse
           }
+
+          test(
+            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop1, node.prop2) IS NOT NULL"
+          ) {
+            assertFailsWithMessage(testName, "Constraint type 'IS NOT NULL' does not allow multiple properties")
+          }
+
+          test(
+            s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString (r.prop1, r.prop2) IS NOT NULL"
+          ) {
+            assertFailsWithMessage(testName, "Constraint type 'IS NOT NULL' does not allow multiple properties")
+          }
         }
     }
 
@@ -1310,6 +1322,18 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     ))
   }
 
+  test(
+    s"CREATE CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop1, node.prop2)"
+  ) {
+    assertFailsWithMessage(testName, "Constraint type 'EXISTS' does not allow multiple properties")
+  }
+
+  test(
+    s"CREATE CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop1, r.prop2)"
+  ) {
+    assertFailsWithMessage(testName, "Constraint type 'EXISTS' does not allow multiple properties")
+  }
+
   // Edge case tests
 
   test(
@@ -1483,7 +1507,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("DROP CONSTRAINT ON ()-[r1:R]-() ASSERT r2.prop IS NODE KEY") {
-    assertFailsWithMessageStart(testName, ASTExceptionFactory.relationshipPattternNotAllowed(ConstraintType.NODE_KEY))
+    assertFailsWithMessageStart(testName, ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_KEY))
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE") {
@@ -1503,7 +1527,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("DROP CONSTRAINT ON ()-[r1:R]-() ASSERT r2.prop IS UNIQUE") {
-    assertFailsWithMessageStart(testName, ASTExceptionFactory.relationshipPattternNotAllowed(ConstraintType.UNIQUE))
+    assertFailsWithMessageStart(testName, ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.UNIQUE))
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)") {

@@ -33,7 +33,7 @@ class Neo4jASTFactoryTest extends CypherFunSuite {
   }
 
   test("relationShipPatternNotAllowed") {
-    ASTExceptionFactory.relationshipPattternNotAllowed(
+    ASTExceptionFactory.relationshipPatternNotAllowed(
       ConstraintType.UNIQUE
     ) shouldBe "'IS UNIQUE' does not allow relationship patterns"
   }
@@ -41,7 +41,7 @@ class Neo4jASTFactoryTest extends CypherFunSuite {
   test("onlySinglePropertyAllowed") {
     ASTExceptionFactory.onlySinglePropertyAllowed(
       ConstraintType.NODE_EXISTS
-    ) shouldBe "'EXISTS' does not allow multiple properties"
+    ) shouldBe "Constraint type 'EXISTS' does not allow multiple properties"
   }
 
   test("invalidShowFilterType") {
