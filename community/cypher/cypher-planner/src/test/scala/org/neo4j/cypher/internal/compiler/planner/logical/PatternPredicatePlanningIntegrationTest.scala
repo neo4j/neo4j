@@ -617,7 +617,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     )
   }
 
-  test("should plan all predicates along with named varlength pattern") {
+  test("should plan all predicates along with named tvarlength pattern") {
     val plan =
       planner.plan("MATCH p=(a)-[r*]->(b) WHERE all(n in nodes(p) WHERE n.prop = 1337) RETURN p").stripProduceResults
 
@@ -1914,7 +1914,9 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("Should plan semiApply with projectEndPoints for ExistsSubClause with already bound variables") {
-    val logicalPlan = planner.plan("MATCH (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE EXISTS { (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE n.foo > 5} RETURN *")
+    val logicalPlan = planner.plan(
+      "MATCH (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE EXISTS { (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE n.foo > 5} RETURN *"
+    )
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("m", "n", "o", "q", "r", "r2", "r3")

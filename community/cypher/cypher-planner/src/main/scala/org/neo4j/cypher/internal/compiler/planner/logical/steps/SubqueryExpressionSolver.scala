@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plannerQueryPartPlanne
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.SelectPatternPredicates.planPredicates
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
-import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.ListSlice
@@ -333,14 +332,6 @@ object SubqueryExpressionSolver {
       context: LogicalPlanningContext
     ): (Seq[Expression], LogicalPlan) = {
       unsolvedPredicates.filter(containsExistsSubquery).foldLeft((Seq.empty[Expression], lhs)) {
-        case ((solvedExprs, plan), e: ExistsSubClause) =>
-          val innerPlan = SelectPatternPredicates.planInnerOfSubquery(plan, context, interestingOrderConfig, e)
-          val solvedPlan = context.logicalPlanProducer.planSemiApplyInHorizon(plan, innerPlan, e, context)
-          (solvedExprs :+ e, solvedPlan)
-        case ((solvedExprs, plan), not @ Not(e: ExistsSubClause)) =>
-          val innerPlan = SelectPatternPredicates.planInnerOfSubquery(plan, context, interestingOrderConfig, e)
-          val solvedPlan = context.logicalPlanProducer.planAntiSemiApplyInHorizon(plan, innerPlan, not, context)
-          (solvedExprs :+ not, solvedPlan)
         case ((solvedExprs, plan), p: ExistsIRExpression) =>
           val rhs = SelectPatternPredicates.rhsPlan(plan, p, context)
           val solvedPlan = context.logicalPlanProducer.planSemiApplyInHorizon(plan, rhs, p, context)
@@ -350,17 +341,15 @@ object SubqueryExpressionSolver {
           val solvedPlan = context.logicalPlanProducer.planAntiSemiApplyInHorizon(plan, rhs, not, context)
           (solvedExprs :+ not, solvedPlan)
         case ((solvedExprs, plan), o @ Ors(exprs)) =>
-          val (subqueryExpressions, expressions) = exprs.partition {
+          val (existsExpressions, expressions) = exprs.partition {
             case ExistsIRExpression(_, _)      => true
             case Not(ExistsIRExpression(_, _)) => true
-            case ExistsSubClause(_, _)         => true
-            case Not(ExistsSubClause(_, _))    => true
             case _                             => false
           }
           // Only plan if the OR contains an EXISTS.
-          if (subqueryExpressions.nonEmpty) {
+          if (solvedExprs.nonEmpty) {
             val (planWithPredicates, solvedPredicates) =
-              planPredicates(plan, subqueryExpressions.toSet, expressions.toSet, None, interestingOrderConfig, context)
+              planPredicates(plan, existsExpressions.toSet, expressions.toSet, None, interestingOrderConfig, context)
             AssertMacros.checkOnlyWhenAssertionsAreEnabled(
               exprs.forall(solvedPredicates.contains),
               "planPredicates is supposed to solve all predicates in an OR clause."

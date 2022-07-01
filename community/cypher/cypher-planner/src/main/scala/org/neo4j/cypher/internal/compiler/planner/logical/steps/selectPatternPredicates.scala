@@ -23,25 +23,17 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.plannerQueryPartPlanner
-import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.NodePatternExpression
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Ors
-import org.neo4j.cypher.internal.expressions.PatternExpression
-import org.neo4j.cypher.internal.expressions.RelationshipChain
-import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections.containsExistsSubquery
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.helpers.CachedFunction
-import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.asQueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Ref
 
 trait SelectPatternPredicates extends SelectionCandidateGenerator {
@@ -58,12 +50,6 @@ trait SelectPatternPredicates extends SelectionCandidateGenerator {
       if queryGraph.argumentIds.subsetOf(lhs.availableSymbols)
     } yield {
       val plan = pattern match {
-        case e: ExistsSubClause =>
-          val innerPlan = planInnerOfSubquery(lhs, context, interestingOrderConfig, e)
-          context.logicalPlanProducer.planSemiApply(lhs, innerPlan, e, context)
-        case p @ Not(e: ExistsSubClause) =>
-          val innerPlan = planInnerOfSubquery(lhs, context, interestingOrderConfig, e)
-          context.logicalPlanProducer.planAntiSemiApply(lhs, innerPlan, p, context)
         case p: ExistsIRExpression =>
           val rhs = rhsPlan(lhs, p, context)
           context.logicalPlanProducer.planSemiApply(lhs, rhs, p, context)
@@ -74,8 +60,6 @@ trait SelectPatternPredicates extends SelectionCandidateGenerator {
           val (subqueryExpressions, expressions) = exprs.partition {
             case ExistsIRExpression(_, _)      => true
             case Not(ExistsIRExpression(_, _)) => true
-            case ExistsSubClause(_, _)         => true
-            case Not(ExistsSubClause(_, _))    => true
             case _                             => false
           }
           val (plan, solvedPredicates) =
@@ -88,51 +72,6 @@ trait SelectPatternPredicates extends SelectionCandidateGenerator {
       }
       SelectionCandidate(plan, Set(pattern))
     }
-  }
-
-  def planInnerOfSubquery(
-    lhs: LogicalPlan,
-    context: LogicalPlanningContext,
-    interestingOrderConfig: InterestingOrderConfig,
-    e: ExistsSubClause
-  ): LogicalPlan = {
-    // Creating a query graph by combining all extracted query graphs created by each entry of the patternElements
-    val qg = e.patternElements.foldLeft(QueryGraph.empty) { (acc, patternElement) =>
-      patternElement match {
-        case elem: RelationshipChain =>
-          val variableToCollectName = context.anonymousVariableNameGenerator.nextName
-          val collectionName = context.anonymousVariableNameGenerator.nextName
-          // Note: This usage of PatternExpression is purely to get the QG from it.
-          val patternExpr = PatternExpression(RelationshipsPattern(elem)(elem.position))(
-            e.outerScope,
-            variableToCollectName,
-            collectionName
-          )
-          val qg = asQueryGraph(patternExpr, lhs.availableSymbols, context.anonymousVariableNameGenerator)
-          acc ++ qg
-
-        case elem: NodePattern =>
-          val patternExpr = NodePatternExpression(List(elem))(elem.position)
-          val qg = asQueryGraph(patternExpr, lhs.availableSymbols, context.anonymousVariableNameGenerator)
-          acc ++ qg
-      }
-    }
-
-    // Adding the predicates and known outer variables to new query graph
-    val new_qg = e.optionalWhereExpression.foldLeft(qg) {
-      case (acc: QueryGraph, patternExpr: Expression) => {
-        val outerVariableNames = e.outerScope.map(id => id.name)
-        val usedVariables: Seq[String] = patternExpr.arguments.folder
-          .findAllByClass[Variable]
-          .map(_.name)
-          .distinct
-
-        acc.addPredicates(outerVariableNames, patternExpr)
-          .addArgumentIds(usedVariables.filter(v => outerVariableNames.contains(v)))
-      }
-    }
-
-    context.strategy.plan(new_qg, interestingOrderConfig, context).result
   }
 
   def planPredicates(
@@ -177,14 +116,6 @@ trait SelectPatternPredicates extends SelectionCandidateGenerator {
         val rhs = rhsPlan(lhs, expr, context)
         planSelect(p, rhs, context.logicalPlanProducer.planSelectOrAntiSemiApply)
 
-      case (e @ ExistsSubClause(_, _)) :: Nil =>
-        val innerPlan = planInnerOfSubquery(lhs, context, interestingOrderConfig, e)
-        planSelect(e, innerPlan, context.logicalPlanProducer.planSelectOrSemiApply)
-
-      case (p @ Not(e @ ExistsSubClause(_, _))) :: Nil =>
-        val innerPlan = planInnerOfSubquery(lhs, context, interestingOrderConfig, e)
-        planSelect(p, innerPlan, context.logicalPlanProducer.planSelectOrAntiSemiApply)
-
       case (p: ExistsIRExpression) :: tail =>
         val rhs = rhsPlan(lhs, p, context)
         planSemiApply(p, p, tail, rhs)
@@ -192,14 +123,6 @@ trait SelectPatternPredicates extends SelectionCandidateGenerator {
       case (p @ Not(expr: ExistsIRExpression)) :: tail =>
         val rhs = rhsPlan(lhs, expr, context)
         planSemiApply(p, expr, tail, rhs)
-
-      case (e @ ExistsSubClause(_, _)) :: tail =>
-        val innerPlan = planInnerOfSubquery(lhs, context, interestingOrderConfig, e)
-        planSemiApply(e, e, tail, innerPlan)
-
-      case (p @ Not(e @ ExistsSubClause(_, _))) :: tail =>
-        val innerPlan = planInnerOfSubquery(lhs, context, interestingOrderConfig, e)
-        planSemiApply(p, e, tail, innerPlan)
 
       case _ =>
         throw new IllegalArgumentException("There should be at least one subquery expression")

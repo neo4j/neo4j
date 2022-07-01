@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
@@ -190,9 +189,7 @@ object Selections {
   def from(expressions: Expression): Selections = Selections(expressions.asPredicates)
 
   def containsExistsSubquery(e: Expression): Boolean = e match {
-    case _: ExistsSubClause         => true
     case _: ExistsIRExpression      => true
-    case Not(_: ExistsSubClause)    => true
     case Not(_: ExistsIRExpression) => true
     case Ors(exprs)                 => exprs.exists(containsExistsSubquery)
     case _                          => false

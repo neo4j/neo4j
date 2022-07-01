@@ -78,11 +78,11 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
    * @param horizon        the horizon to put into the query.
    */
   private def getPlannerQuery(
-                               pattern: ASTNode,
-                               dependencies: Set[String],
-                               maybePredicate: Option[Expression],
-                               horizon: QueryHorizon
-                             ): PlannerQuery = {
+    pattern: ASTNode,
+    dependencies: Set[String],
+    maybePredicate: Option[Expression],
+    horizon: QueryHorizon
+  ): PlannerQuery = {
     val patternContent = pattern match {
       case relationshipsPattern: RelationshipsPattern =>
         relationshipsPattern.element.destructedRelationshipChain
@@ -117,7 +117,7 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
      * Rewrites exists( (n)-[anon_0]->(anon_1:M) ) into
      * IR for MATCH (n)-[anon_0]->(anon_1:M)
      */
-    case exists@Exists(pe@PatternExpression(pattern)) =>
+    case exists @ Exists(pe @ PatternExpression(pattern)) =>
       val query = getPlannerQuery(pattern, pe.dependencies.map(_.name), None, RegularQueryProjection())
       ExistsIRExpression(query, stringifier(exists))(exists.position)
 
@@ -126,15 +126,20 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
      * IR for MATCH (n)-[anon_0]->(anon_1:M)
      *
      */
-    case existsSubClause@ExistsSubClause(pattern, optionalWhereExpression) =>
-      val query = getPlannerQuery(pattern, existsSubClause.dependencies.map(_.name), optionalWhereExpression, RegularQueryProjection())
+    case existsSubClause @ ExistsSubClause(pattern, optionalWhereExpression) =>
+      val query = getPlannerQuery(
+        pattern,
+        existsSubClause.dependencies.map(_.name),
+        optionalWhereExpression,
+        RegularQueryProjection()
+      )
       ExistsIRExpression(query, stringifier(existsSubClause))(existsSubClause.position)
 
     /**
      * Rewrites (n)-[anon_0]->(anon_1:M) into
      * IR for MATCH (n)-[anon_0]->(anon_1:M) RETURN PathExpression(NodePathStep(n, RelationshipPathStep(anon_0, NodePathStep(anon_1, NilPathStep))))
      */
-    case pe@PatternExpression(pattern) =>
+    case pe @ PatternExpression(pattern) =>
       val pathExpression = createPathExpression(pe)
       val query = getPlannerQuery(
         pattern,
