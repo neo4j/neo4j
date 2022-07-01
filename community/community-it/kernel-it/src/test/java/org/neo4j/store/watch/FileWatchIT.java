@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -49,7 +48,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.watcher.FileWatchEventListener;
 import org.neo4j.io.fs.watcher.FileWatcher;
-import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
@@ -58,30 +57,31 @@ import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-@Neo4jLayoutExtension
+@DbmsExtension(configurationCallback = "configure")
 @EnabledOnOs(OS.LINUX)
 class FileWatchIT {
     @Inject
     private TestDirectory testDirectory;
 
     @Inject
-    private RecordDatabaseLayout databaseLayout;
+    private DatabaseLayout databaseLayout;
 
-    private AssertableLogProvider logProvider;
+    @Inject
     private GraphDatabaseService database;
+
+    @Inject
     private DatabaseManagementService managementService;
 
-    @BeforeEach
-    void setUp() {
-        logProvider = new AssertableLogProvider();
-        managementService = new TestDatabaseManagementServiceBuilder(databaseLayout)
-                .setInternalLogProvider(logProvider)
-                .build();
-        database = managementService.database(DEFAULT_DATABASE_NAME);
+    private final AssertableLogProvider logProvider = new AssertableLogProvider();
+
+    @ExtensionCallback
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setInternalLogProvider(logProvider);
     }
 
     @AfterEach
@@ -91,7 +91,7 @@ class FileWatchIT {
 
     @Test
     void notifyAboutStoreFileDeletion() throws IOException, InterruptedException {
-        String fileName = databaseLayout.nodeStore().getFileName().toString();
+        String fileName = databaseLayout.metadataStore().getFileName().toString();
         FileWatcher fileWatcher = getFileWatcher(database);
         CheckPointer checkpointer = getCheckpointer(database);
         DeletionLatchEventListener deletionListener = new DeletionLatchEventListener(fileName);
@@ -136,9 +136,8 @@ class FileWatchIT {
         FileWatcher fileWatcher = getFileWatcher(database);
         CheckPointer checkPointer = dependencyResolver.resolveDependency(CheckPointer.class);
 
-        String propertyStoreName = databaseLayout.propertyStore().getFileName().toString();
         AccumulativeDeletionEventListener accumulativeListener = new AccumulativeDeletionEventListener();
-        ModificationEventListener modificationListener = new ModificationEventListener(propertyStoreName);
+        ModificationEventListener modificationListener = new ModificationEventListener();
         fileWatcher.addFileWatchEventListener(modificationListener);
         fileWatcher.addFileWatchEventListener(accumulativeListener);
 
@@ -152,7 +151,7 @@ class FileWatchIT {
         } while (!modificationListener.awaitModificationNotification());
 
         fileWatcher.removeFileWatchEventListener(modificationListener);
-        ModificationEventListener afterRemovalListener = new ModificationEventListener(propertyStoreName);
+        ModificationEventListener afterRemovalListener = new ModificationEventListener();
         fileWatcher.addFileWatchEventListener(afterRemovalListener);
 
         dropAllIndexes(database);
@@ -168,8 +167,7 @@ class FileWatchIT {
     void doNotMonitorTransactionLogFiles() throws IOException, InterruptedException {
         FileWatcher fileWatcher = getFileWatcher(database);
         CheckPointer checkpointer = getCheckpointer(database);
-        String store = databaseLayout.nodeStore().getFileName().toString();
-        ModificationEventListener modificationEventListener = new ModificationEventListener(store);
+        ModificationEventListener modificationEventListener = new ModificationEventListener();
         fileWatcher.addFileWatchEventListener(modificationEventListener);
 
         do {
@@ -191,11 +189,10 @@ class FileWatchIT {
 
     @Test
     void notifyWhenWholeStoreDirectoryRemoved() throws IOException, InterruptedException {
-        String fileName = databaseLayout.nodeStore().getFileName().toString();
         FileWatcher fileWatcher = getFileWatcher(database);
         CheckPointer checkpointer = getCheckpointer(database);
 
-        ModificationEventListener modificationListener = new ModificationEventListener(fileName);
+        ModificationEventListener modificationListener = new ModificationEventListener();
         fileWatcher.addFileWatchEventListener(modificationListener);
         do {
             createNode(database);
@@ -325,30 +322,28 @@ class FileWatchIT {
     }
 
     private static class ModificationEventListener implements FileWatchEventListener {
-        final String expectedFileName;
         private final CountDownLatch modificationLatch = new CountDownLatch(1);
-
-        ModificationEventListener(String expectedFileName) {
-            this.expectedFileName = expectedFileName;
-        }
+        private int awaitTries;
 
         @Override
         public void fileModified(WatchKey key, String fileName) {
-            if (expectedFileName.equals(fileName)) {
-                modificationLatch.countDown();
-            }
+            modificationLatch.countDown();
         }
 
         boolean awaitModificationNotification() throws InterruptedException {
+            if (awaitTries++ > 300) {
+                throw new RuntimeException("Timed-out waiting for modification");
+            }
             return modificationLatch.await(1, TimeUnit.SECONDS);
         }
     }
 
     private static class DeletionLatchEventListener extends ModificationEventListener {
         private final CountDownLatch deletionLatch = new CountDownLatch(1);
+        final String expectedFileName;
 
         DeletionLatchEventListener(String expectedFileName) {
-            super(expectedFileName);
+            this.expectedFileName = expectedFileName;
         }
 
         @Override
@@ -359,7 +354,7 @@ class FileWatchIT {
         }
 
         void awaitDeletionNotification() throws InterruptedException {
-            deletionLatch.await();
+            deletionLatch.await(5, TimeUnit.MINUTES);
         }
     }
 }
