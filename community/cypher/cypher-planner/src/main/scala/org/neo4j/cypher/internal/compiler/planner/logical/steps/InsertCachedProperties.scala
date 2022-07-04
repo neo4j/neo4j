@@ -352,7 +352,10 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
         indexPlan.withMappedProperties { indexedProp =>
           acc.properties.get(property(indexPlan.idName, indexedProp.propertyKeyToken.name)) match {
             // Get the value since we use it later
-            case Some(PropertyUsages(true, usages, _, _, _)) if usages >= 1 =>
+            case Some(PropertyUsages(true, usages, _, _, _))
+              // If you can't get the property from the index, `canGetFromIndex` should be false inside `PropertyUsages`.
+              // However the first phase isn't entirely sound, in some cases, when there are two indexes on the same property, hence the extra check.
+              if usages >= 1 && indexedProp.getValueFromIndex != DoNotGetValue =>
               indexedProp.copy(getValueFromIndex = GetValue)
             // We could get the value but we don't need it later
             case _ =>
@@ -363,7 +366,10 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
         indexPlan.withMappedProperties { indexedProp =>
           acc.properties.get(property(indexPlan.idName, indexedProp.propertyKeyToken.name)) match {
             // Get the value since we use it later
-            case Some(PropertyUsages(true, usages, _, _, _)) if usages >= 1 =>
+            case Some(PropertyUsages(true, usages, _, _, _))
+              // If you can't get the property from the index, `canGetFromIndex` should be false inside `PropertyUsages`.
+              // However the first phase isn't entirely sound, in some cases, when there are two indexes on the same property, hence the extra check.
+              if usages >= 1 && indexedProp.getValueFromIndex != DoNotGetValue =>
               indexedProp.copy(getValueFromIndex = GetValue)
             // We could get the value but we don't need it later
             case _ =>

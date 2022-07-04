@@ -1159,6 +1159,37 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     newPlan shouldBe builder.build()
   }
 
+  /*
+  The insert cached properties logic doesn't handle correctly the case where you have two indexes, with different capabilities, on the same property.
+  It would attempt to get the value from both indexes, including the one that doesn't support it, leading to an exception at runtime.
+  For example, the following query would fail:
+    CREATE TEXT INDEX FOR (n:L) ON (n.p)
+    CREATE INDEX FOR (n:L) ON (n.p)
+    CREATE (:L {p: "test"})
+    MATCH (n:L) WHERE (n.p =~ "") XOR (n.p ENDS WITH "") RETURN n
+   This test ensures that it doesn't happen anymore.
+   */
+  test("Do _not_ get value from an index that doesn't support it when there are two indexes on the same property") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("a")
+      .union()
+      .|.filter("a.prop < 321")
+      .|.nodeIndexOperator("a:A(prop)", getValue = _ => DoNotGetValue)
+      .filter("a.prop < 123")
+      .nodeIndexOperator("a:A(prop)", getValue = _ => CanGetValue)
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("a")
+      .union()
+      // arguably, this shouldn't be cached, this is the limitation of this fix
+      .|.filter("cacheNFromStore[a.prop] < 321")
+      .|.nodeIndexOperator("a:A(prop)", getValue = _ => DoNotGetValue)
+      .filter("cacheN[a.prop] < 123")
+      .nodeIndexOperator("a:A(prop)", getValue = _ => GetValue)
+      .build()
+  }
+
   private def replace(
     plan: LogicalPlan,
     initialTable: SemanticTable,
