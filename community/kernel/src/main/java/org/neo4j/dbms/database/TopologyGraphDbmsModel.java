@@ -19,6 +19,8 @@
  */
 package org.neo4j.dbms.database;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
@@ -32,16 +34,22 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 
 public interface TopologyGraphDbmsModel {
     enum HostedOnMode {
-        raft(1, GraphDatabaseSettings.Mode.CORE),
-        replica(2, GraphDatabaseSettings.Mode.READ_REPLICA),
-        single(0, GraphDatabaseSettings.Mode.SINGLE);
+        RAFT(1, GraphDatabaseSettings.Mode.CORE, "raft"),
+        REPLICA(2, GraphDatabaseSettings.Mode.READ_REPLICA, "replica"),
+        SINGLE(0, GraphDatabaseSettings.Mode.SINGLE, "single");
 
         private final GraphDatabaseSettings.Mode instanceMode;
+        private final String modeName;
         private final byte code;
 
-        HostedOnMode(int code, GraphDatabaseSettings.Mode instanceMode) {
+        HostedOnMode(int code, GraphDatabaseSettings.Mode instanceMode, String modeName) {
             this.code = (byte) code;
             this.instanceMode = instanceMode;
+            this.modeName = modeName;
+        }
+
+        public String modeName() {
+            return modeName;
         }
 
         public GraphDatabaseSettings.Mode instanceMode() {
@@ -61,6 +69,17 @@ public interface TopologyGraphDbmsModel {
             throw new IllegalArgumentException("Invalid instance mode found: " + instanceMode);
         }
 
+        public static HostedOnMode from(String modeName) {
+            requireNonNull(modeName);
+
+            for (HostedOnMode mode : values()) {
+                if (modeName.equals(mode.modeName)) {
+                    return mode;
+                }
+            }
+            throw new IllegalArgumentException("Enum value not found for requested modeName: " + modeName);
+        }
+
         public static HostedOnMode forCode(byte code) {
             return Arrays.stream(values())
                     .filter(value -> value.code == code)
@@ -71,13 +90,13 @@ public interface TopologyGraphDbmsModel {
         public static HostedOnMode lookup(InstanceModeConstraint modeConstraint) {
             switch (modeConstraint) {
                 case PRIMARY -> {
-                    return HostedOnMode.raft;
+                    return HostedOnMode.RAFT;
                 }
                 case SECONDARY -> {
-                    return HostedOnMode.replica;
+                    return HostedOnMode.REPLICA;
                 }
                 case SINGLE -> {
-                    return HostedOnMode.single;
+                    return HostedOnMode.SINGLE;
                 }
                 default -> throw new IllegalArgumentException("Mode constraint not supported: " + modeConstraint);
             }
@@ -85,8 +104,18 @@ public interface TopologyGraphDbmsModel {
     }
 
     enum DatabaseStatus {
-        online,
-        offline
+        ONLINE("online"),
+        OFFLINE("offline");
+
+        private final String statusName;
+
+        DatabaseStatus(String statusName) {
+            this.statusName = statusName;
+        }
+
+        public String statusName() {
+            return statusName;
+        }
     }
 
     enum DatabaseAccess {
@@ -147,15 +176,11 @@ public interface TopologyGraphDbmsModel {
             if (this == NONE) {
                 return true;
             }
-            if (mode == HostedOnMode.raft) {
-                return this == PRIMARY;
-            } else if (mode == HostedOnMode.replica) {
-                return this == SECONDARY;
-            } else if (mode == HostedOnMode.single) {
-                return this == SINGLE || this == PRIMARY;
-            } else {
-                throw new IllegalArgumentException(mode + " is not supported");
-            }
+            return switch (mode) {
+                case RAFT -> this == PRIMARY;
+                case REPLICA -> this == SECONDARY;
+                case SINGLE -> this == SINGLE || this == PRIMARY;
+            };
         }
     }
 

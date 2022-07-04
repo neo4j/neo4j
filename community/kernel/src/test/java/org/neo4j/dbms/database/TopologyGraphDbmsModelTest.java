@@ -32,19 +32,19 @@ public class TopologyGraphDbmsModelTest {
 
     @Test
     void allowsMode() {
-        assertTrue(PRIMARY.allowsMode(TopologyGraphDbmsModel.HostedOnMode.raft));
-        assertFalse(SECONDARY.allowsMode(TopologyGraphDbmsModel.HostedOnMode.raft));
-        assertFalse(SINGLE.allowsMode(TopologyGraphDbmsModel.HostedOnMode.raft));
-        assertTrue(NONE.allowsMode(TopologyGraphDbmsModel.HostedOnMode.raft));
+        assertTrue(PRIMARY.allowsMode(TopologyGraphDbmsModel.HostedOnMode.RAFT));
+        assertFalse(SECONDARY.allowsMode(TopologyGraphDbmsModel.HostedOnMode.RAFT));
+        assertFalse(SINGLE.allowsMode(TopologyGraphDbmsModel.HostedOnMode.RAFT));
+        assertTrue(NONE.allowsMode(TopologyGraphDbmsModel.HostedOnMode.RAFT));
 
-        assertFalse(PRIMARY.allowsMode(TopologyGraphDbmsModel.HostedOnMode.replica));
-        assertTrue(SECONDARY.allowsMode(TopologyGraphDbmsModel.HostedOnMode.replica));
-        assertFalse(SINGLE.allowsMode(TopologyGraphDbmsModel.HostedOnMode.replica));
-        assertTrue(NONE.allowsMode(TopologyGraphDbmsModel.HostedOnMode.replica));
+        assertFalse(PRIMARY.allowsMode(TopologyGraphDbmsModel.HostedOnMode.REPLICA));
+        assertTrue(SECONDARY.allowsMode(TopologyGraphDbmsModel.HostedOnMode.REPLICA));
+        assertFalse(SINGLE.allowsMode(TopologyGraphDbmsModel.HostedOnMode.REPLICA));
+        assertTrue(NONE.allowsMode(TopologyGraphDbmsModel.HostedOnMode.REPLICA));
 
-        assertTrue(PRIMARY.allowsMode(TopologyGraphDbmsModel.HostedOnMode.single));
-        assertFalse(SECONDARY.allowsMode(TopologyGraphDbmsModel.HostedOnMode.single));
-        assertTrue(SINGLE.allowsMode(TopologyGraphDbmsModel.HostedOnMode.single));
-        assertTrue(NONE.allowsMode(TopologyGraphDbmsModel.HostedOnMode.single));
+        assertTrue(PRIMARY.allowsMode(TopologyGraphDbmsModel.HostedOnMode.SINGLE));
+        assertFalse(SECONDARY.allowsMode(TopologyGraphDbmsModel.HostedOnMode.SINGLE));
+        assertTrue(SINGLE.allowsMode(TopologyGraphDbmsModel.HostedOnMode.SINGLE));
+        assertTrue(NONE.allowsMode(TopologyGraphDbmsModel.HostedOnMode.SINGLE));
     }
 }

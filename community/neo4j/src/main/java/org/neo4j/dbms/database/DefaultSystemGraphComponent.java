@@ -128,7 +128,8 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent {
      * Only community edition (which does not support multiple online databases) should stop the old default database when the default database is changed.
      */
     protected void maybeStopDatabase(Node oldDatabaseNode) {
-        oldDatabaseNode.setProperty(DATABASE_STATUS_PROPERTY, TopologyGraphDbmsModel.DatabaseStatus.offline.name());
+        oldDatabaseNode.setProperty(
+                DATABASE_STATUS_PROPERTY, TopologyGraphDbmsModel.DatabaseStatus.OFFLINE.statusName());
     }
 
     /**
@@ -189,7 +190,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent {
                 if (defaultDb != null) {
                     defaultDb.setProperty(DATABASE_DEFAULT_PROPERTY, true);
                     defaultDb.setProperty(
-                            DATABASE_STATUS_PROPERTY, TopologyGraphDbmsModel.DatabaseStatus.online.name());
+                            DATABASE_STATUS_PROPERTY, TopologyGraphDbmsModel.DatabaseStatus.ONLINE.statusName());
                 } else {
                     createDatabaseNode(tx, defaultDbName.name(), true, true);
                 }
@@ -223,7 +224,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent {
         var databaseNode = tx.createNode(DATABASE_LABEL);
         databaseNode.setProperty(DATABASE_NAME_PROPERTY, databaseName);
         databaseNode.setProperty(DATABASE_UUID_PROPERTY, uuid.toString());
-        databaseNode.setProperty(DATABASE_STATUS_PROPERTY, TopologyGraphDbmsModel.DatabaseStatus.online.name());
+        databaseNode.setProperty(DATABASE_STATUS_PROPERTY, TopologyGraphDbmsModel.DatabaseStatus.ONLINE.statusName());
         databaseNode.setProperty(DATABASE_DEFAULT_PROPERTY, defaultDb);
         databaseNode.setProperty(DATABASE_CREATED_AT_PROPERTY, now);
         databaseNode.setProperty(DATABASE_STARTED_AT_PROPERTY, now);
@@ -232,7 +233,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent {
             var nodes = tx.findNodes(INSTANCE_LABEL).stream().toList();
             if (nodes.size() == 1) {
                 var hostedOn = databaseNode.createRelationshipTo(nodes.get(0), HOSTED_ON_RELATIONSHIP);
-                hostedOn.setProperty(HOSTED_ON_MODE_PROPERTY, TopologyGraphDbmsModel.HostedOnMode.single.name());
+                hostedOn.setProperty(HOSTED_ON_MODE_PROPERTY, TopologyGraphDbmsModel.HostedOnMode.SINGLE.modeName());
                 hostedOn.setProperty(HOSTED_ON_INSTALLED_AT_PROPERTY, now);
             }
         }

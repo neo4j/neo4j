@@ -22,8 +22,8 @@ package org.neo4j.dbms;
 import org.neo4j.dbms.database.TopologyGraphDbmsModel;
 
 public enum DefaultOperatorState implements OperatorState {
-    STOPPED(TopologyGraphDbmsModel.DatabaseStatus.offline.name()),
-    STARTED(TopologyGraphDbmsModel.DatabaseStatus.online.name()),
+    STOPPED(TopologyGraphDbmsModel.DatabaseStatus.OFFLINE.statusName()),
+    STARTED(TopologyGraphDbmsModel.DatabaseStatus.ONLINE.statusName()),
     UNKNOWN("unknown");
 
     private final String description;
