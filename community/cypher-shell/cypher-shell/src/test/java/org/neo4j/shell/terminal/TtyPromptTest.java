@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.terminal;
 
+import static java.lang.System.lineSeparator;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.is;
@@ -135,17 +136,23 @@ class TtyPromptTest {
     private void assertRead(String input, String expected) throws IOException {
         final var out = new ByteArrayOutputStream();
         final var charset = Charset.defaultCharset();
-        assertThat(newTtyPrompt(input, out, charset).readLine("Read me: "), is(expected));
+        final var prompt = newTtyPrompt(input, out, charset);
+        final var reason = "Failed to read input " + input + " with actual charset " + prompt.charset()
+                + " and default charset " + charset + lineSeparator();
+        assertThat(reason, prompt.readLine("Read me: "), is(expected));
         assertThat(out.toString(charset), is("Read me: "));
     }
 
     private void assertReadPassword(String input, String expected) throws IOException {
         final var out = new ByteArrayOutputStream();
         final var charset = Charset.defaultCharset();
-        assertThat(newTtyPrompt(input, out, charset).readPassword("Read me: "), is(expected));
+        final var prompt = newTtyPrompt(input, out, charset);
+        final var reason = "Failed to read input " + input + " with actual charset " + prompt.charset()
+                + " and default charset " + charset + lineSeparator();
+        assertThat(reason, prompt.readPassword("Read me: "), is(expected));
 
         if (input.contains("\n") || input.contains("\r")) {
-            assertThat(out.toString(), is("Read me: " + System.lineSeparator()));
+            assertThat(out.toString(), is("Read me: " + lineSeparator()));
         } else {
             assertThat(out.toString(), is("Read me: "));
         }
