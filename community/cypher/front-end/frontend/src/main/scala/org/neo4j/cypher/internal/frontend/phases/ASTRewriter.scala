@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSema
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.ProjectionClausesHaveSemanticInfo
+import org.neo4j.cypher.internal.rewriting.rewriters.QuantifiedPathPatternNodeInsertRewriter
 import org.neo4j.cypher.internal.rewriting.rewriters.desugarMapProjection
 import org.neo4j.cypher.internal.rewriting.rewriters.expandStar
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
@@ -82,7 +83,8 @@ object ASTRewriter {
         rewriteOrderById,
         LabelExpressionPredicateNormalizer,
         rewriteCountExpression,
-        unwrapParenthesizedPath
+        unwrapParenthesizedPath,
+        QuantifiedPathPatternNodeInsertRewriter
       ),
       initialConditions = Set(ProjectionClausesHaveSemanticInfo, PatternExpressionsHaveSemanticInfo)
     )
