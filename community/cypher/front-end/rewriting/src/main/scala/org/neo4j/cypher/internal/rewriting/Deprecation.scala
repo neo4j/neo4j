@@ -17,11 +17,19 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
+import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
+import org.neo4j.cypher.internal.ast.SetProperty
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonDisjunction
+import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.Ref
@@ -44,8 +52,28 @@ object Deprecations {
             labelExpression.folder.findAllByClass[ColonDisjunction].head.position
           ))
         )
+      case s @ SetExactPropertiesFromMapItem(_, e: Variable) =>
+        Deprecation(
+          Some(Ref(s) -> s.copy(expression =
+            functionInvocationForSetProperties(s, e))(s.position)),
+          Some(DeprecatedNodesOrRelationshipsInSetClauseNotification(e.position))
+        )
+      case s @ SetIncludingPropertiesFromMapItem(_, e: Variable) =>
+        Deprecation(
+          Some(Ref(s) -> s.copy(expression =
+            functionInvocationForSetProperties(s, e))(s.position)),
+          Some(DeprecatedNodesOrRelationshipsInSetClauseNotification(e.position))
+        )
     }
+  }
 
+  private def functionInvocationForSetProperties(s: SetProperty, e: Variable): FunctionInvocation = {
+    FunctionInvocation(
+      namespace = Namespace(List())(e.position),
+      functionName = FunctionName("properties")(e.position),
+      distinct = false,
+      args = Vector(e)
+    )(s.position)
   }
 
   // add new semantically deprecated features here

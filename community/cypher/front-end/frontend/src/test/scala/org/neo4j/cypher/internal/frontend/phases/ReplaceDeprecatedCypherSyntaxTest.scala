@@ -37,4 +37,32 @@ class ReplaceDeprecatedCypherSyntaxTest extends CypherFunSuite with AstConstruct
       "MATCH (a)-[:A|B|C]-() RETURN a"
     )
   }
+
+  test("should rewrite setting of relationship properties to use properties function in a Set Clause") {
+    assertRewritten(
+      "MATCH (g)-[r:KNOWS]->(k) SET g = r",
+      "MATCH (g)-[r:KNOWS]->(k) SET g = properties(r)"
+    )
+  }
+
+  test("should rewrite setting of node properties to use properties function in a Set Clause") {
+    assertRewritten(
+      "MATCH (g)-[r:KNOWS]->(k) SET g = k",
+      "MATCH (g)-[r:KNOWS]->(k) SET g = properties(k)"
+    )
+  }
+
+  test("should rewrite setting of relationship properties to use properties function in a Mutate Set Clause") {
+    assertRewritten(
+      "MATCH (g)-[r:KNOWS]->(k) SET g += r",
+      "MATCH (g)-[r:KNOWS]->(k) SET g += properties(r)"
+    )
+  }
+
+  test("should rewrite setting of node properties to use properties function in a Mutate Set Clause") {
+    assertRewritten(
+      "MATCH (g)-[r:KNOWS]->(k) SET g += k",
+      "MATCH (g)-[r:KNOWS]->(k) SET g += properties(k)"
+    )
+  }
 }

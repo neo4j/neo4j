@@ -31,6 +31,8 @@ case class DeprecatedFunctionNotification(position: InputPosition, oldName: Stri
 
 case class DeprecatedRelTypeSeparatorNotification(position: InputPosition) extends InternalNotification
 
+case class DeprecatedNodesOrRelationshipsInSetClauseNotification(position: InputPosition) extends InternalNotification
+
 case class DeprecatedRepeatedRelVarInPatternExpression(position: InputPosition, relName: String)
     extends InternalNotification
 

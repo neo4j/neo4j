@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.compiler.SuboptimalIndexForEndsWithQueryNotific
 import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.DeprecatedAmbiguousGroupingNotification
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
+import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -147,6 +148,10 @@ object NotificationWrapping {
       )
     case DeprecatedRelTypeSeparatorNotification(pos) =>
       NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(pos.withOffset(offset).asInputPosition)
+    case DeprecatedNodesOrRelationshipsInSetClauseNotification(pos) =>
+      NotificationCode.DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE.notification(
+        pos.withOffset(offset).asInputPosition
+      )
     case ProcedureWarningNotification(pos, name, warning) =>
       NotificationCode.PROCEDURE_WARNING.notification(
         pos.withOffset(offset).asInputPosition,

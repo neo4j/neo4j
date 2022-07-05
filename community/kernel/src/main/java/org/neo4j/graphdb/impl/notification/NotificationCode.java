@@ -72,6 +72,11 @@ public enum NotificationCode {
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
             "The semantics of using colon in the separation of alternative relationship types will change in a future version."),
+    DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The use of nodes or relationships for setting properties is deprecated and will be removed in a future version. "
+                    + "Please use properties() instead."),
     DEPRECATED_AMBIGUOUS_GROUPING_NOTIFICATION(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,

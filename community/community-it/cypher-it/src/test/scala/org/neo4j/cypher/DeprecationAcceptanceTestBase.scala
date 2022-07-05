@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestProcedures
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR
@@ -63,5 +64,17 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
     // clear caches of the rewritten queries to not keep notifications around
     dbms.clearQueryCaches()
+  }
+
+  // DEPRECATIONS in 5.X
+
+  test("deprecate using nodes/relationships on the RHS of a Set Clause") {
+    val queries = Seq(
+      "MATCH (g)-[r:KNOWS]->(k) SET g = r",
+      "MATCH (g)-[r:KNOWS]->(k) SET g = k",
+      "MATCH (g)-[r:KNOWS]->(k) SET g += r",
+      "MATCH (g)-[r:KNOWS]->(k) SET g += k"
+    )
+    assertNotification(queries, true, DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE)
   }
 }
