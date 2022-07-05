@@ -359,14 +359,14 @@ object SubqueryExpressionSolver {
           }
           // Only plan if the OR contains an EXISTS.
           if (subqueryExpressions.nonEmpty) {
-          val (planWithPredicates, solvedPredicates) =
-            planPredicates(plan, subqueryExpressions.toSet, expressions.toSet, None, interestingOrderConfig, context)
-          AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-            exprs.forall(solvedPredicates.contains),
-            "planPredicates is supposed to solve all predicates in an OR clause."
-          )
-          val solvedPlan = context.logicalPlanProducer.solvePredicateInHorizon(planWithPredicates, o)
-          (solvedExprs :+ o, solvedPlan)
+            val (planWithPredicates, solvedPredicates) =
+              planPredicates(plan, subqueryExpressions.toSet, expressions.toSet, None, interestingOrderConfig, context)
+            AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+              exprs.forall(solvedPredicates.contains),
+              "planPredicates is supposed to solve all predicates in an OR clause."
+            )
+            val solvedPlan = context.logicalPlanProducer.solvePredicateInHorizon(planWithPredicates, o)
+            (solvedExprs :+ o, solvedPlan)
           } else (solvedExprs, plan)
         case (acc, _) => acc
       }

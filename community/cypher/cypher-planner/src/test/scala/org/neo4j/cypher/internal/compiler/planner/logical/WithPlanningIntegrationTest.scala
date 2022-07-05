@@ -25,13 +25,11 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.configurationThatForcesCompacting
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ConfigurableIDPSolverConfig
-import org.neo4j.cypher.internal.expressions.Ands
-import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThan
-import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with LogicalPlanningIntegrationTestSupport
-                                  with AstConstructionTestSupport {
+class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2
+    with LogicalPlanningIntegrationTestSupport
+    with AstConstructionTestSupport {
 
   private val planner = plannerBuilder()
     .setAllNodesCardinality(100)
@@ -204,9 +202,10 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     val plan = planner.plan(
       """WITH 0.1 AS p
-                              MATCH (n1)
-                              WITH n1 LIMIT 10 WHERE rand() < p
-                              RETURN n1""".stripMargin)
+        |MATCH (n1)
+        |WITH n1 LIMIT 10 WHERE rand() < p
+        |RETURN n1""".stripMargin
+    )
 
     plan should equal(
       planner.planBuilder()
@@ -222,11 +221,12 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("WHERE clause on WITH DISTINCT uses argument from previous WITH") {
 
     val plan = planner.plan(
-      """
-      WITH 0.1 AS p
-      MATCH (n1)
-      WITH DISTINCT n1, p LIMIT 10 WHERE rand() < p
-      RETURN n1""".stripMargin)
+      """WITH 0.1 AS p
+        |MATCH (n1)
+        |WITH DISTINCT n1, p LIMIT 10 WHERE rand() < p
+        |RETURN n1
+      """.stripMargin
+    )
 
     plan should equal(
       planner.planBuilder()
@@ -243,11 +243,11 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("WHERE clause on WITH AGGREGATION uses argument from previous WITH") {
 
     val plan = planner.plan(
-      """
-      WITH 0.1 AS p
-                      MATCH (n1)
-                      WITH count(n1) AS n, p WHERE rand() < p
-                      RETURN n""".stripMargin)
+      """WITH 0.1 AS p
+        |MATCH (n1)
+        |WITH count(n1) AS n, p WHERE rand() < p
+        |RETURN n""".stripMargin
+    )
 
     plan should equal(
       planner.planBuilder()
@@ -263,10 +263,10 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("WHERE clause on WITH with PatternExpression") {
 
     val plan = planner.plan(
-      """
-      MATCH (n1)-->(n2)
-                      WITH n1 LIMIT 10 WHERE NOT (n1)<--(n2)
-                      RETURN n1""".stripMargin)
+      """MATCH (n1)-->(n2)
+        |WITH n1 LIMIT 10 WHERE NOT (n1)<--(n2)
+        |RETURN n1""".stripMargin
+    )
 
     plan should equal(
       planner.planBuilder()
@@ -284,10 +284,10 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("WHERE clause on WITH DISTINCT with PatternExpression") {
 
     val plan = planner.plan(
-      """
-      MATCH (n1)-->(n2)
-                      WITH DISTINCT n1, n2 LIMIT 10 WHERE NOT (n1)<--(n2)
-                      RETURN n1""".stripMargin)
+      """MATCH (n1)-->(n2)
+        |WITH DISTINCT n1, n2 LIMIT 10 WHERE NOT (n1)<--(n2)
+        |RETURN n1""".stripMargin
+    )
 
     plan should equal(
       planner.planBuilder()
@@ -306,10 +306,10 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("WHERE clause on WITH AGGREGATION with PatternExpression") {
 
     val plan = planner.plan(
-      """
-      MATCH (n1)-->(n2)
-                      WITH count(n1) AS n, n2 LIMIT 10 WHERE NOT ()<--(n2)
-                      RETURN n""".stripMargin)
+      """MATCH (n1)-->(n2)
+        |WITH count(n1) AS n, n2 LIMIT 10 WHERE NOT ()<--(n2)
+        |RETURN n""".stripMargin
+    )
 
     plan should equal(
       planner.planBuilder()
@@ -354,17 +354,5 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       queryGraphSolver
     )
     // if we fail planning for this query the test fails
-  }
-
-  private def hasNestedPlanExpression(ands: Ands): Boolean = {
-    ands.folder.treeExists {
-      case _: NestedPlanExpression => true
-    }
-  }
-
-  private def containsHasDegreeGreaterThan(ands: Ands): Boolean = {
-    ands.folder.treeExists {
-      case _: HasDegreeGreaterThan => true
-    }
   }
 }
