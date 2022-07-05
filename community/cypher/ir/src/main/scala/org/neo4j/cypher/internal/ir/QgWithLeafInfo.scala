@@ -84,7 +84,8 @@ case class QgWithLeafInfo(private val solvedQg: QueryGraph,
 
   def hasUnstableLeaves: Boolean = unstableLeaves.nonEmpty
 
-  lazy val unstablePatternNodes: Set[String] = queryGraph.allPatternNodesRead -- stableIdentifier.map(_.name)
+  lazy val unstablePatternNodes: Set[String] =
+    queryGraph.allPatternNodesRead -- stableIdentifier.map(_.name).filterNot(unstableLeaves.contains)
 
   lazy val unstablePatternRelationships: Set[PatternRelationship] = queryGraph.allPatternRelationshipsRead.filterNot(rel => stableIdentifier.exists(i => i.name == rel.name))
 
