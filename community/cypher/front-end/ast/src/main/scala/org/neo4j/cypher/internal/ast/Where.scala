@@ -40,8 +40,7 @@ object Where {
   def checkExpression(expression: Expression): SemanticCheck =
     SemanticExpressionCheck.simple(expression) chain
       SemanticPatternCheck.checkValidPropertyKeyNames(
-        expression.folder.findAllByClass[Property].map(prop => prop.propertyKey),
-        expression.position
+        expression.folder.findAllByClass[Property].map(prop => prop.propertyKey)
       ) chain
       SemanticExpressionCheck.expectType(CTBoolean.covariant, expression)
 }

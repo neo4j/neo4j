@@ -41,5 +41,5 @@ case class RemovePropertyItem(property: LogicalProperty) extends RemoveItem {
   def position = property.position
 
   def semanticCheck = SemanticExpressionCheck.simple(property) chain
-    SemanticPatternCheck.checkValidPropertyKeyNames(Seq(property.propertyKey), property.position)
+    SemanticPatternCheck.checkValidPropertyKeyNames(Seq(property.propertyKey))
 }

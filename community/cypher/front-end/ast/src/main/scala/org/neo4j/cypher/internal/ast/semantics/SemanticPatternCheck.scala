@@ -638,19 +638,19 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         SemanticExpressionCheck.checkLabelExpression(Some(NODE_TYPE), labelExpression)
     }
 
-  def checkValidPropertyKeyNamesInReturnItems(returnItems: ReturnItems, position: InputPosition): SemanticCheck = {
+  def checkValidPropertyKeyNamesInReturnItems(returnItems: ReturnItems): SemanticCheck = {
     val propertyKeys = returnItems.items.collect { case item =>
       item.expression.folder.findAllByClass[Property] map (prop => prop.propertyKey)
     }.flatten
-    SemanticPatternCheck.checkValidPropertyKeyNames(propertyKeys, position)
+    SemanticPatternCheck.checkValidPropertyKeyNames(propertyKeys)
   }
 
-  def checkValidPropertyKeyNames(propertyKeys: Seq[PropertyKeyName], pos: InputPosition): SemanticCheck = {
-    val errorMessage = propertyKeys.collectFirst {
+  def checkValidPropertyKeyNames(propertyKeys: Seq[PropertyKeyName]): SemanticCheck = {
+    val error = propertyKeys.collectFirst {
       case key if checkValidTokenName(key.name).nonEmpty =>
-        checkValidTokenName(key.name).get
+        (checkValidTokenName(key.name).get, key.position)
     }
-    if (errorMessage.nonEmpty) SemanticError(errorMessage.get, pos) else None
+    if (error.nonEmpty) SemanticError(error.get._1, error.get._2) else None
   }
 
   def checkValidLabels(labelNames: Seq[SymbolicName], pos: InputPosition): SemanticCheck =
@@ -690,7 +690,7 @@ object checkNoParamMapsWhenMatching {
 object checkValidPropertyKeyNamesInPattern {
 
   def apply(properties: Option[Expression]): SemanticCheck = properties match {
-    case Some(e: MapExpression) => SemanticPatternCheck.checkValidPropertyKeyNames(e.items.map(i => i._1), e.position)
+    case Some(e: MapExpression) => SemanticPatternCheck.checkValidPropertyKeyNames(e.items.map(i => i._1))
     case _                      => None
   }
 }

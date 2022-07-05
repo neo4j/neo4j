@@ -945,7 +945,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(8, 1, 9))
+        SemanticError(emptyTokenErrorMessage, InputPosition(18, 1, 19))
       )
     )
   }
@@ -955,7 +955,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(9, 1, 10))
+        SemanticError(emptyTokenErrorMessage, InputPosition(10, 1, 11))
       )
     )
   }
@@ -965,7 +965,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(31, 1, 32))
+        SemanticError(emptyTokenErrorMessage, InputPosition(33, 1, 34))
       )
     )
   }
@@ -975,7 +975,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(30, 1, 31))
+        SemanticError(emptyTokenErrorMessage, InputPosition(32, 1, 33))
       )
     )
   }
@@ -985,7 +985,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(9, 1, 10))
+        SemanticError(emptyTokenErrorMessage, InputPosition(10, 1, 11))
       )
     )
   }
@@ -995,7 +995,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(14, 1, 15))
+        SemanticError(emptyTokenErrorMessage, InputPosition(16, 1, 17))
       )
     )
   }
@@ -1005,7 +1005,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(17, 1, 18))
+        SemanticError(emptyTokenErrorMessage, InputPosition(19, 1, 20))
       )
     )
   }
@@ -1015,7 +1015,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(20, 1, 21))
+        SemanticError(emptyTokenErrorMessage, InputPosition(18, 1, 19))
       )
     )
   }
@@ -1025,8 +1025,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        // TODO: Fix the position to be easier to understand e.g; InputPosition(15, 1, 16)
-        SemanticError(emptyTokenErrorMessage, InputPosition(10, 1, 11))
+        SemanticError(emptyTokenErrorMessage, InputPosition(17, 1, 18))
       )
     )
   }
@@ -1036,7 +1035,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(37, 1, 38))
+        SemanticError(emptyTokenErrorMessage, InputPosition(39, 1, 40))
       )
     )
   }
@@ -1046,8 +1045,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        // TODO: Fix the position to be easier to understand e.g; InputPosition(17, 1, 18)
-        SemanticError(emptyTokenErrorMessage, InputPosition(10, 1, 11))
+        SemanticError(emptyTokenErrorMessage, InputPosition(19, 1, 20))
       )
     )
   }
@@ -1057,8 +1055,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        // TODO: Fix the position to be easier to understand e.g; InputPosition(26, 1, 27)
-        SemanticError(emptyTokenErrorMessage, InputPosition(10, 1, 11))
+        SemanticError(emptyTokenErrorMessage, InputPosition(28, 1, 29))
       )
     )
   }
@@ -1068,8 +1065,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        // TODO: Fix the position to be easier to understand e.g; InputPosition(17, 1, 18)
-        SemanticError(emptyTokenErrorMessage, InputPosition(10, 1, 11))
+        SemanticError(emptyTokenErrorMessage, InputPosition(25, 1, 26))
       )
     )
   }
@@ -1079,7 +1075,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(39, 1, 40))
+        SemanticError(emptyTokenErrorMessage, InputPosition(41, 1, 42))
       )
     )
   }
@@ -1097,7 +1093,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(11, 3, 1))
+        SemanticError(emptyTokenErrorMessage, InputPosition(25, 4, 8))
       )
     )
   }
@@ -1115,7 +1111,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(11, 3, 1))
+        SemanticError(emptyTokenErrorMessage, InputPosition(30, 5, 8))
       )
     )
   }
@@ -1133,7 +1129,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(11, 3, 1))
+        SemanticError(emptyTokenErrorMessage, InputPosition(51, 6, 8))
       )
     )
   }
@@ -1151,7 +1147,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(11, 3, 1))
+        SemanticError(emptyTokenErrorMessage, InputPosition(58, 7, 8))
       )
     )
   }
@@ -1163,7 +1159,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(16, 1, 17))
+        SemanticError(emptyTokenErrorMessage, InputPosition(17, 1, 18))
       )
     )
   }
@@ -1173,7 +1169,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(17, 1, 18))
+        SemanticError(emptyTokenErrorMessage, InputPosition(18, 1, 19))
       )
     )
   }
@@ -1183,7 +1179,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(35, 1, 36))
+        SemanticError(emptyTokenErrorMessage, InputPosition(37, 1, 38))
       )
     )
   }
@@ -1193,7 +1189,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(34, 1, 35))
+        SemanticError(emptyTokenErrorMessage, InputPosition(36, 1, 37))
       )
     )
   }
@@ -1203,7 +1199,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(12, 1, 13))
+        SemanticError(emptyTokenErrorMessage, InputPosition(24, 1, 25))
       )
     )
   }
@@ -1213,7 +1209,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(21, 1, 22))
+        SemanticError(emptyTokenErrorMessage, InputPosition(23, 1, 24))
       )
     )
   }
@@ -1223,7 +1219,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(24, 1, 25))
+        SemanticError(emptyTokenErrorMessage, InputPosition(26, 1, 27))
       )
     )
   }
@@ -1233,8 +1229,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        // TODO: Fix the position to be easier to understand e.g; InputPosition(33, 1, 34)
-        SemanticError(emptyTokenErrorMessage, InputPosition(31, 1, 32))
+        SemanticError(emptyTokenErrorMessage, InputPosition(35, 1, 36))
       )
     )
   }
@@ -1244,8 +1239,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        // TODO: Fix the position to be easier to understand e.g; InputPosition(22, 1, 23)
-        SemanticError(emptyTokenErrorMessage, InputPosition(17, 1, 18))
+        SemanticError(emptyTokenErrorMessage, InputPosition(24, 1, 25))
       )
     )
   }
@@ -1255,7 +1249,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(44, 1, 45))
+        SemanticError(emptyTokenErrorMessage, InputPosition(46, 1, 47))
       )
     )
   }
@@ -1265,8 +1259,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        // TODO: Fix the position to be easier to understand e.g; InputPosition(24, 1, 25)
-        SemanticError(emptyTokenErrorMessage, InputPosition(17, 1, 18))
+        SemanticError(emptyTokenErrorMessage, InputPosition(26, 1, 27))
       )
     )
   }
@@ -1276,8 +1269,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        // TODO: Fix the position to be easier to understand e.g; InputPosition(33, 1, 34)
-        SemanticError(emptyTokenErrorMessage, InputPosition(17, 1, 18)) // weird
+        SemanticError(emptyTokenErrorMessage, InputPosition(35, 1, 36))
       )
     )
   }
@@ -1287,8 +1279,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        // TODO: Fix the position to be easier to understand e.g; InputPosition(24, 1, 25)
-        SemanticError(emptyTokenErrorMessage, InputPosition(17, 1, 18))
+        SemanticError(emptyTokenErrorMessage, InputPosition(30, 1, 31))
       )
     )
   }
@@ -1298,7 +1289,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(45, 1, 46))
+        SemanticError(emptyTokenErrorMessage, InputPosition(47, 1, 48))
       )
     )
   }
@@ -1316,7 +1307,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(18, 3, 1))
+        SemanticError(emptyTokenErrorMessage, InputPosition(32, 4, 8))
       )
     )
   }
@@ -1334,7 +1325,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(18, 3, 1))
+        SemanticError(emptyTokenErrorMessage, InputPosition(37, 5, 8))
       )
     )
   }
@@ -1352,7 +1343,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(18, 3, 1))
+        SemanticError(emptyTokenErrorMessage, InputPosition(58, 6, 8))
       )
     )
   }
@@ -1370,7 +1361,7 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(emptyTokenErrorMessage, InputPosition(18, 3, 1))
+        SemanticError(emptyTokenErrorMessage, InputPosition(65, 7, 8))
       )
     )
   }
