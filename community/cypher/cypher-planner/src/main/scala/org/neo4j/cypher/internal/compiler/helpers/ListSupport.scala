@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
-import scala.collection.mutable
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsScala
 
@@ -112,18 +111,18 @@ trait ListSupport {
       (current, builder.result())
     }
 
-    def asNonEmptyOption = if (inner.isEmpty) None else Some(inner)
+    def asNonEmptyOption: Option[Seq[T]] = if (inner.isEmpty) None else Some(inner)
 
-    /** Partitions this sequence into a map of sequences according to some discriminator function,
+    /** Partitions this sequence, grouping values into a sequences according to some discriminator function,
      *  preserving the order in which the values are first encountered.
      *
      *  For example:
      *  {{{
-     *   scala> val groups = Seq("foo", "", "bar").groupByOrdered(_.length)
+     *   scala> val groups = Seq("foo", "", "bar").sequentiallyGroupBy(_.length)
      *   groups: Seq[(Int, Seq[String])] = List((3,List(foo, bar)), (0,List("")))
      *  }}}
      *
-     *  Whereas using the default `groupBy` implementation, here the resulting sequence starts with the second value, there is no guaranteed order:
+     *  Compare with the default `groupBy` implementation, note how the resulting sequence starts with the second value, there is no guaranteed order:
      *  {{{
      *   scala> val groups = Seq("foo", "", "bar").groupBy(_.length).toSeq
      *   groups: Seq[(Int, Seq[String])] = List((0,List("")), (3,List(foo, bar)))
@@ -131,16 +130,8 @@ trait ListSupport {
      *
      *  @param f     the discriminator function.
      *  @tparam K    the type of keys returned by the discriminator function.
-     *  @return      A sequence tuples each containing a key `k = f(x)` and all the elements `x` of the sequence where `f(x)` is equal to `k`.
+     *  @return      A sequence of tuples each containing a key `k = f(x)` and all the elements `x` of the sequence where `f(x)` is equal to `k`.
      */
-    def sequentiallyGroupBy[K](f: T => K): Seq[(K, Seq[T])] = {
-      val hashMap = mutable.LinkedHashMap.empty[K, mutable.Builder[T, Seq[T]]]
-      inner.foreach { value =>
-        val key = f(value)
-        val builder = hashMap.getOrElseUpdate(key, Seq.newBuilder[T])
-        builder += value
-      }
-      hashMap.view.mapValues(_.result()).toSeq
-    }
+    def sequentiallyGroupBy[K](f: T => K): Seq[(K, Seq[T])] = IterableHelper.sequentiallyGroupBy(inner)(f)
   }
 }

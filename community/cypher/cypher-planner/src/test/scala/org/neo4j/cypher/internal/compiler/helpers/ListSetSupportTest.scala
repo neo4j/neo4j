@@ -19,19 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
+import org.neo4j.cypher.internal.compiler.helpers.ListSetSupport.RichListSet
 import org.scalatest.FunSuite
 import org.scalatest.Matchers
 
-class ListSupportTest extends FunSuite with Matchers with ListSupport {
+import scala.collection.immutable.ListSet
+
+class ListSetSupportTest extends FunSuite with Matchers {
 
   test("group strings by length preserving order") {
-    val strings = Seq("foo", "", "a", "bar", "", "b", "a")
+    val strings = ListSet("foo", "", "a", "bar", "", "b", "a")
     val groups = strings.sequentiallyGroupBy(_.length)
     val expected =
-      Seq(
-        3 -> Seq("foo", "bar"),
-        0 -> Seq("", ""),
-        1 -> Seq("a", "b", "a")
+      ListSet(
+        3 -> ListSet("foo", "bar"),
+        0 -> ListSet(""),
+        1 -> ListSet("a", "b")
       )
 
     groups shouldEqual expected
