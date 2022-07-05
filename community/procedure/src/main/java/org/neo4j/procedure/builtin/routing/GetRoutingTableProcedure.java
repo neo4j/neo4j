@@ -131,8 +131,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
         assertBoltConnectorEnabled(databaseId);
         try {
             var result = invoke(databaseId, routingContext);
-            log.debug(
-                    "Routing result for database %s and routing context %s is %s", databaseId, routingContext, result);
+            log.info("Routing result for database %s and routing context %s is %s", databaseId, routingContext, result);
             assertRoutingResultNotEmpty(result, databaseId);
             return RawIterator.<AnyValue[], ProcedureException>of(RoutingResultFormat.build(result));
         } catch (ProcedureException ex) {
