@@ -51,7 +51,12 @@ object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
           heuristic
         )
 
-        input.minByOption(score(projector, _, heuristic, context))
+        // don't run minBy for only one element, since that will unnecessary call score() for that element
+        input.size match {
+          case 0 => None
+          case 1 => Some(input.head)
+          case _ => Some(input.minBy(score(projector, _, heuristic, context)))
+        }
       }
     }
 
