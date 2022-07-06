@@ -256,8 +256,7 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
       case original @ GetDegree(Variable(n), typ, direction) =>
         val maybeToken: Option[Either[Int, String]] = typ.map(r => tokenContext.getOptRelTypeId(r.name).toLeft(r.name))
         slotConfiguration(n) match {
-          case LongSlot(offset, false, CTNode) => GetDegreePrimitive(offset, maybeToken, direction)
-          case LongSlot(offset, true, CTNode)  => NullCheck(offset, GetDegreePrimitive(offset, maybeToken, direction))
+          case LongSlot(offset, _, CTNode) => GetDegreePrimitive(offset, maybeToken, direction)
           // For ref-slots, we just use the non-specialized GetDegree
           case _ => original
         }
@@ -265,9 +264,7 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
       case original @ HasDegreeGreaterThan(Variable(n), typ, direction, degree) =>
         val maybeToken: Option[Either[Int, String]] = typ.map(r => tokenContext.getOptRelTypeId(r.name).toLeft(r.name))
         slotConfiguration(n) match {
-          case LongSlot(offset, false, CTNode) => HasDegreeGreaterThanPrimitive(offset, maybeToken, direction, degree)
-          case LongSlot(offset, true, CTNode) =>
-            NullCheck(offset, HasDegreeGreaterThanPrimitive(offset, maybeToken, direction, degree))
+          case LongSlot(offset, _, CTNode) => HasDegreeGreaterThanPrimitive(offset, maybeToken, direction, degree)
           // For ref-slots, we just use the non-specialized HasDegreeGreaterThan
           case _ => original
         }
@@ -275,10 +272,8 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
       case original @ HasDegreeGreaterThanOrEqual(Variable(n), typ, direction, degree) =>
         val maybeToken: Option[Either[Int, String]] = typ.map(r => tokenContext.getOptRelTypeId(r.name).toLeft(r.name))
         slotConfiguration(n) match {
-          case LongSlot(offset, false, CTNode) =>
+          case LongSlot(offset, _, CTNode) =>
             HasDegreeGreaterThanOrEqualPrimitive(offset, maybeToken, direction, degree)
-          case LongSlot(offset, true, CTNode) =>
-            NullCheck(offset, HasDegreeGreaterThanOrEqualPrimitive(offset, maybeToken, direction, degree))
           // For ref-slots, we just use the non-specialized HasDegreeGreaterThanOrEqual
           case _ => original
         }
@@ -286,9 +281,7 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
       case original @ HasDegree(Variable(n), typ, direction, degree) =>
         val maybeToken: Option[Either[Int, String]] = typ.map(r => tokenContext.getOptRelTypeId(r.name).toLeft(r.name))
         slotConfiguration(n) match {
-          case LongSlot(offset, false, CTNode) => HasDegreePrimitive(offset, maybeToken, direction, degree)
-          case LongSlot(offset, true, CTNode) =>
-            NullCheck(offset, HasDegreePrimitive(offset, maybeToken, direction, degree))
+          case LongSlot(offset, _, CTNode) => HasDegreePrimitive(offset, maybeToken, direction, degree)
           // For ref-slots, we just use the non-specialized HasDegree
           case _ => original
         }
@@ -296,9 +289,7 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
       case original @ HasDegreeLessThan(Variable(n), typ, direction, degree) =>
         val maybeToken: Option[Either[Int, String]] = typ.map(r => tokenContext.getOptRelTypeId(r.name).toLeft(r.name))
         slotConfiguration(n) match {
-          case LongSlot(offset, false, CTNode) => HasDegreeLessThanPrimitive(offset, maybeToken, direction, degree)
-          case LongSlot(offset, true, CTNode) =>
-            NullCheck(offset, HasDegreeLessThanPrimitive(offset, maybeToken, direction, degree))
+          case LongSlot(offset, _, CTNode) => HasDegreeLessThanPrimitive(offset, maybeToken, direction, degree)
           // For ref-slots, we just use the non-specialized HasDegreeLessThan
           case _ => original
         }
@@ -306,10 +297,8 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
       case original @ HasDegreeLessThanOrEqual(Variable(n), typ, direction, degree) =>
         val maybeToken: Option[Either[Int, String]] = typ.map(r => tokenContext.getOptRelTypeId(r.name).toLeft(r.name))
         slotConfiguration(n) match {
-          case LongSlot(offset, false, CTNode) =>
+          case LongSlot(offset, _, CTNode) =>
             HasDegreeLessThanOrEqualPrimitive(offset, maybeToken, direction, degree)
-          case LongSlot(offset, true, CTNode) =>
-            NullCheck(offset, HasDegreeLessThanOrEqualPrimitive(offset, maybeToken, direction, degree))
           // For ref-slots, we just use the non-specialized HasDegreeLessThanOrEqual
           case _ => original
         }
