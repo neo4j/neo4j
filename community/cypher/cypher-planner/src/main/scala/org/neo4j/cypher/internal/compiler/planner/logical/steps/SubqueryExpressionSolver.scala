@@ -347,7 +347,7 @@ object SubqueryExpressionSolver {
             case _                             => false
           }
           // Only plan if the OR contains an EXISTS.
-          if (solvedExprs.nonEmpty) {
+          if (existsExpressions.nonEmpty) {
             val (planWithPredicates, solvedPredicates) =
               planPredicates(plan, existsExpressions.toSet, expressions.toSet, None, interestingOrderConfig, context)
             AssertMacros.checkOnlyWhenAssertionsAreEnabled(

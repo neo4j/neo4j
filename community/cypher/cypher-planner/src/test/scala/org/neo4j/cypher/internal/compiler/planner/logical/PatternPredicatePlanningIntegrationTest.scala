@@ -617,7 +617,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     )
   }
 
-  test("should plan all predicates along with named tvarlength pattern") {
+  test("should plan all predicates along with named varlength pattern") {
     val plan =
       planner.plan("MATCH p=(a)-[r*]->(b) WHERE all(n in nodes(p) WHERE n.prop = 1337) RETURN p").stripProduceResults
 

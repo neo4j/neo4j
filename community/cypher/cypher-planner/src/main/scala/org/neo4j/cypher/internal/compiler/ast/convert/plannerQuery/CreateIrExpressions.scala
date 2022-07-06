@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
+import org.neo4j.cypher.internal.ir.helpers.PatternConverters
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternDestructor
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.RelationshipChainDestructor
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates

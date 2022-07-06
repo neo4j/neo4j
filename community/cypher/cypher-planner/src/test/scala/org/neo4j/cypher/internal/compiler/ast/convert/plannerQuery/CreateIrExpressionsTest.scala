@@ -419,10 +419,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )
   }
 
-  //      EXISTS { MATCH (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE })
-  // MATCH (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE EXISTS { (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) }
   test("Rewrites ExistsSubClause") {
-    val esc = ExistsSubClause(n_r_m_r2_o_r3_q, None)(pos, Set()) // TODO: Fix the two points on the card.
+    val esc = ExistsSubClause(n_r_m_r2_o_r3_q, None)(pos, Set())
 
     val rewritten = rewrite(esc)
 
