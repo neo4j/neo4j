@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.Kernel;
@@ -57,8 +58,8 @@ class GraphDatabaseFacadeTest {
         Config config = Config.defaults();
         when(resolver.resolveDependency(Config.class)).thenReturn(config);
 
-        graphDatabaseFacade =
-                new GraphDatabaseFacade(database, config, DbmsInfo.COMMUNITY, mock(DatabaseAvailabilityGuard.class));
+        graphDatabaseFacade = new GraphDatabaseFacade(
+                database, config, DbmsInfo.COMMUNITY, HostedOnMode.SINGLE, mock(DatabaseAvailabilityGuard.class));
     }
 
     @Test

@@ -30,8 +30,8 @@ import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
+import org.neo4j.dbms.database.TopologyGraphDbmsModel;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.InternalLogProvider;
@@ -102,7 +102,7 @@ public class HttpTransactionManager {
             GraphDatabaseAPI databaseAPI, MemoryTracker memoryTracker, String databaseName) {
         var dependencyResolver = databaseAPI.getDependencyResolver();
 
-        var readByDefault = databaseAPI.dbmsInfo().operationalMode != OperationalMode.SINGLE && !routingEnabled;
+        var readByDefault = databaseAPI.mode() != TopologyGraphDbmsModel.HostedOnMode.SINGLE && !routingEnabled;
 
         memoryTracker.allocateHeap(TransactionFacade.SHALLOW_SIZE);
         return new TransactionFacade(

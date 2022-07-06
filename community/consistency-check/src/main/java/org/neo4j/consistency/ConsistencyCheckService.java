@@ -50,6 +50,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.logging.LoggingReporterFactoryInvocationHandler;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -465,8 +466,8 @@ public class ConsistencyCheckService {
                     pageCache,
                     jobScheduler,
                     recoveryCleanupWorkCollector,
-                    TOOL, // We use TOOL context because it's true, and also because it uses the 'single' operational
-                    // mode, which is important.
+                    TOOL,
+                    HostedOnMode.SINGLE,
                     monitors,
                     tokenHolders,
                     pageCacheTracer,
@@ -479,7 +480,7 @@ public class ConsistencyCheckService {
                     new SimpleLogService(logProvider),
                     monitors,
                     readOnly(),
-                    TOOL,
+                    HostedOnMode.SINGLE,
                     recoveryCleanupWorkCollector,
                     layout,
                     tokenHolders,

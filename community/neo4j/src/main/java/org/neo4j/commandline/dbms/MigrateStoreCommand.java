@@ -25,7 +25,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.factory.DbmsInfo.TOOL;
 import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
 
 import java.io.Closeable;
@@ -47,6 +46,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.event.DatabaseEventListenerAdapter;
@@ -399,7 +399,7 @@ public class MigrateStoreCommand extends AbstractCommand {
                 logService,
                 monitors,
                 readOnly(),
-                TOOL,
+                HostedOnMode.SINGLE,
                 recoveryCleanupWorkCollector,
                 databaseLayout,
                 tokenHolders,

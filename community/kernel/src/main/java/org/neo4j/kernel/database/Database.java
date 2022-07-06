@@ -56,6 +56,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.dbms.database.DatabasePageCache;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Factory;
@@ -232,7 +233,7 @@ public class Database extends LifecycleAdapter {
     private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
     private final IdController idController;
     private final DbmsInfo dbmsInfo;
-
+    private final HostedOnMode mode;
     private final StorageEngineFactory storageEngineFactory;
     private StorageEngine storageEngine;
     private QueryExecutionEngine executionEngine;
@@ -290,6 +291,7 @@ public class Database extends LifecycleAdapter {
 
         this.idController = context.getIdController();
         this.dbmsInfo = context.getDbmsInfo();
+        this.mode = context.getMode();
         this.cursorContextFactory = context.getContextFactory();
         this.extensionFactories = context.getExtensionFactories();
         this.watcherServiceFactory = context.getWatcherServiceFactory();
@@ -305,7 +307,7 @@ public class Database extends LifecycleAdapter {
                 .toMillis();
         this.databaseAvailabilityGuard =
                 context.getDatabaseAvailabilityGuardFactory().apply(availabilityGuardTimeout);
-        this.databaseFacade = new GraphDatabaseFacade(this, databaseConfig, dbmsInfo, databaseAvailabilityGuard);
+        this.databaseFacade = new GraphDatabaseFacade(this, databaseConfig, dbmsInfo, mode, databaseAvailabilityGuard);
         this.kernelTransactionFactory = new FacadeKernelTransactionFactory(databaseConfig, databaseFacade);
         this.tracers = new DatabaseTracers(context.getTracers());
         this.fileLockerService = context.getFileLockerService();
@@ -365,6 +367,7 @@ public class Database extends LifecycleAdapter {
             databaseDependencies.satisfyDependency(tracers.getDatabaseTracer());
             databaseDependencies.satisfyDependency(tracers.getPageCacheTracer());
             databaseDependencies.satisfyDependency(storageEngineFactory);
+            databaseDependencies.satisfyDependencies(mode);
 
             recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
             databaseDependencies.satisfyDependency(recoveryCleanupWorkCollector);
@@ -721,7 +724,7 @@ public class Database extends LifecycleAdapter {
                 databaseLogService,
                 databaseMonitors,
                 readOnlyDatabaseChecker,
-                dbmsInfo,
+                mode,
                 recoveryCleanupWorkCollector,
                 databaseLayout,
                 tokenHolders,

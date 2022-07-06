@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.factory.DbmsInfo;
 abstract class BaseExtensionContext implements ExtensionContext {
     private final Path contextDirectory;
     private final DbmsInfo dbmsInfo;
+
     private final DependencySatisfier satisfier;
 
     BaseExtensionContext(Path contextDirectory, DbmsInfo dbmsInfo, DependencySatisfier satisfier) {

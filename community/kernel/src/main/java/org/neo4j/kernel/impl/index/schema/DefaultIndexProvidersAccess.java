@@ -25,6 +25,7 @@ import static org.neo4j.kernel.impl.factory.DbmsInfo.TOOL;
 import static org.neo4j.kernel.impl.index.schema.SchemaIndexExtensionLoader.instantiateExtensions;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -81,12 +82,13 @@ public class DefaultIndexProvidersAccess extends LifeContainer implements IndexP
                 pageCache,
                 jobScheduler,
                 immediate(),
-                TOOL, // We use TOOL context because it's true, and also because it uses the 'single' operational mode,
-                // which is important.
+                TOOL,
+                HostedOnMode.SINGLE,
                 monitors,
                 tokenHolders,
                 pageCacheTracer,
                 readOnly()));
+
         return life.add(StaticIndexProviderMapFactory.create(
                 life,
                 databaseConfig,
@@ -95,7 +97,7 @@ public class DefaultIndexProvidersAccess extends LifeContainer implements IndexP
                 logService,
                 monitors,
                 readOnlyChecker,
-                TOOL,
+                HostedOnMode.SINGLE,
                 immediate(),
                 layout,
                 tokenHolders,

@@ -24,7 +24,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 
 public class DatabaseExtensionContext extends BaseExtensionContext {
-    public DatabaseExtensionContext(DatabaseLayout databaseLayout, DbmsInfo dbmsInfo, DependencySatisfier satisfier) {
-        super(databaseLayout.databaseDirectory(), dbmsInfo, satisfier);
+
+    public DatabaseExtensionContext(DatabaseLayout databaseLayout, DbmsInfo info, DependencySatisfier satisfier) {
+        super(databaseLayout.databaseDirectory(), info, satisfier);
     }
 }

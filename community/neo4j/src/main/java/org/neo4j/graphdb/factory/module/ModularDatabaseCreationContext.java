@@ -25,6 +25,7 @@ import java.util.function.Predicate;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.DatabaseConfig;
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.function.Factory;
 import org.neo4j.function.Predicates;
@@ -101,6 +102,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
     private final IdController idController;
     private final DbmsInfo dbmsInfo;
+    private final HostedOnMode mode;
     private final CursorContextFactory contextFactory;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final Iterable<ExtensionFactory<?>> extensionFactories;
@@ -118,6 +120,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     private final ReadOnlyDatabases readOnlyDatabases;
 
     public ModularDatabaseCreationContext(
+            HostedOnMode mode,
             NamedDatabaseId namedDatabaseId,
             GlobalModule globalModule,
             Dependencies globalDependencies,
@@ -136,6 +139,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
             DatabaseStartupController databaseStartupController,
             ReadOnlyDatabases readOnlyDatabases) {
         this(
+                mode,
                 namedDatabaseId,
                 globalModule,
                 globalDependencies,
@@ -164,6 +168,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     }
 
     public ModularDatabaseCreationContext(
+            HostedOnMode mode,
             NamedDatabaseId namedDatabaseId,
             GlobalModule globalModule,
             Dependencies globalDependencies,
@@ -215,6 +220,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
         this.clock = globalModule.getGlobalClock();
         this.storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
         this.dbmsInfo = globalModule.getDbmsInfo();
+        this.mode = mode;
         this.collectionsFactorySupplier = globalModule.getCollectionsFactorySupplier();
         this.extensionFactories = globalModule.getExtensionFactories();
         this.watcherServiceFactory = databaseLayout -> createDatabaseFileSystemWatcher(
@@ -354,6 +360,11 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     @Override
     public DbmsInfo getDbmsInfo() {
         return dbmsInfo;
+    }
+
+    @Override
+    public HostedOnMode getMode() {
+        return mode;
     }
 
     @Override

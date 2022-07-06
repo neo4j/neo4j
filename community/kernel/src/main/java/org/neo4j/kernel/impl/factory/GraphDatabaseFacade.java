@@ -35,6 +35,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.ResultTransformer;
 import org.neo4j.graphdb.Transaction;
@@ -66,21 +67,27 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI {
     protected final TransactionalContextFactory contextFactory;
     private final Config config;
     private final DatabaseAvailabilityGuard availabilityGuard;
+    private final HostedOnMode mode;
     private final DbmsInfo dbmsInfo;
     private Function<LoginContext, LoginContext> loginContextTransformer = Function.identity();
 
     public GraphDatabaseFacade(
             GraphDatabaseFacade facade, Function<LoginContext, LoginContext> loginContextTransformer) {
-        this(facade.database, facade.config, facade.dbmsInfo, facade.availabilityGuard);
+        this(facade.database, facade.config, facade.dbmsInfo, facade.mode, facade.availabilityGuard);
         this.loginContextTransformer = requireNonNull(loginContextTransformer);
     }
 
     public GraphDatabaseFacade(
-            Database database, Config config, DbmsInfo dbmsInfo, DatabaseAvailabilityGuard availabilityGuard) {
+            Database database,
+            Config config,
+            DbmsInfo dbmsInfo,
+            HostedOnMode mode,
+            DatabaseAvailabilityGuard availabilityGuard) {
         this.database = requireNonNull(database);
         this.config = requireNonNull(config);
         this.availabilityGuard = requireNonNull(availabilityGuard);
         this.dbmsInfo = requireNonNull(dbmsInfo);
+        this.mode = requireNonNull(mode);
         this.contextFactory = Neo4jTransactionalContextFactory.create(
                 () -> getDependencyResolver().resolveDependency(GraphDatabaseQueryService.class),
                 new FacadeKernelTransactionFactory(config, this));
@@ -204,6 +211,11 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI {
         return dbmsInfo;
     }
 
+    @Override
+    public HostedOnMode mode() {
+        return mode;
+    }
+
     KernelTransaction beginKernelTransaction(
             Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo, long timeout) {
         try {
@@ -232,6 +244,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI {
 
     @Override
     public String toString() {
-        return dbmsInfo + " [" + databaseLayout() + "]";
+        return dbmsInfo + "/" + mode + " [" + databaseLayout() + "]";
     }
 }

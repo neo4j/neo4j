@@ -50,6 +50,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabasePageCache;
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GroupingRecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -443,6 +444,7 @@ public final class Recovery {
                 databasePageCache,
                 scheduler,
                 DbmsInfo.TOOL,
+                HostedOnMode.SINGLE,
                 monitors,
                 tokenHolders,
                 recoveryCleanupCollector,
@@ -461,7 +463,7 @@ public final class Recovery {
                 logService,
                 monitors,
                 readOnlyChecker,
-                DbmsInfo.TOOL,
+                HostedOnMode.SINGLE,
                 recoveryCleanupCollector,
                 databaseLayout,
                 tokenHolders,
@@ -739,7 +741,8 @@ public final class Recovery {
             LogService logService,
             PageCache pageCache,
             JobScheduler jobScheduler,
-            DbmsInfo dbmsInfo,
+            DbmsInfo info,
+            HostedOnMode mode,
             Monitors monitors,
             TokenHolders tokenHolders,
             RecoveryCleanupWorkCollector recoveryCleanupCollector,
@@ -772,7 +775,7 @@ public final class Recovery {
                 namedDatabaseId,
                 FileStoreProviderRegistry.EMPTY,
                 contextFactory);
-        DatabaseExtensionContext extensionContext = new DatabaseExtensionContext(databaseLayout, dbmsInfo, deps);
+        DatabaseExtensionContext extensionContext = new DatabaseExtensionContext(databaseLayout, info, deps);
         return new DatabaseExtensions(extensionContext, recoveryExtensions, deps, ExtensionFailureStrategies.fail());
     }
 

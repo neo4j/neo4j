@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -30,8 +31,6 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.LoggingMonitor;
-import org.neo4j.kernel.impl.factory.DbmsInfo;
-import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
@@ -47,14 +46,14 @@ public abstract class AbstractIndexProviderFactory<T extends IndexProvider> {
             Monitors monitors,
             Config config,
             DatabaseReadOnlyChecker readOnlyChecker,
-            DbmsInfo dbmsInfo,
+            HostedOnMode mode,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseLayout databaseLayout,
             TokenHolders tokenHolders,
             JobScheduler scheduler,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer) {
-        if (OperationalMode.SINGLE != dbmsInfo.operationalMode) {
+        if (HostedOnMode.SINGLE != mode) {
             // if running as part of cluster indexes should be writable to allow catchup process to accept transactions
             readOnlyChecker = DatabaseReadOnlyChecker.writable();
         }

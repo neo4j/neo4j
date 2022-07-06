@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.state;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -29,7 +30,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.PointIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProviderFactory;
@@ -51,7 +51,7 @@ public class StaticIndexProviderMapFactory {
             LogService logService,
             Monitors monitors,
             DatabaseReadOnlyChecker readOnlyChecker,
-            DbmsInfo dbmsInfo,
+            HostedOnMode mode,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseLayout databaseLayout,
             TokenHolders tokenHolders,
@@ -66,7 +66,7 @@ public class StaticIndexProviderMapFactory {
                 logService,
                 monitors,
                 readOnlyChecker,
-                dbmsInfo,
+                mode,
                 recoveryCleanupWorkCollector,
                 databaseLayout,
                 tokenHolders,
@@ -84,7 +84,7 @@ public class StaticIndexProviderMapFactory {
             LogService logService,
             Monitors monitors,
             DatabaseReadOnlyChecker readOnlyChecker,
-            DbmsInfo dbmsInfo,
+            HostedOnMode mode,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseLayout databaseLayout,
             TokenHolders tokenHolders,
@@ -100,7 +100,7 @@ public class StaticIndexProviderMapFactory {
                         monitors,
                         databaseConfig,
                         readOnlyChecker,
-                        dbmsInfo,
+                        mode,
                         recoveryCleanupWorkCollector,
                         databaseLayout,
                         tokenHolders,
@@ -116,7 +116,7 @@ public class StaticIndexProviderMapFactory {
                         monitors,
                         databaseConfig,
                         readOnlyChecker,
-                        dbmsInfo,
+                        mode,
                         recoveryCleanupWorkCollector,
                         databaseLayout,
                         tokenHolders,
@@ -132,7 +132,7 @@ public class StaticIndexProviderMapFactory {
                         monitors,
                         databaseConfig,
                         readOnlyChecker,
-                        dbmsInfo,
+                        mode,
                         recoveryCleanupWorkCollector,
                         databaseLayout,
                         tokenHolders,
@@ -148,7 +148,7 @@ public class StaticIndexProviderMapFactory {
                         monitors,
                         databaseConfig,
                         readOnlyChecker,
-                        dbmsInfo,
+                        mode,
                         recoveryCleanupWorkCollector,
                         databaseLayout,
                         tokenHolders,
@@ -164,7 +164,7 @@ public class StaticIndexProviderMapFactory {
                         monitors,
                         databaseConfig,
                         readOnlyChecker,
-                        dbmsInfo,
+                        mode,
                         recoveryCleanupWorkCollector,
                         databaseLayout,
                         tokenHolders,

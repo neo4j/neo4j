@@ -61,6 +61,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
@@ -86,7 +87,6 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProviderFactory;
@@ -322,7 +322,7 @@ public class DatabaseCompositeIndexAccessorTest {
                         new Monitors(),
                         CONFIG,
                         writable(),
-                        DbmsInfo.UNKNOWN,
+                        HostedOnMode.SINGLE,
                         RecoveryCleanupWorkCollector.ignore(),
                         DatabaseLayout.ofFlat(testDirectory.homePath()),
                         new TokenHolders(null, null, null),
