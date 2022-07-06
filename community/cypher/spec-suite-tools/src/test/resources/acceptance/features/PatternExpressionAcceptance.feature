@@ -22,6 +22,9 @@
 
 Feature: PatternExpressionAcceptance
 
+  Background:
+    Given an empty graph
+
   Scenario: Returning list comprehension
     Given an empty graph
     And having executed:
@@ -605,4 +608,130 @@ Feature: PatternExpressionAcceptance
     Then the result should be, in any order:
       | coActors       |
       | ['Matt Damon'] |
+    And no side effects
+
+  Scenario: Pattern comprehension with a NULL variable
+    When executing query:
+      """
+      OPTIONAL MATCH (n:DoesNotExist)
+      WITH n, head([n, 'hello']) AS m
+      RETURN
+        [
+          [(n)-->() | 1],
+          [(n)-->({prop: 1}) | 1],
+          [(m)-->() | 1],
+          [(m)-->({prop: 1}) | 1]
+        ] AS lists
+      """
+    Then the result should be, in any order:
+      | lists            |
+      | [[], [], [], []] |
+    And no side effects
+
+  Scenario: Size of pattern comprehension with a NULL variable
+    When executing query:
+      """
+      OPTIONAL MATCH (n:DoesNotExist)
+      WITH n, head([n, 'hello']) AS m
+      RETURN
+        [
+          size( [(n)-->() | 1] ),
+          size( [(n)-->({prop: 1}) | 1] ),
+          size( [(m)-->() | 1] ),
+          size( [(m)-->({prop: 1}) | 1] )
+        ] AS sizes
+      """
+    Then the result should be, in any order:
+      | sizes        |
+      | [0, 0, 0, 0] |
+    And no side effects
+
+  Scenario: Less-than with a size of pattern comprehension with a NULL variable
+    When executing query:
+      """
+      OPTIONAL MATCH (n:DoesNotExist)
+      WITH n, head([n, 'hello']) AS m
+      RETURN
+        [
+          size( [(n)-->() | 1] ) < 123,
+          size( [(n)-->({prop: 1}) | 1] ) < 123,
+          size( [(m)-->() | 1] ) < 123,
+          size( [(m)-->({prop: 1}) | 1] ) < 123
+        ] AS lts
+      """
+    Then the result should be, in any order:
+      | lts                      |
+      | [true, true, true, true] |
+    And no side effects
+
+  Scenario: Less-than-or-equal with a size of pattern comprehension with a NULL variable
+    When executing query:
+      """
+      OPTIONAL MATCH (n:DoesNotExist)
+      WITH n, head([n, 'hello']) AS m
+      RETURN
+        [
+          size( [(n)-->() | 1] ) <= 123,
+          size( [(n)-->({prop: 1}) | 1] ) <= 123,
+          size( [(m)-->() | 1] ) <= 123,
+          size( [(m)-->({prop: 1}) | 1] ) <= 123
+        ] AS ltes
+      """
+    Then the result should be, in any order:
+      | ltes                     |
+      | [true, true, true, true] |
+    And no side effects
+
+  Scenario: Greater-than with a size of pattern comprehension with a NULL variable
+    When executing query:
+      """
+      OPTIONAL MATCH (n:DoesNotExist)
+      WITH n, head([n, 'hello']) AS m
+      RETURN
+        [
+          size( [(n)-->() | 1] ) > 123,
+          size( [(n)-->({prop: 1}) | 1] ) > 123,
+          size( [(m)-->() | 1] ) > 123,
+          size( [(m)-->({prop: 1}) | 1] ) > 123
+        ] AS gts
+      """
+    Then the result should be, in any order:
+      | gts                          |
+      | [false, false, false, false] |
+    And no side effects
+
+  Scenario: Greater-than-or-equals with a size of pattern comprehension with a NULL variable
+    When executing query:
+      """
+      OPTIONAL MATCH (n:DoesNotExist)
+      WITH n, head([n, 'hello']) AS m
+      RETURN
+        [
+          size( [(n)-->() | 1] ) >= 123,
+          size( [(n)-->({prop: 1}) | 1] ) >= 123,
+          size( [(m)-->() | 1] ) >= 123,
+          size( [(m)-->({prop: 1}) | 1] ) >= 123
+        ] AS gtes
+      """
+    Then the result should be, in any order:
+      | gtes                         |
+      | [false, false, false, false] |
+    And no side effects
+
+  Scenario: Equals with a size of pattern comprehension with a NULL variable
+    When executing query:
+      """
+      OPTIONAL MATCH (n:DoesNotExist)
+      WITH n, head([n, 'hello']) AS m
+      RETURN
+        [
+          size( [(n)-->() | 1] ) = 0,
+          size( [(n)-->({prop: 1}) | 1] ) = 0,
+          size( [(m)-->() | 1] ) = 0,
+          size( [(m)-->({prop: 1}) | 1] ) = 0
+        ] AS eqs
+      """
+    Then the result should be, in any order:
+      | eqs                      |
+      | [true, true, true, true] |
     And no side effects
