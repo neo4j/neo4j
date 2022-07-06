@@ -49,7 +49,7 @@ case class SetPropertyItem(property: LogicalProperty, expression: Expression)(va
 
     checkForExists chain
       SemanticExpressionCheck.simple(property) chain
-      SemanticPatternCheck.checkValidPropertyKeyNames(Seq(property.propertyKey), property.position) chain
+      SemanticPatternCheck.checkValidPropertyKeyNames(Seq(property.propertyKey)) chain
       SemanticExpressionCheck.simple(expression) chain
       expectType(CTNode.covariant | CTRelationship.covariant, property.map)
 
