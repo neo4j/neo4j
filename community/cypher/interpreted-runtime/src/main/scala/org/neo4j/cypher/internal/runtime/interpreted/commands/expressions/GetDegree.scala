@@ -30,7 +30,7 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 
 case class GetDegree(node: Expression, typ: Option[KeyToken], direction: SemanticDirection)
-    extends NullInNullOutExpression(node) {
+    extends Expression {
 
   val getDegree: (QueryState, Long) => Long = typ match {
     case None => (state, node) => state.query.nodeGetDegree(node, direction, state.cursors.nodeCursor)
@@ -41,8 +41,9 @@ case class GetDegree(node: Expression, typ: Option[KeyToken], direction: Semanti
         }
   }
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = value match {
-    case n: VirtualNodeValue => Values.longValue(getDegree(state, n.id()))
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = node(row, state) match {
+    case x if x eq Values.NO_VALUE => Values.ZERO_INT
+    case n: VirtualNodeValue       => Values.longValue(getDegree(state, n.id()))
     case other => throw new CypherTypeException(
         s"Type mismatch: expected a node but was $other of type ${other.getClass.getSimpleName}"
       )
