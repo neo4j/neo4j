@@ -1006,7 +1006,7 @@ case class With(distinct: Boolean,
     super.semanticCheck chain
       ReturnItems.checkAmbiguousGrouping(returnItems, name) chain
       ProjectionClause.checkAliasedReturnItems(returnItems, name) chain
-      SemanticPatternCheck.checkValidPropertyKeyNamesInReturnItems(returnItems, this.position)
+      SemanticPatternCheck.checkValidPropertyKeyNamesInReturnItems(returnItems)
 
   override def withReturnItems(items: Seq[ReturnItem]): With =
     this.copy(returnItems = ReturnItems(returnItems.includeExisting, items)(returnItems.position))(this.position)
@@ -1037,7 +1037,7 @@ case class Return(distinct: Boolean,
       checkVariableScope chain
       ReturnItems.checkAmbiguousGrouping(returnItems, name) chain
       ProjectionClause.checkAliasedReturnItems(returnItems, "CALL { RETURN ... }") chain
-      SemanticPatternCheck.checkValidPropertyKeyNamesInReturnItems(returnItems, this.position)
+      SemanticPatternCheck.checkValidPropertyKeyNamesInReturnItems(returnItems)
 
   override def withReturnItems(items: Seq[ReturnItem]): Return =
     this.copy(returnItems = ReturnItems(returnItems.includeExisting, items)(returnItems.position))(this.position)
