@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.UsingIndexHint
@@ -41,6 +42,7 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.ir.QueryPagination
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -61,7 +63,9 @@ import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
+import scala.collection.immutable.ListSet
+
+class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
 
   private val patternRel = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
   private val nProp = prop("n", "prop")
@@ -1501,5 +1505,45 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       Set("a", "b") -> Selections(),
       Set("a", "b", "c") -> Selections.from(assertIsNode("a"))
     )
+  }
+
+  private def queryWith(qg: QueryGraph, horizon: QueryHorizon = RegularQueryProjection()): PlannerQuery = {
+    PlannerQuery(
+      RegularSinglePlannerQuery(
+        queryGraph = qg,
+        horizon = horizon,
+        tail = None
+      )
+    )
+  }
+
+  test("should insert ExistsIRExpression in Selections when having an exists in a subquery") {
+    val query = buildSinglePlannerQuery("MATCH (n)-[r]->(m) WHERE EXISTS { (o)-[r2]->(m)-[r3]->(q) } RETURN *")
+    val m = varFor("m")
+    val o = varFor("o")
+    val q = varFor("q")
+    val r2 = varFor("r2")
+    val r3 = varFor("r3")
+
+    query.queryGraph.selections shouldBe Selections(ListSet(Predicate(
+      Set("m"),
+      ExistsIRExpression(
+        queryWith(
+          QueryGraph(
+            patternNodes = Set(m.name, o.name, q.name),
+            patternRelationships =
+              Set(
+                PatternRelationship(varFor("r2").name, (o.name, m.name), OUTGOING, Seq.empty, SimplePatternLength),
+                PatternRelationship(varFor("r3").name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
+              ),
+            argumentIds = Set("m"),
+            selections = Selections.from(Seq(
+              not(equals(r2, r3))
+            ))
+          )
+        ),
+        "EXISTS { MATCH (o)-[r2]->(m)-[r3]->(q) }"
+      )(pos)
+    )))
   }
 }
