@@ -41,17 +41,25 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
-@DbmsExtension
+@DbmsExtension(configurationCallback = "configure")
 public class FullCheckCountsStoreIT {
     @Inject
     private DatabaseManagementService dbms;
 
     @Inject
     private GraphDatabaseAPI db;
+
+    @ExtensionCallback
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseSettings.db_format, PageAligned.LATEST_NAME);
+    }
 
     @Test
     void shouldReportMissingCountsStore() throws Exception {

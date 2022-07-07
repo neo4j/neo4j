@@ -38,6 +38,7 @@ import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -54,16 +55,19 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
+import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.RandomSupport;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
-@DbmsExtension
+@DbmsExtension(configurationCallback = "configure")
 @ExtendWith(RandomExtension.class)
 class AllNodesInStoreExistInLabelIndexTest {
     @Inject
@@ -83,6 +87,11 @@ class AllNodesInStoreExistInLabelIndexTest {
 
     @Inject
     private RandomSupport random;
+
+    @ExtensionCallback
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseSettings.db_format, PageAligned.LATEST_NAME);
+    }
 
     private final AssertableLogProvider log = new AssertableLogProvider();
     private static final Label[] LABEL_ALPHABET = new Label[] {LABEL_ONE, LABEL_TWO, LABEL_THREE};

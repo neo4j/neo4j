@@ -48,7 +48,6 @@
         <module>import-it</module>
         <module>dbms-it</module>
         <module>algo-it</module>
-        <module>consistency-it</module>
         <module>bolt-it</module>
         <module>community-it</module>
         <module>fabric-it</module>

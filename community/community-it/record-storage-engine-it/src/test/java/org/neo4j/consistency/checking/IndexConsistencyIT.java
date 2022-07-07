@@ -42,6 +42,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -55,16 +56,19 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.RandomSupport;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
-@DbmsExtension
+@DbmsExtension(configurationCallback = "configure")
 @ExtendWith(RandomExtension.class)
 class IndexConsistencyIT {
     @Inject
@@ -81,6 +85,11 @@ class IndexConsistencyIT {
 
     @Inject
     private RandomSupport random;
+
+    @ExtensionCallback
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseSettings.db_format, PageAligned.LATEST_NAME);
+    }
 
     private final AssertableLogProvider log = new AssertableLogProvider();
     private static final Label[] LABELS = new Label[] {LABEL_ONE, LABEL_TWO, LABEL_THREE};

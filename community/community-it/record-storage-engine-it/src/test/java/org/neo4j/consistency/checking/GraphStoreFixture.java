@@ -37,6 +37,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.LookupAccessorsFromRunningDb;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.store.DirectStoreAccess;
@@ -68,6 +69,7 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -127,6 +129,7 @@ public abstract class GraphStoreFixture implements AutoCloseable {
                 // keep the block size to 60 and let them be.
                 .setConfig(GraphDatabaseInternalSettings.label_block_size, 60)
                 .setConfig(GraphDatabaseInternalSettings.consistency_check_on_apply, false)
+                .setConfig(GraphDatabaseSettings.db_format, PageAligned.LATEST_NAME) // NOTE: before getConfig()
                 .setConfig(getConfig())
                 .build();
         database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);

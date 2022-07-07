@@ -41,13 +41,16 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
+import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.Race;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -57,7 +60,7 @@ import org.neo4j.test.utils.TestDirectory;
  * where e.g. a transaction A which did CREATE NODE N and transaction B which did DELETE NODE N would have a chance to be applied to the
  * label index in the reverse order, i.e. transaction B before transaction A, resulting in outdated label data remaining in the label index.
  */
-@DbmsExtension
+@DbmsExtension(configurationCallback = "configure")
 @ExtendWith(SuppressOutputExtension.class)
 @ResourceLock(Resources.SYSTEM_OUT)
 class LabelScanStoreTxApplyRaceIT {
@@ -80,6 +83,11 @@ class LabelScanStoreTxApplyRaceIT {
 
     @Inject
     private TestDirectory testDirectory;
+
+    @ExtensionCallback
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseSettings.db_format, PageAligned.LATEST_NAME);
+    }
 
     /**
      * The test case is basically loads of concurrent CREATE/DELETE NODE or sometimes just CREATE, keeping the created node in an array

@@ -55,6 +55,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -88,6 +89,7 @@ import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.SchemaLayouts;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
+import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -893,6 +895,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
             Consumer<GraphDatabaseService> dbSetup,
             Consumer<TestNeo4jDatabaseManagementServiceBuilder> dbConfiguration) {
         TestNeo4jDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder(neo4jHome)
+                .setConfig(GraphDatabaseSettings.db_format, PageAligned.LATEST_NAME)
                 .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs));
         dbConfiguration.accept(builder);
         final DatabaseManagementService dbms = builder.build();

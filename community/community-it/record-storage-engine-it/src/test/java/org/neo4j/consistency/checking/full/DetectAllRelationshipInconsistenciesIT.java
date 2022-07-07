@@ -48,6 +48,7 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -140,7 +141,7 @@ public class DetectAllRelationshipInconsistenciesIT {
     }
 
     protected Map<Setting<?>, Object> getConfig() {
-        return Map.of();
+        return Map.of(GraphDatabaseSettings.db_format, PageAligned.LATEST_NAME);
     }
 
     private static class Sabotage {
