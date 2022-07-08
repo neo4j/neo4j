@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 /**
- * For databases in dbms.read_only mode, the implementation of {@link org.neo4j.kernel.impl.api.TransactionCommitProcess}
+ * For databases in read only mode, the implementation of {@link org.neo4j.kernel.impl.api.TransactionCommitProcess}
  * will simply always throw an exception on commit, to ensure that no changes are made.
  */
 public class ReadOnlyTransactionCommitProcess implements TransactionCommitProcess {
