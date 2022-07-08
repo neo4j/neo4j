@@ -539,6 +539,7 @@ case class QueryGraph(
     addSetIfNonEmpty(shortestPathPatterns, "Shortest paths", (_: ShortestPathPattern).toString)
     addSetIfNonEmpty(optionalMatches, "Optional Matches: ", (_: QueryGraph).toString)
     addSetIfNonEmpty(hints, "Hints", (_: Hint).toString)
+    addSetIfNonEmpty(mutatingPatterns, "MutatingPatterns", (_: MutatingPattern).toString)
 
     builder.append("}")
     builder.toString()
