@@ -339,22 +339,29 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       nodeGraph(1, "N")
     }
 
+    var nodeCount: Long = 1
+    val probe = recordingProbe(
+      "n",
+      queryStatistics => {
+        val _nodeCount = nodeCount
+        nodeCount = tx.findNodes(Label.label("N")).stream().count()
+        queryStatistics.getNodesCreated shouldEqual nodeCount - _nodeCount
+        queryStatistics.getLabelsAdded shouldEqual nodeCount - _nodeCount
+      }
+    )
+
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .transactionForeach(batchSize)
       .|.emptyResult()
+      .|.prober(probe)
       .|.create(createNode("n", "N"))
       .|.nodeByLabelScan("y", "N")
       .input(variables = Seq("x"))
       .build(readOnly = false)
 
-    val stream = inputStreamWithSideEffectInNewTxn(
-      inputValues(inputRows: _*).stream(),
-      (tx, offset) => Iterables.count(tx.getAllNodes) shouldEqual Math.pow(2, offset / batchSize * batchSize)
-    )
-
     // then
-    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, stream)
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, inputValues(inputRows: _*).stream())
 
     consume(runtimeResult)
 
@@ -375,22 +382,29 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       nodePropertyGraph(1, { case _ => Map[String, Any]("prop" -> 2) }, "Label")
     }
 
+    var nodeCount: Long = 1
+    val probe = recordingProbe(
+      "a",
+      queryStatistics => {
+        val _nodeCount = nodeCount
+        nodeCount = tx.findNodes(Label.label("Label"), "prop", 2).stream().count()
+        queryStatistics.getNodesCreated shouldEqual _nodeCount
+        queryStatistics.getLabelsAdded shouldEqual _nodeCount
+      }
+    )
+
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .transactionForeach(1)
       .|.emptyResult()
+      .|.prober(probe)
       .|.create(createNodeWithProperties("b", Seq("Label"), "{prop: 2}"))
       .|.nodeIndexOperator("a:Label(prop=2)")
       .input(variables = Seq("x"))
       .build(readOnly = false)
 
-    val stream = inputStreamWithSideEffectInNewTxn(
-      inputValues(inputRows: _*).stream(),
-      (tx, offset) => Iterables.count(tx.getAllNodes) shouldEqual Math.pow(2, offset)
-    )
-
     // then
-    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, stream)
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, inputValues(inputRows: _*).stream())
 
     consume(runtimeResult)
 
