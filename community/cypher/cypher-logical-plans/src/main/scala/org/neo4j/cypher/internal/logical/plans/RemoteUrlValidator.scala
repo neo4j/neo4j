@@ -36,13 +36,13 @@ object RemoteUrlValidator {
     }
 
     val uriScheme = URI.create(url).getScheme
-    val validSchemes = Seq("neo4j", "neo4j+s", "neo4j+ssc", "bolt", "bolt+s", "bolt+ssc")
+    val validSchemes = Seq("neo4j", "neo4j+s", "neo4j+ssc")
     if (uriScheme == null || !validSchemes.contains(uriScheme)) {
       throw new InvalidArgumentException(MessageUtil.invalidScheme(url, validSchemes.asJava))
     }
 
     if (secure && !(uriScheme.endsWith("+s") || uriScheme.endsWith("+ssc"))) {
-      val secureSchemes = Seq("neo4j+s", "neo4j+ssc", "bolt+s", "bolt+ssc")
+      val secureSchemes = Seq("neo4j+s", "neo4j+ssc")
       throw new InvalidArgumentException(MessageUtil.insecureScheme(url, secureSchemes.asJava))
     }
   } match {

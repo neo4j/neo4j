@@ -28,9 +28,9 @@ import scala.collection.JavaConverters.seqAsJavaListConverter
 class RemoteUrlValidatorTest extends CypherFunSuite {
 
   val url = "://localhost"
-  val unsecureSchemes = Seq("neo4j", "bolt")
-  val secureSchemes = Seq("neo4j+s", "neo4j+ssc", "bolt+s", "bolt+ssc")
-  val validSchemes = Seq("neo4j", "neo4j+s", "neo4j+ssc", "bolt", "bolt+s", "bolt+ssc")
+  val unsecureSchemes = Seq("neo4j")
+  val secureSchemes = Seq("neo4j+s", "neo4j+ssc")
+  val validSchemes = Seq("neo4j", "neo4j+s", "neo4j+ssc")
   val secureUrls: Seq[String] = secureSchemes.map(_ + url)
   val insecureUrls: Seq[String] = unsecureSchemes.map(_ + url)
   val noSchemeUrl = "localhost"
@@ -55,7 +55,7 @@ class RemoteUrlValidatorTest extends CypherFunSuite {
     }
   )
 
-  Seq("http" + url, "https" + url, noSchemeUrl ).foreach {
+  (Seq("http", "https", "bolt", "bolt+s", "bolt+ssc").map(_ + url) :+ noSchemeUrl).foreach {
     url =>
       test(s"validator should throw exception for invalid url '$url' with insecure schemes") {
         val Some(exception) = RemoteUrlValidator.assertValidRemoteDatabaseUrl(url, secure = true)
