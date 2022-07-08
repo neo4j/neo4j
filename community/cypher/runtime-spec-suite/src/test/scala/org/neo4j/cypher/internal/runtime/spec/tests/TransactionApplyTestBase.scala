@@ -82,6 +82,40 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     exception.getMessage should include("Must be a positive integer")
   }
 
+  test("batchSize -1") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionApply(-1)
+      .|.create(createNode("n", "N"))
+      .|.argument()
+      .unwind("[1, 2] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val exception = intercept[StatusWrapCypherException] {
+      consume(execute(query, runtime))
+    }
+    exception.getMessage should include("Must be a positive integer")
+  }
+
+  test("batchSize -1 on an empty input") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionApply(-1)
+      .|.create(createNode("n", "N"))
+      .|.argument()
+      .unwind("[] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val exception = intercept[StatusWrapCypherException] {
+      consume(execute(query, runtime))
+    }
+    exception.getMessage should include("Must be a positive integer")
+  }
+
   test("should create data from returning subqueries") {
     val query = new LogicalQueryBuilder(this)
       .produceResults("n")

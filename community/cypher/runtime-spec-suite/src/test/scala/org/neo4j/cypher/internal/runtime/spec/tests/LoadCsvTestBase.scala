@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.InterpretedRuntimeName
+import org.neo4j.cypher.internal.PipelinedRuntimeName
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.HasHeaders
@@ -482,6 +484,19 @@ trait LoadCsvWithCallInTransactions[CONTEXT <: RuntimeContext] {
 
 //Merge is supported in fused only so we need to break this one out
 trait LoadCsvWithCallInTransactionsAndMerge[CONTEXT <: RuntimeContext] {
+  self: LoadCsvTestBase[CONTEXT] =>
+
+  /**
+   * We currently only support to count transactions for interpreted and slotted runtime. To account for that, this method switches accordingly.
+   */
+  def transactionsExpectedIfTransactionCountingAvailable(expectation: Int): Int = runtime.name.toUpperCase() match {
+    case InterpretedRuntimeName.name | SlottedRuntimeName.name | PipelinedRuntimeName.name => expectation
+    case _ => 1 // transactionsCommitted default value
+  }
+}
+
+// Currently not supported in pipelined
+trait LoadCsvWithMerge[CONTEXT <: RuntimeContext] {
   self: LoadCsvTestBase[CONTEXT] =>
 
   test("should close open cursors on call in tx - scenario") {

@@ -25,22 +25,29 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
+import org.neo4j.cypher.internal.logical.plans.Prober
+import org.neo4j.cypher.internal.logical.plans.Prober.Probe
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RecordingProbe
+import org.neo4j.cypher.internal.runtime.spec.RecordingRowsProbe
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
 import org.neo4j.cypher.internal.runtime.spec.SideEffectingInputStream
 import org.neo4j.exceptions.StatusWrapCypherException
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Label.label
+import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.traversal.Paths
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.logging.InternalLogProvider
+import org.scalatest.Assertion
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
@@ -154,22 +161,26 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
+    val probe = recordingProbe(
+      "n",
+      queryStatistics => {
+        queryStatistics.getNodesCreated shouldEqual 1
+        queryStatistics.getLabelsAdded shouldEqual 1
+      }
+    )
+
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .transactionForeach(1)
       .|.emptyResult()
+      .|.prober(probe)
       .|.create(createNode("n", "N"))
       .|.argument()
       .input(variables = Seq("x"))
       .build(readOnly = false)
 
-    val stream = inputStreamWithSideEffectInNewTxn(
-      inputValues(inputRows: _*).stream(),
-      (tx, offset) => Iterables.count(tx.getAllNodes) shouldEqual offset
-    )
-
     // then
-    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, stream)
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, inputValues(inputRows: _*).stream())
 
     consume(runtimeResult)
 
@@ -184,22 +195,26 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
+    val probe = recordingProbe(
+      "n",
+      queryStatistics => {
+        queryStatistics.getNodesCreated shouldEqual batchSize
+        queryStatistics.getLabelsAdded shouldEqual batchSize
+      }
+    )
+
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .transactionForeach(batchSize)
       .|.emptyResult()
+      .|.prober(probe)
       .|.create(createNode("n", "N"))
       .|.argument()
       .input(variables = Seq("x"))
       .build(readOnly = false)
 
-    val stream = inputStreamWithSideEffectInNewTxn(
-      inputValues(inputRows: _*).stream(),
-      (tx, offset) => Iterables.count(tx.getAllNodes) shouldEqual (offset / batchSize * batchSize)
-    )
-
     // then
-    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, stream)
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, inputValues(inputRows: _*).stream())
 
     consume(runtimeResult)
 
@@ -214,22 +229,27 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
+    val probe = recordingProbe(
+      "n",
+      queryStatistics => {
+        queryStatistics.getNodesCreated shouldEqual 0
+        queryStatistics.getLabelsAdded shouldEqual 0
+        Iterables.count(tx.getAllNodes) shouldEqual 0
+      }
+    )
+
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .transactionForeach(batchSize)
       .|.emptyResult()
+      .|.prober(probe)
       .|.create(createNode("n", "N"))
       .|.argument()
       .input(variables = Seq("x"))
       .build(readOnly = false)
 
-    val stream = inputStreamWithSideEffectInNewTxn(
-      inputValues(inputRows: _*).stream(),
-      (tx, _) => Iterables.count(tx.getAllNodes) shouldEqual 0
-    )
-
     // then
-    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, stream)
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, inputValues(inputRows: _*).stream())
 
     consume(runtimeResult)
 
@@ -276,22 +296,29 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       nodeGraph(1, "N")
     }
 
+    var nodeCount: Long = 1
+    val probe = recordingProbe(
+      "n",
+      queryStatistics => {
+        val _nodeCount = nodeCount
+        nodeCount = tx.findNodes(Label.label("N")).stream().count()
+        queryStatistics.getNodesCreated shouldEqual _nodeCount
+        queryStatistics.getLabelsAdded shouldEqual _nodeCount
+      }
+    )
+
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .transactionForeach(1)
       .|.emptyResult()
+      .|.prober(probe)
       .|.create(createNode("n", "N"))
       .|.nodeByLabelScan("y", "N")
       .input(variables = Seq("x"))
       .build(readOnly = false)
 
-    val stream = inputStreamWithSideEffectInNewTxn(
-      inputValues(inputRows: _*).stream(),
-      (tx, offset) => Iterables.count(tx.getAllNodes) shouldEqual Math.pow(2, offset)
-    )
-
     // then
-    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, stream)
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, inputValues(inputRows: _*).stream())
 
     consume(runtimeResult)
 
@@ -958,5 +985,26 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     } finally {
       extAllRels.close()
     }
+  }
+
+  protected def recordingProbe(
+    variable: String,
+    assertion: QueryStatistics => Assertion
+  ): Prober.Probe with RecordingRowsProbe = {
+    val probe = new Probe {
+      private var _prevTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics.empty
+      private var _thisTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics.empty
+      private var _transactionsCommitted = 0
+
+      override def onRow(row: AnyRef, queryStatistics: QueryStatistics, transactionsCommitted: Int): Unit = {
+        if (_transactionsCommitted != transactionsCommitted) {
+          assertion(_thisTxQueryStatistics.-(_prevTxQueryStatistics))
+          _transactionsCommitted = transactionsCommitted
+          _prevTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics.empty.+(_thisTxQueryStatistics)
+        }
+        _thisTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics(queryStatistics)
+      }
+    }
+    new RecordingProbe(variable)(probe)
   }
 }
