@@ -58,7 +58,7 @@ class RecoveryRequiredChecker {
     }
 
     boolean isRecoveryRequiredAt(DatabaseLayout databaseLayout, LogTailMetadata logTailMetadata) {
-        if (!storageEngineFactory.storageExists(fs, databaseLayout, pageCache)) {
+        if (!storageEngineFactory.storageExists(fs, databaseLayout)) {
             return false;
         }
         StorageFilesState filesRecoveryState = storageEngineFactory.checkStoreFileState(fs, databaseLayout, pageCache);

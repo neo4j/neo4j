@@ -181,7 +181,7 @@ public class StoreMigrator {
     }
 
     public void upgradeIfNeeded() throws UnableToMigrateException, IOException {
-        if (!storageEngineFactory.storageExists(fs, databaseLayout, pageCache)) {
+        if (!storageEngineFactory.storageExists(fs, databaseLayout)) {
             // upgrade is invoked on database start up and before new databases are initialised,
             // so the database store not existing is a perfectly valid scenario.
             return;
@@ -467,7 +467,7 @@ public class StoreMigrator {
     }
 
     private void checkStoreExists() {
-        if (!storageEngineFactory.storageExists(fs, databaseLayout, pageCache)) {
+        if (!storageEngineFactory.storageExists(fs, databaseLayout)) {
             throw new UnableToMigrateException("Database '" + databaseLayout.getDatabaseName()
                     + "' either does not exists or it has not been initialised");
         }

@@ -336,7 +336,7 @@ public class LogFilesBuilder {
 
     private StorageEngineFactory storageEngineFactory() {
         if (storageEngineFactory == null) {
-            storageEngineFactory = StorageEngineFactory.selectStorageEngine(fileSystem, databaseLayout, pageCache)
+            storageEngineFactory = StorageEngineFactory.selectStorageEngine(fileSystem, databaseLayout)
                     .orElseThrow();
         }
         return storageEngineFactory;

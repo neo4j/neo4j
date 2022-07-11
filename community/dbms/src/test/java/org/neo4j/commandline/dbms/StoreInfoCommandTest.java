@@ -340,12 +340,8 @@ class StoreInfoCommandTest {
                         any(),
                         argThat(dbLayout -> dbLayout.databaseDirectory().equals(databaseLayout.databaseDirectory())),
                         any());
-        doReturn(true)
-                .when(storageEngineFactory)
-                .storageExists(
-                        any(),
-                        argThat(dbLayout -> dbLayout.databaseDirectory().equals(databaseLayout.databaseDirectory())),
-                        any());
+        doReturn(true).when(storageEngineFactory).storageExists(any(), argThat(dbLayout -> dbLayout.databaseDirectory()
+                .equals(databaseLayout.databaseDirectory())));
         doReturn(StorageFilesState.recoveredState())
                 .when(storageEngineFactory)
                 .checkStoreFileState(

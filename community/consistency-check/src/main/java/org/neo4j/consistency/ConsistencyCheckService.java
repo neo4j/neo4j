@@ -435,8 +435,8 @@ public class ConsistencyCheckService {
             config.set(GraphDatabaseSettings.pagecache_warmup_enabled, false);
 
             // assert recovered
-            var storageEngineFactory = StorageEngineFactory.selectStorageEngine(fileSystem, layout, pageCache)
-                    .orElseThrow();
+            var storageEngineFactory =
+                    StorageEngineFactory.selectStorageEngine(fileSystem, layout).orElseThrow();
             assertRecovered(layout, pageCache, config, fileSystem, memoryTracker);
 
             assertSupportedFormat(config, pageCache, storageEngineFactory);
@@ -568,9 +568,8 @@ public class ConsistencyCheckService {
                                 Clocks.nanoClock(),
                                 new MemoryPools())
                         .getOrCreatePageCache()) {
-            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine(
-                            fileSystem, layout, tempPageCache)
-                    .get();
+            StorageEngineFactory storageEngineFactory =
+                    StorageEngineFactory.selectStorageEngine(fileSystem, layout).get();
             return storageEngineFactory.optimalAvailableConsistencyCheckerMemory(
                     fileSystem, layout, config, tempPageCache);
         } catch (Exception e) {

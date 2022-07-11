@@ -1492,9 +1492,8 @@ class RecoveryIT {
 
     private LogFiles buildLogFiles(DatabaseTracers databaseTracers) throws IOException {
         return LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fileSystem)
-                .withCommandReaderFactory(
-                        StorageEngineFactory.selectStorageEngine(fileSystem, databaseLayout, pageCache, null)
-                                .commandReaderFactory())
+                .withCommandReaderFactory(StorageEngineFactory.selectStorageEngine(fileSystem, databaseLayout, null)
+                        .commandReaderFactory())
                 .withDatabaseTracers(databaseTracers)
                 .build();
     }

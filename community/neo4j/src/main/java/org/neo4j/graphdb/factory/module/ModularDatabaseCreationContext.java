@@ -148,11 +148,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
                 globalModule.getGlobalMonitors(),
                 LeaseService.NO_LEASES,
                 DatabaseCreationContext.selectStorageEngine(
-                        globalModule.getFileSystem(),
-                        globalModule.getNeo4jLayout(),
-                        globalModule.getPageCache(),
-                        databaseConfig,
-                        namedDatabaseId),
+                        globalModule.getFileSystem(), globalModule.getNeo4jLayout(), databaseConfig, namedDatabaseId),
                 constraintSemantics,
                 queryEngineProvider,
                 transactionStats,

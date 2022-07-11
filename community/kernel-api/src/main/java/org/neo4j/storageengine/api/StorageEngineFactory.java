@@ -172,12 +172,11 @@ public interface StorageEngineFactory {
 
     /**
      * Check if a store described by provided database layout exists in provided file system
-     * @param fileSystem store file system
+     * @param fileSystem     store file system
      * @param databaseLayout store database layout
-     * @param pageCache page cache to open store with
      * @return true of store exist, false otherwise
      */
-    boolean storageExists(FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCache pageCache);
+    boolean storageExists(FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout);
 
     /**
      * Check if a format is supported by the factory
@@ -423,13 +422,12 @@ public interface StorageEngineFactory {
 
     /**
      * @return the first {@link StorageEngineFactory} that returns {@code true} when asked about
-     * {@link StorageEngineFactory#storageExists(FileSystemAbstraction, DatabaseLayout, PageCache)} for the given {@code databaseLayout}.
+     * {@link StorageEngineFactory#storageExists(FileSystemAbstraction, DatabaseLayout)} for the given {@code databaseLayout}.
      */
-    static Optional<StorageEngineFactory> selectStorageEngine(
-            FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache) {
+    static Optional<StorageEngineFactory> selectStorageEngine(FileSystemAbstraction fs, DatabaseLayout databaseLayout) {
         Collection<StorageEngineFactory> storageEngineFactories = allAvailableStorageEngines();
         return storageEngineFactories.stream()
-                .filter(engine -> engine.storageExists(fs, databaseLayout, pageCache))
+                .filter(engine -> engine.storageExists(fs, databaseLayout))
                 .findFirst();
     }
 
@@ -484,12 +482,9 @@ public interface StorageEngineFactory {
      * @return the found {@link StorageEngineFactory}.
      */
     static StorageEngineFactory selectStorageEngine(
-            FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, Configuration configuration) {
+            FileSystemAbstraction fs, DatabaseLayout databaseLayout, Configuration configuration) {
         return selectStorageEngine(
-                fs,
-                databaseLayout,
-                pageCache,
-                configuration != null ? configuration.get(GraphDatabaseSettings.db_format) : null);
+                fs, databaseLayout, configuration != null ? configuration.get(GraphDatabaseSettings.db_format) : null);
     }
 
     /**
@@ -502,12 +497,11 @@ public interface StorageEngineFactory {
      * @return the found {@link StorageEngineFactory}.
      */
     private static StorageEngineFactory selectStorageEngine(
-            FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, String specificNameOrNull) {
+            FileSystemAbstraction fs, DatabaseLayout databaseLayout, String specificNameOrNull) {
         // - Does a store exist at this location? -> get the one able to open it
         // - Is there a specific name of a store format to look for? -> get the storage engine that recognizes it
         // - Use the default one
-        Optional<StorageEngineFactory> forExistingStore =
-                StorageEngineFactory.selectStorageEngine(fs, databaseLayout, pageCache);
+        Optional<StorageEngineFactory> forExistingStore = StorageEngineFactory.selectStorageEngine(fs, databaseLayout);
         if (forExistingStore.isPresent()) {
             return forExistingStore.get();
         }
@@ -534,5 +528,5 @@ public interface StorageEngineFactory {
                 FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache);
     }
 
-    Selector SELECTOR = StorageEngineFactory::selectStorageEngine;
+    Selector SELECTOR = (fs, databaseLayout, pageCache) -> selectStorageEngine(fs, databaseLayout);
 }

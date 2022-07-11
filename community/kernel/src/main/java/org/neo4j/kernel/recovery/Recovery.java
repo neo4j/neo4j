@@ -204,7 +204,7 @@ public final class Recovery {
                 fs,
                 pageCache,
                 databaseLayout,
-                StorageEngineFactory.selectStorageEngine(fs, databaseLayout, pageCache, config),
+                StorageEngineFactory.selectStorageEngine(fs, databaseLayout, config),
                 config,
                 logTailMetadata,
                 memoryTracker,
@@ -357,7 +357,7 @@ public final class Recovery {
     public static boolean performRecovery(Context context) throws IOException {
         requireNonNull(context);
         StorageEngineFactory storageEngineFactory =
-                selectStorageEngine(context.fs, context.databaseLayout, context.pageCache, context.config);
+                selectStorageEngine(context.fs, context.databaseLayout, context.config);
         Iterable<ExtensionFactory<?>> extensionFactories =
                 context.extensionFactories != null ? context.extensionFactories : loadExtensions();
 

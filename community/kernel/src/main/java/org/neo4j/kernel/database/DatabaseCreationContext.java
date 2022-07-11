@@ -147,15 +147,10 @@ public interface DatabaseCreationContext {
     ExternalIdReuseConditionProvider externalIdReuseConditionProvider();
 
     static StorageEngineFactory selectStorageEngine(
-            FileSystemAbstraction fs,
-            Neo4jLayout neo4jLayout,
-            PageCache pageCache,
-            Configuration config,
-            NamedDatabaseId namedDatabaseId) {
+            FileSystemAbstraction fs, Neo4jLayout neo4jLayout, Configuration config, NamedDatabaseId namedDatabaseId) {
         return StorageEngineFactory.selectStorageEngine(
                 fs,
                 neo4jLayout.databaseLayout(namedDatabaseId.name()),
-                pageCache,
                 namedDatabaseId.isSystemDatabase() ? null : config);
     }
 }

@@ -338,7 +338,7 @@ public class MigrateStoreCommand extends AbstractCommand {
 
     private StorageEngineFactory getCurrentStorageEngineFactory(
             FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache) {
-        return StorageEngineFactory.selectStorageEngine(fs, databaseLayout, pageCache)
+        return StorageEngineFactory.selectStorageEngine(fs, databaseLayout)
                 .orElseThrow(() -> new CommandFailedException(
                         "Current store format has not been recognised by any of the available storage engines"));
     }

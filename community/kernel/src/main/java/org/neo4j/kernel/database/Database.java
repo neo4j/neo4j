@@ -419,7 +419,7 @@ public class Database extends LifecycleAdapter {
             LogTailMetadata tailMetadata = getLogTail();
             initialiseContextFactory(tailMetadata.getLastCommittedTransaction()::transactionId);
 
-            boolean storageExists = storageEngineFactory.storageExists(fs, databaseLayout, databasePageCache);
+            boolean storageExists = storageEngineFactory.storageExists(fs, databaseLayout);
             validateStoreAndTxLogs(tailMetadata, cursorContextFactory, storageExists);
 
             if (Recovery.performRecovery(context(

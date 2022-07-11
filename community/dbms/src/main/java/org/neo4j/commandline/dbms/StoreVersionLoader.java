@@ -77,7 +77,7 @@ public class StoreVersionLoader implements AutoCloseable {
      * @return the {@link Result} of the store version if the format can not be read.
      */
     public Result loadStoreVersion(DatabaseLayout layout) {
-        StorageEngineFactory sef = StorageEngineFactory.selectStorageEngine(fs, layout, pageCache)
+        StorageEngineFactory sef = StorageEngineFactory.selectStorageEngine(fs, layout)
                 .orElseGet(StorageEngineFactory::defaultStorageEngine);
         StoreVersionCheck versionCheck =
                 sef.versionCheck(fs, layout, config, pageCache, NullLogService.getInstance(), contextFactory);

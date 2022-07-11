@@ -273,7 +273,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     }
 
     @Override
-    public boolean storageExists(FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCache pageCache) {
+    public boolean storageExists(FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout) {
         return NeoStores.isStorePresent(fileSystem, convert(databaseLayout));
     }
 
