@@ -186,17 +186,29 @@ public final class Recovery {
                 .build();
         try (JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
                 PageCache pageCache = getPageCache(config, fs, jobScheduler)) {
-            StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
             return isRecoveryRequired(
-                    fs,
-                    pageCache,
-                    databaseLayout,
-                    storageEngineFactory,
-                    config,
-                    Optional.empty(),
-                    memoryTracker,
-                    DatabaseTracers.EMPTY);
+                    fs, pageCache, databaseLayout, config, Optional.empty(), memoryTracker, DatabaseTracers.EMPTY);
         }
+    }
+
+    public static boolean isRecoveryRequired(
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            DatabaseLayout databaseLayout,
+            Config config,
+            Optional<LogTailMetadata> logTailMetadata,
+            MemoryTracker memoryTracker,
+            DatabaseTracers databaseTracers)
+            throws IOException {
+        return isRecoveryRequired(
+                fs,
+                pageCache,
+                databaseLayout,
+                StorageEngineFactory.selectStorageEngine(fs, databaseLayout, pageCache, config),
+                config,
+                logTailMetadata,
+                memoryTracker,
+                databaseTracers);
     }
 
     public static boolean isRecoveryRequired(
@@ -238,8 +250,6 @@ public final class Recovery {
         private final PageCache pageCache;
         private final Config config;
         private final DatabaseTracers tracers;
-
-        private StorageEngineFactory storageEngineFactory;
         private boolean forceRunRecovery;
         private InternalLogProvider logProvider = NullLogProvider.getInstance();
         private Monitors globalMonitors = new Monitors();
@@ -296,14 +306,6 @@ public final class Recovery {
         }
 
         /**
-         * @param storageEngineFactory {@link StorageEngineFactory} for the storage to recover
-         */
-        public Context storageEngineFactory(StorageEngineFactory storageEngineFactory) {
-            this.storageEngineFactory = storageEngineFactory;
-            return this;
-        }
-
-        /**
          * Force recovery to run even if the usual checks indicates that it's not required.
          * In specific cases, like after store copy there's always a need for doing a recovery or at least to start the db, checkpoint and shut down,
          * even if the normal "is recovery required" checks says that recovery isn't required
@@ -354,9 +356,8 @@ public final class Recovery {
      */
     public static boolean performRecovery(Context context) throws IOException {
         requireNonNull(context);
-        StorageEngineFactory storageEngineFactory = context.storageEngineFactory != null
-                ? context.storageEngineFactory
-                : selectStorageEngine(context.fs, context.databaseLayout, context.pageCache, context.config);
+        StorageEngineFactory storageEngineFactory =
+                selectStorageEngine(context.fs, context.databaseLayout, context.pageCache, context.config);
         Iterable<ExtensionFactory<?>> extensionFactories =
                 context.extensionFactories != null ? context.extensionFactories : loadExtensions();
 

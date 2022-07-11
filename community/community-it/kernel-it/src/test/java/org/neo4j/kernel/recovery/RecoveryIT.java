@@ -65,13 +65,17 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.neo4j.annotations.documented.ReporterFactory;
@@ -106,7 +110,6 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -144,6 +147,7 @@ import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -168,13 +172,17 @@ class RecoveryIT {
     @Inject
     private Neo4jLayout neo4jLayout;
 
-    @Inject
     private DatabaseLayout databaseLayout;
 
     private TestDatabaseManagementServiceBuilder builder;
     private DatabaseManagementService managementService;
     private FakeClock fakeClock;
     private AssertableLogProvider logProvider;
+
+    @BeforeEach
+    void setUp() {
+        databaseLayout = neo4jLayout.databaseLayout(DEFAULT_DATABASE_NAME);
+    }
 
     @AfterEach
     void tearDown() {
@@ -227,7 +235,6 @@ class RecoveryIT {
         managementService = new TestDatabaseManagementServiceBuilder(neo4jLayout)
                 .setConfig(config)
                 .build();
-        managementService.database(databaseLayout.getDatabaseName());
         managementService.shutdown();
         removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
 
@@ -805,23 +812,24 @@ class RecoveryIT {
     void recoverDatabaseWithoutOneIdFile() throws Throwable {
         GraphDatabaseAPI db = createDatabase();
         generateSomeData(db);
-        RecordDatabaseLayout layout = RecordDatabaseLayout.cast(db.databaseLayout());
+        DatabaseLayout layout = db.databaseLayout();
         managementService.shutdown();
 
-        fileSystem.deleteFileOrThrow(layout.idRelationshipStore());
+        Path idFile = getIdFile(layout);
+        fileSystem.deleteFileOrThrow(idFile);
         assertTrue(isRecoveryRequired(layout));
 
         performRecovery(
                 Recovery.context(fileSystem, pageCache, EMPTY, defaults(), layout, INSTANCE, IOController.DISABLED));
         assertFalse(isRecoveryRequired(layout));
 
-        assertTrue(fileSystem.fileExists(layout.idRelationshipStore()));
+        assertTrue(fileSystem.fileExists(idFile));
     }
 
     @Test
     void shouldPruneLogs() throws Throwable {
         GraphDatabaseAPI db = createDatabase(ByteUnit.kibiBytes(128));
-        RecordDatabaseLayout layout = RecordDatabaseLayout.cast(db.databaseLayout());
+        DatabaseLayout layout = db.databaseLayout();
         for (int i = 0; i < 10; i++) {
             generateSomeData(db);
         }
@@ -831,7 +839,8 @@ class RecoveryIT {
                         .filter(path -> path.toString().contains("transaction.db"))
                         .count())
                 .isGreaterThan(2);
-        fileSystem.deleteFileOrThrow(layout.idRelationshipStore());
+
+        fileSystem.deleteFileOrThrow(getIdFile(layout));
         assertTrue(isRecoveryRequired(layout));
 
         Config config = defaults(Map.of(GraphDatabaseSettings.keep_logical_logs, "keep_none"));
@@ -867,13 +876,12 @@ class RecoveryIT {
     void failRecoveryWithMissingStoreFile() throws Exception {
         GraphDatabaseAPI database = createDatabase();
         generateSomeData(database);
-        RecordDatabaseLayout layout = RecordDatabaseLayout.cast(database.databaseLayout());
+        DatabaseLayout layout = database.databaseLayout();
         managementService.shutdown();
-
-        fileSystem.deleteFileOrThrow(layout.nodeStore());
+        Path storeFile = getStoreFile(layout);
+        fileSystem.deleteFileOrThrow(storeFile);
 
         GraphDatabaseAPI restartedDb = createDatabase();
-
         try {
             DatabaseStateService dbStateService =
                     restartedDb.getDependencyResolver().resolveDependency(DatabaseStateService.class);
@@ -881,7 +889,8 @@ class RecoveryIT {
             var failure = dbStateService.causeOfFailure(restartedDb.databaseId());
             assertTrue(failure.isPresent());
             assertThat(failure.get().getCause())
-                    .hasMessageContainingAll("neostore.nodestore.db", "is(are) missing and recovery is not possible");
+                    .hasMessageContainingAll(
+                            storeFile.getFileName().toString(), "is(are) missing and recovery is not possible");
         } finally {
             managementService.shutdown();
         }
@@ -891,13 +900,14 @@ class RecoveryIT {
     void failRecoveryWithMissingStoreFileAndIdFile() throws Exception {
         GraphDatabaseAPI database = createDatabase();
         generateSomeData(database);
-        RecordDatabaseLayout layout = RecordDatabaseLayout.cast(database.databaseLayout());
+        DatabaseLayout layout = database.databaseLayout();
         managementService.shutdown();
 
         // Recovery should not be attempted on any store with missing store files, even if other recoverable files are
         // missing as well.
-        fileSystem.deleteFileOrThrow(layout.nodeStore());
-        fileSystem.deleteFileOrThrow(layout.idLabelTokenStore());
+        Path storeFile = getStoreFile(layout);
+        fileSystem.deleteFileOrThrow(storeFile);
+        fileSystem.deleteFileOrThrow(getIdFile(layout));
 
         GraphDatabaseAPI restartedDb = createDatabase();
 
@@ -908,7 +918,8 @@ class RecoveryIT {
             var failure = dbStateService.causeOfFailure(restartedDb.databaseId());
             assertTrue(failure.isPresent());
             assertThat(failure.get().getCause())
-                    .hasMessageContainingAll("neostore.nodestore.db", "is(are) missing and recovery is not possible");
+                    .hasMessageContainingAll(
+                            storeFile.getFileName().toString(), "is(are) missing and recovery is not possible");
         } finally {
             managementService.shutdown();
         }
@@ -977,7 +988,7 @@ class RecoveryIT {
         // given
         GraphDatabaseAPI db = createDatabase();
         generateSomeData(db);
-        RecordDatabaseLayout layout = RecordDatabaseLayout.cast(db.databaseLayout());
+        DatabaseLayout layout = db.databaseLayout();
         managementService.shutdown();
         assertFalse(isRecoveryRequired(layout));
         var openOptions = db.getDependencyResolver()
@@ -986,9 +997,10 @@ class RecoveryIT {
         // Make an ID generator, say for the node store, dirty
         DefaultIdGeneratorFactory idGeneratorFactory =
                 new DefaultIdGeneratorFactory(fileSystem, immediate(), PageCacheTracer.NULL, "my db");
+        Path idFile = getIdFile(layout);
         try (IdGenerator idGenerator = idGeneratorFactory.open(
                 pageCache,
-                layout.idNodeStore(),
+                idFile,
                 RecordIdType.NODE,
                 () -> 0L /*will not be used*/,
                 10_000,
@@ -1001,7 +1013,7 @@ class RecoveryIT {
             idGenerator.marker(NULL_CONTEXT).close();
         }
         assertFalse(isRecoveryRequired(layout));
-        assertTrue(idGeneratorIsDirty(layout.idNodeStore(), RecordIdType.NODE, openOptions));
+        assertTrue(idGeneratorIsDirty(idFile, RecordIdType.NODE, openOptions));
 
         // when
         MutableBoolean recoveryRunEvenThoughNoCommitsAfterLastCheckpoint = new MutableBoolean();
@@ -1018,7 +1030,6 @@ class RecoveryIT {
 
         Recovery.performRecovery(
                 Recovery.context(fileSystem, pageCache, EMPTY, config, layout, INSTANCE, IOController.DISABLED)
-                        .storageEngineFactory(storageEngineFactory)
                         .log(NullLogProvider.getInstance())
                         .recoveryPredicate(RecoveryPredicate.ALL)
                         .monitors(monitors)
@@ -1028,7 +1039,7 @@ class RecoveryIT {
                         .force());
 
         // then
-        assertFalse(idGeneratorIsDirty(layout.idNodeStore(), RecordIdType.NODE, openOptions));
+        assertFalse(idGeneratorIsDirty(idFile, RecordIdType.NODE, openOptions));
         assertTrue(recoveryRunEvenThoughNoCommitsAfterLastCheckpoint.booleanValue());
     }
 
@@ -1312,9 +1323,9 @@ class RecoveryIT {
         GraphDatabaseAPI db = createDatabase();
         DatabaseLayout layout = db.databaseLayout();
         generateSomeData(db);
-        db.getDependencyResolver()
-                .resolveDependency(CheckPointerImpl.class)
-                .forceCheckPoint(new SimpleTriggerInfo("test"));
+        DependencyResolver deps = db.getDependencyResolver();
+        deps.resolveDependency(CheckPointerImpl.class).forceCheckPoint(new SimpleTriggerInfo("test"));
+        long lastTxId = deps.resolveDependency(TransactionIdStore.class).getLastCommittedTransactionId();
         generateSomeData(db);
         managementService.shutdown();
 
@@ -1326,8 +1337,8 @@ class RecoveryIT {
                 .hasCauseInstanceOf(RecoveryPredicateException.class)
                 .getCause()
                 .hasMessageContaining("Partial recovery criteria can't be satisfied. Transaction after and before "
-                        + "checkpoint does not satisfy provided recovery criteria. Observed transaction id: 24, "
-                        + "recovery criteria: transaction id should be < 1.");
+                        + "checkpoint does not satisfy provided recovery criteria. Observed transaction id: " + lastTxId
+                        + ", recovery criteria: transaction id should be < 1.");
 
         assertTrue(isRecoveryRequired(layout));
     }
@@ -1439,11 +1450,9 @@ class RecoveryIT {
         additionalConfiguration(config);
         LogFiles logFiles = buildLogFiles(databaseTracers);
         assertTrue(isRecoveryRequired(databaseLayout, config, logFiles, databaseTracers));
-        StorageEngineFactory storageEngineFactory = defaultStorageEngine();
 
         Recovery.performRecovery(Recovery.context(
                         fileSystem, pageCache, databaseTracers, config, databaseLayout, INSTANCE, IOController.DISABLED)
-                .storageEngineFactory(storageEngineFactory)
                 .log(logProvider)
                 .logTail(logFiles.getTailMetadata())
                 .recoveryPredicate(recoveryCriteria.toPredicate())
@@ -1462,27 +1471,13 @@ class RecoveryIT {
 
     private boolean isRecoveryRequired(DatabaseLayout layout, Config config, LogFiles logFiles) throws Exception {
         return Recovery.isRecoveryRequired(
-                fileSystem,
-                pageCache,
-                layout,
-                defaultStorageEngine(),
-                config,
-                Optional.of(logFiles.getTailMetadata()),
-                INSTANCE,
-                EMPTY);
+                fileSystem, pageCache, layout, config, Optional.of(logFiles.getTailMetadata()), INSTANCE, EMPTY);
     }
 
     private boolean isRecoveryRequired(DatabaseLayout layout, Config config, LogFiles logFiles, DatabaseTracers tracers)
             throws Exception {
         return Recovery.isRecoveryRequired(
-                fileSystem,
-                pageCache,
-                layout,
-                defaultStorageEngine(),
-                config,
-                Optional.of(logFiles.getTailMetadata()),
-                INSTANCE,
-                tracers);
+                fileSystem, pageCache, layout, config, Optional.of(logFiles.getTailMetadata()), INSTANCE, tracers);
     }
 
     private int countCheckPointsInTransactionLogs() throws IOException {
@@ -1497,7 +1492,9 @@ class RecoveryIT {
 
     private LogFiles buildLogFiles(DatabaseTracers databaseTracers) throws IOException {
         return LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fileSystem)
-                .withCommandReaderFactory(defaultStorageEngine().commandReaderFactory())
+                .withCommandReaderFactory(
+                        StorageEngineFactory.selectStorageEngine(fileSystem, databaseLayout, pageCache, null)
+                                .commandReaderFactory())
                 .withDatabaseTracers(databaseTracers)
                 .build();
     }
@@ -1581,6 +1578,23 @@ class RecoveryIT {
         } finally {
             managementService.shutdown();
         }
+    }
+
+    private static Path getIdFile(DatabaseLayout layout) {
+        return getFirstSortedOnName(layout.idFiles());
+    }
+
+    private static Path getStoreFile(DatabaseLayout layout) {
+        Set<Path> files = new HashSet<>(layout.storeFiles());
+        files.remove(layout.metadataStore());
+        files.remove(layout.indexStatisticsStore());
+        return getFirstSortedOnName(files);
+    }
+
+    private static Path getFirstSortedOnName(Set<Path> path) {
+        return path.stream()
+                .max(Comparator.comparing(p -> p.getFileName().toString())) // To be deterministic
+                .get();
     }
 
     interface Dependencies {

@@ -437,7 +437,7 @@ public class ConsistencyCheckService {
             // assert recovered
             var storageEngineFactory = StorageEngineFactory.selectStorageEngine(fileSystem, layout, pageCache)
                     .orElseThrow();
-            assertRecovered(layout, pageCache, storageEngineFactory, config, fileSystem, memoryTracker);
+            assertRecovered(layout, pageCache, config, fileSystem, memoryTracker);
 
             assertSupportedFormat(config, pageCache, storageEngineFactory);
 
@@ -615,7 +615,6 @@ public class ConsistencyCheckService {
     private static void assertRecovered(
             DatabaseLayout databaseLayout,
             PageCache pageCache,
-            StorageEngineFactory storageEngineFactory,
             Config config,
             FileSystemAbstraction fileSystem,
             MemoryTracker memoryTracker)
@@ -625,7 +624,6 @@ public class ConsistencyCheckService {
                     fileSystem,
                     pageCache,
                     databaseLayout,
-                    storageEngineFactory,
                     config,
                     Optional.empty(),
                     memoryTracker,

@@ -430,7 +430,6 @@ public class Database extends LifecycleAdapter {
                             databaseLayout,
                             otherDatabaseMemoryTracker,
                             ioController)
-                    .storageEngineFactory(storageEngineFactory)
                     .log(internalLogProvider)
                     .recoveryPredicate(RecoveryPredicate.ALL)
                     .monitors(databaseMonitors)

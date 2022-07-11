@@ -269,7 +269,6 @@ class StoreInfoCommandTest {
         // when
         CommandLine.populateCommand(command, args(databasesRoot, true, false));
         command.execute();
-
         // then
         verify(out).println(expectedMulti);
     }
