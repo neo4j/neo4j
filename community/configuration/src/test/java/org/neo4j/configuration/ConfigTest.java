@@ -81,6 +81,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.configuration.Config.ValueSource;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
@@ -1476,6 +1477,68 @@ class ConfigTest {
                 .build();
 
         assertEquals(Duration.ofSeconds(777), config.get(GraphDatabaseSettings.transaction_timeout));
+    }
+
+    @Test
+    void shouldKnowDefaultValue() {
+        // Given
+        Config config = Config.newBuilder()
+                .addSettingsClass(TestSettings.class)
+                .set(TestSettings.intSetting, 77)
+                .build();
+
+        // Then
+        assertThat(config.getDefault(TestSettings.intSetting)).isEqualTo(TestSettings.intSetting.defaultValue());
+
+        // Given
+        config = Config.newBuilder()
+                .addSettingsClass(TestSettings.class)
+                .setDefault(TestSettings.intSetting, 50)
+                .build();
+        // Then
+        assertThat(config.getDefault(TestSettings.intSetting)).isEqualTo(50);
+    }
+
+    @Test
+    void shouldRememberStartupValue() {
+        // Given
+        Config config = Config.newBuilder()
+                .addSettingsClass(TestSettings.class)
+                .set(TestSettings.intSetting, 77)
+                .build();
+
+        config.set(TestSettings.intSetting, 50);
+
+        // Then
+        assertThat(config.getStartupValue(TestSettings.intSetting)).isEqualTo(77);
+        assertThat(config.getDefault(TestSettings.intSetting)).isEqualTo(1);
+    }
+
+    @Test
+    void shouldKnowValueSource() {
+        // Given
+        Config config = Config.newBuilder()
+                .addSettingsClass(TestSettings.class)
+                .set(TestSettings.boolSetting, false)
+                .build();
+
+        // When
+        config.setDynamic(TestSettings.intSetting, 50, "Test");
+        config.setDynamicByUser(TestSettings.dynamicStringSetting, "foo", "Test");
+
+        // Then
+        assertThat(config.getValueSource(TestSettings.stringSetting)).isEqualTo(ValueSource.DEFAULT);
+        assertThat(config.getValueSource(TestSettings.boolSetting)).isEqualTo(ValueSource.INITIAL);
+        assertThat(config.getValueSource(TestSettings.intSetting)).isEqualTo(ValueSource.SYSTEM);
+        assertThat(config.getValueSource(TestSettings.dynamicStringSetting)).isEqualTo(ValueSource.USER);
+
+        // Then
+        // Scope remembered fromConfig
+        config = Config.newBuilder().fromConfig(config).build();
+        assertThat(config.getValueSource(TestSettings.stringSetting)).isEqualTo(ValueSource.DEFAULT);
+        assertThat(config.getValueSource(TestSettings.boolSetting)).isEqualTo(ValueSource.INITIAL);
+        assertThat(config.getValueSource(TestSettings.intSetting)).isEqualTo(ValueSource.SYSTEM);
+        assertThat(config.getValueSource(TestSettings.dynamicStringSetting)).isEqualTo(ValueSource.USER);
     }
 
     private static final class AMigrator implements SettingMigrator {

@@ -58,6 +58,20 @@ public class DatabaseConfig extends Config implements Lifecycle {
         return globalConfig.get(setting);
     }
 
+    public <T> T getDefault(Setting<T> setting) {
+        return globalConfig.getDefault(setting);
+    }
+
+    public <T> T getStartupValue(Setting<T> setting) {
+        return globalConfig.getStartupValue(setting);
+    }
+
+    public <T> ValueSource getValueSource(Setting<T> setting) {
+        boolean overridden = overriddenSettings != null && overriddenSettings.containsKey(setting)
+                || databaseSpecificSettings != null && databaseSpecificSettings.containsKey(setting);
+        return overridden ? ValueSource.SYSTEM : globalConfig.getValueSource(setting);
+    }
+
     @Override
     public <T> void addListener(Setting<T> setting, SettingChangeListener<T> listener) {
         registeredListeners
@@ -99,6 +113,11 @@ public class DatabaseConfig extends Config implements Lifecycle {
     @Override
     public <T> void setDynamic(Setting<T> setting, T value, String scope) {
         globalConfig.setDynamic(setting, value, scope);
+    }
+
+    @Override
+    public <T> void setDynamicByUser(Setting<T> setting, T value, String scope) {
+        globalConfig.setDynamicByUser(setting, value, scope);
     }
 
     @Override

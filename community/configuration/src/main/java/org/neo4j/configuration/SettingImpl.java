@@ -22,6 +22,7 @@ package org.neo4j.configuration;
 import static java.lang.String.format;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -117,7 +118,11 @@ public final class SettingImpl<T> implements Setting<T> {
 
     @Override
     public String toString() {
-        String desc = format("%s, %s", name, parser.getDescription());
+        return format("%s, %s", name, validValues());
+    }
+
+    public String validValues() {
+        String desc = parser.getDescription();
 
         if (!constraints.isEmpty()) {
             String constraintDesc =
@@ -132,8 +137,12 @@ public final class SettingImpl<T> implements Setting<T> {
         return desc;
     }
 
-    SettingImpl<T> dependency() {
+    public SettingImpl<T> dependency() {
         return dependency;
+    }
+
+    public List<SettingConstraint<T>> constraints() {
+        return Collections.unmodifiableList(constraints);
     }
 
     @Override
@@ -200,7 +209,7 @@ public final class SettingImpl<T> implements Setting<T> {
         this.documentedDefaultValue = documentedDefaultValue;
     }
 
-    SettingValueParser<T> parser() {
+    public SettingValueParser<T> parser() {
         return parser;
     }
 

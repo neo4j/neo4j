@@ -19,6 +19,7 @@
  */
 package org.neo4j.procedure.builtin;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.SettingImpl;
 import org.neo4j.graphdb.config.Setting;
 
@@ -27,11 +28,20 @@ public class ConfigResult {
     public final String description;
     public final String value;
     public final boolean dynamic;
+    public final String defaultValue;
+    public final String startupValue;
+    public final boolean explicitlySet;
+    public final String validValues;
 
-    ConfigResult(Setting<Object> setting, Object value) {
+    public ConfigResult(Setting<Object> setting, Config config) {
+        SettingImpl<Object> settingImpl = (SettingImpl<Object>) setting;
         this.name = setting.name();
         this.description = setting.description();
-        this.value = ((SettingImpl<Object>) setting).valueToString(value);
+        this.value = settingImpl.valueToString(config.get(setting));
         this.dynamic = setting.dynamic();
+        this.defaultValue = settingImpl.valueToString(config.getDefault(setting));
+        this.startupValue = settingImpl.valueToString(config.getStartupValue(setting));
+        this.explicitlySet = config.isExplicitlySet(setting);
+        this.validValues = settingImpl.validValues();
     }
 }

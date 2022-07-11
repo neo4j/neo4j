@@ -21,7 +21,6 @@ package org.neo4j.kernel.builtinprocs;
 
 import static org.apache.commons.lang3.ArrayUtils.toArray;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -83,17 +82,18 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest {
         List<AnyValue[]> config = callListConfig(GraphDatabaseSettings.strict_config_validation.name());
 
         assertEquals(1, config.size());
-        assertArrayEquals(
-                new AnyValue[] {
-                    stringValue("server.config.strict_validation.enabled"),
-                    stringValue(
-                            "A strict configuration validation will prevent the database from starting up if unknown "
-                                    + "configuration options are specified in the neo4j settings namespace (such as dbms., cypher., etc) "
-                                    + "or if settings are declared multiple times."),
-                    stringValue(TRUE),
-                    Values.FALSE
-                },
-                config.get(0));
+        assertThat(config.get(0)).isEqualTo(new AnyValue[] {
+            stringValue("server.config.strict_validation.enabled"),
+            stringValue("A strict configuration validation will prevent the database from starting up if unknown "
+                    + "configuration options are specified in the neo4j settings namespace (such as dbms., cypher., etc) "
+                    + "or if settings are declared multiple times."),
+            stringValue(TRUE),
+            Values.FALSE,
+            stringValue(TRUE),
+            stringValue(TRUE),
+            Values.FALSE,
+            stringValue("a boolean")
+        });
     }
 
     @Test
@@ -118,14 +118,16 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest {
         List<AnyValue[]> config = callListConfig(GraphDatabaseSettings.transaction_timeout.name());
 
         assertEquals(1, config.size());
-        assertArrayEquals(
-                new AnyValue[] {
-                    stringValue("db.transaction.timeout"),
-                    stringValue("The maximum time interval of a transaction within which it should be completed."),
-                    stringValue("0s"),
-                    Values.TRUE
-                },
-                config.get(0));
+        assertThat(config.get(0)).isEqualTo(new AnyValue[] {
+            stringValue("db.transaction.timeout"),
+            stringValue("The maximum time interval of a transaction within which it should be completed."),
+            stringValue("0s"),
+            Values.TRUE,
+            stringValue("0s"),
+            stringValue("0s"),
+            Values.FALSE,
+            stringValue("a duration (Valid units are: `ns`, `μs`, `ms`, `s`, `m`, `h` and `d`; default unit is `s`)"),
+        });
     }
 
     @Test

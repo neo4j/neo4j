@@ -1101,6 +1101,48 @@
     "enterpriseOnly": false
   },
   {
+    "name": "dbms.checkConfigValue",
+    "description": "Check if a potential config setting value is valid.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.checkConfigValue(setting :: STRING?, value :: STRING?) :: (valid :: BOOLEAN?, message :: STRING?)",
+    "argumentDescription": [
+      {
+        "name": "setting",
+        "description": "setting :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "value",
+        "description": "value :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "valid",
+        "description": "valid :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      },
+      {
+        "name": "message",
+        "description": "message :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": true
+  },
+  {
     "admin": true,
     "name": "dbms.cluster.benchmark.start",
     "option": {
@@ -1699,7 +1741,7 @@
     "description": "List the currently active config of Neo4j.",
     "mode": "DBMS",
     "worksOnSystem": true,
-    "signature": "dbms.listConfig(searchString =  :: STRING?) :: (name :: STRING?, description :: STRING?, value :: STRING?, dynamic :: BOOLEAN?)",
+    "signature": "dbms.listConfig(searchString =  :: STRING?) :: (name :: STRING?, description :: STRING?, value :: STRING?, dynamic :: BOOLEAN?, defaultValue :: STRING?, startupValue :: STRING?, explicitlySet :: BOOLEAN?, validValues :: STRING?)",
     "argumentDescription": [
       {
         "default": "DefaultParameterValue{value=, type=STRING?}",
@@ -1728,6 +1770,26 @@
         "name": "dynamic",
         "description": "dynamic :: BOOLEAN?",
         "type": "BOOLEAN?"
+      },
+      {
+        "name": "defaultValue",
+        "description": "defaultValue :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "startupValue",
+        "description": "startupValue :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "explicitlySet",
+        "description": "explicitlySet :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      },
+      {
+        "name": "validValues",
+        "description": "validValues :: STRING?",
+        "type": "STRING?"
       }
     ],
     "admin": true,

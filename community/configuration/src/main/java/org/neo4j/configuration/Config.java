@@ -744,7 +744,7 @@ public class Config implements Configuration {
             boolean strict) {
         SettingImpl<Object> setting = (SettingImpl<Object>) untypedSetting;
         String key = setting.name();
-
+        ValueSource source = ValueSource.DEFAULT;
         try {
             validateSettingName(setting, strict);
 
@@ -767,17 +767,20 @@ public class Config implements Configuration {
             Object value = null;
             if (settingValueObjects.containsKey(key)) {
                 value = settingValueObjects.get(key);
+                source = ValueSource.INITIAL;
             } else if (settingValueStrings.containsKey(key)) // Map value
             {
+                source = ValueSource.INITIAL;
                 value = setting.parse(evaluateIfCommand(key, settingValueStrings.get(key)));
             } else if (fromConfig != null && fromConfig.settings.containsKey(key)) {
                 Entry<?> entry = fromConfig.settings.get(key);
                 value = entry.isDefault ? null : entry.value;
+                source = entry.valueSource();
             }
 
             value = setting.solveDefault(value, defaultValue);
 
-            settings.put(key, createEntry(setting, value, defaultValue));
+            settings.put(key, createEntry(setting, value, defaultValue, source));
         } catch (AccessDuringEvaluationException exception) {
             throw exception; // Bubble up
         } catch (RuntimeException exception) {
@@ -876,13 +879,13 @@ public class Config implements Configuration {
     }
 
     @SuppressWarnings("unchecked")
-    private <T> Entry<T> createEntry(SettingImpl<T> setting, T value, T defaultValue) {
+    private <T> Entry<T> createEntry(SettingImpl<T> setting, T value, T defaultValue, ValueSource source) {
         if (setting.dependency() != null) {
             var dep = settings.get(setting.dependency().name());
             T solvedValue = setting.solveDependency(value != null ? value : defaultValue, (T) dep.getValue());
-            return new DepEntry<>(setting, value, defaultValue, solvedValue);
+            return new DepEntry<>(setting, value, defaultValue, solvedValue, source);
         }
-        return new Entry<>(setting, value, defaultValue);
+        return new Entry<>(setting, value, defaultValue, source);
     }
 
     @SuppressWarnings("unchecked")
@@ -920,8 +923,20 @@ public class Config implements Configuration {
     }
 
     @Override
-    public <T> T get(org.neo4j.graphdb.config.Setting<T> setting) {
+    public <T> T get(Setting<T> setting) {
         return getObserver(setting).getValue();
+    }
+
+    public <T> T getDefault(Setting<T> setting) {
+        return ((Entry<T>) getObserver(setting)).defaultValue();
+    }
+
+    public <T> T getStartupValue(Setting<T> setting) {
+        return ((Entry<T>) getObserver(setting)).startupValue();
+    }
+
+    public <T> ValueSource getValueSource(Setting<T> setting) {
+        return ((Entry<T>) getObserver(setting)).valueSource();
     }
 
     @SuppressWarnings("unchecked")
@@ -934,24 +949,36 @@ public class Config implements Configuration {
     }
 
     public <T> void setDynamic(Setting<T> setting, T value, String scope) {
+        setDynamic(setting, value, scope, ValueSource.SYSTEM);
+    }
+
+    public <T> void setDynamicByUser(Setting<T> setting, T value, String scope) {
+        setDynamic(setting, value, scope, ValueSource.USER);
+    }
+
+    private <T> void setDynamic(Setting<T> setting, T value, String scope, ValueSource source) {
         Entry<T> entry = (Entry<T>) getObserver(setting);
         SettingImpl<T> actualSetting = entry.setting;
         if (!actualSetting.dynamic()) {
             throw new IllegalArgumentException(
                     format("Setting '%s' is not dynamic and can not be changed at runtime", setting.name()));
         }
-        set(setting, value);
+        set(setting, value, source);
         log.info("%s changed to %s, by %s", setting.name(), actualSetting.valueToString(value), scope);
     }
 
     public <T> void set(Setting<T> setting, T value) {
+        set(setting, value, ValueSource.SYSTEM);
+    }
+
+    private <T> void set(Setting<T> setting, T value, ValueSource source) {
         Entry<T> entry = (Entry<T>) getObserver(setting);
         SettingImpl<T> actualSetting = entry.setting;
         if (actualSetting.immutable()) {
             throw new IllegalArgumentException(
                     format("Setting '%s' immutable (final). Can not amend", actualSetting.name()));
         }
-        entry.setValue(value);
+        entry.setValue(value, source);
     }
 
     public <T> void setIfNotSet(Setting<T> setting, T value) {
@@ -1090,8 +1117,8 @@ public class Config implements Configuration {
     private class DepEntry<T> extends Entry<T> {
         private volatile T solved;
 
-        private DepEntry(SettingImpl<T> setting, T value, T defaultValue, T solved) {
-            super(setting, value, defaultValue, false);
+        private DepEntry(SettingImpl<T> setting, T value, T defaultValue, T solved, ValueSource source) {
+            super(setting, value, defaultValue, source, false);
             this.solved = solved;
             setting.validate(solved, validationConfig);
         }
@@ -1102,15 +1129,22 @@ public class Config implements Configuration {
         }
 
         @Override
-        synchronized void setValue(T value) {
+        synchronized void setValue(T value, ValueSource source) {
             T oldValue = solved;
             solved = setting.solveDependency(
                     value != null ? value : defaultValue,
                     getObserver(setting.dependency()).getValue());
             setting.validate(solved, validationConfig);
-            internalSetValue(value);
+            internalSetValue(value, source);
             notifyListeners(oldValue, solved);
         }
+    }
+
+    public enum ValueSource {
+        DEFAULT, // Default value
+        INITIAL, // Initial value (at startup), e.g. neo4j.conf or embedded
+        SYSTEM, // Set by system, after startup
+        USER // Set by user, after startup
     }
 
     private class Entry<T> implements SettingObserver<T> {
@@ -1120,16 +1154,19 @@ public class Config implements Configuration {
         private final Collection<SettingChangeListener<T>> updateListeners = new ConcurrentLinkedQueue<>();
         private volatile T value;
         private volatile boolean isDefault;
+        private volatile ValueSource valueSource;
+        private final T startupValue;
 
-        private Entry(SettingImpl<T> setting, T value, T defaultValue) {
-            this(setting, value, defaultValue, true);
+        private Entry(SettingImpl<T> setting, T value, T defaultValue, ValueSource source) {
+            this(setting, value, defaultValue, source, true);
         }
 
-        private Entry(SettingImpl<T> setting, T value, T defaultValue, boolean validate) {
+        private Entry(SettingImpl<T> setting, T value, T defaultValue, ValueSource source, boolean validate) {
             this.setting = setting;
             this.defaultValue = defaultValue;
             this.validate = validate;
-            internalSetValue(value);
+            internalSetValue(value, source);
+            startupValue = this.value;
         }
 
         @Override
@@ -1137,15 +1174,28 @@ public class Config implements Configuration {
             return value;
         }
 
-        synchronized void setValue(T value) {
+        T defaultValue() {
+            return defaultValue;
+        }
+
+        T startupValue() {
+            return startupValue;
+        }
+
+        ValueSource valueSource() {
+            return valueSource;
+        }
+
+        synchronized void setValue(T value, ValueSource source) {
             T oldValue = this.value;
-            internalSetValue(value);
+            internalSetValue(value, source);
             notifyListeners(oldValue, this.value);
         }
 
-        void internalSetValue(T value) {
+        void internalSetValue(T value, ValueSource source) {
             this.isDefault = value == null;
             T newValue = isDefault ? defaultValue : value;
+            this.valueSource = isDefault ? ValueSource.DEFAULT : source;
             if (validate) {
                 setting.validate(newValue, validationConfig);
             }
