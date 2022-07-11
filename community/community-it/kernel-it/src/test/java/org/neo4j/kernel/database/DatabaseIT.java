@@ -21,6 +21,7 @@ package org.neo4j.kernel.database;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -33,23 +34,35 @@ import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.index.internal.gbptree.GBPTreeStructure;
+import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.DelegatingPagedFile;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
@@ -282,6 +295,63 @@ class DatabaseIT {
         assertEquals(afterStop, afterShutdown);
     }
 
+    @Test
+    void shouldFlushDatabaseFilesOnCheckpoint() throws Exception {
+        // Given
+        Dependencies dependencyResolver = database.getDependencyResolver();
+        Map<PageFileWrapper, Integer> flushCounts = new HashMap<>();
+        Set<PageFileWrapper> mappedFiles = pageCacheWrapper.getMappedFilesForDatabase(
+                database.getNamedDatabaseId().name());
+        for (PageFileWrapper mappedFile : mappedFiles) {
+            flushCounts.put(mappedFile, mappedFile.getLocalFlushCount());
+        }
+        // When
+        CheckPointerImpl checkPointer = dependencyResolver.resolveDependency(CheckPointerImpl.class);
+        checkPointer.forceCheckPoint(new SimpleTriggerInfo("test"));
+        // Then
+        for (PageFileWrapper mappedFile : mappedFiles) {
+            int numFlushesDuringCheckpoint = mappedFile.getLocalFlushCount() - flushCounts.get(mappedFile);
+            assertThat(numFlushesDuringCheckpoint)
+                    .as(mappedFile.path().getFileName() + " should flush")
+                    .isEqualTo(numberOfExpectedFlushesAtCheckpoint(mappedFile.path()));
+        }
+    }
+
+    @Test
+    void shouldFlushAllFilesOnShutdown() {
+        // Given
+        Map<PageFileWrapper, Integer> flushCounts = new HashMap<>();
+        Set<PageFileWrapper> mappedFiles = pageCacheWrapper.getMappedFiles();
+        for (PageFileWrapper mappedFile : mappedFiles) {
+            flushCounts.put(mappedFile, mappedFile.getLocalFlushCount());
+        }
+        // When
+        dbms.shutdown();
+        // Then
+        for (PageFileWrapper mappedFile : mappedFiles) {
+            int numFlushesDuringShutdown = mappedFile.getLocalFlushCount() - flushCounts.get(mappedFile);
+            assertThat(numFlushesDuringShutdown)
+                    .as(mappedFile.path().getFileName() + " should flush on shutdown")
+                    .isPositive();
+        }
+    }
+
+    private int numberOfExpectedFlushesAtCheckpoint(Path storeFile) {
+        try {
+            GBPTreeVisitor.Adaptor<?, ?, ?> visitor = new GBPTreeVisitor.Adaptor<>();
+            ImmutableSet<OpenOption> openOptions = immutable.of(PageCacheOpenOptions.BIG_ENDIAN);
+            String dbName = "CheckIfGBPTree";
+            // If we can visit both Meta and State (pages 0,1,2) without Exception we can assume it's a GBPTree
+            GBPTreeStructure.visitMeta(
+                    pageCacheWrapper, storeFile, visitor, dbName, CursorContext.NULL_CONTEXT, openOptions);
+            GBPTreeStructure.visitState(
+                    pageCacheWrapper, storeFile, visitor, dbName, CursorContext.NULL_CONTEXT, openOptions);
+            return 3; // GPBTree files flush 3 times during checkpoint
+        } catch (Exception e) {
+            return 1; // Other store files flushes just once
+        }
+    }
+
     private MemoryTracker getOtherMemoryTracker() {
         for (GlobalMemoryGroupTracker pool : memoryPools.getPools()) {
             if (pool.group().equals(MemoryGroup.OTHER)) {
@@ -296,6 +366,7 @@ class DatabaseIT {
         private final AtomicInteger fileFlushes = new AtomicInteger();
         private final AtomicInteger ioControllerChecks = new AtomicInteger();
         private final AtomicBoolean disabledIOController = new AtomicBoolean();
+        private final Set<PageFileWrapper> mappedFiles = ConcurrentHashMap.newKeySet();
 
         PageCacheWrapper(PageCache delegate) {
             super(delegate);
@@ -303,23 +374,13 @@ class DatabaseIT {
 
         @Override
         public PagedFile map(Path path, int pageSize, String databaseName) throws IOException {
-            return new PageFileWrapper(
-                    super.map(path, pageSize, databaseName),
-                    fileFlushes,
-                    IOController.DISABLED,
-                    disabledIOController,
-                    ioControllerChecks);
+            return createPageFileWrapper(path, pageSize, databaseName, immutable.empty(), IOController.DISABLED);
         }
 
         @Override
         public PagedFile map(Path path, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions)
                 throws IOException {
-            return new PageFileWrapper(
-                    super.map(path, pageSize, databaseName, openOptions),
-                    fileFlushes,
-                    IOController.DISABLED,
-                    disabledIOController,
-                    ioControllerChecks);
+            return createPageFileWrapper(path, pageSize, databaseName, openOptions, IOController.DISABLED);
         }
 
         @Override
@@ -330,18 +391,41 @@ class DatabaseIT {
                 ImmutableSet<OpenOption> openOptions,
                 IOController ioController)
                 throws IOException {
-            return new PageFileWrapper(
+            return createPageFileWrapper(path, pageSize, databaseName, openOptions, ioController);
+        }
+
+        private PageFileWrapper createPageFileWrapper(
+                Path path,
+                int pageSize,
+                String databaseName,
+                ImmutableSet<OpenOption> openOptions,
+                IOController ioController)
+                throws IOException {
+            PageFileWrapper pageFileWrapper = new PageFileWrapper(
                     super.map(path, pageSize, databaseName, openOptions, ioController),
                     fileFlushes,
                     ioController,
                     disabledIOController,
-                    ioControllerChecks);
+                    ioControllerChecks,
+                    mappedFiles::remove);
+            mappedFiles.add(pageFileWrapper);
+            return pageFileWrapper;
         }
 
         @Override
         public void flushAndForce(DatabaseFlushEvent flushEvent) throws IOException {
             flushes.incrementAndGet();
             super.flushAndForce(flushEvent);
+        }
+
+        Set<PageFileWrapper> getMappedFiles() {
+            return getMappedFilesForDatabase("");
+        }
+
+        Set<PageFileWrapper> getMappedFilesForDatabase(String databaseName) {
+            return mappedFiles.stream()
+                    .filter(pageFileWrapper -> pageFileWrapper.getDatabaseName().contains(databaseName))
+                    .collect(Collectors.toSet());
         }
 
         public int getFlushes() {
@@ -354,22 +438,26 @@ class DatabaseIT {
     }
 
     private static class PageFileWrapper extends DelegatingPagedFile {
-        private final AtomicInteger flushCounter;
+        private final AtomicInteger globalFlushCounter;
+        private final AtomicInteger fileLocalFlushCounter = new AtomicInteger();
         private final IOController ioController;
         private final AtomicBoolean disabledIOController;
         private final AtomicInteger ioControllerChecks;
+        private final Consumer<PageFileWrapper> onClose;
 
         PageFileWrapper(
                 PagedFile delegate,
-                AtomicInteger flushCounter,
+                AtomicInteger globalFlushCounter,
                 IOController ioController,
                 AtomicBoolean disabledIOController,
-                AtomicInteger ioControllerChecks) {
+                AtomicInteger ioControllerChecks,
+                Consumer<PageFileWrapper> onClose) {
             super(delegate);
-            this.flushCounter = flushCounter;
+            this.globalFlushCounter = globalFlushCounter;
             this.ioController = ioController;
             this.disabledIOController = disabledIOController;
             this.ioControllerChecks = ioControllerChecks;
+            this.onClose = onClose;
         }
 
         @Override
@@ -378,8 +466,19 @@ class DatabaseIT {
                 assertFalse(ioController.isEnabled());
                 ioControllerChecks.incrementAndGet();
             }
-            flushCounter.incrementAndGet();
+            globalFlushCounter.incrementAndGet();
+            fileLocalFlushCounter.incrementAndGet();
             super.flushAndForce(flushEvent);
+        }
+
+        @Override
+        public void close() {
+            super.close();
+            onClose.accept(this);
+        }
+
+        int getLocalFlushCount() {
+            return fileLocalFlushCounter.get();
         }
     }
 }

@@ -597,7 +597,8 @@ public final class Recovery {
                 recoveryPredicate,
                 cursorContextFactory);
 
-        CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation(indexingService, storageEngine);
+        CheckPointerImpl.ForceOperation forceOperation =
+                new DefaultForceOperation(indexingService, storageEngine, databasePageCache);
         var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
         LogPruning logPruning = new LogPruningImpl(
                 fs, logFiles, logProvider, new LogPruneStrategyFactory(), clock, config, new ReentrantLock());

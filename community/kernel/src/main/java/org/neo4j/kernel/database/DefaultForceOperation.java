@@ -20,6 +20,8 @@
 package org.neo4j.kernel.database;
 
 import java.io.IOException;
+import org.neo4j.dbms.database.DatabasePageCache;
+import org.neo4j.dbms.database.DatabasePageCache.FlushGuard;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -29,15 +31,20 @@ import org.neo4j.storageengine.api.StorageEngine;
 public class DefaultForceOperation implements CheckPointerImpl.ForceOperation {
     private final IndexingService indexingService;
     private final StorageEngine storageEngine;
+    private final DatabasePageCache databasePageCache;
 
-    public DefaultForceOperation(IndexingService indexingService, StorageEngine storageEngine) {
+    public DefaultForceOperation(
+            IndexingService indexingService, StorageEngine storageEngine, DatabasePageCache databasePageCache) {
         this.indexingService = indexingService;
         this.storageEngine = storageEngine;
+        this.databasePageCache = databasePageCache;
     }
 
     @Override
     public void flushAndForce(DatabaseFlushEvent databaseFlushEvent, CursorContext cursorContext) throws IOException {
-        indexingService.forceAll(databaseFlushEvent, cursorContext);
-        storageEngine.flushAndForce(databaseFlushEvent, cursorContext);
+        FlushGuard flushGuard = databasePageCache.flushGuard(databaseFlushEvent);
+        indexingService.checkpoint(databaseFlushEvent, cursorContext);
+        storageEngine.checkpoint(databaseFlushEvent, cursorContext);
+        flushGuard.flushUnflushed();
     }
 }

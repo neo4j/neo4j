@@ -20,6 +20,7 @@
 package org.neo4j.dbms.database;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.dbms.database.TicketMachine.Barrier.NO_BARRIER;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -30,6 +31,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.neo4j.dbms.database.TicketMachine.Barrier;
+import org.neo4j.dbms.database.TicketMachine.Ticket;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -49,10 +52,11 @@ import org.neo4j.io.pagecache.tracing.FileMappedListener;
  */
 public class DatabasePageCache implements PageCache {
     private final PageCache globalPageCache;
-    private final CopyOnWriteArrayList<PagedFile> databasePagedFiles = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<DatabasePageFile> databasePagedFiles = new CopyOnWriteArrayList<>();
     private final IOController ioController;
     private final List<FileMappedListener> mappedListeners = new CopyOnWriteArrayList<>();
     private boolean closed;
+    private final TicketMachine ticketMachine = new TicketMachine();
 
     public DatabasePageCache(PageCache globalPageCache, IOController ioController) {
         this.globalPageCache = requireNonNull(globalPageCache);
@@ -70,7 +74,8 @@ public class DatabasePageCache implements PageCache {
         // no one should call this version of map method with emptyDatabaseName != null,
         // since it is this class that is decorating map calls with the name of the database
         PagedFile pagedFile = globalPageCache.map(path, pageSize, databaseName, openOptions, ioController);
-        DatabasePageFile databasePageFile = new DatabasePageFile(pagedFile, databasePagedFiles, mappedListeners);
+        DatabasePageFile databasePageFile =
+                new DatabasePageFile(pagedFile, databasePagedFiles, mappedListeners, ticketMachine.newTicket());
         databasePagedFiles.add(databasePageFile);
         invokeFileMapListeners(mappedListeners, databasePageFile);
         return databasePageFile;
@@ -81,6 +86,7 @@ public class DatabasePageCache implements PageCache {
         Path canonicalFile = path.normalize();
         return databasePagedFiles.stream()
                 .filter(pagedFile -> pagedFile.path().equals(canonicalFile))
+                .map(pf -> (PagedFile) pf)
                 .findFirst();
     }
 
@@ -91,9 +97,15 @@ public class DatabasePageCache implements PageCache {
 
     @Override
     public void flushAndForce(DatabaseFlushEvent flushEvent) throws IOException {
-        for (PagedFile pagedFile : databasePagedFiles) {
-            try (FileFlushEvent fileFlushEvent = flushEvent.beginFileFlush()) {
-                pagedFile.flushAndForce(fileFlushEvent);
+        flushAndForce(flushEvent, NO_BARRIER);
+    }
+
+    private void flushAndForce(DatabaseFlushEvent flushEvent, Barrier barrier) throws IOException {
+        for (DatabasePageFile pagedFile : databasePagedFiles) {
+            if (barrier.canPass(pagedFile.flushTicket())) {
+                try (FileFlushEvent fileFlushEvent = flushEvent.beginFileFlush()) {
+                    pagedFile.flushAndForce(fileFlushEvent);
+                }
             }
         }
     }
@@ -151,15 +163,34 @@ public class DatabasePageCache implements PageCache {
         mappedListeners.remove(mappedListener);
     }
 
+    public FlushGuard flushGuard(DatabaseFlushEvent flushEvent) {
+        Barrier barrier = ticketMachine.nextBarrier();
+        return () -> flushAndForce(flushEvent, barrier);
+    }
+
+    /**
+     * A flush guard to flush any mapped and un-flushed files since creation of the guard
+     */
+    @FunctionalInterface
+    public interface FlushGuard {
+        void flushUnflushed() throws IOException;
+    }
+
     private static class DatabasePageFile implements PagedFile {
         private final PagedFile delegate;
-        private final List<PagedFile> databaseFiles;
+        private final List<DatabasePageFile> databaseFiles;
         private final List<FileMappedListener> mappedListeners;
+        private final Ticket flushTicket;
 
-        DatabasePageFile(PagedFile delegate, List<PagedFile> databaseFiles, List<FileMappedListener> mappedListeners) {
+        DatabasePageFile(
+                PagedFile delegate,
+                List<DatabasePageFile> databaseFiles,
+                List<FileMappedListener> mappedListeners,
+                Ticket flushTicket) {
             this.delegate = delegate;
             this.databaseFiles = databaseFiles;
             this.mappedListeners = mappedListeners;
+            this.flushTicket = flushTicket;
         }
 
         @Override
@@ -195,6 +226,7 @@ public class DatabasePageCache implements PageCache {
         @Override
         public void flushAndForce(FileFlushEvent flushEvent) throws IOException {
             delegate.flushAndForce(flushEvent);
+            flushTicket.use();
         }
 
         @Override
@@ -244,6 +276,10 @@ public class DatabasePageCache implements PageCache {
         @Override
         public int hashCode() {
             return Objects.hash(delegate);
+        }
+
+        Ticket flushTicket() {
+            return flushTicket;
         }
     }
 }

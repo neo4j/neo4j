@@ -514,7 +514,8 @@ public class Database extends LifecycleAdapter {
 
             databaseDependencies.satisfyDependency(storageEngine.countsAccessor());
 
-            CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation(indexingService, storageEngine);
+            CheckPointerImpl.ForceOperation forceOperation =
+                    new DefaultForceOperation(indexingService, storageEngine, databasePageCache);
             DatabaseTransactionLogModule transactionLogModule = buildTransactionLogs(
                     logFiles,
                     databaseConfig,

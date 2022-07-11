@@ -21,6 +21,7 @@ package org.neo4j.dbms.database;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -29,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -264,6 +266,81 @@ class DatabasePageCacheTest {
         assertThat(mapListener2.getMappedHistory()).containsExactly(mappedFile2, mappedFile4);
         assertThat(mapListener1.getUnmappedHistory()).containsExactly(mappedFile2, mappedFile1);
         assertThat(mapListener2.getUnmappedHistory()).contains(mappedFile2, mappedFile1);
+    }
+
+    @Test
+    void shouldFlushUnflushedFilesUsingFlushGuard() throws IOException {
+        // Given
+        Path mapFile1 = testDirectory.createFile("mapFile1");
+        Path mapFile2 = testDirectory.createFile("mapFile2");
+
+        PagedFile pf1 = databasePageCache.map(mapFile1, PAGE_SIZE, DATABASE_NAME);
+        PagedFile pf2 = databasePageCache.map(mapFile2, PAGE_SIZE, DATABASE_NAME);
+        List<PagedFile> pagedFiles = pagedFileMapper.getPagedFiles();
+        PagedFile originalPagedFile1 = findPagedFile(pagedFiles, mapFile1);
+        PagedFile originalPagedFile2 = findPagedFile(pagedFiles, mapFile2);
+
+        // When
+        DatabasePageCache.FlushGuard flushGuard = databasePageCache.flushGuard(DatabaseFlushEvent.NULL);
+        pf1.flushAndForce(FileFlushEvent.NULL);
+        // Then
+        verify(originalPagedFile1).flushAndForce(FileFlushEvent.NULL);
+        verify(originalPagedFile2, never()).flushAndForce(FileFlushEvent.NULL);
+        // When (close)
+        flushGuard.flushUnflushed();
+        // Then
+        verify(originalPagedFile2).flushAndForce(FileFlushEvent.NULL);
+    }
+
+    @Test
+    void shouldNotFlushOtherFilesOnExceptionDuringGuardFlush() throws IOException {
+        // Given
+        Path mapFile1 = testDirectory.createFile("mapFile1");
+        Path mapFile2 = testDirectory.createFile("mapFile2");
+
+        databasePageCache.map(mapFile1, PAGE_SIZE, DATABASE_NAME);
+        databasePageCache.map(mapFile2, PAGE_SIZE, DATABASE_NAME);
+        List<PagedFile> pagedFiles = pagedFileMapper.getPagedFiles();
+        PagedFile originalPagedFile1 = findPagedFile(pagedFiles, mapFile1);
+        PagedFile originalPagedFile2 = findPagedFile(pagedFiles, mapFile2);
+
+        doThrow(new IOException("test")).when(originalPagedFile1).flushAndForce(FileFlushEvent.NULL);
+
+        // When
+        DatabasePageCache.FlushGuard flushGuard = databasePageCache.flushGuard(DatabaseFlushEvent.NULL);
+        // Then
+        assertThatThrownBy(flushGuard::flushUnflushed)
+                .isInstanceOf(IOException.class)
+                .hasMessage("test");
+        verify(originalPagedFile2, never()).flushAndForce(FileFlushEvent.NULL); // This depends on mapped order
+    }
+
+    @Test
+    void shouldNotFlushFilesOnExceptionDuringGuard() throws IOException {
+        // Given
+        Path mapFile1 = testDirectory.createFile("mapFile1");
+        Path mapFile2 = testDirectory.createFile("mapFile2");
+
+        PagedFile pf = databasePageCache.map(mapFile1, PAGE_SIZE, DATABASE_NAME);
+        databasePageCache.map(mapFile2, PAGE_SIZE, DATABASE_NAME);
+        List<PagedFile> pagedFiles = pagedFileMapper.getPagedFiles();
+        PagedFile originalPagedFile1 = findPagedFile(pagedFiles, mapFile1);
+        PagedFile originalPagedFile2 = findPagedFile(pagedFiles, mapFile2);
+
+        doThrow(new IOException("test")).when(originalPagedFile1).flushAndForce(FileFlushEvent.NULL);
+
+        // When
+        assertThatThrownBy(() -> flushFileUnderGuard(pf))
+                .isInstanceOf(IOException.class)
+                .hasMessage("test");
+        // Then
+        verify(originalPagedFile2, never()).flushAndForce(FileFlushEvent.NULL); // This depends on mapped order
+    }
+
+    private void flushFileUnderGuard(PagedFile file) throws IOException {
+        DatabasePageCache.FlushGuard flushGuard = databasePageCache.flushGuard(DatabaseFlushEvent.NULL);
+        file.flushAndForce(FileFlushEvent.NULL);
+        flushGuard.flushUnflushed();
     }
 
     private static PagedFile findPagedFile(List<PagedFile> pagedFiles, Path mapFile) {

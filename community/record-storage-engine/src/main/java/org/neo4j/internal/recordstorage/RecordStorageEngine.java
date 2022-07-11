@@ -626,14 +626,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     @Override
-    public void flushAndForce(DatabaseFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
+    public void checkpoint(DatabaseFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
         try (var fileFlushEvent = flushEvent.beginFileFlush()) {
             countsStore.checkpoint(fileFlushEvent, cursorContext);
         }
         try (var fileFlushEvent = flushEvent.beginFileFlush()) {
             groupDegreesStore.checkpoint(fileFlushEvent, cursorContext);
         }
-        neoStores.flush(flushEvent, cursorContext);
+        neoStores.checkpoint(flushEvent, cursorContext);
     }
 
     @Override

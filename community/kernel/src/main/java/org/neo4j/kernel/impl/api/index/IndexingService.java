@@ -606,7 +606,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         return indexMapRef.getIndexProxy(indexId);
     }
 
-    public void forceAll(DatabaseFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
+    public void checkpoint(DatabaseFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
         try (var fileFlushEvent = flushEvent.beginFileFlush()) {
             indexStatisticsStore.checkpoint(fileFlushEvent, cursorContext);
         }

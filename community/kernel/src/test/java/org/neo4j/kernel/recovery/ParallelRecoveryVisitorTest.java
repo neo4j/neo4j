@@ -354,7 +354,7 @@ class ParallelRecoveryVisitorTest {
         }
 
         @Override
-        public void flushAndForce(DatabaseFlushEvent flushEvent, CursorContext cursorTracer) throws IOException {
+        public void checkpoint(DatabaseFlushEvent flushEvent, CursorContext cursorTracer) throws IOException {
             throw new UnsupportedOperationException();
         }
 

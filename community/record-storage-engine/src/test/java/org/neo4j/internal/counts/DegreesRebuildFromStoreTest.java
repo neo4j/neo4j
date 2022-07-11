@@ -127,7 +127,7 @@ class DegreesRebuildFromStoreTest {
                     }
                 }
             }
-            storageEngine.flushAndForce(DatabaseFlushEvent.NULL, NULL_CONTEXT);
+            storageEngine.checkpoint(DatabaseFlushEvent.NULL, NULL_CONTEXT);
         }
 
         // when
@@ -156,7 +156,7 @@ class DegreesRebuildFromStoreTest {
                                     expectedDegrees.put(combinedKeyOnGroupAndDirection(groupId, direction), degree),
                             NULL_CONTEXT);
             assertThat(expectedDegrees.isEmpty()).isFalse();
-            storageEngine.flushAndForce(DatabaseFlushEvent.NULL, NULL_CONTEXT);
+            storageEngine.checkpoint(DatabaseFlushEvent.NULL, NULL_CONTEXT);
         }
 
         // when

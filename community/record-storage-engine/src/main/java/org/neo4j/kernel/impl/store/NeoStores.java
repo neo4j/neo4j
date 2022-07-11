@@ -161,6 +161,10 @@ public class NeoStores implements AutoCloseable {
 
     public void flush(DatabaseFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
         pageCache.flushAndForce(flushEvent);
+        checkpoint(flushEvent, cursorContext);
+    }
+
+    public void checkpoint(DatabaseFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
         visitStores(store -> {
             try (var fileFlushEvent = flushEvent.beginFileFlush()) {
                 store.getIdGenerator().checkpoint(fileFlushEvent, cursorContext);

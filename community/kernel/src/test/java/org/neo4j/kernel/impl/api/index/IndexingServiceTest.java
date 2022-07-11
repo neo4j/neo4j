@@ -1206,7 +1206,7 @@ class IndexingServiceTest {
 
         IndexingService indexingService = createIndexServiceWithCustomIndexMap(indexMapReference);
 
-        indexingService.forceAll(DatabaseFlushEvent.NULL, NULL_CONTEXT);
+        indexingService.checkpoint(DatabaseFlushEvent.NULL, NULL_CONTEXT);
         verify(validIndex1).force(FileFlushEvent.NULL, NULL_CONTEXT);
         verify(validIndex2).force(FileFlushEvent.NULL, NULL_CONTEXT);
         verify(validIndex3).force(FileFlushEvent.NULL, NULL_CONTEXT);
@@ -1234,7 +1234,7 @@ class IndexingServiceTest {
 
         var e = assertThrows(
                 UnderlyingStorageException.class,
-                () -> indexingService.forceAll(DatabaseFlushEvent.NULL, NULL_CONTEXT));
+                () -> indexingService.checkpoint(DatabaseFlushEvent.NULL, NULL_CONTEXT));
         assertThat(e.getMessage()).startsWith("Unable to force");
     }
 

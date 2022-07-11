@@ -139,14 +139,12 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
     void rollback(ReadableTransactionState txState, CursorContext cursorContext);
 
     /**
-     * Flushes and forces all changes down to underlying storage. This is a blocking call and when it returns
-     * all changes applied to this storage engine will be durable.
-     *
-     * @param flushEvent flush event from checkpoint that requested flush
+     * Checkpoints underlying storage. Leaves no guarantee that files are flushed to persistable storage afterwards
+     * @param flushEvent flush event from checkpoint
      * @param cursorContext underlying page cursor context
      * @throws IOException on I/O error.
      */
-    void flushAndForce(DatabaseFlushEvent flushEvent, CursorContext cursorContext) throws IOException;
+    void checkpoint(DatabaseFlushEvent flushEvent, CursorContext cursorContext) throws IOException;
 
     /**
      * Dump diagnostics about the storage.
