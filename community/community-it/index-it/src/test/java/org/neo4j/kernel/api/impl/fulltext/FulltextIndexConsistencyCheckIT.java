@@ -81,30 +81,33 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Values;
 
-@Neo4jLayoutExtension
+@TestDirectoryExtension
 @ExtendWith(RandomExtension.class)
 class FulltextIndexConsistencyCheckIT {
     @Inject
     private FileSystemAbstraction fs;
 
     @Inject
+    private TestDirectory testDirectory;
+
     private DatabaseLayout databaseLayout;
 
     @Inject
     private RandomSupport random;
 
     private TestDatabaseManagementServiceBuilder builder;
-    private GraphDatabaseService database;
+    private GraphDatabaseAPI database;
     private DatabaseManagementService managementService;
 
     @BeforeEach
     void before() {
-        builder = new TestDatabaseManagementServiceBuilder(databaseLayout);
+        builder = new TestDatabaseManagementServiceBuilder(testDirectory.homePath());
     }
 
     @AfterEach
@@ -880,9 +883,10 @@ class FulltextIndexConsistencyCheckIT {
         assertFalse(result.isSuccessful());
     }
 
-    private GraphDatabaseService createDatabase() {
+    private GraphDatabaseAPI createDatabase() {
         managementService = builder.build();
-        database = managementService.database(DEFAULT_DATABASE_NAME);
+        database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+        databaseLayout = database.databaseLayout();
         return database;
     }
 
