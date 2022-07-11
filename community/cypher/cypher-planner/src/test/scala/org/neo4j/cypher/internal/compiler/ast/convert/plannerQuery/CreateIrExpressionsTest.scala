@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunction
+import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.LabelExpression.Negation
 import org.neo4j.cypher.internal.expressions.LabelExpression.Wildcard
@@ -84,7 +84,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   private val n_r_m_withLabelDisjunction = RelationshipsPattern(RelationshipChain(
     NodePattern(Some(n), None, None, None)(pos),
     RelationshipPattern(Some(r), None, None, None, None, BOTH)(pos),
-    NodePattern(Some(m), Some(Disjunction(Leaf(labelName("M")), Leaf(labelName("MM")))(pos)), None, None)(pos)
+    NodePattern(Some(m), Some(Disjunctions(Seq(Leaf(labelName("M")), Leaf(labelName("MM"))))(pos)), None, None)(pos)
   )(pos))(pos)
 
   private val n_r25_m = RelationshipsPattern(RelationshipChain(
@@ -105,7 +105,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
       NodePattern(Some(n), None, None, None)(pos),
       RelationshipPattern(
         Some(r),
-        Some(Disjunction(Leaf(relTypeName("R")), Leaf(relTypeName("P")))(pos)),
+        Some(Disjunctions(Seq(Leaf(relTypeName("R")), Leaf(relTypeName("P"))))(pos)),
         None,
         Some(mapOfInt("prop" -> 5)),
         Some(rPred),
