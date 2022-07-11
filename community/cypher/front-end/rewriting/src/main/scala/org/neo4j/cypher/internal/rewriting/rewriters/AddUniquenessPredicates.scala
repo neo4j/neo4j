@@ -197,7 +197,7 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory {
       case Conjunction(lhs, rhs)                => and(lhs, rhs, relType)
       case ColonConjunction(lhs, rhs)           => and(lhs, rhs, relType)
       case Disjunctions(children)               => ors(children, relType)
-      case ColonDisjunction(lhs, rhs)           => or(lhs, rhs, relType)
+      case ColonDisjunction(lhs, rhs)           => ors(Seq(lhs, rhs), relType)
       case Negation(e)                          => TailCalls.tailcall(evaluate(e, relType)).map(value => !value)
       case Wildcard()                           => TailCalls.done(true)
       case Leaf(expressionRelType: RelTypeName) => TailCalls.done(expressionRelType == relType)
@@ -205,7 +205,7 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory {
         throw new IllegalArgumentException(s"Unexpected label expression $x when evaluating relationship overlap")
     }
 
-  def ors(exprs: Seq[LabelExpression], relType: SymbolicName): TailRec[Boolean] = {
+  private def ors(exprs: Seq[LabelExpression], relType: SymbolicName): TailRec[Boolean] = {
     if (exprs.isEmpty) TailCalls.done(false)
     else {
       for {
@@ -215,17 +215,12 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory {
     }
   }
 
-  def and(lhs: LabelExpression, rhs: LabelExpression, relType: SymbolicName): TailRec[Boolean] =
+  private def and(lhs: LabelExpression, rhs: LabelExpression, relType: SymbolicName): TailRec[Boolean] = {
     TailCalls.tailcall(evaluate(lhs, relType)).flatMap {
       case true  => TailCalls.tailcall(evaluate(rhs, relType))
       case false => TailCalls.done(false)
     }
-
-  def or(lhs: LabelExpression, rhs: LabelExpression, relType: SymbolicName): TailRec[Boolean] =
-    TailCalls.tailcall(evaluate(lhs, relType)).flatMap {
-      case true  => TailCalls.done(true)
-      case false => TailCalls.tailcall(evaluate(rhs, relType))
-    }
+  }
 
   def overlaps(relTypesToConsider: Seq[SymbolicName], labelExpression: Option[LabelExpression]): Seq[SymbolicName] = {
     relTypesToConsider.filter(relType => labelExpression.forall(le => evaluate(le, relType).result))

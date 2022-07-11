@@ -455,19 +455,13 @@ private class DefaultExpressionStringifier(
 
   override def stringifyLabelExpression(labelExpression: LabelExpression): String = labelExpression match {
     case le: Disjunctions =>
-      le.children.map(stringifyLabelExpressionInDisjunction).mkString("|")
+      le.children.map(stringifyLabelExpressionHalfAtom).mkString("|")
     case le: ColonDisjunction =>
       s"${stringifyLabelExpressionInColonDisjunction(le.lhs)}|:${stringifyLabelExpressionHalfAtom(le.rhs)}"
     case le: Conjunction =>
       s"${stringifyLabelExpressionInConjunction(le.lhs)}&${stringifyLabelExpressionHalfAtom(le.rhs)}"
     case le: ColonConjunction =>
       s"${stringifyLabelExpressionInColonConjunction(le.lhs)}:${stringifyLabelExpressionHalfAtom(le.rhs)}"
-    case le => s"${stringifyLabelExpressionHalfAtom(le)}"
-  }
-
-  private def stringifyLabelExpressionInDisjunction(labelExpression: LabelExpression): String = labelExpression match {
-    case le: Disjunctions =>
-      le.children.map(stringifyLabelExpressionInDisjunction).mkString("|")
     case le => s"${stringifyLabelExpressionHalfAtom(le)}"
   }
 

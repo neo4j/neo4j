@@ -103,6 +103,8 @@ object LabelExpression {
   case class ColonConjunction(lhs: LabelExpression, rhs: LabelExpression)(val position: InputPosition)
       extends BinaryLabelExpression
 
+  /* This is the old now deprecated relationship type disjunction [r:A|:B]
+   */
   case class ColonDisjunction(lhs: LabelExpression, rhs: LabelExpression)(val position: InputPosition)
       extends BinaryLabelExpression
 
