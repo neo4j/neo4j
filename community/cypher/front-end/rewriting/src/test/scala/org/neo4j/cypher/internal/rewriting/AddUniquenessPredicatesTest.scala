@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.LabelExpression
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonConjunction
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonDisjunction
-import org.neo4j.cypher.internal.expressions.LabelExpression.Conjunction
+import org.neo4j.cypher.internal.expressions.LabelExpression.Conjunctions
 import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.LabelExpression.Negation
@@ -262,7 +262,7 @@ trait RelationshipTypeExpressionGenerators {
       RelationshipTypeExpression(Negation(value)(position))
 
     def and(other: RelationshipTypeExpression): RelationshipTypeExpression =
-      RelationshipTypeExpression(Conjunction(value, other.value)(position))
+      RelationshipTypeExpression(Conjunctions(Seq(value, other.value))(position))
 
     def or(other: RelationshipTypeExpression): RelationshipTypeExpression =
       RelationshipTypeExpression(Disjunctions(Seq(value, other.value))(position))
@@ -283,8 +283,8 @@ trait RelationshipTypeExpressionGenerators {
       } yield f(lhs, rhs)
     )
 
-  val genConjunction: Gen[Conjunction] =
-    genBinary((lhs, rhs) => Conjunction(lhs, rhs)(position))
+  val genConjunction: Gen[Conjunctions] =
+    genBinary((lhs, rhs) => Conjunctions(Seq(lhs, rhs))(position))
 
   val genColonConjunction: Gen[ColonConjunction] =
     genBinary((lhs, rhs) => ColonConjunction(lhs, rhs)(position))

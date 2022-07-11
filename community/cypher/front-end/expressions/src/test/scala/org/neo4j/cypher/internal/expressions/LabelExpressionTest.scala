@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.expressions
 
+import org.neo4j.cypher.internal.expressions.LabelExpression.Conjunctions
 import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.util.InputPosition
@@ -30,25 +31,52 @@ class LabelExpressionTest extends CypherFunSuite {
     Disjunctions(Vector.fill(10000)(leaf))(pos)
   }
 
-  test("hashCode should not stackoverflow") {
+  private def longConjunction: LabelExpression = {
+    val leaf = Leaf(LabelName("A")(pos))
+    Conjunctions(Vector.fill(10000)(leaf))(pos)
+  }
+
+  test("disjunction hashCode should not stackoverflow") {
     noException should be thrownBy longDisjunction.hashCode()
   }
 
-  test("flatten should not stackoverflow") {
+  test("disjunction flatten should not stackoverflow") {
     noException should be thrownBy {
       longDisjunction.flatten shouldBe Seq.fill(10000)(LabelName("A")(pos))
     }
   }
 
-  test("containsGpmSpecificLabelExpression should not stackoverflow") {
+  test("disjunction containsGpmSpecificLabelExpression should not stackoverflow") {
     noException should be thrownBy {
       longDisjunction.containsGpmSpecificLabelExpression shouldBe true
     }
   }
 
-  test("containsGpmSpecificRelTypeExpression should not stackoverflow") {
+  test("disjunction containsGpmSpecificRelTypeExpression should not stackoverflow") {
     noException should be thrownBy {
       longDisjunction.containsGpmSpecificRelTypeExpression shouldBe false
+    }
+  }
+
+  test("conjunction hashCode should not stackoverflow") {
+    noException should be thrownBy longConjunction.hashCode()
+  }
+
+  test("conjunction flatten should not stackoverflow") {
+    noException should be thrownBy {
+      longConjunction.flatten shouldBe Seq.fill(10000)(LabelName("A")(pos))
+    }
+  }
+
+  test("conjunction containsGpmSpecificLabelExpression should not stackoverflow") {
+    noException should be thrownBy {
+      longConjunction.containsGpmSpecificLabelExpression shouldBe true
+    }
+  }
+
+  test("conjunction containsGpmSpecificRelTypeExpression should not stackoverflow") {
+    noException should be thrownBy {
+      longConjunction.containsGpmSpecificRelTypeExpression shouldBe true
     }
   }
 }

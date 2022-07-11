@@ -55,8 +55,10 @@ case class LabelExpressionNormalizer(entityExpression: Expression, entityType: O
         colonConjunction.position
       )
 
-    case conjunction: LabelExpression.Conjunction =>
-      And(rewriteLabelExpression(conjunction.lhs), rewriteLabelExpression(conjunction.rhs))(conjunction.position)
+    case conjunctions: LabelExpression.Conjunctions =>
+      conjunctions.children
+        .map(rewriteLabelExpression)
+        .reduceRight((a, b) => And(a, b)(a.position))
 
     case colonDisjunction: LabelExpression.ColonDisjunction =>
       Or(rewriteLabelExpression(colonDisjunction.lhs), rewriteLabelExpression(colonDisjunction.rhs))(

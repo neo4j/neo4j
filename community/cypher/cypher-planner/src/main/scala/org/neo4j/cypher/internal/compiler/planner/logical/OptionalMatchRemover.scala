@@ -257,7 +257,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
       recreateComposingLabelExpression(
         variable,
         predicates.toSeq,
-        (le1, le2) => LabelExpression.Conjunction(le1, le2)(ands.position)
+        (le1, le2) => LabelExpression.Conjunctions(Seq(le1, le2))(ands.position)
       )
 
     case ors @ Ors(predicates) =>
@@ -308,7 +308,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
         case None =>
           newLabelExpression
         case Some(labelExpression: LabelExpression) =>
-          LabelExpression.Conjunction(labelExpression, newLabelExpression)(InputPosition.NONE)
+          LabelExpression.Conjunctions(Seq(labelExpression, newLabelExpression))(InputPosition.NONE)
       }
       predicatesForPatternExpression += idName -> labelExpression
     }

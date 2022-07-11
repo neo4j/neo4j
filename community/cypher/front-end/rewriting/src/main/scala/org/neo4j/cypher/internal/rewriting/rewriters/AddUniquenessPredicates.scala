@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelExpression
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonConjunction
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonDisjunction
-import org.neo4j.cypher.internal.expressions.LabelExpression.Conjunction
+import org.neo4j.cypher.internal.expressions.LabelExpression.Conjunctions
 import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.LabelExpression.Negation
@@ -194,8 +194,8 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory {
 
   def evaluate(expression: LabelExpression, relType: SymbolicName): TailRec[Boolean] =
     expression match {
-      case Conjunction(lhs, rhs)                => and(lhs, rhs, relType)
-      case ColonConjunction(lhs, rhs)           => and(lhs, rhs, relType)
+      case Conjunctions(children)               => ands(children, relType)
+      case ColonConjunction(lhs, rhs)           => ands(Seq(lhs, rhs), relType)
       case Disjunctions(children)               => ors(children, relType)
       case ColonDisjunction(lhs, rhs)           => ors(Seq(lhs, rhs), relType)
       case Negation(e)                          => TailCalls.tailcall(evaluate(e, relType)).map(value => !value)
@@ -215,10 +215,13 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory {
     }
   }
 
-  private def and(lhs: LabelExpression, rhs: LabelExpression, relType: SymbolicName): TailRec[Boolean] = {
-    TailCalls.tailcall(evaluate(lhs, relType)).flatMap {
-      case true  => TailCalls.tailcall(evaluate(rhs, relType))
-      case false => TailCalls.done(false)
+  private def ands(exprs: Seq[LabelExpression], relType: SymbolicName): TailRec[Boolean] = {
+    if (exprs.isEmpty) TailCalls.done(true)
+    else {
+      for {
+        head <- TailCalls.tailcall(evaluate(exprs.head, relType))
+        tail <- if (!head) TailCalls.done(false) else ands(exprs.tail, relType)
+      } yield head && tail
     }
   }
 

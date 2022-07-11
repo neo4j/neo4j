@@ -197,13 +197,12 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite with JavaccParserAst
       nodePat(
         name = Some("n"),
         labelExpression = Some(
-          labelConjunction(
-            labelConjunction(
+          labelConjunctions(
+            Seq(
               labelLeaf("A", (1, 4, 3)),
               labelLeaf("B", (1, 6, 5)),
-              (1, 5, 4)
+              labelLeaf("C", (1, 8, 7))
             ),
-            labelLeaf("C", (1, 8, 7)),
             (1, 7, 6)
           )
         ),
@@ -236,12 +235,11 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite with JavaccParserAst
       nodePat(
         name = Some("n"),
         labelExpression = Some(
-          labelConjunction(
-            labelLeaf("A", (1, 4, 3)),
-            labelConjunction(
+          labelConjunctions(
+            Seq(
+              labelLeaf("A", (1, 4, 3)),
               labelLeaf("B", (1, 7, 6)),
-              labelLeaf("C", (1, 9, 8)),
-              (1, 8, 7)
+              labelLeaf("C", (1, 9, 8))
             ),
             (1, 5, 4)
           )

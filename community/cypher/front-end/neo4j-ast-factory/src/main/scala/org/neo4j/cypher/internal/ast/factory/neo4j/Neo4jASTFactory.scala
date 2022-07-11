@@ -344,7 +344,6 @@ import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.LabelExpression
-import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -2289,10 +2288,10 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
   }
 
   override def labelConjunction(p: InputPosition, lhs: LabelExpression, rhs: LabelExpression): LabelExpression =
-    LabelExpression.Conjunction(lhs, rhs)(p)
+    LabelExpression.Conjunctions.flat(lhs, rhs, p)
 
   override def labelDisjunction(p: InputPosition, lhs: LabelExpression, rhs: LabelExpression): LabelExpression = {
-    Disjunctions.flat(lhs, rhs, p)
+    LabelExpression.Disjunctions.flat(lhs, rhs, p)
   }
 
   override def labelNegation(p: InputPosition, e: LabelExpression): LabelExpression = LabelExpression.Negation(e)(p)
