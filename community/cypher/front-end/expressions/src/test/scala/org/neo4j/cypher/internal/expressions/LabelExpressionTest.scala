@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.expressions
 
+import org.neo4j.cypher.internal.expressions.LabelExpression.ColonConjunction
+import org.neo4j.cypher.internal.expressions.LabelExpression.ColonDisjunction
 import org.neo4j.cypher.internal.expressions.LabelExpression.Conjunctions
 import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
@@ -78,5 +80,17 @@ class LabelExpressionTest extends CypherFunSuite {
     noException should be thrownBy {
       longConjunction.containsGpmSpecificRelTypeExpression shouldBe true
     }
+  }
+
+  test("should replace A:A&A with a flat conjunction") {
+    val leaf = Leaf(LabelName("A")(pos))
+    val expr = Conjunctions.flat(leaf, ColonConjunction(leaf, leaf)(pos), pos)
+    expr.replaceColonSyntax shouldBe Conjunctions(Seq(leaf, leaf, leaf))(pos)
+  }
+
+  test("should replace A|A|:A with a flat disjunction") {
+    val leaf = Leaf(LabelName("A")(pos))
+    val expr = Disjunctions.flat(leaf, ColonDisjunction(leaf, leaf)(pos), pos)
+    expr.replaceColonSyntax shouldBe Disjunctions(Seq(leaf, leaf, leaf))(pos)
   }
 }

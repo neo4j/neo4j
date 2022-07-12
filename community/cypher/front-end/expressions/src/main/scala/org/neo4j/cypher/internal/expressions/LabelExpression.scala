@@ -55,6 +55,8 @@ sealed trait LabelExpression extends ASTNode {
   def replaceColonSyntax: LabelExpression = this.endoRewrite(bottomUp({
     case disj @ ColonDisjunction(lhs, rhs) => Disjunctions.flat(lhs, rhs, disj.position)
     case conj @ ColonConjunction(lhs, rhs) => Conjunctions.flat(lhs, rhs, conj.position)
+    case disj: Disjunctions                => disj.unnestDisjunctions
+    case conj: Conjunctions                => conj.unnestConjunctions
     case expr                              => expr
   }))
 
@@ -79,30 +81,40 @@ sealed trait MultiOperatorLabelExpression extends LabelExpression {
 object LabelExpression {
 
   final case class Disjunctions(children: Seq[LabelExpression])(val position: InputPosition)
-      extends MultiOperatorLabelExpression
+      extends MultiOperatorLabelExpression {
+
+    def unnestDisjunctions: Disjunctions = {
+      val unnested = children.flatMap {
+        case Disjunctions(children) => children
+        case x                      => Vector(x)
+      }
+      copy(children = unnested)(position)
+    }
+  }
 
   object Disjunctions {
 
     def flat(lhs: LabelExpression, rhs: LabelExpression, position: InputPosition): Disjunctions = {
-      val children = Vector(lhs, rhs).flatMap {
-        case Disjunctions(children) => children
-        case x                      => Vector(x)
-      }
-      Disjunctions(children)(position)
+      Disjunctions(Vector(lhs, rhs))(position).unnestDisjunctions
     }
   }
 
   case class Conjunctions(children: Seq[LabelExpression])(val position: InputPosition)
-      extends MultiOperatorLabelExpression
+      extends MultiOperatorLabelExpression {
+
+    def unnestConjunctions: Conjunctions = {
+      val unnested = children.flatMap {
+        case Conjunctions(children) => children
+        case x                      => Vector(x)
+      }
+      copy(children = unnested)(position)
+    }
+  }
 
   object Conjunctions {
 
     def flat(lhs: LabelExpression, rhs: LabelExpression, position: InputPosition): Conjunctions = {
-      val children = Vector(lhs, rhs).flatMap {
-        case Conjunctions(children) => children
-        case x                      => Vector(x)
-      }
-      Conjunctions(children)(position)
+      Conjunctions(Vector(lhs, rhs))(position).unnestConjunctions
     }
   }
 
