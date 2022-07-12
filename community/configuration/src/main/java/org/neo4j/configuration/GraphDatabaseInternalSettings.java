@@ -965,11 +965,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
 
     @Internal
     @Description(
-            "Enables using record format versions that are still under development, which will trigger migration to them on start up. "
-                    + "This setting is only useful for tests of the incomplete record format versions during their development.")
-    public static final Setting<Boolean> include_versions_under_development = newBuilder(
-                    "internal.dbms.include_dev_record_format_versions", BOOL, false)
-            .build();
+            "Enables using format versions that are still under development, which will trigger migration to them on start up. "
+                    + "This setting is only useful for tests of incomplete format versions during their development for for testing upgrade itself.")
+    public static final Setting<Boolean> include_versions_under_development =
+            newBuilder("internal.dbms.include_dev_format_versions", BOOL, false).build();
 
     @Internal
     @Description("If set, the database will locate token index files in the old location and under the old name."

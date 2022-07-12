@@ -386,7 +386,7 @@ public final class SettingMigrators {
                         "internal.dbms.idgenerator.log.rotation_threshold"),
                 new Mapping(
                         "unsupported.dbms.include_dev_record_format_versions",
-                        "internal.dbms.include_dev_record_format_versions"),
+                        "internal.dbms.include_dev_format_versions"),
                 new Mapping("unsupported.dbms.index.archive_failed", "internal.dbms.index.archive_failed"),
                 new Mapping(
                         "unsupported.dbms.index.default_fulltext_provider",
