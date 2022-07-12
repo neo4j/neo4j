@@ -97,7 +97,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     public static final int DEFAULT_ROUTING_CONNECTOR_PORT = 7688;
 
-    @Description("Root relative to which directory settings are resolved.")
+    @Description("Root relative to which directory settings are resolved. Calculated and set by the server on startup.")
     @DocumentedDefaultValue("Defaults to current working directory")
     public static final Setting<Path> neo4j_home = newBuilder(
                     "server.directories.neo4j_home", PATH, Path.of("").toAbsolutePath())
