@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.planner.AttributeComparisonStrategy
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
@@ -1794,5 +1793,27 @@ class IndexPlanningIntegrationTest
 
     planState should
       haveSamePlanAndCardinalitiesAsBuilder(expected, AttributeComparisonStrategy.ComparingProvidedAttributesOnly)
+  }
+
+  test("should plan index seek for COUNT subquery with multiple predicates") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 1000)
+      .setRelationshipCardinality("(:A)-[]->()", 500)
+      .setRelationshipCardinality("()-[]->()", 500)
+      .addNodeIndex("A", Seq("prop"), 0.5, 0.1, indexType = IndexType.RANGE)
+      .build()
+
+    val q = "RETURN COUNT { (n:A)-[r]->(b) WHERE n.prop > 3 AND n.prop < 10 } AS result"
+    val plan = cfg.plan(q).stripProduceResults
+    plan shouldBe cfg.subPlanBuilder()
+      .projection("size(anon_1) AS result")
+      .rollUpApply("anon_1", "anon_0")
+      .|.projection("1 AS anon_0")
+      .|.expandAll("(n)-[r]->(b)")
+      .|.nodeIndexOperator("n:A(3 < prop < 10)", indexType = IndexType.RANGE)
+      .argument()
+      .build()
+
   }
 }

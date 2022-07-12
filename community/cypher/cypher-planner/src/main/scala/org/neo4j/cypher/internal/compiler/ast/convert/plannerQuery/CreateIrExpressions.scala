@@ -113,10 +113,12 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
       selections = Selections.from(uniquePredicates ++ extractedPredicates ++ maybePredicate)
     )
 
-    PlannerQuery(RegularSinglePlannerQuery(
+    val query = RegularSinglePlannerQuery(
       queryGraph = qg,
       horizon = horizon
-    ))
+    )
+    val finalizedQuery = PlannerQueryBuilder.finalizeQuery(query)
+    PlannerQuery(finalizedQuery)
   }
 
   private val instance: Rewriter = topDown(Rewriter.lift {

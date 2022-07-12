@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
@@ -71,6 +72,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   private val collectionName = "col"
 
   private val rPred = greaterThan(prop(r.name, "foo"), literalInt(5))
+  private val rLessPred = lessThan(prop(r.name, "foo"), literalInt(10))
   private val oPred = greaterThan(prop(o.name, "foo"), literalInt(5))
 
   private val n_r_m = RelationshipsPattern(RelationshipChain(
@@ -249,8 +251,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             ),
             selections = Selections.from(Seq(
               not(equals(r, r2)),
-              rPred,
-              oPred,
+              andedPropertyInequalities(rPred),
+              andedPropertyInequalities(oPred),
               equals(prop(r.name, "prop"), literalInt(5)),
               equals(prop(o.name, "prop"), literalInt(5)),
               not(hasALabel(o.name))
@@ -365,7 +367,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             argumentIds = Set(n.name),
             patternRelationships =
               Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)),
-            selections = Selections.from(rPred)
+            selections = Selections.from(andedPropertyInequalities(rPred))
           ),
           Some(RegularQueryProjection(Map(variableToCollectName -> prop(m, "foo"))))
         ),
@@ -407,8 +409,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             ),
             selections = Selections.from(Seq(
               not(equals(r, r2)),
-              rPred,
-              oPred,
+              andedPropertyInequalities(rPred),
+              andedPropertyInequalities(oPred),
               equals(prop(r.name, "prop"), literalInt(5)),
               equals(prop(o.name, "prop"), literalInt(5)),
               not(hasALabel(o.name))
@@ -473,7 +475,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               not(equals(r, r3)),
               not(equals(r, r2)),
               not(equals(r2, r3)),
-              rPred
+              andedPropertyInequalities(rPred)
             ))
           ),
           None
@@ -525,7 +527,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               argumentIds = Set(n.name),
               patternRelationships =
                 Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)),
-              selections = Selections.from(rPred)
+              selections = Selections.from(andedPropertyInequalities(rPred))
             ),
             horizon = Some(RegularQueryProjection(Map(countVariableToCollect -> literalInt(1))))
           ),
@@ -562,8 +564,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               ),
               selections = Selections.from(Seq(
                 not(equals(r, r2)),
-                rPred,
-                oPred,
+                andedPropertyInequalities(rPred),
+                andedPropertyInequalities(oPred),
                 equals(prop(r.name, "prop"), literalInt(5)),
                 equals(prop(o.name, "prop"), literalInt(5)),
                 not(hasALabel(o.name))
@@ -577,4 +579,57 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         )(pos)
       )(pos)
   }
+
+  test("should rewrite COUNT { (m) } and add a type check") {
+    val countExpr = CountExpression(n_r_m.element.rightNode, None)(pos, Set(m))
+
+    val nameGenerator = makeAnonymousVariableNameGenerator()
+    val countVariableToCollect = nameGenerator.nextName
+    val countCollectionName = nameGenerator.nextName
+
+    rewrite(countExpr) shouldBe
+      Size(
+        ListIRExpression(
+          queryWith(
+            qg = QueryGraph(
+              patternNodes = Set(m.name),
+              argumentIds = Set(m.name),
+              selections = Selections.from(AssertIsNode(m)(pos))
+            ),
+            horizon = Some(RegularQueryProjection(Map(countVariableToCollect -> literalInt(1))))
+          ),
+          countVariableToCollect,
+          countCollectionName,
+          s"COUNT { (m) }"
+        )(pos)
+      )(pos)
+  }
+
+  test("should rewrite COUNT { (n)-[r]-(m) WHERE r.foo > 5 AND r.foo < 10 } and group predicates") {
+    val countExpr = CountExpression(n_r_m.element, Some(and(rPred, rLessPred)))(pos, Set(n))
+
+    val nameGenerator = makeAnonymousVariableNameGenerator()
+    val countVariableToCollect = nameGenerator.nextName
+    val countCollectionName = nameGenerator.nextName
+
+    rewrite(countExpr) shouldBe
+      Size(
+        ListIRExpression(
+          queryWith(
+            qg = QueryGraph(
+              patternNodes = Set(n.name, m.name),
+              argumentIds = Set(n.name),
+              patternRelationships =
+                Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)),
+              selections = Selections.from(andedPropertyInequalities(rPred, rLessPred))
+            ),
+            horizon = Some(RegularQueryProjection(Map(countVariableToCollect -> literalInt(1))))
+          ),
+          countVariableToCollect,
+          countCollectionName,
+          s"COUNT { (n)-[r]-(m) WHERE r.foo > 5 AND r.foo < 10 }"
+        )(pos)
+      )(pos)
+  }
+
 }
