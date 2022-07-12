@@ -61,7 +61,7 @@ public class PageAlignedV5_0 extends BaseRecordFormats {
     public static final String NAME = FormatFamily.ALIGNED.name();
 
     private PageAlignedV5_0() {
-        super(ALIGNED_V5_0, 1, 1, new RecordFormatFamilyCapability(FormatFamily.ALIGNED));
+        super(ALIGNED_V5_0, new RecordFormatFamilyCapability(FormatFamily.ALIGNED));
     }
 
     @Override

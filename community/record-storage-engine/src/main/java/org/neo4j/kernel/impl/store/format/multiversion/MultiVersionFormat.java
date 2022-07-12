@@ -61,8 +61,6 @@ public class MultiVersionFormat extends BaseRecordFormats {
     private MultiVersionFormat() {
         super(
                 MULTIVERSION,
-                1,
-                0,
                 new RecordFormatFamilyCapability(FormatFamily.MULTIVERSION),
                 RecordStorageCapability.LITTLE_ENDIAN,
                 RecordStorageCapability.MULTI_VERSIONED);

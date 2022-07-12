@@ -23,29 +23,46 @@ package org.neo4j.kernel.impl.store.format;
  * All known store formats are collected here.
  */
 public enum StoreVersion {
-    STANDARD_V4_3("SF4.3.0", "4.3.0", true),
-    STANDARD_V5_0("SF5.0.0", "5.0.0", false),
+    STANDARD_V4_3(FormatFamily.STANDARD, 0, 1, "4.3.0", true),
+    STANDARD_V5_0(FormatFamily.STANDARD, 1, 1, "5.0.0", false),
 
-    ALIGNED_V4_3("AF4.3.0", "4.3.0", true),
-    ALIGNED_V5_0("AF5.0.0", "5.0.0", false),
+    ALIGNED_V4_3(FormatFamily.ALIGNED, 0, 1, "4.3.0", true),
+    ALIGNED_V5_0(FormatFamily.ALIGNED, 1, 1, "5.0.0", false),
 
-    MULTIVERSION("MVCC5.0", "5.0.0", false),
+    MULTIVERSION(FormatFamily.MULTIVERSION, 1, 1, "5.0.0", false),
 
-    HIGH_LIMIT_V4_3("HL4.3.0", "4.3.0", true),
-    HIGH_LIMIT_V5_0("HL5.0.0", "5.0.0", false);
+    HIGH_LIMIT_V4_3(FormatFamily.HIGH_LIMIT, 0, 1, "4.3.0", true),
+    HIGH_LIMIT_V5_0(FormatFamily.HIGH_LIMIT, 1, 1, "5.0.0", false);
 
-    private final String versionString;
+    private final FormatFamily formatFamily;
+    private final int majorVersion;
+    private final int minorVersion;
     private final String introductionVersion;
     private final boolean onlyForMigration;
 
-    StoreVersion(String versionString, String introductionVersion, boolean onlyForMigration) {
-        this.versionString = versionString;
+    StoreVersion(
+            FormatFamily formatFamily,
+            int majorVersion,
+            int minorVersion,
+            String introductionVersion,
+            boolean onlyForMigration) {
+        this.formatFamily = formatFamily;
+        this.majorVersion = majorVersion;
+        this.minorVersion = minorVersion;
         this.introductionVersion = introductionVersion;
         this.onlyForMigration = onlyForMigration;
     }
 
-    public String versionString() {
-        return versionString;
+    public FormatFamily formatFamily() {
+        return formatFamily;
+    }
+
+    public int majorVersion() {
+        return majorVersion;
+    }
+
+    public int minorVersion() {
+        return minorVersion;
     }
 
     public String introductionVersion() {

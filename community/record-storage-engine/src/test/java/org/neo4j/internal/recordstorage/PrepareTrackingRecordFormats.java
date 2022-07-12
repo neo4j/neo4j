@@ -62,11 +62,6 @@ public class PrepareTrackingRecordFormats implements RecordFormats {
     }
 
     @Override
-    public String storeVersion() {
-        return actual.storeVersion();
-    }
-
-    @Override
     public String introductionVersion() {
         return actual.introductionVersion();
     }

@@ -58,11 +58,6 @@ public class ForcedSecondaryUnitRecordFormats implements RecordFormats {
     }
 
     @Override
-    public String storeVersion() {
-        return actual.storeVersion();
-    }
-
-    @Override
     public String introductionVersion() {
         return actual.introductionVersion();
     }

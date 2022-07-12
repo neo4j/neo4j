@@ -36,12 +36,11 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 public class StandardV5_0 extends BaseRecordFormats {
-    public static final String STORE_VERSION = StoreVersion.STANDARD_V5_0.versionString();
     public static final RecordFormats RECORD_FORMATS = new StandardV5_0();
     public static final String NAME = FormatFamily.STANDARD.name();
 
     public StandardV5_0() {
-        super(StoreVersion.STANDARD_V5_0, 1, 1, new RecordFormatFamilyCapability(FormatFamily.STANDARD));
+        super(StoreVersion.STANDARD_V5_0, new RecordFormatFamilyCapability(FormatFamily.STANDARD));
     }
 
     @Override

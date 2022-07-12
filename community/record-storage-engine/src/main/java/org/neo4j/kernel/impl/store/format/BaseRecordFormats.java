@@ -39,22 +39,14 @@ public abstract class BaseRecordFormats implements RecordFormats {
     private final int minorFormatVersion;
     private final boolean onlyForMigration;
     private final Capability[] capabilities;
-    private final String storeVersion;
     private final String introductionVersion;
 
-    protected BaseRecordFormats(
-            StoreVersion storeVersion, int majorFormatVersion, int minorFormatVersion, Capability... capabilities) {
-        this.storeVersion = storeVersion.versionString();
+    protected BaseRecordFormats(StoreVersion storeVersion, Capability... capabilities) {
         this.onlyForMigration = storeVersion.onlyForMigration();
-        this.majorFormatVersion = majorFormatVersion;
-        this.minorFormatVersion = minorFormatVersion;
+        this.majorFormatVersion = storeVersion.majorVersion();
+        this.minorFormatVersion = storeVersion.minorVersion();
         this.capabilities = capabilities;
         this.introductionVersion = storeVersion.introductionVersion();
-    }
-
-    @Override
-    public String storeVersion() {
-        return storeVersion;
     }
 
     @Override
@@ -116,7 +108,9 @@ public abstract class BaseRecordFormats implements RecordFormats {
 
     @Override
     public String toString() {
-        return "RecordFormat:" + getClass().getSimpleName() + "[" + storeVersion() + "]";
+        return String.format(
+                "RecordFormat:%s[%s-%d.%d]",
+                getClass().getSimpleName(), getFormatFamily().name(), majorFormatVersion, minorFormatVersion);
     }
 
     @Override

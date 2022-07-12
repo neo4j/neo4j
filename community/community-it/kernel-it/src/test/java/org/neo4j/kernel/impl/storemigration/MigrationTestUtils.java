@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.kernel.impl.storemigration.legacystore.v43.Legacy43Store;
 import org.neo4j.test.Unzip;
@@ -34,12 +35,12 @@ public final class MigrationTestUtils {
     private MigrationTestUtils() {}
 
     public static void prepareSampleLegacyDatabase(
-            String version, FileSystemAbstraction fs, RecordDatabaseLayout databaseLayout, Path prepareDirectory)
+            RecordFormats format, FileSystemAbstraction fs, RecordDatabaseLayout databaseLayout, Path prepareDirectory)
             throws IOException {
         if (Files.notExists(prepareDirectory)) {
             throw new IllegalArgumentException("bad prepare directory");
         }
-        Path source = findFormatStoreDirectoryForVersion(version, prepareDirectory);
+        Path source = findFormatStoreDirectoryForVersion(format, prepareDirectory);
         Path dbDirectory = databaseLayout.databaseDirectory();
         Path txDirectory = databaseLayout.getTransactionLogsDirectory();
         prepareDirectory(fs, dbDirectory);
@@ -57,8 +58,8 @@ public final class MigrationTestUtils {
         fs.mkdirs(destination);
     }
 
-    static Path findFormatStoreDirectoryForVersion(String version, Path targetDir) throws IOException {
-        if (StandardV4_3.STORE_VERSION.equals(version)) {
+    static Path findFormatStoreDirectoryForVersion(RecordFormats format, Path targetDir) throws IOException {
+        if (StandardV4_3.RECORD_FORMATS.name().equals(format.name())) {
             return find43FormatStoreDirectory(targetDir);
         } else {
             throw new IllegalArgumentException("Unknown version");

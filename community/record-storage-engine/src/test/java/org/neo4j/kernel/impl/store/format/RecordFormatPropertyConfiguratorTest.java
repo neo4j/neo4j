@@ -92,11 +92,6 @@ class RecordFormatPropertyConfiguratorTest {
         }
 
         @Override
-        public String storeVersion() {
-            return null;
-        }
-
-        @Override
         public String introductionVersion() {
             return null;
         }

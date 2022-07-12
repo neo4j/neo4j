@@ -62,12 +62,7 @@ public class PageAlignedV4_3 extends BaseRecordFormats {
     public static final String NAME = FormatFamily.ALIGNED.name() + "V4_3";
 
     private PageAlignedV4_3() {
-        super(
-                ALIGNED_V4_3,
-                0,
-                1,
-                new RecordFormatFamilyCapability(FormatFamily.ALIGNED),
-                Index44Compatibility.INSTANCE);
+        super(ALIGNED_V4_3, new RecordFormatFamilyCapability(FormatFamily.ALIGNED), Index44Compatibility.INSTANCE);
     }
 
     @Override

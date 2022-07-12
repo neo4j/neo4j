@@ -73,6 +73,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
@@ -125,7 +126,7 @@ class RecordStorageMigratorIT {
     private final JobScheduler jobScheduler = new ThreadPoolJobScheduler();
 
     private static Stream<Arguments> versions() {
-        return Stream.of(Arguments.of(StandardV4_3.STORE_VERSION));
+        return Stream.of(Arguments.of(StandardV4_3.RECORD_FORMATS));
     }
 
     @BeforeEach
@@ -144,11 +145,11 @@ class RecordStorageMigratorIT {
 
     @ParameterizedTest
     @MethodSource("versions")
-    void shouldBeAbleToResumeMigrationOnMoving(String version) throws Exception {
+    void shouldBeAbleToResumeMigrationOnMoving(RecordFormats format) throws Exception {
         // GIVEN a legacy database
         Path prepare = testDirectory.directory("prepare");
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase(version, fs, databaseLayout, prepare);
+        MigrationTestUtils.prepareSampleLegacyDatabase(format, fs, databaseLayout, prepare);
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         RecordStoreVersionCheck check = getVersionCheck(pageCache, databaseLayout);
@@ -208,10 +209,10 @@ class RecordStorageMigratorIT {
 
     @ParameterizedTest
     @MethodSource("versions")
-    void keepExternalIdAndDatabaseIdOnMigration(String version) throws IOException, KernelException {
+    void keepExternalIdAndDatabaseIdOnMigration(RecordFormats format) throws IOException, KernelException {
         Path prepare = testDirectory.directory("prepare");
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase(version, fs, databaseLayout, prepare);
+        MigrationTestUtils.prepareSampleLegacyDatabase(format, fs, databaseLayout, prepare);
 
         LogService logService = NullLogService.getInstance();
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
@@ -266,7 +267,7 @@ class RecordStorageMigratorIT {
     void changeStoreIdOnMigration() throws IOException, KernelException {
         Path prepare = testDirectory.directory("prepare");
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase(StandardV4_3.STORE_VERSION, fs, databaseLayout, prepare);
+        MigrationTestUtils.prepareSampleLegacyDatabase(StandardV4_3.RECORD_FORMATS, fs, databaseLayout, prepare);
 
         LogService logService = NullLogService.getInstance();
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
@@ -400,12 +401,12 @@ class RecordStorageMigratorIT {
 
     @ParameterizedTest
     @MethodSource("versions")
-    void shouldBeAbleToMigrateWithoutErrors(String version) throws Exception {
+    void shouldBeAbleToMigrateWithoutErrors(RecordFormats format) throws Exception {
         // GIVEN a legacy database
 
         Path prepare = testDirectory.directory("prepare");
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase(version, fs, databaseLayout, prepare);
+        MigrationTestUtils.prepareSampleLegacyDatabase(format, fs, databaseLayout, prepare);
 
         AssertableLogProvider logProvider = new AssertableLogProvider(true);
         LogService logService = new SimpleLogService(logProvider, logProvider);
@@ -505,12 +506,12 @@ class RecordStorageMigratorIT {
 
     @ParameterizedTest
     @MethodSource("versions")
-    void shouldBeAbleToResumeMigrationOnRebuildingCounts(String version) throws Exception {
+    void shouldBeAbleToResumeMigrationOnRebuildingCounts(RecordFormats format) throws Exception {
         // GIVEN a legacy database
 
         Path prepare = testDirectory.directory("prepare");
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase(version, fs, databaseLayout, prepare);
+        MigrationTestUtils.prepareSampleLegacyDatabase(format, fs, databaseLayout, prepare);
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         RecordStoreVersionCheck check = getVersionCheck(pageCache, databaseLayout);
@@ -560,11 +561,11 @@ class RecordStorageMigratorIT {
 
     @ParameterizedTest
     @MethodSource("versions")
-    void shouldStartCheckpointLogVersionFromZeroIfMissingBeforeMigration(String version) throws Exception {
+    void shouldStartCheckpointLogVersionFromZeroIfMissingBeforeMigration(RecordFormats format) throws Exception {
         // given
         Path prepare = testDirectory.directory("prepare");
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase(version, fs, databaseLayout, prepare);
+        MigrationTestUtils.prepareSampleLegacyDatabase(format, fs, databaseLayout, prepare);
         RecordStoreVersionCheck check = getVersionCheck(pageCache, databaseLayout);
         StoreVersion versionToMigrateFrom = getVersionToMigrateFrom(check);
         StoreVersion versionToMigrateTo = getVersionToMigrateTo();

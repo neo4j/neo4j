@@ -49,21 +49,23 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 public abstract class PageAlignedTestFormat extends BaseRecordFormats implements RecordFormats.Factory {
     private final String name;
-    private final String versionString;
+    private int majorFormatVersion;
+    private int minorFormatVersion;
 
-    public PageAlignedTestFormat(String name, String versionString, int majorFormatVersion, int minorFormatVersion) {
-        super(
-                ALIGNED_V5_0,
-                majorFormatVersion,
-                minorFormatVersion,
-                new RecordFormatFamilyCapability(FormatFamily.ALIGNED));
+    public PageAlignedTestFormat(String name, int majorFormatVersion, int minorFormatVersion) {
+        super(ALIGNED_V5_0, new RecordFormatFamilyCapability(FormatFamily.ALIGNED));
         this.name = name;
-        this.versionString = versionString;
+        this.majorFormatVersion = majorFormatVersion;
+        this.minorFormatVersion = minorFormatVersion;
+    }
+
+    public int majorVersion() {
+        return majorFormatVersion;
     }
 
     @Override
-    public String storeVersion() {
-        return versionString;
+    public int minorVersion() {
+        return minorFormatVersion;
     }
 
     @Override
@@ -140,12 +142,10 @@ public abstract class PageAlignedTestFormat extends BaseRecordFormats implements
     public static class WithMinorVersionBump extends PageAlignedTestFormat {
 
         public static final String NAME = "Page-Aligned-Format-With-Minor-Version-Bump";
-        public static final String VERSION_STRING = "TAF1.2";
 
         public WithMinorVersionBump() {
             super(
                     NAME,
-                    VERSION_STRING,
                     PageAlignedV5_0.RECORD_FORMATS.majorVersion(),
                     PageAlignedV5_0.RECORD_FORMATS.minorVersion() + 1);
         }
@@ -160,12 +160,10 @@ public abstract class PageAlignedTestFormat extends BaseRecordFormats implements
     public static class WithMajorVersionBump extends PageAlignedTestFormat {
 
         public static final String NAME = "Page-Aligned-Format-With-Major-Version-Bump";
-        public static final String VERSION_STRING = "TAF2.1";
 
         public WithMajorVersionBump() {
             super(
                     NAME,
-                    VERSION_STRING,
                     PageAlignedV5_0.RECORD_FORMATS.majorVersion() + 1,
                     PageAlignedV5_0.RECORD_FORMATS.minorVersion());
         }

@@ -28,6 +28,7 @@ import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.R
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.UUID;
 import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -39,6 +40,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.util.Bits;
@@ -52,6 +54,11 @@ public class LegacyMetadataHandler {
 
     private static final String UNKNOWN_VERSION = "Unknown";
     private static final UUID NOT_INITIALIZED_UUID = new UUID(Long.MIN_VALUE, Long.MIN_VALUE);
+    // Mapping of known legacy format version identifiers
+    private static final Map<String, StoreVersion> LEGACY_VERSION_MAPPING = Map.of(
+            "SF4.3.0", StoreVersion.STANDARD_V4_3,
+            "AF4.3.0", StoreVersion.ALIGNED_V4_3,
+            "HL4.3.0", StoreVersion.HIGH_LIMIT_V4_3);
 
     public static Metadata44 readMetadata44FromStore(
             PageCache pageCache, Path metadataStore, String databaseName, CursorContext cursorContext)
@@ -134,8 +141,16 @@ public class LegacyMetadataHandler {
 
     private static StoreId storeIdFromLegacyMetadata(long creationTime, long random, long legacyVersion) {
         String versionString = versionLongToString(legacyVersion);
+        var version = LEGACY_VERSION_MAPPING.get(versionString);
+        if (version == null) {
+            throw new IllegalArgumentException("Unknown store version '" + versionString + "'");
+        }
         RecordFormats recordFormat = Iterables.stream(allFormats())
-                .filter(format -> format.storeVersion().equals(versionString))
+                .filter(format -> format.getFormatFamily()
+                                .name()
+                                .equals(version.formatFamily().name())
+                        && format.majorVersion() == version.majorVersion()
+                        && format.minorVersion() == version.minorVersion())
                 .findAny()
                 .orElseThrow(() -> new IllegalArgumentException("Unknown store version '" + versionString + "'"));
 

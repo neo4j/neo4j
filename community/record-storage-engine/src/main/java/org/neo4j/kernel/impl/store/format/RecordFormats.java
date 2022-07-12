@@ -47,8 +47,6 @@ public interface RecordFormats {
         RecordFormats newInstance();
     }
 
-    String storeVersion();
-
     /**
      * @return the neo4j version where this format was introduced. It is almost certainly NOT the only version of
      * neo4j where this format is used.
