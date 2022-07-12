@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
@@ -27,9 +28,12 @@ import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PathStep
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions.Exists
+import org.neo4j.cypher.internal.expressions.functions.Size
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -39,8 +43,8 @@ import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
-import org.neo4j.cypher.internal.ir.helpers.PatternConverters
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternDestructor
+import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternElementDestructor
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.RelationshipChainDestructor
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.MatchPredicateNormalizer
@@ -89,6 +93,8 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
         relationshipsPattern.element.destructedRelationshipChain
       case patternList: Pattern =>
         patternList.destructed(anonymousVariableNameGenerator)
+      case patternElement: PatternElement =>
+        patternElement.destructed
     }
 
     // Create predicates for relationship uniqueness
@@ -163,6 +169,31 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
         RegularQueryProjection(Map(pc.variableToCollectName -> projection))
       )
       ListIRExpression(query, pc.variableToCollectName, pc.collectionName, stringifier(pc))(pc.position)
+
+    /**
+     * Rewrites COUNT { (n)-[anon_0]->(anon_1:M) } into
+     * Size(ListIRExpression(IR for MATCH (n)-[anon_0]->(anon_1:M) RETURN 1))
+     */
+    case ce @ CountExpression(patternElement, where) =>
+      val variableToCollect = anonymousVariableNameGenerator.nextName
+      val collectionName = anonymousVariableNameGenerator.nextName
+      val projection = SignedDecimalIntegerLiteral("1")(ce.position)
+
+      val query = getPlannerQuery(
+        patternElement,
+        ce.dependencies.map(_.name),
+        where,
+        RegularQueryProjection(Map(variableToCollect -> projection))
+      )
+
+      Size(
+        ListIRExpression(
+          query = query,
+          variableToCollectName = variableToCollect,
+          collectionName = collectionName,
+          solvedExpressionAsString = stringifier(ce)
+        )(ce.position)
+      )(ce.position)
 
     case PatternComprehension(Some(_), _, _, _) =>
       throw new IllegalStateException(

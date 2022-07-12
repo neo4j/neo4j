@@ -44,7 +44,6 @@ import org.neo4j.cypher.internal.rewriting.rewriters.normalizeNotEquals
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizePatternComprehensionPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.parameterValueTypeReplacement
 import org.neo4j.cypher.internal.rewriting.rewriters.replaceLiteralDynamicPropertyLookups
-import org.neo4j.cypher.internal.rewriting.rewriters.rewriteCountExpression
 import org.neo4j.cypher.internal.rewriting.rewriters.rewriteOrderById
 import org.neo4j.cypher.internal.rewriting.rewriters.simplifyIterablePredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.unwrapParenthesizedPath
@@ -82,7 +81,6 @@ object ASTRewriter {
         parameterValueTypeReplacement,
         rewriteOrderById,
         LabelExpressionPredicateNormalizer,
-        rewriteCountExpression,
         unwrapParenthesizedPath,
         QuantifiedPathPatternNodeInsertRewriter
       ),

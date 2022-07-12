@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
@@ -39,6 +40,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.functions.Exists
+import org.neo4j.cypher.internal.expressions.functions.Size
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -154,8 +156,10 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )(pos))
   ))(pos)
 
+  private def makeAnonymousVariableNameGenerator(): AnonymousVariableNameGenerator = new AnonymousVariableNameGenerator
+
   private def rewrite(e: Expression): Expression = {
-    val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator
+    val anonymousVariableNameGenerator = makeAnonymousVariableNameGenerator()
     val rewriter = inSequence(
       inlineNamedPathsInPatternComprehensions.instance,
       CreateIrExpressions(anonymousVariableNameGenerator)
@@ -477,5 +481,100 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         "EXISTS { MATCH (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE r.foo > 5 }"
       )(pos)
     )
+  }
+
+  test("should rewrite COUNT { (n)-[r]-(m) }") {
+    val countExpr = CountExpression(n_r_m.element, None)(pos, Set(n))
+
+    val nameGenerator = makeAnonymousVariableNameGenerator()
+    val countVariableToCollect = nameGenerator.nextName
+    val countCollectionName = nameGenerator.nextName
+
+    rewrite(countExpr) shouldBe
+      Size(
+        ListIRExpression(
+          queryWith(
+            qg = QueryGraph(
+              patternNodes = Set(n.name, m.name),
+              argumentIds = Set(n.name),
+              patternRelationships =
+                Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength))
+            ),
+            horizon = Some(RegularQueryProjection(Map(countVariableToCollect -> literalInt(1))))
+          ),
+          countVariableToCollect,
+          countCollectionName,
+          s"COUNT { (n)-[r]-(m) }"
+        )(pos)
+      )(pos)
+  }
+
+  test("should rewrite COUNT { (n)-[r]-(m) WHERE r.foo > 5}") {
+    val countExpr = CountExpression(n_r_m.element, Some(rPred))(pos, Set(n))
+
+    val nameGenerator = makeAnonymousVariableNameGenerator()
+    val countVariableToCollect = nameGenerator.nextName
+    val countCollectionName = nameGenerator.nextName
+
+    rewrite(countExpr) shouldBe
+      Size(
+        ListIRExpression(
+          queryWith(
+            qg = QueryGraph(
+              patternNodes = Set(n.name, m.name),
+              argumentIds = Set(n.name),
+              patternRelationships =
+                Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)),
+              selections = Selections.from(rPred)
+            ),
+            horizon = Some(RegularQueryProjection(Map(countVariableToCollect -> literalInt(1))))
+          ),
+          countVariableToCollect,
+          countCollectionName,
+          s"COUNT { (n)-[r]-(m) WHERE r.foo > 5 }"
+        )(pos)
+      )(pos)
+  }
+
+  test("should rewrite count expression with longer pattern and inlined predicates") {
+    val countExpr = CountExpression(n_r_m_withPreds.element, None)(pos, Set(n))
+
+    val nameGenerator = makeAnonymousVariableNameGenerator()
+    val countVariableToCollect = nameGenerator.nextName
+    val countCollectionName = nameGenerator.nextName
+
+    rewrite(countExpr) shouldBe
+      Size(
+        ListIRExpression(
+          queryWith(
+            QueryGraph(
+              patternNodes = Set(n.name, m.name, o.name),
+              argumentIds = Set(n.name),
+              patternRelationships = Set(
+                PatternRelationship(
+                  r.name,
+                  (n.name, m.name),
+                  OUTGOING,
+                  Seq(relTypeName("R"), relTypeName("P")),
+                  SimplePatternLength
+                ),
+                PatternRelationship(r2.name, (m.name, o.name), INCOMING, Seq.empty, SimplePatternLength)
+              ),
+              selections = Selections.from(Seq(
+                not(equals(r, r2)),
+                rPred,
+                oPred,
+                equals(prop(r.name, "prop"), literalInt(5)),
+                equals(prop(o.name, "prop"), literalInt(5)),
+                not(hasALabel(o.name))
+              ))
+            ),
+            Some(RegularQueryProjection(Map(countVariableToCollect -> literalInt(1))))
+          ),
+          countVariableToCollect,
+          countCollectionName,
+          s"COUNT { (n)-[r:R|P {prop: 5} WHERE r.foo > 5]->(m)<-[r2]-(o:!% {prop: 5} WHERE o.foo > 5) }"
+        )(pos)
+      )(pos)
   }
 }

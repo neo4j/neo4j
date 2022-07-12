@@ -92,7 +92,6 @@ case class normalizeExistsPatternExpressions(semanticState: SemanticState) exten
 case object normalizeExistsPatternExpressions extends StepSequencer.Step with ASTRewriterFactory {
 
   override def preConditions: Set[Condition] = Set(
-    NoCountExpression,
     PatternExpressionsHaveSemanticInfo // Looks up type of pattern expressions
   )
 
