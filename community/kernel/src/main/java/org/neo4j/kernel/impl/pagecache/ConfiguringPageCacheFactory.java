@@ -136,7 +136,7 @@ public class ConfiguringPageCacheFactory {
                     + "setting is always explicitly configured, to ensure the system has a balanced configuration. "
                     + "Until then, a computed heuristic value of "
                     + heuristic + " bytes will be used instead. "
-                    + "Run `neo4j-admin memrec` for memory configuration suggestions.");
+                    + "Run `neo4j-admin memory-recommendation` for memory configuration suggestions.");
             pageCacheMemorySetting = heuristic;
         }
         return pageCacheMemorySetting;

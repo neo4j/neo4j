@@ -70,7 +70,7 @@ public class JvmChecker {
                 "The initial heap memory has not been configured. It is recommended that it is always explicitly configured, to "
                         + "ensure the system has a balanced configuration. Until then, a JVM computed heuristic of %d bytes is used instead. If you are running "
                         + "neo4j server, you need to configure %s in neo4j.conf. If you are running neo4j embedded, you have to launch the JVM with -Xms set to a "
-                        + "value. You can run neo4j-admin memrec for memory configuration suggestions.",
+                        + "value. You can run neo4j-admin server memory-recommendation for memory configuration suggestions.",
                 currentUsage, initial_heap_size.name());
     }
 
@@ -79,7 +79,7 @@ public class JvmChecker {
                 "The max heap memory has not been configured. It is recommended that it is always explicitly configured, to "
                         + "ensure the system has a balanced configuration. Until then, a JVM computed heuristic of %d bytes is used instead. If you are running "
                         + "neo4j server, you need to configure %s in neo4j.conf. If you are running neo4j embedded, you have to launch the JVM with -Xmx set to a "
-                        + "value. You can run neo4j-admin memrec for memory configuration suggestions.",
+                        + "value. You can run neo4j-admin server memory-recommendation for memory configuration suggestions.",
                 currentUsage, max_heap_size.name());
     }
 

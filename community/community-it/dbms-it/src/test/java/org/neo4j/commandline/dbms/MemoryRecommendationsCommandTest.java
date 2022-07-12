@@ -102,32 +102,36 @@ class MemoryRecommendationsCommandTest {
         assertThat(baos.toString().trim())
                 .isEqualToIgnoringNewLines(
                         """
-                        Print Neo4j heap and pagecache memory settings recommendations.
+                                Print Neo4j heap and pagecache memory settings recommendations.
 
-                        USAGE
+                                USAGE
 
-                        memrec [--docker] [--expand-commands] [--verbose] [--memory=<size>]
+                                memory-recommendation [--docker] [--expand-commands] [--verbose]
+                                                      [--memory=<size>]
 
-                        DESCRIPTION
+                                DESCRIPTION
 
-                        Print heuristic memory setting recommendations for the Neo4j JVM heap and
-                        pagecache. The heuristic is based on the total memory of the system the command
-                        is running on, or on the amount of memory specified with the --memory argument.
-                        The heuristic assumes that the system is dedicated to running Neo4j. If this is
-                        not the case, then use the --memory argument to specify how much memory can be
-                        expected to be dedicated to Neo4j. The output is formatted such that it can be
-                        copy-pasted into the neo4j.conf file.
+                                Print heuristic memory setting recommendations for the Neo4j JVM heap and
+                                pagecache. The heuristic is based on the total memory of the system the command
+                                is running on, or on the amount of memory specified with the --memory argument.
+                                The heuristic assumes that the system is dedicated to running Neo4j. If this is
+                                not the case, then use the --memory argument to specify how much memory can be
+                                expected to be dedicated to Neo4j. The output is formatted such that it can be
+                                copy-pasted into the neo4j.conf file.
 
-                        OPTIONS
+                                OPTIONS
 
-                              --docker            The recommended memory settings are produced in the
-                                                    form of environment variables that can be directly
-                                                    passed to Neo4j docker container.
-                              --expand-commands   Allow command expansion in config value evaluation.
-                              --memory=<size>     Recommend memory settings with respect to the given
-                                                    amount of memory, instead of the total memory of
-                                                    the system running the command.
-                              --verbose           Enable verbose output.""");
+                                      --docker            The recommended memory settings are produced in the
+                                                            form of environment variables that can be directly
+                                                            passed to Neo4j docker container. The recommended
+                                                            use is to save the generated environment variables
+                                                            to a file and pass the file to a docker container
+                                                            using '--env-file' docker option.
+                                      --expand-commands   Allow command expansion in config value evaluation.
+                                      --memory=<size>     Recommend memory settings with respect to the given
+                                                            amount of memory, instead of the total memory of
+                                                            the system running the command.
+                                      --verbose           Enable verbose output.""");
     }
 
     @Test
@@ -264,10 +268,10 @@ class MemoryRecommendationsCommandTest {
 
         var commandResult = outputStream.toString();
         assertThat(commandResult)
-                .contains("EXPORT NEO4J_server_memory_heap_initial__size='" + heap + "'")
-                .contains("EXPORT NEO4J_server_memory_heap_max__size='" + heap + "'")
-                .contains("EXPORT NEO4J_server_memory_pagecache_size='" + pagecache + "'")
-                .contains("EXPORT NEO4J_server_jvm_additional='" + "-XX:+ExitOnOutOfMemoryError" + "'")
+                .contains("NEO4J_server_memory_heap_initial__size='" + heap + "'")
+                .contains("NEO4J_server_memory_heap_max__size='" + heap + "'")
+                .contains("NEO4J_server_memory_pagecache_size='" + pagecache + "'")
+                .contains("NEO4J_server_jvm_additional='" + "-XX:+ExitOnOutOfMemoryError" + "'")
                 .doesNotContain("EXPORT NEO4J_server_memory_off__heap_max__size='");
     }
 
