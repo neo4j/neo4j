@@ -84,14 +84,13 @@ public class RecordFormatSelector {
      * @return default record format.
      */
     public static RecordFormats defaultFormat() {
-        return DEFAULT_FORMAT;
+        return defaultFormat(false);
     }
 
     private static RecordFormats defaultFormat(boolean includeDevFormats) {
-        if (includeDevFormats) {
-            return PageAlignedV5_0.RECORD_FORMATS;
-        }
-        return DEFAULT_FORMAT;
+        return includeDevFormats
+                ? findLatestFormatInFamily(DEFAULT_FORMAT, true).orElse(DEFAULT_FORMAT)
+                : DEFAULT_FORMAT;
     }
 
     /**
