@@ -66,6 +66,7 @@ import org.neo4j.kernel.ZippedStore;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
@@ -84,8 +85,6 @@ public abstract class DatabaseMigrationITBase {
     protected Neo4jLayout layout;
 
     protected abstract TestDatabaseManagementServiceBuilder newDbmsBuilder(Path homeDir);
-
-    protected abstract RecordFormats expectedFormat(String toRecordFormat);
 
     protected abstract void verifySystemDbSchema(GraphDatabaseService system, SystemDbMigration systemDbMigration);
 
@@ -109,7 +108,7 @@ public abstract class DatabaseMigrationITBase {
         try {
             GraphDatabaseService db = dbms.database(DEFAULT_DATABASE_NAME);
             verifyContents(db, zippedStore.statistics());
-            verifyStoreFormat(db, expectedFormat(toRecordFormat));
+            verifyStoreFormat(db, expectedFormat(db, toRecordFormat));
             verifyTokenIndexes(db);
             verifyKernelVersion(db);
             verifyRemovedIndexProviders(db);
@@ -118,6 +117,11 @@ public abstract class DatabaseMigrationITBase {
             dbms.shutdown();
         }
         consistencyCheck(homeDir, DEFAULT_DATABASE_NAME);
+    }
+
+    protected RecordFormats expectedFormat(GraphDatabaseService db, String toRecordFormat) {
+        Config config = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(Config.class);
+        return RecordFormatSelector.findLatestFormatInFamily(toRecordFormat, config);
     }
 
     protected void doShouldMigrateSystemDatabase(SystemDbMigration systemDbMigration)

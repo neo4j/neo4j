@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -43,15 +42,9 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.ZippedStore;
 import org.neo4j.kernel.ZippedStoreCommunity;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
-import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 public class DatabaseMigrationCommunityIT extends DatabaseMigrationITBase {
-    private static final Map<String, RecordFormats> expectedFormat = Map.of(
-            Standard.LATEST_NAME, Standard.LATEST_RECORD_FORMATS,
-            PageAligned.LATEST_NAME, PageAligned.LATEST_RECORD_FORMATS);
 
     public static Stream<Arguments> migrations() {
         List<Arguments> permutations = new ArrayList<>();
@@ -100,11 +93,6 @@ public class DatabaseMigrationCommunityIT extends DatabaseMigrationITBase {
     @Override
     protected TestDatabaseManagementServiceBuilder newDbmsBuilder(Path homeDir) {
         return new TestDatabaseManagementServiceBuilder(homeDir);
-    }
-
-    @Override
-    protected RecordFormats expectedFormat(String toRecordFormat) {
-        return expectedFormat.get(toRecordFormat);
     }
 
     @Override
