@@ -33,7 +33,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
+import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;

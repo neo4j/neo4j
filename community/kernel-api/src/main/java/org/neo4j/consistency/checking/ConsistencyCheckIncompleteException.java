@@ -17,28 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.consistency.checking.full;
+package org.neo4j.consistency.checking;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
-/**
- * A {@link ThreadLocal} which additionally assigns a zero-based id to each thread-local value created in
- * {@link #initialValue(int)}.
- */
-public abstract class IdAssigningThreadLocal<T> extends ThreadLocal<T> {
-    private final AtomicInteger id = new AtomicInteger();
-
-    @Override
-    protected final T initialValue() {
-        return initialValue(id.getAndIncrement());
-    }
-
-    protected abstract T initialValue(int id);
-
-    /**
-     * Resets the id counter so that the next call to {@link #initialValue(int)} will get {@code 0}.
-     */
-    public void resetId() {
-        id.set(0);
+public class ConsistencyCheckIncompleteException extends Exception {
+    public ConsistencyCheckIncompleteException(Throwable cause) {
+        super("Consistency check did not complete", cause);
     }
 }

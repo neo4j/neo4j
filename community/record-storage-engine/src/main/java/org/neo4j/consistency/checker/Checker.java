@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.checker;
 
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
+import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.internal.helpers.collection.LongRange;
 
 interface Checker {

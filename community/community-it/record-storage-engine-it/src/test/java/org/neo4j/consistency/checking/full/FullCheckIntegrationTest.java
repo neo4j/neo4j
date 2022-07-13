@@ -98,6 +98,8 @@ import org.neo4j.consistency.LookupAccessorsFromRunningDb;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checker.EntityBasedMemoryLimiter;
 import org.neo4j.consistency.checker.RecordStorageConsistencyChecker;
+import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
+import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.GraphStoreFixture.IdGenerator;
 import org.neo4j.consistency.checking.GraphStoreFixture.TransactionDataBuilder;

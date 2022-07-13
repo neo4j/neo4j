@@ -22,7 +22,7 @@ package org.neo4j.consistency.checker;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
+import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.LongRange;

@@ -23,7 +23,7 @@ import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.AUTO_WIT
 
 import java.util.Collection;
 import org.neo4j.consistency.checking.ByteArrayBitsManipulator;
-import org.neo4j.consistency.checking.full.IdAssigningThreadLocal;
+import org.neo4j.consistency.checking.IdAssigningThreadLocal;
 import org.neo4j.consistency.statistics.Counts;
 import org.neo4j.consistency.statistics.Counts.Type;
 import org.neo4j.internal.batchimport.cache.ByteArray;

@@ -32,7 +32,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.common.EntityType;
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
+import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingConsumer;

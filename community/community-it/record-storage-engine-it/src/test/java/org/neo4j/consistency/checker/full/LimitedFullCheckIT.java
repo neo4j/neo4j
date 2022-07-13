@@ -33,7 +33,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.common.EntityType;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checker.EntityBasedMemoryLimiter;
-import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheckIntegrationTest;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.graphdb.Node;

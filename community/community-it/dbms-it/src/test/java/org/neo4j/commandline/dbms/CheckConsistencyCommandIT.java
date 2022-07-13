@@ -39,7 +39,7 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.CheckConsistencyCommand;
 import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
+import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.io.fs.FileSystemAbstraction;
