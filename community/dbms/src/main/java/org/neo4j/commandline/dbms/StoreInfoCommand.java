@@ -87,7 +87,7 @@ public class StoreInfoCommand extends AbstractCommand {
         try (var fs = ctx.fs();
                 var jobScheduler = createInitialisedScheduler();
                 var pageCache = StandalonePageCacheFactory.createPageCache(fs, jobScheduler, PageCacheTracer.NULL)) {
-            validatePath(fs, pageCache, all, path, neo4jLayout);
+            validatePath(fs, all, path, neo4jLayout);
             if (all) {
                 var collector = structured
                         ? Collectors.joining(",", "[", "]")
@@ -97,7 +97,7 @@ public class StoreInfoCommand extends AbstractCommand {
                         .map(dbPath ->
                                 neo4jLayout.databaseLayout(dbPath.getFileName().toString()))
                         .filter(dbLayout -> storageEngineSelector
-                                .selectStorageEngine(fs, dbLayout, pageCache)
+                                .selectStorageEngine(fs, dbLayout)
                                 .isPresent())
                         .map(dbLayout -> printInfo(fs, dbLayout, pageCache, config, structured, true))
                         .collect(collector);
@@ -114,8 +114,7 @@ public class StoreInfoCommand extends AbstractCommand {
         }
     }
 
-    private void validatePath(
-            FileSystemAbstraction fs, PageCache pageCache, boolean all, Path storePath, Neo4jLayout neo4jLayout) {
+    private void validatePath(FileSystemAbstraction fs, boolean all, Path storePath, Neo4jLayout neo4jLayout) {
         if (!fs.isDirectory(storePath)) {
             throw new IllegalArgumentException(
                     format("Provided path %s must point to a directory.", storePath.toAbsolutePath()));
@@ -123,9 +122,8 @@ public class StoreInfoCommand extends AbstractCommand {
 
         var dirName = storePath.getFileName().toString();
         var databaseLayout = neo4jLayout.databaseLayout(dirName);
-        var pathIsDatabase = storageEngineSelector
-                .selectStorageEngine(fs, databaseLayout, pageCache)
-                .isPresent();
+        var pathIsDatabase =
+                storageEngineSelector.selectStorageEngine(fs, databaseLayout).isPresent();
         if (all && pathIsDatabase) {
             throw new IllegalArgumentException(format(
                     "You used the --all option but directory %s contains the store files of a single database, "
@@ -149,7 +147,7 @@ public class StoreInfoCommand extends AbstractCommand {
         try (var ignored = LockChecker.checkDatabaseLock(databaseLayout);
                 var cursorContext = NULL_CONTEXT_FACTORY.create("printInfo")) {
             var storageEngineFactory = storageEngineSelector
-                    .selectStorageEngine(fs, databaseLayout, pageCache)
+                    .selectStorageEngine(fs, databaseLayout)
                     .orElseThrow();
             StoreId storeId = storageEngineFactory.retrieveStoreId(fs, databaseLayout, pageCache, cursorContext);
             if (storeId == null) {

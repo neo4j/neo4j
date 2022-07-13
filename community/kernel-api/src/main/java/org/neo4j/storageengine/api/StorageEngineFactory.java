@@ -172,7 +172,7 @@ public interface StorageEngineFactory {
 
     /**
      * Check if a store described by provided database layout exists in provided file system
-     * @param fileSystem     store file system
+     * @param fileSystem store file system
      * @param databaseLayout store database layout
      * @return true of store exist, false otherwise
      */
@@ -524,9 +524,8 @@ public interface StorageEngineFactory {
 
     @FunctionalInterface
     interface Selector {
-        Optional<StorageEngineFactory> selectStorageEngine(
-                FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache);
+        Optional<StorageEngineFactory> selectStorageEngine(FileSystemAbstraction fs, DatabaseLayout databaseLayout);
     }
 
-    Selector SELECTOR = (fs, databaseLayout, pageCache) -> selectStorageEngine(fs, databaseLayout);
+    Selector SELECTOR = StorageEngineFactory::selectStorageEngine;
 }

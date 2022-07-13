@@ -83,7 +83,7 @@ class StoreInfoCommandTest {
         storageEngineFactory = mock(StorageEngineFactory.class);
         doReturn(transactionIdStore).when(storageEngineFactory).readOnlyTransactionIdStore(any());
         storageEngineSelector = mock(StorageEngineFactory.Selector.class);
-        when(storageEngineSelector.selectStorageEngine(any(), any(), any())).thenReturn(Optional.empty());
+        when(storageEngineSelector.selectStorageEngine(any(), any())).thenReturn(Optional.empty());
         command = new StoreInfoCommand(
                 new ExecutionContext(homeDir, homeDir, out, mock(PrintStream.class), testDirectory.getFileSystem()),
                 storageEngineSelector);
@@ -336,10 +336,8 @@ class StoreInfoCommandTest {
             throws IOException {
         doReturn(Optional.of(storageEngineFactory))
                 .when(storageEngineSelector)
-                .selectStorageEngine(
-                        any(),
-                        argThat(dbLayout -> dbLayout.databaseDirectory().equals(databaseLayout.databaseDirectory())),
-                        any());
+                .selectStorageEngine(any(), argThat(dbLayout -> dbLayout.databaseDirectory()
+                        .equals(databaseLayout.databaseDirectory())));
         doReturn(true).when(storageEngineFactory).storageExists(any(), argThat(dbLayout -> dbLayout.databaseDirectory()
                 .equals(databaseLayout.databaseDirectory())));
         doReturn(StorageFilesState.recoveredState())
