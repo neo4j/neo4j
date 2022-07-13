@@ -1,0 +1,183 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.cypher.internal.compiler.planner.logical.plans
+
+import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.allRelationshipsScanLeafPlanner
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
+import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
+import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
+import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+
+class AllRelationshipsScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
+
+  test("simple outgoing directed scan") {
+    // given
+    val context = planningContext()
+    // (a)-[:R]->(b)
+    val qg = pattern("r", "a", "b", OUTGOING)
+
+    // when
+    val resultPlans = allRelationshipsScanLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
+
+    // then
+    resultPlans should equal(Set(
+      DirectedAllRelationshipsScan("r", "a", "b", Set.empty)
+    ))
+  }
+
+  test("simple incoming directed scan") {
+    // given
+    val context = planningContext()
+    // (a)<-[:R]-(b)
+    val qg = pattern("r", "a", "b", INCOMING)
+
+    // when
+    val resultPlans = allRelationshipsScanLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
+
+    // then
+    resultPlans should equal(Set(
+      DirectedAllRelationshipsScan("r", "b", "a", Set.empty)
+    ))
+  }
+
+  test("simple undirected scan") {
+    // given
+    val context = planningContext()
+    // (a)-[:R]-(b)
+    val qg = pattern("r", "a", "b", BOTH)
+
+    // when
+    val resultPlans = allRelationshipsScanLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
+
+    // then
+    resultPlans should equal(Set(
+      UndirectedAllRelationshipsScan("r", "a", "b", Set.empty)
+    ))
+  }
+
+  test("should not scan if pattern has types") {
+    // given
+    val context = planningContext()
+    // (a)-[:R1|R2]->(b)
+    val qg = pattern("r", "a", "b", OUTGOING, "R")
+
+    // when
+    val resultPlans = allRelationshipsScanLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
+
+    // then
+    resultPlans shouldBe empty
+  }
+
+  test("should not scan if variable length pattern") {
+    // given
+    val context = planningContext()
+    // (a)-[:R*]->(b)
+    val qg = varPattern("r", "a", "b", OUTGOING)
+
+    // when
+    val resultPlans = allRelationshipsScanLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
+
+    // then
+    resultPlans shouldBe empty
+  }
+
+  test("should not plan scan for skipped ids") {
+    // given
+    val context = planningContext()
+    // (a)-[:R]->(b)
+    val qg = pattern("r", "a", "b", OUTGOING)
+
+    // then
+    allRelationshipsScanLeafPlanner(Set("r"))(qg, InterestingOrderConfig.empty, context) should be(empty)
+    allRelationshipsScanLeafPlanner(Set("a"))(qg, InterestingOrderConfig.empty, context) should be(empty)
+    allRelationshipsScanLeafPlanner(Set("b"))(qg, InterestingOrderConfig.empty, context) should be(empty)
+  }
+
+  test("should not plan scan when rel id is in arguments") {
+    // given
+    // (a)-[:R]->(b)
+    val context = planningContext()
+    val qg = pattern("r", "a", "b", OUTGOING)
+
+    // then
+    allRelationshipsScanLeafPlanner(Set.empty)(
+      qg.withArgumentIds(Set("r")),
+      InterestingOrderConfig.empty,
+      context
+    ) should be(empty)
+  }
+
+  test("should plan scan if no type index") {
+    // given
+    val context = planningContext(typeScanEnabled = false)
+
+    // (a)-[:R]->(b)
+    val qg = pattern("r", "a", "b", OUTGOING)
+
+    // when
+    val resultPlans = allRelationshipsScanLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
+
+    // then
+    resultPlans should equal(Set(
+      DirectedAllRelationshipsScan("r", "a", "b", Set.empty)
+    ))
+  }
+
+  private def pattern(name: String, from: String, to: String, direction: SemanticDirection, types: String*) =
+    QueryGraph(
+      patternNodes = Set(name, from, to),
+      patternRelationships =
+        Set(PatternRelationship(name, (from, to), direction, types.map(relTypeName(_)), SimplePatternLength))
+    )
+
+  private def varPattern(name: String, from: String, to: String, direction: SemanticDirection, types: String*) =
+    QueryGraph(
+      patternNodes = Set(name, from, to),
+      patternRelationships =
+        Set(PatternRelationship(name, (from, to), direction, types.map(relTypeName(_)), VarPatternLength(1, None)))
+    )
+
+  def planningContext(typeScanEnabled: Boolean = true): LogicalPlanningContext = {
+    val planContext = newMockedPlanContext()
+    when(planContext.canLookupRelationshipsByType).thenReturn(typeScanEnabled)
+    newMockedLogicalPlanningContext(planContext = planContext, semanticTable = newMockedSemanticTable)
+  }
+
+}

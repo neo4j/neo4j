@@ -130,6 +130,7 @@ import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
+import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
@@ -217,6 +218,7 @@ import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
+import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
@@ -330,6 +332,45 @@ case class LogicalPlanProducer(
     val solved =
       RegularSinglePlannerQuery(queryGraph = QueryGraph(argumentIds = argumentIds, patternNodes = Set(idName)))
     annotate(AllNodesScan(idName, argumentIds), solved, ProvidedOrder.empty, context)
+  }
+
+  /**
+   * @param idName             the name of the relationship variable
+   * @param patternForLeafPlan the pattern to use for the leaf plan
+   * @param originalPattern    the original pattern, as it appears in the query graph
+   * @param hiddenSelections   selections that make the leaf plan solve the originalPattern instead.
+   *                           Must not contain any pattern expressions or pattern comprehensions.
+   */
+  def planAllRelationshipsScan(
+    idName: String,
+    patternForLeafPlan: PatternRelationship,
+    originalPattern: PatternRelationship,
+    hiddenSelections: Seq[Expression],
+    argumentIds: Set[String],
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+    require(patternForLeafPlan.types.isEmpty)
+    def planLeaf: LogicalPlan = {
+      val (firstNode, secondNode) = patternForLeafPlan.inOrder
+      val solved =
+        RegularSinglePlannerQuery(queryGraph =
+          QueryGraph(
+            argumentIds = argumentIds,
+            patternNodes = Set(firstNode, secondNode),
+            patternRelationships = Set(patternForLeafPlan)
+          )
+        )
+
+      val leafPlan =
+        if (patternForLeafPlan.dir == BOTH) {
+          UndirectedAllRelationshipsScan(idName, firstNode, secondNode, argumentIds)
+        } else {
+          DirectedAllRelationshipsScan(idName, firstNode, secondNode, argumentIds)
+        }
+      annotate(leafPlan, solved, ProvidedOrder.empty, context)
+    }
+
+    planHiddenSelectionIfNeeded(planLeaf, hiddenSelections, context, originalPattern)
   }
 
   /**

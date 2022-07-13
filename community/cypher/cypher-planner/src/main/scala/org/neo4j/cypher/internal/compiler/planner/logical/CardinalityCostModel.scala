@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
@@ -88,6 +89,7 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleFromRightLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
@@ -263,7 +265,7 @@ object CardinalityCostModel {
   val PROPERTY_ACCESS_DB_HITS = 2
   val LABEL_CHECK_DB_HITS = 1
   val EXPAND_INTO_COST: CostPerRow = 6.4
-  val ALL_NODES_SCAN_COST_PER_ROW = 1.2
+  val ALL_SCAN_COST_PER_ROW = 1.2
 
   val INDEX_SCAN_COST_PER_ROW = 1.0
   val INDEX_SEEK_COST_PER_ROW = 1.9
@@ -314,7 +316,7 @@ object CardinalityCostModel {
       val multiplier = if (directed) 1.0 else 0.5
       DIRECTED_RELATIONSHIP_INDEX_SCAN_COST_PER_ROW * multiplier
     } else {
-      ALL_NODES_SCAN_COST_PER_ROW * allNodeScanCostMultiplier
+      ALL_SCAN_COST_PER_ROW * allNodeScanCostMultiplier
     }
   }
 
@@ -348,7 +350,7 @@ object CardinalityCostModel {
 
       case Selection(predicate, _) => costPerRowFor(predicate, semanticTable)
 
-      case _: AllNodesScan => ALL_NODES_SCAN_COST_PER_ROW
+      case _: AllNodesScan => ALL_SCAN_COST_PER_ROW
 
       case e: OptionalExpand if e.mode == ExpandInto => EXPAND_INTO_COST
 
@@ -371,6 +373,10 @@ object CardinalityCostModel {
       case _: UndirectedRelationshipByIdSeek
         // Only every second row needs to access the store
         => STORE_LOOKUP_COST_PER_ROW / 2
+
+      case _: DirectedAllRelationshipsScan => ALL_SCAN_COST_PER_ROW
+
+      case _: UndirectedAllRelationshipsScan => ALL_SCAN_COST_PER_ROW / 2
 
       case plan: DirectedRelationshipTypeScan =>
         hackyRelTypeScanCost(propertyAccess, plan, directed = true, 2.2)
