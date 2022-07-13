@@ -21,15 +21,13 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
-import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.RelationshipType
 
-abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
+abstract class AllRelationshipsScanTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
   sizeHint: Int
@@ -46,7 +44,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "x", "y")
       .filter("r:R")
-      .relationshipTypeScan("(x)-[r:R]->(y)")
+      .allRelationshipsScan("(x)-[r]->(y)")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -57,27 +55,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     ))
   }
 
-  test("should handle directed relationship scan for non-existing type") {
-    // given
-    val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    given {
-      bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("r", "x", "y")
-      .filter("r:X")
-      .relationshipTypeScan("(x)-[r:X]->(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("r", "x", "y").withNoRows()
-  }
-
-  test("should combine directed type scan and filter") {
+  test("should combine directed relationship scan and filter") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
     given {
@@ -88,7 +66,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "x", "y")
       .filter("x:NOT_THERE")
-      .relationshipTypeScan("(x)-[r:R]->(y)")
+      .allRelationshipsScan("(x)-[r]->(y)")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -105,10 +83,10 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r1", "r2", "r3")
       .apply()
-      .|.relationshipTypeScan("()-[r3:R]->()")
+      .|.allRelationshipsScan("()-[r3]->()")
       .apply()
-      .|.relationshipTypeScan("()-[r2:R]->()")
-      .relationshipTypeScan("()-[r1:R]->()")
+      .|.allRelationshipsScan("()-[r2]->()")
+      .allRelationshipsScan("()-[r1]->()")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -127,7 +105,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
       .produceResults("b", "r")
       .apply()
       .|.projection("a AS b")
-      .|.relationshipTypeScan("()-[r:R]->()", "a")
+      .|.allRelationshipsScan("()-[r]->()", "a")
       .input(variables = Seq("a"))
       .build()
 
@@ -139,44 +117,25 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
   test("should support undirected relationship scan") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (_, _, relationships, _) = given {
+    val (_, _, relsA2B, relsB2A) = given {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "x", "y")
-      .relationshipTypeScan("(x)-[r:R]-(y)")
+      .allRelationshipsScan("(x)-[r]-(y)")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("r", "x", "y").withRows(relationships.flatMap(r =>
+    runtimeResult should beColumns("r", "x", "y").withRows((relsA2B ++ relsB2A).flatMap(r =>
       Seq(Array(r, r.getStartNode, r.getEndNode), Array(r, r.getEndNode, r.getStartNode))
     ))
   }
 
-  test("should handle undirected relationship scan for non-existent type") {
-    // given
-    val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    given {
-      bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("r", "x", "y")
-      .relationshipTypeScan("(x)-[r:X]-(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("r", "x", "y").withNoRows()
-  }
-
-  test("should combine undirected type scan and filter") {
+  test("should combine undirected relationship scan and filter") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
     given {
@@ -187,7 +146,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "x", "y")
       .filter("x:NOT_THERE")
-      .relationshipTypeScan("(x)-[r:R]-(y)")
+      .allRelationshipsScan("(x)-[r]-(y)")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -204,10 +163,10 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r1", "r2", "r3")
       .apply()
-      .|.relationshipTypeScan("()-[r3:R]-()")
+      .|.allRelationshipsScan("()-[r3]-()")
       .apply()
-      .|.relationshipTypeScan("()-[r2:R]-()")
-      .relationshipTypeScan("()-[r1:R]-()")
+      .|.allRelationshipsScan("()-[r2]-()")
+      .allRelationshipsScan("()-[r1]-()")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -228,7 +187,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
       .produceResults("b", "r")
       .apply()
       .|.projection("a AS b")
-      .|.relationshipTypeScan("()-[r:R]-()", "a")
+      .|.allRelationshipsScan("()-[r]-()", "a")
       .input(variables = Seq("a"))
       .build()
 
@@ -237,104 +196,24 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("b", "r").withRows(expected)
   }
 
-  test("directed relationship scan should use ascending index order when provided") {
-    // given
-    val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (_, _, relationships, _) = given {
-      bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
+  test("should handle directed and continuation") {
+    val size = 100
+    val (_, rels) = given {
+      circleGraph(size)
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("r", "x", "y")
-      .relationshipTypeScan("(x)-[r:R]->(y)", IndexOrderAscending)
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("r", "x", "y").withRows(
-      inOrder(
-        relationships
-          .map(r => Array(r, r.getStartNode, r.getEndNode))
-          .sortBy(_.head.getId)
-      )
-    )
-  }
-
-  test("directed relationship scan should use descending index order when provided") {
-    // given
-    val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (_, _, relationships, _) = given {
-      bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("r", "x", "y")
-      .relationshipTypeScan("(x)-[r:R]->(y)", IndexOrderDescending)
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
+      .produceResults("r")
+      .nonFuseable()
+      .unwind(s"range(1, 10) AS r2")
+      .allRelationshipsScan("(n)-[r]->(m)")
+      .build(readOnly = false)
 
     // then
-    runtimeResult should beColumns("r", "x", "y").withRows(
-      inOrder(
-        relationships
-          .map(r => Array(r, r.getStartNode, r.getEndNode))
-          .sortBy(_.head.getId * -1)
-      )
-    )
-  }
-
-  test("undirected relationship scan should use ascending index order when provided") {
-    // given
-    val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (_, _, relationships, _) = given {
-      bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("r", "x", "y")
-      .relationshipTypeScan("(x)-[r:R]-(y)", IndexOrderAscending)
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("r", "x", "y").withRows(
-      inOrder(
-        relationships
-          .flatMap(r => Seq(Array(r, r.getStartNode, r.getEndNode), Array(r, r.getEndNode, r.getStartNode)))
-          .sortBy(_.head.getId)
-      )
-    )
-  }
-
-  test("undirected relationship scan should use descending index order when provided") {
-    // given
-    val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (_, _, relationships, _) = given {
-      bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("r", "x", "y")
-      .relationshipTypeScan("(x)-[r:R]-(y)", IndexOrderDescending)
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("r", "x", "y").withRows(
-      inOrder(
-        relationships
-          .flatMap(r => Seq(Array(r, r.getStartNode, r.getEndNode), Array(r, r.getEndNode, r.getStartNode)))
-          .sortBy(_.head.getId * -1)
-      )
-    )
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("r")
+      .withRows(singleColumn(rels.flatMap(r => Seq.fill(10)(r))))
   }
 
   test("should handle undirected and continuation") {
@@ -348,7 +227,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
       .produceResults("r")
       .nonFuseable()
       .unwind(s"range(1, 10) AS r2")
-      .relationshipTypeScan("(n)-[r:R]-(m)")
+      .allRelationshipsScan("(n)-[r]-(m)")
       .build(readOnly = false)
 
     // then
@@ -366,7 +245,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .relationshipTypeScan("(n)-[r:R]-(m)")
+      .allRelationshipsScan("(n)-[r]-(m)")
       .build(readOnly = false)
 
     execute(logicalQuery, runtime) should beColumns("r").withSingleRow(rel)

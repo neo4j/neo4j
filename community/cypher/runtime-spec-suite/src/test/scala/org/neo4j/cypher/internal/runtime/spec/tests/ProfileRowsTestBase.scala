@@ -564,6 +564,110 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
     queryProfile.operatorProfile(3).rows() shouldBe nodesPerLabel // nodeByIdSeek
   }
 
+  test("should profile rows with directed all relationships scan") {
+    // given
+    val nodesPerLabel = 20
+    val (_, _, rs, _) = given {
+      bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
+    }
+    val id = rs.head.getId
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .filter(s"id(r) = $id")
+      .allRelationshipsScan("(x)-[r]->(y)")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe 1 // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe 1 // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe 1 // filter
+    queryProfile.operatorProfile(3).rows() shouldBe 2 * nodesPerLabel * nodesPerLabel // all relationships scan
+  }
+
+  test("should profile rows undirected all relationships scan") {
+    // given
+    val nodesPerLabel = 20
+    val (_, _, rs, _) = given {
+      bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
+    }
+    val id = rs.head.getId
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .filter(s"id(r) = $id")
+      .allRelationshipsScan("(x)-[r]-(y)")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe 2 // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe 2 // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe 2 // filter
+    queryProfile.operatorProfile(3).rows() shouldBe 4 * nodesPerLabel * nodesPerLabel // all relationships scan
+  }
+
+  test("should profile rows with directed relationship type scan") {
+    // given
+    val nodesPerLabel = 20
+    val (_, _, rs, _) = given {
+      bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
+    }
+    val id = rs.head.getId
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .filter(s"id(r) = $id")
+      .relationshipTypeScan("(x)-[r:R]->(y)")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe 1 // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe 1 // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe 1 // filter
+    queryProfile.operatorProfile(3).rows() shouldBe nodesPerLabel * nodesPerLabel // relationship type scan
+  }
+
+  test("should profile rows undirected relationship type scan") {
+    // given
+    val nodesPerLabel = 20
+    val (_, _, rs, _) = given {
+      bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
+    }
+    val id = rs.head.getId
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .filter(s"id(r) = $id")
+      .relationshipTypeScan("(x)-[r:R]-(y)")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe 2 // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe 2 // nonFuseable
+    queryProfile.operatorProfile(2).rows() shouldBe 2 // filter
+    queryProfile.operatorProfile(3).rows() shouldBe 2 * nodesPerLabel * nodesPerLabel // relationship type scan
+  }
+
   test("should profile rows with single directed rel by id seek (fused pipelines)") {
     // given
     val nodesPerLabel = 20

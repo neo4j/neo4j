@@ -343,6 +343,89 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     result.runtimeResult.queryProfile()
   }
 
+  test("should profile dbHits of directed all relationships scan") {
+    assume(!(isParallel && runOnlySafeScenarios))
+    // given
+    given { circleGraph(sizeHint) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "x", "y")
+      .allRelationshipsScan("(x)-[r]->(y)")
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    // then
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe sizeHint
+  }
+
+  test("should profile dbHits of undirected all relationships scan") {
+    assume(!(isParallel && runOnlySafeScenarios))
+    // given
+    given { circleGraph(sizeHint) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "x", "y")
+      .allRelationshipsScan("(x)-[r]-(y)")
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    // then
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe sizeHint
+  }
+
+  test("should profile dbHits of directed relationship type scan") {
+    assume(!(isParallel && runOnlySafeScenarios))
+    // given
+    given { circleGraph(sizeHint) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "x", "y")
+      .relationshipTypeScan("(x)-[r:R]->(y)")
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    // then
+    val expectedDbHits: Int = runtimeUsed match {
+      case Slotted | Interpreted => sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/
+      case Pipelined             => sizeHint + 1
+      case Parallel              => 2 * sizeHint
+    }
+
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe expectedDbHits
+  }
+
+  test("should profile dbHits of undirected relationship type scan") {
+    assume(!(isParallel && runOnlySafeScenarios))
+    // given
+    given { circleGraph(sizeHint) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "x", "y")
+      .relationshipTypeScan("(x)-[r:R]-(y)")
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    // then
+    val expectedDbHits: Int = runtimeUsed match {
+      case Slotted | Interpreted => sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/
+      case Pipelined             => sizeHint + 1
+      case Parallel              => 2 * sizeHint
+    }
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe expectedDbHits
+  }
+
   test("should profile dbHits of directed relationship index exact seek") {
     // given
     given {
