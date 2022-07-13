@@ -114,7 +114,7 @@ class Neo4jAdminCommandTest {
         void shouldPassThroughAndAcceptVerboseAndExpandCommands() throws Exception {
             addConf(GraphDatabaseSettings.default_database, "$(echo foo)");
             if (fork.run(() -> assertThat(
-                            execute("server", "report", "--to", home.toString(), "--verbose", "--expand-commands"))
+                            execute("server", "report", "--to-path", home.toString(), "--verbose", "--expand-commands"))
                     .isEqualTo(EXIT_CODE_OK))) {
                 assertThat(out.toString()).containsSubsequence("Writing report to", "100%");
                 assertThat(err.toString()).isEmpty();

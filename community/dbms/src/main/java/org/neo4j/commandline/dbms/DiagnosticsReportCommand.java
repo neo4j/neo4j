@@ -23,7 +23,6 @@ import static java.lang.String.join;
 import static org.apache.commons.text.StringEscapeUtils.escapeCsv;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
 import static picocli.CommandLine.Command;
-import static picocli.CommandLine.Help.Visibility.NEVER;
 import static picocli.CommandLine.Option;
 import static picocli.CommandLine.Parameters;
 
@@ -67,22 +66,22 @@ public class DiagnosticsReportCommand extends AbstractCommand {
         "logs", "config", "plugins", "tree", "metrics", "threads", "sysprop", "ps", "version"
     };
     private static final DateTimeFormatter filenameDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmmss");
-    private static final long NO_PID = 0;
 
     @Option(names = "--list", arity = "0", description = "List all available classifiers")
     private boolean list;
 
-    @Option(names = "--force", arity = "0", description = "Ignore disk full warning")
-    private boolean force;
+    @Option(
+            names = "--ignore-disk-space-check",
+            defaultValue = "false",
+            arity = "0",
+            description = "Ignore disk full warning")
+    private boolean ignoreDiskSpaceCheck;
 
     @Option(
-            names = "--to",
+            names = "--to-path",
             paramLabel = "<path>",
             description = "Destination directory for reports. Defaults to a system tmp directory.")
     private Path reportDir;
-
-    @Option(names = "--pid", description = "Specify process id of running neo4j instance", showDefaultValue = NEVER)
-    private long pid;
 
     @Parameters(arity = "0..*", paramLabel = "<classifier>")
     private Set<String> classifiers = new TreeSet<>(List.of(DEFAULT_CLASSIFIERS));
@@ -118,7 +117,7 @@ public class DiagnosticsReportCommand extends AbstractCommand {
             }
             Path reportFile = reportDir.resolve(getDefaultFilename());
             ctx.out().println("Writing report to " + reportFile.toAbsolutePath());
-            reporter.dump(classifiers, reportFile, progress, force);
+            reporter.dump(classifiers, reportFile, progress, ignoreDiskSpaceCheck);
         } catch (IOException e) {
             throw new CommandFailedException("Creating archive failed", e);
         }
@@ -193,11 +192,7 @@ public class DiagnosticsReportCommand extends AbstractCommand {
 
     private void registerJMXSources(DiagnosticsReporter reporter) {
         Optional<JmxDump> jmxDump;
-        if (pid == NO_PID) {
-            jmxDump = jmxDumper.getJMXDump();
-        } else {
-            jmxDump = jmxDumper.getJMXDump(pid);
-        }
+        jmxDump = jmxDumper.getJMXDump();
         jmxDump.ifPresent(jmx -> {
             reporter.registerSource("threads", jmx.threadDump());
             reporter.registerSource("heap", jmx.heapDump());

@@ -58,13 +58,11 @@ public class JMXDumper {
             return getJMXDump(pid.get());
         } else {
             out.println("No running instance of neo4j was found. Online reports will be omitted.");
-            out.println(
-                    "If neo4j is running but not detected, you can supply the process id of the running instance with --pid");
             return Optional.empty();
         }
     }
 
-    public Optional<JmxDump> getJMXDump(long pid) {
+    private Optional<JmxDump> getJMXDump(long pid) {
         try {
             LocalVirtualMachine vm = LocalVirtualMachine.from(pid);
             out.println("Attached to running process with process id " + pid);

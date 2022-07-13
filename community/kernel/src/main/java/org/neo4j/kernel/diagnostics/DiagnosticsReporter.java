@@ -60,12 +60,16 @@ public class DiagnosticsReporter {
         additionalSources.computeIfAbsent(classifier, c -> new ArrayList<>()).add(source);
     }
 
-    public void dump(Set<String> classifiers, Path destination, DiagnosticsReporterProgress progress, boolean force)
+    public void dump(
+            Set<String> classifiers,
+            Path destination,
+            DiagnosticsReporterProgress progress,
+            boolean ignoreDiskSpaceCheck)
             throws IOException {
         final List<DiagnosticsReportSource> sources = getAllSources(classifiers);
         final Path destinationDir = createDirectories(destination.getParent());
 
-        if (!force) {
+        if (!ignoreDiskSpaceCheck) {
             estimateSizeAndCheckAvailableDiskSpace(destination, sources, destinationDir);
         }
 

@@ -105,7 +105,7 @@ class DiagnosticsReportCommandIT {
 
         // Run command, should detect running instance
         try {
-            String[] args = {"threads", "--to=" + testDirectory.absolutePath() + "/reports"};
+            String[] args = {"threads", "--to-path=" + testDirectory.absolutePath() + "/reports"};
             Path homeDir = testDirectory.homePath();
             var ctx = new ExecutionContext(homeDir, homeDir, System.out, System.err, testDirectory.getFileSystem());
             DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
@@ -147,7 +147,7 @@ class DiagnosticsReportCommandIT {
 
         // Run command, should detect running instance
         try {
-            String[] args = {"heap", "--to=" + testDirectory.absolutePath() + "/reports"};
+            String[] args = {"heap", "--to-path=" + testDirectory.absolutePath() + "/reports"};
             Path homeDir = testDirectory.homePath();
             var ctx = new ExecutionContext(homeDir, homeDir, System.out, System.err, testDirectory.getFileSystem());
             DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
@@ -185,7 +185,7 @@ class DiagnosticsReportCommandIT {
         testDirectory.createFile("logs/custom.neo4j.log.name");
         testDirectory.createFile("logs/custom.neo4j.log.name.1");
 
-        String[] args = {"logs", "--to=" + testDirectory.absolutePath() + "/reports"};
+        String[] args = {"logs", "--to-path=" + testDirectory.absolutePath() + "/reports"};
         Path homeDir = testDirectory.homePath();
         var ctx = new ExecutionContext(homeDir, homeDir, System.out, System.err, testDirectory.getFileSystem());
         DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
@@ -267,7 +267,6 @@ class DiagnosticsReportCommandIT {
             assertThat(baos.toString())
                     .isEqualTo(String.format("Finding running instance of neo4j%n"
                             + "No running instance of neo4j was found. Online reports will be omitted.%n"
-                            + "If neo4j is running but not detected, you can supply the process id of the running instance with --pid%n"
                             + "All available classifiers:%n"
                             + "  config     include configuration file%n"
                             + "  logs       include log files%n"
@@ -281,7 +280,7 @@ class DiagnosticsReportCommandIT {
 
     @Test
     void overrideDestination() throws Exception {
-        String toArgument = "--to=" + System.getProperty("user.dir") + "/other/";
+        String toArgument = "--to-path=" + System.getProperty("user.dir") + "/other/";
         String[] args = {toArgument, "all"};
 
         DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);

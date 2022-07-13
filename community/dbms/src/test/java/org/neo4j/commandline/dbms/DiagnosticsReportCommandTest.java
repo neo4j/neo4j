@@ -43,8 +43,8 @@ class DiagnosticsReportCommandTest {
 
                 USAGE
 
-                report [--expand-commands] [--force] [--list] [--verbose] [--pid=<pid>]
-                       [--to=<path>] [<classifier>...]
+                report [--expand-commands] [--ignore-disk-space-check] [--list] [--verbose]
+                       [--to-path=<path>] [<classifier>...]
 
                 DESCRIPTION
 
@@ -60,10 +60,10 @@ class DiagnosticsReportCommandTest {
                 OPTIONS
 
                       --expand-commands   Allow command expansion in config value evaluation.
-                      --force             Ignore disk full warning
+                      --ignore-disk-space-check
+                                          Ignore disk full warning
                       --list              List all available classifiers
-                      --pid=<pid>         Specify process id of running neo4j instance
-                      --to=<path>         Destination directory for reports. Defaults to a
+                      --to-path=<path>    Destination directory for reports. Defaults to a
                                             system tmp directory.
                       --verbose           Enable verbose output.""");
     }
