@@ -20,13 +20,11 @@
 package synchronization;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -40,39 +38,33 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.log4j.Log4jLogProvider;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
 
-@Neo4jLayoutExtension
+@DbmsExtension
 @ExtendWith(SuppressOutputExtension.class)
 @ResourceLock(Resources.SYSTEM_OUT)
 class ConcurrentChangesOnEntitiesTest {
     @Inject
     private DatabaseLayout databaseLayout;
 
-    private final CyclicBarrier barrier = new CyclicBarrier(2);
-    private final AtomicReference<Exception> ex = new AtomicReference<>();
+    @Inject
     private GraphDatabaseService db;
+
+    @Inject
     private DatabaseManagementService managementService;
 
-    @BeforeEach
-    void setup() {
-        managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
-        db = managementService.database(DEFAULT_DATABASE_NAME);
-    }
+    private final CyclicBarrier barrier = new CyclicBarrier(2);
+    private final AtomicReference<Exception> ex = new AtomicReference<>();
 
     @Test
     void addConcurrentlySameLabelToANode() throws Throwable {
+        final var nodeId = initWithNode(db);
 
-        final long nodeId = initWithNode(db);
-
-        Thread t1 = newThreadForNodeAction(nodeId, node -> node.addLabel(Label.label("A")));
-
-        Thread t2 = newThreadForNodeAction(nodeId, node -> node.addLabel(Label.label("A")));
+        final var t1 = newThreadForNodeAction(nodeId, node -> node.addLabel(Label.label("A")));
+        final var t2 = newThreadForNodeAction(nodeId, node -> node.addLabel(Label.label("A")));
 
         startAndWait(t1, t2);
 
@@ -83,11 +75,10 @@ class ConcurrentChangesOnEntitiesTest {
 
     @Test
     void setConcurrentlySamePropertyWithDifferentValuesOnANode() throws Throwable {
-        final long nodeId = initWithNode(db);
+        final var nodeId = initWithNode(db);
 
-        Thread t1 = newThreadForNodeAction(nodeId, node -> node.setProperty("a", 0.788));
-
-        Thread t2 = newThreadForNodeAction(nodeId, node -> node.setProperty("a", new double[] {0.999, 0.77}));
+        final var t1 = newThreadForNodeAction(nodeId, node -> node.setProperty("a", 0.788));
+        final var t2 = newThreadForNodeAction(nodeId, node -> node.setProperty("a", new double[] {0.999, 0.77}));
 
         startAndWait(t1, t2);
 
@@ -98,11 +89,10 @@ class ConcurrentChangesOnEntitiesTest {
 
     @Test
     void setConcurrentlySamePropertyWithDifferentValuesOnARelationship() throws Throwable {
-        final long relId = initWithRel(db);
+        final var relId = initWithRel(db);
 
-        Thread t1 = newThreadForRelationshipAction(relId, relationship -> relationship.setProperty("a", 0.788));
-
-        Thread t2 = newThreadForRelationshipAction(
+        final var t1 = newThreadForRelationshipAction(relId, relationship -> relationship.setProperty("a", 0.788));
+        final var t2 = newThreadForRelationshipAction(
                 relId, relationship -> relationship.setProperty("a", new double[] {0.999, 0.77}));
 
         startAndWait(t1, t2);
@@ -112,30 +102,30 @@ class ConcurrentChangesOnEntitiesTest {
         assertDatabaseConsistent();
     }
 
-    private static long initWithNode(GraphDatabaseService db) {
+    private static String initWithNode(GraphDatabaseService db) {
         try (Transaction tx = db.beginTx()) {
-            Node theNode = tx.createNode();
-            long id = theNode.getId();
+            final var theNode = tx.createNode();
+            final var id = theNode.getElementId();
             tx.commit();
             return id;
         }
     }
 
-    private static long initWithRel(GraphDatabaseService db) {
-        try (Transaction tx = db.beginTx()) {
-            Node node = tx.createNode();
+    private static String initWithRel(GraphDatabaseService db) {
+        try (var tx = db.beginTx()) {
+            final var node = tx.createNode();
             node.setProperty("a", "prop");
-            Relationship rel = node.createRelationshipTo(tx.createNode(), RelationshipType.withName("T"));
-            long id = rel.getId();
+            final var rel = node.createRelationshipTo(tx.createNode(), RelationshipType.withName("T"));
+            final var id = rel.getElementId();
             tx.commit();
             return id;
         }
     }
 
-    private Thread newThreadForNodeAction(final long nodeId, final Consumer<Node> nodeConsumer) {
+    private Thread newThreadForNodeAction(final String nodeId, final Consumer<Node> nodeConsumer) {
         return new Thread(() -> {
-            try (Transaction tx = db.beginTx()) {
-                Node node = tx.getNodeById(nodeId);
+            try (var tx = db.beginTx()) {
+                final var node = tx.getNodeByElementId(nodeId);
                 barrier.await();
                 nodeConsumer.accept(node);
                 tx.commit();
@@ -145,10 +135,11 @@ class ConcurrentChangesOnEntitiesTest {
         });
     }
 
-    private Thread newThreadForRelationshipAction(final long relationshipId, final Consumer<Relationship> relConsumer) {
+    private Thread newThreadForRelationshipAction(
+            final String relationshipId, final Consumer<Relationship> relConsumer) {
         return new Thread(() -> {
-            try (Transaction tx = db.beginTx()) {
-                Relationship relationship = tx.getRelationshipById(relationshipId);
+            try (var tx = db.beginTx()) {
+                final var relationship = tx.getRelationshipByElementId(relationshipId);
                 barrier.await();
                 relConsumer.accept(relationship);
                 tx.commit();
@@ -171,11 +162,10 @@ class ConcurrentChangesOnEntitiesTest {
     }
 
     private void assertDatabaseConsistent() {
-        InternalLogProvider logProvider = new Log4jLogProvider(System.out);
         assertDoesNotThrow(() -> {
-            ConsistencyCheckService.Result result = new ConsistencyCheckService(databaseLayout)
+            final var result = new ConsistencyCheckService(databaseLayout)
                     .with(System.err)
-                    .with(logProvider)
+                    .with(new Log4jLogProvider(System.out))
                     .runFullConsistencyCheck();
             Assertions.assertTrue(result.isSuccessful());
         });
