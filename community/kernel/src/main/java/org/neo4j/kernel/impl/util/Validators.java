@@ -30,6 +30,7 @@ import org.neo4j.common.Validator;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.util.Preconditions;
 
 public final class Validators {
@@ -84,7 +85,8 @@ public final class Validators {
     };
 
     public static boolean isExistingDatabase(FileSystemAbstraction fileSystem, DatabaseLayout layout) {
-        return fileSystem.fileExists(layout.metadataStore());
+        return StorageEngineFactory.selectStorageEngine(fileSystem, layout, null)
+                .isPresent();
     }
 
     public static <T> Validator<T> emptyValidator() {

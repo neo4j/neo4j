@@ -72,9 +72,9 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.locker.DatabaseLocker;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DisabledForRoot;
@@ -105,8 +105,7 @@ class DumpCommandIT {
         configDir = testDirectory.directory("config-dir");
         archive = testDirectory.file("some-archive.dump");
         dumper = mock(Dumper.class);
-        databaseLayout = neo4jLayout.databaseLayout("foo");
-        databaseDirectory = databaseLayout.databaseDirectory();
+        databaseDirectory = neo4jLayout.databaseLayout("foo").databaseDirectory();
         putStoreInDirectory(buildConfig(), databaseDirectory);
     }
 
@@ -219,7 +218,6 @@ class DumpCommandIT {
         LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, testDirectory.getFileSystem())
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())
-                .withStorageEngineFactory(StorageEngineFactory.defaultStorageEngine())
                 .withStoreId(new StoreId(1, 1, "engine-1", "format-1", 1, 1))
                 .build();
         try (Lifespan ignored = new Lifespan(logFiles)) {
@@ -406,13 +404,14 @@ class DumpCommandIT {
         }
     }
 
-    private static void putStoreInDirectory(Config config, Path databaseDirectory) {
+    private void putStoreInDirectory(Config config, Path databaseDirectory) {
         String databaseName = databaseDirectory.getFileName().toString();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(
                         databaseDirectory.getParent().getParent().getParent())
                 .setConfig(config)
                 .setConfig(default_database, databaseName)
                 .build();
+        databaseLayout = ((GraphDatabaseAPI) managementService.database(databaseName)).databaseLayout();
         managementService.shutdown();
     }
 
