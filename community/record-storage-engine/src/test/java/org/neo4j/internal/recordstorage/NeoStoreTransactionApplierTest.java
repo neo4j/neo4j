@@ -30,7 +30,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
@@ -815,7 +814,6 @@ class NeoStoreTransactionApplierTest {
         assertFalse(result);
 
         verify(schemaStore).updateRecord(eq(after), any(), any(), any(), any());
-        verify(metaDataStore).setLatestConstraintIntroducingTx(eq(transactionId));
         verify(cacheAccess).addSchemaRule(rule);
     }
 
@@ -838,7 +836,6 @@ class NeoStoreTransactionApplierTest {
 
         verify(schemaStore).setHighestPossibleIdInUse(after.getId());
         verify(schemaStore).updateRecord(eq(after), any(), any(), any(), any());
-        verify(metaDataStore).setLatestConstraintIntroducingTx(eq(transactionId));
         verify(cacheAccess).addSchemaRule(rule);
     }
 
@@ -859,7 +856,6 @@ class NeoStoreTransactionApplierTest {
         assertFalse(result);
 
         verify(schemaStore).updateRecord(eq(after), any(), any(), any(), any());
-        verify(metaDataStore).setLatestConstraintIntroducingTx(eq(transactionId));
         verify(cacheAccess).addSchemaRule(rule);
     }
 
@@ -881,7 +877,6 @@ class NeoStoreTransactionApplierTest {
 
         verify(schemaStore).setHighestPossibleIdInUse(after.getId());
         verify(schemaStore).updateRecord(eq(after), any(), any(), any(), any());
-        verify(metaDataStore).setLatestConstraintIntroducingTx(eq(transactionId));
         verify(cacheAccess).addSchemaRule(rule);
     }
 
@@ -901,7 +896,6 @@ class NeoStoreTransactionApplierTest {
         assertFalse(result);
 
         verify(schemaStore).updateRecord(eq(after), any(), any(), any(), any());
-        verify(metaDataStore, never()).setLatestConstraintIntroducingTx(eq(transactionId));
         verify(cacheAccess).removeSchemaRuleFromCache(command.getKey());
     }
 
@@ -922,7 +916,6 @@ class NeoStoreTransactionApplierTest {
 
         verify(schemaStore).setHighestPossibleIdInUse(after.getId());
         verify(schemaStore).updateRecord(eq(after), any(), any(), any(), any());
-        verify(metaDataStore, never()).setLatestConstraintIntroducingTx(transactionId);
         verify(cacheAccess).removeSchemaRuleFromCache(command.getKey());
     }
 

@@ -83,7 +83,6 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
@@ -326,40 +325,6 @@ class NeoStoresTest {
         } finally {
             managementService.shutdown();
         }
-    }
-
-    @Test
-    void testSetLatestConstraintTx() throws IOException {
-        // given
-        Config config = Config.defaults();
-        StoreFactory sf = new StoreFactory(
-                databaseLayout,
-                config,
-                new DefaultIdGeneratorFactory(fs, immediate(), PageCacheTracer.NULL, databaseLayout.getDatabaseName()),
-                pageCache,
-                PageCacheTracer.NULL,
-                fs,
-                LOG_PROVIDER,
-                CONTEXT_FACTORY,
-                writable(),
-                EMPTY_LOG_TAIL);
-
-        // when
-        NeoStores neoStores = sf.openAllNeoStores(true);
-        MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-
-        // then the default is 0
-        assertEquals(0L, metaDataStore.getLatestConstraintIntroducingTx());
-
-        // when
-        metaDataStore.setLatestConstraintIntroducingTx(10L);
-
-        // then
-        assertEquals(10L, metaDataStore.getLatestConstraintIntroducingTx());
-
-        // when
-        neoStores.flush(DatabaseFlushEvent.NULL, NULL_CONTEXT);
-        neoStores.close();
     }
 
     @Test

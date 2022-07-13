@@ -114,7 +114,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     private final AtomicLong checkpointLogVersion = new AtomicLong();
     private final AtomicLong lastCommittingTx = new AtomicLong(NOT_INITIALIZED);
     private final Supplier<StoreId> storeIdFactory;
-    private volatile long latestConstraintIntroducingTxId;
     private volatile KernelVersion kernelVersion;
 
     // This is not a field in the store, but something keeping track of which is the currently highest
@@ -280,15 +279,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     @Override
     public long incrementAndGetVersion() {
         return logVersion.incrementAndGet();
-    }
-
-    public long getLatestConstraintIntroducingTx() {
-        assertNotClosed();
-        return latestConstraintIntroducingTxId;
-    }
-
-    public void setLatestConstraintIntroducingTx(long latestConstraintIntroducingTxId) {
-        this.latestConstraintIntroducingTxId = latestConstraintIntroducingTxId;
     }
 
     @Override

@@ -185,13 +185,6 @@ public class MetaDataStoreTest {
     }
 
     @Test
-    void getLatestConstraintIntroducingTxShouldFailWhenStoreIsClosed() {
-        MetaDataStore metaDataStore = newMetaDataStore();
-        metaDataStore.close();
-        assertThrows(StoreFileClosedException.class, metaDataStore::getLatestConstraintIntroducingTx);
-    }
-
-    @Test
     void nextCommittingTransactionIdShouldFailWhenStoreIsClosed() {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
@@ -638,7 +631,6 @@ public class MetaDataStoreTest {
         store.getLastCommittedTransaction();
         store.getLastClosedTransaction();
         store.getCheckpointLogVersion();
-        store.getLatestConstraintIntroducingTx();
         store.getExternalStoreId();
         // getDatabaseIdUuid actually reads from store, but must not refresh fields
         store.getDatabaseIdUuid(NULL_CONTEXT);

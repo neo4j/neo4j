@@ -154,8 +154,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter {
         //    entries for the same property
         updateStore(neoStores.getSchemaStore(), command, SCHEMA_CURSOR);
         SchemaRule schemaRule = command.getSchemaRule();
-        boolean isConstraint = command.getAfter().isConstraint();
-        onSchemaRuleChange(command.getMode(), command.getKey(), schemaRule, isConstraint);
+        onSchemaRuleChange(command.getMode(), command.getKey(), schemaRule);
         return false;
     }
 
@@ -167,21 +166,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter {
         return false;
     }
 
-    private void onSchemaRuleChange(
-            Command.Mode commandMode, long schemaRuleId, SchemaRule schemaRule, boolean isConstraint) {
-        if (isConstraint) {
-            switch (commandMode) {
-                case UPDATE:
-                case CREATE:
-                    neoStores.getMetaDataStore().setLatestConstraintIntroducingTx(transactionId);
-                    break;
-                case DELETE:
-                    break;
-                default:
-                    throw new IllegalStateException(commandMode.name());
-            }
-        }
-
+    private void onSchemaRuleChange(Command.Mode commandMode, long schemaRuleId, SchemaRule schemaRule) {
         if (commandMode == Command.Mode.DELETE) {
             cacheAccess.removeSchemaRuleFromCache(schemaRuleId);
         } else {

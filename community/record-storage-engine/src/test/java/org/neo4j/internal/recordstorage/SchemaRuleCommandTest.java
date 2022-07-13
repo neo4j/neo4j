@@ -120,7 +120,6 @@ class SchemaRuleCommandTest {
         after.setConstraint(true);
 
         when(neoStores.getSchemaStore()).thenReturn(schemaStore);
-        when(neoStores.getMetaDataStore()).thenReturn(metaDataStore);
 
         ConstraintDescriptor schemaRule = ConstraintDescriptorFactory.uniqueForLabel(labelId, propertyKey)
                 .withId(id)
@@ -131,7 +130,6 @@ class SchemaRuleCommandTest {
 
         // THEN
         verify(schemaStore).updateRecord(eq(after), any(), any(), any(), any());
-        verify(metaDataStore).setLatestConstraintIntroducingTx(txId);
     }
 
     @Test
