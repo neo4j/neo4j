@@ -22,6 +22,7 @@ package org.neo4j.consistency.checker;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.consistency.checker.ParallelExecution.NOOP_EXCEPTION_HANDLER;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
@@ -52,14 +53,17 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.token.TokenHolders;
 
 @ExtendWith(SoftAssertionsExtension.class)
-@DbmsExtension
+@DbmsExtension(configurationCallback = "configure")
 class NodeCheckerIT {
     private static final String INDEX_NAME = "index";
     private final ParallelExecution execution = new ParallelExecution(10, NOOP_EXCEPTION_HANDLER, 100);
@@ -88,6 +92,11 @@ class NodeCheckerIT {
 
     @InjectSoftAssertions
     private SoftAssertions softly;
+
+    @ExtensionCallback
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(db_format, RecordFormatSelector.defaultFormat().name());
+    }
 
     @BeforeEach
     void setUp() throws Exception {

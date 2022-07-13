@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.consistency.checker.ParallelExecution.NOOP_EXCEPTION_HANDLER;
 import static org.neo4j.consistency.checker.RecordStorageConsistencyChecker.DEFAULT_SLOT_SIZES;
@@ -104,6 +105,7 @@ import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -151,9 +153,10 @@ class CheckerTestBase {
 
     @BeforeEach
     void setUpDb() throws Exception {
-        TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder(directory.homePath());
-        builder.setFileSystem(directory.getFileSystem());
-        dbms = builder.build();
+        dbms = new TestDatabaseManagementServiceBuilder(directory.homePath())
+                .setConfig(db_format, RecordFormatSelector.defaultFormat().name())
+                .setFileSystem(directory.getFileSystem())
+                .build();
         db = (GraphDatabaseAPI) dbms.database(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
 
         // Create our tokens

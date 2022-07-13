@@ -24,6 +24,7 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_STRING_STORE_CURSOR;
@@ -108,6 +109,7 @@ import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -157,7 +159,8 @@ public class DetectRandomSabotageIT {
     }
 
     protected TestDatabaseManagementServiceBuilder createBuilder(Path home) {
-        return new TestDatabaseManagementServiceBuilder(home);
+        return new TestDatabaseManagementServiceBuilder(home)
+                .setConfig(db_format, RecordFormatSelector.defaultFormat().name());
     }
 
     @BeforeEach

@@ -23,6 +23,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.consistency.checker.ParallelExecution.NOOP_EXCEPTION_HANDLER;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
@@ -51,13 +52,16 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.token.TokenHolders;
 
-@DbmsExtension
+@DbmsExtension(configurationCallback = "configure")
 class RelationshipCheckerIT {
     private static final String INDEX_NAME = "index";
     private final ParallelExecution execution = new ParallelExecution(10, NOOP_EXCEPTION_HANDLER, 100);
@@ -83,6 +87,11 @@ class RelationshipCheckerIT {
     private long relationshipId;
     private CheckerContext context;
     private DefaultPageCacheTracer pageCacheTracer;
+
+    @ExtensionCallback
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(db_format, RecordFormatSelector.defaultFormat().name());
+    }
 
     @BeforeEach
     void setUp() throws Exception {

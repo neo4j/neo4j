@@ -22,6 +22,7 @@ package org.neo4j.consistency.checking.index;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.internal.helpers.collection.Iterators.count;
@@ -42,11 +43,14 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
-@DbmsExtension
+@DbmsExtension(configurationCallback = "configure")
 class IndexIteratorIT {
     private static final String INDEX_NAME = "index";
 
@@ -65,6 +69,11 @@ class IndexIteratorIT {
     private IndexAccessors indexAccessors;
     private DefaultPageCacheTracer pageCacheTracer;
     private CursorContextFactory contextFactory;
+
+    @ExtensionCallback
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(db_format, RecordFormatSelector.defaultFormat().name());
+    }
 
     @BeforeEach
     void setUp() {
