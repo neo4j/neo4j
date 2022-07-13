@@ -50,8 +50,7 @@ case class LoggingSystemCommandExecutionPlan(
     val securityContext = ctx.transactionalContext.securityContext
     val sourceResult = source.run(ctx, executionMode, params, prePopulateResults, ignore, subscriber)
     sourceResult match {
-      case IgnoredRuntimeResult =>
-        IgnoredRuntimeResult
+      case i: IgnoredRuntimeResult => i
       case result =>
         logger.apply(commandString, securityContext)
         result

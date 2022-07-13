@@ -24,10 +24,14 @@ import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionCommittedCounterIterator.wrap
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.kernel.impl.query.QuerySubscriber
+
+import java.util
+import java.util.Collections
 
 class PipeExecutionResult(
   pipe: Pipe,
@@ -80,6 +84,8 @@ class PipeExecutionResult(
   override def await(): Boolean = {
     inner == null || (inner.hasNext && !cancelled)
   }
+
+  override def notifications(): util.Set[InternalNotification] = Collections.emptySet()
 
   private def serveResults(): Unit = {
     while (inner.hasNext && demand > 0 && !cancelled) {

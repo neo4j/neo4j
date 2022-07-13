@@ -66,8 +66,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.TaskCloser
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.ExecutionPlanDescription
+import org.neo4j.graphdb.impl.notification.NotificationCode
 import org.neo4j.kernel.api.query.CompilerInfo
 import org.neo4j.kernel.api.query.LookupIndexUsage
 import org.neo4j.kernel.api.query.QueryObfuscator
@@ -442,7 +444,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
             innerExecutionMode,
             planDescriptionBuilder,
             subscriber,
-            allNotifications
+            allNotifications ++ filterRuntimeNotifications(runtimeResult)
           )
         }
 
@@ -452,6 +454,13 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
         monitor,
         subscriber
       )
+    }
+
+    private def filterRuntimeNotifications(runtimeResult: RuntimeResult): Set[NotificationCode#Notification] = {
+      // TODO: Filter runtime notifications based on config and return those that the caller
+      // is interested in
+      // runtimeResult.notifications().asScala.map(asKernelNotification(None))
+      Set.empty
     }
 
     override def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState =

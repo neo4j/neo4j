@@ -33,13 +33,18 @@ import org.neo4j.cypher.internal.procs.ThrowException
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
 import org.neo4j.cypher.internal.security.SecureHasher
 import org.neo4j.cypher.internal.security.SystemGraphCredential
+import org.neo4j.cypher.internal.util.HomeDatabaseNotPresent
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.StringType
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_LABEL
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.exceptions.ParameterNotFoundException
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.graphdb.Transaction
+import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
@@ -242,7 +247,8 @@ object AdministrationCommandRuntime {
         initFunction = params => NameValidator.assertValidUsername(runtimeStringValue(userName, params)),
         finallyFunction = p => p.get(credentials.bytesKey).asInstanceOf[ByteArray].zero()
       ),
-      parameterConverter = mapValueConverter
+      parameterConverter = mapValueConverter,
+      parameterValidator = isHomeDatabasePresent(homeDatabaseFields)
     )
   }
 
@@ -342,9 +348,28 @@ object AdministrationCommandRuntime {
       initAndFinally = InitAndFinallyFunctions(finallyFunction =
         p => maybePw.foreach(newPw => p.get(newPw.bytesKey).asInstanceOf[ByteArray].zero())
       ),
-      parameterConverter = mapper
+      parameterConverter = mapper,
+      parameterValidator = isHomeDatabasePresent(homeDatabaseFields)
     )
   }
+
+  private def isHomeDatabasePresent(homeDatabaseFields: Option[NameFields])(
+    tx: Transaction,
+    params: MapValue
+  ): (MapValue, Set[InternalNotification]) =
+    homeDatabaseFields.map(ddf => {
+      params.get(ddf.nameKey) match {
+        case tv: TextValue =>
+          val notifications: Set[InternalNotification] =
+            if (Iterators.asList(tx.findNodes(DATABASE_NAME_LABEL, DATABASE_NAME_PROPERTY, tv.stringValue())).isEmpty) {
+              Set(HomeDatabaseNotPresent(tv.stringValue()))
+            } else {
+              Set.empty
+            }
+          (params, notifications)
+        case _ => (params, Set.empty[InternalNotification])
+      }
+    }).getOrElse((params, Set.empty))
 
   private[internal] def makeRenameExecutionPlan(
     entity: String,

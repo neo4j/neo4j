@@ -149,7 +149,11 @@ public enum NotificationCode {
             SeverityLevel.WARNING,
             Status.Statement.SubqueryVariableShadowingWarning,
             "Variable in subquery is shadowing a variable with the same name from the outer scope. "
-                    + "If you want to use that variable instead, it must be imported into the subquery using importing WITH clause.");
+                    + "If you want to use that variable instead, it must be imported into the subquery using importing WITH clause."),
+    HOME_DATABASE_NOT_PRESENT(
+            SeverityLevel.WARNING,
+            Status.Database.DatabaseNotFound,
+            "The home database provided does not currently exist in the DBMS. This command will not take effect until this database is created.");
 
     private final Status status;
     private final String description;

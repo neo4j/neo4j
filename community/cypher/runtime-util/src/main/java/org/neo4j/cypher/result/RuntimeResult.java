@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.result;
 
+import java.util.Set;
+import org.neo4j.cypher.internal.util.InternalNotification;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.kernel.impl.query.QuerySubscription;
 import org.neo4j.memory.HeapHighWaterMarkTracker;
@@ -55,4 +57,6 @@ public interface RuntimeResult extends AutoCloseable, QuerySubscription, HeapHig
 
     @Override
     void close();
+
+    Set<InternalNotification> notifications();
 }

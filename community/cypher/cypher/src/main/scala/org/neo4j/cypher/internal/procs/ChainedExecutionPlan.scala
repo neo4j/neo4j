@@ -39,6 +39,10 @@ import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 
+import java.util
+
+import scala.jdk.CollectionConverters.SetHasAsJava
+
 /**
  * System commands are broken down into a linear chain of sub-commands. The outermost (or last) command
  * will be passed the original QuerySubscriber (coming from the BOLT server) and this can be tied into
@@ -75,9 +79,9 @@ abstract class ChainedExecutionPlan[T <: QueryContext with CountingQueryContext]
     val sourceResult =
       source.map(_.run(ctx, executionMode, params, prePopulateResults, ignore, querySubscriber(ctx, subscriber)))
     sourceResult match {
-      case Some(IgnoredRuntimeResult) =>
+      case Some(_: IgnoredRuntimeResult) =>
         onSkip(ctx, subscriber)
-      case Some(UpdatingSystemCommandRuntimeResult(newCtx)) =>
+      case Some(UpdatingSystemCommandRuntimeResult(newCtx, _)) =>
         runSpecific(newCtx.asInstanceOf[T], executionMode, params, prePopulateResults, ignore, subscriber)
       case _ =>
         runSpecific(ctx, executionMode, params, prePopulateResults, ignore, subscriber)
@@ -88,7 +92,7 @@ abstract class ChainedExecutionPlan[T <: QueryContext with CountingQueryContext]
     // When an operation in the chain switches the entire chain to ignore mode we still need to notify the outer most subscriber
     // This is a no-op for all elements of the chain except the last (outermost) which will be the BoltAdapterSubscriber
     subscriber.onResultCompleted(ctx.getStatistics)
-    IgnoredRuntimeResult
+    IgnoredRuntimeResult()
   }
 
   override def metadata: Seq[Argument] = Nil
@@ -122,7 +126,7 @@ abstract class AdministrationChainedExecutionPlan(source: Option[ExecutionPlan])
   override def runtimeName: RuntimeName = SystemCommandRuntimeName
 }
 
-case object IgnoredRuntimeResult extends RuntimeResult {
+case class IgnoredRuntimeResult(runtimeNotifications: Set[InternalNotification]) extends RuntimeResult {
   import org.neo4j.cypher.internal.runtime.QueryStatistics
   override def fieldNames(): Array[String] = Array.empty
   override def queryStatistics(): QueryStatistics = QueryStatistics()
@@ -133,4 +137,9 @@ case object IgnoredRuntimeResult extends RuntimeResult {
   override def request(numberOfRecords: Long): Unit = {}
   override def cancel(): Unit = {}
   override def await(): Boolean = false
+  override def notifications(): util.Set[InternalNotification] = runtimeNotifications.asJava
+}
+
+case object IgnoredRuntimeResult {
+  def apply(): IgnoredRuntimeResult = IgnoredRuntimeResult(Set.empty)
 }

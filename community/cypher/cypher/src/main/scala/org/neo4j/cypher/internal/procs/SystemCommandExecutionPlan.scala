@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.ProfileMode
-import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.graphdb.Transaction
@@ -100,8 +99,6 @@ case class SystemCommandExecutionPlan(
   override def runtimeName: RuntimeName = SystemCommandRuntimeName
 
   override def metadata: Seq[Argument] = Nil
-
-  override def notifications: Set[InternalNotification] = Set.empty
 
   private def withFullDatabaseAccess(tc: TransactionalContext)(elevatedWork: SecurityContext => RuntimeResult)
     : RuntimeResult = {

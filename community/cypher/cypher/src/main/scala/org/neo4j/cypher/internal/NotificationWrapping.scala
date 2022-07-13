@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.util.DeprecatedAmbiguousGroupingNotification
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
+import org.neo4j.cypher.internal.util.HomeDatabaseNotPresent
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
@@ -205,6 +206,11 @@ object NotificationWrapping {
             pos.withOffset(offset).asInputPosition
           )
       }
+    case HomeDatabaseNotPresent(name) => NotificationCode.HOME_DATABASE_NOT_PRESENT.notification(
+        InputPosition.NONE.asInputPosition,
+        NotificationDetail.Factory.message("Not Found", s"HOME DATABASE: $name")
+      )
+
     case _ => throw new IllegalStateException("Missing mapping for notification detail.")
   }
 

@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.runtime.READ_ONLY
 import org.neo4j.cypher.internal.runtime.READ_WRITE
 import org.neo4j.cypher.internal.runtime.SCHEMA_WRITE
 import org.neo4j.cypher.internal.runtime.WRITE
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.TaskCloser
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.QueryProfile
@@ -44,6 +45,8 @@ import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.values.storable.Values.intValue
 
 import java.io.PrintWriter
+import java.util
+import java.util.Collections
 
 //noinspection NameBooleanParameters,RedundantDefaultArgument
 class StandardInternalExecutionResultTest extends CypherFunSuite {
@@ -211,6 +214,8 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
     }
 
     override def await(): Boolean = iterator.hasNext
+
+    override def notifications(): util.Set[InternalNotification] = Collections.emptySet()
   }
 
 }

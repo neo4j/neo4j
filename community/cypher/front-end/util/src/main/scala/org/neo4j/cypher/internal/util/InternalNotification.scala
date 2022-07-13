@@ -44,3 +44,5 @@ case class SubqueryVariableShadowing(position: InputPosition, varName: String) e
 
 case class DeprecatedAmbiguousGroupingNotification(pos: InputPosition, hint: Option[String])
     extends InternalNotification
+
+case class HomeDatabaseNotPresent(databaseName: String) extends InternalNotification

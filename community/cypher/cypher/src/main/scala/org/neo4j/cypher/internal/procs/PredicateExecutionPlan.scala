@@ -36,6 +36,9 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.values.virtual.MapValue
 
+import java.util
+import java.util.Collections
+
 class PredicateExecutionPlan(
   predicate: (MapValue, SecurityContext) => Boolean,
   source: Option[ExecutionPlan] = None,
@@ -61,8 +64,6 @@ class PredicateExecutionPlan(
   override def runtimeName: RuntimeName = SystemCommandRuntimeName
 
   override def metadata: Seq[Argument] = Nil
-
-  override def notifications: Set[InternalNotification] = Set.empty
 }
 
 case class NoRuntimeResult(subscriber: QuerySubscriber) extends EmptyQuerySubscription(subscriber) with RuntimeResult {
@@ -78,4 +79,6 @@ case class NoRuntimeResult(subscriber: QuerySubscriber) extends EmptyQuerySubscr
   override def close(): Unit = {}
 
   override def queryProfile(): QueryProfile = QueryProfile.NONE
+
+  override def notifications(): util.Set[InternalNotification] = Collections.emptySet()
 }

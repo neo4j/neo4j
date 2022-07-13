@@ -52,6 +52,7 @@ object AuthorizationAndPredicateExecutionPlan {
   ): Exception = {
     val errorMsgs = check(params, securityContext)
       .groupBy(_._2)
+      .view
       .filterKeys(state => state != PermissionState.EXPLICIT_GRANT).map { case (state, actions) =>
         messageGenerator(state, actions.map(_._1))
       }.mkString("; ")

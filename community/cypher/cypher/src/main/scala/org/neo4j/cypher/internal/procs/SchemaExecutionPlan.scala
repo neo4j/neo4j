@@ -62,7 +62,7 @@ case class SchemaExecutionPlan(
       val runtimeResult = SchemaRuntimeResult(ctx, subscriber)
       runtimeResult
     } else {
-      IgnoredRuntimeResult
+      IgnoredRuntimeResult()
     }
   }
 }

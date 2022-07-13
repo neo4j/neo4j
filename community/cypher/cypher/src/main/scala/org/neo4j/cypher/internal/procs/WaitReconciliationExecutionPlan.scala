@@ -48,6 +48,9 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
+import java.util
+import java.util.Collections
+
 /**
  * This plan calls the internal procedure dbms.admin.wait which waits for a transaction to replicate across a cluster.
  * It is used to implement the WAIT clause on admin commands, e.g. CREATE DATABASE foo WAIT
@@ -138,8 +141,6 @@ case class WaitReconciliationExecutionPlan(
   override def runtimeName: RuntimeName = SystemCommandRuntimeName
 
   override def metadata: Seq[Argument] = Nil
-
-  override def notifications: Set[InternalNotification] = Set.empty
 }
 
 case class SingleRowRuntimeResult(cols: Array[String], row: Array[Value], subscriber: QuerySubscriber)
@@ -165,4 +166,5 @@ case class SingleRowRuntimeResult(cols: Array[String], row: Array[Value], subscr
   }
   override def cancel(): Unit = cs = ConsumptionState.EXHAUSTED
   override def await(): Boolean = cs == ConsumptionState.NOT_STARTED
+  override def notifications(): util.Set[InternalNotification] = Collections.emptySet()
 }

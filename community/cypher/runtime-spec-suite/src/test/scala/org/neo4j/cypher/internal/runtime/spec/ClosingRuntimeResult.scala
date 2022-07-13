@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.QueryStatistics
@@ -27,6 +28,9 @@ import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.util.VisibleForTesting
+
+import java.util
+import java.util.Collections
 
 /**
  * This is needed for tests, because closing is usually handled in org.neo4j.cypher.internal.result.ClosingExecutionResult,
@@ -105,6 +109,8 @@ class ClosingRuntimeResult(
         throw t
     }
   }
+
+  override def notifications(): util.Set[InternalNotification] = Collections.emptySet()
 
   private def closeResources(): Unit = {
     // Capture page cache statistics before closing

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.result.Error
 import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
@@ -32,6 +33,7 @@ import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.memory.HeapHighWaterMarkTracker
 
 import java.util
+import java.util.Collections
 
 import scala.util.Using
 
@@ -77,6 +79,8 @@ case class SystemCommandRuntimeResult(
     }
     hasMore
   }
+
+  override def notifications(): util.Set[InternalNotification] = Collections.emptySet()
 }
 
 class SystemCommandExecutionResult(val inner: InternalExecutionResult) {

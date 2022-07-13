@@ -58,6 +58,7 @@ case class UpdatingSystemCommandExecutionPlan(
   initAndFinally: InitAndFinally = NoInitAndFinally,
   parameterGenerator: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY,
   parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p,
+  parameterValidator: (Transaction, MapValue) => (MapValue, Set[InternalNotification]) = (_, p) => (p, Set.empty),
   assertPrivilegeAction: Transaction => Unit = _ => {}
 ) extends AdministrationChainedExecutionPlan(source) {
 
@@ -77,12 +78,19 @@ case class UpdatingSystemCommandExecutionPlan(
       val tx = tc.transaction()
       assertPrivilegeAction(tx)
 
-      val updatedParams =
-        parameterConverter(tx, safeMergeParameters(systemParams, params, parameterGenerator.apply(tx, securityContext)))
+      val (updatedParams, notifications) = {
+        parameterValidator(
+          tx,
+          parameterConverter(
+            tx,
+            safeMergeParameters(systemParams, params, parameterGenerator.apply(tx, securityContext))
+          )
+        )
+      }
       val systemSubscriber =
         new SystemCommandQuerySubscriber(ctx, new RowDroppingQuerySubscriber(subscriber), queryHandler, updatedParams)
       assertCanWrite(tc, systemSubscriber)
-      initAndFinally.execute(ctx, updatedParams) { () =>
+      initAndFinally.execute(ctx, notifications, updatedParams) { () =>
         val execution = normalExecutionEngine.executeSubquery(
           query,
           updatedParams,
@@ -101,9 +109,9 @@ case class UpdatingSystemCommandExecutionPlan(
         systemSubscriber.assertNotFailed()
 
         if (systemSubscriber.shouldIgnoreResult()) {
-          IgnoredRuntimeResult
+          IgnoredRuntimeResult(notifications)
         } else {
-          UpdatingSystemCommandRuntimeResult(ctx.withContextVars(systemSubscriber.getContextUpdates()))
+          UpdatingSystemCommandRuntimeResult(ctx.withContextVars(systemSubscriber.getContextUpdates()), notifications)
         }
       }
     }
@@ -112,8 +120,6 @@ case class UpdatingSystemCommandExecutionPlan(
   override def runtimeName: RuntimeName = SystemCommandRuntimeName
 
   override def metadata: Seq[Argument] = Nil
-
-  override def notifications: Set[InternalNotification] = Set.empty
 
   private def withFullDatabaseAccess(tc: TransactionalContext)(elevatedWork: () => RuntimeResult): RuntimeResult = {
     val securityContext = tc.securityContext()
@@ -218,6 +224,7 @@ sealed trait InitAndFinally {
 
   def execute(
     context: SystemUpdateCountingQueryContext,
+    notifications: Set[InternalNotification],
     params: MapValue
   )(queryFunction: () => RuntimeResult): RuntimeResult = queryFunction()
 }
@@ -231,13 +238,14 @@ case class InitAndFinallyFunctions(
 
   override def execute(
     context: SystemUpdateCountingQueryContext,
+    notifications: Set[InternalNotification],
     params: MapValue
   )(queryFunction: () => RuntimeResult): RuntimeResult =
     try {
       if (initFunction(params)) {
         queryFunction()
       } else {
-        UpdatingSystemCommandRuntimeResult(context)
+        UpdatingSystemCommandRuntimeResult(context, notifications)
       }
     } finally {
       finallyFunction(params)
