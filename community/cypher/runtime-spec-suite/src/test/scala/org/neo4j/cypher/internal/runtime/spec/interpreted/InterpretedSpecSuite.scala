@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.spec.interpreted.InterpretedSpecSuite.S
 import org.neo4j.cypher.internal.runtime.spec.tests.AggregationTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.AllNodeScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.AllNodeScanWithOtherOperatorsTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.AllRelationshipsScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.AntiConditionalApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.AntiSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ApplyTestBase
@@ -395,6 +396,9 @@ class InterpretedLetSelectOrAntiSemiApplyTest
 class InterpretedNestedPlanExpressionTest
     extends NestedPlanExpressionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedRollupApplyTest extends RollupApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+
+class InterpretedAllRelationshipsScanTest
+    extends AllRelationshipsScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
 class InterpretedRelationshipTypeScanTest
     extends RelationshipTypeScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

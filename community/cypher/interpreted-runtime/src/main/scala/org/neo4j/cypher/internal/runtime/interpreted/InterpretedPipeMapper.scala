@@ -59,6 +59,7 @@ import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
+import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
@@ -147,6 +148,7 @@ import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
+import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
@@ -201,6 +203,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreateNodeCommand
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreatePipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreateRelationshipCommand
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DeletePipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedAllRelationshipsScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipByIdSeekPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipIndexContainsScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipIndexEndsWithScanPipe
@@ -289,6 +292,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.TrailPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionForeachPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TriadicSelectionPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedAllRelationshipsScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipByIdSeekPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipIndexContainsScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipIndexEndsWithScanPipe
@@ -378,6 +382,14 @@ case class InterpretedPipeMapper(
           toNode,
           fromNode
         )(id = id)
+
+      case DirectedAllRelationshipsScan(ident, fromNode, toNode, _) =>
+        indexRegistrator.registerTypeScan()
+        DirectedAllRelationshipsScanPipe(ident, fromNode, toNode)(id = id)
+
+      case UndirectedAllRelationshipsScan(ident, fromNode, toNode, _) =>
+        indexRegistrator.registerTypeScan()
+        UndirectedAllRelationshipsScanPipe(ident, fromNode, toNode)(id = id)
 
       case DirectedRelationshipTypeScan(ident, fromNode, typ, toNode, _, indexOrder) =>
         indexRegistrator.registerTypeScan()
