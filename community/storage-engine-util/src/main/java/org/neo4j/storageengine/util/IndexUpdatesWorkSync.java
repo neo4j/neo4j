@@ -92,11 +92,15 @@ public class IndexUpdatesWorkSync {
             }
         }
 
-        public AsyncApply applyAsync(CursorContext cursorContext) {
-            addSingleUpdates();
-            return updates.isEmpty()
-                    ? AsyncApply.EMPTY
-                    : workSync.applyAsync(new IndexUpdatesWork(updates, cursorContext));
+        public AsyncApply applyAsync(CursorContext cursorContext) throws ExecutionException {
+            if (!parallelApply) {
+                addSingleUpdates();
+                return updates.isEmpty()
+                        ? AsyncApply.EMPTY
+                        : workSync.applyAsync(new IndexUpdatesWork(updates, cursorContext));
+            }
+            apply(cursorContext);
+            return AsyncApply.EMPTY;
         }
     }
 
