@@ -818,7 +818,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     val orgAstState = SemanticChecker.check(astOriginal).state
     val ast = astOriginal.endoRewrite(inSequence(
       LabelExpressionPredicateNormalizer.instance,
-      normalizeExistsPatternExpressions(orgAstState),
+      normalizeExistsPatternExpressions(orgAstState, anonymousVariableNameGenerator),
       normalizeHasLabelsAndHasType(orgAstState),
       AddUniquenessPredicates(anonymousVariableNameGenerator),
       flattenBooleanOperators,

@@ -17,12 +17,17 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.expressions.functions.Size
@@ -50,40 +55,25 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
  * Rewrite equivalent expressions with `size` or `length` to `exists`.
  * This rewrite normalizes this cases and make it easier to plan correctly.
  *
- * [[simplifyPredicates]]  takes care of rewriting the Not(Not(Exists(...))) which can be introduced by this rewriter.
+ * [[simplifyPredicates]] takes care of rewriting the Not(Not(Exists(...))) which can be introduced by this rewriter.
  *
  * This rewriter needs to run before [[namePatternElements]], which rewrites pattern expressions. Otherwise we don't find them in the semantic table.
  */
-case class normalizeExistsPatternExpressions(semanticState: SemanticState) extends Rewriter {
+case class normalizeExistsPatternExpressions(
+  semanticState: SemanticState,
+  anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+) extends Rewriter {
+
+  private val CountConverter = CountLikeToExistsConverter(anonymousVariableNameGenerator)
 
   private val instance = bottomUp(Rewriter.lift {
     case p: PatternExpression if semanticState.expressionType(p).expected.contains(symbols.CTBoolean.invariant) =>
       Exists(p)(p.position)
-    case GreaterThan(Size(p: PatternExpression), SignedDecimalIntegerLiteral("0")) =>
-      Exists(p)(p.position)
-    case LessThan(SignedDecimalIntegerLiteral("0"), Size(p: PatternExpression)) =>
-      Exists(p)(p.position)
-    case Equals(Size(p: PatternExpression), SignedDecimalIntegerLiteral("0")) =>
-      Not(Exists(p)(p.position))(p.position)
-    case Equals(SignedDecimalIntegerLiteral("0"), Size(p: PatternExpression)) =>
-      Not(Exists(p)(p.position))(p.position)
-    // MATCH (n) WHERE size([pt = (n)-[:MaybeLabel]->(m) | pt]) (>|=) 0 is rewritten to EXISTS/NOT EXISTS
-    case GreaterThan(Size(p @ PatternComprehension(maybePt, pattern, None, _)), SignedDecimalIntegerLiteral("0"))
-      if p.introducedVariables == maybePt.toSet =>
-      Exists(PatternExpression(pattern)(p.outerScope, p.variableToCollectName, p.collectionName))(p.position)
-    case LessThan(SignedDecimalIntegerLiteral("0"), Size(p @ PatternComprehension(maybePt, pattern, None, _)))
-      if p.introducedVariables == maybePt.toSet =>
-      Exists(PatternExpression(pattern)(p.outerScope, p.variableToCollectName, p.collectionName))(p.position)
-    case Equals(Size(p @ PatternComprehension(maybePt, pattern, None, _)), SignedDecimalIntegerLiteral("0"))
-      if p.introducedVariables == maybePt.toSet =>
-      Not(Exists(PatternExpression(pattern)(p.outerScope, p.variableToCollectName, p.collectionName))(p.position))(
-        p.position
-      )
-    case Equals(SignedDecimalIntegerLiteral("0"), Size(p @ PatternComprehension(maybePt, pattern, None, _)))
-      if p.introducedVariables == maybePt.toSet =>
-      Not(Exists(PatternExpression(pattern)(p.outerScope, p.variableToCollectName, p.collectionName))(p.position))(
-        p.position
-      )
+
+    case GreaterThan(CountConverter(exists), SignedDecimalIntegerLiteral("0")) => exists
+    case LessThan(SignedDecimalIntegerLiteral("0"), CountConverter(exists))    => exists
+    case Equals(CountConverter(exists), SignedDecimalIntegerLiteral("0"))      => Not(exists)(exists.position)
+    case Equals(SignedDecimalIntegerLiteral("0"), CountConverter(exists))      => Not(exists)(exists.position)
   })
 
   override def apply(v: AnyRef): AnyRef = instance(v)
@@ -107,5 +97,33 @@ case object normalizeExistsPatternExpressions extends StepSequencer.Step with AS
     parameterTypeMapping: Map[String, CypherType],
     cypherExceptionFactory: CypherExceptionFactory,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-  ): Rewriter = normalizeExistsPatternExpressions(semanticState)
+  ): Rewriter = normalizeExistsPatternExpressions(semanticState, anonymousVariableNameGenerator)
+}
+
+final case class CountLikeToExistsConverter(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) {
+
+  def unapply(expression: Expression): Option[FunctionInvocation] = expression match {
+
+    // size((n)--(m))
+    case Size(p: PatternExpression) =>
+      Some(Exists(p)(p.position))
+
+    // size([pt = (n)--(m) | pt])
+    case Size(p @ PatternComprehension(maybePt, pattern, None, _)) if p.introducedVariables == maybePt.toSet =>
+      val exists =
+        Exists(PatternExpression(pattern)(p.outerScope, p.variableToCollectName, p.collectionName))(p.position)
+      Some(exists)
+
+    // COUNT { (n)--(m) }
+    case ce @ CountExpression(pattern: RelationshipChain, None) if ce.introducedVariables.isEmpty =>
+      val relPattern = RelationshipsPattern(pattern)(pattern.position)
+      val variableToCollectName = anonymousVariableNameGenerator.nextName
+      val collectionName = anonymousVariableNameGenerator.nextName
+      val exists =
+        Exists(PatternExpression(relPattern)(ce.outerScope, variableToCollectName, collectionName))(ce.position)
+      Some(exists)
+
+    case _ =>
+      None
+  }
 }

@@ -250,7 +250,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       new LogicalPlanBuilder()
         .produceResults("a")
         .semiApply()
-        .|.expandAll("(a)-[anon_3:X]->(anon_4)")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -263,7 +263,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       new LogicalPlanBuilder()
         .produceResults("a")
         .antiSemiApply()
-        .|.expandAll("(a)-[anon_3:X]->(anon_4)")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -276,20 +276,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
-        .filter("0 = size(anon_1)")
-        .rollUpApply("anon_1", "anon_0")
-        .|.projection(Map("anon_0" -> PathExpression(
-          NodePathStep(
-            Variable("a")(pos),
-            SingleRelationshipPathStep(
-              Variable("anon_3")(pos),
-              OUTGOING,
-              Some(Variable("anon_4")(pos)),
-              NilPathStep()(pos)
-            )(pos)
-          )(pos)
-        )(pos)))
-        .|.expandAll("(a)-[anon_3:X]->(anon_4)")
+        .filter("0 = size(anon_3)")
+        .rollUpApply("anon_3", "anon_2")
+        .|.projection(Map("anon_2" -> literalInt(1)))
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
         .|.filter("a.prop = 'c'")
         .|.argument("a")
         .allNodeScan("a")
@@ -303,18 +293,11 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
-        .filter("0 < size(anon_1)")
-        .rollUpApply("anon_1", "anon_0")
-        .|.projection(Map("anon_0" -> PathExpression(
-          NodePathStep(
-            Variable("a")(pos),
-            SingleRelationshipPathStep(Variable("anon_3")(pos), OUTGOING, Some(Variable("b")(pos)), NilPathStep()(pos))(
-              pos
-            )
-          )(pos)
-        )(pos)))
+        .filter("0 < size(anon_2)")
+        .rollUpApply("anon_2", "anon_1")
+        .|.projection(Map("anon_1" -> literalInt(1)))
         .|.filter("b.prop = 'c'")
-        .|.expandAll("(a)-[anon_3:X]->(b)")
+        .|.expandAll("(a)-[anon_0:X]->(b)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -327,8 +310,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       new LogicalPlanBuilder()
         .produceResults("a")
         .semiApply()
-        .|.filter("anon_4:Foo")
-        .|.expandAll("(a)-[anon_3:X]->(anon_4)")
+        .|.filter("anon_3:Foo")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -343,8 +326,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       new LogicalPlanBuilder()
         .produceResults("a")
         .antiSemiApply()
-        .|.filter("anon_4:Foo")
-        .|.expandAll("(a)-[anon_3:X]->(anon_4)")
+        .|.filter("anon_3:Foo")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
