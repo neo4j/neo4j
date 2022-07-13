@@ -21,6 +21,7 @@ package org.neo4j.procedure.impl;
 
 import static java.lang.String.format;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -262,10 +263,19 @@ public class ProcedureRegistry {
     }
 
     int[] getIdsOfProceduresMatching(Predicate<CallableProcedure> predicate) {
-        return procedures.all().stream()
-                .filter(predicate)
-                .mapToInt(p -> procedures.idOf(p.signature().name()))
-                .toArray();
+        int[] ids = new int[10];
+        int count = 0;
+        for (CallableProcedure p : procedures.all()) {
+            if (predicate.test(p)) {
+                int i = procedures.idOf(p.signature().name());
+                if (ids.length == count) {
+                    ids = Arrays.copyOf(ids, count * 2);
+                }
+                ids[count++] = i;
+            }
+        }
+        ids = Arrays.copyOfRange(ids, 0, count);
+        return ids;
     }
 
     public Stream<UserFunctionSignature> getAllNonAggregatingFunctions() {
@@ -273,10 +283,19 @@ public class ProcedureRegistry {
     }
 
     int[] getIdsOfFunctionsMatching(Predicate<CallableUserFunction> predicate) {
-        return functions.all().stream()
-                .filter(predicate)
-                .mapToInt(f -> functions.idOf(f.signature().name()))
-                .toArray();
+        int[] ids = new int[10];
+        int count = 0;
+        for (CallableUserFunction f : functions.all()) {
+            if (predicate.test(f)) {
+                int i = functions.idOf(f.signature().name());
+                if (ids.length == count) {
+                    ids = Arrays.copyOf(ids, count * 2);
+                }
+                ids[count++] = i;
+            }
+        }
+        ids = Arrays.copyOfRange(ids, 0, count);
+        return ids;
     }
 
     public Stream<UserFunctionSignature> getAllAggregatingFunctions() {
@@ -284,9 +303,18 @@ public class ProcedureRegistry {
     }
 
     int[] getIdsOfAggregatingFunctionsMatching(Predicate<CallableUserAggregationFunction> predicate) {
-        return aggregationFunctions.all().stream()
-                .filter(predicate)
-                .mapToInt(f -> aggregationFunctions.idOf(f.signature().name()))
-                .toArray();
+        int[] ids = new int[10];
+        int count = 0;
+        for (CallableUserAggregationFunction f : aggregationFunctions.all()) {
+            if (predicate.test(f)) {
+                int i = aggregationFunctions.idOf(f.signature().name());
+                if (ids.length == count) {
+                    ids = Arrays.copyOf(ids, count * 2);
+                }
+                ids[count++] = i;
+            }
+        }
+        ids = Arrays.copyOfRange(ids, 0, count);
+        return ids;
     }
 }
