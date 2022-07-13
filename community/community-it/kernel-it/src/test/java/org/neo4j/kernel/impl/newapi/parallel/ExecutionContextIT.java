@@ -36,11 +36,14 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionExecutionStatistic;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -182,6 +185,12 @@ public class ExecutionContextIT {
             }
             transaction.commit();
         }
+        int nodeSize = databaseAPI.databaseLayout() instanceof RecordDatabaseLayout
+                ? NodeRecordFormat.RECORD_SIZE
+                : 128; // 128B per node in freki
+        int nodesPerPage = PageCache.PAGE_SIZE / nodeSize;
+        int numPages = (int) Math.ceil((double) numberOfNodes / nodesPerPage);
+        int numPins = numPages * NUMBER_OF_WORKERS;
 
         try (Transaction transaction = databaseAPI.beginTx()) {
             var ktx = ((InternalTransaction) transaction).kernelTransaction();
@@ -204,9 +213,9 @@ public class ExecutionContextIT {
             closeAllUnchecked(contexts);
 
             var tracer = ktx.cursorContext().getCursorTracer();
-            assertEquals(1220, tracer.pins());
-            assertEquals(1220, tracer.unpins());
-            assertEquals(1220, tracer.hits());
+            assertEquals(numPins, tracer.pins());
+            assertEquals(numPins, tracer.unpins());
+            assertEquals(numPins, tracer.hits());
         }
     }
 
