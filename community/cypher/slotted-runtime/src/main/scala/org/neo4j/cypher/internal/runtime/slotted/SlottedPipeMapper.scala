@@ -56,6 +56,7 @@ import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
+import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
@@ -116,6 +117,7 @@ import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.Trail
+import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
@@ -211,6 +213,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.ConditionalApplySlottedPi
 import org.neo4j.cypher.internal.runtime.slotted.pipes.CreateNodeSlottedCommand
 import org.neo4j.cypher.internal.runtime.slotted.pipes.CreateRelationshipSlottedCommand
 import org.neo4j.cypher.internal.runtime.slotted.pipes.CreateSlottedPipe
+import org.neo4j.cypher.internal.runtime.slotted.pipes.DirectedAllRelationshipsScanSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.DirectedRelationshipIndexContainsScanSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.DirectedRelationshipIndexEndsWithScanSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.DirectedRelationshipIndexScanSlottedPipe
@@ -255,6 +258,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedSetRelationshipPro
 import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedSetRelationshipPropertyFromMapOperation
 import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedSetRelationshipPropertyOperation
 import org.neo4j.cypher.internal.runtime.slotted.pipes.TrailSlottedPipe
+import org.neo4j.cypher.internal.runtime.slotted.pipes.UndirectedAllRelationshipsScanSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.UndirectedRelationshipIndexContainsScanSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.UndirectedRelationshipIndexEndsWithScanSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.UndirectedRelationshipIndexScanSlottedPipe
@@ -458,6 +462,20 @@ class SlottedPipeMapper(
           indexRegistrator.registerQueryIndex(indexType, typeToken, properties),
           indexOrder,
           slots
+        )(id)
+
+      case DirectedAllRelationshipsScan(name, start, end, _) =>
+        DirectedAllRelationshipsScanSlottedPipe(
+          slots.getLongOffsetFor(name),
+          slots.getLongOffsetFor(start),
+          slots.getLongOffsetFor(end)
+        )(id)
+
+      case UndirectedAllRelationshipsScan(name, start, end, _) =>
+        UndirectedAllRelationshipsScanSlottedPipe(
+          slots.getLongOffsetFor(name),
+          slots.getLongOffsetFor(start),
+          slots.getLongOffsetFor(end)
         )(id)
 
       case DirectedRelationshipTypeScan(name, start, typ, end, _, indexOrder) =>
