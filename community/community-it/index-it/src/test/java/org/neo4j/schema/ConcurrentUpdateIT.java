@@ -42,28 +42,30 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
-@Neo4jLayoutExtension
+@TestDirectoryExtension
 @ExtendWith(SuppressOutputExtension.class)
 @ResourceLock(Resources.SYSTEM_OUT)
 class ConcurrentUpdateIT {
     @Inject
-    private SuppressOutput suppressOutput;
+    TestDirectory dir;
 
     @Inject
-    private DatabaseLayout databaseLayout;
+    private SuppressOutput suppressOutput;
 
     @Test
     void populateDbWithConcurrentUpdates() throws Exception {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
-        GraphDatabaseService database = managementService.database(DEFAULT_DATABASE_NAME);
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(dir.homePath()).build();
+        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
         try {
             RandomValues randomValues = RandomValues.create();
             int counter = 1;
@@ -107,6 +109,7 @@ class ConcurrentUpdateIT {
                 // Basically we don't care to await their completion because they've done their job
             }
         } finally {
+            DatabaseLayout databaseLayout = database.databaseLayout();
             managementService.shutdown();
             Config config = Config.defaults(GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes(8));
             new ConsistencyCheckService(databaseLayout)

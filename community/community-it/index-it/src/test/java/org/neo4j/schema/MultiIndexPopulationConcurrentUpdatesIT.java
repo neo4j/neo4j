@@ -43,6 +43,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -61,7 +62,6 @@ import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -342,7 +342,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
             int propertyId,
             Runnable customAction)
             throws Throwable {
-        RecordStorageEngine storageEngine = getStorageEngine();
+        StorageEngine storageEngine = getStorageEngine();
 
         try (Transaction transaction = db.beginTx()) {
             Config config = Config.defaults();
@@ -498,8 +498,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
         return node;
     }
 
-    private RecordStorageEngine getStorageEngine() {
-        return db.getDependencyResolver().resolveDependency(RecordStorageEngine.class);
+    private StorageEngine getStorageEngine() {
+        return db.getDependencyResolver().resolveDependency(StorageEngine.class);
     }
 
     private SchemaState getSchemaState() {
@@ -560,6 +560,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
                     memoryTracker);
             return new LabelViewNodeStoreWrapper(
                     storageEngine.newReader(),
+                    storageEngine::createStorageCursors,
                     lockService,
                     null,
                     propertyScanConsumer,
@@ -577,6 +578,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
 
         LabelViewNodeStoreWrapper(
                 StorageReader storageReader,
+                Function<CursorContext, StoreCursors> storeCursorsFactory,
                 LockService locks,
                 TokenScanConsumer labelScanConsumer,
                 PropertyScanConsumer propertyUpdatesConsumer,
@@ -588,7 +590,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
             super(
                     Config.defaults(),
                     storageReader,
-                    any -> StoreCursors.NULL,
+                    storeCursorsFactory,
                     locks,
                     labelScanConsumer,
                     propertyUpdatesConsumer,
