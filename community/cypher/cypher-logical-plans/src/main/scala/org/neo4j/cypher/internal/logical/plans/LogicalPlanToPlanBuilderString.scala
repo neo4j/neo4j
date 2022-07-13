@@ -208,6 +208,8 @@ object LogicalPlanToPlanBuilderString {
       case _: UndirectedRelationshipIndexScan         => "relationshipIndexOperator"
       case _: DirectedRelationshipTypeScan            => "relationshipTypeScan"
       case _: UndirectedRelationshipTypeScan          => "relationshipTypeScan"
+      case _: DirectedAllRelationshipsScan            => "allRelationshipsScan"
+      case _: UndirectedAllRelationshipsScan          => "allRelationshipsScan"
       case _: DirectedUnionRelationshipTypesScan      => "unionRelationshipTypesScan"
       case _: UndirectedUnionRelationshipTypesScan    => "unionRelationshipTypesScan"
     }
@@ -513,6 +515,14 @@ object LogicalPlanToPlanBuilderString {
         s""" ${wrapInQuotationsAndMkString(Seq(idName, leftNode, rightNode))}, Set(${wrapInQuotationsAndMkString(
           argumentIds
         )}), $idsString """.trim
+      case DirectedAllRelationshipsScan(idName, start, end, argumentIds) =>
+        val args = argumentIds.map(wrapInQuotations)
+        val argString = if (args.isEmpty) "" else args.mkString(", ", ", ", "")
+        s""" "($start)-[$idName]->($end)"$argString """.trim
+      case UndirectedAllRelationshipsScan(idName, start, end, argumentIds) =>
+        val args = argumentIds.map(wrapInQuotations)
+        val argString = if (args.isEmpty) "" else args.mkString(", ", ", ", "")
+        s""" "($start)-[$idName]-($end)"$argString """.trim
       case DirectedRelationshipTypeScan(idName, start, typ, end, argumentIds, indexOrder) =>
         val args = Seq(objectName(indexOrder)) ++ argumentIds.map(wrapInQuotations)
         s""" "($start)-[$idName:${typ.name}]->($end)", ${args.mkString(", ")} """.trim

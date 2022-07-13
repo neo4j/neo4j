@@ -106,6 +106,7 @@ import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
+import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
@@ -218,6 +219,7 @@ import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
+import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
@@ -626,6 +628,30 @@ case class LogicalPlan2PlanDescription(
           "UndirectedRelationshipByIdSeek",
           NoChildren,
           Seq(details),
+          variables,
+          withRawCardinalities
+        )
+
+      case DirectedAllRelationshipsScan(idName, start, end, _) =>
+        val prettyDetails =
+          pretty"(${asPrettyString(start)})-[${asPrettyString(idName)}]->(${asPrettyString(end)})"
+        PlanDescriptionImpl(
+          id,
+          "DirectedAllRelationshipsScan",
+          NoChildren,
+          Seq(Details(prettyDetails)),
+          variables,
+          withRawCardinalities
+        )
+
+      case UndirectedAllRelationshipsScan(idName, start, end, _) =>
+        val prettyDetails =
+          pretty"(${asPrettyString(start)})-[${asPrettyString(idName)}]-(${asPrettyString(end)})"
+        PlanDescriptionImpl(
+          id,
+          "UndirectedAllRelationshipsScan",
+          NoChildren,
+          Seq(Details(prettyDetails)),
           variables,
           withRawCardinalities
         )

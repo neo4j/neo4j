@@ -182,6 +182,7 @@ import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
+import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.DirectedUnionRelationshipTypesScan
@@ -318,6 +319,7 @@ import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
+import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedUnionRelationshipTypesScan
@@ -1063,6 +1065,36 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "UndirectedRelationshipIndexEndsWithScan",
         NoChildren,
         Seq(details("RANGE INDEX (x)-[r:R(Prop)]-(y) WHERE Prop ENDS WITH \"Foo\"")),
+        Set("r", "x", "y")
+      )
+    )
+  }
+
+  test("AllRelationshipsScan") {
+    assertGood(
+      attach(
+        DirectedAllRelationshipsScan("r", "x", "y", Set.empty),
+        23.0
+      ),
+      planDescription(
+        id,
+        "DirectedAllRelationshipsScan",
+        NoChildren,
+        Seq(details("(x)-[r]->(y)")),
+        Set("r", "x", "y")
+      )
+    )
+
+    assertGood(
+      attach(
+        UndirectedAllRelationshipsScan("r", "x", "y", Set.empty),
+        23.0
+      ),
+      planDescription(
+        id,
+        "UndirectedAllRelationshipsScan",
+        NoChildren,
+        Seq(details("(x)-[r]-(y)")),
         Set("r", "x", "y")
       )
     )

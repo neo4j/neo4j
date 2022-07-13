@@ -99,6 +99,7 @@ import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
+import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
@@ -199,6 +200,7 @@ import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
+import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
@@ -984,6 +986,38 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     expr: Expression*
   ): IMPL = {
     undirectedRelationshipByIdSeekSolver(relationship, from, to, args, expr)
+  }
+
+  def allRelationshipsScan(pattern: String, args: String*): IMPL = {
+    val p = patternParser.parse(pattern)
+    newRelationship(varFor(p.relName))
+    newNode(varFor(p.from))
+    newNode(varFor(p.to))
+    if (!p.length.isSimple) throw new UnsupportedOperationException("Cannot do a scan from a variable pattern")
+
+    p.dir match {
+      case SemanticDirection.OUTGOING =>
+        appendAtCurrentIndent(LeafOperator(DirectedAllRelationshipsScan(
+          p.relName,
+          p.from,
+          p.to,
+          args.toSet
+        )(_)))
+      case SemanticDirection.INCOMING =>
+        appendAtCurrentIndent(LeafOperator(DirectedAllRelationshipsScan(
+          p.relName,
+          p.to,
+          p.from,
+          args.toSet
+        )(_)))
+      case SemanticDirection.BOTH =>
+        appendAtCurrentIndent(LeafOperator(UndirectedAllRelationshipsScan(
+          p.relName,
+          p.from,
+          p.to,
+          args.toSet
+        )(_)))
+    }
   }
 
   def relationshipTypeScan(pattern: String, args: String*): IMPL = {
