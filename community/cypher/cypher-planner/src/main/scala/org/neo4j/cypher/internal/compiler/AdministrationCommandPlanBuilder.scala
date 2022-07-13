@@ -110,6 +110,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
@@ -794,6 +795,10 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           case p: PatternComprehension => throw context.cypherExceptionFactory.syntaxException(
               "You cannot include a pattern comprehension in the RETURN clause on a system database",
               p.position
+            )
+          case c: CountExpression => throw context.cypherExceptionFactory.syntaxException(
+              "You cannot include a COUNT expression in the RETURN clause on a system database",
+              c.position
             )
         }
 
