@@ -209,7 +209,6 @@ class IndexWorkSyncTransactionApplicationStressIT {
                     creationContext,
                     null,
                     LockTracer.NONE,
-                    0,
                     NO_DECORATION,
                     NULL_CONTEXT,
                     storeCursors,

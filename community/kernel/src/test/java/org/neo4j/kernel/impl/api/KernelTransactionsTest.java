@@ -31,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -687,7 +686,6 @@ class KernelTransactionsTest {
                         any(CommandCreationContext.class),
                         any(ResourceLocker.class),
                         any(LockTracer.class),
-                        anyLong(),
                         any(TxStateVisitor.Decorator.class),
                         any(CursorContext.class),
                         any(StoreCursors.class),

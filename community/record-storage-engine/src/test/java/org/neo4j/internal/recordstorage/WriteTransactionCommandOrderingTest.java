@@ -151,9 +151,7 @@ class WriteTransactionCommandOrderingTest {
 
         return new TransactionRecordState(
                 neoStores,
-                mock(IntegrityValidator.class),
                 recordChangeSet,
-                0,
                 null,
                 LockTracer.NONE,
                 null,

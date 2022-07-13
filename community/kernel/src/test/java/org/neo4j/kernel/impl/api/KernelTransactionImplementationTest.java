@@ -410,7 +410,6 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
                         any(CommandCreationContext.class),
                         any(ResourceLocker.class),
                         any(LockTracer.class),
-                        anyLong(),
                         any(TxStateVisitor.Decorator.class),
                         any(CursorContext.class),
                         any(StoreCursors.class),

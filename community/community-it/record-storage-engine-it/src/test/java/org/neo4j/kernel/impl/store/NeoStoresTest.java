@@ -571,7 +571,6 @@ class NeoStoresTest {
                     commandCreationContext,
                     IGNORE,
                     NONE,
-                    storageEngine.testAccessNeoStores().getMetaDataStore().getLastClosedTransactionId(),
                     tx -> tx,
                     cursorContext,
                     storeCursors,

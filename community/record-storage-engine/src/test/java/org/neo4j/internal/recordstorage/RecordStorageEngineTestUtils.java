@@ -124,7 +124,6 @@ public class RecordStorageEngineTestUtils {
                     commandCreationContext,
                     ResourceLocker.IGNORE,
                     LockTracer.NONE,
-                    metaDataStore.getLastCommittedTransactionId(),
                     t -> t,
                     cursorContext,
                     storeCursors,

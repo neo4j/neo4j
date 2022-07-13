@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -132,7 +131,6 @@ class KernelTransactionTestBase {
                         any(CommandCreationContext.class),
                         any(ResourceLocker.class),
                         any(LockTracer.class),
-                        anyLong(),
                         any(TxStateVisitor.Decorator.class),
                         any(CursorContext.class),
                         any(StoreCursors.class),

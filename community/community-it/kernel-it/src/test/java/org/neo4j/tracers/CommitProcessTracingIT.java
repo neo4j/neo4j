@@ -101,7 +101,6 @@ public class CommitProcessTracingIT {
                         context,
                         IGNORE,
                         LockTracer.NONE,
-                        0,
                         NO_DECORATION,
                         cursorContext,
                         storeCursors,

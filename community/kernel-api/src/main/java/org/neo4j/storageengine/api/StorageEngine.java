@@ -39,7 +39,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TransactionStateBehaviour;
-import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.storageengine.api.txstate.TxStateVisitor.Decorator;
 
 /**
  * A StorageEngine provides the functionality to durably store data, and read it back.
@@ -47,8 +47,7 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
     /**
      * @return a new {@link CommandCreationContext} meant to be kept for multiple calls to
-     * {@link #createCommands(Collection, ReadableTransactionState, StorageReader, CommandCreationContext, ResourceLocker, LockTracer, long,
-     * TxStateVisitor.Decorator, CursorContext, StoreCursors, MemoryTracker)}.
+     * {@link #createCommands(Collection, ReadableTransactionState, StorageReader, CommandCreationContext, ResourceLocker, LockTracer, Decorator, CursorContext, StoreCursors, MemoryTracker)}.
      * Must be {@link CommandCreationContext#close() closed} after used, before being discarded.
      */
     CommandCreationContext newCommandCreationContext(MemoryTracker memoryTracker);
@@ -80,8 +79,6 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
      * needs to lock prev/next relationships and these changes happens when creating commands
      * The EntityLocker interface is a subset of Locks.Client interface, just to fit in while it's here.
      * @param lockTracer traces additional locks acquired while creating commands.
-     * @param lastTransactionIdWhenStarted transaction id which was seen as last committed when this
-     * transaction started, i.e. before any changes were made and before any data was read.
      * @param additionalTxStateVisitor any additional tx state visitor decoration.
      * @param cursorContext underlying page cursor context
      * @param memoryTracker to report allocations to
@@ -94,8 +91,7 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
             CommandCreationContext creationContext,
             ResourceLocker locks,
             LockTracer lockTracer,
-            long lastTransactionIdWhenStarted,
-            TxStateVisitor.Decorator additionalTxStateVisitor,
+            Decorator additionalTxStateVisitor,
             CursorContext cursorContext,
             StoreCursors storeCursors,
             MemoryTracker memoryTracker)

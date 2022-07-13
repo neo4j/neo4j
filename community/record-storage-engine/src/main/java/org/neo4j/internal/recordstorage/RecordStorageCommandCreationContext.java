@@ -24,6 +24,7 @@ import static java.lang.Math.toIntExact;
 import java.util.function.BooleanSupplier;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.recordstorage.RecordAccess.LoadMonitor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -147,12 +148,10 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
     public void close() {}
 
     TransactionRecordState createTransactionRecordState(
-            IntegrityValidator integrityValidator,
-            long lastTransactionIdWhenStarted,
             ResourceLocker locks,
             LockTracer lockTracer,
             LogCommandSerialization commandSerialization,
-            RecordAccess.LoadMonitor monitor) {
+            LoadMonitor monitor) {
         RecordChangeSet recordChangeSet = new RecordChangeSet(loaders, memoryTracker, monitor, storeCursors);
         RelationshipModifier relationshipModifier = new RelationshipModifier(
                 relationshipGroupGetter,
@@ -163,9 +162,7 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
                 memoryTracker);
         return new TransactionRecordState(
                 neoStores,
-                integrityValidator,
                 recordChangeSet,
-                lastTransactionIdWhenStarted,
                 locks,
                 lockTracer,
                 relationshipModifier,

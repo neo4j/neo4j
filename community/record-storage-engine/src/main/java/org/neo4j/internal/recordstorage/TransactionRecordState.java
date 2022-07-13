@@ -90,13 +90,11 @@ public class TransactionRecordState implements RecordState {
     private static final Function<Mode, List<Command>> MODE_TO_ARRAY_LIST = mode -> new ArrayList<>();
 
     private final NeoStores neoStores;
-    private final IntegrityValidator integrityValidator;
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
     private final PropertyStore propertyStore;
     private final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
     private final RecordAccessSet recordChangeSet;
-    private final long lastCommittedTxWhenTransactionStarted;
     private final ResourceLocker locks;
     private final LockTracer lockTracer;
     private final RelationshipModifier relationshipModifier;
@@ -113,9 +111,7 @@ public class TransactionRecordState implements RecordState {
 
     TransactionRecordState(
             NeoStores neoStores,
-            IntegrityValidator integrityValidator,
             RecordChangeSet recordChangeSet,
-            long lastCommittedTxWhenTransactionStarted,
             ResourceLocker locks,
             LockTracer lockTracer,
             RelationshipModifier relationshipModifier,
@@ -130,9 +126,7 @@ public class TransactionRecordState implements RecordState {
         this.relationshipStore = neoStores.getRelationshipStore();
         this.propertyStore = neoStores.getPropertyStore();
         this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
-        this.integrityValidator = integrityValidator;
         this.recordChangeSet = recordChangeSet;
-        this.lastCommittedTxWhenTransactionStarted = lastCommittedTxWhenTransactionStarted;
         this.locks = locks;
         this.lockTracer = lockTracer;
         this.relationshipModifier = relationshipModifier;
@@ -149,8 +143,6 @@ public class TransactionRecordState implements RecordState {
     public void extractCommands(Collection<StorageCommand> commands, MemoryTracker memoryTracker)
             throws TransactionFailureException {
         assert !prepared : "Transaction has already been prepared";
-
-        integrityValidator.validateTransactionStartKnowledge(lastCommittedTxWhenTransactionStarted);
 
         int noOfCommands = recordChangeSet.changeSize();
 

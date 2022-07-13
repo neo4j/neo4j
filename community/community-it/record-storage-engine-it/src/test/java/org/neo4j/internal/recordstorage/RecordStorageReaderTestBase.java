@@ -271,7 +271,6 @@ public abstract class RecordStorageReaderTestBase {
                 commitContext,
                 IGNORE_LOCKING,
                 LockTracer.NONE,
-                txId,
                 state -> state,
                 NULL_CONTEXT,
                 storageCursors,

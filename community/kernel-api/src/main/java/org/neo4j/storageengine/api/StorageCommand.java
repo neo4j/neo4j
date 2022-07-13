@@ -33,8 +33,7 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 /**
  * A command representing one unit of change to a {@link StorageEngine}. Commands are created by
- * {@link StorageEngine#createCommands(Collection, ReadableTransactionState, StorageReader, CommandCreationContext, ResourceLocker, LockTracer, long,
- * TxStateVisitor.Decorator,CursorContext, StoreCursors, MemoryTracker)}
+ * {@link StorageEngine#createCommands(Collection, ReadableTransactionState, StorageReader, CommandCreationContext, ResourceLocker, LockTracer, TxStateVisitor.Decorator, CursorContext, StoreCursors, MemoryTracker)}
  * and once created can be serialized onto a {@link WritableChannel} and/or passed back to
  * {@link StorageEngine#apply(CommandsToApply, TransactionApplicationMode)} for application where the
  * changes represented by the command are actually applied onto storage.

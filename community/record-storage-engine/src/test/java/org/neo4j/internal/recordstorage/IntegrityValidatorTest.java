@@ -20,12 +20,8 @@
 package org.neo4j.internal.recordstorage;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 class IntegrityValidatorTest {
@@ -33,26 +29,10 @@ class IntegrityValidatorTest {
     @Test
     void deletingNodeWithRelationshipsIsNotAllowed() {
         // Given
-        NeoStores store = mock(NeoStores.class);
-        IntegrityValidator validator = new IntegrityValidator(store);
-
         NodeRecord record = new NodeRecord(1L).initialize(false, -1L, false, 1L, 0);
         record.setInUse(false);
 
         // When
         assertThrows(Exception.class, () -> IntegrityValidator.validateNodeRecord(record));
-    }
-
-    @Test
-    void transactionsStartedBeforeAConstraintWasCreatedAreDisallowed() {
-        // Given
-        NeoStores store = mock(NeoStores.class);
-        MetaDataStore metaDataStore = mock(MetaDataStore.class);
-        when(store.getMetaDataStore()).thenReturn(metaDataStore);
-        when(metaDataStore.getLatestConstraintIntroducingTx()).thenReturn(10L);
-        IntegrityValidator validator = new IntegrityValidator(store);
-
-        // When
-        assertThrows(Exception.class, () -> validator.validateTransactionStartKnowledge(1));
     }
 }

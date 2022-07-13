@@ -21,7 +21,6 @@ package org.neo4j.internal.recordstorage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -109,15 +108,9 @@ public class CommandCreationContextIT {
         var memoryTracker = new LocalMemoryTracker();
         try (var commandCreationContext = storageEngine.newCommandCreationContext(memoryTracker);
                 var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
-            var integrityValidator = mock(IntegrityValidator.class);
             commandCreationContext.initialize(NULL_CONTEXT, storeCursors);
             var recordState = commandCreationContext.createTransactionRecordState(
-                    integrityValidator,
-                    1,
-                    IGNORE,
-                    LockTracer.NONE,
-                    LATEST_LOG_SERIALIZATION,
-                    RecordAccess.LoadMonitor.NULL_MONITOR);
+                    IGNORE, LockTracer.NONE, LATEST_LOG_SERIALIZATION, RecordAccess.LoadMonitor.NULL_MONITOR);
             long heapBefore = memoryTracker.estimatedHeapMemory();
             for (int i = 1; i < 1024; i++) {
                 operation.accept(recordState, new ContextHolder(nodeId, relationshipId, i));

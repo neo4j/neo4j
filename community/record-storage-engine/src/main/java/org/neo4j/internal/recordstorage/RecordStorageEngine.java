@@ -118,6 +118,7 @@ import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.storageengine.api.txstate.TxStateVisitor.Decorator;
 import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.storageengine.util.IndexUpdatesWorkSync;
@@ -136,7 +137,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     private final TokenHolders tokenHolders;
     private final Health databaseHealth;
     private final SchemaCache schemaCache;
-    private final IntegrityValidator integrityValidator;
     private final CacheAccessBackDoor cacheAccess;
     private final SchemaState schemaState;
     private final SchemaRuleAccess schemaRuleAccess;
@@ -219,7 +219,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess(neoStores.getSchemaStore(), tokenHolders);
             schemaCache = new SchemaCache(constraintSemantics, indexConfigCompleter);
 
-            integrityValidator = new IntegrityValidator(neoStores);
             cacheAccess = new BridgingCacheAccess(schemaCache, schemaState, tokenHolders);
 
             denseNodeThreshold = config.get(GraphDatabaseSettings.dense_node_threshold);
@@ -427,8 +426,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             CommandCreationContext commandCreationContext,
             ResourceLocker locks,
             LockTracer lockTracer,
-            long lastTransactionIdWhenStarted,
-            TxStateVisitor.Decorator additionalTxStateVisitor,
+            Decorator additionalTxStateVisitor,
             CursorContext cursorContext,
             StoreCursors storeCursors,
             MemoryTracker transactionMemoryTracker)
@@ -443,8 +441,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                     (RecordStorageCommandCreationContext) commandCreationContext;
             LogCommandSerialization serialization = RecordStorageCommandReaderFactory.INSTANCE.get(version);
             TransactionRecordState recordState = creationContext.createTransactionRecordState(
-                    integrityValidator,
-                    lastTransactionIdWhenStarted,
                     locks,
                     lockTracer,
                     serialization,

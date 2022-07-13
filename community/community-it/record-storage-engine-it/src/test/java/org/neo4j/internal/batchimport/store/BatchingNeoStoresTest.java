@@ -552,7 +552,6 @@ class BatchingNeoStoresTest {
                     commandCreationContext,
                     ResourceLocker.IGNORE,
                     LockTracer.NONE,
-                    BASE_TX_ID,
                     v -> v,
                     NULL_CONTEXT,
                     storeCursors,
