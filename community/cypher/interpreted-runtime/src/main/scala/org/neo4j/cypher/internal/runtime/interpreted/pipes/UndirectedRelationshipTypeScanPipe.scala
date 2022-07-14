@@ -72,10 +72,13 @@ object UndirectedRelationshipTypeScanPipe {
         emitSibling = false
         rowFactory.copyWith(baseContext, relName, lastRelationship, fromNode, lastEnd, toNode, lastStart)
       } else {
-        emitSibling = true
         lastRelationship = query.relationshipById(relIterator.next())
-        lastStart = query.nodeById(relIterator.startNodeId())
-        lastEnd = query.nodeById(relIterator.endNodeId())
+        val start = relIterator.startNodeId()
+        val end = relIterator.endNodeId()
+        // For self-loops, we don't emit sibling
+        emitSibling = start != end
+        lastStart = query.nodeById(start)
+        lastEnd = query.nodeById(end)
         rowFactory.copyWith(baseContext, relName, lastRelationship, fromNode, lastStart, toNode, lastEnd)
       }
     }

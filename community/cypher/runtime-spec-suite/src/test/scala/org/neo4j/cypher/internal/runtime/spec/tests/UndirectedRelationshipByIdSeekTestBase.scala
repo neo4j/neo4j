@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.RelationshipType
 
 import scala.util.Random
 
@@ -232,5 +233,26 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
     } yield Array(r, x, y)
 
     runtimeResult should beColumns("r", "x", "y").withRows(expected)
+  }
+
+  test("should only find loop once") {
+    // given
+    val relToFind = given {
+      val a = tx.createNode()
+      a.createRelationshipTo(a, RelationshipType.withName("R"))
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "x", "y")
+      .undirectedRelationshipByIdSeek("r", "x", "y", Set.empty, relToFind.getId)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("r", "x", "y").withRows(Seq(
+      Array(relToFind, relToFind.getStartNode, relToFind.getEndNode)
+    ))
   }
 }

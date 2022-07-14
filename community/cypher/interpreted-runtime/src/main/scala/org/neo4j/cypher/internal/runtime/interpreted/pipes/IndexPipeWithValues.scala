@@ -120,9 +120,12 @@ trait IndexPipeWithValues extends Pipe {
           while (ctx == null && cursor.next()) {
             lastRelationship = queryContext.relationshipById(cursor.relationshipReference())
             if (cursor.readFromStore()) {
-              lastStart = queryContext.nodeById(cursor.sourceNodeReference())
-              lastEnd = queryContext.nodeById(cursor.targetNodeReference())
-              emitSibling = true
+              val start = cursor.sourceNodeReference()
+              val end = cursor.targetNodeReference()
+              lastStart = queryContext.nodeById(start)
+              lastEnd = queryContext.nodeById(end)
+              // For self-loops, we don't emit sibling
+              emitSibling = start != end
               ctx = rowFactory.copyWith(baseContext, ident, lastRelationship, startNode, lastStart, endNode, lastEnd)
             }
           }

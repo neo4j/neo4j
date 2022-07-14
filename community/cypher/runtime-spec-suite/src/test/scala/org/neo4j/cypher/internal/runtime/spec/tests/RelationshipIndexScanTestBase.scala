@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.schema.IndexType
 
 abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
@@ -542,5 +543,23 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("r")
       .withRows(singleColumn(rels.flatMap(r => Seq.fill(2 * 10)(r))))
+  }
+
+  test("undirected scans only find loop once") {
+    val rel = given {
+      relationshipIndex(IndexType.RANGE, "R", "prop")
+      val a = tx.createNode()
+      val r = a.createRelationshipTo(a, RelationshipType.withName("R"))
+      r.setProperty("prop", 42)
+      r
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .relationshipIndexOperator("(n)-[r:R(prop)]-(m)", indexType = IndexType.RANGE)
+      .build(readOnly = false)
+
+    execute(logicalQuery, runtime) should beColumns("r").withSingleRow(rel)
   }
 }

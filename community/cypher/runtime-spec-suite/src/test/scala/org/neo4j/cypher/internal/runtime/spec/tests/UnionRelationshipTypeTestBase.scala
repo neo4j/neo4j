@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.RelationshipType
 
 abstract class UnionRelationshipTypeTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
@@ -355,5 +356,20 @@ abstract class UnionRelationshipTypeTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = rels.map(r => Array[Any](r.getStartNode, r.getEndNode, r.getType.name()))
     runtimeResult should beColumns("x", "y", "t").withRows(expected)
+  }
+
+  test("undirected scans only find loop once") {
+    val rel = given {
+      val a = tx.createNode()
+      a.createRelationshipTo(a, RelationshipType.withName("R"))
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .unionRelationshipTypesScan("(n)-[r:R|S|T]-(m)", IndexOrderNone)
+      .build(readOnly = false)
+
+    execute(logicalQuery, runtime) should beColumns("r").withSingleRow(rel)
   }
 }

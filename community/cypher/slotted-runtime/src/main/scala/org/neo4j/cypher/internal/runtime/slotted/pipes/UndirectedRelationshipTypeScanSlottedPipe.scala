@@ -72,10 +72,11 @@ object UndirectedRelationshipTypeScanSlottedPipe {
         context.setLongAt(fromOffset, lastEnd)
         context.setLongAt(toOffset, lastStart)
       } else {
-        emitSibling = true
         lastRelationship = relIterator.next()
         lastStart = relIterator.startNodeId()
         lastEnd = relIterator.endNodeId()
+        // For self-loops, we don't emit sibling
+        emitSibling = lastStart != lastEnd
         context.setLongAt(fromOffset, lastStart)
         context.setLongAt(toOffset, lastEnd)
       }

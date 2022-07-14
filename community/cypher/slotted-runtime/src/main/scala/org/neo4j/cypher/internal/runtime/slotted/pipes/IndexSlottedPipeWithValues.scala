@@ -108,7 +108,6 @@ trait IndexSlottedPipeWithValues extends Pipe {
         } else {
           var slottedContext: CypherRow = null
           while (slottedContext == null && cursor.next()) {
-            emitSibling = true
             // NOTE: sourceNodeReference and targetNodeReference is not implemented yet on the cursor
             if (cursor.readFromStore()) {
               lastRelationship = cursor.relationshipReference()
@@ -118,6 +117,8 @@ trait IndexSlottedPipeWithValues extends Pipe {
               slottedContext.setLongAt(offset, lastRelationship)
               slottedContext.setLongAt(startOffset, lastStart)
               slottedContext.setLongAt(endOffset, lastEnd)
+              // For self-loops, we don't emit sibling
+              emitSibling = lastStart != lastEnd
             }
           }
           slottedContext

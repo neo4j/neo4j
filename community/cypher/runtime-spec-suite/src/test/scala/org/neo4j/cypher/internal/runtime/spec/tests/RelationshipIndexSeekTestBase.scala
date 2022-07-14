@@ -36,6 +36,7 @@ import org.neo4j.cypher.operations.CypherBoolean
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType.EXACT
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType.RANGE
@@ -1552,6 +1553,25 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     }
 
     runtimeResult should beColumns("r").withRows(singleColumn(expected))
+  }
+
+  test("undirected seek should only find loop once") {
+    val rel = given {
+      relationshipIndex(IndexType.RANGE, "R", "prop")
+
+      val a = tx.createNode()
+      val r = a.createRelationshipTo(a, RelationshipType.withName("R"))
+      r.setProperty("prop", 42)
+      r
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .relationshipIndexOperator("(n)-[r:R(prop = 42)]-(m)", indexType = IndexType.RANGE)
+      .build(readOnly = false)
+
+    execute(logicalQuery, runtime) should beColumns("r").withSingleRow(rel)
   }
 
   private def nodesAndRelationship(relationship: Relationship): Array[_] =
