@@ -28,7 +28,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     val cfg = plannerBuilder().setAllNodesCardinality(100).build()
     val plan = cfg.plan("MATCH (a), (b), shortestPath((a)-[r]->(b)) RETURN b").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .shortestPath("(a)-[r]->(b)", pathName = Some("anon_0"))
+      .shortestPath("(a)-[r*1..1]->(b)", pathName = Some("anon_0"))
       .cartesianProduct()
       .|.allNodeScan("b")
       .allNodeScan("a")
@@ -40,7 +40,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     val plan = cfg.plan("MATCH (a), (b), p = shortestPath((a)-[r]->(b)) WITH p WHERE length(p) > 1 RETURN p").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .filter("length(p) > 1")
-      .shortestPath("(a)-[r]->(b)", pathName = Some("p"))
+      .shortestPath("(a)-[r*1..1]->(b)", pathName = Some("p"))
       .cartesianProduct()
       .|.allNodeScan("b")
       .allNodeScan("a")
@@ -51,7 +51,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     val cfg = plannerBuilder().setAllNodesCardinality(100).build()
     val plan = cfg.plan("MATCH (a), (b), allShortestPaths((a)-[r]->(b)) RETURN b").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .shortestPath("(a)-[r]->(b)", pathName = Some("anon_0"), all = true)
+      .shortestPath("(a)-[r*1..1]->(b)", pathName = Some("anon_0"), all = true)
       .cartesianProduct()
       .|.allNodeScan("b")
       .allNodeScan("a")
@@ -68,7 +68,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
 
     val plan = cfg.plan("MATCH (a:X)<-[r1]-(b)-[r2]->(c:X), p = shortestPath((a)-[r]->(c)) RETURN p").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .shortestPath("(a)-[r]->(c)", pathName = Some("p"))
+      .shortestPath("(a)-[r*1..1]->(c)", pathName = Some("p"))
       .filter("not r1 = r2")
       .nodeHashJoin("b")
       .|.expandAll("(c)<-[r2]-(b)")
