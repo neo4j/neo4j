@@ -20,6 +20,7 @@
 package org.neo4j.dbms.identity;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.UUID;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
@@ -31,6 +32,25 @@ import org.neo4j.util.Id;
  * It is persisted in the root of the data directory.
  */
 public final class ServerId extends Id {
+
+    private static final int UUID_LEN = 36;
+
+    /**
+     * Parse a full UUID based ServerId
+     * @param uuid a legit UUID
+     * @return a ServerId if the uuid is valid OR {@link Optional#empty()}
+     */
+    public static Optional<ServerId> from(String uuid) {
+        if (uuid != null && uuid.length() == UUID_LEN) {
+            try {
+                return Optional.of(new ServerId(UUID.fromString(uuid)));
+            } catch (IllegalArgumentException ignore) {
+
+            }
+        }
+        return Optional.empty();
+    }
+
     public ServerId(UUID uuid) {
         super(uuid);
     }

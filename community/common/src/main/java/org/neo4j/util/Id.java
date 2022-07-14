@@ -37,6 +37,13 @@ public class Id {
         return uuid;
     }
 
+    /**
+     * Returns true if this id has the first 8 characters equals to the provided ones
+     */
+    public boolean startsWith(String prefix) {
+        return Objects.equals(shortName(), prefix);
+    }
+
     protected String shortName() {
         if (shortName == null) {
             shortName = uuid.toString().substring(0, 8);
