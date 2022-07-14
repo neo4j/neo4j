@@ -480,31 +480,6 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     )
   }
 
-  test("should allow relationship type expressions in shortestPath in MATCH") {
-    val query =
-      """
-        |MATCH p = shortestPath((a)-[:REL|!BAR]->(b))
-        |RETURN length(p) AS result""".stripMargin
-    expectNoErrorsFrom(query)
-  }
-
-  test("should not allow relationship type expressions in shortestPath expression") {
-    val query =
-      """
-        |MATCH (a), (b)
-        |WITH shortestPath((a)-[:REL|!BAR]->(b)) AS p
-        |RETURN length(p) AS result""".stripMargin
-    expectErrorsFrom(
-      query,
-      Set(
-        SemanticError(
-          "Relationship type expressions in patterns are not allowed in expression, but only in MATCH clause",
-          InputPosition(43, 3, 28)
-        )
-      )
-    )
-  }
-
   test("should allow relationship pattern predicates in MATCH") {
     val query =
       "WITH 123 AS minValue MATCH (n)-[r:Relationship {prop: 42} WHERE r.otherProp > minValue]->(m) RETURN r AS result"
@@ -580,24 +555,6 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
         )
       )
     )
-  }
-
-  test("should allow relationship pattern predicates in MATCH with shortestPath") {
-    val query =
-      """
-        |WITH 123 AS minValue
-        |MATCH p = shortestPath((n)-[r:Relationship WHERE r.prop > minValue]->(m))
-        |RETURN r AS result
-        |""".stripMargin
-    expectNoErrorsFrom(query)
-  }
-
-  test("should allow relationship pattern predicates in MATCH with shortestPath to refer to nodes") {
-    val query =
-      """
-        |MATCH p = shortestPath((n)-[r:Relationship WHERE n.prop > 42]->(m))
-        |RETURN n AS result""".stripMargin
-    expectNoErrorsFrom(query)
   }
 
   test("CALL IN TRANSACTIONS with batchSize 1") {
