@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.Expand
@@ -47,7 +48,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
         ),
         ShortestPathPattern(
           Some("anon_0"),
-          PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
+          PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, VarPatternLength(1, Some(1))),
           single = true
         )(null)
       )
@@ -64,7 +65,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
           ),
           ShortestPathPattern(
             Some("p"),
-            PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
+            PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, VarPatternLength(1, Some(1))),
             single = true
           )(null)
         )
@@ -81,7 +82,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
         ),
         ShortestPathPattern(
           Some("anon_0"),
-          PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
+          PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, VarPatternLength(1, Some(1))),
           single = false
         )(null)
       )
@@ -115,7 +116,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
               "c", SemanticDirection.INCOMING, Seq.empty, "b", "r2", ExpandAll)
           )
         ),
-        ShortestPathPattern(Some("p"), PatternRelationship("r", ("a", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength), single = true)(null))
+        ShortestPathPattern(Some("p"), PatternRelationship("r", ("a", "c"), SemanticDirection.OUTGOING, Seq.empty, VarPatternLength(1, Some(1))), single = true)(null))
 
     result should equal(expected)
   }
