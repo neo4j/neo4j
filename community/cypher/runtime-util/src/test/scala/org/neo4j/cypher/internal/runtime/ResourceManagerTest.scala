@@ -27,6 +27,9 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.CloseListener
 import org.neo4j.memory.EmptyMemoryTracker
+import org.neo4j.memory.LocalMemoryTracker
+import org.neo4j.memory.MemoryLimitExceededException
+import org.neo4j.memory.MemoryPools
 
 import scala.util.Try
 
@@ -209,6 +212,19 @@ class ResourceManagerTest extends CypherFunSuite {
         }
       }
     }
+  }
+
+  test("Resource pool should not overflow") {
+    // given
+    val maxMemory = Int.MaxValue / 2 + 1
+    val memoryTracker = new LocalMemoryTracker(MemoryPools.NO_TRACKING, maxMemory, 0, null)
+    val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor], memoryTracker)
+
+    // when
+    pool.unsafeFillForTesting(maxMemory)
+
+    // then
+    a[MemoryLimitExceededException] should be thrownBy pool.add(mock[AutoCloseablePlus])
   }
 
   private def verifyTrace(resource: AutoCloseablePlus, monitor: ResourceMonitor, resources: ResourceManager): Unit = {

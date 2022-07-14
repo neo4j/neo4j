@@ -31,6 +31,7 @@ import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
 import org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray
 import org.neo4j.memory.MemoryTracker
+import org.neo4j.util.VisibleForTesting
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
@@ -222,17 +223,44 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memory
     }
   }
 
+  /**
+   * DO NOT USE OUTSIDE TESTING
+   */
+  @VisibleForTesting
+  def unsafeFillForTesting(newSizeAndCapacity: Int): Unit = {
+    closeables = new Array[AutoCloseablePlus](newSizeAndCapacity)
+    trackedSize = shallowSizeOfObjectArray(capacity)
+    memoryTracker.allocateHeap(trackedSize)
+    highMark = newSizeAndCapacity
+  }
+
   private def ensureCapacity(): Unit = {
     if (closeables.length <= highMark) {
       val temp = closeables
       val oldHeapUsage = trackedSize
-      val newSize = closeables.length * 2
+      val newSize = computeNewSize
       trackedSize = shallowSizeOfObjectArray(newSize)
       memoryTracker.allocateHeap(trackedSize)
       closeables = new Array[AutoCloseablePlus](newSize)
       System.arraycopy(temp, 0, closeables, 0, temp.length)
       memoryTracker.releaseHeap(oldHeapUsage)
     }
+  }
+
+  private def computeNewSize: Int = {
+    val oldSize = closeables.length
+    val minSize = oldSize + 1
+    if (minSize < 0) {
+      // We cannot grow anymore, this is really an OOM but we let
+      // the memory tracker figure that out
+      return Int.MaxValue
+    }
+
+    // try to double the size
+    val newSize = oldSize + (oldSize >> 1)
+    // we got an overflow grow by the minimum amount
+    if (newSize < 0) minSize
+    else newSize
   }
 }
 
