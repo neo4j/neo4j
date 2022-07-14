@@ -685,17 +685,14 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
       1
     ).dbHits() shouldBe ((n + extraNodes) * 2 + n * costOfExpandOneRel) // optional expand into
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // apply
-    queryProfile.operatorProfile(
-      3
-    ).dbHits() shouldBe ((n + extraNodes) * (n + extraNodes) * 2 * (costOfGetPropertyChain + costOfProperty)) // filter (reads 2 properties))
-
+    queryProfile.operatorProfile(3).dbHits() shouldBe (
+      (n + extraNodes) * (n + extraNodes) * 2 * (costOfGetPropertyChain + costOfProperty)
+    ) // filter (reads 2 properties))
     // TODO: parallel scans don't seem to add up the dbhits correctly when on the rhs of apply, investigate why that is?
-    queryProfile.operatorProfile(4).dbHits() should (be((n + extraNodes) * (n + extraNodes) + costOfLabelLookup) or be(
+    queryProfile.operatorProfile(4).dbHits() shouldBe (
       (n + extraNodes) * (n + extraNodes + 1) + costOfLabelLookup
-    )) // label scan OK
-    queryProfile.operatorProfile(5).dbHits() should (be(n + extraNodes + costOfLabelLookup) or be(
-      n + extraNodes + 1 + costOfLabelLookup
-    )) // label scan OK
+    ) // label scan Y
+    queryProfile.operatorProfile(5).dbHits() shouldBe (n + extraNodes + 1 + costOfLabelLookup) // // label scan X
   }
 
   test("should profile dbHits with node hash join") {
@@ -937,10 +934,11 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // then
     val numberOfChunks = Math.ceil(size / cartesianProductChunkSize.toDouble).toInt
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 0 // cartesian product
-    result.runtimeResult.queryProfile().operatorProfile(2).dbHits() should (be(numberOfChunks * size) or be(
+    // TODO: parallel scans don't seem to add up the dbhits correctly when on the rhs, investigate why that is?
+    result.runtimeResult.queryProfile().operatorProfile(2).dbHits() shouldBe (
       numberOfChunks * (size + 1)
-    )) // all node scan b
-    result.runtimeResult.queryProfile().operatorProfile(3).dbHits() should (be(size) or be(size + 1)) // all node scan a
+    ) // all node scan b
+    result.runtimeResult.queryProfile().operatorProfile(3).dbHits() shouldBe (size + 1) // all node scan a
   }
 
   test("should profile dbHits of skip") {

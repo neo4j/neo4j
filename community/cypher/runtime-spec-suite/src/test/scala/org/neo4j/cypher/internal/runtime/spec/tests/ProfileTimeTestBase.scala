@@ -309,7 +309,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile time with shortest path") {
     // TODO: flaky because of fallback and ambient cursors
-    assume(!(isParallel && runOnlySafeScenarios))
+    assume(!isParallel) // Parallel does not yet support `FindShortestPaths`
 
     // given
     val nodesPerLabel = 10

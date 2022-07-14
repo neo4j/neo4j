@@ -20,7 +20,13 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.InterpretedRuntime
+import org.neo4j.cypher.internal.InterpretedRuntimeName
+import org.neo4j.cypher.internal.ParallelRuntimeName
+import org.neo4j.cypher.internal.PipelinedRuntimeName
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.SlottedRuntime
+import org.neo4j.cypher.internal.SlottedRuntimeName
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.runtime.spec.Edition
@@ -305,12 +311,13 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then
-    // TODO: Interpreted and slotted doesn't count relationshipById as a dbhit
-    //      is this a bug?
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should
-      (be(sizeHint + 1) or be(sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/ ) or be(
-        2 * sizeHint + 1 + 0 /*costOfRelationshipTypeLookup*/
-      ))
+    val expectedDbHits: Int = runtime.name.toUpperCase() match {
+      case SlottedRuntimeName.name | InterpretedRuntimeName.name => sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/
+      case PipelinedRuntimeName.name                             => sizeHint + 1
+      case ParallelRuntimeName.name                              => 2 * sizeHint
+    }
+
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe expectedDbHits
   }
 
   test("should profile dbHits of undirected relationship type scan") {
@@ -328,12 +335,12 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then
-    // TODO: Interpreted and slotted doesn't count relationshipById as a dbhit
-    //      is this a bug?
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should
-      (be(sizeHint + 1) or be(sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/ ) or be(
-        2 * sizeHint + 1 + 0 /*costOfRelationshipTypeLookup*/
-      ))
+    val expectedDbHits: Int = runtime.name.toUpperCase() match {
+      case SlottedRuntimeName.name | InterpretedRuntimeName.name => sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/
+      case PipelinedRuntimeName.name                             => sizeHint + 1
+      case ParallelRuntimeName.name                              => 2 * sizeHint
+    }
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe expectedDbHits
   }
 
   test("directed relationship scan should use ascending index order when provided") {
