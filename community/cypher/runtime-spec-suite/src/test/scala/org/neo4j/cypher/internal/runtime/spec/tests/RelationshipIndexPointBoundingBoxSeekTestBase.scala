@@ -25,7 +25,10 @@ import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.RelationshipType
+import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.graphdb.spatial.Point
+import org.neo4j.values.storable.CoordinateReferenceSystem
 import org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian
 import org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D
 import org.neo4j.values.storable.CoordinateReferenceSystem.WGS84
@@ -612,5 +615,32 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     //then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2)))
+  }
+
+  test("undirected scans only find loop once") {
+    val rel = given {
+      relationshipIndex(IndexType.POINT, "R", "location")
+      val a = tx.createNode()
+      val r = a.createRelationshipTo(a, RelationshipType.withName("R"))
+      r.setProperty("location", pointValue(Cartesian, 0, 0))
+      r
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .pointBoundingBoxRelationshipIndexSeekExpr(
+        "r",
+        "n",
+        "m",
+        "R",
+        "location",
+        "{x: 0.0, y: 0.0, crs: 'cartesian'}",
+        "{x: 2.0, y: 2.0, crs: 'cartesian'}",
+        indexType = IndexType.POINT
+      )
+      .build(readOnly = false)
+
+    execute(logicalQuery, runtime) should beColumns("r").withSingleRow(rel)
   }
 }

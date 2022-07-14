@@ -55,18 +55,21 @@ private class UndirectedIterator(relName: String,
   private val query = state.query
   private val relIterator = query.getRelationshipsByType(state.relTypeTokenReadSession.get, relToken, indexOrder)
 
-  def next(): CypherRow = {
-    if (emitSibling) {
-      emitSibling = false
-      rowFactory.copyWith(baseContext, relName, lastRelationship, fromNode, lastEnd, toNode, lastStart)
-    } else {
-      emitSibling = true
-      lastRelationship = query.relationshipById(relIterator.next())
-      lastStart = query.nodeById(relIterator.startNodeId())
-      lastEnd = query.nodeById(relIterator.endNodeId())
-      rowFactory.copyWith(baseContext, relName, lastRelationship, fromNode, lastStart, toNode, lastEnd)
+    def next(): CypherRow = {
+      if (emitSibling) {
+        emitSibling = false
+        rowFactory.copyWith(baseContext, relName, lastRelationship, fromNode, lastEnd, toNode, lastStart)
+      } else {
+        lastRelationship = query.relationshipById(relIterator.next())
+        val start = relIterator.startNodeId()
+        val end = relIterator.endNodeId()
+        // For self-loops, we don't emit sibling
+        emitSibling = start != end
+        lastStart = query.nodeById(start)
+        lastEnd = query.nodeById(end)
+        rowFactory.copyWith(baseContext, relName, lastRelationship, fromNode, lastStart, toNode, lastEnd)
+      }
     }
-  }
 
   override protected[this] def closeMore(): Unit = {
     relIterator.close()

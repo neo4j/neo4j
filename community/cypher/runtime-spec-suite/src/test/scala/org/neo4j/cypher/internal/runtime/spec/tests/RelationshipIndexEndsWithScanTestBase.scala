@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.RelationshipType
 
 abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
                                                              edition: Edition[CONTEXT],
@@ -491,5 +492,24 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
 
     //then
     runtimeResult should beColumns("value").withRows(rowCount(limit))
+  }
+
+  test("undirected scans only find loop once") {
+    val rel = given {
+      relationshipIndex("R", "text")
+
+      val a = tx.createNode()
+      val r = a.createRelationshipTo(a, RelationshipType.withName("R"))
+      r.setProperty("text", "value")
+      r
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .relationshipIndexOperator("(n)-[r:R(text ENDS WITH 'alue')]-(m)")
+      .build(readOnly = false)
+
+    execute(logicalQuery, runtime) should beColumns("r").withSingleRow(rel)
   }
 }

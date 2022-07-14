@@ -33,7 +33,10 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.schema.IndexType
+import org.neo4j.kernel.impl.util.ValueUtils.asValue
+import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.ValueType
 
 // Supported by all runtimes
@@ -1255,6 +1258,25 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     }
 
     runtimeResult should beColumns("r").withRows(singleColumn(expected))
+  }
+
+  test("undirected seek should only find loop once") {
+    val rel = given {
+      relationshipIndex(IndexType.RANGE, "R", "prop")
+
+      val a = tx.createNode()
+      val r = a.createRelationshipTo(a, RelationshipType.withName("R"))
+      r.setProperty("prop", 42)
+      r
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .relationshipIndexOperator("(n)-[r:R(prop = 42)]-(m)", indexType = IndexType.RANGE)
+      .build(readOnly = false)
+
+    execute(logicalQuery, runtime) should beColumns("r").withSingleRow(rel)
   }
 
   private def propFilter[T](predicate: T => Boolean): Relationship => Boolean = {

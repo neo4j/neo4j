@@ -147,9 +147,10 @@ class UndirectedRelationshipIdSeekIterator(relIds: java.util.Iterator[AnyValue],
         flipState()
         lastRel
       } else {
-        emitSibling = true
         lastRel = _next
         storeState()
+        // For self-loops, we don't emit sibling
+        emitSibling = startNodeId() != endNodeId()
         _next = computeNext()
         lastRel
       }

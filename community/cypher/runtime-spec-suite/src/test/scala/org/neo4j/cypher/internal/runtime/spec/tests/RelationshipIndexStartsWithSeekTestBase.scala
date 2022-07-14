@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.RelationshipType
+import org.neo4j.graphdb.schema.IndexType
 
 abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
                                                              edition: Edition[CONTEXT],
@@ -223,5 +225,24 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
       case _ => Seq.empty
     }
     runtimeResult should beColumns("r", "text").withRows(expected)
+  }
+
+  test("undirected scans only find loop once") {
+    val rel = given {
+      relationshipIndex(IndexType.TEXT, "R", "text")
+
+      val a = tx.createNode()
+      val r = a.createRelationshipTo(a, RelationshipType.withName("R"))
+      r.setProperty("text", "value")
+      r
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .relationshipIndexOperator("(n)-[r:R(text STARTS WITH 'val')]-(m)", indexType = IndexType.TEXT)
+      .build(readOnly = false)
+
+    execute(logicalQuery, runtime) should beColumns("r").withSingleRow(rel)
   }
 }
