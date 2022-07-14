@@ -43,6 +43,7 @@ import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.junit.jupiter.api.Test;
+import org.neo4j.common.Primitive;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -86,7 +87,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     }
 
     @Test
-    void shouldHandleSizeHintOverflow() {
+    void shouldHandleSizeHintLargerThanNumberOfNodes() {
         try (NodeCursor nodes = cursors.allocateNodeCursor(NULL_CONTEXT)) {
             // when
             Scan<NodeCursor> scan = read.allNodesScan();
@@ -97,6 +98,36 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
                     tx.securityContext().mode()));
 
             LongArrayList ids = new LongArrayList();
+            while (nodes.next()) {
+                ids.add(nodes.nodeReference());
+            }
+
+            assertEquals(NODE_IDS, ids);
+        }
+    }
+
+    @Test
+    void shouldHandleMaxSizeHint() {
+        try (NodeCursor nodes = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+            // when
+            Scan<NodeCursor> scan = read.allNodesScan();
+            LongArrayList ids = new LongArrayList();
+
+            // scan a quarter
+            assertTrue(scan.reserveBatch(
+                    nodes,
+                    Primitive.ceil(NUMBER_OF_NODES, 4),
+                    NULL_CONTEXT,
+                    tx.securityContext().mode()));
+
+            while (nodes.next()) {
+                ids.add(nodes.nodeReference());
+            }
+
+            // scan the rest
+            assertTrue(scan.reserveBatch(
+                    nodes, Integer.MAX_VALUE, NULL_CONTEXT, tx.securityContext().mode()));
+
             while (nodes.next()) {
                 ids.add(nodes.nodeReference());
             }

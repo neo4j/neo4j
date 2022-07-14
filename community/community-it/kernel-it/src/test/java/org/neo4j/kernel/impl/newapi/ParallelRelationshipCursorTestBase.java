@@ -41,6 +41,7 @@ import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.junit.jupiter.api.Test;
+import org.neo4j.common.Primitive;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -89,7 +90,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
     }
 
     @Test
-    void shouldHandleSizeHintOverflow() {
+    void shouldHandleSizeHintLargerThanNumberOfRelationships() {
         CursorContext cursorContext = tx.cursorContext();
         try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(cursorContext)) {
             // when
@@ -101,6 +102,40 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
                     tx.securityContext().mode()));
 
             LongArrayList ids = new LongArrayList();
+            while (relationships.next()) {
+                ids.add(relationships.relationshipReference());
+            }
+
+            assertEquals(RELATIONSHIPS, ids);
+        }
+    }
+
+    @Test
+    void shouldHandleMaxSizeHint() {
+        CursorContext cursorContext = tx.cursorContext();
+        try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(cursorContext)) {
+            // when
+            Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
+            LongArrayList ids = new LongArrayList();
+
+            // scan a quarter
+            assertTrue(scan.reserveBatch(
+                    relationships,
+                    Primitive.ceil(NUMBER_OF_RELATIONSHIPS, 4),
+                    cursorContext,
+                    tx.securityContext().mode()));
+
+            while (relationships.next()) {
+                ids.add(relationships.relationshipReference());
+            }
+
+            // scan the rest
+            assertTrue(scan.reserveBatch(
+                    relationships,
+                    Integer.MAX_VALUE,
+                    cursorContext,
+                    tx.securityContext().mode()));
+
             while (relationships.next()) {
                 ids.add(relationships.relationshipReference());
             }
