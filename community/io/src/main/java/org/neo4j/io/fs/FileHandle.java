@@ -44,26 +44,6 @@ public interface FileHandle {
         }
     };
 
-    /**
-     * Create a consumer of FileHandle that uses fileHandle.rename to move file held by file handle to move from
-     * directory to directory.
-     * <p>
-     * Possibly IOException will be wrapped in UncheckedIOException
-     *
-     * @param from Directory to move file from.
-     * @param to Directory to move file to.
-     * @return A new Consumer that moves the file wrapped by the file handle.
-     */
-    static Consumer<FileHandle> handleRenameBetweenDirectories(Path from, Path to) {
-        return fileHandle -> {
-            try {
-                fileHandle.rename(FileUtils.pathToFileAfterMove(from, to, fileHandle.getPath()));
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        };
-    }
-
     static Consumer<FileHandle> handleRename(Path to) {
         return fileHandle -> {
             try {
