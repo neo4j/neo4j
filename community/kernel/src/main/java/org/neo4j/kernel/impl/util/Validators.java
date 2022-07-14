@@ -85,8 +85,7 @@ public final class Validators {
     };
 
     public static boolean isExistingDatabase(FileSystemAbstraction fileSystem, DatabaseLayout layout) {
-        return StorageEngineFactory.selectStorageEngine(fileSystem, layout, null)
-                .isPresent();
+        return StorageEngineFactory.selectStorageEngine(fileSystem, layout).isPresent();
     }
 
     public static <T> Validator<T> emptyValidator() {
