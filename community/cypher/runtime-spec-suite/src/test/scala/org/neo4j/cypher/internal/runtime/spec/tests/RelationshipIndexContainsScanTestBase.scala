@@ -546,7 +546,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .relationshipIndexOperator("(n)-[r:R(text CONTAINS 'alu')]-(m)", indexType = IndexType.TEXT)
-      .build(readOnly = false)
+      .build() // readOnly = true
 
     execute(logicalQuery, runtime) should beColumns("r").withSingleRow(rel)
   }
