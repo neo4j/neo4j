@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predica
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyType
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NestedPipeCollectExpression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NestedPipeExistsExpression
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NestedPipeGetByNameExpression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.slotted
 import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedExpressionConverters.orderGroupingKeyExpressions
@@ -427,6 +428,14 @@ case class SlottedExpressionConverters(physicalPlan: PhysicalPlan, maybeOwningPi
       case e: NestedPipeExistsExpression =>
         Some(slotted.expressions.NestedPipeExistsSlottedExpression(
           e.pipe,
+          physicalPlan.nestedPlanArgumentConfigurations(e.pipe.id),
+          e.availableExpressionVariables.map(commands.expressions.ExpressionVariable.of).toArray,
+          id
+        ))
+      case e: NestedPipeGetByNameExpression =>
+        Some(slotted.expressions.NestedPipeGetByNameSlottedExpression(
+          e.pipe,
+          e.columnNameToGet,
           physicalPlan.nestedPlanArgumentConfigurations(e.pipe.id),
           e.availableExpressionVariables.map(commands.expressions.ExpressionVariable.of).toArray,
           id

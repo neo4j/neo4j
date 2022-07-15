@@ -56,6 +56,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
+import org.neo4j.cypher.internal.logical.plans.NestedPlanGetByNameExpression
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
@@ -205,6 +206,8 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
             val rewrittenProjection = projection.endoRewrite(rewriter)
             ce.copy(plan = rewrittenPlan, projection = rewrittenProjection)(e.position)
           case ee: NestedPlanExistsExpression =>
+            ee.copy(plan = rewrittenPlan)(e.position)
+          case ee: NestedPlanGetByNameExpression =>
             ee.copy(plan = rewrittenPlan)(e.position)
         }
 
