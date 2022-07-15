@@ -44,7 +44,6 @@ import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.SuboptimalIndexForConstainsQueryNotification
 import org.neo4j.cypher.internal.compiler.SuboptimalIndexForEndsWithQueryNotification
 import org.neo4j.cypher.internal.util.CartesianProductNotification
-import org.neo4j.cypher.internal.util.DeprecatedAmbiguousGroupingNotification
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
@@ -195,17 +194,6 @@ object NotificationWrapping {
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.shadowingVariable(varName)
       )
-    case DeprecatedAmbiguousGroupingNotification(pos, maybeHint) =>
-      maybeHint match {
-        case Some(hint) => NotificationCode.DEPRECATED_AMBIGUOUS_GROUPING_NOTIFICATION
-            .notification(
-              pos.withOffset(offset).asInputPosition,
-              NotificationDetail.Factory.message("Hint", s"Hint: $hint")
-            )
-        case _ => NotificationCode.DEPRECATED_AMBIGUOUS_GROUPING_NOTIFICATION.notification(
-            pos.withOffset(offset).asInputPosition
-          )
-      }
     case HomeDatabaseNotPresent(name) => NotificationCode.HOME_DATABASE_NOT_PRESENT.notification(
         InputPosition.NONE.asInputPosition,
         NotificationDetail.Factory.message("Not Found", s"HOME DATABASE: $name")

@@ -16,103 +16,51 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.ast.AmbiguousAggregation.ambiguousExpressions
+import org.neo4j.cypher.internal.ast.AmbiguousAggregation.notProjectedAggregationExpression
+import org.neo4j.cypher.internal.ast.Order.ambiguousAggregationMessage
+import org.neo4j.cypher.internal.ast.Order.notProjectedAggregations
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
+import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
-import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
-import org.neo4j.cypher.internal.util.DeprecatedAmbiguousGroupingNotification
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.topDown
 
 case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extends ASTNode with SemanticCheckable {
   def semanticCheck: SemanticCheck = sortItems.semanticCheck
 
-  def checkAmbiguousOrdering(returnItems: ReturnItems, nameOfClause: String): SemanticCheck =
-    (state: SemanticState) => {
-      val (aggregationItems, groupingItems) = returnItems.items.partition(item => item.expression.containsAggregate)
-      val groupingVariablesAndAliases = groupingItems.map(_.expression).collect { case v: LogicalVariable =>
-        v
-      } ++ returnItems.items.flatMap(_.alias)
-      val propertiesUsedForGrouping =
-        groupingItems.map(_.expression).collect { case v @ LogicalProperty(LogicalVariable(_), _) => v }
+  def checkIllegalOrdering(returnItems: ReturnItems): Seq[SemanticError] =
+    checkAmbiguousOrdering(returnItems).toSeq ++ checkAggregationInProjection(returnItems)
 
-      val stateWithNotifications =
-        if (aggregationItems.nonEmpty) {
-          val ambiguousSortItems = sortItems.filter(sortItem =>
-            AmbiguousAggregation.isDeprecatedExpression(
-              sortItem.originalExpression,
-              groupingVariablesAndAliases,
-              propertiesUsedForGrouping
-            )
-          )
-          if (ambiguousSortItems.nonEmpty) {
-            state.addNotification(
-              DeprecatedAmbiguousGroupingNotification(
-                sortItems.head.position,
-                Order.getAmbiguousNotificationDetails(sortItems, groupingItems, returnItems.items, nameOfClause)
-              )
-            )
-          } else {
-            state
-          }
-        } else {
-          state
-        }
+  private def checkAmbiguousOrdering(returnItems: ReturnItems): Option[SemanticError] = {
+    val (aggregationItems, groupingItems) = returnItems.items.partition(item => item.expression.containsAggregate)
+    val groupingVariablesAndAliases = groupingItems.map(_.expression).collect { case v: LogicalVariable =>
+      v
+    } ++ returnItems.items.flatMap(_.alias)
+    val propertiesUsedForGrouping =
+      groupingItems.map(_.expression).collect { case v @ LogicalProperty(LogicalVariable(_), _) => v }
 
-      SemanticCheckResult.success(stateWithNotifications)
-    }
+    if (aggregationItems.nonEmpty) {
+      val ambiguousExprs = sortItems.flatMap(sortItem =>
+        ambiguousExpressions(
+          sortItem.expression,
+          groupingVariablesAndAliases,
+          propertiesUsedForGrouping
+        )
+      )
 
-  def dependencies: Set[LogicalVariable] =
-    sortItems.foldLeft(Set.empty[LogicalVariable]) { case (acc, item) => acc ++ item.expression.dependencies }
-}
-
-object Order {
-  private val ExprStringifier = ExpressionStringifier(e => e.asCanonicalStringVal)
-
-  /**
-   * If possible, creates a notification detail which describes how this query can be rewritten to use an extra `WITH` clause.
-   *
-   * Example:
-   * RETURN n.x + n.y, count(*) ORDER BY n.x + n.y, where n is a variable
-   * ->
-   * WITH n.x + n.y AS grpExpr0 RETURN grpExpr0, count(*) ORDER BY grpExpr0
-   *
-   * @param sortItems        sortItems
-   * @param allGroupingItems grouping items
-   * @param allReturnItems   both grouping items and items which expression contains an aggregation.
-   * @return
-   */
-  def getAmbiguousNotificationDetails(
-    sortItems: Seq[SortItem],
-    allGroupingItems: Seq[ReturnItem],
-    allReturnItems: Seq[ReturnItem],
-    nameOfClause: String
-  ): Option[String] = {
-    val deprecatedGroupingKeys =
-      AmbiguousAggregation.deprecatedGroupingKeysUsedInAggrExpr(sortItems.map(_.originalExpression), allGroupingItems)
-    if (deprecatedGroupingKeys.nonEmpty) {
-      val (withItems, returnItems) = AmbiguousAggregation.getAliasedWithAndReturnItems(allReturnItems)
-      val aliasedWithItems = withItems.collect { case item: AliasedReturnItem => item }
-      val rewrittenOrderBy = replaceExpressionWithAlias(sortItems, aliasedWithItems)
-
-      if (!AmbiguousAggregation.containsDeprecatedAggrExpr(rewrittenOrderBy.map(_.expression), returnItems)) {
-        val singleDeprecatedGK = deprecatedGroupingKeys.size == 1
-        Some(s"The grouping key${if (singleDeprecatedGK) "" else "s"} " +
-          s"${deprecatedGroupingKeys.map(_.expression).map(ExprStringifier(_)).mkString("`", "`, `", "`")} " +
-          s"${if (singleDeprecatedGK) "is" else "are"} deprecated. Could be rewritten using a `WITH`: " +
-          s"`WITH ${withItems.map(_.stringify(ExprStringifier)).mkString(", ")}" +
-          s" $nameOfClause ${returnItems.map(_.stringify(ExprStringifier)).mkString(", ")}" +
-          s" ORDER BY ${rewrittenOrderBy.map(_.stringify(ExprStringifier)).mkString(", ")}`")
+      if (ambiguousExprs.nonEmpty) {
+        Some(SemanticError(
+          ambiguousAggregationMessage(ambiguousExprs.map(_.asCanonicalStringVal)),
+          sortItems.head.position
+        ))
       } else {
         None
       }
@@ -121,43 +69,48 @@ object Order {
     }
   }
 
-  /**
-   * Replace all grouping expressions in `sortItems` with the matching alias from `groupingExprs`
-   *
-   * @param sortItems     sort items
-   * @param groupingExprs grouping items
-   * @return the expression
-   */
-  private def replaceExpressionWithAlias(
-    sortItems: Seq[SortItem],
-    groupingExprs: Seq[AliasedReturnItem]
-  ): Seq[SortItem] = {
-    val rewriter = topDown(Rewriter.lift {
-      case expr: Expression =>
-        val matchingGroupingExpr = groupingExprs.find(returnItem => expr == returnItem.expression)
+  private def checkAggregationInProjection(returnItems: ReturnItems): Option[SemanticError] = {
+    val aggregationItems = returnItems.items
+      .filter(item => item.expression.containsAggregate)
+      .map(_.expression)
 
-        if (matchingGroupingExpr.nonEmpty) {
-          Variable(matchingGroupingExpr.get.name)(InputPosition.NONE)
-        } else {
-          expr
-        }
-    })
+    if (aggregationItems.nonEmpty) {
+      val illegalSortItems =
+        sortItems.flatMap(sortItem => notProjectedAggregationExpression(sortItem.expression, aggregationItems))
 
-    sortItems.map { sortItem =>
-      val rewrittenExpression = rewriter.apply(sortItem.originalExpression).asInstanceOf[Expression]
-      sortItem match {
-        case ascSortItem: AscSortItem =>
-          AscSortItem(rewrittenExpression)(ascSortItem.position, ascSortItem.originalExpression)
-        case descSortItem: DescSortItem =>
-          DescSortItem(rewrittenExpression)(descSortItem.position, descSortItem.originalExpression)
+      if (illegalSortItems.nonEmpty) {
+        Some(SemanticError(
+          notProjectedAggregations(illegalSortItems.map(_.asCanonicalStringVal)),
+          sortItems.head.position
+        ))
+      } else {
+        None
       }
+    } else {
+      None
     }
   }
+
+  def dependencies: Set[LogicalVariable] =
+    sortItems.foldLeft(Set.empty[LogicalVariable]) { case (acc, item) => acc ++ item.expression.dependencies }
+}
+
+object Order {
+
+  def ambiguousAggregationMessage(variables: Seq[String]): String =
+    s"Order by column contains implicit grouping expressions: ${variables.mkString(",")}. Implicit grouping keys are not supported. " +
+      "For example, in 'RETURN n.a, n.a + n.b + count(*)' the aggregation expression 'n.a + n.b + count(*)' includes the implicit grouping key 'n.b'. " +
+      "It may be possible to rewrite the query by extracting these grouping/aggregation expressions into a preceding WITH clause. "
+
+  def notProjectedAggregations(variables: Seq[String]): String =
+    s"Illegal aggregation expression(s) in order by: ${variables.mkString(", ")}. " +
+      "If an aggregation expression is used in order by, it also needs to be a projection item on it's own. " +
+      "For example, in 'RETURN n.a, 1 + count(*) ORDER BY count(*) + 1' the aggregation expression 'count(*) + 1' is not a projection " +
+      "item on its own, but it could be rewritten to 'RETURN n.a, 1 + count(*) AS cnt ORDER BY 1 + count(*)'."
 }
 
 sealed trait SortItem extends ASTNode with SemanticCheckable {
   def expression: Expression
-  def originalExpression: Expression
 
   def semanticCheck: SemanticCheck = SemanticExpressionCheck.check(Expression.SemanticContext.Results, expression) chain
     SemanticPatternCheck.checkValidPropertyKeyNames(
@@ -168,15 +121,14 @@ sealed trait SortItem extends ASTNode with SemanticCheckable {
 }
 
 case class AscSortItem(expression: Expression)(
-  val position: InputPosition,
-  val originalExpression: Expression = expression
+  val position: InputPosition
 ) extends SortItem {
 
   override def mapExpression(f: Expression => Expression): AscSortItem =
-    copy(expression = f(expression))(position, originalExpression)
+    copy(expression = f(expression))(position)
 
   override def dup(children: Seq[AnyRef]): AscSortItem.this.type =
-    AscSortItem(children.head.asInstanceOf[Expression])(position, originalExpression).asInstanceOf[this.type]
+    AscSortItem(children.head.asInstanceOf[Expression])(position).asInstanceOf[this.type]
 
   override def asCanonicalStringVal: String = s"${expression.asCanonicalStringVal} ASC"
 
@@ -185,15 +137,14 @@ case class AscSortItem(expression: Expression)(
 }
 
 case class DescSortItem(expression: Expression)(
-  val position: InputPosition,
-  val originalExpression: Expression = expression
+  val position: InputPosition
 ) extends SortItem {
 
   override def mapExpression(f: Expression => Expression): DescSortItem =
-    copy(expression = f(expression))(position, originalExpression)
+    copy(expression = f(expression))(position)
 
   override def dup(children: Seq[AnyRef]): DescSortItem.this.type =
-    DescSortItem(children.head.asInstanceOf[Expression])(position, originalExpression).asInstanceOf[this.type]
+    DescSortItem(children.head.asInstanceOf[Expression])(position).asInstanceOf[this.type]
   override def asCanonicalStringVal: String = s"${expression.asCanonicalStringVal} DESC"
 
   override def stringify(expressionStringifier: ExpressionStringifier): String =

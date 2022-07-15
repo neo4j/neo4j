@@ -86,3 +86,10 @@ Feature "Literals7 - List": Scenario "Return a list containing a octal integer"
 Feature "Literals7 - List": Scenario "Return a list containing multiple integer"
 Feature "Literals8 - Maps": Scenario "Return a map containing a octal integer"
 Feature "Temporal5 - Access Components of Temporal Values": Scenario "Should provide accessors for date in last weekYear"
+
+// Removed deprecated ambiguous aggregation expressions, these tests will be fixed in the M19 TCK release
+Feature "WithOrderBy4 - Order by in combination with projection and aliasing": Scenario "Fail on sorting by a non-projected aggregation on an expression"
+Feature "WithOrderBy4 - Order by in combination with projection and aliasing": Scenario "Fail on sorting by a non-projected aggregation on a variable"
+Feature "Return6 - Implicit grouping with aggregates": Scenario "Handle aggregates inside non-aggregate expressions"
+Feature "ReturnOrderBy2 - Order by a single expression (order of projection)": Scenario "Fail when sorting on variable removed by DISTINCT"
+Feature "Match4 - Match variable length patterns scenarios": Scenario "Matching longer variable length paths"

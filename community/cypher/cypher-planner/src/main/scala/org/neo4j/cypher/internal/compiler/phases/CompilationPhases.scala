@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.Cardina
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.PlanRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CompressPlanIDs
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProperties
+import org.neo4j.cypher.internal.frontend.phases.AmbiguousAggregationAnalysis
 import org.neo4j.cypher.internal.frontend.phases.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
@@ -108,6 +109,7 @@ object CompilationPhases {
   private def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     Parse andThen
       SyntaxDeprecationWarningsAndReplacements(Deprecations.syntacticallyDeprecatedFeatures) andThen
+      AmbiguousAggregationAnalysis(config.semanticFeatures: _*) andThen
       PreparatoryRewriting andThen
       If((_: BaseState) => config.obfuscateLiterals)(
         extractSensitiveLiterals

@@ -211,9 +211,9 @@ case class normalizeWithAndReturnClauses(
   private def aliasSortItem(existingAliases: Map[Expression, LogicalVariable], sortItem: SortItem): SortItem = {
     sortItem match {
       case AscSortItem(expression) =>
-        AscSortItem(aliasExpression(existingAliases, expression))(sortItem.position, sortItem.originalExpression)
+        AscSortItem(aliasExpression(existingAliases, expression))(sortItem.position)
       case DescSortItem(expression) =>
-        DescSortItem(aliasExpression(existingAliases, expression))(sortItem.position, sortItem.originalExpression)
+        DescSortItem(aliasExpression(existingAliases, expression))(sortItem.position)
     }
   }
 

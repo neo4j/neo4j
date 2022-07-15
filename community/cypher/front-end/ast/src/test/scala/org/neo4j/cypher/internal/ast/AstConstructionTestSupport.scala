@@ -602,7 +602,20 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     AliasedReturnItem(
       varFor(originalName, position),
       varFor(newName, increasePos(position, originalName.length + 4))
-    )(pos, isAutoAliased = false)
+    )(position, isAutoAliased = false)
+
+  def aliasedReturnItem(originalExpr: Expression, newName: String): AliasedReturnItem = AliasedReturnItem(
+    originalExpr,
+    varFor(newName, increasePos(originalExpr.position, originalExpr.asCanonicalStringVal.length + 4))
+  )(originalExpr.position, isAutoAliased = false)
+
+  def autoAliasedReturnItem(originalExpr: Expression): AliasedReturnItem = AliasedReturnItem(
+    originalExpr,
+    varFor(
+      originalExpr.asCanonicalStringVal,
+      increasePos(originalExpr.position, originalExpr.asCanonicalStringVal.length + 4)
+    )
+  )(originalExpr.position, isAutoAliased = true)
 
   def orderBy(items: SortItem*): OrderBy =
     OrderBy(items)(pos)
@@ -613,8 +626,13 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def limit(value: Long, position: InputPosition = pos): Limit =
     Limit(literalInt(value, increasePos(position, 6)))(position)
 
-  def sortItem(e: Expression): AscSortItem =
-    AscSortItem(e)(pos)
+  def sortItem(e: Expression, ascending: Boolean = true): SortItem = {
+    if (ascending) {
+      AscSortItem(e)(pos)
+    } else {
+      DescSortItem(e)(pos)
+    }
+  }
 
   def where(expr: Expression): Where = Where(expr)(pos)
 

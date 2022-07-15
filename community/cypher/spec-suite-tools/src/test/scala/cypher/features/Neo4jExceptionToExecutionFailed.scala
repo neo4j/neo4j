@@ -218,10 +218,10 @@ object Neo4jExceptionToExecutionFailed {
       UNDEFINED_VARIABLE
     else if (
       msg.matches(semanticError(
-        "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: .+"
+        "Aggregation column contains implicit grouping expressions. .+"
       ))
     )
-      UNDEFINED_VARIABLE
+      UNDEFINED_VARIABLE // TODO: update here before merge
     else if (msg.matches(semanticError("PatternExpressions are not allowed to introduce new variables: .+")))
       UNDEFINED_VARIABLE
     else if (msg.matches(semanticError("Type mismatch: .+ defined with conflicting type .+ \\(expected .+\\)")))

@@ -1868,8 +1868,9 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   test("should sort before widening expand and aggregation expression with alias, ordering by expression") {
     val query =
       """MATCH (a)-[:R]->(b)-[:Q]->()
-        |RETURN a.prop+1 AS x, count(*) AS c
-        |ORDER BY a.prop+1""".stripMargin
+        |WITH a.prop+1 AS x, count(*) AS c
+        |RETURN x, c
+        |ORDER BY x""".stripMargin
 
     val plan = wideningExpandConfig
       .plan(query)
@@ -1878,46 +1879,6 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     plan should beLike {
       case OrderedAggregation(Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _), _, _, Seq(Variable("x"))) =>
         ()
-    }
-  }
-
-  test(
-    "should sort before widening expand and aggregation expression with alias, ordering by expression, difference in whitespace"
-  ) {
-    val query =
-      """MATCH (a)-[:R]->(b)-[:Q]->()
-        |RETURN a.prop +1 AS x, count(*) AS c
-        |ORDER BY a.prop+ 1""".stripMargin
-
-    val plan = wideningExpandConfig
-      .plan(query)
-      .stripProduceResults
-
-    plan should beLike {
-      case OrderedAggregation(Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _), _, _, Seq(Variable("x"))) =>
-        ()
-    }
-  }
-
-  test(
-    "should sort before widening expand and aggregation expression, ordering by expression, difference in whitespace"
-  ) {
-    val query =
-      """MATCH (a)-[:R]->(b)-[:Q]->()
-        |RETURN a.prop+ 1, count(*) AS c
-        |ORDER BY a.prop +1""".stripMargin
-
-    val plan = wideningExpandConfig
-      .plan(query)
-      .stripProduceResults
-
-    plan should beLike {
-      case OrderedAggregation(
-          Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _),
-          _,
-          _,
-          Seq(Variable("a.prop+ 1"))
-        ) => ()
     }
   }
 

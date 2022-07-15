@@ -264,7 +264,8 @@ Feature: ReturnAcceptance
     When executing query:
       """
       MATCH (actor:Actor)-->(movie:Movie)
-      RETURN actor{ .name, movies: collect(movie{.title}) }
+      WITH actor.name AS name, collect(movie{.title}) AS movies
+      RETURN { name: name, movies: movies } AS actor
       """
     Then the result should be (ignoring element order for lists):
       | actor                                                               |

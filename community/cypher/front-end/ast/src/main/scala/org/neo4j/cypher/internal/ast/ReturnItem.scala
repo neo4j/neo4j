@@ -29,10 +29,10 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.util.ASTNode
-import org.neo4j.cypher.internal.util.DeprecatedAmbiguousGroupingNotification
 import org.neo4j.cypher.internal.util.InputPosition
 
 /**
@@ -155,58 +155,30 @@ case class AliasedReturnItem(expression: Expression, variable: LogicalVariable)(
 }
 
 object ReturnItems {
-  private val ExprStringifier = ExpressionStringifier(e => e.asCanonicalStringVal)
 
-  def checkAmbiguousGrouping(returnItems: ReturnItems, nameOfClause: String): SemanticCheck =
-    (state: SemanticState) => {
-      val stateWithNotifications = {
-        val aggregationExpressions =
-          returnItems.items.map(_.expression).collect { case expr if expr.containsAggregate => expr }
+  def errorMessage(variables: Seq[String]): String =
+    "Aggregation column contains implicit grouping expressions. " +
+      "For example, in 'RETURN n.a, n.a + n.b + count(*)' the aggregation expression 'n.a + n.b + count(*)' includes the implicit grouping key 'n.b'. " +
+      "It may be possible to rewrite the query by extracting these grouping/aggregation expressions into a preceding WITH clause. " +
+      s"Illegal expression(s): ${variables.mkString(", ")}"
 
-        if (AmbiguousAggregation.containsDeprecatedAggrExpr(aggregationExpressions, returnItems.items)) {
-          state.addNotification(DeprecatedAmbiguousGroupingNotification(
-            returnItems.position,
-            getAmbiguousNotificationDetails(returnItems.items, nameOfClause)
-          ))
-        } else {
-          state
-        }
-      }
+  def checkAmbiguousGrouping(returnItems: ReturnItems): Option[SemanticError] = {
+    val returnItemExprs = returnItems.items.map(_.expression)
+    val aggregationExpressions = returnItemExprs.collect { case expr if expr.containsAggregate => expr }
+    val newGroupingVariables = returnItemExprs.collect { case expr: LogicalVariable => expr }
+    val newPropertiesUsedForGrouping = returnItemExprs.collect { case v @ LogicalProperty(LogicalVariable(_), _) => v }
 
-      SemanticCheckResult.success(stateWithNotifications)
-    }
+    val ambiguousSortItems = aggregationExpressions
+      .flatMap(aggItem =>
+        AmbiguousAggregation.ambiguousExpressions(aggItem, newGroupingVariables, newPropertiesUsedForGrouping)
+      )
 
-  /**
-   * If possible, creates a notification detail which describes how this query can be rewritten to use an extra `WITH` clause.
-   *
-   * Example:
-   * RETURN n.x + n.y, n.x + n.y + count(*), where n is a variable
-   * ->
-   * WITH n.x + n.y AS grpExpr0 RETURN grpExpr0, grpExpr0 + count(*)
-   *
-   * @param allReturnItems all return items, both grouping keys and expressions which contains aggregation(s).
-   * @param nameOfClause   "RETURN" OR "WHERE"
-   * @return
-   */
-  private def getAmbiguousNotificationDetails(allReturnItems: Seq[ReturnItem], nameOfClause: String): Option[String] = {
-
-    val (aggregationItems, allGroupingItems) = allReturnItems.partition(_.expression.containsAggregate)
-    val deprecatedGroupingKeys =
-      AmbiguousAggregation.deprecatedGroupingKeysUsedInAggrExpr(aggregationItems.map(_.expression), allGroupingItems)
-    if (deprecatedGroupingKeys.nonEmpty) {
-      val (withItems, returnItems) = AmbiguousAggregation.getAliasedWithAndReturnItems(allReturnItems)
-      val aggregationExpressions = returnItems.map(_.expression).collect { case expr if expr.containsAggregate => expr }
-
-      if (!AmbiguousAggregation.containsDeprecatedAggrExpr(aggregationExpressions, returnItems)) {
-        val singleDeprecatedGK = deprecatedGroupingKeys.size == 1
-        Some(s"The grouping key${if (singleDeprecatedGK) "" else "s"} " +
-          s"${deprecatedGroupingKeys.map(gk => ExprStringifier(gk.expression)).mkString("`", "`, `", "`")} " +
-          s"${if (singleDeprecatedGK) "is" else "are"} deprecated. Could be rewritten using a `WITH`: " +
-          s"`WITH ${withItems.map(_.stringify(ExprStringifier)).mkString(", ")}" +
-          s" $nameOfClause ${returnItems.map(_.stringify(ExprStringifier)).mkString(", ")}`")
-      } else {
-        None
-      }
+    if (ambiguousSortItems.nonEmpty) {
+      val errorMsg = errorMessage(ambiguousSortItems.map(_.asCanonicalStringVal))
+      Some(SemanticError(
+        errorMsg,
+        returnItems.items.head.position
+      ))
     } else {
       None
     }

@@ -77,16 +77,6 @@ public enum NotificationCode {
             Status.Statement.FeatureDeprecationWarning,
             "The use of nodes or relationships for setting properties is deprecated and will be removed in a future version. "
                     + "Please use properties() instead."),
-    DEPRECATED_AMBIGUOUS_GROUPING_NOTIFICATION(
-            SeverityLevel.WARNING,
-            Status.Statement.FeatureDeprecationWarning,
-            "Aggregation column contains implicit grouping expressions. "
-                    + "Aggregation expressions with implicit grouping keys are deprecated and will be removed in a future version. "
-                    + "For example, in 'RETURN n.a, n.a + n.b + count(*)' the aggregation expression 'n.a + n.b + count(*)' includes the implicit grouping key 'n.b', "
-                    + "and this expression is now deprecated. "
-                    + "It may be possible to rewrite the query by extracting these grouping/aggregation expressions into a preceding WITH clause."),
-    DEPRECATED_FORMAT(
-            SeverityLevel.WARNING, Status.Request.DeprecatedFormat, "The requested format has been deprecated."),
     EAGER_LOAD_CSV(
             SeverityLevel.WARNING,
             Status.Statement.EagerOperatorWarning,
@@ -94,6 +84,8 @@ public enum NotificationCode {
                     + "Eager operator could potentially consume a lot of memory and is likely to not perform well. "
                     + "See the Neo4j Manual entry on the Eager operator for more information and hints on "
                     + "how problems could be avoided."),
+    DEPRECATED_FORMAT(
+            SeverityLevel.WARNING, Status.Request.DeprecatedFormat, "The requested format has been deprecated."),
     LARGE_LABEL_LOAD_CSV(
             SeverityLevel.WARNING,
             Status.Statement.NoApplicableIndexWarning,

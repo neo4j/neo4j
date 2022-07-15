@@ -1173,6 +1173,8 @@ sealed trait ProjectionClause extends HorizonClause {
 
   def isReturn: Boolean = false
 
+  def name: String
+
   def copyProjection(
     distinct: Boolean = this.distinct,
     returnItems: ReturnItems = this.returnItems,
@@ -1201,7 +1203,6 @@ sealed trait ProjectionClause extends HorizonClause {
       state: SemanticState =>
         def runChecks(scopeInUse: Scope): SemanticCheck = {
           returnItems.declareVariables(scopeInUse) chain
-            orderBy.foldSemanticCheck(_.checkAmbiguousOrdering(returnItems, if (isReturn) "RETURN" else "WITH")) chain
             orderBy.semanticCheck chain
             checkSkip chain
             checkLimit chain
@@ -1365,7 +1366,6 @@ case class With(
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-      ReturnItems.checkAmbiguousGrouping(returnItems, name) chain
       ProjectionClause.checkAliasedReturnItems(returnItems, name) chain
       SemanticPatternCheck.checkValidPropertyKeyNamesInReturnItems(returnItems)
 
@@ -1400,7 +1400,6 @@ case class Return(
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       checkVariableScope chain
-      ReturnItems.checkAmbiguousGrouping(returnItems, name) chain
       ProjectionClause.checkAliasedReturnItems(returnItems, "CALL { RETURN ... }") chain
       SemanticPatternCheck.checkValidPropertyKeyNamesInReturnItems(returnItems)
 

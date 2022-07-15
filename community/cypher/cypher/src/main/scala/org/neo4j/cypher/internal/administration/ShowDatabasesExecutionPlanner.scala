@@ -160,6 +160,7 @@ case class ShowDatabasesExecutionPlanner(
            |props.status as currentStatus,
            |props.error as error,
            |d.$DATABASE_DEFAULT_PROPERTY as default,
+           |homeDbName,
            |coalesce( homeDbName in collect(aliasName) + [d.name], false ) as home
            |$verboseColumns
            |$extraFilter
