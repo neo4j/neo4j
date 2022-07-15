@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.ExecutionModel.SelectedBatchSize
 import org.neo4j.cypher.internal.compiler.ExecutionModel.VolcanoBatchSize
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
+import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.ALL_SCAN_COST_PER_ROW
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.EffectiveCardinalities
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.HashJoin
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROBE_BUILD_COST
@@ -59,6 +60,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedUnionRelationshipTypesSca
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
@@ -248,6 +250,17 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
       val inCardinality = effectiveCardinalities.lhs + effectiveCardinalities.rhs
       val rowCost = costPerRow(plan, inCardinality, semanticTable, propertyAccess)
       val costForThisPlan = inCardinality * rowCost
+      costForThisPlan + lhsCost + rhsCost
+
+    // NOTE: Expand generally gets underestimated since they are treated as a middle operator
+    // like Selection and which doesn't reflect that for each row it creates it will read data from
+    // the relationship store. This particular special case is just for making it more likely to plan
+    // AllRelationshipsScan since we know they are always faster than doing AllNodes + Expan
+    case Expand(_: AllNodesScan, _, _, types, _, _, mode) if types.isEmpty && mode == ExpandAll =>
+      // AllNodes + Expand is more expensive than scanning the relationship directly
+      val rowCost = CostPerRow(ALL_SCAN_COST_PER_ROW * 1.1)
+      // Note: we use the outputCardinality to compute the cost
+      val costForThisPlan = effectiveCardinalities.outputCardinality * rowCost
       costForThisPlan + lhsCost + rhsCost
 
     case _ =>
