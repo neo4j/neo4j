@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.ast.CountIRExpression
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -47,6 +48,10 @@ case class irExpressionRewriter(outerPlan: LogicalPlan, context: LogicalPlanning
         val subQueryPlan = plannerQueryPartPlanner.planSubqueryWithLabelInfo(outerPlan, expr, context)
         val variableToCollect = Variable(variableToCollectName)(expr.position)
         NestedPlanExpression.collect(subQueryPlan, variableToCollect, expr)(expr.position)
+
+      case expr: CountIRExpression =>
+        val subQueryPlan = plannerQueryPartPlanner.planSubquery(expr, context)
+        NestedPlanExpression.count(subQueryPlan, expr.countVariableName, expr)(expr.position)
     },
     // Do not rewrite anything inside the NestedPlanExpressions that we generate
     stopper = _.isInstanceOf[NestedPlanExpression],

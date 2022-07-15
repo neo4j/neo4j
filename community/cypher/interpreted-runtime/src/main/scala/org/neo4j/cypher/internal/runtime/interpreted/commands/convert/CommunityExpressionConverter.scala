@@ -319,7 +319,13 @@ case class CommunityExpressionConverter(
           e.availableExpressionVariables.map(commands.expressions.ExpressionVariable.of).toArray,
           id
         )
-
+      case e: pipes.NestedPipeGetByNameExpression =>
+        commands.expressions.NestedPipeGetByNameExpression(
+          e.pipe,
+          e.columnNameToGet,
+          e.availableExpressionVariables.map(commands.expressions.ExpressionVariable.of).toArray,
+          id
+        )
       case e: internal.expressions.GetDegree => getDegree(id, e, self)
       case internal.expressions.HasDegreeGreaterThan(node, relType, dir, degree) =>
         val typ = relType.map(relType => UnresolvedRelType(relType.name))

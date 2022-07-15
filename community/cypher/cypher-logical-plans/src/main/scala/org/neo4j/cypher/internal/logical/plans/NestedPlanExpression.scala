@@ -41,6 +41,14 @@ case class NestedPlanExistsExpression(
   override val solvedExpressionAsString: String
 )(val position: InputPosition) extends NestedPlanExpression
 
+case class NestedPlanGetByNameExpression(
+  override val plan: LogicalPlan,
+  columnNameToGet: String,
+  // We cannot put the actual pattern expression in the case class, that would lead to endless recursion
+  // while trying to rewrite such pattern expressions away.
+  override val solvedExpressionAsString: String
+)(val position: InputPosition) extends NestedPlanExpression
+
 abstract class NestedPlanExpression extends Expression with SemanticCheckableExpression {
 
   def plan: LogicalPlan
@@ -68,4 +76,11 @@ object NestedPlanExpression {
     solvedExpression: Expression
   )(position: InputPosition): NestedPlanCollectExpression =
     NestedPlanCollectExpression(plan, projection, stringifier(solvedExpression))(position)
+
+  def count(
+    plan: LogicalPlan,
+    countVariableName: String,
+    solvedExpression: Expression
+  )(position: InputPosition): NestedPlanGetByNameExpression =
+    NestedPlanGetByNameExpression(plan, countVariableName, stringifier(solvedExpression))(position)
 }
