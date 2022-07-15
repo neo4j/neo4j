@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.CreateIrExpressions
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.getDegreeRewriterTest.relPattern
+import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.GetDegree
@@ -106,316 +108,6 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
     getDegreeRewriter(incoming) should equal(incoming)
   }
 
-  test("Rewrite size([ (a)-[:FOO]->() | 1 ]) to GetDegree( (a)-[:FOO]->() )") {
-    val incoming =
-      createIrExpressions(Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos))
-    val expected = GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.OUTGOING)(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Rewrite size([ ()-[:FOO]->(a) | 1 ]) to GetDegree( (a)<-[:FOO]-() )") {
-    val incoming =
-      createIrExpressions(Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos))
-    val expected = GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.INCOMING)(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Rewrite size([ (a)-[:FOO|:BAR]->() | 1 ]) to GetDegree( (a)-[:FOO]->() ) + GetDegree( (a)-[:BAR]->() )") {
-    val incoming =
-      createIrExpressions(Size(patternComprehension(from = Some("a"), relationships = Seq("FOO", "BAR")))(pos))
-    val expected =
-      add(
-        GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING)(pos),
-        GetDegree(varFor("a"), Some(RelTypeName("BAR")(pos)), OUTGOING)(pos)
-      )
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Does not rewrite size([ (a)-[:FOO]->(b) | 1 ]) ") {
-    val incoming =
-      createIrExpressions(Size(patternComprehension(from = Some("a"), to = Some("b"), relationships = Seq("FOO")))(
-        pos
-      ))
-
-    getDegreeRewriter(incoming) should equal(incoming)
-  }
-
-  test("Does not rewrite size([ (a)-[:FOO]->() WHERE a.prop | 1 ]) ") {
-    val incoming = createIrExpressions(Size(patternComprehension(
-      from = Some("a"),
-      to = Some("b"),
-      relationships = Seq("FOO"),
-      predicate = Some(prop("a", "prop"))
-    ))(pos))
-
-    getDegreeRewriter(incoming) should equal(incoming)
-  }
-
-  test("Rewrite size([ (a)-[:FOO]->() | 1 ]) > 5 to HasDegreeGreaterThan( (a)-[:FOO]->() , 5)") {
-    val incoming =
-      createIrExpressions(GreaterThan(
-        Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos),
-        literalInt(5)
-      )(
-        pos
-      ))
-    val expected = HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Rewrite size([ ()-[:FOO]->(a) | 1 ]) > 5 to HasDegreeGreaterThan( (a)<-[:FOO]-() , 5)") {
-    val incoming =
-      createIrExpressions(GreaterThan(
-        Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos),
-        literalInt(5)
-      )(
-        pos
-      ))
-    val expected = HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Rewrite 5 > size([ (a)-[:FOO]->() | 1 ]) to HasDegreeLessThan( (a)-[:FOO]->() , 5)") {
-    val incoming =
-      createIrExpressions(GreaterThan(
-        literalInt(5),
-        Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos)
-      )(
-        pos
-      ))
-    val expected = HasDegreeLessThan(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Rewrite 5 > size([ ()-[:FOO]->(a) | 1 ]) to HasDegreeLessThan( (a)<-[:FOO]-() , 5)") {
-    val incoming =
-      createIrExpressions(GreaterThan(
-        literalInt(5),
-        Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos)
-      )(
-        pos
-      ))
-    val expected = HasDegreeLessThan(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Rewrite size([ (a)-[:FOO]->() | 1 ]) >= 5 to HasDegreeGreaterThanOrEqual( (a)-[:FOO]->() , 5)") {
-    val incoming = createIrExpressions(GreaterThanOrEqual(
-      Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos),
-      literalInt(5)
-    )(pos))
-    val expected = HasDegreeGreaterThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Rewrite size([ ()-[:FOO]->(a) | 1 ]) >= 5 to HasDegreeGreaterThanOrEqual( (a)<-[:FOO]-() , 5)") {
-    val incoming = createIrExpressions(GreaterThanOrEqual(
-      Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos),
-      literalInt(5)
-    )(pos))
-    val expected = HasDegreeGreaterThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Rewrite 5 >= size([ (a)-[:FOO]->() | 1 ]) to HasDegreeLessThanOrEqual( (a)-[:FOO]->() , 5)") {
-    val incoming = createIrExpressions(GreaterThanOrEqual(
-      literalInt(5),
-      Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos)
-    )(pos))
-    val expected = HasDegreeLessThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Rewrite 5 >= size([ ()-[:FOO]->(a) | 1 ]) to HasDegreeLessThanOrEqual( (a)<-[:FOO]-() , 5)") {
-    val incoming = createIrExpressions(GreaterThanOrEqual(
-      literalInt(5),
-      Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos)
-    )(pos))
-    val expected = HasDegreeLessThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Rewrite size([ (a)-[:FOO]->() | 1 ]) = 5 to HasDegree( (a)-[:FOO]->() , 5)") {
-    val incoming =
-      createIrExpressions(Equals(
-        Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos),
-        literalInt(5)
-      )(
-        pos
-      ))
-    val expected = HasDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Rewrite size([ ()-[:FOO]->(a) | 1 ]) = 5 to HasDegree( (a)<-[:FOO]-() , 5)") {
-    val incoming =
-      createIrExpressions(Equals(
-        Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos),
-        literalInt(5)
-      )(
-        pos
-      ))
-    val expected = HasDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Rewrite 5 = size([ (a)-[:FOO]->() | 1 ]) to HasDegree( (a)-[:FOO]->() , 5)") {
-    val incoming =
-      createIrExpressions(Equals(
-        literalInt(5),
-        Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos)
-      )(
-        pos
-      ))
-    val expected = HasDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Rewrite 5 = size([ ()-[:FOO]->(a) | 1 ]) to HasDegree( (a)<-[:FOO]-() , 5)") {
-    val incoming =
-      createIrExpressions(Equals(
-        literalInt(5),
-        Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos)
-      )(
-        pos
-      ))
-    val expected = HasDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Rewrite size([ (a)-[:FOO]->() | 1 ]) <= 5 to HasDegreeLessThanOrEqual( (a)-[:FOO]->() , 5)") {
-    val incoming = createIrExpressions(LessThanOrEqual(
-      Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos),
-      literalInt(5)
-    )(pos))
-    val expected = HasDegreeLessThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Rewrite size([ ()-[:FOO]->(a) | 1 ]) <= 5 to HasDegreeLessThanOrEqual( (a)<-[:FOO]-() , 5)") {
-    val incoming =
-      createIrExpressions(LessThanOrEqual(
-        Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos),
-        literalInt(5)
-      )(
-        pos
-      ))
-    val expected = HasDegreeLessThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Rewrite 5 <= size([ (a)-[:FOO]->() | 1]) to HasDegreeGreaterThanOrEqual( (a)-[:FOO]->() , 5)") {
-    val incoming = createIrExpressions(LessThanOrEqual(
-      literalInt(5),
-      Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos)
-    )(pos))
-    val expected = HasDegreeGreaterThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Rewrite 5 <= size([ ()-[:FOO]->(a) | 1]) to HasDegreeGreaterThanOrEqual( (a)<-[:FOO]-() , 0)") {
-    val incoming =
-      createIrExpressions(LessThanOrEqual(
-        literalInt(5),
-        Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos)
-      )(
-        pos
-      ))
-    val expected = HasDegreeGreaterThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Rewrite size([ (a)-[:FOO]->() | 1 ]) < 5 to HasDegreeLessThan( (a)-[:FOO]->() , 0)") {
-    val incoming =
-      createIrExpressions(LessThan(
-        Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos),
-        literalInt(5)
-      )(
-        pos
-      ))
-    val expected = HasDegreeLessThan(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Rewrite size([ ()-[:FOO]->(a) | 1 ]) < 5 to HasDegreeLessThan( (a)<-[:FOO]-() , 0)") {
-    val incoming =
-      createIrExpressions(LessThan(
-        Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos),
-        literalInt(5)
-      )(
-        pos
-      ))
-    val expected = HasDegreeLessThan(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Rewrite 5 < size([ (a)-[:FOO]->() | 1 ]) to HasDegreeGreaterThan( (a)-[:FOO]->() , 5)") {
-    val incoming =
-      createIrExpressions(LessThan(
-        literalInt(5),
-        Size(patternComprehension(from = Some("a"), relationships = Seq("FOO")))(pos)
-      )(
-        pos
-      ))
-    val expected = HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  test("Rewrite 5 < size([ ()-[:FOO]->(a) | 1 ]) to HasDegreeGreaterThan( (a)<-[:FOO]-() , 5)") {
-    val incoming =
-      createIrExpressions(LessThan(
-        literalInt(5),
-        Size(patternComprehension(to = Some("a"), relationships = Seq("FOO")))(pos)
-      )(
-        pos
-      ))
-    val expected = HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
-
-    getDegreeRewriter(incoming) should equal(expected)
-  }
-
-  private def relPattern(
-    from: Option[String] = None,
-    to: Option[String] = None,
-    relationships: Seq[String] = Seq.empty,
-    fromPropertyPredicate: Option[Expression] = None
-  ) = {
-    RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(from.map(varFor(_)).getOrElse(varFor("DEFAULT"))), None, fromPropertyPredicate, None)(pos),
-      RelationshipPattern(
-        Some(varFor("r")),
-        disjoinRelTypesToLabelExpression(relationships.map(r => RelTypeName(r)(pos))),
-        None,
-        None,
-        None,
-        SemanticDirection.OUTGOING
-      )(pos),
-      NodePattern(Some(to.map(varFor(_)).getOrElse(varFor("DEFAULT"))), None, None, None)(pos)
-    )(pos))(pos)
-  }
-
   private def patternExpression(
     from: Option[String] = None,
     to: Option[String] = None,
@@ -430,23 +122,351 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
       collectionName = ""
     )
   }
+}
 
-  private def patternComprehension(
+object getDegreeRewriterTest extends AstConstructionTestSupport {
+
+  def relPattern(
+    from: Option[String] = None,
+    to: Option[String] = None,
+    relationships: Seq[String] = Seq.empty,
+    fromPropertyPredicate: Option[Expression] = None
+  ): RelationshipsPattern = {
+    RelationshipsPattern(RelationshipChain(
+      NodePattern(Some(from.map(varFor(_)).getOrElse(varFor("DEFAULT"))), None, fromPropertyPredicate, None)(pos),
+      RelationshipPattern(
+        Some(varFor("r")),
+        disjoinRelTypesToLabelExpression(relationships.map(r => RelTypeName(r)(pos))),
+        None,
+        None,
+        None,
+        SemanticDirection.OUTGOING
+      )(pos),
+      NodePattern(Some(to.map(varFor(_)).getOrElse(varFor("DEFAULT"))), None, None, None)(pos)
+    )(pos))(pos)
+  }
+}
+
+class GetDegreeRewriterSizeOfPatternComprehensionTest extends GetDegreeRewriterCountLikeTestBase {
+
+  override def makeInputExpression(
+    from: Option[String],
+    to: Option[String],
+    relationships: Seq[String],
+    predicate: Option[Expression]
+  ): Expression = {
+    Size(
+      PatternComprehension(
+        namedPath = None,
+        pattern = relPattern(from, to, relationships),
+        predicate = predicate,
+        projection = literalInt(1)
+      )(
+        position = pos,
+        outerScope = (from.toSet ++ to.toSet).map(varFor(_)),
+        variableToCollectName = "",
+        collectionName = ""
+      )
+    )(pos)
+  }
+
+  override protected def testNameExpr(pattern: String): String = s"size([ $pattern | 1])"
+}
+
+class GetDegreeRewriterCountExpressionTest extends GetDegreeRewriterCountLikeTestBase {
+
+  override def makeInputExpression(
+    from: Option[String],
+    to: Option[String],
+    relationships: Seq[String],
+    predicate: Option[Expression]
+  ): Expression = {
+    CountExpression(
+      pattern = relPattern(from, to, relationships).element,
+      optionalWhereExpression = predicate
+    )(
+      position = pos,
+      outerScope = (from.toSet ++ to.toSet).map(varFor(_))
+    )
+  }
+
+  override protected def testNameExpr(pattern: String): String = s"COUNT { $pattern }"
+}
+
+trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstructionTestSupport {
+
+  protected def makeInputExpression(
     from: Option[String] = None,
     to: Option[String] = None,
     relationships: Seq[String] = Seq.empty,
     predicate: Option[Expression] = None
-  ) = {
-    PatternComprehension(
-      namedPath = None,
-      pattern = relPattern(from, to, relationships),
-      predicate = predicate,
-      projection = literalInt(1)
-    )(
-      position = pos,
-      outerScope = (from.toSet ++ to.toSet).map(varFor(_)),
-      variableToCollectName = "",
-      collectionName = ""
-    )
+  ): Expression
+
+  protected def testNameExpr(pattern: String): String
+
+  private def createIrExpressions = CreateIrExpressions(new AnonymousVariableNameGenerator())
+
+  test(s"Rewrite ${testNameExpr("(a)-[:FOO]->()")} to GetDegree( (a)-[:FOO]->() )") {
+    val incoming =
+      createIrExpressions(makeInputExpression(from = Some("a"), relationships = Seq("FOO")))
+    val expected = GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.OUTGOING)(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Rewrite ${testNameExpr("()-[:FOO]->(a)")} to GetDegree( (a)<-[:FOO]-() )") {
+    val incoming =
+      createIrExpressions(makeInputExpression(to = Some("a"), relationships = Seq("FOO")))
+    val expected = GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.INCOMING)(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Rewrite ${testNameExpr("(a)-[:FOO|:BAR]->()")} to GetDegree( (a)-[:FOO]->() ) + GetDegree( (a)-[:BAR]->() )") {
+    val incoming =
+      createIrExpressions(makeInputExpression(from = Some("a"), relationships = Seq("FOO", "BAR")))
+    val expected =
+      add(
+        GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING)(pos),
+        GetDegree(varFor("a"), Some(RelTypeName("BAR")(pos)), OUTGOING)(pos)
+      )
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Does not rewrite ${testNameExpr("[ (a)-[:FOO]->(b)")}") {
+    val incoming =
+      createIrExpressions(makeInputExpression(from = Some("a"), to = Some("b"), relationships = Seq("FOO")))
+
+    getDegreeRewriter(incoming) should equal(incoming)
+  }
+
+  test(s"Does not rewrite ${testNameExpr("(a)-[:FOO]->() WHERE a.prop")}") {
+    val incoming = createIrExpressions(Size(makeInputExpression(
+      from = Some("a"),
+      to = Some("b"),
+      relationships = Seq("FOO"),
+      predicate = Some(prop("a", "prop"))
+    ))(pos))
+
+    getDegreeRewriter(incoming) should equal(incoming)
+  }
+
+  test(s"Rewrite ${testNameExpr("(a)-[:FOO]->()")} > 5 to HasDegreeGreaterThan( (a)-[:FOO]->() , 5)") {
+    val incoming =
+      createIrExpressions(GreaterThan(
+        makeInputExpression(from = Some("a"), relationships = Seq("FOO")),
+        literalInt(5)
+      )(pos))
+    val expected = HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Rewrite ${testNameExpr("()-[:FOO]->(a)")} > 5 to HasDegreeGreaterThan( (a)<-[:FOO]-() , 5)") {
+    val incoming =
+      createIrExpressions(GreaterThan(
+        makeInputExpression(to = Some("a"), relationships = Seq("FOO")),
+        literalInt(5)
+      )(pos))
+    val expected = HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Rewrite 5 > ${testNameExpr("} (a)-[:FOO]->()")} to HasDegreeLessThan( (a)-[:FOO]->() , 5)") {
+    val incoming =
+      createIrExpressions(GreaterThan(
+        literalInt(5),
+        makeInputExpression(from = Some("a"), relationships = Seq("FOO"))
+      )(pos))
+    val expected = HasDegreeLessThan(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Rewrite 5 > ${testNameExpr("()-[:FOO]->(a)")} to HasDegreeLessThan( (a)<-[:FOO]-() , 5)") {
+    val incoming =
+      createIrExpressions(GreaterThan(
+        literalInt(5),
+        makeInputExpression(to = Some("a"), relationships = Seq("FOO"))
+      )(pos))
+    val expected = HasDegreeLessThan(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Rewrite ${testNameExpr("(a)-[:FOO]->()")} >= 5 to HasDegreeGreaterThanOrEqual( (a)-[:FOO]->() , 5)") {
+    val incoming = createIrExpressions(GreaterThanOrEqual(
+      makeInputExpression(from = Some("a"), relationships = Seq("FOO")),
+      literalInt(5)
+    )(pos))
+    val expected = HasDegreeGreaterThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Rewrite ${testNameExpr("()-[:FOO]->(a)")} >= 5 to HasDegreeGreaterThanOrEqual( (a)<-[:FOO]-() , 5)") {
+    val incoming = createIrExpressions(GreaterThanOrEqual(
+      makeInputExpression(to = Some("a"), relationships = Seq("FOO")),
+      literalInt(5)
+    )(pos))
+    val expected = HasDegreeGreaterThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Rewrite 5 >= ${testNameExpr("(a)-[:FOO]->()")} to HasDegreeLessThanOrEqual( (a)-[:FOO]->() , 5)") {
+    val incoming = createIrExpressions(GreaterThanOrEqual(
+      literalInt(5),
+      makeInputExpression(from = Some("a"), relationships = Seq("FOO"))
+    )(pos))
+    val expected = HasDegreeLessThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Rewrite 5 >= ${testNameExpr("()-[:FOO]->(a)")} to HasDegreeLessThanOrEqual( (a)<-[:FOO]-() , 5)") {
+    val incoming = createIrExpressions(GreaterThanOrEqual(
+      literalInt(5),
+      makeInputExpression(to = Some("a"), relationships = Seq("FOO"))
+    )(pos))
+    val expected = HasDegreeLessThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Rewrite ${testNameExpr("(a)-[:FOO]->()")} = 5 to HasDegree( (a)-[:FOO]->() , 5)") {
+    val incoming =
+      createIrExpressions(Equals(
+        makeInputExpression(from = Some("a"), relationships = Seq("FOO")),
+        literalInt(5)
+      )(pos))
+    val expected = HasDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Rewrite ${testNameExpr("()-[:FOO]->(a)")} = 5 to HasDegree( (a)<-[:FOO]-() , 5)") {
+    val incoming =
+      createIrExpressions(Equals(
+        makeInputExpression(to = Some("a"), relationships = Seq("FOO")),
+        literalInt(5)
+      )(pos))
+    val expected = HasDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Rewrite 5 = ${testNameExpr("(a)-[:FOO]->()")} to HasDegree( (a)-[:FOO]->() , 5)") {
+    val incoming =
+      createIrExpressions(Equals(
+        literalInt(5),
+        makeInputExpression(from = Some("a"), relationships = Seq("FOO"))
+      )(pos))
+    val expected = HasDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Rewrite 5 = ${testNameExpr("()-[:FOO]->(a)")} to HasDegree( (a)<-[:FOO]-() , 5)") {
+    val incoming =
+      createIrExpressions(Equals(
+        literalInt(5),
+        makeInputExpression(to = Some("a"), relationships = Seq("FOO"))
+      )(pos))
+    val expected = HasDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Rewrite ${testNameExpr("(a)-[:FOO]->()")} <= 5 to HasDegreeLessThanOrEqual( (a)-[:FOO]->() , 5)") {
+    val incoming = createIrExpressions(LessThanOrEqual(
+      makeInputExpression(from = Some("a"), relationships = Seq("FOO")),
+      literalInt(5)
+    )(pos))
+    val expected = HasDegreeLessThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Rewrite ${testNameExpr("()-[:FOO]->(a)")} <= 5 to HasDegreeLessThanOrEqual( (a)<-[:FOO]-() , 5)") {
+    val incoming =
+      createIrExpressions(LessThanOrEqual(
+        makeInputExpression(to = Some("a"), relationships = Seq("FOO")),
+        literalInt(5)
+      )(pos))
+    val expected = HasDegreeLessThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Rewrite 5 <= ${testNameExpr("(a)-[:FOO]->()")} to HasDegreeGreaterThanOrEqual( (a)-[:FOO]->() , 5)") {
+    val incoming = createIrExpressions(LessThanOrEqual(
+      literalInt(5),
+      makeInputExpression(from = Some("a"), relationships = Seq("FOO"))
+    )(pos))
+    val expected = HasDegreeGreaterThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Rewrite 5 <= ${testNameExpr("()-[:FOO]->(a)")} to HasDegreeGreaterThanOrEqual( (a)<-[:FOO]-() , 0)") {
+    val incoming =
+      createIrExpressions(LessThanOrEqual(
+        literalInt(5),
+        makeInputExpression(to = Some("a"), relationships = Seq("FOO"))
+      )(pos))
+    val expected = HasDegreeGreaterThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Rewrite ${testNameExpr("(a)-[:FOO]->()")} < 5 to HasDegreeLessThan( (a)-[:FOO]->() , 0)") {
+    val incoming =
+      createIrExpressions(LessThan(
+        makeInputExpression(from = Some("a"), relationships = Seq("FOO")),
+        literalInt(5)
+      )(
+        pos
+      ))
+    val expected = HasDegreeLessThan(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Rewrite ${testNameExpr("()-[:FOO]->(a)")} < 5 to HasDegreeLessThan( (a)<-[:FOO]-() , 0)") {
+    val incoming =
+      createIrExpressions(LessThan(
+        makeInputExpression(to = Some("a"), relationships = Seq("FOO")),
+        literalInt(5)
+      )(pos))
+    val expected = HasDegreeLessThan(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Rewrite 5 < ${testNameExpr("(a)-[:FOO]->()")} to HasDegreeGreaterThan( (a)-[:FOO]->() , 5)") {
+    val incoming =
+      createIrExpressions(LessThan(
+        literalInt(5),
+        makeInputExpression(from = Some("a"), relationships = Seq("FOO"))
+      )(
+        pos
+      ))
+    val expected = HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
+  }
+
+  test(s"Rewrite 5 < ${testNameExpr("()-[:FOO]->(a)")} to HasDegreeGreaterThan( (a)<-[:FOO]-() , 5)") {
+    val incoming =
+      createIrExpressions(LessThan(
+        literalInt(5),
+        makeInputExpression(to = Some("a"), relationships = Seq("FOO"))
+      )(pos))
+    val expected = HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
+
+    getDegreeRewriter(incoming) should equal(expected)
   }
 }

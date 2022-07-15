@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Size
+import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -54,6 +55,7 @@ import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.ast.CountIRExpression
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
@@ -106,7 +108,8 @@ case object getDegreeRewriter extends Rewriter {
       HasDegree(node, typ, dir, value)(e.position)
 
     // SIZE( [p=(a)-[]->() | p] )
-    case SizeFunctionOfListIRExpression(node, types, dir) =>
+    // COUNT { (a)-[]->() }
+    case EligibleCountLikeIRExpression(node, types, dir) =>
       calculateUsingGetDegree(node, types, dir)
 
     // EXISTS( (a)-[]->() ) rewritten to GetDegree( (a)-[]->() ) > 0
@@ -217,7 +220,7 @@ object QuerySolvableByGetDegree {
           IndexedSeq()
         ),
         InterestingOrder.empty,
-        RegularQueryProjection(_, QueryPagination.empty, Selections.empty),
+        RegularQueryProjection(_, QueryPagination.empty, Selections.empty) | _: AggregatingQueryProjection,
         None,
         None
       )) if patternNodes.contains(argument) && patternNodes == Set(firstNode, secondNode) =>
@@ -245,7 +248,7 @@ object EligibleExistsIRExpression {
   }
 }
 
-object SizeFunctionOfListIRExpression {
+object EligibleCountLikeIRExpression {
 
   def unapply(arg: Any): Option[(String, Seq[RelTypeName], SemanticDirection)] = arg match {
     case Size(
@@ -263,6 +266,19 @@ object SizeFunctionOfListIRExpression {
         )
       ) =>
       isEligible(e, node, rel, otherNode, types, dir)
+
+    case ce @ CountIRExpression(
+        QuerySolvableByGetDegree(
+          node,
+          rel,
+          otherNode,
+          types,
+          dir
+        ),
+        _,
+        _
+      ) =>
+      isEligible(ce, node, rel, otherNode, types, dir)
 
     case _ => None
   }
