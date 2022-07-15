@@ -1809,12 +1809,9 @@ class IndexPlanningIntegrationTest
     val q = "RETURN COUNT { (n:A)-[r]->(b) WHERE n.prop > 3 AND n.prop < 10 } AS result"
     val plan = cfg.plan(q).stripProduceResults
     plan shouldBe cfg.subPlanBuilder()
-      .projection("size(anon_1) AS result")
-      .rollUpApply("anon_1", "anon_0")
-      .|.projection("1 AS anon_0")
-      .|.expandAll("(n)-[r]->(b)")
-      .|.nodeIndexOperator("n:A(3 < prop < 10)", indexType = IndexType.RANGE)
-      .argument()
+      .aggregation(Seq.empty, Seq("count(*) AS result"))
+      .expandAll("(n)-[r]->(b)")
+      .nodeIndexOperator("n:A(3 < prop < 10)", indexType = IndexType.RANGE)
       .build()
 
   }

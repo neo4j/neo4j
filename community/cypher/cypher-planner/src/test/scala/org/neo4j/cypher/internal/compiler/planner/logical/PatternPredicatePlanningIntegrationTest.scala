@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
+import org.neo4j.cypher.internal.logical.plans.NestedPlanGetByNameExpression
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -284,15 +285,15 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     )
   }
 
-  test("should build plans with RollUpApply for a pattern predicate with 0=COUNT with WHERE inside") {
+  test("should build plans with Apply for a pattern predicate with 0=COUNT with WHERE inside") {
     val logicalPlan =
       planner.plan("MATCH (a) WHERE 0=COUNT{(a)-[:X]->() WHERE a.prop = 'c'} RETURN a")
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
-        .filter("0 = size(anon_3)")
-        .rollUpApply("anon_3", "anon_2")
-        .|.projection(Map("anon_2" -> literalInt(1)))
+        .filter("0 = anon_2")
+        .apply()
+        .|.aggregation(Seq.empty, Seq("count(*) AS anon_2"))
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
         .|.filter("a.prop = 'c'")
         .|.argument("a")
@@ -301,15 +302,15 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     )
   }
 
-  test("should build plans with RollUpApply for a pattern predicate with 0<COUNT with WHERE inside") {
+  test("should build plans with Apply for a pattern predicate with 0<COUNT with WHERE inside") {
     val logicalPlan =
       planner.plan("MATCH (a) WHERE 0<COUNT{(a)-[:X]->(b) WHERE b.prop = 'c'} RETURN a")
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
-        .filter("0 < size(anon_2)")
-        .rollUpApply("anon_2", "anon_1")
-        .|.projection(Map("anon_1" -> literalInt(1)))
+        .filter("0 < anon_1")
+        .apply()
+        .|.aggregation(Seq.empty, Seq("count(*) AS anon_1"))
         .|.filter("b.prop = 'c'")
         .|.expandAll("(a)-[anon_0:X]->(b)")
         .|.argument("a")
@@ -2078,6 +2079,40 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         .|.argument("a")
         .allNodeScan("a")
         .build()
+    )
+  }
+
+  test("should get relationship count from store for a simple COUNT expression") {
+    val plan = planner.plan("RETURN COUNT { ()-[]->() } AS result").stripProduceResults
+    plan shouldBe planner.subPlanBuilder()
+      .relationshipCountFromCountStore("result", None, Seq.empty, None)
+      .build()
+  }
+
+  test("should get relationship count from store for a simple nested COUNT expression") {
+    val query =
+      """MATCH (n)
+        |RETURN CASE n.prop
+        |  WHEN true THEN COUNT { (a)-[r:REL]->(b) }
+        |  WHEN false THEN COUNT { (c:Person)-[k:KNOWS]->(d) }
+        |END AS result""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan.folder.findAllByClass[NestedPlanGetByNameExpression].toSet shouldBe Set(
+      NestedPlanGetByNameExpression(
+        planner.subPlanBuilder()
+          .relationshipCountFromCountStore("anon_0", None, Seq("REL"), None)
+          .build(),
+        "anon_0",
+        "COUNT { (a)-[r:REL]->(b) }"
+      )(pos),
+      NestedPlanGetByNameExpression(
+        planner.subPlanBuilder()
+          .relationshipCountFromCountStore("anon_1", Some("Person"), Seq("KNOWS"), None)
+          .build(),
+        "anon_1",
+        "COUNT { (c:Person)-[k:KNOWS]->(d) }"
+      )(pos)
     )
   }
 }
