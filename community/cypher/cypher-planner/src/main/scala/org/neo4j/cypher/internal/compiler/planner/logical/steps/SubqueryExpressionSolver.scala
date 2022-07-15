@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.expressions.functions.Head
 import org.neo4j.cypher.internal.ir.HasMappableExpressions
 import org.neo4j.cypher.internal.ir.Selections.containsExistsSubquery
+import org.neo4j.cypher.internal.ir.ast.CountIRExpression
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
@@ -122,6 +123,11 @@ object SubqueryExpressionSolver {
           case expression: ListIRExpression =>
             val (newPlan, newVar) =
               solveUsingRollUpApply(resultPlan, expression, maybeKey, context)
+            RewriteResult(newPlan, newVar, Set(newVar.name))
+
+          case expression: CountIRExpression =>
+            val (newPlan, newVar) =
+              solveUsingApply(resultPlan, expression, maybeKey, context)
             RewriteResult(newPlan, newVar, Set(newVar.name))
 
           case inExpression =>
@@ -211,6 +217,24 @@ object SubqueryExpressionSolver {
     (producedPlan, Variable(collectionName)(expr.position))
   }
 
+  private def solveUsingApply(
+    source: LogicalPlan,
+    expr: CountIRExpression,
+    maybeKey: Option[String],
+    context: LogicalPlanningContext
+  ): (LogicalPlan, Variable) = {
+
+    val countVariableName = maybeKey.getOrElse(expr.countVariableName)
+    val subQueryPlan = {
+      val exprToPlan = maybeKey.fold(expr)(expr.renameCountVariable)
+      plannerQueryPartPlanner.planSubquery(exprToPlan, context)
+    }
+    val producedPlan =
+      context.logicalPlanProducer.ForSubqueryExpressionSolver.planCountExpressionApply(source, subQueryPlan, context)
+
+    (producedPlan, Variable(countVariableName)(expr.position))
+  }
+
   /**
    * Rewrite any [[IRExpression]] inside `expression`. If `RollupApply` is not possible,
    * it will use the [[irExpressionRewriter]] to generate [[NestedPlanExpression]]s.
@@ -239,7 +263,11 @@ object SubqueryExpressionSolver {
               newPlan = p
               newVariable = v
               v
-
+            case countIRExpression: CountIRExpression if countIRExpression == irExpression =>
+              val (p, v) = solveUsingApply(currentPlan, countIRExpression, None, context)
+              newPlan = p
+              newVariable = v
+              v
           }
           /*
            * It's important to not go use RollUpApply if the expression we are working with is:
@@ -252,7 +280,8 @@ object SubqueryExpressionSolver {
           val rewriter = topDown(
             rewriter = inner,
             stopper = {
-              case _: ListIRExpression => false
+              case _: ListIRExpression  => false
+              case _: CountIRExpression => false
               // Note that ExistsIRExpression is a subtype of ScopeExpression (via IRExpression)
               case _: ExistsIRExpression => true
               // Loops

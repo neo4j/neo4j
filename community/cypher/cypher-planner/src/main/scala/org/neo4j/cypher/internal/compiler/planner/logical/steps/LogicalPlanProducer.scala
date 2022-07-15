@@ -304,6 +304,15 @@ case class LogicalPlanProducer(
         context
       )
     }
+
+    def planCountExpressionApply(
+      lhs: LogicalPlan,
+      rhs: LogicalPlan,
+      context: LogicalPlanningContext
+    ): LogicalPlan = {
+      val solved = solveds.get(lhs.id)
+      annotate(Apply(lhs, rhs), solved, providedOrders.get(lhs.id).fromLeft, context)
+    }
   }
 
   def solvePredicate(plan: LogicalPlan, solvedExpression: Expression): LogicalPlan = {

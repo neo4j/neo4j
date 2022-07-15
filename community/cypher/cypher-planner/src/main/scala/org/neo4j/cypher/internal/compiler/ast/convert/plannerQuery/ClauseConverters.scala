@@ -78,7 +78,6 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.expressions.containsAggregate
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.CommandProjection
 import org.neo4j.cypher.internal.ir.CreateNode
@@ -126,6 +125,7 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.SyntaxException
 
@@ -197,7 +197,7 @@ object ClauseConverters {
     val projectionMap = turnIntoMap(groupingKeys)
     val aggregationsMap = turnIntoMap(aggregatingItems)
 
-    if (projectionMap.values.exists(containsAggregate))
+    if (projectionMap.values.exists(containsAggregateOutsideOfAggregatingHorizon))
       throw new InternalException("Grouping keys contains aggregation. AST has not been rewritten?")
 
     if (aggregationsMap.nonEmpty)
@@ -721,7 +721,8 @@ object ClauseConverters {
      */
     def returnItemsOK(ri: ReturnItems): Boolean = {
       ri.items.forall {
-        case item: AliasedReturnItem => !containsAggregate(item.expression) && item.expression == item.variable
+        case item: AliasedReturnItem =>
+          !containsAggregateOutsideOfAggregatingHorizon(item.expression) && item.expression == item.variable
         case _ => throw new InternalException("This should have been rewritten to an AliasedReturnItem.")
       }
     }
@@ -854,5 +855,13 @@ object ClauseConverters {
       case (_, other) =>
         throw new InternalException(s"REMOVE $other not supported in cost planner yet")
     }
+  }
+
+  private def containsAggregateOutsideOfAggregatingHorizon(expr: Expression): Boolean = {
+    expr.folder.treeFold[Boolean](false) {
+      case _: AggregatingQueryProjection => _ => SkipChildren(false)
+      case IsAggregate(_)                => _ => SkipChildren(true)
+    }
+
   }
 }

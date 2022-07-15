@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.CountExpression
+import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
@@ -31,16 +32,16 @@ import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
-import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions.Exists
-import org.neo4j.cypher.internal.expressions.functions.Size
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
+import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.ast.CountIRExpression
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternDestructor
@@ -177,27 +178,22 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
 
     /**
      * Rewrites COUNT { (n)-[anon_0]->(anon_1:M) } into
-     * Size(ListIRExpression(IR for MATCH (n)-[anon_0]->(anon_1:M) RETURN 1))
+     * IR for MATCH (n)-[anon_0]->(anon_1:M) RETURN count(*)
      */
     case ce @ CountExpression(patternElement, where) =>
-      val variableToCollect = anonymousVariableNameGenerator.nextName
-      val collectionName = anonymousVariableNameGenerator.nextName
-      val projection = SignedDecimalIntegerLiteral("1")(ce.position)
+      val countVariableName = anonymousVariableNameGenerator.nextName
 
       val query = getPlannerQuery(
         patternElement,
         ce.dependencies.map(_.name),
         where,
-        RegularQueryProjection(Map(variableToCollect -> projection))
+        AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(ce.position)))
       )
 
-      Size(
-        ListIRExpression(
-          query = query,
-          variableToCollectName = variableToCollect,
-          collectionName = collectionName,
-          solvedExpressionAsString = stringifier(ce)
-        )(ce.position)
+      CountIRExpression(
+        query = query,
+        countVariableName = countVariableName,
+        solvedExpressionAsString = stringifier(ce)
       )(ce.position)
 
     case PatternComprehension(Some(_), _, _, _) =>

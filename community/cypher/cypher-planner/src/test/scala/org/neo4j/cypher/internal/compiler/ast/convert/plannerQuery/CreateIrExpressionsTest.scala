@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.CountExpression
+import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
@@ -41,7 +42,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.functions.Exists
-import org.neo4j.cypher.internal.expressions.functions.Size
+import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -51,6 +52,7 @@ import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.ir.ast.CountIRExpression
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
 import org.neo4j.cypher.internal.rewriting.rewriters.inlineNamedPathsInPatternComprehensions
@@ -489,25 +491,22 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val countExpr = CountExpression(n_r_m.element, None)(pos, Set(n))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
-    val countVariableToCollect = nameGenerator.nextName
-    val countCollectionName = nameGenerator.nextName
+    val countVariableName = nameGenerator.nextName
 
     rewrite(countExpr) shouldBe
-      Size(
-        ListIRExpression(
-          queryWith(
-            qg = QueryGraph(
-              patternNodes = Set(n.name, m.name),
-              argumentIds = Set(n.name),
-              patternRelationships =
-                Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength))
-            ),
-            horizon = Some(RegularQueryProjection(Map(countVariableToCollect -> literalInt(1))))
+      CountIRExpression(
+        queryWith(
+          qg = QueryGraph(
+            patternNodes = Set(n.name, m.name),
+            argumentIds = Set(n.name),
+            patternRelationships =
+              Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength))
           ),
-          countVariableToCollect,
-          countCollectionName,
-          s"COUNT { (n)-[r]-(m) }"
-        )(pos)
+          horizon =
+            Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(pos))))
+        ),
+        countVariableName,
+        s"COUNT { (n)-[r]-(m) }"
       )(pos)
   }
 
@@ -515,26 +514,23 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val countExpr = CountExpression(n_r_m.element, Some(rPred))(pos, Set(n))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
-    val countVariableToCollect = nameGenerator.nextName
-    val countCollectionName = nameGenerator.nextName
+    val countVariableName = nameGenerator.nextName
 
     rewrite(countExpr) shouldBe
-      Size(
-        ListIRExpression(
-          queryWith(
-            qg = QueryGraph(
-              patternNodes = Set(n.name, m.name),
-              argumentIds = Set(n.name),
-              patternRelationships =
-                Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)),
-              selections = Selections.from(andedPropertyInequalities(rPred))
-            ),
-            horizon = Some(RegularQueryProjection(Map(countVariableToCollect -> literalInt(1))))
+      CountIRExpression(
+        queryWith(
+          qg = QueryGraph(
+            patternNodes = Set(n.name, m.name),
+            argumentIds = Set(n.name),
+            patternRelationships =
+              Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)),
+            selections = Selections.from(andedPropertyInequalities(rPred))
           ),
-          countVariableToCollect,
-          countCollectionName,
-          s"COUNT { (n)-[r]-(m) WHERE r.foo > 5 }"
-        )(pos)
+          horizon =
+            Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(pos))))
+        ),
+        countVariableName,
+        s"COUNT { (n)-[r]-(m) WHERE r.foo > 5 }"
       )(pos)
   }
 
@@ -542,41 +538,38 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val countExpr = CountExpression(n_r_m_withPreds.element, None)(pos, Set(n))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
-    val countVariableToCollect = nameGenerator.nextName
-    val countCollectionName = nameGenerator.nextName
+    val countVariableName = nameGenerator.nextName
 
     rewrite(countExpr) shouldBe
-      Size(
-        ListIRExpression(
-          queryWith(
-            QueryGraph(
-              patternNodes = Set(n.name, m.name, o.name),
-              argumentIds = Set(n.name),
-              patternRelationships = Set(
-                PatternRelationship(
-                  r.name,
-                  (n.name, m.name),
-                  OUTGOING,
-                  Seq(relTypeName("R"), relTypeName("P")),
-                  SimplePatternLength
-                ),
-                PatternRelationship(r2.name, (m.name, o.name), INCOMING, Seq.empty, SimplePatternLength)
+      CountIRExpression(
+        queryWith(
+          QueryGraph(
+            patternNodes = Set(n.name, m.name, o.name),
+            argumentIds = Set(n.name),
+            patternRelationships = Set(
+              PatternRelationship(
+                r.name,
+                (n.name, m.name),
+                OUTGOING,
+                Seq(relTypeName("R"), relTypeName("P")),
+                SimplePatternLength
               ),
-              selections = Selections.from(Seq(
-                not(equals(r, r2)),
-                andedPropertyInequalities(rPred),
-                andedPropertyInequalities(oPred),
-                equals(prop(r.name, "prop"), literalInt(5)),
-                equals(prop(o.name, "prop"), literalInt(5)),
-                not(hasALabel(o.name))
-              ))
+              PatternRelationship(r2.name, (m.name, o.name), INCOMING, Seq.empty, SimplePatternLength)
             ),
-            Some(RegularQueryProjection(Map(countVariableToCollect -> literalInt(1))))
+            selections = Selections.from(Seq(
+              not(equals(r, r2)),
+              andedPropertyInequalities(rPred),
+              andedPropertyInequalities(oPred),
+              equals(prop(r.name, "prop"), literalInt(5)),
+              equals(prop(o.name, "prop"), literalInt(5)),
+              not(hasALabel(o.name))
+            ))
           ),
-          countVariableToCollect,
-          countCollectionName,
-          s"COUNT { (n)-[r:R|P {prop: 5} WHERE r.foo > 5]->(m)<-[r2]-(o:!% {prop: 5} WHERE o.foo > 5) }"
-        )(pos)
+          horizon =
+            Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(pos))))
+        ),
+        countVariableName,
+        s"COUNT { (n)-[r:R|P {prop: 5} WHERE r.foo > 5]->(m)<-[r2]-(o:!% {prop: 5} WHERE o.foo > 5) }"
       )(pos)
   }
 
@@ -584,24 +577,21 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val countExpr = CountExpression(n_r_m.element.rightNode, None)(pos, Set(m))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
-    val countVariableToCollect = nameGenerator.nextName
-    val countCollectionName = nameGenerator.nextName
+    val countVariableName = nameGenerator.nextName
 
     rewrite(countExpr) shouldBe
-      Size(
-        ListIRExpression(
-          queryWith(
-            qg = QueryGraph(
-              patternNodes = Set(m.name),
-              argumentIds = Set(m.name),
-              selections = Selections.from(AssertIsNode(m)(pos))
-            ),
-            horizon = Some(RegularQueryProjection(Map(countVariableToCollect -> literalInt(1))))
+      CountIRExpression(
+        queryWith(
+          qg = QueryGraph(
+            patternNodes = Set(m.name),
+            argumentIds = Set(m.name),
+            selections = Selections.from(AssertIsNode(m)(pos))
           ),
-          countVariableToCollect,
-          countCollectionName,
-          s"COUNT { (m) }"
-        )(pos)
+          horizon =
+            Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(pos))))
+        ),
+        countVariableName,
+        s"COUNT { (m) }"
       )(pos)
   }
 
@@ -609,26 +599,23 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val countExpr = CountExpression(n_r_m.element, Some(and(rPred, rLessPred)))(pos, Set(n))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
-    val countVariableToCollect = nameGenerator.nextName
-    val countCollectionName = nameGenerator.nextName
+    val countVariableName = nameGenerator.nextName
 
     rewrite(countExpr) shouldBe
-      Size(
-        ListIRExpression(
-          queryWith(
-            qg = QueryGraph(
-              patternNodes = Set(n.name, m.name),
-              argumentIds = Set(n.name),
-              patternRelationships =
-                Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)),
-              selections = Selections.from(andedPropertyInequalities(rPred, rLessPred))
-            ),
-            horizon = Some(RegularQueryProjection(Map(countVariableToCollect -> literalInt(1))))
+      CountIRExpression(
+        queryWith(
+          qg = QueryGraph(
+            patternNodes = Set(n.name, m.name),
+            argumentIds = Set(n.name),
+            patternRelationships =
+              Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)),
+            selections = Selections.from(andedPropertyInequalities(rPred, rLessPred))
           ),
-          countVariableToCollect,
-          countCollectionName,
-          s"COUNT { (n)-[r]-(m) WHERE r.foo > 5 AND r.foo < 10 }"
-        )(pos)
+          horizon =
+            Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(pos))))
+        ),
+        countVariableName,
+        s"COUNT { (n)-[r]-(m) WHERE r.foo > 5 AND r.foo < 10 }"
       )(pos)
   }
 
