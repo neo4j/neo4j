@@ -33,7 +33,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
-import org.neo4j.io.layout.CommonDatabaseFile;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -218,7 +217,7 @@ class RecordDatabaseLayoutTest {
             assertNotNull(layout.file(databaseFile));
         }
 
-        Path metadata = layout.file(CommonDatabaseFile.METADATA_STORE);
+        Path metadata = layout.file(RecordDatabaseFile.METADATA_STORE);
         assertEquals("neostore", metadata.getFileName().toString());
     }
 

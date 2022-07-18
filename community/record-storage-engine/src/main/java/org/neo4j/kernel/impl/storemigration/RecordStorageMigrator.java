@@ -74,7 +74,6 @@ import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.CommonDatabaseFile;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
@@ -277,7 +276,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                     fileSystem,
                     directoryLayout,
                     migrationLayout,
-                    singleton(CommonDatabaseFile.METADATA_STORE),
+                    singleton(RecordDatabaseFile.METADATA_STORE),
                     true,
                     false,
                     ExistingTargetStrategy.SKIP);
@@ -367,7 +366,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             // anyways and cannot be avoided with the importer, but delete the store files that weren't written
             // (left empty) so that we don't overwrite those in the real store directory later.
             Collection<DatabaseFile> storesToDeleteFromMigratedDirectory = new ArrayList<>();
-            storesToDeleteFromMigratedDirectory.add(CommonDatabaseFile.METADATA_STORE);
+            storesToDeleteFromMigratedDirectory.add(RecordDatabaseFile.METADATA_STORE);
             if (!requiresPropertyMigration) {
                 // We didn't migrate properties, so the property stores in the migrated store are just empty/bogus
                 storesToDeleteFromMigratedDirectory.addAll(asList(

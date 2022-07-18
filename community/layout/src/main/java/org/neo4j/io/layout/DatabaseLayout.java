@@ -110,7 +110,7 @@ public class DatabaseLayout {
     }
 
     public Path metadataStore() {
-        return file(CommonDatabaseFile.METADATA_STORE.getName());
+        throw new IllegalStateException("Can not get the metadata store for a plain DatabaseLayout.");
     }
 
     public Path pathForExistsMarker() {

@@ -23,8 +23,6 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.List;
 import java.util.Optional;
-import org.apache.commons.lang3.ArrayUtils;
-import org.neo4j.io.layout.CommonDatabaseFile;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -73,7 +71,10 @@ public enum RecordDatabaseFile implements DatabaseFile {
     RELATIONSHIP_GROUP_DEGREES_STORE(RecordDatabaseFileNames.RELATIONSHIP_GROUP_DEGREES_STORE, false),
 
     INDEX_STATISTICS_STORE(RecordDatabaseFileNames.INDEX_STATISTICS_STORE, false),
-    EXISTS_MARKER(CommonDatabaseFile.METADATA_STORE);
+
+    METADATA_STORE(RecordDatabaseFileNames.METADATA_STORE, false),
+
+    EXISTS_MARKER(METADATA_STORE);
 
     private final String name;
     private final boolean hasIdFile;
@@ -122,7 +123,7 @@ public enum RecordDatabaseFile implements DatabaseFile {
     }
 
     public static DatabaseFile[] allValues() {
-        return ArrayUtils.addAll(new DatabaseFile[] {CommonDatabaseFile.METADATA_STORE}, RecordDatabaseFile.values());
+        return values();
     }
 
     static final List<DatabaseFile> STORE_FILES = List.of(allValues());

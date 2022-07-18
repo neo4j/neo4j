@@ -46,4 +46,6 @@ final class RecordDatabaseFileNames {
     static final String SCHEMA_STORE = "neostore.schemastore.db";
 
     static final String INDEX_STATISTICS_STORE = "neostore.indexstats.db";
+
+    static final String METADATA_STORE = "neostore";
 }

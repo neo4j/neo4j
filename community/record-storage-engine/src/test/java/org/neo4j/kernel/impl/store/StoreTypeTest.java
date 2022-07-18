@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.io.layout.CommonDatabaseFile;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
 
 class StoreTypeTest {
@@ -36,7 +35,7 @@ class StoreTypeTest {
 
     @Test
     void storeTypeOfMetaDataStoreFile() {
-        StoreType matchedType = StoreType.typeOf(CommonDatabaseFile.METADATA_STORE)
+        StoreType matchedType = StoreType.typeOf(RecordDatabaseFile.METADATA_STORE)
                 .orElseThrow(() -> new IllegalStateException("Store type not found"));
         assertEquals(StoreType.META_DATA, matchedType);
     }

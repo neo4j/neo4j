@@ -24,7 +24,6 @@ import java.util.Optional;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.internal.recordstorage.RecordIdType;
-import org.neo4j.io.layout.CommonDatabaseFile;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
 
@@ -114,7 +113,7 @@ public enum StoreType {
             return neoStores.createRelationshipGroupStore();
         }
     },
-    META_DATA(CommonDatabaseFile.METADATA_STORE, RecordIdType.NODE) // Make sure this META store is last
+    META_DATA(RecordDatabaseFile.METADATA_STORE, RecordIdType.NODE) // Make sure this META store is last
     {
         @Override
         public CommonAbstractStore open(NeoStores neoStores) {
