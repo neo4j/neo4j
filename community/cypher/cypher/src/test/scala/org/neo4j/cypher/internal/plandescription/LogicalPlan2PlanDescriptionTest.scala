@@ -1461,7 +1461,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         CreateRangeIndex(
-          Some(DoNothingIfExistsForIndex(Left(label("Label")), List(key("prop")), IndexType.RANGE, None)),
+          Some(DoNothingIfExistsForIndex(Left(label("Label")), List(key("prop")), IndexType.RANGE, None, NoOptions)),
           Left(label("Label")),
           List(key("prop")),
           None,
@@ -1531,7 +1531,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         CreateRangeIndex(
-          Some(DoNothingIfExistsForIndex(Right(relType("Label")), List(key("prop")), IndexType.RANGE, None)),
+          Some(DoNothingIfExistsForIndex(Right(relType("Label")), List(key("prop")), IndexType.RANGE, None, NoOptions)),
           Right(relType("Label")),
           List(key("prop")),
           None,
@@ -1592,7 +1592,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         CreateLookupIndex(
-          Some(DoNothingIfExistsForLookupIndex(EntityType.NODE, None)),
+          Some(DoNothingIfExistsForLookupIndex(EntityType.NODE, None, NoOptions)),
           EntityType.NODE,
           None,
           NoOptions
@@ -1651,7 +1651,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         CreateLookupIndex(
-          Some(DoNothingIfExistsForLookupIndex(EntityType.RELATIONSHIP, None)),
+          Some(DoNothingIfExistsForLookupIndex(EntityType.RELATIONSHIP, None, NoOptions)),
           EntityType.RELATIONSHIP,
           None,
           NoOptions
@@ -1749,7 +1749,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         CreateFulltextIndex(
-          Some(DoNothingIfExistsForFulltextIndex(Left(List(label("Label"))), List(key("prop")), None)),
+          Some(DoNothingIfExistsForFulltextIndex(Left(List(label("Label"))), List(key("prop")), None, NoOptions)),
           Left(List(label("Label"))),
           List(key("prop")),
           None,
@@ -1833,7 +1833,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         CreateFulltextIndex(
-          Some(DoNothingIfExistsForFulltextIndex(Right(List(relType("Label"))), List(key("prop")), None)),
+          Some(DoNothingIfExistsForFulltextIndex(Right(List(relType("Label"))), List(key("prop")), None, NoOptions)),
           Right(List(relType("Label"))),
           List(key("prop")),
           None,
@@ -1919,7 +1919,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         CreateTextIndex(
-          Some(DoNothingIfExistsForIndex(Left(label("Label")), List(key("prop")), IndexType.TEXT, None)),
+          Some(DoNothingIfExistsForIndex(Left(label("Label")), List(key("prop")), IndexType.TEXT, None, NoOptions)),
           Left(label("Label")),
           List(key("prop")),
           None,
@@ -1983,7 +1983,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         CreateTextIndex(
-          Some(DoNothingIfExistsForIndex(Right(relType("Label")), List(key("prop")), IndexType.TEXT, None)),
+          Some(DoNothingIfExistsForIndex(Right(relType("Label")), List(key("prop")), IndexType.TEXT, None, NoOptions)),
           Right(relType("Label")),
           List(key("prop")),
           None,
@@ -2069,7 +2069,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         CreatePointIndex(
-          Some(DoNothingIfExistsForIndex(Left(label("Label")), List(key("prop")), IndexType.POINT, None)),
+          Some(DoNothingIfExistsForIndex(Left(label("Label")), List(key("prop")), IndexType.POINT, None, NoOptions)),
           Left(label("Label")),
           List(key("prop")),
           None,
@@ -2139,7 +2139,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         CreatePointIndex(
-          Some(DoNothingIfExistsForIndex(Right(relType("Label")), List(key("prop")), IndexType.POINT, None)),
+          Some(DoNothingIfExistsForIndex(Right(relType("Label")), List(key("prop")), IndexType.POINT, None, NoOptions)),
           Right(relType("Label")),
           List(key("prop")),
           None,

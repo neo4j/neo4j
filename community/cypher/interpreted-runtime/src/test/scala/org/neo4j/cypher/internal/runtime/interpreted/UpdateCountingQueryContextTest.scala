@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
-import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexPrototype
 import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.values.storable.Values
@@ -225,13 +224,13 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   }
 
   test("create_unique_constraint") {
-    context.createUniqueConstraint(0, Array(1), None, None, IndexConfig.empty)
+    context.createUniqueConstraint(0, Array(1), None, None)
 
     context.getStatistics should equal(QueryStatistics(uniqueConstraintsAdded = 1))
   }
 
   test("create_unique_constraint with name") {
-    context.createUniqueConstraint(0, Array(1), Some("name"), None, IndexConfig.empty)
+    context.createUniqueConstraint(0, Array(1), Some("name"), None)
 
     context.getStatistics should equal(QueryStatistics(uniqueConstraintsAdded = 1))
   }
@@ -261,13 +260,13 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   }
 
   test("create node key constraint") {
-    context.createNodeKeyConstraint(0, Array(1), None, None, IndexConfig.empty)
+    context.createNodeKeyConstraint(0, Array(1), None, None)
 
     context.getStatistics should equal(QueryStatistics(nodekeyConstraintsAdded = 1))
   }
 
   test("create node key constraint with name") {
-    context.createNodeKeyConstraint(0, Array(1), Some("name"), None, IndexConfig.empty)
+    context.createNodeKeyConstraint(0, Array(1), Some("name"), None)
 
     context.getStatistics should equal(QueryStatistics(nodekeyConstraintsAdded = 1))
   }

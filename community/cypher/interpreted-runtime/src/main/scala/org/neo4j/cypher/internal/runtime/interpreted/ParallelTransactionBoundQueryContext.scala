@@ -41,6 +41,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
+import org.neo4j.internal.schema.IndexType
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
@@ -85,6 +86,12 @@ object ParallelTransactionBoundQueryContext {
     override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int = unsupported()
     override def getOrCreatePropertyKeyId(propertyKey: String): Int = unsupported()
     override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] = unsupported()
+
+    override def validateIndexProvider(
+      schemaDescription: String,
+      providerString: String,
+      indexType: IndexType
+    ): IndexProviderDescriptor = unsupported()
 
     override def addRangeIndexRule(
       entityId: Int,
@@ -131,16 +138,14 @@ object ParallelTransactionBoundQueryContext {
       labelId: Int,
       propertyKeyIds: Seq[Int],
       name: Option[String],
-      provider: Option[String],
-      indexConfig: IndexConfig
+      provider: Option[IndexProviderDescriptor]
     ): Unit = unsupported()
 
     override def createUniqueConstraint(
       labelId: Int,
       propertyKeyIds: Seq[Int],
       name: Option[String],
-      provider: Option[String],
-      indexConfig: IndexConfig
+      provider: Option[IndexProviderDescriptor]
     ): Unit = unsupported()
 
     override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit =

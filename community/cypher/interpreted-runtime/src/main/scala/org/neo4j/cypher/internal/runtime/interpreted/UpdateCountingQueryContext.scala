@@ -204,10 +204,9 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     labelId: Int,
     propertyKeyIds: Seq[Int],
     name: Option[String],
-    provider: Option[String],
-    indexConfig: IndexConfig
+    provider: Option[IndexProviderDescriptor]
   ): Unit = {
-    inner.createNodeKeyConstraint(labelId, propertyKeyIds, name, provider, indexConfig)
+    inner.createNodeKeyConstraint(labelId, propertyKeyIds, name, provider)
     nodekeyConstraintsAdded.increase()
   }
 
@@ -215,10 +214,9 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     labelId: Int,
     propertyKeyIds: Seq[Int],
     name: Option[String],
-    provider: Option[String],
-    indexConfig: IndexConfig
+    provider: Option[IndexProviderDescriptor]
   ): Unit = {
-    inner.createUniqueConstraint(labelId, propertyKeyIds, name, provider, indexConfig)
+    inner.createUniqueConstraint(labelId, propertyKeyIds, name, provider)
     uniqueConstraintsAdded.increase()
   }
 

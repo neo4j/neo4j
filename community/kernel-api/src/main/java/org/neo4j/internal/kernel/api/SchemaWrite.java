@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import java.util.List;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -55,6 +56,15 @@ public interface SchemaWrite {
      * @throws RuntimeException if there is no index provider by the given name.
      */
     IndexType indexTypeByProviderName(String providerName);
+
+    /**
+     * Get all the index providers that has support for the given {@link IndexType}.
+     *
+     * @param indexType {@link IndexType} to find index providers for
+     * @return List of all {@link IndexProviderDescriptor} that describe index provider with support for the given
+     * index type.
+     */
+    List<IndexProviderDescriptor> indexProvidersByType(IndexType indexType);
 
     /**
      * Create index using the given {@link IndexPrototype}.

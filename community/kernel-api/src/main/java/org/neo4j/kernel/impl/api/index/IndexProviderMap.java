@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Consumer;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.index.IndexProvider;
 
 /**
@@ -47,6 +50,14 @@ public interface IndexProviderMap extends IndexConfigCompleter {
      * @throws IndexProviderNotFoundException if no such {@link IndexProvider} was found.
      */
     IndexProvider lookup(String providerDescriptorName) throws IndexProviderNotFoundException;
+
+    /**
+     * Looks up all {@link IndexProvider} with support for the given {@link IndexType}.
+     *
+     * @param indexType {@link IndexType} for which to find index providers.
+     * @return A list of all {@link IndexProvider index providers} with support for the given type.
+     */
+    List<IndexProvider> lookup(IndexType indexType);
 
     /**
      * There's always a default {@link IndexProvider}, this method returns it.
@@ -102,6 +113,11 @@ public interface IndexProviderMap extends IndexConfigCompleter {
         @Override
         public IndexProvider lookup(String providerDescriptorName) throws IndexProviderNotFoundException {
             return IndexProvider.EMPTY;
+        }
+
+        @Override
+        public List<IndexProvider> lookup(IndexType indexType) {
+            return Collections.singletonList(IndexProvider.EMPTY);
         }
 
         @Override

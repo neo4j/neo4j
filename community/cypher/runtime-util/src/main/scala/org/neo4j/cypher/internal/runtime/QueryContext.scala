@@ -432,6 +432,12 @@ trait WriteQueryContext {
 
   def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int]
 
+  def validateIndexProvider(
+    schemaDescription: String,
+    providerString: String,
+    indexType: IndexType
+  ): IndexProviderDescriptor
+
   def addRangeIndexRule(
     entityId: Int,
     entityType: EntityType,
@@ -479,8 +485,7 @@ trait WriteQueryContext {
     labelId: Int,
     propertyKeyIds: Seq[Int],
     name: Option[String],
-    provider: Option[String],
-    indexConfig: IndexConfig
+    provider: Option[IndexProviderDescriptor]
   ): Unit
 
   /* throws if failed or pre-existing */
@@ -488,8 +493,7 @@ trait WriteQueryContext {
     labelId: Int,
     propertyKeyIds: Seq[Int],
     name: Option[String],
-    provider: Option[String],
-    indexConfig: IndexConfig
+    provider: Option[IndexProviderDescriptor]
   ): Unit
 
   /* throws if failed or pre-existing */

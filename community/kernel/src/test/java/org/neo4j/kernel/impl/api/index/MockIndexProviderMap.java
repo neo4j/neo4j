@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Consumer;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -74,6 +77,14 @@ public class MockIndexProviderMap extends LifecycleAdapter implements IndexProvi
             return indexProvider;
         }
         throw new IndexProviderNotFoundException("lookup by descriptor name failed");
+    }
+
+    @Override
+    public List<IndexProvider> lookup(IndexType indexType) {
+        if (indexProvider.getIndexType().equals(indexType)) {
+            return Collections.singletonList(indexProvider);
+        }
+        throw new IndexProviderNotFoundException("lookup by type failed");
     }
 
     @Override

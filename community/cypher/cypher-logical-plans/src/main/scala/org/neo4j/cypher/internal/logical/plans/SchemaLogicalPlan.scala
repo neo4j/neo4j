@@ -134,16 +134,22 @@ case class DoNothingIfExistsForIndex(
   entityName: Either[LabelName, RelTypeName],
   propertyKeyNames: List[PropertyKeyName],
   indexType: IndexType,
-  name: Option[String]
+  name: Option[String],
+  options: Options
 )(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
-case class DoNothingIfExistsForLookupIndex(entityType: EntityType, name: Option[String])(implicit idGen: IdGen)
+case class DoNothingIfExistsForLookupIndex(
+  entityType: EntityType,
+  name: Option[String],
+  options: Options
+)(implicit idGen: IdGen)
     extends SchemaLogicalPlan(idGen)
 
 case class DoNothingIfExistsForFulltextIndex(
   entityNames: Either[List[LabelName], List[RelTypeName]],
   propertyKeyNames: List[PropertyKeyName],
-  name: Option[String]
+  name: Option[String],
+  options: Options
 )(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
 case class DoNothingIfExistsForConstraint(

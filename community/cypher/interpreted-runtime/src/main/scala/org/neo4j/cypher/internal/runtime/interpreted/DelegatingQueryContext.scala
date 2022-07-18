@@ -219,6 +219,13 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
     inner.getOrCreatePropertyKeyIds(propertyKeys)
   }
 
+  override def validateIndexProvider(
+    schemaDescription: String,
+    providerString: String,
+    indexType: IndexType
+  ): IndexProviderDescriptor =
+    singleDbHit(inner.validateIndexProvider(schemaDescription, providerString, indexType))
+
   override def addRangeIndexRule(
     entityId: Int,
     entityType: EntityType,
@@ -378,19 +385,17 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
     labelId: Int,
     propertyKeyIds: Seq[Int],
     name: Option[String],
-    provider: Option[String],
-    indexConfig: IndexConfig
+    provider: Option[IndexProviderDescriptor]
   ): Unit =
-    singleDbHit(inner.createNodeKeyConstraint(labelId, propertyKeyIds, name, provider, indexConfig))
+    singleDbHit(inner.createNodeKeyConstraint(labelId, propertyKeyIds, name, provider))
 
   override def createUniqueConstraint(
     labelId: Int,
     propertyKeyIds: Seq[Int],
     name: Option[String],
-    provider: Option[String],
-    indexConfig: IndexConfig
+    provider: Option[IndexProviderDescriptor]
   ): Unit =
-    singleDbHit(inner.createUniqueConstraint(labelId, propertyKeyIds, name, provider, indexConfig))
+    singleDbHit(inner.createUniqueConstraint(labelId, propertyKeyIds, name, provider))
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit =
     singleDbHit(inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId, name))

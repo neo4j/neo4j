@@ -556,6 +556,13 @@ class ExceptionTranslatingQueryContext(override val inner: QueryContext)
   override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] =
     translateException(tokenNameLookup, inner.getOrCreatePropertyKeyIds(propertyKeys))
 
+  override def validateIndexProvider(
+    schemaDescription: String,
+    providerString: String,
+    indexType: IndexType
+  ): IndexProviderDescriptor =
+    translateException(tokenNameLookup, inner.validateIndexProvider(schemaDescription, providerString, indexType))
+
   override def addRangeIndexRule(
     entityId: Int,
     entityType: EntityType,
@@ -614,24 +621,22 @@ class ExceptionTranslatingQueryContext(override val inner: QueryContext)
     labelId: Int,
     propertyKeyIds: Seq[Int],
     name: Option[String],
-    provider: Option[String],
-    indexConfig: IndexConfig
+    provider: Option[IndexProviderDescriptor]
   ): Unit =
     translateException(
       tokenNameLookup,
-      inner.createNodeKeyConstraint(labelId, propertyKeyIds, name, provider, indexConfig)
+      inner.createNodeKeyConstraint(labelId, propertyKeyIds, name, provider)
     )
 
   override def createUniqueConstraint(
     labelId: Int,
     propertyKeyIds: Seq[Int],
     name: Option[String],
-    provider: Option[String],
-    indexConfig: IndexConfig
+    provider: Option[IndexProviderDescriptor]
   ): Unit =
     translateException(
       tokenNameLookup,
-      inner.createUniqueConstraint(labelId, propertyKeyIds, name, provider, indexConfig)
+      inner.createUniqueConstraint(labelId, propertyKeyIds, name, provider)
     )
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit =

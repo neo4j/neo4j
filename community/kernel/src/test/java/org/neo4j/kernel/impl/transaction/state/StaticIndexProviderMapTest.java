@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,9 +29,11 @@ import java.util.ArrayList;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
 import org.neo4j.kernel.impl.index.schema.PointIndexProvider;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
@@ -113,29 +116,56 @@ class StaticIndexProviderMapTest {
 
     @Test
     void testWithExtension() throws Exception {
-        var extension = mockProvider(IndexProvider.class);
+        var extension = mockProvider(IndexProvider.class, IndexType.RANGE);
         var dependencies = new Dependencies();
         dependencies.satisfyDependency(extension);
-        RangeIndexProvider rangeIndexProvider = mockProvider(RangeIndexProvider.class);
+        RangeIndexProvider rangeIndexProvider = mockProvider(RangeIndexProvider.class, IndexType.RANGE);
         var map = new StaticIndexProviderMap(
-                mockProvider(TokenIndexProvider.class),
-                mockProvider(TextIndexProvider.class),
-                mockProvider(FulltextIndexProvider.class),
+                mockProvider(TokenIndexProvider.class, IndexType.LOOKUP),
+                mockProvider(TextIndexProvider.class, IndexType.TEXT),
+                mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT),
                 rangeIndexProvider,
-                mockProvider(PointIndexProvider.class),
+                mockProvider(PointIndexProvider.class, IndexType.POINT),
                 dependencies);
         map.init();
 
         assertThat(map.lookup(extension.getProviderDescriptor())).isEqualTo(extension);
         assertThat(map.lookup(extension.getProviderDescriptor().name())).isEqualTo(extension);
+        assertThat(map.lookup(IndexType.RANGE)).containsExactlyInAnyOrder(extension, rangeIndexProvider);
         var accepted = new ArrayList<>();
         map.accept(accepted::add);
         assertThat(accepted).contains(extension);
     }
 
+    @Test
+    void testLookupByMissingType() throws Exception {
+        var rangeIndexProvider = mockProvider(RangeIndexProvider.class, IndexType.RANGE);
+        var map = new StaticIndexProviderMap(
+                mockProvider(TokenIndexProvider.class, IndexType.LOOKUP),
+                mockProvider(TextIndexProvider.class, IndexType.TEXT),
+                mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT),
+                rangeIndexProvider,
+                mockProvider(PointIndexProvider.class), // <- No type
+                new Dependencies());
+        map.init();
+
+        assertThatThrownBy(() -> map.lookup(IndexType.POINT))
+                .isInstanceOf(IndexProviderNotFoundException.class)
+                .hasMessageContaining("Tried to get index providers for index type " + IndexType.POINT
+                        + " but could not find any. Available index providers per type are ")
+                .hasMessageContaining(IndexType.RANGE + "=["
+                        + rangeIndexProvider.getProviderDescriptor().name() + "]");
+    }
+
     private static <T extends IndexProvider> T mockProvider(Class<? extends T> clazz) {
         var mock = mock(clazz);
         when(mock.getProviderDescriptor()).thenReturn(new IndexProviderDescriptor(clazz.getName(), "o_O"));
+        return mock;
+    }
+
+    private static <T extends IndexProvider> T mockProvider(Class<? extends T> clazz, IndexType indexType) {
+        var mock = mockProvider(clazz);
+        when(mock.getIndexType()).thenReturn(indexType);
         return mock;
     }
 }

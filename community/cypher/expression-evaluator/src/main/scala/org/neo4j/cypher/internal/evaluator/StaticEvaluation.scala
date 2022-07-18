@@ -233,6 +233,12 @@ object StaticEvaluation {
 
     override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] = notAvailable()
 
+    override def validateIndexProvider(
+      schemaDescription: String,
+      providerString: String,
+      indexType: IndexType
+    ): IndexProviderDescriptor = notAvailable()
+
     override def addRangeIndexRule(
       entityId: Int,
       entityType: EntityType,
@@ -368,16 +374,14 @@ object StaticEvaluation {
       labelId: Int,
       propertyKeyIds: Seq[Int],
       name: Option[String],
-      provider: Option[String],
-      indexConfig: IndexConfig
+      provider: Option[IndexProviderDescriptor]
     ): Unit = notAvailable()
 
     override def createUniqueConstraint(
       labelId: Int,
       propertyKeyIds: Seq[Int],
       name: Option[String],
-      provider: Option[String],
-      indexConfig: IndexConfig
+      provider: Option[IndexProviderDescriptor]
     ): Unit = notAvailable()
 
     override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit =

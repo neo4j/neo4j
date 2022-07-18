@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.List;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
@@ -55,6 +56,11 @@ public class RestrictedSchemaWrite implements SchemaWrite {
     @Override
     public IndexType indexTypeByProviderName(String providerName) {
         return inner.indexTypeByProviderName(providerName);
+    }
+
+    @Override
+    public List<IndexProviderDescriptor> indexProvidersByType(IndexType indexType) {
+        return inner.indexProvidersByType(indexType);
     }
 
     @Override

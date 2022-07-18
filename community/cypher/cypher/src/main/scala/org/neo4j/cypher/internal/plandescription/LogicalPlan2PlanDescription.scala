@@ -743,7 +743,7 @@ case class LogicalPlan2PlanDescription(
           withRawCardinalities
         )
 
-      case DoNothingIfExistsForIndex(entityName, propertyKeyNames, indexType, nameOption) =>
+      case DoNothingIfExistsForIndex(entityName, propertyKeyNames, indexType, nameOption, _) =>
         PlanDescriptionImpl(
           id,
           s"DoNothingIfExists(INDEX)",
@@ -753,7 +753,7 @@ case class LogicalPlan2PlanDescription(
           withRawCardinalities
         )
 
-      case DoNothingIfExistsForLookupIndex(entityType, nameOption) =>
+      case DoNothingIfExistsForLookupIndex(entityType, nameOption, _) =>
         PlanDescriptionImpl(
           id,
           s"DoNothingIfExists(INDEX)",
@@ -763,7 +763,7 @@ case class LogicalPlan2PlanDescription(
           withRawCardinalities
         )
 
-      case DoNothingIfExistsForFulltextIndex(entityNames, propertyKeyNames, nameOption) =>
+      case DoNothingIfExistsForFulltextIndex(entityNames, propertyKeyNames, nameOption, _) =>
         PlanDescriptionImpl(
           id,
           s"DoNothingIfExists(INDEX)",

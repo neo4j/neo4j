@@ -1334,6 +1334,12 @@ public class Operations implements Write, SchemaWrite {
     }
 
     @Override
+    public List<IndexProviderDescriptor> indexProvidersByType(IndexType indexType) {
+        ktx.assertOpen();
+        return indexProviders.indexProvidersByType(indexType);
+    }
+
+    @Override
     public IndexDescriptor indexCreate(IndexPrototype prototype) throws KernelException {
         IndexType indexType = prototype.getIndexType();
         if ((indexType == IndexType.TEXT || indexType == IndexType.POINT)

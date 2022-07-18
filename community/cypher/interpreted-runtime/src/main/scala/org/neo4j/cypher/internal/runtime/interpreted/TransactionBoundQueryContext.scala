@@ -95,7 +95,6 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.internal.kernel.api.SchemaReadCore
-import org.neo4j.internal.kernel.api.SchemaWrite
 import org.neo4j.internal.kernel.api.TokenPredicate
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.TokenReadSession
@@ -114,7 +113,9 @@ import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.kernel.api.StatementConstants
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException
+import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.QueryExecutionEngine
@@ -200,6 +201,49 @@ sealed class TransactionBoundQueryContext(
     val ids = new Array[Int](propertyKeys.length)
     tokenWrite.propertyKeyGetOrCreateForNames(propertyKeys, ids)
     ids
+  }
+
+  override def validateIndexProvider(
+    schemaDescription: String,
+    providerString: String,
+    indexType: IndexType
+  ): IndexProviderDescriptor = {
+    val schemaWrite = transactionalContext.schemaWrite
+    try {
+      val providerDescriptor = schemaWrite.indexProviderByName(providerString)
+      val providerIndexType = schemaWrite.indexTypeByProviderName(providerString)
+
+      if (!providerIndexType.equals(indexType)) {
+        val indexProviders =
+          schemaWrite.indexProvidersByType(indexType).asScala.toList.map(_.name()).mkString("['", "', '", "']")
+        val indexDescription = if (providerIndexType.isLookup) "token lookup" else providerIndexType.name().toLowerCase
+        throw new InvalidArgumentsException(
+          s"""Could not create $schemaDescription with specified index provider '$providerString'.
+             |To create $indexDescription index, please use 'CREATE $providerIndexType INDEX ...'.
+             |The available index providers for the given type: $indexProviders.""".stripMargin
+        )
+      }
+
+      providerDescriptor
+    } catch {
+      case e: IndexProviderNotFoundException =>
+        val indexProviders =
+          schemaWrite.indexProvidersByType(indexType).asScala.toList.map(_.name()).mkString("['", "', '", "']")
+        // Throw nicer error on old providers
+        val message =
+          if (
+            providerString.equalsIgnoreCase("native-btree-1.0") ||
+            providerString.equalsIgnoreCase("lucene+native-3.0")
+          )
+            s"""Could not create $schemaDescription with specified index provider '$providerString'.
+               |Invalid index type b-tree, use range, point or text index instead.
+               |The available index providers for the given type: $indexProviders.""".stripMargin
+          else
+            s"""Could not create $schemaDescription with specified index provider '$providerString'.
+               |The available index providers for the given type: $indexProviders.""".stripMargin
+
+        throw new InvalidArgumentsException(message, e)
+    }
   }
 
   override def addRangeIndexRule(
@@ -311,44 +355,35 @@ sealed class TransactionBoundQueryContext(
     labelId: Int,
     propertyKeyIds: Seq[Int],
     name: Option[String],
-    provider: Option[String],
-    indexConfig: IndexConfig
+    provider: Option[IndexProviderDescriptor]
   ): Unit = {
-    val schemaWrite = transactionalContext.schemaWrite
-    val indexPrototype = getUniqueIndexPrototype(labelId, propertyKeyIds, name, provider, indexConfig, schemaWrite)
-    schemaWrite.nodeKeyConstraintCreate(indexPrototype)
+    val indexPrototype = getUniqueIndexPrototype(labelId, propertyKeyIds, name, provider)
+    transactionalContext.schemaWrite.nodeKeyConstraintCreate(indexPrototype)
   }
 
   override def createUniqueConstraint(
     labelId: Int,
     propertyKeyIds: Seq[Int],
     name: Option[String],
-    provider: Option[String],
-    indexConfig: IndexConfig
+    provider: Option[IndexProviderDescriptor]
   ): Unit = {
-    val schemaWrite = transactionalContext.schemaWrite
-    val indexPrototype = getUniqueIndexPrototype(labelId, propertyKeyIds, name, provider, indexConfig, schemaWrite)
-    schemaWrite.uniquePropertyConstraintCreate(indexPrototype)
+    val indexPrototype = getUniqueIndexPrototype(labelId, propertyKeyIds, name, provider)
+    transactionalContext.schemaWrite.uniquePropertyConstraintCreate(indexPrototype)
   }
 
   private def getUniqueIndexPrototype(
     labelId: Int,
     propertyKeyIds: Seq[Int],
     name: Option[String],
-    provider: Option[String],
-    indexConfig: IndexConfig,
-    schemaWrite: SchemaWrite
+    provider: Option[IndexProviderDescriptor]
   ) = {
     val descriptor = SchemaDescriptors.forLabel(labelId, propertyKeyIds: _*)
-    val providerAndType =
-      provider.map(p => (schemaWrite.indexProviderByName(p), schemaWrite.indexTypeByProviderName(p)))
 
-    val indexPrototype = providerAndType.map { case (provider, indexType) =>
-      IndexPrototype.uniqueForSchema(descriptor, provider).withIndexType(indexType)
-    }
-      .getOrElse(IndexPrototype.uniqueForSchema(descriptor))
+    val indexPrototype =
+      provider.map(provider => IndexPrototype.uniqueForSchema(descriptor, provider))
+        .getOrElse(IndexPrototype.uniqueForSchema(descriptor))
 
-    indexPrototype.withName(name.orNull).withIndexConfig(indexConfig)
+    indexPrototype.withName(name.orNull)
   }
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit =

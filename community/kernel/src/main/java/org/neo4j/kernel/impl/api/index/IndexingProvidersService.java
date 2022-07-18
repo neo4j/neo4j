@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.List;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -42,6 +43,15 @@ public interface IndexingProvidersService extends IndexConfigCompleter {
      * @param providerName name of the index provider to get matching index type for
      */
     IndexType indexTypeByProviderName(String providerName);
+
+    /**
+     * Get all the index providers that has support for the given {@link IndexType}.
+     *
+     * @param indexType {@link IndexType} to find index providers for
+     * @return List of all {@link IndexProviderDescriptor} that describe index provider with support for the given
+     * index type.
+     */
+    List<IndexProviderDescriptor> indexProvidersByType(IndexType indexType);
 
     /**
      * Validate that the given value tuple can be stored in the index associated with the given schema.

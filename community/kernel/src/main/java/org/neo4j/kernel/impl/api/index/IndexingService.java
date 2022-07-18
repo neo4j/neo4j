@@ -467,6 +467,13 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         return providerMap.lookup(providerName).getIndexType();
     }
 
+    @Override
+    public List<IndexProviderDescriptor> indexProvidersByType(IndexType indexType) {
+        return providerMap.lookup(indexType).stream()
+                .map(IndexProvider::getProviderDescriptor)
+                .toList();
+    }
+
     /**
      * Applies the given updates, which may contain updates for one or more indexes.
      *

@@ -38,15 +38,19 @@ import org.neo4j.internal.kernel.api.procs.ProcedureSignature
 import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature
 import org.neo4j.internal.kernel.api.security.LoginContext
+import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.Kernel
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.KernelTransaction.Type
+import org.neo4j.kernel.api.index.IndexProvider
 import org.neo4j.kernel.api.procedure.CallableProcedure
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction
 import org.neo4j.kernel.api.procedure.CallableUserFunction
 import org.neo4j.kernel.api.procedure.GlobalProcedures
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory
+import org.neo4j.kernel.impl.index.schema.BuiltInDelegatingIndexProviderFactory
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.logging.NullLogProvider
 import org.neo4j.monitoring.Monitors
@@ -88,18 +92,26 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   protected def startGraphDatabase(
     config: Map[Setting[_], Object] = databaseConfig(),
-    maybeExternalDatabase: Option[(String, String)] = externalDatabase
+    maybeExternalDatabase: Option[(String, String)] = externalDatabase,
+    maybeProvider: Option[(AbstractIndexProviderFactory[_ <: IndexProvider], IndexProviderDescriptor)] = None
   ): Unit = {
-    maybeExternalDatabase match {
+    val (databaseFactory, dbName) = maybeExternalDatabase match {
       case Some((url, databaseName)) =>
-        managementService =
-          graphDatabaseFactory(Path.of(url)).setConfig(config.asJava).setInternalLogProvider(logProvider).build()
-        graphOps = managementService.database(databaseName)
+        (graphDatabaseFactory(Path.of(url)), databaseName)
       case _ =>
-        managementService = graphDatabaseFactory(Files.createTempDirectory("test").getParent).impermanent()
-          .setConfig(config.asJava).setInternalLogProvider(logProvider).build()
-        graphOps = managementService.database(DEFAULT_DATABASE_NAME)
+        (graphDatabaseFactory(Files.createTempDirectory("test").getParent).impermanent(), DEFAULT_DATABASE_NAME)
     }
+
+    val updatedDatabaseFactory = maybeProvider match {
+      case Some((providerFactory, descriptor)) =>
+        databaseFactory.addExtension(new BuiltInDelegatingIndexProviderFactory(providerFactory, descriptor))
+      case None => databaseFactory
+    }
+
+    managementService =
+      updatedDatabaseFactory.setConfig(config.asJava).setInternalLogProvider(logProvider).build()
+    graphOps = managementService.database(dbName)
+
     graph = new GraphDatabaseCypherService(graphOps)
     onNewGraphDatabase()
   }
@@ -157,6 +169,14 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   protected def restartWithConfig(config: Map[Setting[_], Object] = databaseConfig()): Unit = {
     managementService.shutdown()
     startGraphDatabase(config)
+  }
+
+  protected def restartWithIndexProvider(
+    factory: AbstractIndexProviderFactory[_ <: IndexProvider],
+    provider: IndexProviderDescriptor
+  ): Unit = {
+    managementService.shutdown()
+    startGraphDatabase(maybeProvider = Some((factory, provider)))
   }
 
   override protected def stopTest(): Unit = {

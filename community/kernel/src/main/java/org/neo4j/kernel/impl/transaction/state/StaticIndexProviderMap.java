@@ -21,12 +21,15 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import static java.util.Objects.requireNonNull;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -40,6 +43,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 public class StaticIndexProviderMap extends LifecycleAdapter implements IndexProviderMap {
     private final Map<IndexProviderDescriptor, IndexProvider> indexProvidersByDescriptor = new HashMap<>();
     private final Map<String, IndexProvider> indexProvidersByName = new HashMap<>();
+    private final Map<IndexType, List<IndexProvider>> indexProvidersByType = new HashMap<>();
     private final IndexProvider tokenIndexProvider;
     private final IndexProvider textIndexProvider;
     private final IndexProvider fulltextIndexProvider;
@@ -112,6 +116,13 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
     }
 
     @Override
+    public List<IndexProvider> lookup(IndexType indexType) {
+        var indexProviders = indexProvidersByType.get(indexType);
+        assertProviderFoundByType(indexProviders, indexType);
+        return indexProviders;
+    }
+
+    @Override
     public void accept(Consumer<IndexProvider> visitor) {
         indexProvidersByDescriptor.values().forEach(visitor);
     }
@@ -122,6 +133,24 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
                     + " whereas available providers in this session being "
                     + indexProvidersByName.keySet() + ", and default being "
                     + rangeIndexProvider.getProviderDescriptor().name());
+        }
+    }
+
+    private void assertProviderFoundByType(List<IndexProvider> indexProviders, IndexType indexType) {
+        if (indexProviders == null) {
+            var providerNamesByType = indexProvidersByType.entrySet().stream()
+                    .map(entry -> {
+                        var type = entry.getKey();
+                        var providers = entry.getValue();
+                        return "" + type + "="
+                                + providers.stream()
+                                        .map(provider ->
+                                                provider.getProviderDescriptor().name())
+                                        .toList();
+                    })
+                    .toList();
+            throw new IndexProviderNotFoundException("Tried to get index providers for index type " + indexType
+                    + " but could not find any. Available index providers per type are " + providerNamesByType);
         }
     }
 
@@ -141,5 +170,8 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
                             + providerDescriptor + ". First loaded " + existing + " then " + provider);
         }
         indexProvidersByName.putIfAbsent(providerDescriptor.name(), provider);
+        indexProvidersByType
+                .computeIfAbsent(provider.getIndexType(), it -> new ArrayList<>())
+                .add(provider);
     }
 }
