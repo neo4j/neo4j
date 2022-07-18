@@ -19,8 +19,6 @@
  */
 package org.neo4j.dbms.database;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.Mode;
-
 import org.neo4j.collection.Dependencies;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -42,6 +40,4 @@ public interface DatabaseContext {
     }
 
     GraphDatabaseFacade databaseFacade();
-
-    Mode mode();
 }

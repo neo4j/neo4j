@@ -26,25 +26,21 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.GraphDatabaseSettings.Mode;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 public interface TopologyGraphDbmsModel {
     enum HostedOnMode {
-        RAFT(1, GraphDatabaseSettings.Mode.CORE, "raft"),
-        REPLICA(2, GraphDatabaseSettings.Mode.READ_REPLICA, "replica"),
-        SINGLE(0, GraphDatabaseSettings.Mode.SINGLE, "single");
+        RAFT(1, "raft"),
+        REPLICA(2, "replica"),
+        SINGLE(0, "single");
 
-        private final GraphDatabaseSettings.Mode instanceMode;
         private final String modeName;
         private final byte code;
 
-        HostedOnMode(int code, GraphDatabaseSettings.Mode instanceMode, String modeName) {
+        HostedOnMode(int code, String modeName) {
             this.code = (byte) code;
-            this.instanceMode = instanceMode;
             this.modeName = modeName;
         }
 
@@ -52,21 +48,8 @@ public interface TopologyGraphDbmsModel {
             return modeName;
         }
 
-        public GraphDatabaseSettings.Mode instanceMode() {
-            return instanceMode;
-        }
-
         public byte code() {
             return code;
-        }
-
-        public static HostedOnMode from(GraphDatabaseSettings.Mode instanceMode) {
-            for (HostedOnMode mode : values()) {
-                if (mode.instanceMode == instanceMode) {
-                    return mode;
-                }
-            }
-            throw new IllegalArgumentException("Invalid instance mode found: " + instanceMode);
         }
 
         public static HostedOnMode from(String modeName) {
@@ -85,21 +68,6 @@ public interface TopologyGraphDbmsModel {
                     .filter(value -> value.code == code)
                     .findFirst()
                     .orElseThrow(() -> new IllegalArgumentException("Invalid hosted on mode: " + code));
-        }
-
-        public static HostedOnMode lookup(InstanceModeConstraint modeConstraint) {
-            switch (modeConstraint) {
-                case PRIMARY -> {
-                    return HostedOnMode.RAFT;
-                }
-                case SECONDARY -> {
-                    return HostedOnMode.REPLICA;
-                }
-                case SINGLE -> {
-                    return HostedOnMode.SINGLE;
-                }
-                default -> throw new IllegalArgumentException("Mode constraint not supported: " + modeConstraint);
-            }
         }
     }
 
@@ -144,43 +112,6 @@ public interface TopologyGraphDbmsModel {
                 return InstanceStatus.DEALLOCATING;
             }
             return InstanceStatus.valueOf(value);
-        }
-    }
-
-    enum InstanceModeConstraint {
-        PRIMARY,
-        SECONDARY,
-        // Temporary value, to be removed when mode goes away.
-        SINGLE,
-        NONE;
-
-        public static InstanceModeConstraint lookupFromMode(Mode mode) {
-            switch (mode) {
-                case CORE -> {
-                    return InstanceModeConstraint.PRIMARY;
-                }
-                case READ_REPLICA -> {
-                    return InstanceModeConstraint.SECONDARY;
-                }
-                case SINGLE -> {
-                    return InstanceModeConstraint.SINGLE;
-                }
-                default -> throw new IllegalArgumentException("Can't find instance constraint for " + mode.name());
-            }
-        }
-
-        /**
-         * Does this mode constraint allow a database in the specified mode.
-         */
-        public boolean allowsMode(HostedOnMode mode) {
-            if (this == NONE) {
-                return true;
-            }
-            return switch (mode) {
-                case RAFT -> this == PRIMARY;
-                case REPLICA -> this == SECONDARY;
-                case SINGLE -> this == SINGLE || this == PRIMARY;
-            };
         }
     }
 
@@ -272,7 +203,7 @@ public interface TopologyGraphDbmsModel {
 
     /**
      * Fetches the {@link NamedDatabaseId} corresponding to the provided alias, if one exists in this DBMS.
-     *
+     * <p>
      * Note: The returned id will have its *true* name (primary alias), rather than the provided databaseName, which may be an (secondary) alias.
      *
      * @param databaseName the database alias to resolve a {@link NamedDatabaseId} for.

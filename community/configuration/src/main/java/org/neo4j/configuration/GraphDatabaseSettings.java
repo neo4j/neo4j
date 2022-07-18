@@ -189,13 +189,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .dynamic()
             .build();
 
-    @Description(
-            "Configure the operating mode of the database -- 'SINGLE' for stand-alone operation, "
-                    + "'CORE' for operating as a core member of a Causal Cluster, "
-                    + "or 'READ_REPLICA' for operating as a read replica member of a Causal Cluster. Only SINGLE mode is allowed in Community")
-    public static final Setting<Mode> mode =
-            newBuilder("dbms.mode", ofEnum(Mode.class), Mode.SINGLE).build();
-
     @Description("Use server side routing by default for neo4j:// protocol connections")
     public static final Setting<RoutingMode> routing_default_router = newBuilder(
                     "dbms.routing.default_router", ofEnum(RoutingMode.class), RoutingMode.CLIENT)
@@ -1091,12 +1084,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .withMap(ConnectorDefaults.SERVER_CONNECTOR_DEFAULTS)
             .withKeyValue(auth_enabled, true)
             .withKeyValue(cypher_render_plan_descriptions, true);
-
-    public enum Mode {
-        SINGLE,
-        CORE,
-        READ_REPLICA
-    }
 
     public enum RoutingMode {
         SERVER,
