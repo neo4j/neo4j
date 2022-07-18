@@ -48,6 +48,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.watcher.FileWatchEventListener;
 import org.neo4j.io.fs.watcher.FileWatcher;
+import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -91,7 +92,10 @@ class FileWatchIT {
 
     @Test
     void notifyAboutStoreFileDeletion() throws IOException, InterruptedException {
-        String fileName = databaseLayout.metadataStore().getFileName().toString();
+        String fileName = databaseLayout
+                .pathForStore(CommonDatabaseStores.METADATA)
+                .getFileName()
+                .toString();
         FileWatcher fileWatcher = getFileWatcher(database);
         CheckPointer checkpointer = getCheckpointer(database);
         DeletionLatchEventListener deletionListener = new DeletionLatchEventListener(fileName);

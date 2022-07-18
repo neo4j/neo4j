@@ -33,6 +33,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
+import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -203,10 +204,9 @@ class RecordDatabaseLayoutTest {
 
     @Test
     void allFilesContainsIdFileIfPresent() {
-
         RecordDatabaseFile nodeStore = RecordDatabaseFile.NODE_STORE;
         List<Path> allNodeStoreFile = layout.allFiles(nodeStore).collect(toList());
-        Path nodeStoreIdFile = layout.idFile(nodeStore).get();
+        Path nodeStoreIdFile = layout.idFile(nodeStore).orElseThrow();
         assertThat(allNodeStoreFile).contains(nodeStoreIdFile);
     }
 
@@ -217,7 +217,7 @@ class RecordDatabaseLayoutTest {
             assertNotNull(layout.file(databaseFile));
         }
 
-        Path metadata = layout.file(RecordDatabaseFile.METADATA_STORE);
+        Path metadata = layout.pathForStore(CommonDatabaseStores.METADATA);
         assertEquals("neostore", metadata.getFileName().toString());
     }
 

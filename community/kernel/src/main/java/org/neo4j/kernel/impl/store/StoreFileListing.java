@@ -33,6 +33,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -75,7 +76,7 @@ public class StoreFileListing implements FileStoreProviderRegistry {
     private void placeMetaDataStoreLast(List<StoreFileMetadata> files) {
         int index = 0;
         for (StoreFileMetadata file : files) {
-            if (databaseLayout.metadataStore().equals(file.path())) {
+            if (databaseLayout.pathForStore(CommonDatabaseStores.METADATA).equals(file.path())) {
                 break;
             }
             index++;
@@ -208,7 +209,7 @@ public class StoreFileListing implements FileStoreProviderRegistry {
                 try {
                     IOUtils.closeAll(resources);
                 } catch (IOException e1) {
-                    e = Exceptions.chain(e, e1);
+                    throw Exceptions.chain(e, e1);
                 }
                 throw e;
             }

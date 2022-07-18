@@ -148,9 +148,9 @@ public class Loader {
     }
 
     private static void checkDatabasePresence(DatabaseLayout databaseLayout) throws FileAlreadyExistsException {
-        if (Files.exists(databaseLayout.metadataStore())) {
+        if (Files.exists(databaseLayout.pathForExistsMarker())) {
             throw new FileAlreadyExistsException(
-                    databaseLayout.metadataStore().toAbsolutePath().toString());
+                    databaseLayout.pathForExistsMarker().toAbsolutePath().toString());
         }
     }
 

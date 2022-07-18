@@ -1595,7 +1595,7 @@ class RecoveryIT {
 
     private static Path getStoreFile(DatabaseLayout layout) {
         Set<Path> files = new HashSet<>(layout.storeFiles());
-        files.remove(layout.metadataStore());
+        files.remove(layout.pathForStore(CommonDatabaseStores.METADATA));
         files.remove(layout.pathForStore(CommonDatabaseStores.INDEX_STATISTICS));
         return getFirstSortedOnName(files);
     }

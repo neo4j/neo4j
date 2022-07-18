@@ -45,7 +45,9 @@ import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
@@ -64,19 +66,20 @@ class DatabaseStartupTest {
     FileSystemAbstraction fs;
 
     @Inject
-    private DatabaseLayout databaseLayout;
+    private Neo4jLayout neoLayout;
 
     @Test
     void startDatabaseWithWrongVersionShouldFail() throws Throwable {
         // given
         // create a store
 
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(neoLayout).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
         try (Transaction tx = db.beginTx()) {
             tx.createNode();
             tx.commit();
         }
+        DatabaseLayout databaseLayout = db.databaseLayout();
         managementService.shutdown();
 
         // mess up the version in the metadatastore
@@ -84,7 +87,10 @@ class DatabaseStartupTest {
                 ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
                 PageCache pageCache = createPageCache(fileSystem, scheduler, PageCacheTracer.NULL)) {
             var fieldAccess = MetaDataStore.getFieldAccess(
-                    pageCache, databaseLayout.metadataStore(), databaseLayout.getDatabaseName(), NULL_CONTEXT);
+                    pageCache,
+                    databaseLayout.pathForStore(CommonDatabaseStores.METADATA),
+                    databaseLayout.getDatabaseName(),
+                    NULL_CONTEXT);
             StoreId originalId = fieldAccess.readStoreId();
             fieldAccess.writeStoreId(
                     new StoreId(originalId.getCreationTime(), originalId.getRandom(), "bad", "even_worse", 1, 1));
@@ -112,7 +118,7 @@ class DatabaseStartupTest {
     @Test
     void startDatabaseWithWrongTransactionFilesShouldFail() throws IOException {
         // Create a store
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(neoLayout).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
         DatabaseLayout databaseLayout = db.databaseLayout();
         try (Transaction tx = db.beginTx()) {
@@ -126,7 +132,10 @@ class DatabaseStartupTest {
                 ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
                 PageCache pageCache = createPageCache(fileSystem, scheduler, PageCacheTracer.NULL)) {
             var fieldAccess = MetaDataStore.getFieldAccess(
-                    pageCache, databaseLayout.metadataStore(), databaseLayout.getDatabaseName(), NULL_CONTEXT);
+                    pageCache,
+                    databaseLayout.pathForStore(CommonDatabaseStores.METADATA),
+                    databaseLayout.getDatabaseName(),
+                    NULL_CONTEXT);
             StoreId originalId = fieldAccess.readStoreId();
             fieldAccess.writeStoreId(new StoreId(
                     System.currentTimeMillis() + 1,
@@ -156,7 +165,7 @@ class DatabaseStartupTest {
     @Test
     void startDatabaseWithoutStoreFilesAndWithTransactionLogFilesFailure() throws IOException {
         // Create a store
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(neoLayout).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
         DatabaseLayout databaseLayout = db.databaseLayout();
         try (Transaction tx = db.beginTx()) {
@@ -208,7 +217,7 @@ class DatabaseStartupTest {
     @Test
     void dumpSystemDiagnosticLoggingOnStartup() {
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(databaseLayout)
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(neoLayout)
                 .setInternalLogProvider(logProvider)
                 .setConfig(GraphDatabaseInternalSettings.dump_diagnostics, true)
                 .build();

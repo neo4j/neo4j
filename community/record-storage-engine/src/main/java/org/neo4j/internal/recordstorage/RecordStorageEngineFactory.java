@@ -166,7 +166,10 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext)
             throws IOException {
         MetaDataStore.FieldAccess fieldAccess = MetaDataStore.getFieldAccess(
-                pageCache, databaseLayout.metadataStore(), databaseLayout.getDatabaseName(), cursorContext);
+                pageCache,
+                formatSpecificDatabaseLayout(databaseLayout).metadataStore(),
+                databaseLayout.getDatabaseName(),
+                cursorContext);
         return fieldAccess.readStoreId();
     }
 

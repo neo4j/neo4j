@@ -229,7 +229,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
 
                 IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory(
                         fileSystem, immediate(), pageCacheTracer, migrationLayout.getDatabaseName());
-                IdGeneratorFactory srcIdGeneratorFactory = new ScanOnOpenReadOnlyIdGeneratorFactory();
 
                 StoreFactory dstFactory = createStoreFactory(migrationLayout, newFormat, idGeneratorFactory);
 

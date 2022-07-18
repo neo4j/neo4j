@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -90,7 +91,7 @@ class StoreFileListingTest {
         String indexDir = "indexes";
         IndexingService indexingService = mock(IndexingService.class);
         DatabaseLayout databaseLayout = mock(DatabaseLayout.class);
-        when(databaseLayout.metadataStore()).thenReturn(mock(Path.class));
+        when(databaseLayout.pathForStore(eq(CommonDatabaseStores.METADATA))).thenReturn(mock(Path.class));
         LogFiles logFiles = mock(LogFiles.class);
         filesInStoreDirAre(databaseLayout, indexDir);
         StorageEngine storageEngine = mock(StorageEngine.class);
@@ -114,13 +115,13 @@ class StoreFileListingTest {
     @Test
     void shouldListMetaDataStoreLast() throws Exception {
         StoreFileMetadata fileMetadata = Iterators.last(database.listStoreFiles(false));
-        assertEquals(fileMetadata.path(), database.getDatabaseLayout().metadataStore());
+        assertEquals(fileMetadata.path(), database.getDatabaseLayout().pathForStore(CommonDatabaseStores.METADATA));
     }
 
     @Test
     void shouldListMetaDataStoreLastWithTxLogs() throws Exception {
         StoreFileMetadata fileMetadata = Iterators.last(database.listStoreFiles(true));
-        assertEquals(fileMetadata.path(), database.getDatabaseLayout().metadataStore());
+        assertEquals(fileMetadata.path(), database.getDatabaseLayout().pathForStore(CommonDatabaseStores.METADATA));
     }
 
     @Test

@@ -88,11 +88,12 @@ class KernelDiagnosticsTest {
         //   storeDir/neostore (3 kB)
         Path storeDir = testDirectory.directory("storedir");
         DatabaseLayout layout = DatabaseLayout.ofFlat(storeDir);
+        Path metadataStore = layout.databaseDirectory().resolve("metadata.store");
         Path indexDir = directory(storeDir, "indexDir");
         file(indexDir, "indexFile", (int) kibiBytes(1));
-        file(storeDir, layout.metadataStore().getFileName().toString(), (int) kibiBytes(3));
+        file(storeDir, metadataStore.getFileName().toString(), (int) kibiBytes(3));
         StorageEngineFactory storageEngineFactory = mock(StorageEngineFactory.class);
-        when(storageEngineFactory.listStorageFiles(any(), any())).thenReturn(singletonList(layout.metadataStore()));
+        when(storageEngineFactory.listStorageFiles(any(), any())).thenReturn(singletonList(metadataStore));
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
         StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics(storageEngineFactory, fs, layout);

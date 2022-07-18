@@ -36,6 +36,7 @@ import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -87,14 +88,14 @@ class RecordStoreMigratorTest {
     void shouldNotMigrateFilesForVersionsWithSameCapability() throws Exception {
         // Prepare migrator and file
         RecordStorageMigrator migrator = newStoreMigrator();
-        DatabaseLayout dbLayout = databaseLayout;
+        RecordDatabaseLayout dbLayout = RecordDatabaseLayout.convert(databaseLayout);
         Path neoStore = dbLayout.metadataStore();
         Files.createFile(neoStore);
 
         // Monitor what happens
         MyProgressReporter progressReporter = new MyProgressReporter();
         // Migrate with two storeversions that have the same FORMAT capabilities
-        DatabaseLayout migrationLayout = neo4jLayout.databaseLayout("migrationDir");
+        RecordDatabaseLayout migrationLayout = RecordDatabaseLayout.convert(neo4jLayout.databaseLayout("migrationDir"));
         fileSystem.mkdirs(migrationLayout.databaseDirectory());
 
         var format = Standard.LATEST_RECORD_FORMATS;
