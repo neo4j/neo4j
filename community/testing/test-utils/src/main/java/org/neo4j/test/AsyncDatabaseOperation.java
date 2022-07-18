@@ -19,6 +19,10 @@
  */
 package org.neo4j.test;
 
+import java.time.Duration;
+import java.util.Objects;
+import org.awaitility.Awaitility;
+import org.awaitility.core.ConditionTimeoutException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -28,18 +32,24 @@ public class AsyncDatabaseOperation {
 
     public static GraphDatabaseService findDatabaseEventually(
             DatabaseManagementService managementService, String databaseName) {
-        // wait maximal 10 seconds
-        for (int i = 0; i < 200; i++) {
-            try {
-                return managementService.database(databaseName);
-            } catch (DatabaseNotFoundException e) {
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException ex) {
-                    // ignore
-                }
-            }
+        return findDatabaseEventually(managementService, databaseName, Duration.ofSeconds(10));
+    }
+
+    public static GraphDatabaseService findDatabaseEventually(
+            DatabaseManagementService managementService, String databaseName, Duration timeout) {
+        try {
+            return Awaitility.await()
+                    .atMost(timeout)
+                    .ignoreException(DatabaseNotFoundException.class)
+                    .between(Duration.ofMillis(50), timeout)
+                    .until(() -> findDatabase(managementService, databaseName), Objects::nonNull);
+        } catch (ConditionTimeoutException e) {
+            throw new DatabaseNotFoundException(databaseName);
         }
-        throw new DatabaseNotFoundException(databaseName);
+    }
+
+    private static GraphDatabaseService findDatabase(DatabaseManagementService managementService, String databaseName) {
+        var database = managementService.database(databaseName);
+        return database.isAvailable() ? database : null;
     }
 }
