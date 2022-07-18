@@ -73,4 +73,9 @@ public class ConsistencyCheckOptions {
     public boolean isCheckIndexStructure() {
         return checkIndexStructure;
     }
+
+    public ConsistencyFlags toFlags() {
+        // counts and big property checks are not exposed via API
+        return ConsistencyFlags.create(checkGraph, checkIndexes, checkIndexStructure);
+    }
 }

@@ -41,7 +41,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
-import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -142,12 +141,7 @@ public class CheckConsistencyCommand extends AbstractCommand {
                             .with(fileSystem)
                             .verbose(verbose)
                             .with(options.getReportDir().normalize())
-                            // counts check is not exposed via API
-                            .with(new ConsistencyFlags(
-                                    options.isCheckGraph(),
-                                    options.isCheckIndexes(),
-                                    options.isCheckIndexStructure(),
-                                    true))
+                            .with(options.toFlags())
                             .runFullConsistencyCheck();
                 }
 

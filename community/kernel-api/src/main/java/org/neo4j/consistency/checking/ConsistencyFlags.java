@@ -19,41 +19,59 @@
  */
 package org.neo4j.consistency.checking;
 
+@SuppressWarnings("unused")
 public record ConsistencyFlags(
-        boolean checkGraph, boolean checkIndexes, boolean checkIndexStructure, boolean checkCounts) {
-    public static final ConsistencyFlags NONE = new ConsistencyFlags(false, false, false, false);
-    public static final ConsistencyFlags ALL = new ConsistencyFlags(true, true, true, true);
-    public static final ConsistencyFlags DEFAULT = ALL;
+        boolean checkGraph,
+        boolean checkIndexes,
+        boolean checkIndexStructure,
+        boolean checkCounts,
+        boolean checkPropertyValues) {
+    public static final ConsistencyFlags NONE = new ConsistencyFlags(false, false, false, false, false);
+    public static final ConsistencyFlags ALL = new ConsistencyFlags(true, true, true, true, true);
+    public static final ConsistencyFlags DEFAULT = ALL.withoutCheckPropertyValues();
+
+    public static ConsistencyFlags create(boolean checkGraph, boolean checkIndexes, boolean checkIndexStructure) {
+        return new ConsistencyFlags(
+                checkGraph, checkIndexes, checkIndexStructure, DEFAULT.checkCounts(), DEFAULT.checkPropertyValues());
+    }
 
     public ConsistencyFlags withCheckGraph() {
-        return new ConsistencyFlags(true, checkIndexes, checkIndexStructure, checkCounts);
+        return new ConsistencyFlags(true, checkIndexes, checkIndexStructure, checkCounts, checkPropertyValues);
     }
 
     public ConsistencyFlags withoutCheckGraph() {
-        return new ConsistencyFlags(false, checkIndexes, checkIndexStructure, checkCounts);
+        return new ConsistencyFlags(false, checkIndexes, checkIndexStructure, checkCounts, checkPropertyValues);
     }
 
     public ConsistencyFlags withCheckIndexes() {
-        return new ConsistencyFlags(checkGraph, true, checkIndexStructure, checkCounts);
+        return new ConsistencyFlags(checkGraph, true, checkIndexStructure, checkCounts, checkPropertyValues);
     }
 
     public ConsistencyFlags withoutCheckIndexes() {
-        return new ConsistencyFlags(checkGraph, false, checkIndexStructure, checkCounts);
+        return new ConsistencyFlags(checkGraph, false, checkIndexStructure, checkCounts, checkPropertyValues);
     }
 
     public ConsistencyFlags withCheckIndexStructure() {
-        return new ConsistencyFlags(checkGraph, checkIndexes, true, checkCounts);
+        return new ConsistencyFlags(checkGraph, checkIndexes, true, checkCounts, checkPropertyValues);
     }
 
     public ConsistencyFlags withoutCheckIndexStructure() {
-        return new ConsistencyFlags(checkGraph, checkIndexes, false, checkCounts);
+        return new ConsistencyFlags(checkGraph, checkIndexes, false, checkCounts, checkPropertyValues);
     }
 
     public ConsistencyFlags withCheckCounts() {
-        return new ConsistencyFlags(checkGraph, checkIndexes, checkIndexStructure, true);
+        return new ConsistencyFlags(checkGraph, checkIndexes, checkIndexStructure, true, checkPropertyValues);
     }
 
     public ConsistencyFlags withoutCheckCounts() {
-        return new ConsistencyFlags(checkGraph, checkIndexes, checkIndexStructure, false);
+        return new ConsistencyFlags(checkGraph, checkIndexes, checkIndexStructure, false, checkPropertyValues);
+    }
+
+    public ConsistencyFlags withCheckPropertyValues() {
+        return new ConsistencyFlags(checkGraph, checkIndexes, checkIndexStructure, checkCounts, true);
+    }
+
+    public ConsistencyFlags withoutCheckPropertyValues() {
+        return new ConsistencyFlags(checkGraph, checkIndexes, checkIndexStructure, checkCounts, false);
     }
 }

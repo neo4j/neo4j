@@ -21,6 +21,7 @@ package org.neo4j.commandline.dbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.consistency.checking.ConsistencyFlags.DEFAULT;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
@@ -259,7 +260,8 @@ class CheckConsistencyCommandIT {
                 "--check-index-structure=true");
         checkConsistencyCommand.execute();
 
-        consistencyCheckService.verifyArgument(ConsistencyFlags.class, new ConsistencyFlags(false, false, true, true));
+        consistencyCheckService.verifyArgument(
+                ConsistencyFlags.class, DEFAULT.withoutCheckGraph().withoutCheckIndexes());
     }
 
     @Test
