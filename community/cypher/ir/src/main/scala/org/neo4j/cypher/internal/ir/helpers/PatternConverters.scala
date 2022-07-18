@@ -44,8 +44,8 @@ object PatternConverters {
   }
 
   implicit class PatternElementDestructor(val pattern: PatternElement) extends AnyVal {
-    def destructed: DestructResult = pattern match {
-      case relchain: RelationshipChain => relchain.destructedRelationshipChain
+    def destructed(ignoreLabels: Boolean): DestructResult = pattern match {
+      case relchain: RelationshipChain => relchain.destructedRelationshipChain(ignoreLabels)
       case node: NodePattern           => node.destructedNodePattern
     }
   }
@@ -56,11 +56,11 @@ object PatternConverters {
   }
 
   implicit class RelationshipChainDestructor(val chain: RelationshipChain) extends AnyVal {
-    def destructedRelationshipChain: DestructResult = chain match {
+    def destructedRelationshipChain(ignorePropertiesLabelsAndPredicates: Boolean): DestructResult = chain match {
       // (a)->[r]->(b)
       case RelationshipChain(NodePattern(Some(leftNodeId), Seq(), None),
-                             RelationshipPattern(Some(relId), relTypes, length, None, direction, _),
-                             NodePattern(Some(rightNodeId), Seq(), None)) =>
+      RelationshipPattern(Some(relId), relTypes, length, None, direction, _),
+      NodePattern(Some(rightNodeId), Seq(), None)) =>
         val leftNode = leftNodeId.name
         val rightNode = rightNodeId.name
         val r = PatternRelationship(relId.name, (leftNode, rightNode), direction, relTypes, length.asPatternLength)
@@ -68,15 +68,36 @@ object PatternConverters {
 
       // ...->[r]->(b)
       case RelationshipChain(relChain: RelationshipChain,
-                             RelationshipPattern(Some(relId), relTypes, length, None, direction, _),
-                             NodePattern(Some(rightNodeId), Seq(), None)) =>
-        val destructed = relChain.destructedRelationshipChain
+      RelationshipPattern(Some(relId), relTypes, length, None, direction, _),
+      NodePattern(Some(rightNodeId), Seq(), None)) =>
+        val destructed = relChain.destructedRelationshipChain(ignorePropertiesLabelsAndPredicates)
         val leftNode = destructed.rels.last.right
         val rightNode = rightNodeId.name
         val newRel = PatternRelationship(relId.name, (leftNode, rightNode), direction, relTypes, length.asPatternLength)
         destructed.
           addNodeId(rightNode).
           addRel(newRel)
+
+      // ...->[r]->(b)
+      case RelationshipChain(relChain: RelationshipChain,
+      RelationshipPattern(Some(relId), relTypes, length, _, direction, _),
+      NodePattern(Some(rightNodeId), _, _)) if ignorePropertiesLabelsAndPredicates =>
+        val destructed = relChain.destructedRelationshipChain(ignorePropertiesLabelsAndPredicates)
+        val leftNode = destructed.rels.last.right
+        val rightNode = rightNodeId.name
+        val newRel = PatternRelationship(relId.name, (leftNode, rightNode), direction, relTypes, length.asPatternLength)
+        destructed
+          .addNodeId(rightNode)
+          .addRel(newRel)
+
+      // (a)->[r]->(b)
+      case RelationshipChain(NodePattern(Some(leftNodeId), _, _),
+      RelationshipPattern(Some(relId), relTypes, length, _, direction, _),
+      NodePattern(Some(rightNodeId), _, _)) if ignorePropertiesLabelsAndPredicates =>
+        val leftNode = leftNodeId.name
+        val rightNode = rightNodeId.name
+        val r = PatternRelationship(relId.name, (leftNode, rightNode), direction, relTypes, length.asPatternLength)
+        DestructResult(Seq(leftNode, rightNode), Seq(r), Seq.empty)
     }
   }
 
@@ -84,7 +105,7 @@ object PatternConverters {
     def destructed(anonymousVariableNameGenerator: AnonymousVariableNameGenerator): DestructResult = {
       pattern.patternParts.foldLeft(DestructResult.empty) {
         case (acc, NamedPatternPart(ident, sps@ShortestPaths(element, single))) =>
-          val destructedElement: DestructResult = element.destructed
+          val destructedElement: DestructResult = element.destructed(false)
           val pathName = ident.name
           val newShortest = ShortestPathPattern(Some(pathName), destructedElement.rels.head, single)(sps)
           acc.
@@ -92,14 +113,14 @@ object PatternConverters {
             addShortestPaths(newShortest)
 
         case (acc, sps@ShortestPaths(element, single)) =>
-          val destructedElement = element.destructed
+          val destructedElement = element.destructed(false)
           val newShortest = ShortestPathPattern(Some(anonymousVariableNameGenerator.nextName), destructedElement.rels.head, single)(sps)
           acc.
             addNodeId(destructedElement.nodeIds:_*).
             addShortestPaths(newShortest)
 
         case (acc, everyPath: EveryPath) =>
-          val destructedElement = everyPath.element.destructed
+          val destructedElement = everyPath.element.destructed(false)
           acc.
             addNodeId(destructedElement.nodeIds:_*).
             addRel(destructedElement.rels:_*)
