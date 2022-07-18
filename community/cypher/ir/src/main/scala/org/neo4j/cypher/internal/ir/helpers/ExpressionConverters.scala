@@ -24,106 +24,18 @@ import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasTypes
-import org.neo4j.cypher.internal.expressions.NodePatternExpression
-import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Range
-import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PatternLength
 import org.neo4j.cypher.internal.ir.Predicate
-import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
-import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternElementDestructor
-import org.neo4j.cypher.internal.macros.AssertMacros
-import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
-import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionsInPatternsNormalizer
-import org.neo4j.cypher.internal.rewriting.rewriters.MatchPredicateNormalizerChain
-import org.neo4j.cypher.internal.rewriting.rewriters.PropertyPredicateNormalizer
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
-import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.immutable.ListSet
 
 object ExpressionConverters {
-
-  private def normalizer(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) =
-    MatchPredicateNormalizerChain(
-      PropertyPredicateNormalizer(anonymousVariableNameGenerator),
-      LabelExpressionsInPatternsNormalizer
-    )
-
-  private def getQueryGraphArguments(expr: Expression, availableSymbols: Set[String]) = {
-    val dependencies = expr.dependencies.map(_.name)
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-      dependencies.subsetOf(availableSymbols),
-      s"Trying to plan a PatternExpression where a dependency is not available. Dependencies: $dependencies. Available: ${availableSymbols}"
-    )
-    dependencies
-  }
-
-  /**
-   * Turn a PatternExpression into a query graph.
-   *
-   * @param exp the pattern expression
-   * @param availableSymbols all symbols available in the outer scope. Only used to assert that all dependencies can be satisfied.
-   */
-  def asQueryGraph(
-    exp: PatternExpression,
-    availableSymbols: Set[String],
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-  ): QueryGraph = {
-    val addUniquenessPredicates = AddUniquenessPredicates(anonymousVariableNameGenerator)
-    val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
-    val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
-    val relChain: RelationshipChain = exp.pattern.element
-    val predicates: IndexedSeq[Expression] = relChain.folder.fold(uniquePredicates.toIndexedSeq) {
-      case pattern: AnyRef if normalizer(anonymousVariableNameGenerator).extract.isDefinedAt(pattern) =>
-        acc => acc ++ normalizer(anonymousVariableNameGenerator).extract(pattern)
-      case _ => identity
-    }
-
-    val rewrittenChain =
-      relChain.endoRewrite(topDown(Rewriter.lift(normalizer(anonymousVariableNameGenerator).replace)))
-
-    val patternContent = rewrittenChain.destructed
-    QueryGraph(
-      patternRelationships = patternContent.rels.toSet,
-      patternNodes = patternContent.nodeIds.toSet,
-      argumentIds = getQueryGraphArguments(exp, availableSymbols)
-    ).addPredicates(predicates: _*)
-  }
-
-  /**
-   * Turn a NodePatternExpression into a query graph
-   * @param exp the NodePatternExpression
-   * @param availableSymbols all symbols available in the outer scope. Unfortunately used to to intersect with wrongly computed dependencies.
-   */
-  def asQueryGraph(
-    exp: NodePatternExpression,
-    availableSymbols: Set[String],
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-  ): QueryGraph = {
-    val predicates: Seq[Expression] = exp.patterns.collect {
-      case pattern if normalizer(anonymousVariableNameGenerator).extract.isDefinedAt(pattern) =>
-        normalizer(anonymousVariableNameGenerator).extract(pattern)
-    }.flatten
-
-    val rewrittenPattern =
-      exp.patterns.map(_.endoRewrite(topDown(Rewriter.lift(normalizer(anonymousVariableNameGenerator).replace))))
-
-    // TODO it would be nicer to be able to use getQueryGraphArguments, but dependencies of NodePatternExpression are not correct
-    val dependencies = exp.dependencies.map(_.name)
-    val qgArguments = availableSymbols intersect dependencies
-
-    QueryGraph(
-      patternNodes = rewrittenPattern.map(_.variable.get.name).toSet,
-      argumentIds = qgArguments
-    ).addPredicates(predicates: _*)
-  }
 
   implicit class PredicateConverter(val predicate: Expression) extends AnyVal {
 
