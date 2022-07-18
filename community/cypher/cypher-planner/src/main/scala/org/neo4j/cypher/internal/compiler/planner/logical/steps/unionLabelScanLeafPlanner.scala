@@ -37,8 +37,7 @@ import scala.collection.immutable.ListSet
 
 case class unionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
 
-  private def variableIfAllEqualHasLabels(expressions: ListSet[Expression])
-    : Option[(Variable, Seq[LabelName])] = {
+  private def variableIfAllEqualHasLabels(expressions: ListSet[Expression]): Option[(Variable, Seq[LabelName])] = {
     val maybeSingleVar = expressions.headOption
       .collect {
         case HasLabels(variable: Variable, _) => variable
@@ -69,40 +68,32 @@ case class unionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
   ): Set[LogicalPlan] = {
     qg.selections.flatPredicatesSet.flatMap {
       case ors @ Ors(exprs) =>
-        variableIfAllEqualHasLabels(exprs) match {
-          case Some((variable, labels)) =>
-            if (
-              !skipIDs.contains(variable.name) &&
+        variableIfAllEqualHasLabels(exprs).collect {
+          case (variable, labels)
+            if !skipIDs.contains(variable.name) &&
               context.planContext.canLookupNodesByLabel &&
               qg.patternNodes(variable.name) &&
-              !qg.argumentIds(variable.name)
-            ) {
-
-              val hints = qg.hints.toSeq.collect {
-                case hint @ UsingScanHint(`variable`, LabelOrRelTypeName(labelName))
-                  if labels.map(_.name).contains(labelName) => hint
-              }
-
-              val providedOrder = ResultOrdering.providedOrderForLabelScan(
-                interestingOrderConfig.orderToSolve,
-                variable,
-                context.providedOrderFactory
-              )
-
-              val plan = context.logicalPlanProducer.planUnionNodeByLabelsScan(
-                variable,
-                labels,
-                Seq(ors),
-                hints,
-                qg.argumentIds,
-                providedOrder,
-                context
-              )
-              Some(plan)
-            } else {
-              None
+              !qg.argumentIds(variable.name) =>
+            val hints = qg.hints.toSeq.collect {
+              case hint @ UsingScanHint(`variable`, LabelOrRelTypeName(labelName))
+                if labels.map(_.name).contains(labelName) => hint
             }
-          case None => None
+
+            val providedOrder = ResultOrdering.providedOrderForLabelScan(
+              interestingOrderConfig.orderToSolve,
+              variable,
+              context.providedOrderFactory
+            )
+
+            context.logicalPlanProducer.planUnionNodeByLabelsScan(
+              variable,
+              labels,
+              Seq(ors),
+              hints,
+              qg.argumentIds,
+              providedOrder,
+              context
+            )
         }
       case _ =>
         None
