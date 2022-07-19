@@ -384,11 +384,9 @@ case class InterpretedPipeMapper(
         )(id = id)
 
       case DirectedAllRelationshipsScan(ident, fromNode, toNode, _) =>
-        indexRegistrator.registerTypeScan()
         DirectedAllRelationshipsScanPipe(ident, fromNode, toNode)(id = id)
 
       case UndirectedAllRelationshipsScan(ident, fromNode, toNode, _) =>
-        indexRegistrator.registerTypeScan()
         UndirectedAllRelationshipsScanPipe(ident, fromNode, toNode)(id = id)
 
       case DirectedRelationshipTypeScan(ident, fromNode, typ, toNode, _, indexOrder) =>

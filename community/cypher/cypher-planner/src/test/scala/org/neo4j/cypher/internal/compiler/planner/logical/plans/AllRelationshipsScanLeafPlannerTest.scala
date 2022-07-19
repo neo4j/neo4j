@@ -50,7 +50,7 @@ class AllRelationshipsScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   test("simple outgoing directed scan") {
     // given
     val context = planningContext()
-    // (a)-[:R]->(b)
+    // (a)-[r]->(b)
     val qg = pattern("r", "a", "b", OUTGOING)
 
     // when
@@ -65,7 +65,7 @@ class AllRelationshipsScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   test("simple incoming directed scan") {
     // given
     val context = planningContext()
-    // (a)<-[:R]-(b)
+    // (a)<-[r]-(b)
     val qg = pattern("r", "a", "b", INCOMING)
 
     // when
@@ -80,7 +80,7 @@ class AllRelationshipsScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   test("simple undirected scan") {
     // given
     val context = planningContext()
-    // (a)-[:R]-(b)
+    // (a)-[r]-(b)
     val qg = pattern("r", "a", "b", BOTH)
 
     // when
@@ -95,7 +95,7 @@ class AllRelationshipsScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   test("should not scan if pattern has types") {
     // given
     val context = planningContext()
-    // (a)-[:R1|R2]->(b)
+    // (a)-[r:R]->(b)
     val qg = pattern("r", "a", "b", OUTGOING, "R")
 
     // when
@@ -121,7 +121,7 @@ class AllRelationshipsScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   test("should not plan scan for skipped ids") {
     // given
     val context = planningContext()
-    // (a)-[:R]->(b)
+    // (a)-[r]->(b)
     val qg = pattern("r", "a", "b", OUTGOING)
 
     // then
@@ -132,7 +132,7 @@ class AllRelationshipsScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
   test("should not plan scan when rel id is in arguments") {
     // given
-    // (a)-[:R]->(b)
+    // (a)-[r]->(b)
     val context = planningContext()
     val qg = pattern("r", "a", "b", OUTGOING)
 
@@ -148,7 +148,7 @@ class AllRelationshipsScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     // given
     val context = planningContext(typeScanEnabled = false)
 
-    // (a)-[:R]->(b)
+    // (a)-[r]->(b)
     val qg = pattern("r", "a", "b", OUTGOING)
 
     // when
@@ -162,14 +162,14 @@ class AllRelationshipsScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
   private def pattern(name: String, from: String, to: String, direction: SemanticDirection, types: String*) =
     QueryGraph(
-      patternNodes = Set(name, from, to),
+      patternNodes = Set(from, to),
       patternRelationships =
         Set(PatternRelationship(name, (from, to), direction, types.map(relTypeName(_)), SimplePatternLength))
     )
 
   private def varPattern(name: String, from: String, to: String, direction: SemanticDirection, types: String*) =
     QueryGraph(
-      patternNodes = Set(name, from, to),
+      patternNodes = Set(from, to),
       patternRelationships =
         Set(PatternRelationship(name, (from, to), direction, types.map(relTypeName(_)), VarPatternLength(1, None)))
     )

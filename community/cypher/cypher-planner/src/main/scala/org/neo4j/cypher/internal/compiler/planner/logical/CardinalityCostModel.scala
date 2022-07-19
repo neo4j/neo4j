@@ -253,7 +253,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
       costForThisPlan + lhsCost + rhsCost
 
     // NOTE: Expand generally gets underestimated since they are treated as a middle operator
-    // like Selection and which doesn't reflect that for each row it creates it will read data from
+    // like Selection which doesn't reflect that for each row it creates it will read data from
     // the relationship store. This particular special case is just for making it more likely to plan
     // AllRelationshipsScan since we know they are always faster than doing AllNodes + Expan
     case Expand(_: AllNodesScan, _, _, types, _, _, mode) if types.isEmpty && mode == ExpandAll =>

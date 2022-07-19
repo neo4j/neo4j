@@ -1185,7 +1185,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
   testPlan(
     "allRelationshipsScan",
     new TestPlanBuilder()
-      .produceResults("x", "y")
+      .produceResults("x1", "y1")
       .apply()
       .|.allRelationshipsScan("(x2)-[r2]-(y2)", "x1", "r1", "y1")
       .allRelationshipsScan("(x1)-[r1]->(y1)")
