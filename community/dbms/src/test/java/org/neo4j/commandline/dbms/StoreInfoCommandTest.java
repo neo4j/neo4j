@@ -68,6 +68,7 @@ class StoreInfoCommandTest {
     private PrintStream out;
     private DatabaseLayout fooDbLayout;
     private Path homeDir;
+    private Path databasesRoot;
     private StorageEngineFactory storageEngineFactory;
     private StorageEngineFactory.Selector storageEngineSelector;
     private final TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
@@ -75,6 +76,7 @@ class StoreInfoCommandTest {
     @BeforeEach
     void setUp() throws Exception {
         homeDir = testDirectory.directory("home-dir");
+        databasesRoot = homeDir.resolve("data/databases");
         fooDbDirectory = homeDir.resolve("data/databases/foo");
         fooDbLayout = DatabaseLayout.ofFlat(fooDbDirectory);
         fileSystem.mkdirs(fooDbDirectory);
@@ -102,7 +104,8 @@ class StoreInfoCommandTest {
 
                 USAGE
 
-                info [--all] [--expand-commands] [--structured] [--verbose] <path>
+                info [--expand-commands] [--verbose] [--format=<structuredFormat>]
+                     [--from-path=<path>] [<database>]
 
                 DESCRIPTION
 
@@ -111,35 +114,42 @@ class StoreInfoCommandTest {
 
                 PARAMETERS
 
-                      <path>              Path to database store files, or databases directory
-                                            if --all option is used
+                      [<database>]         Name of the database to show info for. Can contain *
+                                             and ? for globbing.
+                                             Default: *
 
                 OPTIONS
 
-                      --all               Return store info for all databases at provided path
-                      --expand-commands   Allow command expansion in config value evaluation.
-                      --structured        Return result structured as json
-                      --verbose           Enable verbose output.""");
+                      --expand-commands    Allow command expansion in config value evaluation.
+                      --format=<structuredFormat>
+                                           The format of the returned information. Either
+                                             'text' or 'json'.
+                                             Default: text
+                      --from-path=<path>   Path to databases directory.
+                      --verbose            Enable verbose output.""");
     }
 
     @Test
-    void nonExistingDatabaseShouldThrow() {
-        var notADirArgs = args(Paths.get("yaba", "daba", "doo"), false, false);
+    void nonExistingDirShouldThrow() {
+        var notADirArgs = args(Paths.get("yaba", "daba", "doo"), true, "foo");
         CommandLine.populateCommand(command, notADirArgs);
         var notADirException = assertThrows(CommandFailedException.class, () -> command.execute());
         assertThat(notADirException.getMessage()).contains("must point to a directory");
+    }
 
-        var dir = testDirectory.directory("not-a-db");
-        var notADbArgs = args(dir, false, false);
-        CommandLine.populateCommand(command, notADbArgs);
-        var notADbException = assertThrows(CommandFailedException.class, () -> command.execute());
-        assertThat(notADbException.getMessage()).contains("does not contain the store files of a database");
+    @Test
+    void databaseDirShouldThrow() throws IOException {
+        prepareStore(fooDbLayout, "A", "v1", null, null, 5);
+        var dbDirArgs = args(fooDbDirectory, false, "");
+        CommandLine.populateCommand(command, dbDirArgs);
+        var dbDirException = assertThrows(CommandFailedException.class, () -> command.execute());
+        assertThat(dbDirException.getMessage()).contains("should point to the databases directory");
     }
 
     @Test
     void readsLatestStoreVersionCorrectly() throws IOException {
         prepareStore(fooDbLayout, "A", "v1", null, null, 5);
-        CommandLine.populateCommand(command, fooDbDirectory.toAbsolutePath().toString());
+        CommandLine.populateCommand(command, args(databasesRoot, true, "foo"));
         command.execute();
 
         verify(out)
@@ -151,7 +161,7 @@ class StoreInfoCommandTest {
     @Test
     void readsOlderStoreVersionCorrectly() throws IOException {
         prepareStore(fooDbLayout, "A", "v1", "B", "v2", 5);
-        CommandLine.populateCommand(command, fooDbDirectory.toAbsolutePath().toString());
+        CommandLine.populateCommand(command, args(databasesRoot, true, "foo"));
         command.execute();
 
         verify(out)
@@ -164,7 +174,7 @@ class StoreInfoCommandTest {
     void throwsOnUnknownVersion() throws IOException {
         prepareStore(fooDbLayout, "unknown", "v1", null, null, 3);
         when(storageEngineFactory.versionInformation(any(StoreId.class))).thenThrow(IllegalArgumentException.class);
-        CommandLine.populateCommand(command, fooDbDirectory.toAbsolutePath().toString());
+        CommandLine.populateCommand(command, args(databasesRoot, true, "foo"));
         var exception = assertThrows(Exception.class, () -> command.execute());
         assertThat(exception).hasRootCauseInstanceOf(IllegalArgumentException.class);
     }
@@ -174,7 +184,7 @@ class StoreInfoCommandTest {
         prepareStore(fooDbLayout, "A", "v1", null, null, 4);
         try (Locker locker = new DatabaseLocker(fileSystem, fooDbLayout)) {
             locker.checkLock();
-            CommandLine.populateCommand(command, fooDbDirectory.toAbsolutePath().toString());
+            CommandLine.populateCommand(command, args(databasesRoot, true, "foo"));
             var exception = assertThrows(Exception.class, () -> command.execute());
             assertEquals(
                     "Failed to execute command as the database 'foo' is in use. Please stop it and try again.",
@@ -191,7 +201,6 @@ class StoreInfoCommandTest {
 
         prepareStore(fooDbLayout, "A", "v1", null, null, 4);
         prepareStore(barDbLayout, "A", "v1", null, null, 5);
-        var databasesRoot = homeDir.resolve("data/databases");
 
         var expectedBar = expectedStructuredResult("bar", false, "A", "v1", null, 5);
 
@@ -203,7 +212,7 @@ class StoreInfoCommandTest {
         try (Locker locker = new DatabaseLocker(fileSystem, fooDbLayout)) {
             locker.checkLock();
 
-            CommandLine.populateCommand(command, args(databasesRoot, true, true));
+            CommandLine.populateCommand(command, args(databasesRoot, false, "", true, "json"));
             command.execute();
         }
 
@@ -223,17 +232,63 @@ class StoreInfoCommandTest {
         prepareStore(barDbLayout, "A", "v1", null, null, 10);
         var expectedBar = expectedPrettyResult("bar", false, "A", "v1", null, 10);
 
-        var databasesRoot = homeDir.resolve("data/databases");
         when(transactionIdStore.getLastCommittedTransactionId()).thenReturn(10L, 9L);
 
         var expected = expectedBar + System.lineSeparator() + System.lineSeparator() + expectedFoo;
 
         // when
-        CommandLine.populateCommand(command, args(databasesRoot, true, false));
+        CommandLine.populateCommand(command, args(databasesRoot, false, ""));
         command.execute();
 
         // then
         verify(out).println(expected);
+    }
+
+    @Test
+    void globbingCanSelectAllDatabasesInDirectory() throws IOException {
+        // given
+        var barDbDirectory = homeDir.resolve("data/databases/bar");
+        var barDbLayout = DatabaseLayout.ofFlat(barDbDirectory);
+        fileSystem.mkdirs(barDbDirectory);
+
+        prepareStore(fooDbLayout, "A", "v1", null, null, 9);
+        var expectedFoo = expectedPrettyResult("foo", false, "A", "v1", null, 9);
+
+        prepareStore(barDbLayout, "A", "v1", null, null, 10);
+        var expectedBar = expectedPrettyResult("bar", false, "A", "v1", null, 10);
+
+        when(transactionIdStore.getLastCommittedTransactionId()).thenReturn(10L, 9L);
+
+        var expected = expectedBar + System.lineSeparator() + System.lineSeparator() + expectedFoo;
+
+        // when
+        CommandLine.populateCommand(command, args(databasesRoot, true, "*"));
+        command.execute();
+
+        // then
+        verify(out).println(expected);
+    }
+
+    @Test
+    void globbingCanSelectSomeDatabasesInDirectory() throws IOException {
+        // given
+        var barDbDirectory = homeDir.resolve("data/databases/bar");
+        var barDbLayout = DatabaseLayout.ofFlat(barDbDirectory);
+        fileSystem.mkdirs(barDbDirectory);
+
+        prepareStore(fooDbLayout, "A", "v1", null, null, 9);
+        var expectedFoo = expectedPrettyResult("foo", false, "A", "v1", null, 9);
+
+        prepareStore(barDbLayout, "A", "v1", null, null, 10);
+
+        when(transactionIdStore.getLastCommittedTransactionId()).thenReturn(9L);
+
+        // when
+        CommandLine.populateCommand(command, args(databasesRoot, true, "f*"));
+        command.execute();
+
+        // then
+        verify(out).println(expectedFoo);
     }
 
     @Test
@@ -243,7 +298,21 @@ class StoreInfoCommandTest {
         var expectedFoo = expectedStructuredResult("foo", false, "A", "v1", null, 13);
 
         // when
-        CommandLine.populateCommand(command, args(fooDbDirectory, false, true));
+        CommandLine.populateCommand(command, args(databasesRoot, true, "foo", true, "json"));
+        command.execute();
+
+        // then
+        verify(out).println(expectedFoo);
+    }
+
+    @Test
+    void returnsInfoInTextFormat() throws IOException {
+        // given
+        prepareStore(fooDbLayout, "A", "v1", null, null, 13);
+        var expectedFoo = expectedPrettyResult("foo", false, "A", "v1", null, 13);
+
+        // when
+        CommandLine.populateCommand(command, args(databasesRoot, true, "foo", true, "text"));
         command.execute();
 
         // then
@@ -261,13 +330,12 @@ class StoreInfoCommandTest {
         var expectedFoo = expectedPrettyResult("foo", false, "B", "v2", null, 2);
         prepareStore(barDbLayout, "B", "v2", null, null, 3);
         var expectedBar = expectedPrettyResult("bar", false, "B", "v2", null, 3);
-        var databasesRoot = homeDir.resolve("data/databases");
         when(transactionIdStore.getLastCommittedTransactionId()).thenReturn(3L, 2L);
 
         var expectedMulti = expectedBar + System.lineSeparator() + System.lineSeparator() + expectedFoo;
 
         // when
-        CommandLine.populateCommand(command, args(databasesRoot, true, false));
+        CommandLine.populateCommand(command, args(databasesRoot, false, ""));
         command.execute();
         // then
         verify(out).println(expectedMulti);
@@ -280,7 +348,7 @@ class StoreInfoCommandTest {
         var expectedFoo = expectedPrettyResult("foo", false, "B", "v2", null, 8);
 
         // when
-        CommandLine.populateCommand(command, args(fooDbDirectory, false, false));
+        CommandLine.populateCommand(command, args(databasesRoot, true, "foo"));
         command.execute();
 
         // then
@@ -369,16 +437,21 @@ class StoreInfoCommandTest {
         return version;
     }
 
-    private static String[] args(Path path, boolean all, boolean structured) {
-        var args = new ArrayList<String>();
-        args.add(path.toAbsolutePath().toString());
+    private static String[] args(Path path, boolean includeDatabase, String database) {
+        return args(path, includeDatabase, database, false, "");
+    }
 
-        if (all) {
-            args.add("--all");
+    private static String[] args(
+            Path path, boolean includeDatabase, String database, boolean includeFormat, String format) {
+        var args = new ArrayList<String>();
+        args.add("--from-path=" + path.toAbsolutePath());
+
+        if (includeDatabase) {
+            args.add(database);
         }
 
-        if (structured) {
-            args.add("--structured");
+        if (includeFormat) {
+            args.add("--format=" + format);
         }
 
         return args.toArray(new String[0]);

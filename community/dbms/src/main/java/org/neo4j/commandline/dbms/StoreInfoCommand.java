@@ -31,13 +31,16 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
+import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -52,6 +55,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
+import picocli.CommandLine;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
@@ -60,13 +64,27 @@ import picocli.CommandLine.Parameters;
         header = "Print information about a Neo4j database store.",
         description = "Print information about a Neo4j database store, such as what version of Neo4j created it.")
 public class StoreInfoCommand extends AbstractCommand {
-    @Option(names = "--structured", arity = "0", description = "Return result structured as json")
-    private boolean structured;
+    private static final String PLAIN_FORMAT = "text";
+    private static final String JSON_FORMAT = "json";
 
-    @Option(names = "--all", arity = "0", description = "Return store info for all databases at provided path")
-    private boolean all;
+    @Parameters(
+            arity = "0..1",
+            paramLabel = "<database>",
+            defaultValue = "*",
+            description = "Name of the database to show info for. Can contain * and ? for globbing.",
+            converter = Converters.DatabaseNamePatternConverter.class)
+    private DatabaseNamePattern database;
 
-    @Parameters(description = "Path to database store files, or databases directory if --all option is used")
+    @Option(
+            names = "--format",
+            arity = "1",
+            defaultValue = "text",
+            description = "The format of the returned information. Either 'text' or 'json'.",
+            showDefaultValue = CommandLine.Help.Visibility.ALWAYS,
+            converter = FormatConverter.class)
+    private boolean structuredFormat;
+
+    @Option(names = "--from-path", description = "Path to databases directory.")
     private Path path;
 
     private final StorageEngineFactory.Selector storageEngineSelector;
@@ -80,6 +98,20 @@ public class StoreInfoCommand extends AbstractCommand {
         this.storageEngineSelector = storageEngineSelector;
     }
 
+    static class FormatConverter implements CommandLine.ITypeConverter<Boolean> {
+        @Override
+        public Boolean convert(String name) {
+            String lowerCase = name.toLowerCase(Locale.ROOT);
+            if (PLAIN_FORMAT.equals(lowerCase)) {
+                return false;
+            } else if (JSON_FORMAT.equals(lowerCase)) {
+                return true;
+            }
+            throw new CommandLine.TypeConversionException(
+                    format("Invalid format '%s'. Supported options are 'text' or 'json'", name));
+        }
+    }
+
     @Override
     public void execute() {
         var config = CommandHelpers.buildConfig(ctx, allowCommandExpansion);
@@ -87,25 +119,30 @@ public class StoreInfoCommand extends AbstractCommand {
         try (var fs = ctx.fs();
                 var jobScheduler = createInitialisedScheduler();
                 var pageCache = StandalonePageCacheFactory.createPageCache(fs, jobScheduler, PageCacheTracer.NULL)) {
-            validatePath(fs, all, path, neo4jLayout);
-            if (all) {
-                var collector = structured
+
+            if (path != null) {
+                validatePath(fs, path, neo4jLayout);
+            } else {
+                path = neo4jLayout.databasesDirectory();
+            }
+            if (database.containsPattern()) {
+                var collector = structuredFormat
                         ? Collectors.joining(",", "[", "]")
                         : Collectors.joining(System.lineSeparator() + System.lineSeparator());
                 var result = Arrays.stream(fs.listFiles(path))
                         .sorted(comparing(Path::getFileName))
                         .map(dbPath ->
                                 neo4jLayout.databaseLayout(dbPath.getFileName().toString()))
-                        .filter(dbLayout -> storageEngineSelector
-                                .selectStorageEngine(fs, dbLayout)
-                                .isPresent())
-                        .map(dbLayout -> printInfo(fs, dbLayout, pageCache, config, structured, true))
+                        .filter(dbLayout -> database.matches(dbLayout.getDatabaseName())
+                                && storageEngineSelector
+                                        .selectStorageEngine(fs, dbLayout)
+                                        .isPresent())
+                        .map(dbLayout -> printInfo(fs, dbLayout, pageCache, config, structuredFormat, true))
                         .collect(collector);
                 ctx.out().println(result);
             } else {
-                var databaseLayout =
-                        neo4jLayout.databaseLayout(path.getFileName().toString());
-                ctx.out().println(printInfo(fs, databaseLayout, pageCache, config, structured, false));
+                var databaseLayout = neo4jLayout.databaseLayout(database.getDatabaseName());
+                ctx.out().println(printInfo(fs, databaseLayout, pageCache, config, structuredFormat, false));
             }
         } catch (CommandFailedException e) {
             throw e;
@@ -114,7 +151,7 @@ public class StoreInfoCommand extends AbstractCommand {
         }
     }
 
-    private void validatePath(FileSystemAbstraction fs, boolean all, Path storePath, Neo4jLayout neo4jLayout) {
+    private void validatePath(FileSystemAbstraction fs, Path storePath, Neo4jLayout neo4jLayout) {
         if (!fs.isDirectory(storePath)) {
             throw new IllegalArgumentException(
                     format("Provided path %s must point to a directory.", storePath.toAbsolutePath()));
@@ -124,14 +161,10 @@ public class StoreInfoCommand extends AbstractCommand {
         var databaseLayout = neo4jLayout.databaseLayout(dirName);
         var pathIsDatabase =
                 storageEngineSelector.selectStorageEngine(fs, databaseLayout).isPresent();
-        if (all && pathIsDatabase) {
+        if (pathIsDatabase) {
             throw new IllegalArgumentException(format(
-                    "You used the --all option but directory %s contains the store files of a single database, "
-                            + "rather than several database directories.",
-                    storePath.toAbsolutePath()));
-        } else if (!all && !pathIsDatabase) {
-            throw new IllegalArgumentException(format(
-                    "Directory %s does not contain the store files of a database, but you did not use the --all option.",
+                    "The directory %s contains the store files of a single database. --from-path should point to the "
+                            + "databases directory.",
                     storePath.toAbsolutePath()));
         }
     }
