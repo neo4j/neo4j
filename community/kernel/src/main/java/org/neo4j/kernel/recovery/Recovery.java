@@ -66,6 +66,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.AvailabilityListener;
@@ -415,7 +416,8 @@ public final class Recovery {
         LifeSupport recoveryLife = new LifeSupport();
         var namedDatabaseId = createRecoveryDatabaseId(fs, pageCache, databaseLayout, storageEngineFactory);
         Monitors monitors = new Monitors(globalMonitors, logProvider);
-        DatabasePageCache databasePageCache = new DatabasePageCache(pageCache, ioController);
+        DatabasePageCache databasePageCache =
+                new DatabasePageCache(pageCache, ioController, VersionStorage.EMPTY_STORAGE);
         SimpleLogService logService = new SimpleLogService(logProvider);
         DatabaseReadOnlyChecker readOnlyChecker = writable();
 

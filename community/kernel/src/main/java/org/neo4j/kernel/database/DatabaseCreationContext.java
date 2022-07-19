@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.pagecache.IOControllerService;
+import org.neo4j.kernel.impl.pagecache.VersionStorageFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
@@ -153,4 +154,6 @@ public interface DatabaseCreationContext {
                 neo4jLayout.databaseLayout(namedDatabaseId.name()),
                 namedDatabaseId.isSystemDatabase() ? null : config);
     }
+
+    VersionStorageFactory getVersionStorageFactory();
 }

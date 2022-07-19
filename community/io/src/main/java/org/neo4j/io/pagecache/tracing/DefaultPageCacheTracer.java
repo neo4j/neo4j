@@ -55,6 +55,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     protected final LongAdder openedCursors = new LongAdder();
     protected final LongAdder closedCursors = new LongAdder();
     protected final LongAdder copiedPages = new LongAdder();
+    protected final LongAdder chainsPatched = new LongAdder();
     protected final LongAdder snapshotsLoaded = new LongAdder();
     protected final AtomicLong maxPages = new AtomicLong();
 
@@ -242,6 +243,11 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
+    public long chainsPatched() {
+        return chainsPatched.sum();
+    }
+
+    @Override
     public long snapshotsLoaded() {
         return snapshotsLoaded.sum();
     }
@@ -270,6 +276,11 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     @Override
     public void pagesCopied(long copiesCreated) {
         copiedPages.add(copiesCreated);
+    }
+
+    @Override
+    public void chainsPatched(long chainsPatched) {
+        this.chainsPatched.add(chainsPatched);
     }
 
     @Override

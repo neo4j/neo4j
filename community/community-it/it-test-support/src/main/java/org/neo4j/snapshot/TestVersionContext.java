@@ -42,8 +42,13 @@ public class TestVersionContext extends TransactionVersionContext {
     private final String databaseName;
 
     public TestVersionContext(LongSupplier transactionIdSupplier, String databaseName) {
+        this(transactionIdSupplier, databaseName, true);
+    }
+
+    public TestVersionContext(LongSupplier transactionIdSupplier, String databaseName, boolean wrongLastClosedTxId) {
         super(transactionIdSupplier);
         this.databaseName = databaseName;
+        this.wrongLastClosedTxId = wrongLastClosedTxId;
     }
 
     @Override

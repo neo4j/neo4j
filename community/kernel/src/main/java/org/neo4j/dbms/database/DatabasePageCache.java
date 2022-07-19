@@ -39,6 +39,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.monitoring.PageFileCounters;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -51,16 +52,19 @@ import org.neo4j.io.pagecache.tracing.FileMappedListener;
  * Database specific page cache lifecycle tight to an individual database, and it will be closed as soon as the particular database will be closed.
  */
 public class DatabasePageCache implements PageCache {
+
     private final PageCache globalPageCache;
     private final CopyOnWriteArrayList<DatabasePageFile> databasePagedFiles = new CopyOnWriteArrayList<>();
     private final IOController ioController;
     private final List<FileMappedListener> mappedListeners = new CopyOnWriteArrayList<>();
     private boolean closed;
     private final TicketMachine ticketMachine = new TicketMachine();
+    private final VersionStorage versionStorage;
 
-    public DatabasePageCache(PageCache globalPageCache, IOController ioController) {
+    public DatabasePageCache(PageCache globalPageCache, IOController ioController, VersionStorage versionStorage) {
         this.globalPageCache = requireNonNull(globalPageCache);
         this.ioController = requireNonNull(ioController);
+        this.versionStorage = requireNonNull(versionStorage);
     }
 
     @Override
@@ -69,11 +73,13 @@ public class DatabasePageCache implements PageCache {
             int pageSize,
             String databaseName,
             ImmutableSet<OpenOption> openOptions,
-            IOController ignoredController)
+            IOController ignoredController,
+            VersionStorage ignoredVersionStorage)
             throws IOException {
         // no one should call this version of map method with emptyDatabaseName != null,
         // since it is this class that is decorating map calls with the name of the database
-        PagedFile pagedFile = globalPageCache.map(path, pageSize, databaseName, openOptions, ioController);
+        PagedFile pagedFile =
+                globalPageCache.map(path, pageSize, databaseName, openOptions, ioController, versionStorage);
         DatabasePageFile databasePageFile =
                 new DatabasePageFile(pagedFile, databasePagedFiles, mappedListeners, ticketMachine.newTicket());
         databasePagedFiles.add(databasePageFile);

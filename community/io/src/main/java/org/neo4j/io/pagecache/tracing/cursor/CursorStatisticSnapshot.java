@@ -33,7 +33,8 @@ public record CursorStatisticSnapshot(
         long flushes,
         long merges,
         long snapshotsLoaded,
-        long copiedPages) {
+        long copiedPages,
+        long chainsPatched) {
     public CursorStatisticSnapshot(PageCursorTracer cursorTracer) {
         this(
                 cursorTracer.pins(),
@@ -49,6 +50,7 @@ public record CursorStatisticSnapshot(
                 cursorTracer.flushes(),
                 cursorTracer.merges(),
                 cursorTracer.snapshotsLoaded(),
-                cursorTracer.copiedPages());
+                cursorTracer.copiedPages(),
+                cursorTracer.chainsPatched());
     }
 }

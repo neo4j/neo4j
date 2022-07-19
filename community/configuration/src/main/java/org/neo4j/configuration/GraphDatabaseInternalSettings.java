@@ -939,14 +939,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .addConstraint(min(0))
             .build();
 
-    @Description("Feature flag for multi-versioned store prototype")
-    @Internal
-    public static final Setting<Boolean> multi_version_store = newBuilder(
-                    "internal.dbms.multiversioned.store",
-                    BOOL,
-                    Boolean.valueOf(System.getProperty("internal.dbms.multiversioned.store.override")))
-            .build();
-
     @Description("Allow database to use dedicated transaction appender writer thread.")
     @Internal
     public static final Setting<Boolean> dedicated_transaction_appender = newBuilder(

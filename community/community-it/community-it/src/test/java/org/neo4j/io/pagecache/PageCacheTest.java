@@ -28,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -4376,6 +4377,68 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             cursorA.copyTo(1, cursorB, 1, -1);
             assertTrue(cursorA.checkAndClearBoundsFlag());
             assertFalse(cursorB.checkAndClearBoundsFlag());
+        }
+    }
+
+    @Test
+    void copyPageChecksForWritableCursor() throws IOException {
+        configureStandardPageCache();
+        try (PagedFile pf = map(file("a"), filePageSize);
+                PageCursor reader = pf.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT);
+                PageCursor writer = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+            assertTrue(writer.next());
+            assertTrue(reader.next());
+
+            assertThrows(IllegalArgumentException.class, () -> writer.copyPage(reader));
+        }
+    }
+
+    @Test
+    void copyPageChecksForDifferentCursorPageSizes() throws IOException {
+        configureStandardPageCache();
+        ensureExists(file("b"));
+        try (PagedFile pfA = map(file("a"), filePageSize);
+                PagedFile pfB = map(file("b"), filePageSize + 2);
+                PageCursor reader = pfA.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT);
+                PageCursor writerA = pfA.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT);
+                PageCursor writerB = pfB.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+            assertTrue(writerB.next());
+            assertTrue(writerA.next());
+            assertTrue(reader.next());
+
+            assertThrows(IllegalArgumentException.class, () -> reader.copyPage(writerB));
+            assertDoesNotThrow(() -> reader.copyPage(writerA));
+        }
+    }
+
+    @Test
+    void copyPageContent() throws IOException {
+        configureStandardPageCache();
+        ensureExists(file("b"));
+
+        try (PagedFile pfA = map(file("a"), filePageSize);
+                PagedFile pfB = map(file("b"), filePageSize);
+                PageCursor writerB = pfB.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+
+            try (PageCursor writerA = pfA.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                assertTrue(writerA.next());
+
+                for (int i = 0; i < filePageSize; i++) {
+                    writerA.putByte((byte) 5);
+                }
+            }
+
+            try (PageCursor reader = pfA.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                assertTrue(reader.next());
+                assertTrue(writerB.next());
+                do {
+                    reader.copyPage(writerB);
+                } while (reader.shouldRetry());
+            }
+
+            for (int i = 0; i < filePageSize; i++) {
+                assertEquals(5, writerB.getByte());
+            }
         }
     }
 

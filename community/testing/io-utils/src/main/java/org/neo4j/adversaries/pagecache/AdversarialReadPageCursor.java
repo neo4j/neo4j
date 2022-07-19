@@ -347,6 +347,14 @@ class AdversarialReadPageCursor extends DelegatingPageCursor {
     }
 
     @Override
+    public void copyPage(PageCursor targetCursor) {
+        while (targetCursor instanceof DelegatingPageCursor) {
+            targetCursor = ((DelegatingPageCursor) targetCursor).unwrap();
+        }
+        super.copyPage(targetCursor);
+    }
+
+    @Override
     public int copyTo(int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes) {
         state.injectFailure(IndexOutOfBoundsException.class);
         if (!state.isInconsistent()) {

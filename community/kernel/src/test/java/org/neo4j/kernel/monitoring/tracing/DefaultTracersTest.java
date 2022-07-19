@@ -37,7 +37,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
-class TracersTest {
+class DefaultTracersTest {
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private final JobScheduler jobScheduler = mock(JobScheduler.class);
     private final SystemNanoClock clock = Clocks.nanoClock();
@@ -52,7 +52,7 @@ class TracersTest {
 
     @Test
     void mustProduceNullImplementationsWhenRequested() {
-        Tracers tracers = createTracers("null");
+        DefaultTracers tracers = createTracers("null");
         assertThat(tracers.getPageCacheTracer()).isEqualTo(PageCacheTracer.NULL);
         assertThat(tracers.getDatabaseTracer()).isEqualTo(DatabaseTracer.NULL.NULL);
         assertNoWarning();
@@ -60,30 +60,30 @@ class TracersTest {
 
     @Test
     void mustProduceDefaultImplementationForNullConfiguration() {
-        Tracers tracers = createTracers(null);
+        DefaultTracers tracers = createTracers(null);
         assertDefaultImplementation(tracers);
         assertNoWarning();
     }
 
     @Test
     void mustProduceDefaultImplementationWhenRequested() {
-        Tracers tracers = createTracers("default");
+        DefaultTracers tracers = createTracers("default");
         assertDefaultImplementation(tracers);
         assertNoWarning();
     }
 
     @Test
     void mustProduceDefaultImplementationWhenRequestingUnknownImplementation() {
-        Tracers tracers = createTracers("there's nothing like this");
+        DefaultTracers tracers = createTracers("there's nothing like this");
         assertDefaultImplementation(tracers);
         assertWarning("there's nothing like this");
     }
 
-    private Tracers createTracers(String s) {
-        return new Tracers(s, log, monitors, jobScheduler, clock, Config.defaults());
+    private DefaultTracers createTracers(String s) {
+        return new DefaultTracers(s, log, monitors, jobScheduler, clock, Config.defaults());
     }
 
-    private static void assertDefaultImplementation(Tracers tracers) {
+    private static void assertDefaultImplementation(DefaultTracers tracers) {
         assertThat(tracers.getPageCacheTracer()).isInstanceOf(DefaultPageCacheTracer.class);
         assertThat(tracers.getDatabaseTracer()).isInstanceOf(DefaultTracer.class);
     }

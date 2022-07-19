@@ -34,6 +34,7 @@ import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 
 /**
@@ -59,14 +60,15 @@ public class AdversarialPageCache implements PageCache {
             int pageSize,
             String databaseName,
             ImmutableSet<OpenOption> openOptions,
-            IOController ioController)
+            IOController ioController,
+            VersionStorage versionStorage)
             throws IOException {
         if (openOptions.contains(CREATE)) {
             adversary.injectFailure(IOException.class, SecurityException.class);
         } else {
             adversary.injectFailure(NoSuchFileException.class, IOException.class, SecurityException.class);
         }
-        PagedFile pagedFile = delegate.map(path, pageSize, databaseName, openOptions, ioController);
+        PagedFile pagedFile = delegate.map(path, pageSize, databaseName, openOptions, ioController, versionStorage);
         return new AdversarialPagedFile(pagedFile, adversary);
     }
 

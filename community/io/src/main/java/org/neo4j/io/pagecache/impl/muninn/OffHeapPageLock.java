@@ -161,6 +161,10 @@ public final class OffHeapPageLock {
         return (getState(address) & EXL_MASK) == EXL_MASK;
     }
 
+    public static boolean isWriteLocked(long address) {
+        return (getState(address) & CNT_MASK) != 0;
+    }
+
     /**
      * Try taking a concurrent write lock. Multiple write locks can be held at the same time. Write locks will
      * invalidate any optimistic read lock that overlaps with them, and write locks will make any attempt at grabbing

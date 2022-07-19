@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 
 /**
@@ -92,7 +93,17 @@ public interface PageCache extends AutoCloseable {
      */
     default PagedFile map(Path path, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions)
             throws IOException {
-        return map(path, pageSize, databaseName, openOptions, IOController.DISABLED);
+        return map(path, pageSize, databaseName, openOptions, IOController.DISABLED, VersionStorage.EMPTY_STORAGE);
+    }
+
+    default PagedFile map(
+            Path path,
+            int pageSize,
+            String databaseName,
+            ImmutableSet<OpenOption> openOptions,
+            IOController ioController)
+            throws IOException {
+        return map(path, pageSize, databaseName, openOptions, ioController, VersionStorage.EMPTY_STORAGE);
     }
 
     /**
@@ -123,7 +134,8 @@ public interface PageCache extends AutoCloseable {
             int pageSize,
             String databaseName,
             ImmutableSet<OpenOption> openOptions,
-            IOController ioController)
+            IOController ioController,
+            VersionStorage versionStorage)
             throws IOException;
 
     /**

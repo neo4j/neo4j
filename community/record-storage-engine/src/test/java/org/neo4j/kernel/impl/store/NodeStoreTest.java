@@ -81,6 +81,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
@@ -309,13 +310,14 @@ class NodeStoreTest {
                             int pageSize,
                             String databaseName,
                             ImmutableSet<OpenOption> openOptions,
-                            IOController ioController)
+                            IOController ioController,
+                            VersionStorage versionStorage)
                             throws IOException {
                         if (path.getFileName().toString().toLowerCase().endsWith(".id")) {
                             fired.setTrue();
                             throw new IOException("Proving a point here");
                         }
-                        return super.map(path, pageSize, databaseName, openOptions, ioController);
+                        return super.map(path, pageSize, databaseName, openOptions, ioController, versionStorage);
                     }
                 };
 

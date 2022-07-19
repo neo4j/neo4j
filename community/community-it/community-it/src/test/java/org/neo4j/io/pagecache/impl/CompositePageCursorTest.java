@@ -804,6 +804,14 @@ public class CompositePageCursorTest {
     }
 
     @Test
+    void compositeCursorDoesNotSupportCopyPage() {
+        assertThrows(UnsupportedOperationException.class, () -> {
+            PageCursor pageCursor = CompositePageCursor.compose(first, PAYLOAD_SIZE, second, PAYLOAD_SIZE);
+            pageCursor.copyPage(new StubPageCursor(0, 1));
+        });
+    }
+
+    @Test
     void getByteBeyondEndOfViewMustRaiseBoundsFlag() {
         PageCursor pageCursor = CompositePageCursor.compose(first, PAYLOAD_SIZE, second, PAYLOAD_SIZE);
         for (int i = 0; i < 3 * PAGE_SIZE; i++) {

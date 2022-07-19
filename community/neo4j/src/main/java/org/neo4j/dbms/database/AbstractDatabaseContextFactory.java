@@ -19,8 +19,8 @@
  */
 package org.neo4j.dbms.database;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.multi_version_store;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.snapshot_query;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockManager;
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
 import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
@@ -97,7 +97,7 @@ public abstract class AbstractDatabaseContextFactory<DB> implements DatabaseCont
     }
 
     private static VersionContextSupplier.Factory internalVersionContextSupplierFactory(DatabaseConfig databaseConfig) {
-        return databaseId -> databaseConfig.get(multi_version_store) || databaseConfig.get(snapshot_query)
+        return databaseId -> "multiversion".equals(databaseConfig.get(db_format)) || databaseConfig.get(snapshot_query)
                 ? new TransactionVersionContextSupplier()
                 : EmptyVersionContextSupplier.EMPTY;
     }

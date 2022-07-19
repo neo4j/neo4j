@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.api.ExternalIdReuseConditionProvider;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.pagecache.CommunityVersionStorageFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 
 public class DefaultDatabaseContextFactory extends AbstractDatabaseContextFactory<StandaloneDatabaseContext> {
@@ -78,6 +79,7 @@ public class DefaultDatabaseContextFactory extends AbstractDatabaseContextFactor
                     globalModule.getGlobalDependencies(),
                     databaseConfig,
                     contextFactory,
+                    new CommunityVersionStorageFactory(),
                     new StandardConstraintSemantics(),
                     new CommunityCypherEngineProvider(),
                     transactionStatsFactory.create(),

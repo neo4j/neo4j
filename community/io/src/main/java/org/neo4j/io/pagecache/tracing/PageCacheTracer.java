@@ -196,6 +196,11 @@ public interface PageCacheTracer extends PageCacheCounters {
         }
 
         @Override
+        public long chainsPatched() {
+            return 0;
+        }
+
+        @Override
         public long snapshotsLoaded() {
             return 0;
         }
@@ -259,6 +264,9 @@ public interface PageCacheTracer extends PageCacheCounters {
 
         @Override
         public void pagesCopied(long copiesCreated) {}
+
+        @Override
+        public void chainsPatched(long chainsPatched) {}
 
         @Override
         public String toString() {
@@ -435,4 +443,9 @@ public interface PageCacheTracer extends PageCacheCounters {
      * report number of copied pages
      */
     void pagesCopied(long copiesCreated);
+
+    /**
+     * report number of chains patched
+     */
+    void chainsPatched(long chainsPatched);
 }

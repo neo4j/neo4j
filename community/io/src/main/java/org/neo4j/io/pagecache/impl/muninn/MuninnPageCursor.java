@@ -19,13 +19,12 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import static java.lang.String.format;
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_TRANSIENT;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.UNMAPPED_TTE;
-import static org.neo4j.io.pagecache.impl.muninn.PageList.getAddress;
+import static org.neo4j.io.pagecache.impl.muninn.VersionStorage.CHECKSUM_OFFSET;
 import static org.neo4j.util.FeatureToggles.flag;
 
 import java.io.IOException;
@@ -42,7 +41,6 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
-import org.neo4j.io.pagecache.impl.muninn.versioned.VersionStorage;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -64,8 +62,6 @@ public abstract class MuninnPageCursor extends PageCursor {
     private static final int SIZE_OF_SHORT = Short.BYTES;
     private static final int SIZE_OF_INT = Integer.BYTES;
     private static final int SIZE_OF_LONG = Long.BYTES;
-    protected static final int POINTER_OFFSET = Long.BYTES;
-    public static final int CHECKSUM_OFFSET = Long.BYTES * 2;
 
     protected final PageCursorTracer tracer;
     protected final VersionContext versionContext;
@@ -73,7 +69,8 @@ public abstract class MuninnPageCursor extends PageCursor {
 
     protected final MuninnPagedFile pagedFile;
     protected final PageSwapper swapper;
-    private final VersionStorage versionStorage;
+    final VersionStorage versionStorage;
+    protected VersionState versionState;
     private final long victimPage;
     protected final int swapperId;
     private final int filePageSize;
@@ -85,7 +82,7 @@ public abstract class MuninnPageCursor extends PageCursor {
     protected final boolean noGrow;
     protected final boolean updateUsage;
     protected final boolean multiVersioned;
-    private final boolean littleEndian;
+    protected final boolean littleEndian;
 
     @SuppressWarnings("unused") // accessed via VarHandle.
     private long currentPageId;
@@ -94,7 +91,6 @@ public abstract class MuninnPageCursor extends PageCursor {
     protected long nextPageId;
     protected long pointer;
     protected long version;
-    protected long chainPreviousPointer;
     private int pageSize;
     private int payloadSize;
     private int offset;
@@ -177,34 +173,22 @@ public abstract class MuninnPageCursor extends PageCursor {
         this.offset = pageReservedBytes;
         this.pageSize = filePageSize;
         this.payloadSize = filePayloadSize;
-        long pagePointer = PageList.getAddress(pageRef);
-        int oldSnapshotsLoaded = 0;
-        if (multiVersioned) {
-            long pageVersion = getLongAt(pagePointer, littleEndian);
-            boolean endReached = false;
-            while (pageVersion > versionContext.lastClosedTransactionId()
-                    && (pageVersion
-                            != versionContext
-                                    .committingTransactionId()) /* we allow cursors to see mutations from the same transaction */
-                    && !endReached) {
-                chainPreviousPointer = pagePointer;
-                pagePointer = getLongAt(pagePointer + POINTER_OFFSET, littleEndian);
-                if (pagePointer == UNBOUND_PAGE_ADDRESS) {
-                    // TODO: check after switch to file based storage
-                    setCursorException(format(
-                            "Requested page version not found. Requested last closed transaction id: %d. "
-                                    + "Last found version: %d.",
-                            versionContext.lastClosedTransactionId(), pageVersion));
-                    endReached = true;
-                }
-                oldSnapshotsLoaded++;
-                pageVersion = getLongAt(pagePointer, littleEndian);
-            }
-            this.version = pageVersion;
-        }
-        this.pointer = pagePointer;
+        this.pointer = PageList.getAddress(pageRef);
         pinEvent.setCachePageId(pagedFile.toId(pageRef));
-        pinEvent.snapshotsLoaded(oldSnapshotsLoaded);
+    }
+
+    protected boolean shouldLoadSnapshot() {
+        long pagePointer = pointer;
+        long pageVersion = getLongAt(pagePointer, littleEndian);
+        return olderVersionRequired(pagePointer)
+                && ((pageVersion > versionContext.lastClosedTransactionId())
+                        && (pageVersion != versionContext.committingTransactionId()));
+    }
+
+    protected boolean olderVersionRequired(long pagePointer) {
+        long chainHeadVersion = getLongAt(pagePointer, littleEndian);
+        // We in the same version as we already have, we do not need to move anywhere. Head is actual page.
+        return chainHeadVersion != versionContext.committingTransactionId();
     }
 
     protected long getPageChecksum() {
@@ -305,9 +289,9 @@ public abstract class MuninnPageCursor extends PageCursor {
         pageSize = 0;
         payloadSize = 0;
         version = 0;
-        chainPreviousPointer = UNBOUND_PAGE_ADDRESS;
         // Decouple us from the memory page, so we avoid messing with the page meta-data.
         pinnedPageRef = 0;
+        versionState = null;
     }
 
     @Override
@@ -570,7 +554,7 @@ public abstract class MuninnPageCursor extends PageCursor {
         return getLongAt(p, littleEndian);
     }
 
-    private static long getLongAt(long p, boolean littleEndian) {
+    static long getLongAt(long p, boolean littleEndian) {
         if (UnsafeUtil.allowUnalignedMemoryAccess) {
             var value = UnsafeUtil.getLong(p);
             if (UnsafeUtil.nativeByteOrderIsLittleEndian == littleEndian) {
@@ -579,14 +563,6 @@ public abstract class MuninnPageCursor extends PageCursor {
             return Long.reverseBytes(value);
         }
         return getLongUnaligned(p, littleEndian);
-    }
-
-    protected static byte getByteAt(long p) {
-        return UnsafeUtil.getByte(p);
-    }
-
-    protected static void putByteAt(long p, byte value) {
-        UnsafeUtil.putByte(p, value);
     }
 
     private static long getLongUnaligned(long p, boolean littleEndian) {
@@ -617,7 +593,7 @@ public abstract class MuninnPageCursor extends PageCursor {
         putLongAt(p, value, littleEndian);
     }
 
-    private static void putLongAt(long p, long value, boolean littleEndian) {
+    static void putLongAt(long p, long value, boolean littleEndian) {
         if (UnsafeUtil.allowUnalignedMemoryAccess) {
             UnsafeUtil.putLong(
                     p, UnsafeUtil.nativeByteOrderIsLittleEndian == littleEndian ? value : Long.reverseBytes(value));
@@ -660,29 +636,6 @@ public abstract class MuninnPageCursor extends PageCursor {
     public int getInt(int offset) {
         long p = getBoundedPointer(offset, SIZE_OF_INT);
         return getIntAt(p, littleEndian);
-    }
-
-    protected void copyPage(long pageRef) {
-        long currentCommitTxId = versionContext.committingTransactionId();
-
-        // if current version matches to the id of currently updating transaction - we update current page since it's
-        // yet not visible to anyone
-        if (this.version == currentCommitTxId) {
-            return;
-        }
-        long originalPageAddress = this.pointer;
-        long copyAddress = version >= 0 ? versionStorage.copyPage(originalPageAddress) : UNBOUND_PAGE_ADDRESS;
-        tracer.pageCopied(pageRef, version);
-        // update from head to current ->
-        if (chainPreviousPointer != UNBOUND_PAGE_ADDRESS) {
-            // 1. we do chain patching here
-            // 2. on unbind data patching up to the head will be performed
-            putLongAt(chainPreviousPointer + POINTER_OFFSET, originalPageAddress, littleEndian);
-        }
-
-        // update from current to next ->
-        putLongAt(originalPageAddress + POINTER_OFFSET, copyAddress, littleEndian);
-        putLongAt(originalPageAddress, currentCommitTxId, littleEndian);
     }
 
     private static int getIntAt(long p, boolean littleEndian) {
@@ -858,6 +811,19 @@ public abstract class MuninnPageCursor extends PageCursor {
             UnsafeUtil.putByte(p, (byte) (value >> 8));
             UnsafeUtil.putByte(p + 1, (byte) value);
         }
+    }
+
+    @Override
+    public void copyPage(PageCursor targetCursor) {
+        if (targetCursor.getClass() != MuninnWritePageCursor.class) {
+            throw new IllegalArgumentException("Target cursor must be writable");
+        }
+        MuninnPageCursor target = (MuninnPageCursor) targetCursor;
+        if (pageSize != target.pageSize) {
+            throw new IllegalArgumentException("Target cursor page size: " + target.pageSize
+                    + " is not equal to source cursor page size: " + pageSize);
+        }
+        UnsafeUtil.copyMemory(pointer, target.pointer, target.pageSize);
     }
 
     @Override
@@ -1086,20 +1052,49 @@ public abstract class MuninnPageCursor extends PageCursor {
         return PageList.getLastModifiedTxId(pageRef);
     }
 
-    protected void updateChain(long pageRef) {
-        // patch chain if required
-        // 1. byte diff with next page, excluding header is new content
-        // 2. apply up to the head written data
-        long destination = getAddress(pageRef);
-        long nextCopy = getLongAt(pointer + POINTER_OFFSET, littleEndian);
-        while (destination != pointer) {
-            for (int i = 0; i < getPayloadSize(); i++) {
-                byte inspectedByte = getByte(i);
-                if (inspectedByte != getByteAt(nextCopy + pageReservedBytes + i)) {
-                    putByteAt(destination + pageReservedBytes + i, inspectedByte);
-                }
-            }
-            destination = getLongAt(destination + POINTER_OFFSET, littleEndian);
+    abstract long lockStamp();
+
+    protected void updateChain() {
+        // we need to update chain only when writer was remapped to a writer in a snapshot version
+        // if not there is nothing to update and no remapping of writer should happen.
+        if (versionState != null) {
+            versionStorage.patchSnapshotChain(this);
+        }
+    }
+
+    public void unmapSnapshot() {
+        var remappedState = versionState;
+        if (remappedState != null) {
+            restoreState(remappedState);
+            remappedState.close();
+            versionState = null;
+        }
+    }
+
+    protected void restoreState(VersionState remappedState) {
+        this.pinnedPageRef = remappedState.pinnedPageRef;
+        this.version = remappedState.version;
+        this.pointer = remappedState.pointer;
+        this.storeCurrentPageId(remappedState.currentPageId);
+    }
+
+    public void remapSnapshot(MuninnPageCursor cursor, long committingTransactionId) {
+        // unmap any previous state that we can have in the middle of should retry loops, we only need to close it
+        unmapSnapshot();
+        versionState =
+                new VersionState(pinnedPageRef, version, pointer, cursor.lockStamp(), getCurrentPageId(), cursor);
+        pinnedPageRef = cursor.pinnedPageRef;
+        version = committingTransactionId;
+        pointer = cursor.pointer;
+        storeCurrentPageId(cursor.getCurrentPageId());
+    }
+
+    record VersionState(
+            long pinnedPageRef, long version, long pointer, long lockStamp, long currentPageId, MuninnPageCursor cursor)
+            implements AutoCloseable {
+        @Override
+        public void close() {
+            cursor.close();
         }
     }
 

@@ -120,4 +120,9 @@ public class AdversarialPagedFile implements PagedFile {
     public PageFileCounters pageFileCounters() {
         return delegate.pageFileCounters();
     }
+
+    @Override
+    public String toString() {
+        return "AdversarialPagedFile{" + "delegate=" + delegate + '}';
+    }
 }

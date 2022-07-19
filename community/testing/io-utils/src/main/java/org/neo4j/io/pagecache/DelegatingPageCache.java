@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Optional;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 
 public class DelegatingPageCache implements PageCache {
@@ -41,9 +42,10 @@ public class DelegatingPageCache implements PageCache {
             int pageSize,
             String databaseName,
             ImmutableSet<OpenOption> openOptions,
-            IOController ioController)
+            IOController ioController,
+            VersionStorage versionStorage)
             throws IOException {
-        return delegate.map(path, pageSize, databaseName, openOptions, ioController);
+        return delegate.map(path, pageSize, databaseName, openOptions, ioController, versionStorage);
     }
 
     @Override

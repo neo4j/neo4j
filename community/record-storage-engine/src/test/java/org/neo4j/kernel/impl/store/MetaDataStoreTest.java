@@ -73,7 +73,6 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
-import org.neo4j.kernel.impl.store.format.multiversion.MultiVersionFormat;
 import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
@@ -90,7 +89,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 
 @EphemeralNeo4jLayoutExtension
-class MetaDataStoreTest {
+public class MetaDataStoreTest {
     @RegisterExtension
     static PageCacheSupportExtension pageCacheExtension =
             new PageCacheSupportExtension(config().withInconsistentReads(new AtomicBoolean()));
@@ -107,8 +106,7 @@ class MetaDataStoreTest {
     private final CursorContextFactory contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
 
     public static Stream<Arguments> recordFormats() {
-        return Stream.of(
-                Arguments.of(PageAligned.LATEST_RECORD_FORMATS), Arguments.of(MultiVersionFormat.RECORD_FORMATS));
+        return Stream.of(Arguments.of(PageAligned.LATEST_RECORD_FORMATS));
     }
 
     @BeforeEach

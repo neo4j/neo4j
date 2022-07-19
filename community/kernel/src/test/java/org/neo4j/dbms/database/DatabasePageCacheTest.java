@@ -37,6 +37,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
+import static org.neo4j.io.pagecache.impl.muninn.VersionStorage.EMPTY_STORAGE;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -48,21 +49,25 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileMappedListener;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-@TestDirectoryExtension
+@Neo4jLayoutExtension
 class DatabasePageCacheTest {
     private static final String DATABASE_NAME = "test database";
 
     @Inject
     private TestDirectory testDirectory;
+
+    @Inject
+    private Neo4jLayout neo4jLayout;
 
     private DatabasePageCache databasePageCache;
     private PageCache globalPageCache;
@@ -72,9 +77,9 @@ class DatabasePageCacheTest {
     void setUp() throws IOException {
         globalPageCache = mock(PageCache.class);
         pagedFileMapper = new PagedFileAnswer();
-        when(globalPageCache.map(any(Path.class), eq(PAGE_SIZE), any(), any(), any()))
+        when(globalPageCache.map(any(Path.class), eq(PAGE_SIZE), any(), any(), any(), any()))
                 .then(pagedFileMapper);
-        databasePageCache = new DatabasePageCache(globalPageCache, DISABLED);
+        databasePageCache = createPageCache();
     }
 
     @AfterEach
@@ -87,10 +92,10 @@ class DatabasePageCacheTest {
     @Test
     void mapDatabaseFile() throws IOException {
         Path mapFile = testDirectory.createFile("mapFile");
-        PagedFile pagedFile = databasePageCache.map(mapFile, PAGE_SIZE, DATABASE_NAME, immutable.empty(), DISABLED);
+        PagedFile pagedFile = databasePageCache.map(mapFile, PAGE_SIZE, DATABASE_NAME, immutable.empty());
 
         assertNotNull(pagedFile);
-        verify(globalPageCache).map(mapFile, PAGE_SIZE, DATABASE_NAME, immutable.empty(), DISABLED);
+        verify(globalPageCache).map(mapFile, PAGE_SIZE, DATABASE_NAME, immutable.empty(), DISABLED, EMPTY_STORAGE);
     }
 
     @Test
@@ -108,7 +113,7 @@ class DatabasePageCacheTest {
 
     @Test
     void doNotIncludeNotDatabaseFilesInMappingsList() throws IOException {
-        try (DatabasePageCache anotherDatabaseCache = new DatabasePageCache(globalPageCache, DISABLED)) {
+        try (DatabasePageCache anotherDatabaseCache = createPageCache()) {
             Path mapFile1 = testDirectory.createFile("mapFile1");
             Path mapFile2 = testDirectory.createFile("mapFile2");
             Path mapFile3 = testDirectory.createFile("mapFile3");
@@ -130,7 +135,7 @@ class DatabasePageCacheTest {
 
     @Test
     void existingMappingRestrictedToDatabaseMappedFiles() throws IOException {
-        try (DatabasePageCache anotherDatabaseCache = new DatabasePageCache(globalPageCache, DISABLED)) {
+        try (DatabasePageCache anotherDatabaseCache = createPageCache()) {
             Path mapFile1 = testDirectory.createFile("mapFile1");
             Path mapFile2 = testDirectory.createFile("mapFile2");
             Path mapFile3 = testDirectory.createFile("mapFile3");
@@ -161,7 +166,7 @@ class DatabasePageCacheTest {
 
     @Test
     void flushOnlyAffectsDatabaseRelatedFiles() throws IOException {
-        try (DatabasePageCache anotherDatabaseCache = new DatabasePageCache(globalPageCache, DISABLED)) {
+        try (DatabasePageCache anotherDatabaseCache = createPageCache()) {
             Path mapFile1 = testDirectory.createFile("mapFile1");
             Path mapFile2 = testDirectory.createFile("mapFile2");
             Path mapFile3 = testDirectory.createFile("mapFile3");
@@ -188,7 +193,7 @@ class DatabasePageCacheTest {
 
     @Test
     void flushWithLimiterOnlyAffectsDatabaseRelatedFiles() throws IOException {
-        try (DatabasePageCache anotherDatabaseCache = new DatabasePageCache(globalPageCache, DISABLED)) {
+        try (DatabasePageCache anotherDatabaseCache = createPageCache()) {
             Path mapFile1 = testDirectory.createFile("mapFile1");
             Path mapFile2 = testDirectory.createFile("mapFile2");
             Path mapFile3 = testDirectory.createFile("mapFile3");
@@ -341,6 +346,10 @@ class DatabasePageCacheTest {
         DatabasePageCache.FlushGuard flushGuard = databasePageCache.flushGuard(DatabaseFlushEvent.NULL);
         file.flushAndForce(FileFlushEvent.NULL);
         flushGuard.flushUnflushed();
+    }
+
+    private DatabasePageCache createPageCache() {
+        return new DatabasePageCache(globalPageCache, DISABLED, EMPTY_STORAGE);
     }
 
     private static PagedFile findPagedFile(List<PagedFile> pagedFiles, Path mapFile) {

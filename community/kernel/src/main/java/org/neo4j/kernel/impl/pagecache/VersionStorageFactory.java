@@ -17,11 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.muninn.versioned;
+package org.neo4j.kernel.impl.pagecache;
+
+import org.neo4j.configuration.DatabaseConfig;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.IOController;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 
 @FunctionalInterface
-public interface VersionStorage {
-    VersionStorage EMPTY_STORAGE = sourcePage -> 0;
-
-    long copyPage(long sourcePage);
+public interface VersionStorageFactory {
+    VersionStorage createVersionStorage(
+            PageCache pageCache,
+            IOController ioController,
+            DatabaseLayout databaseLayout,
+            DatabaseConfig databaseConfig);
 }

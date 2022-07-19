@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.pagecache.IOControllerService;
+import org.neo4j.kernel.impl.pagecache.VersionStorageFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
@@ -104,6 +105,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     private final DbmsInfo dbmsInfo;
     private final HostedOnMode mode;
     private final CursorContextFactory contextFactory;
+    private final VersionStorageFactory versionStorageFactory;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final Iterable<ExtensionFactory<?>> extensionFactories;
     private final Function<DatabaseLayout, DatabaseLayoutWatcher> watcherServiceFactory;
@@ -126,6 +128,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
             Dependencies globalDependencies,
             DatabaseConfig databaseConfig,
             CursorContextFactory contextFactory,
+            VersionStorageFactory versionStorageFactory,
             ConstraintSemantics constraintSemantics,
             QueryEngineProvider queryEngineProvider,
             DatabaseTransactionStats transactionStats,
@@ -144,6 +147,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
                 globalModule,
                 globalDependencies,
                 contextFactory,
+                versionStorageFactory,
                 databaseConfig,
                 globalModule.getGlobalMonitors(),
                 LeaseService.NO_LEASES,
@@ -169,6 +173,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
             GlobalModule globalModule,
             Dependencies globalDependencies,
             CursorContextFactory contextFactory,
+            VersionStorageFactory versionStorageFactory,
             DatabaseConfig databaseConfig,
             Monitors parentMonitors,
             LeaseService leaseService,
@@ -188,6 +193,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
         this.namedDatabaseId = namedDatabaseId;
         this.databaseConfig = databaseConfig;
         this.contextFactory = contextFactory;
+        this.versionStorageFactory = versionStorageFactory;
         this.queryEngineProvider = queryEngineProvider;
         this.externalIdReuseConditionProvider = externalIdReuseConditionProvider;
         this.idGeneratorFactory = databaseIdContext.getIdGeneratorFactory();
@@ -431,6 +437,11 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     @Override
     public CursorContextFactory getContextFactory() {
         return contextFactory;
+    }
+
+    @Override
+    public VersionStorageFactory getVersionStorageFactory() {
+        return versionStorageFactory;
     }
 
     @Override

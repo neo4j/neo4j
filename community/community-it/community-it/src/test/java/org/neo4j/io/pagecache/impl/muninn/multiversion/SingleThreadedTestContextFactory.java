@@ -31,11 +31,11 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.context.TransactionVersionContext;
 
-class SingleThreadedTestContextFactory extends CursorContextFactory {
+public class SingleThreadedTestContextFactory extends CursorContextFactory {
     private final VersionContextSupplier versionContextSupplier;
     private final PageCacheTracer cacheTracer;
 
-    SingleThreadedTestContextFactory(PageCacheTracer pageCacheTracer) {
+    public SingleThreadedTestContextFactory(PageCacheTracer pageCacheTracer) {
         this(pageCacheTracer, new TestVersionContextSupplier());
     }
 
@@ -53,7 +53,7 @@ class SingleThreadedTestContextFactory extends CursorContextFactory {
         return testCursorContext;
     }
 
-    static class TestCursorContext extends CursorContext {
+    public static class TestCursorContext extends CursorContext {
         private final TestTransactionVersionContext versionContext;
 
         protected TestCursorContext(

@@ -1695,6 +1695,33 @@ public class AbstractPageListTest {
 
     @ParameterizedTest(name = "pageRef = {0}")
     @MethodSource("argumentsProvider")
+    public void reportWriteLockStatus(int pageId) {
+        init(pageId);
+
+        assertFalse(PageList.isWriteLocked(pageRef));
+        PageList.unlockExclusive(pageRef);
+
+        assertFalse(PageList.isWriteLocked(pageRef));
+        assertTrue(PageList.tryWriteLock(pageRef, multiVersioned));
+
+        if (!multiVersioned) {
+            for (int i = 0; i < 11; i++) {
+                assertTrue(PageList.tryWriteLock(pageRef, multiVersioned));
+                assertTrue(PageList.isWriteLocked(pageRef));
+            }
+
+            for (int i = 0; i < 11; i++) {
+                PageList.unlockWrite(pageRef);
+                assertTrue(PageList.isWriteLocked(pageRef));
+            }
+        }
+
+        PageList.unlockWrite(pageRef);
+        assertFalse(PageList.isWriteLocked(pageRef));
+    }
+
+    @ParameterizedTest(name = "pageRef = {0}")
+    @MethodSource("argumentsProvider")
     public void failedFaultMustNotInterfereWithAdjacentPages(int pageId) {
         init(pageId);
 

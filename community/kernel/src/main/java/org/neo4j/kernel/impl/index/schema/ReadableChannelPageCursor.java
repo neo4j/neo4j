@@ -230,6 +230,11 @@ class ReadableChannelPageCursor extends PageCursor {
     }
 
     @Override
+    public void copyPage(PageCursor targetCursor) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public int copyTo(int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes) {
         throw new UnsupportedOperationException();
     }

@@ -103,7 +103,7 @@ import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.monitoring.tracing.Tracers;
+import org.neo4j.kernel.monitoring.tracing.DefaultTracers;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLog;
@@ -706,8 +706,8 @@ class KernelTransactionsTest {
         TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
         when(transactionIdStore.getLastCommittedTransaction()).thenReturn(new TransactionId(0, 0, 0));
 
-        Tracers tracers =
-                new Tracers("null", NullLog.getInstance(), new Monitors(), mock(JobScheduler.class), clock, config);
+        DefaultTracers tracers = new DefaultTracers(
+                "null", NullLog.getInstance(), new Monitors(), mock(JobScheduler.class), clock, config);
         final DatabaseTracers databaseTracers = new DatabaseTracers(tracers);
 
         KernelTransactions transactions;

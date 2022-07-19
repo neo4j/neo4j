@@ -96,6 +96,7 @@ import org.neo4j.kernel.internal.locker.GlobalLockerService;
 import org.neo4j.kernel.internal.locker.LockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.DatabaseEventListeners;
+import org.neo4j.kernel.monitoring.tracing.DefaultTracers;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -223,14 +224,8 @@ public class GlobalModule {
         globalDependencies.satisfyDependency(globalAvailabilityGuard);
         globalLife.setLast(globalAvailabilityGuard);
 
-        String desiredImplementationName = globalConfig.get(GraphDatabaseInternalSettings.tracer);
-        tracers = globalDependencies.satisfyDependency(new Tracers(
-                desiredImplementationName,
-                logService.getInternalLog(Tracers.class),
-                globalMonitors,
-                jobScheduler,
-                globalClock,
-                globalConfig));
+        tracers = tryResolveOrCreate(Tracers.class, this::createDefaultTracers);
+        globalDependencies.satisfyDependency(tracers);
         globalDependencies.satisfyDependency(tracers.getPageCacheTracer());
 
         collectionsFactorySupplier = createCollectionsFactorySupplier(globalConfig, globalLife, logService);
@@ -281,6 +276,17 @@ public class GlobalModule {
         globalDependencies.satisfyDependency(capabilitiesService);
         globalDependencies.satisfyDependency(
                 tryResolveOrCreate(NativeAccess.class, NativeAccessProvider::getNativeAccess));
+    }
+
+    private Tracers createDefaultTracers() {
+        String desiredImplementationName = globalConfig.get(GraphDatabaseInternalSettings.tracer);
+        return new DefaultTracers(
+                desiredImplementationName,
+                logService.getInternalLog(DefaultTracers.class),
+                globalMonitors,
+                jobScheduler,
+                globalClock,
+                globalConfig);
     }
 
     private <T> T tryResolveOrCreate(Class<T> clazz, Supplier<T> newInstanceMethod) {

@@ -51,7 +51,6 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore.HeavyRecordData;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
-import org.neo4j.kernel.impl.store.format.multiversion.MultiVersionFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -66,7 +65,7 @@ import org.neo4j.values.storable.Values;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
-class TestArrayStore {
+public class TestArrayStore {
     @Inject
     private FileSystemAbstraction fileSystem;
 
@@ -80,8 +79,7 @@ class TestArrayStore {
     private NeoStores neoStores;
 
     public static Stream<Arguments> recordFormats() {
-        return Stream.of(
-                Arguments.of(PageAligned.LATEST_RECORD_FORMATS), Arguments.of(MultiVersionFormat.RECORD_FORMATS));
+        return Stream.of(Arguments.of(PageAligned.LATEST_RECORD_FORMATS));
     }
 
     void setup(RecordFormats recordFormats) {

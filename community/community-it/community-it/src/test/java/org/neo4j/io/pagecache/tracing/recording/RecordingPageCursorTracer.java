@@ -128,6 +128,11 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
     }
 
     @Override
+    public long chainsPatched() {
+        return 0;
+    }
+
+    @Override
     public PinEvent beginPin(boolean writeLock, final long filePageId, PageSwapper swapper) {
         return new PinEvent() {
             private boolean hit = true;
@@ -202,6 +207,9 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
 
     @Override
     public void pageCopied(long pageRef, long version) {}
+
+    @Override
+    public void chainPatched(long pageId) {}
 
     @Override
     public void merge(CursorStatisticSnapshot statisticSnapshot) {}

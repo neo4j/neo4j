@@ -38,6 +38,11 @@ public class DelegatingPageCursor extends PageCursor {
     }
 
     @Override
+    public void copyPage(PageCursor targetCursor) {
+        delegate.copyPage(targetCursor);
+    }
+
+    @Override
     public int copyTo(int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes) {
         return delegate.copyTo(sourceOffset, targetCursor, targetOffset, lengthInBytes);
     }

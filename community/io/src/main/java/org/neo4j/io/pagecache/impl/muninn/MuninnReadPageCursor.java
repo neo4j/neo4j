@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 
 final class MuninnReadPageCursor extends MuninnPageCursor {
-    private long lockStamp;
+    long lockStamp;
 
     MuninnReadPageCursor(
             MuninnPagedFile pagedFile, int pf_flags, long victimPage, CursorContext cursorContext, long pageId) {
@@ -37,6 +37,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
         if (pinnedPageRef != 0) {
             tracer.unpin(loadPlainCurrentPageId(), swapper);
         }
+        unmapSnapshot();
         lockStamp = 0; // make sure not to accidentally keep a lock state around
         clearPageCursorState();
     }
@@ -71,6 +72,9 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
     @Override
     protected void pinCursorToPage(PinEvent pinEvent, long pageRef, long filePageId, PageSwapper swapper) {
         init(pinEvent, pageRef);
+        if (multiVersioned && shouldLoadSnapshot()) {
+            versionStorage.loadReadSnapshot(this, versionContext, pinEvent);
+        }
         if (updateUsage) {
             PageList.incrementUsage(pageRef);
         }
@@ -82,11 +86,23 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
     }
 
     @Override
+    public void remapSnapshot(MuninnPageCursor cursor, long committingTransactionId) {
+        super.remapSnapshot(cursor, committingTransactionId);
+        lockStamp = cursor.lockStamp();
+    }
+
+    @Override
+    protected void restoreState(VersionState remappedState) {
+        super.restoreState(remappedState);
+        lockStamp = remappedState.lockStamp();
+    }
+
+    @Override
     public boolean shouldRetry() throws IOException {
         MuninnReadPageCursor cursor = this;
         do {
             long pageRef = cursor.pinnedPageRef;
-            if (pageRef != 0 && isInvalidVersion(cursor, pageRef)) {
+            if (pageRef != 0 && !PageList.validateReadLock(pageRef, cursor.lockStamp)) {
                 assertCursorOpenFileMappedAndGetIdOfLastPage();
                 startRetryLinkedChain();
                 return true;
@@ -96,16 +112,10 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
         return false;
     }
 
-    private boolean isInvalidVersion(MuninnReadPageCursor cursor, long pageRef) {
-        return multiVersioned
-                ? (cursor.chainPreviousPointer == UNBOUND_PAGE_ADDRESS
-                        && !PageList.validateReadLock(pageRef, cursor.lockStamp))
-                : !PageList.validateReadLock(pageRef, cursor.lockStamp);
-    }
-
     private void startRetryLinkedChain() throws IOException {
         MuninnReadPageCursor cursor = this;
         do {
+            cursor.unmapSnapshot();
             long pageRef = cursor.pinnedPageRef;
             if (pageRef != 0) {
                 cursor.startRetry(pageRef);
@@ -173,6 +183,11 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
     @Override
     public void shiftBytes(int sourceStart, int length, int shift) {
         throw new IllegalStateException("Cannot write to read-locked page");
+    }
+
+    @Override
+    long lockStamp() {
+        return lockStamp;
     }
 
     @Override

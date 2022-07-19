@@ -29,7 +29,6 @@ import java.nio.ByteOrder;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
@@ -68,7 +67,6 @@ public abstract class AbstractRecordFormatTest {
     private final int entityBits;
     private final int propertyBits;
     protected RecordGenerators generators;
-    private String testName;
 
     protected AbstractRecordFormatTest(RecordFormats formats, int entityBits, int propertyBits) {
         this.formats = formats;
@@ -77,8 +75,7 @@ public abstract class AbstractRecordFormatTest {
     }
 
     @BeforeEach
-    public void before(TestInfo testInfo) {
-        testName = testInfo.getDisplayName();
+    public void before() {
         generators = new LimitedRecordGenerators(random.randomValues(), entityBits, propertyBits, 40, 16, -1, formats);
     }
 

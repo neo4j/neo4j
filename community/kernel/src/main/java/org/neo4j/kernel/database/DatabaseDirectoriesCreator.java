@@ -17,15 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage;
+package org.neo4j.kernel.database;
 
-import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.multiversion.MultiVersionFormat;
+import java.io.IOException;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 
-public class LERecordPropertyCursorTest extends RecordPropertyCursorTest {
+public class DatabaseDirectoriesCreator {
+    private final FileSystemAbstraction fs;
+    private final DatabaseLayout databaseLayout;
 
-    @Override
-    protected RecordFormats getRecordFormats() {
-        return MultiVersionFormat.RECORD_FORMATS;
+    public DatabaseDirectoriesCreator(FileSystemAbstraction fs, DatabaseLayout databaseLayout) {
+        this.fs = fs;
+        this.databaseLayout = databaseLayout;
+    }
+
+    void createDirectories() throws IOException {
+        fs.mkdirs(databaseLayout.databaseDirectory());
+        fs.mkdirs(databaseLayout.getTransactionLogsDirectory());
     }
 }

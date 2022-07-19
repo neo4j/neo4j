@@ -45,9 +45,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
-import java.util.function.Supplier;
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.neo4j.function.Suppliers;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.IOController;
@@ -56,8 +54,6 @@ import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
-import org.neo4j.io.pagecache.impl.muninn.versioned.InMemoryVersionStorage;
-import org.neo4j.io.pagecache.impl.muninn.versioned.VersionStorage;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -213,8 +209,6 @@ public class MuninnPageCache implements PageCache {
 
     // 'true' (the default) if we should print any exceptions we get when unmapping a file.
     private boolean printExceptionsOnClose;
-
-    private final Supplier<VersionStorage> versionStorage;
 
     static {
         try {
@@ -499,8 +493,6 @@ public class MuninnPageCache implements PageCache {
         this.faultLockStriping = configuration.faultLockStriping;
         this.enableEvictionThread = configuration.enableEvictionThread;
         this.preallocateStoreFiles = configuration.preallocateStoreFiles;
-        versionStorage =
-                Suppliers.lazySingleton(() -> new InMemoryVersionStorage(configuration.memoryAllocator, cachePageSize));
         setFreelistHead(new AtomicInteger());
 
         // Expose the total number of pages
@@ -546,7 +538,8 @@ public class MuninnPageCache implements PageCache {
             int filePageSize,
             String databaseName,
             ImmutableSet<OpenOption> openOptions,
-            IOController ioController)
+            IOController ioController,
+            VersionStorage versionStorage)
             throws IOException {
         assertHealthy();
         ensureThreadsInitialised();
@@ -644,7 +637,7 @@ public class MuninnPageCache implements PageCache {
                 ioController,
                 multiVersioned,
                 multiVersioned ? pageReservedBytes : 0,
-                multiVersioned ? versionStorage.get() : VersionStorage.EMPTY_STORAGE,
+                versionStorage,
                 littleEndian);
         pagedFile.incrementRefCount();
         pagedFile.setDeleteOnClose(deleteOnClose);

@@ -59,6 +59,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
@@ -373,36 +374,16 @@ class DatabaseIT {
         }
 
         @Override
-        public PagedFile map(Path path, int pageSize, String databaseName) throws IOException {
-            return createPageFileWrapper(path, pageSize, databaseName, immutable.empty(), IOController.DISABLED);
-        }
-
-        @Override
-        public PagedFile map(Path path, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions)
-                throws IOException {
-            return createPageFileWrapper(path, pageSize, databaseName, openOptions, IOController.DISABLED);
-        }
-
-        @Override
         public PagedFile map(
                 Path path,
                 int pageSize,
                 String databaseName,
                 ImmutableSet<OpenOption> openOptions,
-                IOController ioController)
-                throws IOException {
-            return createPageFileWrapper(path, pageSize, databaseName, openOptions, ioController);
-        }
-
-        private PageFileWrapper createPageFileWrapper(
-                Path path,
-                int pageSize,
-                String databaseName,
-                ImmutableSet<OpenOption> openOptions,
-                IOController ioController)
+                IOController ioController,
+                VersionStorage versionStorage)
                 throws IOException {
             PageFileWrapper pageFileWrapper = new PageFileWrapper(
-                    super.map(path, pageSize, databaseName, openOptions, ioController),
+                    super.map(path, pageSize, databaseName, openOptions, ioController, versionStorage),
                     fileFlushes,
                     ioController,
                     disabledIOController,

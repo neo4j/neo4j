@@ -119,6 +119,7 @@ import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.pagecache.IOControllerService;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
+import org.neo4j.kernel.impl.pagecache.VersionStorageFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
@@ -255,6 +256,7 @@ public class Database extends LifecycleAdapter {
     private final GlobalMemoryGroupTracker transactionsMemoryPool;
     private final GlobalMemoryGroupTracker otherMemoryPool;
     private final CursorContextFactory cursorContextFactory;
+    private final VersionStorageFactory versionStorageFactory;
     private MemoryTracker otherDatabaseMemoryTracker;
     private RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private DatabaseAvailability databaseAvailability;
@@ -293,6 +295,7 @@ public class Database extends LifecycleAdapter {
         this.dbmsInfo = context.getDbmsInfo();
         this.mode = context.getMode();
         this.cursorContextFactory = context.getContextFactory();
+        this.versionStorageFactory = context.getVersionStorageFactory();
         this.extensionFactories = context.getExtensionFactories();
         this.watcherServiceFactory = context.getWatcherServiceFactory();
         this.engineProvider = context.getEngineProvider();
@@ -327,9 +330,12 @@ public class Database extends LifecycleAdapter {
             return;
         }
         try {
+            new DatabaseDirectoriesCreator(fs, databaseLayout).createDirectories();
             databaseDependencies = new Dependencies(globalDependencies);
             ioController = ioControllerService.createIOController(databaseConfig, clock);
-            databasePageCache = new DatabasePageCache(globalPageCache, ioController);
+            var versionStorage = versionStorageFactory.createVersionStorage(
+                    globalPageCache, ioController, databaseLayout, databaseConfig);
+            databasePageCache = new DatabasePageCache(globalPageCache, ioController, versionStorage);
             databaseMonitors = new Monitors(parentMonitors, internalLogProvider);
 
             life = new LifeSupport();
@@ -350,6 +356,7 @@ public class Database extends LifecycleAdapter {
             databaseDependencies.satisfyDependency(databaseMonitors);
             databaseDependencies.satisfyDependency(databaseLogService);
             databaseDependencies.satisfyDependency(databasePageCache);
+            databaseDependencies.satisfyDependency(versionStorage);
             databaseDependencies.satisfyDependency(tokenHolders);
             databaseDependencies.satisfyDependency(databaseFacade);
             databaseDependencies.satisfyDependency(kernelTransactionFactory);
@@ -372,6 +379,7 @@ public class Database extends LifecycleAdapter {
             recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
             databaseDependencies.satisfyDependency(recoveryCleanupWorkCollector);
 
+            life.add(onShutdown(versionStorage::close));
             life.add(new PageCacheLifecycle(databasePageCache));
             life.add(initializeExtensions(databaseDependencies));
             life.add(initializeIndexProviderMap(databaseDependencies));

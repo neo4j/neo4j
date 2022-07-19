@@ -19,7 +19,6 @@
  */
 package org.neo4j.io.pagecache;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Path;
@@ -264,6 +263,11 @@ public class ByteArrayPageCursor extends PageCursor {
     }
 
     @Override
+    public void copyPage(PageCursor target) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public int copyTo(int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes) {
         throw new UnsupportedOperationException();
     }
@@ -339,7 +343,7 @@ public class ByteArrayPageCursor extends PageCursor {
 
     private record ByteArrayPagedFile(int pageSize) implements PagedFile {
         @Override
-        public PageCursor io(long pageId, int pf_flags, CursorContext context) throws IOException {
+        public PageCursor io(long pageId, int pf_flags, CursorContext context) {
             throw new UnsupportedOperationException();
         }
 
@@ -359,7 +363,7 @@ public class ByteArrayPageCursor extends PageCursor {
         }
 
         @Override
-        public long fileSize() throws IOException {
+        public long fileSize() {
             return pageSize;
         }
 
@@ -369,10 +373,10 @@ public class ByteArrayPageCursor extends PageCursor {
         }
 
         @Override
-        public void flushAndForce(FileFlushEvent flushEvent) throws IOException {}
+        public void flushAndForce(FileFlushEvent flushEvent) {}
 
         @Override
-        public long getLastPageId() throws IOException {
+        public long getLastPageId() {
             return 0;
         }
 

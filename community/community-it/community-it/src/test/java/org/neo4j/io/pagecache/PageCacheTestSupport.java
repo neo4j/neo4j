@@ -160,6 +160,10 @@ public abstract class PageCacheTestSupport<T extends PageCache> {
         return fixture.file(pathname);
     }
 
+    protected final Path path() throws IOException {
+        return fixture.file("a").getParent();
+    }
+
     protected void ensureExists(Path file) throws IOException {
         fs.mkdirs(file.getParent());
         fs.write(file).close();

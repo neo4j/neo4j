@@ -22,7 +22,7 @@ package org.neo4j.io.pagecache.impl;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_LINUX;
 import static org.neo4j.io.fs.DefaultFileSystemAbstraction.WRITE_OPTIONS;
 import static org.neo4j.io.fs.FileSystemAbstraction.INVALID_FILE_DESCRIPTOR;
-import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCursor.CHECKSUM_OFFSET;
+import static org.neo4j.io.pagecache.impl.muninn.VersionStorage.CHECKSUM_OFFSET;
 
 import com.sun.nio.file.ExtendedOpenOption;
 import java.io.IOException;

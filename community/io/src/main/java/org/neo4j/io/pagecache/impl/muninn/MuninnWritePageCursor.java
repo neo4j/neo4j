@@ -31,6 +31,8 @@ import org.neo4j.io.pagecache.tracing.PinEvent;
 
 final class MuninnWritePageCursor extends MuninnPageCursor {
 
+    private static final long UNKNOWN_STAMP = -1;
+
     private static final MutableLongLongMap LOCKED_PAGES = flag(MuninnWritePageCursor.class, "CHECK_WRITE_LOCKS", false)
             ? LongLongMaps.mutable.empty().asSynchronized()
             : null;
@@ -42,13 +44,15 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
 
     @Override
     public void unpin() {
+        if (multiVersioned) {
+            // first we need to see if we need to update and remap snapshot,
+            // as part of that pinned page may change so this should be the first operation on unpin
+            // if cursor was already unpinned it will not have any state to update any chain.
+            updateChain();
+        }
         long pageRef = pinnedPageRef;
         if (pageRef != 0) {
             tracer.unpin(loadPlainCurrentPageId(), swapper);
-
-            if (multiVersioned) {
-                updateChain(pageRef);
-            }
 
             // Mark the page as dirty *after* our write access, to make sure it's dirty even if it was concurrently
             // flushed. Unlocking the write-locked page will mark it as dirty for us.
@@ -193,14 +197,20 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
         // after the reset() call, which means that if we throw, the cursor will
         // be closed and the page lock will be released.
         assertCursorOpenFileMappedAndGetIdOfLastPage();
+        if (multiVersioned && olderVersionRequired(pointer)) {
+            versionStorage.loadWriteSnapshot(this, versionContext, pinEvent);
+        }
         if (updateUsage) {
             PageList.incrementUsage(pageRef);
         }
-        if (multiVersioned) {
-            copyPage(pageRef);
-        } else {
+        if (!multiVersioned) {
             PageList.setLastModifiedTxId(pageRef, versionContext.committingTransactionId());
         }
+    }
+
+    @Override
+    long lockStamp() {
+        return UNKNOWN_STAMP;
     }
 
     @Override

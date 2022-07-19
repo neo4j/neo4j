@@ -298,6 +298,16 @@ public abstract class PageCursor implements AutoCloseable {
     public abstract boolean shouldRetry() throws IOException;
 
     /**
+     * Copy the current cursor page, to the given target cursor page.
+     * Always copy full page including any reserved bytes.
+     * <p>
+     * <strong>Note</strong> that {@code copyPage} is only guaranteed to work when both target and source cursor are from
+     * the <em>same</em> page cache implementation. Using wrappers, delegates or mixing cursor implementations may
+     * produce unspecified errors.
+     */
+    public abstract void copyPage(PageCursor targetCursor);
+
+    /**
      * Copy the specified number of bytes from the given offset of this page, to the given offset of the target page.
      * <p>
      * If the length reaches beyond the end of either cursor, then only as many bytes as are available in this cursor,

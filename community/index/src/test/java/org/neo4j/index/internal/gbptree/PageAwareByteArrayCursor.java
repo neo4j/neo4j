@@ -120,6 +120,11 @@ class PageAwareByteArrayCursor extends PageCursor {
     }
 
     @Override
+    public void copyPage(PageCursor targetCursor) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public int copyTo(int sourceOffset, ByteBuffer buf) {
         int bytesToCopy = Math.min(buf.limit() - buf.position(), payloadSize - sourceOffset);
         for (int i = 0; i < bytesToCopy; i++) {

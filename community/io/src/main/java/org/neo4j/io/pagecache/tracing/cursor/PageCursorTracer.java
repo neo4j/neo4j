@@ -110,6 +110,11 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable {
         }
 
         @Override
+        public long chainsPatched() {
+            return 0;
+        }
+
+        @Override
         public PinEvent beginPin(boolean writeLock, long filePageId, PageSwapper swapper) {
             return PinEvent.NULL;
         }
@@ -136,6 +141,9 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable {
 
         @Override
         public void pageCopied(long pageRef, long version) {}
+
+        @Override
+        public void chainPatched(long pageId) {}
     };
 
     /**
@@ -182,4 +190,6 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable {
     void merge(CursorStatisticSnapshot statisticSnapshot);
 
     void pageCopied(long pageRef, long version);
+
+    void chainPatched(long pageId);
 }

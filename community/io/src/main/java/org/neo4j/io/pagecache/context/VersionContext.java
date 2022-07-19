@@ -39,7 +39,7 @@ package org.neo4j.io.pagecache.context;
  *     committing transaction id.
  *     </li>
  * </ul>
- * By default non context will be initialised with last closed transaction id which is equal to {@link Long#MAX_VALUE}
+ * By default, non context will be initialised with last closed transaction id which is equal to {@link Long#MAX_VALUE}
  * and transaction id that is equal to minimal possible transaction id: 1.
  */
 public interface VersionContext {

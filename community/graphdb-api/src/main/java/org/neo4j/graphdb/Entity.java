@@ -174,7 +174,6 @@ public interface Entity {
      *
      * @return all property keys on this property container
      */
-    // TODO: figure out concurrency semantics
     Iterable<String> getPropertyKeys();
 
     /**

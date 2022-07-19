@@ -26,6 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCursor.getLongAt;
+import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCursor.putLongAt;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -320,6 +322,34 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
             assertFalse(writer.checkAndClearBoundsFlag());
 
             int expectedValue = 1;
+            while (writer2.getOffset() < writer2.getPagedFile().payloadSize()) {
+                assertEquals(expectedValue, writer2.getInt());
+            }
+        }
+    }
+
+    @Test
+    void copyPageCopyWholePageWithPayload() throws IOException {
+        try (var pageCache = getPageCache(fs, 1024, new DefaultPageCacheTracer());
+                var pagedFile = map(file("a"), pageCache.pageSize());
+                MuninnPageCursor writer = (MuninnPageCursor) pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT);
+                MuninnPageCursor writer2 = (MuninnPageCursor) pagedFile.io(1, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+            assertTrue(writer.next());
+            assertTrue(writer2.next());
+
+            int value = 7;
+            while (writer.getOffset() < writer.getPagedFile().payloadSize()) {
+                writer.putInt(value);
+            }
+            putLongAt(writer.pointer, 101, true);
+            putLongAt(writer.pointer + Long.BYTES, 4242, true);
+
+            writer.copyPage(writer2);
+            assertFalse(writer.checkAndClearBoundsFlag());
+
+            assertEquals(101, getLongAt(writer2.pointer, true));
+            assertEquals(4242, getLongAt(writer.pointer + Long.BYTES, true));
+            int expectedValue = 7;
             while (writer2.getOffset() < writer2.getPagedFile().payloadSize()) {
                 assertEquals(expectedValue, writer2.getInt());
             }

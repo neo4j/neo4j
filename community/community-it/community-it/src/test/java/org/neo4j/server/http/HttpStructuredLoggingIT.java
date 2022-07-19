@@ -67,6 +67,8 @@ class HttpStructuredLoggingIT extends ExclusiveWebContainerTestBase {
                     Map.of(
                             HttpConnector.listen_address.name(),
                             "localhost:0",
+                            HttpConnector.advertised_address.name(),
+                            "localhost:0",
                             ServerSettings.http_log_format.name(),
                             FormattedLogFormat.JSON.name(),
                             ServerSettings.http_logging_enabled.name(),
