@@ -242,11 +242,13 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String, Ob
 
     @Override
     protected Map<String, Object> fetchNextOrNull() {
+        Map<String, Object> result;
         if (isMaterialized()) {
-            return nextFromMaterialized();
+            result = nextFromMaterialized();
         } else {
-            return nextFromSubscriber();
+            result = nextFromSubscriber();
         }
+        return result;
     }
 
     private Map<String, Object> nextFromMaterialized() {

@@ -96,6 +96,10 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setAllRelationshipsCardinality(100)
       .setLabelCardinality("A", 60)
       .setLabelCardinality("B", 60)
+      .setRelationshipCardinality("(:A)-[]->()", 100)
+      .setRelationshipCardinality("()-[]->(:A)", 100)
+      .setRelationshipCardinality("(:B)-[]->()", 100)
+      .setRelationshipCardinality("()-[]->(:B)", 100)
       .build()
       .plan(query)
       .stripProduceResults

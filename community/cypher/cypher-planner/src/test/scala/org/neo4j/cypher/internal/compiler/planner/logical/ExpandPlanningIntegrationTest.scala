@@ -38,8 +38,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
 
     val plan = cfg.plan("MATCH (a)-[r]->(b) RETURN r").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .expandAll("(a)-[r]->(b)")
-      .allNodeScan("a")
+      .allRelationshipsScan("(a)-[r]->(b)")
       .build()
   }
 
@@ -56,6 +55,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
       .setRelationshipCardinality("(:C)-[]->(:D)", 100)
       .setRelationshipCardinality("(:C)-[]->()", 100)
       .setRelationshipCardinality("()-[]->(:D)", 100)
+      .setRelationshipCardinality("()-[]->()", 100000)
       .build()
 
     val plan = cfg.plan("MATCH (a:A)-[r1]->(b:B), (c:C)-[r2]->(d:D) RETURN r1, r2").stripProduceResults
@@ -74,7 +74,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
   test("Should build plans containing expand for self-referencing relationship patterns") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(100)
-      .setRelationshipCardinality("()-[]-()", 50)
+      .setRelationshipCardinality("()-[]-()", 5000)
       .build()
 
     val plan = cfg.plan("MATCH (a)-[r]->(a) RETURN r").stripProduceResults
@@ -87,15 +87,17 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
   test("Should build plans containing expand for looping relationship patterns") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(100)
-      .setRelationshipCardinality("()-[]->()", 20)
+      .setLabelCardinality("A", 100)
+      .setRelationshipCardinality("()-[]->()", 2000)
+      .setRelationshipCardinality("(:A)-[]->()", 20)
       .build()
 
-    val plan = cfg.plan("MATCH (a)-[r1]->(b)<-[r2]-(a) RETURN r1, r2").stripProduceResults
+    val plan = cfg.plan("MATCH (a:A)-[r1]->(b)<-[r2]-(a) RETURN r1, r2").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .filter("not r1 = r2")
       .expandInto("(a)-[r1]->(b)")
       .expandAll("(a)-[r2]->(b)")
-      .allNodeScan("a")
+      .nodeByLabelScan("a", "A")
       .build()
   }
 
@@ -121,6 +123,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
       .setRelationshipCardinality("(:A)-[]->(:Person)", 10)
       .setRelationshipCardinality("(:A)-[]->()", 10)
       .setRelationshipCardinality("()-[]->(:Person)", 500)
+      .setRelationshipCardinality("()-[]->()", 5000)
       .addNodeIndex("Person", Seq("name"), existsSelectivity = 1.0, uniqueSelectivity = 0.1)
       .build()
 

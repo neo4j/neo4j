@@ -54,7 +54,7 @@ class IndexPlanningIntegrationTest
       .setLabelCardinality("Label", 100)
       .setRelationshipCardinality("()-[]->(:Label)", 50)
       .setRelationshipCardinality("(:Label)-[]->()", 50)
-      .setRelationshipCardinality("()-[]->()", 50)
+      .setRelationshipCardinality("()-[]->()", 500)
 
   private def plannerConfigForRangeIndexOnLabelPropTests(): StatisticsBackedLogicalPlanningConfiguration =
     plannerBaseConfigForIndexOnLabelPropTests()
@@ -343,6 +343,7 @@ class IndexPlanningIntegrationTest
       .setRelationshipCardinality("(:Place)-[]->()", 20)
       .setRelationshipCardinality("(:Place)-[]->(:Preference)", 20)
       .setRelationshipCardinality("()-[]->(:Preference)", 20)
+      .setRelationshipCardinality("()-[]->()", 200)
 
   private def plannerConfigWithPointIndexForDistancePredicateTests(): StatisticsBackedLogicalPlanningConfiguration =
     plannerBaseConfigForDistancePredicateTests()
@@ -440,6 +441,7 @@ class IndexPlanningIntegrationTest
       .setRelationshipCardinality("()-[]->(:S)", 1000)
       .setRelationshipCardinality("(:T)-[]->(:S)", 1000)
       .setRelationshipCardinality("(:T)-[]->()", 1000)
+      .setRelationshipCardinality("()-[]->()", 10000)
 
   private def plannerConfigWithRangeIndexForUsingHintTests(): StatisticsBackedLogicalPlanningConfiguration =
     plannerBaseConfigForUsingHintTests()

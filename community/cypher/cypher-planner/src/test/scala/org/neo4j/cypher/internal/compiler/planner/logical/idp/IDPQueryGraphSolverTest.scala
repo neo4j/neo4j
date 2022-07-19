@@ -30,12 +30,14 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
@@ -350,7 +352,10 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     }.withLogicalPlanningContext { (cfg, ctx) =>
       val plan = queryGraphSolver.plan(cfg.qg, InterestingOrderConfig.empty, ctx).result
       plan should equal(
-        Expand(AllNodesScan("a", Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "a", "r", ExpandInto)
+        Selection(
+          ands(equals(varFor("a"), varFor("  UNNAMED0"))),
+          DirectedAllRelationshipsScan("r", "a", "  UNNAMED0", Set.empty)
+        )
       )
 
       verify(monitor).initTableFor(cfg.qg)
@@ -377,6 +382,11 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
           PatternRelationship("r2", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
         )
       )
+      // make it expensive to do allRelationshipsScans
+      cost = {
+        case (_: DirectedAllRelationshipsScan, _, _, _) => 1000
+        case _                                          => 1
+      }
     }.withLogicalPlanningContext { (cfg, ctx) =>
       val plan = queryGraphSolver.plan(cfg.qg, InterestingOrderConfig.empty, ctx).result
       plan should beLike {
@@ -617,6 +627,11 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         }
 
         qg = QueryGraph(patternNodes = patternNodes.toSet, patternRelationships = patternRels.toSet)
+        // make it expensive to do allRelationshipsScans
+        cost = {
+          case (_: DirectedAllRelationshipsScan, _, _, _) => 1000
+          case _                                          => 1
+        }
       }.withLogicalPlanningContext { (cfg, ctx) =>
         try {
           val plan = queryGraphSolver.plan(cfg.qg, InterestingOrderConfig.empty, ctx).result
@@ -791,14 +806,13 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
           Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
       )
     }.withLogicalPlanningContext { (cfg, ctx) =>
-      val expandAtoB =
-        Expand(AllNodesScan("a", Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r", ExpandAll)
+      val allRelScanAB = DirectedAllRelationshipsScan("r", "a", "b", Set.empty)
       val allNodeScanC = AllNodesScan("c", Set.empty)
       val plan = queryGraphSolver.plan(cfg.qg, InterestingOrderConfig.empty, ctx).result
       plan should equal(
         ValueHashJoin(
           allNodeScanC,
-          expandAtoB,
+          allRelScanAB,
           predicate.switchSides
         )
       )
@@ -822,6 +836,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     }.withLogicalPlanningContext { (cfg, ctx) =>
       val qgs = cfg.qg.connectedComponents
       val allNodeScanA: AllNodesScan = AllNodesScan("a", Set.empty)
+      val allRelScan = DirectedAllRelationshipsScan("r", "a", "b", Set.empty)
       val expandAtoB = Expand(Argument(Set("a")), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
       val expandAtoB2 = Expand(allNodeScanA, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
       val plan = queryGraphSolver.plan(cfg.qg, InterestingOrderConfig.empty, ctx).result
@@ -852,17 +867,16 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         verify(monitor).startConnectingComponents(omQG)
         verify(monitor).endConnectingComponents(omQG, expandAtoB)
 
-        // outer hash join
+        // all relationship scan
         val omQGWithoutArguments = omQG.withoutArguments()
-
         verify(monitor).initTableFor(omQGWithoutArguments)
         verify(monitor).startIDPIterationFor(omQGWithoutArguments)
-        verify(monitor).endIDPIterationFor(omQGWithoutArguments, expandAtoB2)
+        verify(monitor).endIDPIterationFor(omQGWithoutArguments, allRelScan)
 
         verify(monitor, times(2)).foundPlanAfter(0) // 1 time here
 
         verify(monitor).startConnectingComponents(omQGWithoutArguments)
-        verify(monitor).endConnectingComponents(omQGWithoutArguments, expandAtoB2)
+        verify(monitor).endConnectingComponents(omQGWithoutArguments, allRelScan)
       }
 
       // final result
@@ -900,15 +914,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
             AllNodesScan("a", Set.empty),
             AllNodesScan("b", Set.empty)
           ),
-          Expand(
-            AllNodesScan("a", Set.empty),
-            "a",
-            SemanticDirection.OUTGOING,
-            Seq.empty,
-            "b",
-            "r",
-            ExpandAll
-          )
+          DirectedAllRelationshipsScan("r", "a", "b", Set.empty)
         )
       )
     }
@@ -929,6 +935,11 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
             Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
         ))
       )
+      // make it expensive to do allRelationshipsScans
+      cost = {
+        case (_: DirectedAllRelationshipsScan, _, _, _) => 1000
+        case _                                          => 1
+      }
     }.withLogicalPlanningContext { (cfg, ctx) =>
       queryGraphSolver.plan(cfg.qg, InterestingOrderConfig.empty, ctx).result should equal(
         Apply(

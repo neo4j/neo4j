@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Descending
+import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
@@ -113,16 +114,20 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should prefer cheaper optional expand over joins, even if not cheaper before rewriting") {
     (new given {
       cost = {
+        // cost tweak for not choosing an all-relationships-scan
+        case (s: Selection, _, _, _) if s.leftmostLeaf.isInstanceOf[DirectedAllRelationshipsScan] => Double.MaxValue
+
+        case (_: Selection, _, _, _)          => 1.02731056E8
         case (_: RightOuterHashJoin, _, _, _) => 6.610321376825E9
         case (_: LeftOuterHashJoin, _, _, _)  => 8.1523761738E9
         case (_: Apply, _, _, _)              => 7.444573003149691E9
         case (_: OptionalExpand, _, _, _)     => 4.76310362E8
         case (_: Optional, _, _, _)           => 7.206417822149691E9
-        case (_: Selection, _, _, _)          => 1.02731056E8
-        case (_: Expand, _, _, _)             => 7.89155379E7
-        case (_: AllNodesScan, _, _, _)       => 3.50735724E7
-        case (_: Argument, _, _, _)           => 2.38155181E8
-        case (_: ProjectEndpoints, _, _, _)   => 11.0
+
+        case (_: Expand, _, _, _)           => 7.89155379E7
+        case (_: AllNodesScan, _, _, _)     => 3.50735724E7
+        case (_: Argument, _, _, _)         => 2.38155181E8
+        case (_: ProjectEndpoints, _, _, _) => 11.0
       }
     } getLogicalPlanFor
       """UNWIND $createdRelationships as r
@@ -1218,7 +1223,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should pick expands in an order that minimizes early cardinality increase") {
     val config = new given {
       cardinality = mapCardinality {
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a")      => 1000.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a")      => 100.0
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b")      => 2000.0
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("c")      => 2000.0
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "b") => 200.0
@@ -1236,7 +1241,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   ) {
     val config = new givenPlanWithMinimumCardinalityEnabled {
       cardinality = mapCardinality {
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a")      => 1000.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a")      => 100.0
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b")      => 2000.0
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("c")      => 2000.0
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "b") => 200.0
@@ -1252,7 +1257,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should pick expands in an order that minimizes early cardinality increase with estimates < 1.0") {
     val config = new given {
       cardinality = mapCardinality {
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a")           => 5.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a")           => 0.1
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b")           => 10.0
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("c")           => 10.0
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "b")      => 0.4
@@ -1270,7 +1275,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   ) {
     val config = new givenPlanWithMinimumCardinalityEnabled {
       cardinality = mapCardinality {
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a")           => 5.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a")           => 0.1
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b")           => 10.0
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("c")           => 10.0
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "b")      => 0.4

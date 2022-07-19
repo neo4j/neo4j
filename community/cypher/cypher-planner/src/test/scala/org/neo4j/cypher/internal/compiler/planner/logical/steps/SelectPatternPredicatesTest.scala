@@ -231,7 +231,7 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
     // Then
     result should equal(
       Seq(SelectionCandidate(
-        SelectOrSemiApply(LetSemiApply(aPlan, inner, "  UNNAMED0"), inner2, varFor("  UNNAMED0")),
+        SelectOrSemiApply(LetSemiApply(aPlan, inner, "  UNNAMED1"), inner2, varFor("  UNNAMED1")),
         Set(orsExp)
       ))
     )
@@ -260,7 +260,7 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
     // Then
     result should equal(
       Seq(SelectionCandidate(
-        SelectOrAntiSemiApply(LetSemiApply(aPlan, inner, "  UNNAMED0"), inner2, varFor("  UNNAMED0")),
+        SelectOrAntiSemiApply(LetSemiApply(aPlan, inner, "  UNNAMED1"), inner2, varFor("  UNNAMED1")),
         Set(orsExp)
       ))
     )
@@ -289,7 +289,7 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
     // Then
     result should equal(
       Seq(SelectionCandidate(
-        SelectOrSemiApply(LetAntiSemiApply(aPlan, inner, "  UNNAMED0"), inner2, varFor("  UNNAMED0")),
+        SelectOrSemiApply(LetAntiSemiApply(aPlan, inner, "  UNNAMED1"), inner2, varFor("  UNNAMED1")),
         Set(orsExp)
       ))
     )
@@ -322,9 +322,9 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
     result should equal(
       Seq(SelectionCandidate(
         SelectOrAntiSemiApply(
-          LetSelectOrSemiApply(aPlan, inner, "  UNNAMED0", equalsExp),
+          LetSelectOrSemiApply(aPlan, inner, "  UNNAMED1", equalsExp),
           inner2,
-          varFor("  UNNAMED0")
+          varFor("  UNNAMED1")
         ),
         Set(orsExp)
       ))
@@ -358,9 +358,9 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
     result should equal(
       Seq(SelectionCandidate(
         SelectOrSemiApply(
-          LetSelectOrAntiSemiApply(aPlan, inner, "  UNNAMED0", equalsExp),
+          LetSelectOrAntiSemiApply(aPlan, inner, "  UNNAMED1", equalsExp),
           inner2,
-          varFor("  UNNAMED0")
+          varFor("  UNNAMED1")
         ),
         Set(orsExp)
       ))

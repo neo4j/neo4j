@@ -105,8 +105,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         .|.projectEndpoints("(u)-[r]->(v)", startInScope = false, endInScope = false)
         .|.argument("r")
         .limit(1)
-        .expandAll("(a)-[r]->(b)")
-        .allNodeScan("a")
+        .allRelationshipsScan("(a)-[r]->(b)")
         .build()
     )
   }
@@ -122,8 +121,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         .|.projectEndpoints("(a)-[r]->(b2)", startInScope = true, endInScope = false)
         .|.argument("a", "r")
         .limit(1)
-        .expandAll("(a)-[r]->(b)")
-        .allNodeScan("a")
+        .allRelationshipsScan("(a)-[r]->(b)")
         .build()
     )
   }
@@ -139,8 +137,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         .|.projectEndpoints("(a)-[r]->(b)", startInScope = true, endInScope = true)
         .|.argument("a", "b", "r")
         .limit(1)
-        .expandAll("(a)-[r]->(b)")
-        .allNodeScan("a")
+        .allRelationshipsScan("(a)-[r]->(b)")
         .build()
     )
   }
@@ -156,8 +153,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         .|.projectEndpoints("(a)-[r]->(b2)", startInScope = true, endInScope = false)
         .|.argument("a", "r")
         .limit(1)
-        .expandAll("(a)-[r]->(b)")
-        .allNodeScan("a")
+        .allRelationshipsScan("(a)-[r]->(b)")
         .build()
     )
   }
@@ -173,8 +169,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         .|.projectEndpoints("(a)-[r]-(b2)", startInScope = true, endInScope = false)
         .|.argument("a", "r")
         .limit(1)
-        .expandAll("(a)-[r]->(b)")
-        .allNodeScan("a")
+        .allRelationshipsScan("(a)-[r]->(b)")
         .build()
     )
   }
@@ -275,8 +270,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         .|.expandInto("(n1)<-[anon_3]-(n2)")
         .|.argument("n1", "n2")
         .limit(10)
-        .expandAll("(n1)-[anon_2]->(n2)")
-        .allNodeScan("n1")
+        .allRelationshipsScan("(n1)-[anon_2]->(n2)")
         .build()
     )
   }
@@ -297,8 +291,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         .|.argument("n1", "n2")
         .limit(10)
         .distinct("n1 AS n1", "n2 AS n2")
-        .expandAll("(n1)-[anon_2]->(n2)")
-        .allNodeScan("n1")
+        .allRelationshipsScan("(n1)-[anon_2]->(n2)")
         .build()
     )
   }
@@ -319,8 +312,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         .|.argument("n2")
         .limit(10)
         .aggregation(Seq("n2 AS n2"), Seq("count(n1) AS n"))
-        .expandAll("(n1)-[anon_2]->(n2)")
-        .allNodeScan("n1")
+        .allRelationshipsScan("(n1)-[anon_2]->(n2)")
         .build()
     )
   }

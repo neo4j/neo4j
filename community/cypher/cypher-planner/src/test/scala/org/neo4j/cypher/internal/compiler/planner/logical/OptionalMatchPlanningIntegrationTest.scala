@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -56,7 +57,9 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
+import org.scalatest.FixtureContext
 import org.scalatest.Inside
+import org.scalatest.Succeeded
 
 import java.lang.Boolean.FALSE
 
@@ -284,10 +287,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
     planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2")._1 match {
       case Apply(
           Limit(
-            Expand(
-              AllNodesScan(_, _),
-              _,
-              _,
+            DirectedAllRelationshipsScan(
               _,
               _,
               _,
@@ -320,7 +320,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       "MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2"
     )._1 match {
       case Apply(
-          Limit(Expand(AllNodesScan(_, _), _, _, _, _, _, _), _),
+          Limit(DirectedAllRelationshipsScan(_, _, _, _), _),
           Optional(
             Selection(
               predicates,
@@ -349,7 +349,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   test("should build optional ProjectEndpoints with extra predicates 2") {
     planFor("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2")._1 match {
       case Apply(
-          Limit(Expand(AllNodesScan(_, _), _, _, _, _, _, _), _),
+          Limit(DirectedAllRelationshipsScan(_, _, _, _), _),
           Optional(
             ProjectEndpoints(
               Argument(args),
@@ -1011,7 +1011,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
     val planner = plannerBuilder()
       .setAllNodesCardinality(30)
       .setLabelCardinality("L0", 10)
-      .setRelationshipCardinality("()-[]->()", 10000)
+      .setRelationshipCardinality("()-[]->()", 20)
       .setRelationshipCardinality("(:L0)-[]->()", 20)
       .build()
 
@@ -1024,13 +1024,11 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
 
     planner.plan(query).stripProduceResults shouldEqual
       new LogicalPlanBuilder(wholePlan = false)
-        .expandInto("(a)-[r2]->(n1)")
+        .filter("a:L0")
+        .expandAll("(n1)<-[r2]-(a)")
         .filterExpression(assertIsNode("n0"))
-        .apply()
-        .|.nodeByLabelScan("a", "L0", "n0", "n1", "r1")
         .optional()
-        .expandAll("(n0)-[r1]->(n1)")
-        .allNodeScan("n0")
+        .allRelationshipsScan("(n0)-[r1]->(n1)")
         .build()
   }
 
