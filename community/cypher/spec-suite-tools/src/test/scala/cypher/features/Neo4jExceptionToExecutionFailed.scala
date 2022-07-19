@@ -182,6 +182,8 @@ object Neo4jExceptionToExecutionFailed {
       )
     )
       INVALID_ARGUMENT_TYPE
+    else if (msg.matches("Coercion of list to boolean is not allowed. Please use `NOT isEmpty\\(...\\)` instead.[\\s.\\S]*"))
+      INVALID_ARGUMENT_TYPE
     else if (msg.matches(semanticError("Can't use aggregate functions inside of aggregate functions\\.")))
       NESTED_AGGREGATION
     else if (
@@ -328,6 +330,10 @@ object Neo4jExceptionToExecutionFailed {
       PROCEDURE_NOT_FOUND
     else if (msg.startsWith("Type mismatch for parameter"))
       INVALID_ARGUMENT_TYPE
+    else if (msg.matches(semanticError("Cannot use `YIELD \\*` outside standalone call")))
+      UNEXPECTED_SYNTAX
+    else if (msg.startsWith("A pattern expression should only be used in order to test the existence of a pattern"))
+      UNEXPECTED_SYNTAX
     else if (msg.startsWith("Invalid input"))
       UNEXPECTED_SYNTAX
     else if (msg.startsWith("Query cannot conclude with"))
