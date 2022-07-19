@@ -34,6 +34,7 @@ import org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_TRANSACTION
 import org.neo4j.internal.kernel.api.security.UserSegment
 import org.neo4j.kernel.api.KernelTransactionHandle
 import org.neo4j.kernel.api.query.QuerySnapshot
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -159,7 +160,7 @@ case class ShowTransactionsCommand(
           def getMapValue(m: util.Map[String, AnyRef]) = {
             val scalaMap = m.asScala
             val keys = scalaMap.keys.toArray
-            val vals: Array[AnyValue] = scalaMap.values.map(Values.of).toArray
+            val vals: Array[AnyValue] = scalaMap.values.map(ValueUtils.of).toArray
             VirtualValues.map(keys, vals)
           }
 
