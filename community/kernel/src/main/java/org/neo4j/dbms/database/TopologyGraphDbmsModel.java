@@ -103,7 +103,8 @@ public interface TopologyGraphDbmsModel {
 
     enum InstanceStatus {
         ENABLED,
-        DEALLOCATING;
+        DEALLOCATING,
+        MARKED;
 
         public static InstanceStatus getInstanceStatus(String value) {
             if (value.equals("active")) {
