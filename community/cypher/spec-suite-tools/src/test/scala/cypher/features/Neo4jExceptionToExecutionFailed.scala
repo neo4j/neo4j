@@ -182,7 +182,9 @@ object Neo4jExceptionToExecutionFailed {
       )
     )
       INVALID_ARGUMENT_TYPE
-    else if (msg.matches("Coercion of list to boolean is not allowed. Please use `NOT isEmpty\\(...\\)` instead.[\\s.\\S]*"))
+    else if (
+      msg.matches("Coercion of list to boolean is not allowed. Please use `NOT isEmpty\\(...\\)` instead.[\\s.\\S]*")
+    )
       INVALID_ARGUMENT_TYPE
     else if (msg.matches(semanticError("Can't use aggregate functions inside of aggregate functions\\.")))
       NESTED_AGGREGATION
