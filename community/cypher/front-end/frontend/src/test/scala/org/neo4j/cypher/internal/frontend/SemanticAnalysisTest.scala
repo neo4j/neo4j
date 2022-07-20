@@ -1846,6 +1846,36 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
         SemanticError(
           "Query cannot conclude with WITH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
           InputPosition(10, 1, 11)
+        ),
+        SemanticError(
+          "All sub queries in an UNION must have the same return column names",
+          InputPosition(17, 1, 18)
+        )
+      )
+    )
+  }
+
+  test("UNION with missing return in first part") {
+    val query = "CALL db.labels() YIELD label UNION CALL db.labels() YIELD label RETURN label"
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "All sub queries in an UNION must have the same return column names",
+          InputPosition(29, 1, 30)
+        )
+      )
+    )
+  }
+
+  test("UNION with missing return in second part") {
+    val query = "CALL db.labels() YIELD label RETURN label UNION CALL db.labels() YIELD label"
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "All sub queries in an UNION must have the same return column names",
+          InputPosition(42, 1, 43)
         )
       )
     )
@@ -1859,6 +1889,10 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
         SemanticError(
           "Query cannot conclude with WITH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
           InputPosition(35, 1, 36)
+        ),
+        SemanticError(
+          "All sub queries in an UNION must have the same return column names",
+          InputPosition(19, 1, 20)
         )
       )
     )

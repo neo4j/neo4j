@@ -430,7 +430,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     )
       .semanticCheck(clean)
       .tap(_.errors.size.shouldEqual(1))
-      .tap(_.errors.head.msg.should(include("All sub queries in an UNION must have the same column names")))
+      .tap(_.errors.head.msg.should(include("All sub queries in an UNION must have the same return column names")))
   }
 
   test("correlated subquery importing variables using leading WITH") {

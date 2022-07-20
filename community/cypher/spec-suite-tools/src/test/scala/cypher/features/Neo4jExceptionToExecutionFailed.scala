@@ -296,7 +296,7 @@ object Neo4jExceptionToExecutionFailed {
       INVALID_AGGREGATION
     else if (msg.matches(semanticError("Expression in .* must be aliased \\(use AS\\)")))
       NO_EXPRESSION_ALIAS
-    else if (msg.matches(semanticError("All sub queries in an UNION must have the same column names")))
+    else if (msg.matches(semanticError("All sub queries in an UNION must have the same return column names")))
       DIFFERENT_COLUMNS_IN_UNION
     else if (msg.matches(semanticError("DELETE doesn't support removing labels from a node. Try REMOVE.")))
       INVALID_DELETE
