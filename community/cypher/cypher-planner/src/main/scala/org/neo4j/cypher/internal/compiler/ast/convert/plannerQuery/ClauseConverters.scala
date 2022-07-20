@@ -484,6 +484,7 @@ object ClauseConverters {
             selections = selections,
             patternNodes = patternContent.nodeIds.toSet,
             patternRelationships = patternContent.rels.toSet,
+            quantifiedPathPatterns = patternContent.quantifiedPathPatterns.toSet,
             hints = clause.hints.toSet,
             shortestPathPatterns = patternContent.shortestPaths.toSet
           )
@@ -496,6 +497,7 @@ object ClauseConverters {
             .addSelections(selections)
             .addPatternNodes(patternContent.nodeIds: _*)
             .addPatternRelationships(patternContent.rels.toSet)
+            .addQuantifiedPathPatterns(patternContent.quantifiedPathPatterns.toSet)
             .addHints(clause.hints)
             .addShortestPaths(patternContent.shortestPaths: _*)
       }

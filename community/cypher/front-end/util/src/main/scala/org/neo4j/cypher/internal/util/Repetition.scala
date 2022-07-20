@@ -16,19 +16,21 @@
  */
 package org.neo4j.cypher.internal.util
 
-case class Repetition(min: Int, max: UpperBound)
+case class Repetition(min: Long, max: UpperBound)
 
 sealed trait UpperBound {
-  def isGreaterThan(count: Int): Boolean
+  def isGreaterThan(count: Long): Boolean
 }
 
 object UpperBound {
 
+  def unlimited: UpperBound = Unlimited
+
   case object Unlimited extends UpperBound {
-    override def isGreaterThan(count: Int): Boolean = true
+    override def isGreaterThan(count: Long): Boolean = true
   }
 
-  case class Limited(n: Int) extends UpperBound {
-    override def isGreaterThan(count: Int): Boolean = count < n
+  case class Limited(n: Long) extends UpperBound {
+    override def isGreaterThan(count: Long): Boolean = count < n
   }
 }

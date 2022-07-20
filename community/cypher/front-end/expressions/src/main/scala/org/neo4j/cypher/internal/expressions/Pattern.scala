@@ -19,6 +19,8 @@ package org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 
+import scala.annotation.tailrec
+
 object Pattern {
 
   sealed trait SemanticContext {
@@ -154,6 +156,11 @@ case class RelationshipChain(
 
   override def allVariables: Set[LogicalVariable] = element.allVariables ++ relationship.variable ++ rightNode.variable
 
+  @tailrec
+  final def leftNode: NodePattern = element match {
+    case node: NodePattern      => node
+    case rel: RelationshipChain => rel.leftNode
+  }
 }
 
 object RelationshipChain {

@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
@@ -199,7 +200,7 @@ object CNFNormalizerTest {
   case object SemanticWrapper extends Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step {
 
     private val transformer =
-      SemanticAnalysis.getTransformer(pushdownPropertyReads = false, Seq.empty)
+      SemanticAnalysis.getTransformer(pushdownPropertyReads = false, Seq(SemanticFeature.QuantifiedPathPatterns))
 
     override def preConditions: Set[Condition] = SemanticAnalysis.preConditions
 

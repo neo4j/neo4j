@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
@@ -419,10 +420,10 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   val pipeLine: Transformer[PlannerContext, BaseState, LogicalPlanState] =
     Parse andThen
       PreparatoryRewriting andThen
-      SemanticAnalysis(warn = true) andThen
+      SemanticAnalysis(warn = true, SemanticFeature.QuantifiedPathPatterns) andThen
       AstRewriting() andThen
       RewriteProcedureCalls andThen
-      SemanticAnalysis(warn = true) andThen
+      SemanticAnalysis(warn = true, SemanticFeature.QuantifiedPathPatterns) andThen
       Namespacer andThen
       ProjectNamedPathsRewriter andThen
       rewriteEqualityToInPredicate andThen

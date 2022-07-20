@@ -38,9 +38,11 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.DistinctQueryProjection
+import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.Predicate
+import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.ir.QueryPagination
@@ -60,6 +62,8 @@ import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.util.Repetition
+import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -1546,4 +1550,161 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       )(pos)
     )))
   }
+
+  test("should convert a single quantified pattern") {
+    val query = buildSinglePlannerQuery("MATCH ((n)-[r]->(m))+ RETURN 1")
+    query.queryGraph shouldBe QueryGraph(
+      patternNodes = Set("anon_0", "anon_1"),
+      quantifiedPathPatterns = Set(
+        QuantifiedPathPattern(
+          leftBinding = NodeBinding("anon_0", "n"),
+          rightBinding = NodeBinding("anon_1", "m"),
+          pattern = QueryGraph(
+            patternNodes = Set("n", "m"),
+            patternRelationships =
+              Set(PatternRelationship("r", ("n", "m"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
+          ),
+          repetition = Repetition(min = 1, max = UpperBound.Unlimited)
+        )
+      )
+    )
+  }
+
+  test("should convert a single quantified pattern with explicitly juxtaposed nodes") {
+    val query = buildSinglePlannerQuery("MATCH (a) ((n)-[r]->(m)){2, 5} (b) RETURN 1")
+    query.queryGraph shouldBe QueryGraph(
+      patternNodes = Set("a", "b"),
+      quantifiedPathPatterns = Set(
+        QuantifiedPathPattern(
+          leftBinding = NodeBinding("a", "n"),
+          rightBinding = NodeBinding("b", "m"),
+          pattern = QueryGraph(
+            patternNodes = Set("n", "m"),
+            patternRelationships =
+              Set(PatternRelationship("r", ("n", "m"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
+          ),
+          repetition = Repetition(min = 2, max = UpperBound.Limited(5))
+        )
+      )
+    )
+  }
+
+  test("should convert a single quantified pattern with explicitly juxtaposed patterns") {
+    val query = buildSinglePlannerQuery("MATCH (a)-[r1]->(b) ((n)-[r2]->(m)){3,} (x)-[r3]->(y) RETURN 1")
+    query.queryGraph shouldBe QueryGraph(
+      patternNodes = Set("a", "b", "x", "y"),
+      patternRelationships = Set(
+        PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
+        PatternRelationship("r3", ("x", "y"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+      ),
+      selections = Selections.from(Set(
+        not(equals(varFor("r1"), varFor("r2"))), // should fix AddUniquenessPredicates to not have these
+        not(equals(varFor("r2"), varFor("r3"))), // should fix AddUniquenessPredicates to not have these
+        not(equals(varFor("r1"), varFor("r3")))
+      )),
+      quantifiedPathPatterns = Set(
+        QuantifiedPathPattern(
+          leftBinding = NodeBinding("b", "n"),
+          rightBinding = NodeBinding("x", "m"),
+          pattern = QueryGraph(
+            patternNodes = Set("n", "m"),
+            patternRelationships =
+              Set(PatternRelationship("r2", ("n", "m"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
+          ),
+          repetition = Repetition(min = 3, max = UpperBound.Unlimited)
+        )
+      )
+    )
+  }
+
+  test("should convert consecutive quantified patterns") {
+    val query = buildSinglePlannerQuery("MATCH ((n)-[r1]->(m))+ ((x)-[r2]->(y)){,3} RETURN 1")
+    query.queryGraph shouldBe QueryGraph(
+      patternNodes = Set("anon_0", "anon_1", "anon_2"),
+      selections = Selections.from(
+        not(equals(varFor("r1"), varFor("r2"))) // should fix AddUniquenessPredicates to not have this
+      ),
+      quantifiedPathPatterns = Set(
+        QuantifiedPathPattern(
+          leftBinding = NodeBinding("anon_0", "n"),
+          rightBinding = NodeBinding("anon_1", "m"),
+          pattern = QueryGraph(
+            patternNodes = Set("n", "m"),
+            patternRelationships =
+              Set(PatternRelationship("r1", ("n", "m"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
+          ),
+          repetition = Repetition(min = 1, max = UpperBound.Unlimited)
+        ),
+        QuantifiedPathPattern(
+          leftBinding = NodeBinding("anon_1", "x"),
+          rightBinding = NodeBinding("anon_2", "y"),
+          pattern = QueryGraph(
+            patternNodes = Set("x", "y"),
+            patternRelationships =
+              Set(PatternRelationship("r2", ("x", "y"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
+          ),
+          repetition = Repetition(min = 0, max = UpperBound.Limited(3))
+        )
+      )
+    )
+  }
+
+  test("should convert a larger consecutive quantified pattern") {
+    val query = buildSinglePlannerQuery("MATCH ((a)-[r1]->(b)-[r2]->(c)){5} ((x)-[r3]->(y))+ RETURN 1")
+    query.queryGraph shouldBe QueryGraph(
+      patternNodes = Set("anon_0", "anon_1", "anon_2"),
+      selections = Selections.from(Set(
+        not(equals(varFor("r1"), varFor("r2"))), // should fix AddUniquenessPredicates to not have this
+        not(equals(varFor("r1"), varFor("r3"))), // should fix AddUniquenessPredicates to not have this
+        not(equals(varFor("r2"), varFor("r3"))) // should fix AddUniquenessPredicates to not have this
+      )),
+      quantifiedPathPatterns = Set(
+        QuantifiedPathPattern(
+          leftBinding = NodeBinding("anon_0", "a"),
+          rightBinding = NodeBinding("anon_1", "c"),
+          pattern = QueryGraph(
+            patternNodes = Set("a", "b", "c"),
+            patternRelationships =
+              Set(
+                PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
+                PatternRelationship("r2", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+              )
+          ),
+          repetition = Repetition(min = 5, max = UpperBound.Limited(5))
+        ),
+        QuantifiedPathPattern(
+          leftBinding = NodeBinding("anon_1", "x"),
+          rightBinding = NodeBinding("anon_2", "y"),
+          pattern = QueryGraph(
+            patternNodes = Set("x", "y"),
+            patternRelationships =
+              Set(PatternRelationship("r3", ("x", "y"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
+          ),
+          repetition = Repetition(min = 1, max = UpperBound.Unlimited)
+        )
+      )
+    )
+  }
+
+  test("should convert a single quantified pattern in OPTIONAL MATCH") {
+    val query = buildSinglePlannerQuery("OPTIONAL MATCH ((n)-[r]->(m))+ RETURN 1")
+    query.queryGraph shouldBe QueryGraph(
+      optionalMatches = Vector(QueryGraph(
+        patternNodes = Set("anon_0", "anon_1"),
+        quantifiedPathPatterns = Set(
+          QuantifiedPathPattern(
+            leftBinding = NodeBinding("anon_0", "n"),
+            rightBinding = NodeBinding("anon_1", "m"),
+            pattern = QueryGraph(
+              patternNodes = Set("n", "m"),
+              patternRelationships =
+                Set(PatternRelationship("r", ("n", "m"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
+            ),
+            repetition = Repetition(min = 1, max = UpperBound.Unlimited)
+          )
+        )
+      ))
+    )
+  }
+
 }
