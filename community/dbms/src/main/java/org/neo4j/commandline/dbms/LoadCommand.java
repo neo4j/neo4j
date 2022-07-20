@@ -22,36 +22,22 @@ package org.neo4j.commandline.dbms;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.commandline.Util.wrapIOException;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.fs.FileUtils.deleteDirectory;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.AccessDeniedException;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.Optional;
 import org.neo4j.cli.AbstractCommand;
-import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.function.ThrowingSupplier;
-import org.neo4j.io.fs.FileUtils;
-import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.io.locker.FileLockException;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 
 @Command(
@@ -135,31 +121,21 @@ public class LoadCommand extends AbstractCommand {
     }
 
     protected void loadDump() throws IOException {
+
         Config config = buildConfig();
-        CursorContextFactory contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
 
-        DatabaseLayout databaseLayout = Neo4jLayout.of(config).databaseLayout(database.name());
-        ctx.fs().mkdirs(databaseLayout.databaseDirectory());
-        ctx.fs().mkdirs(databaseLayout.getNeo4jLayout().transactionLogsRootDirectory());
-        try (Closeable ignore = LockChecker.checkDatabaseLock(databaseLayout)) {
-            deleteIfNecessary(databaseLayout, force);
-            load(getArchiveInputStreamSupplier(), databaseLayout, getArchivePath());
-        } catch (FileLockException e) {
-            throw new CommandFailedException(
-                    "The database is in use. Stop database '" + database.name() + "' and try again.", e);
-        } catch (IOException e) {
-            wrapIOException(e);
-        } catch (CannotWriteException e) {
-            throw new CommandFailedException("You do not have permission to load the database.", e);
-        }
+        LoadDumpExecutor loadDumpExecutor = new LoadDumpExecutor(config, ctx.fs(), ctx.err(), loader);
 
-        StoreVersionLoader.Result result = loader.getStoreVersion(ctx.fs(), config, databaseLayout, contextFactory);
-        if (result.migrationNeeded) {
-            ctx.err()
-                    .printf(
-                            "The loaded database is not on a supported version (current:%s). Use the migrate-store command%n",
-                            result.currentFormat.getStoreVersionUserString());
-        }
+        var dumpInputFile = Optional.ofNullable(getArchivePath());
+        var dumpInputDescription = dumpInputFile.isEmpty()
+                ? "reading from stdin"
+                : dumpInputFile.get().toString();
+        var dumpInputStreamSupplier = getArchiveInputStreamSupplier();
+
+        loadDumpExecutor.execute(
+                new LoadDumpExecutor.DumpInput(dumpInputStreamSupplier, dumpInputFile, dumpInputDescription),
+                database.name(),
+                force);
     }
 
     protected Config buildConfig() {
@@ -170,39 +146,5 @@ public class LoadCommand extends AbstractCommand {
                 .build();
         ConfigUtils.disableAllConnectors(cfg);
         return cfg;
-    }
-
-    private static void deleteIfNecessary(DatabaseLayout databaseLayout, boolean force) {
-        try {
-            if (force) {
-                // we remove everything except our database lock
-                deleteDirectory(
-                        databaseLayout.databaseDirectory(), path -> !path.equals(databaseLayout.databaseLockFile()));
-                FileUtils.deleteDirectory(databaseLayout.getTransactionLogsDirectory());
-            }
-        } catch (IOException e) {
-            wrapIOException(e);
-        }
-    }
-
-    private void load(
-            ThrowingSupplier<InputStream, IOException> streamSupplier, DatabaseLayout databaseLayout, Path archive) {
-        var inputName = archive == null ? "reading from stdin" : archive.toString();
-        try {
-            loader.load(databaseLayout, streamSupplier, inputName);
-        } catch (NoSuchFileException e) {
-            if (archive != null && Paths.get(e.getMessage()).toAbsolutePath().equals(archive.toAbsolutePath())) {
-                throw new CommandFailedException("Archive does not exist: " + inputName, e);
-            }
-            wrapIOException(e);
-        } catch (FileAlreadyExistsException e) {
-            throw new CommandFailedException("Database already exists: " + databaseLayout.getDatabaseName(), e);
-        } catch (AccessDeniedException e) {
-            throw new CommandFailedException("You do not have permission to load the database.", e);
-        } catch (IOException e) {
-            wrapIOException(e);
-        } catch (IncorrectFormat incorrectFormat) {
-            throw new CommandFailedException("Not a valid Neo4j archive: " + inputName, incorrectFormat);
-        }
     }
 }

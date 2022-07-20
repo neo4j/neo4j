@@ -230,6 +230,24 @@ public final class SettingConstraints {
         };
     }
 
+    public static SettingConstraint<List<String>> singleControlledValueOrFreeList(final String controlledvalue) {
+        return new SettingConstraint<>() {
+            @Override
+            public void validate(List<String> list, Configuration config) {
+                if (list != null && list.size() > 1 && list.contains(controlledvalue)) {
+                    throw new IllegalArgumentException(format(
+                            "The list's length can not be greater than 1 if it contains the value %s.",
+                            controlledvalue));
+                }
+            }
+
+            @Override
+            public String getDescription() {
+                return format("One single controlled value (`%s`) or free list.", controlledvalue);
+            }
+        };
+    }
+
     public static final SettingConstraint<SocketAddress> HOSTNAME_ONLY = new SettingConstraint<>() {
         @Override
         public void validate(SocketAddress value, Configuration config) {

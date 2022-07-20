@@ -36,6 +36,22 @@ package org.neo4j.kernel.lifecycle;
  * Stop reverses whatever was done in start, and shutdown finally clears any set-up structure, if necessary.
  */
 public interface Lifecycle {
+
+    Lifecycle NO_OP = new Lifecycle() {
+
+        @Override
+        public void init() throws Exception {}
+
+        @Override
+        public void start() throws Exception {}
+
+        @Override
+        public void stop() throws Exception {}
+
+        @Override
+        public void shutdown() throws Exception {}
+    };
+
     void init() throws Exception;
 
     void start() throws Exception;

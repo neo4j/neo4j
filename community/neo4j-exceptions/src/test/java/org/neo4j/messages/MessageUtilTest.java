@@ -83,7 +83,7 @@ public class MessageUtilTest {
 
     @Test
     void failedToReadRemoteAliasEncryptionKey() {
-        Assertions.assertThat(MessageUtil.failedToReadRemoteAliasEncryptionKey("setting1", "setting2"))
+        Assertions.assertThat(MessageUtil.failedToReadEncryptionKey("setting1", "setting2"))
                 .isEqualTo(
                         "Failed to read the symmetric key from the configured keystore. Please verify the keystore configurations: setting1, setting2.");
     }

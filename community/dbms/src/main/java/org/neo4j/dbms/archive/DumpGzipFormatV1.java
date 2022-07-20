@@ -24,7 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 public class DumpGzipFormatV1 implements CompressionFormat {
-    static final String MAGIC_HEADER = "DGV1";
+    static final String MAGIC_HEADER = DumpFormatSelector.DUMP_PREFIX + "GV1";
 
     @Override
     public OutputStream compress(OutputStream stream) throws IOException {

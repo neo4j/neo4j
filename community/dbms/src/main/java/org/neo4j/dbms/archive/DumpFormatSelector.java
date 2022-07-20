@@ -30,6 +30,8 @@ import org.neo4j.function.ThrowingSupplier;
 public class DumpFormatSelector {
     private static final int MAGIC_PREFIX_LENGTH = 4;
 
+    public static final char DUMP_PREFIX = 'D';
+
     public static InputStream decompress(ThrowingSupplier<InputStream, IOException> streamSupplier) throws IOException {
         // use pushback stream to support reading of legacy zstd dumps from stdin
         // if dump magic isn't recognized, this could be legacy dump format (plain zstd or gzip stream)

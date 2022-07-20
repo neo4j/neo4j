@@ -24,7 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 public class DumpZstdFormatV1 implements CompressionFormat {
-    static final String MAGIC_HEADER = "DZV1";
+    static final String MAGIC_HEADER = DumpFormatSelector.DUMP_PREFIX + "ZV1";
 
     @Override
     public OutputStream compress(OutputStream stream) throws IOException {

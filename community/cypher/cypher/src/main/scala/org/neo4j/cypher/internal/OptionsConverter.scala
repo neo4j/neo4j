@@ -100,6 +100,9 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
   val NUM_PRIMARIES = "primaries"
   val NUM_SECONDARIES = "secondaries"
   val STORE_FORMAT = "storeFormat"
+  val SEED_URI = "seedURI"
+  val SEED_CREDENTIALS = "seedCredentials"
+  val SEED_CONFIG = "seedConfig"
   val VISIBLE_PERMITTED_OPTIONS = s"'$EXISTING_DATA', '$EXISTING_SEED_INSTANCE', '$STORE_FORMAT'"
 
   // existing Data values
@@ -107,79 +110,106 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
 
   override def convert(map: MapValue): CreateDatabaseOptions = {
 
-    map.foldLeft(CreateDatabaseOptions(None, None, None, None, None)) { case (ops, (key, value)) =>
-      // existingData
-      if (key.equalsIgnoreCase(EXISTING_DATA)) {
-        value match {
-          case existingDataVal: TextValue if USE_EXISTING_DATA.equalsIgnoreCase(existingDataVal.stringValue()) =>
-            ops.copy(existingData = Some(USE_EXISTING_DATA))
-          case value: TextValue =>
-            throw new InvalidArgumentsException(
-              s"Could not create database with specified $EXISTING_DATA '${value.stringValue()}'. Expected '$USE_EXISTING_DATA'."
-            )
-          case value: AnyValue =>
-            throw new InvalidArgumentsException(
-              s"Could not create database with specified $EXISTING_DATA '$value'. Expected '$USE_EXISTING_DATA'."
-            )
-        }
+    map.foldLeft(CreateDatabaseOptions(None, None, None, None, None, None, None, None)) {
+      case (ops, (key, value)) =>
+        // existingData
+        if (key.equalsIgnoreCase(EXISTING_DATA)) {
+          value match {
+            case existingDataVal: TextValue if USE_EXISTING_DATA.equalsIgnoreCase(existingDataVal.stringValue()) =>
+              ops.copy(existingData = Some(USE_EXISTING_DATA))
+            case value: TextValue =>
+              throw new InvalidArgumentsException(
+                s"Could not create database with specified $EXISTING_DATA '${value.stringValue()}'. Expected '$USE_EXISTING_DATA'."
+              )
+            case value: AnyValue =>
+              throw new InvalidArgumentsException(
+                s"Could not create database with specified $EXISTING_DATA '$value'. Expected '$USE_EXISTING_DATA'."
+              )
+          }
 
-        // existingDataSeedInstance
-      } else if (key.equalsIgnoreCase(EXISTING_SEED_INSTANCE)) {
-        value match {
-          case seed: TextValue => ops.copy(databaseSeed = Some(seed.stringValue()))
-          case _ =>
-            throw new InvalidArgumentsException(
-              s"Could not create database with specified $EXISTING_SEED_INSTANCE '$value'. Expected instance uuid string."
-            )
+          // existingDataSeedInstance
+        } else if (key.equalsIgnoreCase(EXISTING_SEED_INSTANCE)) {
+          value match {
+            case seed: TextValue => ops.copy(databaseSeed = Some(seed.stringValue()))
+            case _ =>
+              throw new InvalidArgumentsException(
+                s"Could not create database with specified $EXISTING_SEED_INSTANCE '$value'. Expected instance uuid string."
+              )
+          }
+          // numberOfPrimaries
+        } else if (key.equalsIgnoreCase(NUM_PRIMARIES)) {
+          value match {
+            case number: IntegralValue if number.longValue() >= 1 =>
+              ops.copy(primaries = Some(number.longValue().intValue()))
+            case _ =>
+              throw new InvalidArgumentsException(
+                s"Could not create database with specified $NUM_PRIMARIES '$value'. Expected positive integer number of primaries."
+              )
+          }
+          // numberOfSecondaries
+        } else if (key.equalsIgnoreCase(NUM_SECONDARIES)) {
+          value match {
+            case number: IntegralValue if number.longValue() >= 0 =>
+              ops.copy(secondaries = Some(number.longValue().intValue()))
+            case _ =>
+              throw new InvalidArgumentsException(
+                s"Could not create database with specified $NUM_SECONDARIES '$value'. Expected non-negative integer number of secondaries."
+              )
+          }
+          // storeFormat
+        } else if (key.equalsIgnoreCase(STORE_FORMAT)) {
+          value match {
+            case storeFormat: TextValue =>
+              try {
+                // Validate the format by looking for a storage engine that supports it - will throw if none was found
+                StorageEngineFactory.selectStorageEngine(Config.defaults(
+                  GraphDatabaseSettings.db_format,
+                  storeFormat.stringValue()
+                ))
+                ops.copy(storeFormatNewDb = Some(storeFormat.stringValue()))
+              } catch {
+                case _: Exception =>
+                  throw new InvalidArgumentsException(
+                    s"Could not create database with specified $STORE_FORMAT '${storeFormat.stringValue()}'. Unknown format, supported formats are "
+                      + "'aligned', 'standard' or 'high_limit'"
+                  )
+              }
+            case _ =>
+              throw new InvalidArgumentsException(
+                s"Could not create database with specified $STORE_FORMAT '$value', String expected."
+              )
+          }
         }
-        // numberOfPrimaries
-      } else if (key.equalsIgnoreCase(NUM_PRIMARIES)) {
-        value match {
-          case number: IntegralValue if number.longValue() >= 1 =>
-            ops.copy(primaries = Some(number.longValue().intValue()))
-          case _ =>
-            throw new InvalidArgumentsException(
-              s"Could not create database with specified $NUM_PRIMARIES '$value'. Expected positive integer number of primaries."
-            )
+        // seed URI
+        else if (key.equalsIgnoreCase(SEED_URI)) {
+          value match {
+            case seedURI: TextValue => ops.copy(seedURI = Some(seedURI.stringValue()))
+            case _ =>
+              throw new InvalidArgumentsException(
+                s"Could not create database with specified $SEED_URI '$value', String expected."
+              )
+          }
+        } else if (key.equalsIgnoreCase(SEED_CREDENTIALS)) {
+          value match {
+            case seedCredentials: TextValue => ops.copy(seedCredentials = Some(seedCredentials.stringValue()))
+            case _ =>
+              throw new InvalidArgumentsException(
+                s"Could not create database with specified $SEED_CREDENTIALS '$value', String expected."
+              )
+          }
+        } else if (key.equalsIgnoreCase(SEED_CONFIG)) {
+          value match {
+            case seedConfig: TextValue => ops.copy(seedConfig = Some(seedConfig.stringValue()))
+            case _ =>
+              throw new InvalidArgumentsException(
+                s"Could not create database with specified $SEED_CONFIG '$value', String expected."
+              )
+          }
+        } else {
+          throw new InvalidArgumentsException(
+            s"Could not create database with unrecognised option: '$key'. Expected $VISIBLE_PERMITTED_OPTIONS."
+          )
         }
-        // numberOfSecondaries
-      } else if (key.equalsIgnoreCase(NUM_SECONDARIES)) {
-        value match {
-          case number: IntegralValue if number.longValue() >= 0 =>
-            ops.copy(secondaries = Some(number.longValue().intValue()))
-          case _ =>
-            throw new InvalidArgumentsException(
-              s"Could not create database with specified $NUM_SECONDARIES '$value'. Expected non-negative integer number of secondaries."
-            )
-        }
-        // storeFormat
-      } else if (key.equalsIgnoreCase(STORE_FORMAT)) {
-        value match {
-          case storeFormat: TextValue =>
-            try {
-              // Validate the format by looking for a storage engine that supports it - will throw if none was found
-              StorageEngineFactory.selectStorageEngine(Config.defaults(
-                GraphDatabaseSettings.db_format,
-                storeFormat.stringValue()
-              ))
-              ops.copy(storeFormatNewDb = Some(storeFormat.stringValue()))
-            } catch {
-              case _: Exception =>
-                throw new InvalidArgumentsException(
-                  s"Could not create database with specified $STORE_FORMAT '${storeFormat.stringValue()}'. Unknown format, supported formats are "
-                    + "'aligned', 'standard' or 'high_limit'"
-                )
-            }
-          case _ =>
-            throw new InvalidArgumentsException(
-              s"Could not create database with specified $STORE_FORMAT '$value', String expected."
-            )
-        }
-      } else {
-        throw new InvalidArgumentsException(
-          s"Could not create database with unrecognised option: '$key'. Expected $VISIBLE_PERMITTED_OPTIONS."
-        )
-      }
     }
   }
 
@@ -457,7 +487,10 @@ case class CreateDatabaseOptions(
   databaseSeed: Option[String],
   primaries: Option[Integer],
   secondaries: Option[Integer],
-  storeFormatNewDb: Option[String]
+  storeFormatNewDb: Option[String],
+  seedURI: Option[String],
+  seedCredentials: Option[String],
+  seedConfig: Option[String]
 )
 
 object MapValueOps {

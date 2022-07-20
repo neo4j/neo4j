@@ -130,6 +130,10 @@ public interface TopologyGraphDbmsModel {
     String DATABASE_STORE_FORMAT_NEW_DB_PROPERTY = "creation_store_format";
     String DATABASE_PRIMARIES_PROPERTY = "primaries";
     String DATABASE_SECONDARIES_PROPERTY = "secondaries";
+    String DATABASE_SEED_URI_PROPERTY = "seedURI";
+    String DATABASE_SEED_CREDENTIALS_ENCRYPTED_PROPERTY = "seedCredentialsEncrypted";
+    String DATABASE_SEED_CREDENTIALS_IV_PROPERTY = "seedCredentialsIv";
+    String DATABASE_SEED_CONFIG_PROPERTY = "seedConfig";
     String DATABASE_CREATED_AT_PROPERTY = "created_at";
     String DATABASE_STARTED_AT_PROPERTY = "started_at";
     String DATABASE_UPDATED_AT_PROPERTY = "updated_at";

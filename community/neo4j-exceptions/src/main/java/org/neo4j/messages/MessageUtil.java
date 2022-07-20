@@ -55,7 +55,9 @@ public class MessageUtil {
     // alias
     private static final String ALTER_TO_REMOTE =
             "Failed to alter the specified database alias '%s': alter a local alias to a remote alias is not supported.";
-    private static final String FAILED_TO_READ_REMOTE_ALIAS_KEY =
+
+    // security
+    private static final String FAILED_TO_READ_ENCRYPTION_KEY =
             "Failed to read the symmetric key from the configured keystore";
 
     // hints
@@ -107,15 +109,18 @@ public class MessageUtil {
         return String.format(ALTER_TO_REMOTE, alias);
     }
 
+    /**
+     * Security messages
+     */
     public static String failedToFindEncryptionKeyInKeystore(String keyName) {
         return String.format(
-                "%s. The key '%s' was not found in the given keystore file.", FAILED_TO_READ_REMOTE_ALIAS_KEY, keyName);
+                "%s. The key '%s' was not found in the given keystore file.", FAILED_TO_READ_ENCRYPTION_KEY, keyName);
     }
 
-    public static String failedToReadRemoteAliasEncryptionKey(String... settings) {
+    public static String failedToReadEncryptionKey(String... settings) {
         return String.format(
                 "%s. Please verify the keystore configurations: %s.",
-                FAILED_TO_READ_REMOTE_ALIAS_KEY, StringUtils.join(settings, ", "));
+                FAILED_TO_READ_ENCRYPTION_KEY, StringUtils.join(settings, ", "));
     }
 
     public static String failedToEncryptPassword() {
