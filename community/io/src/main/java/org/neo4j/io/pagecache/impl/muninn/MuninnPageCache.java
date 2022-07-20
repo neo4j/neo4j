@@ -118,8 +118,6 @@ import org.neo4j.util.VisibleForTesting;
  * </p>
  */
 public class MuninnPageCache implements PageCache {
-    // this implementation requires at least 3 longs reserved in order to map multiversioned pages
-    public static final int MINIMUM_RESERVED_BYTES = Long.BYTES * 3;
     public static final byte ZERO_BYTE = (byte) (flag(MuninnPageCache.class, "brandedZeroByte", false) ? 0x0f : 0);
 
     // The amount of memory we need for every page, both its buffer and its meta-data.
@@ -569,12 +567,6 @@ public class MuninnPageCache implements PageCache {
             } else if (option.equals(PageCacheOpenOptions.BIG_ENDIAN)) {
                 littleEndian = false;
             } else if (option.equals(PageCacheOpenOptions.MULTI_VERSIONED)) {
-                if (pageReservedBytes < MINIMUM_RESERVED_BYTES) {
-                    throw new IllegalArgumentException("Cannot map file " + path
-                            + " as multiversioned, because configured reserved bytes for page cache "
-                            + pageReservedBytes + " is less then minimum " + MINIMUM_RESERVED_BYTES
-                            + " bytes required for mvcc.");
-                }
                 multiVersioned = true;
             } else if (!ignoredOpenOptions.contains(option)) {
                 throw new UnsupportedOperationException("Unsupported OpenOption: " + option);

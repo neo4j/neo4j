@@ -22,7 +22,6 @@ package org.neo4j.internal.batchimport.store;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_iops_limit;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
@@ -387,7 +386,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                 .memoryTracker(memoryTracker)
                 .bufferFactory(new ConfigurableIOBufferFactory(config, memoryTracker))
                 .faultLockStriping(1 << 11)
-                .reservedPageBytes(config.get(reserved_page_header_bytes))
+                .reservedPageBytes(PageCache.RESERVED_BYTES)
                 .disableEvictionThread();
         return new MuninnPageCache(swapperFactory, jobScheduler, configuration);
     }

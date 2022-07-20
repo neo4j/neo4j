@@ -167,6 +167,7 @@ public final class SettingMigrators {
                 "unsupported.dbms.topology_graph.enable",
                 "unsupported.dbms.topology_graph_updater.enable",
                 "unsupported.dbms.uris.rest",
+                "unsupported.dbms.reserved.page.header.bytes",
                 "cypher.default_language_version");
         private static final Collection<Mapping> LEGACY_UNSUPPORTED_SETTINGS_MAPPING = List.of(
                 new Mapping("dbms.capabilities.blocked", "internal.dbms.capabilities.blocked"),
@@ -486,7 +487,6 @@ public final class SettingMigrators {
                 new Mapping(
                         "unsupported.dbms.recovery.enable_parallelism", "internal.dbms.recovery.enable_parallelism"),
                 new Mapping("unsupported.dbms.report_configuration", "internal.dbms.report_configuration"),
-                new Mapping("unsupported.dbms.reserved.page.header.bytes", "internal.dbms.reserved.page.header.bytes"),
                 new Mapping(
                         "unsupported.dbms.security.ldap.authorization.connection_pooling",
                         "internal.dbms.security.ldap.authorization.connection_pooling"),
