@@ -43,7 +43,7 @@ trait HasLabelsAndHasTypeNormalizer extends Rewriter {
 
   override def apply(that: AnyRef): AnyRef = instance(that)
 
-  def rewrite(expression: Expression): Expression = expression match {
+  private def rewrite(expression: Expression): Expression = expression match {
     case p @ HasLabelsOrTypes(e, labels) if isNode(e) =>
       HasLabels(e, labels.map(l => LabelName(l.name)(l.position)))(p.position)
     case p @ HasLabelsOrTypes(e, labels) if isRelationship(e) =>

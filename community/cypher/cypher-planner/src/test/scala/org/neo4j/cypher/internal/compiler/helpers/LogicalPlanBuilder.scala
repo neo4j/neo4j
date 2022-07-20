@@ -65,7 +65,7 @@ class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new Log
   }
 
   override protected def rewriteExpression(expr: Expression): Expression =
-    hasLabelsAndHasTypeNormalizer.rewrite(expr)
+    expr.endoRewrite(hasLabelsAndHasTypeNormalizer)
 
   def withCardinality(x: Double): LogicalPlanBuilder = {
     cardinalities.set(idOfLastPlan, Cardinality(x))
