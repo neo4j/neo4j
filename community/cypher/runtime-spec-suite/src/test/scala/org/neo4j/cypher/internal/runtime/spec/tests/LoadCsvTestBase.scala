@@ -20,9 +20,7 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
-import org.neo4j.cypher.internal.InterpretedRuntimeName
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.SlottedRuntimeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.ir.NoHeaders
@@ -391,14 +389,6 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
     val expected = testRange.map { i => Array(s"${testValueOffset + i}", i.toLong + 2, filename) }.toArray
     runtimeResult should beColumns("x", "y", "z").withRows(expected)
   }
-
-  /**
-   * We currently only support to count transactions for interpreted and slotted runtime. To account for that, this method switches accordingly.
-   */
-  def transactionsExpectedIfTransactionCountingAvailable(expectation: Int): Int = runtime.name.toUpperCase() match {
-    case InterpretedRuntimeName.name | SlottedRuntimeName.name => expectation
-    case _                                                     => 1 // transactionsCommitted default value
-  }
 }
 
 // Currently not supported in pipelined
@@ -431,7 +421,7 @@ trait LoadCsvWithCallInTransactions[CONTEXT <: RuntimeContext] {
         nodesCreated = testRange.size,
         labelsAdded = testRange.size,
         propertiesSet = testRange.size * 3,
-        transactionsCommitted = transactionsExpectedIfTransactionCountingAvailable(6)
+        transactionsCommitted = 6
       )
   }
 
@@ -462,7 +452,7 @@ trait LoadCsvWithCallInTransactions[CONTEXT <: RuntimeContext] {
         nodesCreated = testRange.size,
         labelsAdded = testRange.size,
         propertiesSet = testRange.size * 3,
-        transactionsCommitted = transactionsExpectedIfTransactionCountingAvailable(6)
+        transactionsCommitted = 6
       )
   }
 
@@ -488,6 +478,11 @@ trait LoadCsvWithCallInTransactions[CONTEXT <: RuntimeContext] {
     val expected = Range(0, 10).map(i => Array((i * 3L).toString))
     runtimeResult should beColumns("x").withRows(expected)
   }
+}
+
+//Merge is supported in fused only so we need to break this one out
+trait LoadCsvWithCallInTransactionsAndMerge[CONTEXT <: RuntimeContext] {
+  self: LoadCsvTestBase[CONTEXT] =>
 
   test("should close open cursors on call in tx - scenario") {
     val url = multipleColumnCsvFile(withHeaders = true)
@@ -571,7 +566,8 @@ trait LoadCsvWithCallInTransactions[CONTEXT <: RuntimeContext] {
       .withRows(RowCount(testRange.size))
       .withStatistics(
         relationshipsCreated = testRange.size,
-        transactionsCommitted = transactionsExpectedIfTransactionCountingAvailable(testRange.size / 2 + 1)
+        transactionsCommitted = testRange.size / 2 + 1
       )
   }
+
 }
