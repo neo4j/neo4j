@@ -37,8 +37,6 @@ public class TransactionApplierFacade implements TransactionApplier {
 
     @Override
     public void close() throws Exception {
-        // Need to close in reverse order or LuceneRecoveryIT can hang on database shutdown, when
-        // errors are thrown
         for (int i = appliers.length - 1; i >= 0; i--) {
             appliers[i].close();
         }

@@ -22,6 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
+import static org.neo4j.io.IOUtils.closeAllSilently;
 
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -514,6 +515,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
             traverseDownToCorrectLevel();
         } catch (Throwable e) {
             exceptionDecorator.accept(e);
+            closeAllSilently(this);
             throw e;
         }
         return this;
