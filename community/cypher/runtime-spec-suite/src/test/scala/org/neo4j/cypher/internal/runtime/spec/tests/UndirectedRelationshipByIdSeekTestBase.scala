@@ -255,4 +255,25 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
       Array(relToFind, relToFind.getStartNode, relToFind.getEndNode)
     ))
   }
+
+  test("should only find loop once, many ids") {
+    // given
+    val relToFind = given {
+      val a = tx.createNode()
+      a.createRelationshipTo(a, RelationshipType.withName("R"))
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "x", "y")
+      .undirectedRelationshipByIdSeek("r", "x", "y", Set.empty, Seq.fill(10)(relToFind.getId): _*)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("r", "x", "y").withRows(Seq.fill(10)(
+      Array(relToFind, relToFind.getStartNode, relToFind.getEndNode)
+    ))
+  }
 }
