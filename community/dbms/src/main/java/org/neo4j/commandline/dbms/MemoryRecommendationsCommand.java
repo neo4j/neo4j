@@ -317,31 +317,34 @@ public class MemoryRecommendationsCommand extends AbstractCommand {
     }
 
     private long sumStoreFiles(DatabaseLayout databaseLayout) {
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
         FileSystemAbstraction fileSystem = ctx.fs();
-        try {
-            long total = 0L;
-            for (Path path : storageEngineFactory.listStorageFiles(fileSystem, databaseLayout)) {
-                total += fileSystem.getFileSize(path);
-            }
-
-            return total;
-        } catch (IOException e) {
-            return 0;
-        }
+        return StorageEngineFactory.selectStorageEngine(fileSystem, databaseLayout)
+                .map(factory -> {
+                    try {
+                        long total = 0L;
+                        for (Path path : factory.listStorageFiles(fileSystem, databaseLayout)) {
+                            total += fileSystem.getFileSize(path);
+                        }
+                        return total;
+                    } catch (IOException e) {
+                        return 0L;
+                    }
+                })
+                .orElse(0L);
     }
 
     private long sumIndexFiles(Path file, DirectoryStream.Filter<Path> filter) throws IOException {
         long total = 0;
-        if (ctx.fs().isDirectory(file)) {
-            Path[] children = ctx.fs().listFiles(file, filter);
+        final var fs = ctx.fs();
+        if (fs.isDirectory(file)) {
+            Path[] children = fs.listFiles(file, filter);
             if (children != null) {
                 for (Path child : children) {
                     total += sumIndexFiles(child, filter);
                 }
             }
-        } else if (ctx.fs().fileExists(file)) {
-            total += ctx.fs().getFileSize(file);
+        } else if (fs.fileExists(file)) {
+            total += fs.getFileSize(file);
         }
         return total;
     }

@@ -76,7 +76,7 @@ import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
-import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -405,12 +405,15 @@ class MemoryRecommendationsCommandTest {
                         + bytesToString(expectedPageCacheSize)));
     }
 
-    private static long[] calculatePageCacheFileSize(DatabaseLayout databaseLayout) throws IOException {
+    private long[] calculatePageCacheFileSize(DatabaseLayout databaseLayout) throws IOException {
         MutableLong pageCacheTotal = new MutableLong();
         MutableLong luceneTotal = new MutableLong();
-        for (StoreType storeType : StoreType.values()) {
-            long length = Files.size(databaseLayout.file(storeType.getDatabaseFile()));
-            pageCacheTotal.add(length);
+
+        final var fs = testDirectory.getFileSystem();
+        for (final var path : StorageEngineFactory.selectStorageEngine(fs, databaseLayout)
+                .orElseThrow(() -> new IOException("No storage engine factory matched for layout: " + databaseLayout))
+                .listStorageFiles(fs, databaseLayout)) {
+            pageCacheTotal.add(Files.size(path));
         }
 
         Path indexFolder = IndexDirectoryStructure.baseSchemaIndexFolder(databaseLayout.databaseDirectory());
