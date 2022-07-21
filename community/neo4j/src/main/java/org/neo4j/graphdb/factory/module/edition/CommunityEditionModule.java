@@ -30,17 +30,15 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.cypher.internal.javacompat.CommunityCypherEngineProvider;
 import org.neo4j.dbms.CommunityDatabaseStateService;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseReferenceCacheClearingListener;
 import org.neo4j.dbms.database.DatabaseInfoService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DatabaseOperationCounts;
+import org.neo4j.dbms.database.DatabaseReferenceCacheClearingListener;
 import org.neo4j.dbms.database.DefaultDatabaseManager;
 import org.neo4j.dbms.database.DefaultSystemGraphComponent;
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
@@ -48,6 +46,7 @@ import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.dbms.database.StandaloneDatabaseInfoService;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.SystemGraphInitializer;
+import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.identity.DefaultIdentityModule;
 import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.dbms.procedures.StandaloneDatabaseStateProcedure;
@@ -68,6 +67,7 @@ import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseStartupController;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.database.GlobalAvailabilityGuardController;
 import org.neo4j.kernel.database.MapCachingDatabaseReferenceRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -280,14 +280,15 @@ public class CommunityEditionModule extends StandaloneEditionModule
 
     @Override
     protected AbstractRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule, DatabaseManager<?> databaseManager,
-                                                                                 ClientRoutingDomainChecker clientRoutingDomainChecker )
+                                                                                 ClientRoutingDomainChecker clientRoutingDomainChecker,
+                                                                                 DefaultDatabaseResolver defaultDatabaseResolver )
     {
         var portRegister = globalModule.getConnectorPortRegister();
         var config = globalModule.getGlobalConfig();
         var logProvider = globalModule.getLogService().getInternalLogProvider();
         var databaseAvailabilityChecker = new DefaultDatabaseAvailabilityChecker( databaseManager );
         return new SingleInstanceRoutingProcedureInstaller( databaseAvailabilityChecker, clientRoutingDomainChecker,
-                                                            portRegister, config, logProvider, databaseReferenceRepo );
+                                                            portRegister, config, logProvider, databaseReferenceRepo, defaultDatabaseResolver );
     }
 
     @Override

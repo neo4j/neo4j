@@ -24,6 +24,7 @@ import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.procedure.builtin.routing.RoutingTableTTLProvider.ttlFromConfig;
@@ -38,10 +39,11 @@ public final class SingleInstanceRoutingProcedureInstaller extends AbstractRouti
     private final ConnectorPortRegister portRegister;
     private final Config config;
     private final LogProvider logProvider;
+    private final DefaultDatabaseResolver defaultDatabaseResolver;
 
     public SingleInstanceRoutingProcedureInstaller( DatabaseAvailabilityChecker databaseAvailabilityChecker,
             ClientRoutingDomainChecker clientRoutingDomainChecker, ConnectorPortRegister portRegister, Config config, LogProvider logProvider,
-            DatabaseReferenceRepository databaseReferenceRepo )
+            DatabaseReferenceRepository databaseReferenceRepo, DefaultDatabaseResolver defaultDatabaseResolver )
     {
         this.databaseAvailabilityChecker = databaseAvailabilityChecker;
         this.clientRoutingDomainChecker = clientRoutingDomainChecker;
@@ -49,6 +51,7 @@ public final class SingleInstanceRoutingProcedureInstaller extends AbstractRouti
         this.config = config;
         this.logProvider = logProvider;
         this.databaseReferenceRepo = databaseReferenceRepo;
+        this.defaultDatabaseResolver = defaultDatabaseResolver;
     }
 
     @Override
@@ -59,6 +62,6 @@ public final class SingleInstanceRoutingProcedureInstaller extends AbstractRouti
                 portRegister, RoutingOption.ROUTE_WRITE_AND_READ, config, logProvider, ttlFromConfig( config ) );
 
         return new GetRoutingTableProcedure( namespace, DESCRIPTION, databaseReferenceRepo, validator, routingTableProvider, clientRoutingDomainChecker,
-                                             config, logProvider );
+                                             config, logProvider, defaultDatabaseResolver );
     }
 }

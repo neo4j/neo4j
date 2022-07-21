@@ -28,7 +28,6 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseInfoService;
@@ -37,6 +36,7 @@ import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.SystemGraphInitializer;
+import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
@@ -121,7 +121,8 @@ public abstract class AbstractEditionModule
         registerEditionSpecificProcedures( globalProcedures, databaseManager );
         AbstractRoutingProcedureInstaller routingProcedureInstaller =
                 createRoutingProcedureInstaller( globalModule, databaseManager,
-                                                 globalModule.getGlobalDependencies().resolveDependency( ClientRoutingDomainChecker.class ) );
+                                                 globalModule.getGlobalDependencies().resolveDependency( ClientRoutingDomainChecker.class ),
+                                                 defaultDatabaseResolver );
         routingProcedureInstaller.install( globalProcedures );
     }
 
@@ -137,7 +138,9 @@ public abstract class AbstractEditionModule
             throws KernelException;
 
     protected abstract AbstractRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule,
-            DatabaseManager<?> databaseManager, ClientRoutingDomainChecker clientRoutingDomainChecker );
+                                                                                          DatabaseManager<?> databaseManager,
+                                                                                          ClientRoutingDomainChecker clientRoutingDomainChecker,
+                                                                                          DefaultDatabaseResolver defaultDatabaseResolver );
 
     protected abstract AuthConfigProvider createAuthConfigProvider( GlobalModule globalModule );
 

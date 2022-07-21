@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.procedure.Mode;
@@ -72,22 +73,22 @@ public final class GetRoutingTableProcedure implements CallableProcedure
     private final ClientSideRoutingTableProvider clientSideRoutingTableProvider;
     private final ServerSideRoutingTableProvider serverSideRoutingTableProvider;
     private final ClientRoutingDomainChecker clientRoutingDomainChecker;
-    private final String defaultDatabaseName;
     private final Supplier<GraphDatabaseSettings.RoutingMode> defaultRouterSupplier;
     private final Supplier<Boolean> boltEnabled;
+    private final DefaultDatabaseResolver defaultDatabaseResolver;
 
     public GetRoutingTableProcedure( List<String> namespace, String description, DatabaseReferenceRepository databaseReferenceRepo,
             RoutingTableProcedureValidator validator, SingleAddressRoutingTableProvider routingTableProvider,
-            ClientRoutingDomainChecker clientRoutingDomainChecker, Config config, LogProvider logProvider )
+            ClientRoutingDomainChecker clientRoutingDomainChecker, Config config, LogProvider logProvider, DefaultDatabaseResolver defaultDatabaseResolver )
     {
         this( namespace, description, databaseReferenceRepo, validator, routingTableProvider,
-              routingTableProvider, clientRoutingDomainChecker, config, logProvider );
+              routingTableProvider, clientRoutingDomainChecker, config, logProvider, defaultDatabaseResolver );
     }
 
     public GetRoutingTableProcedure( List<String> namespace, String description, DatabaseReferenceRepository databaseReferenceRepo,
             RoutingTableProcedureValidator validator, ClientSideRoutingTableProvider clientSideRoutingTableProvider,
             ServerSideRoutingTableProvider serverSideRoutingTableProvider, ClientRoutingDomainChecker clientRoutingDomainChecker,
-            Config config, LogProvider logProvider )
+            Config config, LogProvider logProvider, DefaultDatabaseResolver defaultDatabaseResolver )
     {
         this.signature = buildSignature( namespace, description );
         this.databaseReferenceRepo = databaseReferenceRepo;
@@ -96,9 +97,9 @@ public final class GetRoutingTableProcedure implements CallableProcedure
         this.clientSideRoutingTableProvider = clientSideRoutingTableProvider;
         this.serverSideRoutingTableProvider = serverSideRoutingTableProvider;
         this.clientRoutingDomainChecker = clientRoutingDomainChecker;
-        this.defaultDatabaseName = config.get( default_database );
         this.defaultRouterSupplier = () -> config.get( GraphDatabaseSettings.routing_default_router );
         this.boltEnabled = () -> config.get( BoltConnector.enabled );
+        this.defaultDatabaseResolver = defaultDatabaseResolver;
     }
 
     @Override
@@ -110,7 +111,8 @@ public final class GetRoutingTableProcedure implements CallableProcedure
     @Override
     public RawIterator<AnyValue[],ProcedureException> apply( Context ctx, AnyValue[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
-        var databaseReference = extractDatabaseReference( input );
+        var user = ctx.securityContext().subject().executingUser();
+        var databaseReference = extractDatabaseReference( input, user );
         var routingContext = extractRoutingContext( input );
 
         assertBoltConnectorEnabled( databaseReference );
@@ -153,13 +155,13 @@ public final class GetRoutingTableProcedure implements CallableProcedure
         }
     }
 
-    private DatabaseReference extractDatabaseReference( AnyValue[] input ) throws ProcedureException
+    private DatabaseReference extractDatabaseReference( AnyValue[] input, String user ) throws ProcedureException
     {
         var arg = input[1];
         final String databaseName;
         if ( arg == NO_VALUE )
         {
-            databaseName = defaultDatabaseName;
+            databaseName = defaultDatabaseResolver.defaultDatabase( user );
         }
         else if ( arg instanceof TextValue )
         {
