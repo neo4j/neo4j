@@ -1937,6 +1937,39 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     }
   }
 
+  test("COUNT subquery plan should plan predicates in the right order according to LabelInfo") {
+    val logicalPlan = planner.plan(
+      """MATCH (a:ManyProps), (b:SomeProps), (c:FewProps)
+        |RETURN COUNT { (a {prop: 0})--(b {prop: 0})--(c {prop: 0}) } AS foo
+        |""".stripMargin
+    )
+
+    // There are 2 filters in the plan, we are interested in the 2nd:
+    //  .filter("not anon_2 = anon_3")
+    //  .expandInto("(a)-[anon_2]-(b)")
+    //  .expandInto("(b)-[anon_3]-(c)")
+    //  .filter("cacheN[c.prop] = 0", "cacheN[b.prop] = 0", "cacheN[a.prop] = 0") <- this one
+    val filter = logicalPlan.folder.findAllByClass[Selection].apply(1)
+
+    val aProp = equals(cachedNodeProp("a", "prop"), literalInt(0))
+    val bProp = equals(cachedNodeProp("b", "prop"), literalInt(0))
+    val cProp = equals(cachedNodeProp("c", "prop"), literalInt(0))
+
+    // Should filter in best order according to selectivity: c.prop, b.prop, a.prop
+    filter should beLike {
+      // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
+      // But unapply takes the order into account for [[Ands]].
+      case Selection(
+          Ands(SetExtractor(
+            `cProp`,
+            `bProp`,
+            `aProp`
+          )),
+          Argument(SetExtractor("a", "b", "c"))
+        ) => ()
+    }
+  }
+
   test("Subquery plan with NestedPlanExpression should plan predicates in the right order according to LabelInfo") {
     val logicalPlan = planner.plan(
       """MATCH (a:ManyProps), (b:SomeProps), (c:FewProps)

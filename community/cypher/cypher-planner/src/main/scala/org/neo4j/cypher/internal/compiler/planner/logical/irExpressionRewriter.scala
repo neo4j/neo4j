@@ -50,7 +50,7 @@ case class irExpressionRewriter(outerPlan: LogicalPlan, context: LogicalPlanning
         NestedPlanExpression.collect(subQueryPlan, variableToCollect, expr)(expr.position)
 
       case expr: CountIRExpression =>
-        val subQueryPlan = plannerQueryPartPlanner.planSubquery(expr, context)
+        val subQueryPlan = plannerQueryPartPlanner.planSubqueryWithLabelInfo(outerPlan, expr, context)
         NestedPlanExpression.count(subQueryPlan, expr.countVariableName, expr)(expr.position)
     },
     // Do not rewrite anything inside the NestedPlanExpressions that we generate

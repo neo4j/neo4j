@@ -227,7 +227,7 @@ object SubqueryExpressionSolver {
     val countVariableName = maybeKey.getOrElse(expr.countVariableName)
     val subQueryPlan = {
       val exprToPlan = maybeKey.fold(expr)(expr.renameCountVariable)
-      plannerQueryPartPlanner.planSubquery(exprToPlan, context)
+      plannerQueryPartPlanner.planSubqueryWithLabelInfo(source, exprToPlan, context)
     }
     val producedPlan =
       context.logicalPlanProducer.ForSubqueryExpressionSolver.planCountExpressionApply(source, subQueryPlan, context)
