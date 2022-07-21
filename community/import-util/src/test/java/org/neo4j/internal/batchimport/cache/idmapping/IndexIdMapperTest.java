@@ -138,6 +138,7 @@ class IndexIdMapperTest {
                                 progressor,
                                 AccessMode.Static.FULL,
                                 false,
+                                false,
                                 IndexQueryConstraints.unconstrained(),
                                 query);
                     }

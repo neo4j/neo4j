@@ -112,7 +112,7 @@ public class FulltextIndexReader implements ValueIndexReader {
         ValuesIterator itr =
                 searchLucene(query, constraints, context, context.cursorContext(), context.memoryTracker());
         IndexProgressor progressor = new FulltextIndexProgressor(itr, client, constraints);
-        client.initialize(index, progressor, accessMode, true, constraints, queries);
+        client.initialize(index, progressor, accessMode, true, false, constraints, queries);
     }
 
     @Override

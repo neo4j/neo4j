@@ -276,14 +276,18 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     public DefaultNodeValueIndexCursor allocateNodeValueIndexCursor(
             CursorContext cursorContext, MemoryTracker memoryTracker) {
         if (nodeValueIndexCursor == null) {
-            return trace(new DefaultNodeValueIndexCursor(
+            var nodeCursor = new DefaultNodeCursor(
                     this::accept,
-                    new DefaultNodeCursor(
-                            this::accept,
-                            storageReader.allocateNodeCursor(cursorContext, storeCursors),
-                            storageReader.allocateNodeCursor(cursorContext, storeCursors),
-                            storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors)),
-                    memoryTracker));
+                    storageReader.allocateNodeCursor(cursorContext, storeCursors),
+                    storageReader.allocateNodeCursor(cursorContext, storeCursors),
+                    storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors));
+            var propertyCursor = new DefaultPropertyCursor(
+                    this::accept,
+                    storageReader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker),
+                    new FullAccessNodeCursor(c -> {}, storageReader.allocateNodeCursor(cursorContext, storeCursors)),
+                    new FullAccessRelationshipScanCursor(
+                            c -> {}, storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors)));
+            return trace(new DefaultNodeValueIndexCursor(this::accept, nodeCursor, propertyCursor, memoryTracker));
         }
 
         try {
@@ -381,7 +385,14 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
                     storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors));
             DefaultRelationshipScanCursor relationshipScanCursor = new DefaultRelationshipScanCursor(
                     c -> {}, storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors), nodeCursor);
-            return trace(new DefaultRelationshipValueIndexCursor(this::accept, relationshipScanCursor, memoryTracker));
+            var propertyCursor = new DefaultPropertyCursor(
+                    c -> {},
+                    storageReader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker),
+                    new FullAccessNodeCursor(c -> {}, storageReader.allocateNodeCursor(cursorContext, storeCursors)),
+                    new FullAccessRelationshipScanCursor(
+                            c -> {}, storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors)));
+            return trace(new DefaultRelationshipValueIndexCursor(
+                    this::accept, relationshipScanCursor, propertyCursor, memoryTracker));
         }
 
         try {

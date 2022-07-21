@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.index;
 import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -39,6 +40,7 @@ public class BridgingIndexProgressor implements IndexProgressor.EntityValueClien
     // number
     // of progressors and each progressor has many results each
     private final Queue<IndexProgressor> progressors = new ConcurrentLinkedQueue<>();
+    private final AtomicBoolean needStoreFilter = new AtomicBoolean();
     private IndexProgressor current;
 
     public BridgingIndexProgressor(EntityValueClient client, int[] keys) {
@@ -78,10 +80,14 @@ public class BridgingIndexProgressor implements IndexProgressor.EntityValueClien
             IndexProgressor progressor,
             AccessMode accessMode,
             boolean indexIncludesTransactionState,
+            boolean needStoreFilter,
             IndexQueryConstraints constraints,
             PropertyIndexQuery... queries) {
         assertKeysAlign(descriptor.schema().getPropertyIds());
         progressors.add(progressor);
+        if (needStoreFilter) {
+            this.needStoreFilter.set(true);
+        }
     }
 
     private void assertKeysAlign(int[] keys) {
@@ -93,5 +99,9 @@ public class BridgingIndexProgressor implements IndexProgressor.EntityValueClien
     @Override
     public boolean acceptEntity(long reference, float score, Value... values) {
         return client.acceptEntity(reference, score, values);
+    }
+
+    public boolean needStoreFilter() {
+        return needStoreFilter.get();
     }
 }

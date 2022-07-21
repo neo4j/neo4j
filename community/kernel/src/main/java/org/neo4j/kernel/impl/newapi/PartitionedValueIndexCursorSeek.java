@@ -61,7 +61,7 @@ public class PartitionedValueIndexCursorSeek<Cursor extends org.neo4j.internal.k
             return false;
         }
         indexCursor.initialize(
-                descriptor, indexProgressor, accessMode, false, IndexQueryConstraints.unorderedValues(), query);
+                descriptor, indexProgressor, accessMode, false, false, IndexQueryConstraints.unorderedValues(), query);
         return true;
     }
 }

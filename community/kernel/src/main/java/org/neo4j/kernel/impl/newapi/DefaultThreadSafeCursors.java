@@ -151,7 +151,10 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     @Override
     public NodeValueIndexCursor allocateNodeValueIndexCursor(CursorContext cursorContext, MemoryTracker memoryTracker) {
         return trace(new DefaultNodeValueIndexCursor(
-                DefaultNodeValueIndexCursor::release, allocateNodeCursor(cursorContext), memoryTracker));
+                DefaultNodeValueIndexCursor::release,
+                allocateNodeCursor(cursorContext),
+                allocatePropertyCursor(cursorContext, memoryTracker),
+                memoryTracker));
     }
 
     @Override
@@ -177,6 +180,7 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
         return trace(new DefaultRelationshipValueIndexCursor(
                 DefaultRelationshipValueIndexCursor::release,
                 allocateRelationshipScanCursor(cursorContext),
+                allocatePropertyCursor(cursorContext, memoryTracker),
                 memoryTracker));
     }
 

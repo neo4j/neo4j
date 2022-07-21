@@ -36,6 +36,7 @@ public class GatheringNodeValueClient implements IndexProgressor.EntityValueClie
     public IndexProgressor progressor;
     public PropertyIndexQuery[] query;
     public IndexQueryConstraints constraints;
+    public boolean needStoreFilter;
 
     @Override
     public void initialize(
@@ -43,12 +44,14 @@ public class GatheringNodeValueClient implements IndexProgressor.EntityValueClie
             IndexProgressor progressor,
             AccessMode accessMode,
             boolean indexIncludesTransactionState,
+            boolean needStoreFilter,
             IndexQueryConstraints constraints,
             PropertyIndexQuery... query) {
         this.descriptor = descriptor;
         this.progressor = progressor;
         this.query = query;
         this.constraints = constraints;
+        this.needStoreFilter = needStoreFilter;
     }
 
     @Override

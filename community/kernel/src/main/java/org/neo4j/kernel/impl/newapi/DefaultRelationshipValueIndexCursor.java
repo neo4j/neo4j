@@ -26,6 +26,7 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -37,14 +38,17 @@ import org.neo4j.storageengine.api.Reference;
 class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultRelationshipValueIndexCursor>
         implements RelationshipValueIndexCursor {
     private final DefaultRelationshipScanCursor relationshipScanCursor;
+    private final PropertyCursor propertyCursor;
     private int[] propertyIds;
 
     DefaultRelationshipValueIndexCursor(
             CursorPool<DefaultRelationshipValueIndexCursor> pool,
             DefaultRelationshipScanCursor relationshipScanCursor,
+            PropertyCursor propertyCursor,
             MemoryTracker memoryTracker) {
         super(pool, memoryTracker);
         this.relationshipScanCursor = relationshipScanCursor;
+        this.propertyCursor = propertyCursor;
     }
 
     @Override
@@ -109,6 +113,16 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
         if (relationshipScanCursor.relationshipReference() != entity) {
             throw new IllegalStateException("Relationship hasn't been read from store");
         }
+    }
+
+    protected boolean doStoreValuePassesQueryFilter(
+            long reference, PropertySelection propertySelection, PropertyIndexQuery[] query) {
+        read.singleRelationship(reference, relationshipScanCursor);
+        if (relationshipScanCursor.next()) {
+            relationshipScanCursor.properties(propertyCursor, propertySelection);
+            return CursorPredicates.propertiesMatch(propertyCursor, query);
+        }
+        return false;
     }
 
     /**

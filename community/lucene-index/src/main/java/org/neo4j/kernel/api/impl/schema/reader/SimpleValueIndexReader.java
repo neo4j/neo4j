@@ -92,7 +92,7 @@ public class SimpleValueIndexReader extends AbstractValueIndexReader {
         PropertyIndexQuery predicate = predicates[0];
         Query query = toLuceneQuery(descriptor, predicate);
         IndexProgressor progressor = search(query).getIndexProgressor(NODE_ID_KEY, client);
-        client.initialize(descriptor, progressor, accessMode, false, constraints, predicate);
+        client.initialize(descriptor, progressor, accessMode, false, false, constraints, predicate);
     }
 
     @Override

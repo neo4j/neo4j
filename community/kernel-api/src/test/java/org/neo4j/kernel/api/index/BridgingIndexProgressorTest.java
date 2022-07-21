@@ -19,17 +19,26 @@
  */
 package org.neo4j.kernel.api.index;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 
+@ExtendWith(RandomExtension.class)
 class BridgingIndexProgressorTest {
+    @Inject
+    private RandomSupport random;
+
     @Test
     void closeMustCloseAll() {
         IndexDescriptor index = IndexPrototype.forSchema(SchemaDescriptors.forLabel(1, 2, 3))
@@ -42,7 +51,7 @@ class BridgingIndexProgressorTest {
 
         // Given
         for (IndexProgressor part : parts) {
-            progressor.initialize(index, part, AccessMode.Static.ACCESS, false, unconstrained(), null);
+            progressor.initialize(index, part, AccessMode.Static.ACCESS, false, false, unconstrained(), null);
         }
 
         // When
@@ -52,5 +61,27 @@ class BridgingIndexProgressorTest {
         for (IndexProgressor part : parts) {
             verify(part).close();
         }
+    }
+
+    @Test
+    void aggregateNeedStoreFilter() {
+        IndexDescriptor index = IndexPrototype.forSchema(SchemaDescriptors.forLabel(1, 2, 3))
+                .withName("a")
+                .materialise(0);
+        BridgingIndexProgressor progressor =
+                new BridgingIndexProgressor(null, index.schema().getPropertyIds());
+
+        IndexProgressor[] parts = {mock(IndexProgressor.class), mock(IndexProgressor.class)};
+
+        // Given
+        boolean anyNeedStoreFilter = false;
+        for (IndexProgressor part : parts) {
+            var needStoreFilter = random.nextBoolean();
+            anyNeedStoreFilter |= needStoreFilter;
+            progressor.initialize(index, part, AccessMode.Static.ACCESS, false, needStoreFilter, unconstrained(), null);
+        }
+
+        // When
+        assertThat(progressor.needStoreFilter()).isEqualTo(anyNeedStoreFilter);
     }
 }

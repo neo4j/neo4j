@@ -58,6 +58,7 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedAndRemoved;
 import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedWithValuesAndRemoved;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 
@@ -78,6 +79,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     private final SortedMergeJoin sortedMergeJoin = new SortedMergeJoin();
     private AccessMode accessMode;
     private boolean shortcutSecurity;
+    private boolean needStoreFilter;
 
     DefaultEntityValueIndexCursor(CursorPool<CURSOR> pool, MemoryTracker memoryTracker) {
         super(pool);
@@ -93,12 +95,14 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
             IndexProgressor progressor,
             AccessMode accessMode,
             boolean indexIncludesTransactionState,
+            boolean needStoreFilter,
             IndexQueryConstraints constraints,
             PropertyIndexQuery... query) {
         assert query != null;
         super.initialize(progressor);
         this.indexOrder = constraints.order();
         this.needsValues = constraints.needsValues();
+        this.needStoreFilter = needStoreFilter;
         sortedMergeJoin.initialize(indexOrder);
 
         this.query = query;
@@ -191,7 +195,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
 
     @Override
     public final boolean acceptEntity(long reference, float score, Value... values) {
-        if (isRemoved(reference) || !allowed(reference)) {
+        if (isRemoved(reference) || !allowed(reference) || !storeValuePassesQueryFilter(reference)) {
             return false;
         } else {
             this.entity = reference;
@@ -200,6 +204,18 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
             return true;
         }
     }
+
+    private boolean storeValuePassesQueryFilter(long reference) {
+        if (!needStoreFilter) {
+            return true;
+        }
+        var propertySelection = PropertySelection.selection(
+                stream(query).mapToInt(PropertyIndexQuery::propertyKeyId).toArray());
+        return doStoreValuePassesQueryFilter(reference, propertySelection, query);
+    }
+
+    protected abstract boolean doStoreValuePassesQueryFilter(
+            long reference, PropertySelection propertySelection, PropertyIndexQuery[] query);
 
     boolean allowsAll() {
         return false;

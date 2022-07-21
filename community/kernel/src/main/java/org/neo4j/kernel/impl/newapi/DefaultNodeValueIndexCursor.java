@@ -27,22 +27,28 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.PropertySelection;
 
 class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultNodeValueIndexCursor>
         implements NodeValueIndexCursor {
     private final DefaultNodeCursor securityNodeCursor;
+    private final PropertyCursor propertyCursor;
     private int[] propertyIds;
 
     DefaultNodeValueIndexCursor(
             CursorPool<DefaultNodeValueIndexCursor> pool,
             DefaultNodeCursor securityNodeCursor,
+            PropertyCursor propertyCursor,
             MemoryTracker memoryTracker) {
         super(pool, memoryTracker);
         this.securityNodeCursor = securityNodeCursor;
+        this.propertyCursor = propertyCursor;
     }
 
     /**
@@ -140,5 +146,15 @@ class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultN
             securityNodeCursor.close();
             securityNodeCursor.release();
         }
+    }
+
+    protected boolean doStoreValuePassesQueryFilter(
+            long reference, PropertySelection propertySelection, PropertyIndexQuery[] query) {
+        read.singleNode(reference, securityNodeCursor);
+        if (securityNodeCursor.next()) {
+            securityNodeCursor.properties(propertyCursor, propertySelection);
+            return CursorPredicates.propertiesMatch(propertyCursor, query);
+        }
+        return false;
     }
 }

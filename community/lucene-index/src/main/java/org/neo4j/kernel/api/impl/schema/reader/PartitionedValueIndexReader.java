@@ -71,7 +71,9 @@ public class PartitionedValueIndexReader extends AbstractValueIndexReader {
                     throw new InnerException(e);
                 }
             });
-            client.initialize(descriptor, bridgingIndexProgressor, accessMode, false, constraints, query);
+            boolean needStoreFilter = bridgingIndexProgressor.needStoreFilter();
+            client.initialize(
+                    descriptor, bridgingIndexProgressor, accessMode, false, needStoreFilter, constraints, query);
         } catch (InnerException e) {
             throw e.getCause();
         }

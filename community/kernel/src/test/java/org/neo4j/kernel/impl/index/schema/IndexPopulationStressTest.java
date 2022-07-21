@@ -404,6 +404,7 @@ abstract class IndexPopulationStressTest {
                 IndexProgressor progressor,
                 AccessMode accessMode,
                 boolean indexIncludesTransactionState,
+                boolean needStoreFilter,
                 IndexQueryConstraints constraints,
                 PropertyIndexQuery... query) {
             initialize(progressor);

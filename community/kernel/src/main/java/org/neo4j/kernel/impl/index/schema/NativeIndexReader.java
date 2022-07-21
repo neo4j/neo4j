@@ -155,13 +155,13 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
             IndexQueryConstraints constraints,
             PropertyIndexQuery... query) {
         if (isEmptyRange(treeKeyFrom, treeKeyTo) || isEmptyResultQuery(query)) {
-            client.initialize(descriptor, IndexProgressor.EMPTY, accessMode, false, constraints, query);
+            client.initialize(descriptor, IndexProgressor.EMPTY, accessMode, false, false, constraints, query);
             return;
         }
         try {
             Seeker<KEY, NullValue> seeker = makeIndexSeeker(treeKeyFrom, treeKeyTo, constraints.order(), cursorContext);
             IndexProgressor hitProgressor = getIndexProgressor(seeker, client, needFilter, query);
-            client.initialize(descriptor, hitProgressor, accessMode, false, constraints, query);
+            client.initialize(descriptor, hitProgressor, accessMode, false, false, constraints, query);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

@@ -340,9 +340,17 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>> 
                     IndexProgressor progressor,
                     AccessMode accessMode,
                     boolean indexIncludesTransactionState,
+                    boolean needStoreFilter,
                     IndexQueryConstraints constraints,
                     PropertyIndexQuery... query) {
-                iter.initialize(descriptor, progressor, accessMode, indexIncludesTransactionState, constraints, query);
+                iter.initialize(
+                        descriptor,
+                        progressor,
+                        accessMode,
+                        indexIncludesTransactionState,
+                        needStoreFilter,
+                        constraints,
+                        query);
             }
 
             @Override

@@ -54,6 +54,7 @@ public class NodeValueIterator extends PrimitiveLongCollections.AbstractPrimitiv
             IndexProgressor progressor,
             AccessMode accessMode,
             boolean indexIncludesTransactionState,
+            boolean needStoreFilter,
             IndexQueryConstraints constraints,
             PropertyIndexQuery... query) {
         this.progressor = progressor;

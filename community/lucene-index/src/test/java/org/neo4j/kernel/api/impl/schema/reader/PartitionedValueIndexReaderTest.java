@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema.reader;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,20 +34,26 @@ import static org.neo4j.values.storable.Values.stringValue;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.AccessMode.Static;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.api.index.BridgingIndexProgressor;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.ValueIndexReader;
+import org.neo4j.kernel.impl.index.schema.GatheringNodeValueClient;
 import org.neo4j.kernel.impl.index.schema.NodeIdsIndexReaderQueryAnswer;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.values.storable.Values;
@@ -190,6 +197,52 @@ class PartitionedValueIndexReaderTest {
 
         IndexSampler sampler = indexReader.createSampler();
         assertEquals(new IndexSample(6, 6, 6), sampler.sampleIndex(CursorContext.NULL_CONTEXT));
+    }
+
+    @ParameterizedTest
+    @MethodSource("needStoreFilters")
+    void propagateNeedStoreFilter1(boolean[] needStoreFilters) throws IndexNotApplicableKernelException {
+        var query = mock(PropertyIndexQuery.class);
+        var client = new GatheringNodeValueClient();
+
+        // Update mocked sub-readers with value for needStoreFilter
+        setNeedStoreFilter(indexReader1, needStoreFilters[0]);
+        setNeedStoreFilter(indexReader2, needStoreFilters[1]);
+        setNeedStoreFilter(indexReader3, needStoreFilters[2]);
+
+        PartitionedValueIndexReader indexReader = createPartitionedReaderFromReaders();
+        indexReader.query(client, QueryContext.NULL_CONTEXT, Static.READ, unconstrained(), query);
+
+        assertThat(client.needStoreFilter).isEqualTo(needStoreFilters[3]);
+    }
+
+    private void setNeedStoreFilter(SimpleValueIndexReader indexReader, boolean needStoreFilter)
+            throws IndexNotApplicableKernelException {
+        doAnswer(invocation -> {
+                    // This is out outer client
+                    var invokedClient = (BridgingIndexProgressor) invocation.getArgument(0);
+                    invokedClient.initialize(
+                            schemaIndexDescriptor,
+                            invokedClient,
+                            null,
+                            false,
+                            needStoreFilter,
+                            null,
+                            (PropertyIndexQuery) null);
+                    return null;
+                })
+                .when(indexReader)
+                .query(any(), any(), any(), any(), any());
+    }
+
+    public static Stream<boolean[]> needStoreFilters() {
+        return Stream.of(
+                // Fourth value is expected result from ORing the first three
+                new boolean[] {false, false, false, false},
+                new boolean[] {true, false, false, true},
+                new boolean[] {false, true, false, true},
+                new boolean[] {false, false, true, true},
+                new boolean[] {true, true, true, true});
     }
 
     private static LongSet queryResultAsSet(PartitionedValueIndexReader indexReader, PropertyIndexQuery query)

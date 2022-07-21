@@ -30,7 +30,11 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
+import org.neo4j.kernel.api.impl.schema.trigram.TrigramTokenStream.CodePointBuffer;
 import org.neo4j.values.storable.Value;
 
 class TrigramQueryFactory {
@@ -39,24 +43,39 @@ class TrigramQueryFactory {
         return new TermQuery(term);
     }
 
+    // Need to filter out false positives
     static Query exact(Value value) {
         return trigramSearch(value.asObject().toString());
     }
 
+    // Need to filter out false positives
     static Query stringPrefix(String prefix) {
         return trigramSearch(prefix);
     }
 
+    // Need to filter out false positives
     static Query stringContains(String contains) {
         return trigramSearch(contains);
     }
 
+    // Need to filter out false positives
     static Query stringSuffix(String suffix) {
         return trigramSearch(suffix);
     }
 
+    // Need to filter out false positives
+    static Query range(String from, String to) {
+        String lowerNgram = getFirstNgram(from);
+        String upperNgram = getFirstNgram(to);
+        return TermRangeQuery.newStringRange(TRIGRAM_VALUE_KEY, lowerNgram, upperNgram, true, true);
+    }
+
     static MatchAllDocsQuery allValues() {
         return new MatchAllDocsQuery();
+    }
+
+    static boolean needStoreFilter(PropertyIndexQuery predicate) {
+        return !predicate.type().equals(IndexQueryType.ALL_ENTRIES);
     }
 
     private static Query trigramSearch(String searchString) {
@@ -75,13 +94,23 @@ class TrigramQueryFactory {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
 
         for (int i = 0; i < codePointBuffer.codePointCount() - 2; i++) {
-            char[] termCharBuffer = new char[6];
-            int length = CharacterUtils.toChars(codePointBuffer.codePoints(), i, 3, termCharBuffer, 0);
-            String term = new String(termCharBuffer, 0, length);
+            String term = getNgram(codePointBuffer, i, 3);
 
             var termQuery = new ConstantScoreQuery(new TermQuery(new Term(TRIGRAM_VALUE_KEY, term)));
             builder.add(termQuery, BooleanClause.Occur.MUST);
         }
         return builder.build();
+    }
+
+    private static String getFirstNgram(String searchString) {
+        var codePointBuffer = TrigramTokenStream.getCodePoints(searchString);
+        var n = Math.min(3, codePointBuffer.codePointCount());
+        return getNgram(codePointBuffer, 0, n);
+    }
+
+    private static String getNgram(CodePointBuffer codePointBuffer, int ngramIndex, int n) {
+        char[] termCharBuffer = new char[2 * n];
+        int length = CharacterUtils.toChars(codePointBuffer.codePoints(), ngramIndex, n, termCharBuffer, 0);
+        return new String(termCharBuffer, 0, length);
     }
 }

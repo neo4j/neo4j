@@ -457,6 +457,7 @@ class FulltextIndexProviderTest {
                         IndexProgressor progressor,
                         AccessMode accessMode,
                         boolean indexIncludesTransactionState,
+                        boolean needStoreFilter,
                         IndexQueryConstraints constraints,
                         PropertyIndexQuery... query) {
                     this.progressor = progressor;

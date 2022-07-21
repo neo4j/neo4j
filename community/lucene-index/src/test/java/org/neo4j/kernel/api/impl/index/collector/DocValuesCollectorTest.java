@@ -373,6 +373,7 @@ final class DocValuesCollectorTest {
                 IndexProgressor progressor,
                 AccessMode accessMode,
                 boolean indexIncludesTransactionState,
+                boolean needStoreFilter,
                 IndexQueryConstraints constraints,
                 PropertyIndexQuery... query) {}
 

@@ -35,6 +35,7 @@ public class SimpleEntityValueClient extends SimpleEntityClient implements Index
             IndexProgressor progressor,
             AccessMode accessMode,
             boolean indexIncludesTransactionState,
+            boolean needStoreFilter,
             IndexQueryConstraints constraints,
             PropertyIndexQuery... query) {
         initialize(progressor);

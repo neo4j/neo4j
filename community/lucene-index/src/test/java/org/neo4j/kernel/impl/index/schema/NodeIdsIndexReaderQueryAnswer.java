@@ -49,6 +49,7 @@ public class NodeIdsIndexReaderQueryAnswer implements Answer<Object> {
                 progressor,
                 AccessMode.Static.READ,
                 false,
+                false,
                 invocation.getArgument(3),
                 getIndexQueryArgument(invocation));
         return null;

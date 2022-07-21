@@ -313,13 +313,13 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport> {
     private SchemaDescriptor asSchemaDescriptor(TokenRead tokenRead, Label label, String prop) {
         var labelId = tokenRead.nodeLabel(label.name());
         var propId = tokenRead.propertyKey(prop);
-        return SchemaDescriptors.forLabel(labelId,propId);
+        return SchemaDescriptors.forLabel(labelId, propId);
     }
 
     private SchemaDescriptor asSchemaDescriptor(TokenRead tokenRead, RelationshipType relType, String prop) {
         var labelId = tokenRead.relationshipType(relType.name());
         var propId = tokenRead.propertyKey(prop);
-        return SchemaDescriptors.forRelType(labelId,propId);
+        return SchemaDescriptors.forRelType(labelId, propId);
     }
 
     private TokenRead getTokenRead(Transaction tx) {

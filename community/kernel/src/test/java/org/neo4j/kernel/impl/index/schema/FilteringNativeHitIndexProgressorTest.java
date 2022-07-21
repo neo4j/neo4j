@@ -72,6 +72,7 @@ class FilteringNativeHitIndexProgressorTest {
                     progressor,
                     AccessMode.Static.READ,
                     false,
+                    false,
                     unorderedValues(),
                     predicates);
             List<Long> result = new ArrayList<>();

@@ -30,6 +30,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.RangePredicate;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -46,8 +47,10 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.Values;
 
 class TrigramValueIndexReader extends AbstractValueIndexReader {
     private final SearcherReference searcherReference;
@@ -84,7 +87,8 @@ class TrigramValueIndexReader extends AbstractValueIndexReader {
         PropertyIndexQuery predicate = predicates[0];
         Query query = toLuceneQuery(predicate);
         IndexProgressor progressor = search(query).getIndexProgressor(TrigramDocumentStructure.ENTITY_ID_KEY, client);
-        client.initialize(descriptor, progressor, accessMode, false, constraints, predicate);
+        var needStoreFilter = TrigramQueryFactory.needStoreFilter(predicate);
+        client.initialize(descriptor, progressor, accessMode, false, needStoreFilter, constraints, predicate);
     }
 
     @Override
@@ -107,6 +111,11 @@ class TrigramValueIndexReader extends AbstractValueIndexReader {
         switch (predicate.type()) {
             case ALL_ENTRIES:
                 return TrigramQueryFactory.allValues();
+            case RANGE:
+                // We have already validated that the query has TEXT type
+                //noinspection unchecked
+                var range = (RangePredicate<TextValue>) predicate;
+                return TrigramQueryFactory.range(fromStringForRange(range), toStringForRange(range));
             case EXACT:
                 return TrigramQueryFactory.exact(((PropertyIndexQuery.ExactPredicate) predicate).value());
             case STRING_PREFIX:
@@ -119,9 +128,9 @@ class TrigramValueIndexReader extends AbstractValueIndexReader {
                 PropertyIndexQuery.StringSuffixPredicate ssp = (PropertyIndexQuery.StringSuffixPredicate) predicate;
                 return TrigramQueryFactory.stringSuffix(ssp.suffix().stringValue());
             default:
-                throw new IllegalArgumentException(
-                        format("Index query not supported for %s index. Query: %s",
-                                TrigramIndexProvider.DESCRIPTOR.getKey(), predicate));
+                throw new IllegalArgumentException(format(
+                        "Index query not supported for %s index. Query: %s",
+                        TrigramIndexProvider.DESCRIPTOR.getKey(), predicate));
         }
     }
 
@@ -173,5 +182,23 @@ class TrigramValueIndexReader extends AbstractValueIndexReader {
 
     private IndexSearcher getIndexSearcher() {
         return searcherReference.getIndexSearcher();
+    }
+
+    private static String fromStringForRange(PropertyIndexQuery.RangePredicate<TextValue> rangePredicate) {
+        Value fromValue = rangePredicate.fromValue();
+        if (fromValue == Values.NO_VALUE) {
+            return null;
+        } else {
+            return ((TextValue) fromValue).stringValue();
+        }
+    }
+
+    private static String toStringForRange(PropertyIndexQuery.RangePredicate<TextValue> rangePredicate) {
+        Value toValue = rangePredicate.toValue();
+        if (toValue == Values.NO_VALUE) {
+            return null;
+        } else {
+            return ((TextValue) toValue).stringValue();
+        }
     }
 }
