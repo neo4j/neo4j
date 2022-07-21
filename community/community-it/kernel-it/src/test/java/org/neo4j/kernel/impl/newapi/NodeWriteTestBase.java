@@ -23,6 +23,7 @@ import static java.util.Arrays.stream;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -259,10 +260,8 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // When
         try (KernelTransaction tx = beginTransaction()) {
             int token = tx.token().propertyKeyGetOrCreateForName(propertyKey);
-            tx.dataWrite().nodeSetProperty(node, token, stringValue("hello"));
-            fail("Expected EntityNotFoundException");
-        } catch (EntityNotFoundException e) {
-            // wanted
+            assertThatThrownBy(() -> tx.dataWrite().nodeSetProperty(node, token, stringValue("hello")))
+                    .isInstanceOf(EntityNotFoundException.class);
         }
     }
 

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.coreapi;
 
 import static java.lang.String.format;
+import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptyMap;
@@ -272,13 +273,13 @@ public class TransactionImpl extends EntityValidationTransactionImpl {
     public Node getNodeById(long id) {
         if (id < 0) {
             throw new NotFoundException(
-                    format("Node %d not found", id), new EntityNotFoundException(EntityType.NODE, id));
+                    format("Node %d not found", id), new EntityNotFoundException(EntityType.NODE, valueOf(id)));
         }
 
         KernelTransaction ktx = kernelTransaction();
         if (!ktx.dataRead().nodeExists(id)) {
             throw new NotFoundException(
-                    format("Node %d not found", id), new EntityNotFoundException(EntityType.NODE, id));
+                    format("Node %d not found", id), new EntityNotFoundException(EntityType.NODE, valueOf(id)));
         }
         return newNodeEntity(id);
     }
@@ -289,7 +290,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl {
         long nodeId = elementIdMapper.nodeId(elementId);
         if (!read.nodeExists(nodeId)) {
             throw new NotFoundException(
-                    format("Node %d not found", nodeId), new EntityNotFoundException(EntityType.NODE, nodeId));
+                    format("Node %s not found.", elementId), new EntityNotFoundException(EntityType.NODE, elementId));
         }
         return newNodeEntity(nodeId);
     }
@@ -322,14 +323,16 @@ public class TransactionImpl extends EntityValidationTransactionImpl {
     public Relationship getRelationshipById(long id) {
         if (id < 0) {
             throw new NotFoundException(
-                    format("Relationship %d not found", id), new EntityNotFoundException(EntityType.RELATIONSHIP, id));
+                    format("Relationship with %d not found", id),
+                    new EntityNotFoundException(EntityType.RELATIONSHIP, valueOf(id)));
         }
 
         KernelTransaction ktx = kernelTransaction();
 
         if (!ktx.dataRead().relationshipExists(id)) {
             throw new NotFoundException(
-                    format("Relationship %d not found", id), new EntityNotFoundException(EntityType.RELATIONSHIP, id));
+                    format("Relationship with %d not found", id),
+                    new EntityNotFoundException(EntityType.RELATIONSHIP, valueOf(id)));
         }
         return newRelationshipEntity(id);
     }
@@ -340,8 +343,8 @@ public class TransactionImpl extends EntityValidationTransactionImpl {
         long relationshipId = elementIdMapper.relationshipId(elementId);
         if (!read.relationshipExists(relationshipId)) {
             throw new NotFoundException(
-                    format("Relationship %d not found", relationshipId),
-                    new EntityNotFoundException(EntityType.RELATIONSHIP, relationshipId));
+                    format("Relationship %s not found.", elementId),
+                    new EntityNotFoundException(EntityType.RELATIONSHIP, elementId));
         }
         return newRelationshipEntity(relationshipId);
     }

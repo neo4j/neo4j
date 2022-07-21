@@ -662,7 +662,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship> {
     private void singleNode(KernelTransaction transaction, NodeCursor nodes) {
         transaction.dataRead().singleNode(nodeId, nodes);
         if (!nodes.next()) {
-            throw new NotFoundException(new EntityNotFoundException(EntityType.NODE, nodeId));
+            throw new NotFoundException(new EntityNotFoundException(EntityType.NODE, getElementId()));
         }
     }
 

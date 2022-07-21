@@ -31,6 +31,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.parallel.ResourceLock;
+import org.mockito.Answers;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -76,7 +77,7 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     private static final QueryExecutionEngine engine = mock(QueryExecutionEngine.class);
     private static final TransactionalContextFactory contextFactory = mock(TransactionalContextFactory.class);
     private static final DatabaseAvailabilityGuard availabilityGuard = mock(DatabaseAvailabilityGuard.class);
-    private static final ElementIdMapper elementIdMapper = mock(ElementIdMapper.class);
+    private static final ElementIdMapper elementIdMapper = mock(ElementIdMapper.class, Answers.RETURNS_MOCKS);
 
     @Inject
     private TestDirectory testDirectory;

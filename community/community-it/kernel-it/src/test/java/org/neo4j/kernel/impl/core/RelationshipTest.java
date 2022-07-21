@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -39,9 +40,11 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.token.api.NamedToken;
 
@@ -104,6 +107,27 @@ public class RelationshipTest extends EntityTest {
                     "(" + start.getId() + ")-[" + type + "," + relationship.getId() + "]->(" + end.getId() + ")",
                     toString);
         }
+    }
+
+    @Test
+    void relationshipNotFoundByElementId() {
+        String elementId;
+        try (Transaction transaction = db.beginTx()) {
+            Node node = transaction.createNode();
+            Relationship relationship = node.createRelationshipTo(transaction.createNode(), withName("test"));
+            elementId = relationship.getElementId();
+            transaction.rollback();
+        }
+        assertThatThrownBy(() -> {
+                    try (Transaction tx = db.beginTx()) {
+                        tx.getRelationshipByElementId(elementId);
+                    }
+                })
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining(elementId + " not found")
+                .hasRootCauseInstanceOf(EntityNotFoundException.class)
+                .getRootCause()
+                .hasMessageContaining("Unable to load RELATIONSHIP " + elementId);
     }
 
     @Test

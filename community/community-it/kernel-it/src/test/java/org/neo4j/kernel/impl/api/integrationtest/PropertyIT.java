@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.integrationtest;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 
 import java.util.Iterator;
@@ -74,9 +74,9 @@ class PropertyIT extends KernelIntegrationTest {
         transaction.dataWrite().relationshipDelete(rel);
 
         // When
-        var e = assertThrows(
-                EntityNotFoundException.class, () -> transaction.dataWrite().relationshipRemoveProperty(rel, prop1));
-        assertThat(e.getMessage()).isEqualTo("Unable to load RELATIONSHIP with id " + rel + ".");
+        assertThatThrownBy(() -> transaction.dataWrite().relationshipRemoveProperty(rel, prop1))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessageContaining("Unable to load RELATIONSHIP");
         commit();
     }
 

@@ -522,14 +522,16 @@ public class Operations implements Write, SchemaWrite {
     private void singleNode(long node) throws EntityNotFoundException {
         allStoreHolder.singleNode(node, nodeCursor);
         if (!nodeCursor.next()) {
-            throw new EntityNotFoundException(NODE, node);
+            throw new EntityNotFoundException(
+                    NODE, ktx.internalTransaction().elementIdMapper().nodeElementId(node));
         }
     }
 
     private void singleRelationship(long relationship) throws EntityNotFoundException {
         allStoreHolder.singleRelationship(relationship, relationshipCursor);
         if (!relationshipCursor.next()) {
-            throw new EntityNotFoundException(RELATIONSHIP, relationship);
+            throw new EntityNotFoundException(
+                    RELATIONSHIP, ktx.internalTransaction().elementIdMapper().relationshipElementId(relationship));
         }
     }
 
@@ -1835,7 +1837,8 @@ public class Operations implements Write, SchemaWrite {
 
     private void assertNodeExists(long sourceNode) throws EntityNotFoundException {
         if (!allStoreHolder.nodeExists(sourceNode)) {
-            throw new EntityNotFoundException(NODE, sourceNode);
+            throw new EntityNotFoundException(
+                    NODE, ktx.internalTransaction().elementIdMapper().nodeElementId(sourceNode));
         }
     }
 

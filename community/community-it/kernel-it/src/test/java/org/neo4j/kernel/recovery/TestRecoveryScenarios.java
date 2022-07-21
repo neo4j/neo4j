@@ -20,8 +20,8 @@
 package org.neo4j.kernel.recovery;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -96,11 +96,9 @@ class TestRecoveryScenarios {
         // THEN
         // -- really the problem was that recovery threw exception, so mostly assert that.
         try (Transaction tx = db.beginTx()) {
-            node = tx.getNodeById(node.getId());
-            tx.commit();
-            fail("Should not exist");
-        } catch (NotFoundException e) {
-            assertEquals("Node " + node.getId() + " not found", e.getMessage());
+            assertThatThrownBy(() -> tx.getNodeById(node.getId()))
+                    .isInstanceOf(NotFoundException.class)
+                    .hasMessage("Node " + node.getId() + " not found");
         }
     }
 

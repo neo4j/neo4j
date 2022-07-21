@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -63,6 +64,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -497,6 +499,26 @@ public class NodeEntityTest extends EntityTest {
             assertThat(node2.getProperty("name")).isEqualTo("Node 2");
             tx.commit();
         }
+    }
+
+    @Test
+    void nodeNotFoundByElementId() {
+        String elementId;
+        try (Transaction transaction = db.beginTx()) {
+            Node node = transaction.createNode();
+            elementId = node.getElementId();
+            transaction.rollback();
+        }
+        assertThatThrownBy(() -> {
+                    try (Transaction tx = db.beginTx()) {
+                        tx.getNodeByElementId(elementId);
+                    }
+                })
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining(elementId + " not found")
+                .hasRootCauseInstanceOf(EntityNotFoundException.class)
+                .getRootCause()
+                .hasMessageContaining("Unable to load NODE " + elementId);
     }
 
     @Test
