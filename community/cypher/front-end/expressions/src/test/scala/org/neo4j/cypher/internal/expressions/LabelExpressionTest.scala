@@ -83,14 +83,18 @@ class LabelExpressionTest extends CypherFunSuite {
   }
 
   test("should replace A:A&A with a flat conjunction") {
-    val leaf = Leaf(LabelName("A")(pos))
-    val expr = Conjunctions.flat(leaf, ColonConjunction(leaf, leaf)(pos), pos)
-    expr.replaceColonSyntax shouldBe Conjunctions(Seq(leaf, leaf, leaf))(pos)
+    val a = Leaf(LabelName("A")(pos))
+    val b = Leaf(LabelName("B")(pos))
+    val c = Leaf(LabelName("C")(pos))
+    val expr = Conjunctions.flat(a, ColonConjunction(b, c)(pos), pos)
+    expr.replaceColonSyntax shouldBe Conjunctions(Seq(a, b, c))(pos)
   }
 
   test("should replace A|A|:A with a flat disjunction") {
-    val leaf = Leaf(LabelName("A")(pos))
-    val expr = Disjunctions.flat(leaf, ColonDisjunction(leaf, leaf)(pos), pos)
-    expr.replaceColonSyntax shouldBe Disjunctions(Seq(leaf, leaf, leaf))(pos)
+    val a = Leaf(LabelName("A")(pos))
+    val b = Leaf(LabelName("B")(pos))
+    val c = Leaf(LabelName("C")(pos))
+    val expr = Disjunctions.flat(a, ColonDisjunction(b, c)(pos), pos)
+    expr.replaceColonSyntax shouldBe Disjunctions(Seq(a, b, c))(pos)
   }
 }
