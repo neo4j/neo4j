@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import java.util.Arrays;
 import org.neo4j.internal.schema.IndexBehaviour;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexQuery;
@@ -53,7 +52,17 @@ class FulltextIndexCapability implements IndexCapability {
     public boolean areValueCategoriesAccepted(ValueCategory... valueCategories) {
         Preconditions.requireNonEmpty(valueCategories);
         Preconditions.requireNoNullElements(valueCategories);
-        return Arrays.stream(valueCategories).allMatch(ValueCategory.TEXT::equals);
+        var anyValidCategory = false;
+        for (final var valueCategory : valueCategories) {
+            switch (valueCategory) {
+                case TEXT -> anyValidCategory = true;
+                case NO_CATEGORY -> {}
+                default -> {
+                    return false;
+                }
+            }
+        }
+        return anyValidCategory;
     }
 
     @Override
