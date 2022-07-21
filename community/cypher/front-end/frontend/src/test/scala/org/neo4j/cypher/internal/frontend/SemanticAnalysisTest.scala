@@ -707,6 +707,32 @@ class SemanticAnalysisTest extends CypherFunSuite {
     )
   }
 
+  test("UNION with missing return in first part") {
+    val query = "CALL db.labels() YIELD label UNION CALL db.labels() YIELD label RETURN label"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+
+    context.errors shouldBe Seq(
+      SemanticError("All sub queries in an UNION must have the same return column names", InputPosition(29, 1, 30)),
+    )
+  }
+
+  test("UNION with missing return in second part") {
+    val query = "CALL db.labels() YIELD label RETURN label UNION CALL db.labels() YIELD label"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+
+    context.errors shouldBe Seq(
+      SemanticError("All sub queries in an UNION must have the same return column names", InputPosition(42, 1, 43)),
+    )
+  }
+
   test("subquery without RETURN should not declare variables from YIELD in the outer scope") {
     val q =
       """CALL {

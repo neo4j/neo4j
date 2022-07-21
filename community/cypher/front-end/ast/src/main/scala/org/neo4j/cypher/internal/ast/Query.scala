@@ -561,12 +561,12 @@ sealed trait UnmappedUnion extends Union {
   override def checkColumnNamesAgree: SemanticCheck = (state: SemanticState) => {
     val myScope: Scope = state.currentScope.scope
 
-    val partScope = part.finalScope(myScope.children.head)
-    val queryScope = query.finalScope(myScope.children.last)
+    val partScope = if (part.isReturning) part.finalScope(myScope.children.head) else Scope.empty
+    val queryScope = if (query.isReturning) query.finalScope(myScope.children.last) else Scope.empty
     val errors = if (partScope.symbolNames == queryScope.symbolNames) {
       Seq.empty
     } else {
-      Seq(SemanticError("All sub queries in an UNION must have the same column names", position))
+      Seq(SemanticError("All sub queries in an UNION must have the same return column names", position))
     }
     semantics.SemanticCheckResult(state, errors)
   }

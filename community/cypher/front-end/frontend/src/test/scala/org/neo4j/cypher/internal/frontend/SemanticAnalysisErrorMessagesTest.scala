@@ -710,12 +710,22 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
   test("UNION with incomplete first part") {
     val query = "MATCH (a) WITH a UNION MATCH (a) RETURN a"
-    expectErrorMessagesFrom(query, List("Query cannot conclude with WITH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)"))
+    expectErrorMessagesFrom(query,
+      List(
+        "Query cannot conclude with WITH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
+        "All sub queries in an UNION must have the same return column names"
+      )
+    )
   }
 
   test("UNION with incomplete second part") {
     val query = "MATCH (a) RETURN a UNION MATCH (a) WITH a"
-    expectErrorMessagesFrom(query, List("Query cannot conclude with WITH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)"))
+    expectErrorMessagesFrom(query,
+      List(
+        "Query cannot conclude with WITH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
+        "All sub queries in an UNION must have the same return column names"
+      )
+    )
   }
 
   test("Query ending in CALL ... YIELD ...") {
