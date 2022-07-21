@@ -48,6 +48,7 @@ public abstract class IndexFiles {
     }
 
     public static class Directory extends IndexFiles {
+        public static final String INDEX_FILE_PREFIX = "index-";
         private final FileSystemAbstraction fs;
         private final Path directory;
         private final Path storeFile;
@@ -102,7 +103,7 @@ public abstract class IndexFiles {
         }
 
         private static String indexFileName(long indexId) {
-            return "index-" + indexId;
+            return INDEX_FILE_PREFIX + indexId;
         }
     }
 

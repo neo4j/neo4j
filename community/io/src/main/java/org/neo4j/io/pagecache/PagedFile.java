@@ -212,4 +212,9 @@ public interface PagedFile extends AutoCloseable {
      * Underlying page cache counters for mapped file
      */
     PageFileCounters pageFileCounters();
+
+    /**
+     * True if mapped in multi versioned mode.
+     */
+    boolean isMultiVersioned();
 }

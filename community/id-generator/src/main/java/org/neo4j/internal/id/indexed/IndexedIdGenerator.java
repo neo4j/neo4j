@@ -61,7 +61,6 @@ import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -327,9 +326,7 @@ public class IndexedIdGenerator implements IdGenerator {
         this.monitor = monitor;
         this.defaultMerger = new IdRangeMerger(false, monitor);
         this.recoveryMerger = new IdRangeMerger(true, monitor);
-        // id generators are not versioned
-        var treeOpenOptions = openOptions.newWithout(PageCacheOpenOptions.MULTI_VERSIONED);
-        Optional<HeaderReader> header = readHeader(pageCache, path, databaseName, contextFactory, treeOpenOptions);
+        Optional<HeaderReader> header = readHeader(pageCache, path, databaseName, contextFactory, openOptions);
         // We check generation here too since we could get into this scenario:
         // 1. start on existing store, but with missing .id file so that it gets created
         // 2. rebuild will happen in start(), but perhaps the db was shut down or killed before or during start()
@@ -363,7 +360,7 @@ public class IndexedIdGenerator implements IdGenerator {
                 readOnlyChecker,
                 databaseName,
                 contextFactory,
-                treeOpenOptions);
+                openOptions);
 
         this.strictlyPrioritizeFreelist = config.get(GraphDatabaseInternalSettings.strictly_prioritize_id_freelist);
         this.cacheOptimisticRefillThreshold = strictlyPrioritizeFreelist ? 0 : cacheCapacity / 4;

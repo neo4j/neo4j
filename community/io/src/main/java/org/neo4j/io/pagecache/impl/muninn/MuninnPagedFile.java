@@ -862,4 +862,9 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     static int computeChunkIndex(long filePageId) {
         return (int) (filePageId & translationTableChunkSizeMask);
     }
+
+    @Override
+    public boolean isMultiVersioned() {
+        return multiVersioned;
+    }
 }

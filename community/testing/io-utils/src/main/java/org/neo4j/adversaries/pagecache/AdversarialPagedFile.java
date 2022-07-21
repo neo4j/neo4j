@@ -122,6 +122,11 @@ public class AdversarialPagedFile implements PagedFile {
     }
 
     @Override
+    public boolean isMultiVersioned() {
+        return delegate.isMultiVersioned();
+    }
+
+    @Override
     public String toString() {
         return "AdversarialPagedFile{" + "delegate=" + delegate + '}';
     }

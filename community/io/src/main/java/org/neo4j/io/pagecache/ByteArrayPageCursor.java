@@ -400,5 +400,10 @@ public class ByteArrayPageCursor extends PageCursor {
         public PageFileCounters pageFileCounters() {
             return PageFileSwapperTracer.NULL;
         }
+
+        @Override
+        public boolean isMultiVersioned() {
+            return false;
+        }
     }
 }

@@ -31,6 +31,7 @@ import static org.neo4j.index.internal.gbptree.GenerationSafePointer.MIN_GENERAT
 import static org.neo4j.index.internal.gbptree.Header.CARRY_OVER_PREVIOUS_HEADER;
 import static org.neo4j.index.internal.gbptree.Header.replace;
 import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
+import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 
@@ -547,7 +548,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             Consumer<PageCursor> headerWriter,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseReadOnlyChecker readOnlyChecker,
-            ImmutableSet<OpenOption> openOptions,
+            ImmutableSet<OpenOption> engineOpenOptions,
             String databaseName,
             String name,
             CursorContextFactory contextFactory,
@@ -558,7 +559,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         this.monitor = monitor;
         this.readOnlyChecker = readOnlyChecker;
         this.contextFactory = contextFactory;
-        this.openOptions = openOptions;
+        this.openOptions = treeOpenOptions(engineOpenOptions);
         this.databaseName = databaseName;
         this.pageCacheTracer = pageCacheTracer;
         this.generation = Generation.generation(MIN_GENERATION, MIN_GENERATION + 1);
@@ -676,7 +677,8 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             String databaseName,
             ImmutableSet<OpenOption> openOptions)
             throws IOException, MetadataMismatchException {
-        PagedFile pagedFile = pageCache.map(indexFile, pageCache.pageSize(), databaseName, openOptions);
+        PagedFile pagedFile =
+                pageCache.map(indexFile, pageCache.pageSize(), databaseName, treeOpenOptions(openOptions));
         // This index already exists, verify meta data aligns with expectations
 
         MutableBoolean pagedFileOpen = new MutableBoolean(true);
@@ -1278,6 +1280,10 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
                 }
             }
         }
+    }
+
+    private static ImmutableSet<OpenOption> treeOpenOptions(ImmutableSet<OpenOption> openOptions) {
+        return openOptions.newWithout(MULTI_VERSIONED);
     }
 
     protected static <KEY, VALUE> OffloadStoreImpl<KEY, VALUE> buildOffload(

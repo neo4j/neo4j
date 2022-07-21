@@ -268,6 +268,11 @@ public class DatabasePageCache implements PageCache {
         }
 
         @Override
+        public boolean isMultiVersioned() {
+            return delegate.isMultiVersioned();
+        }
+
+        @Override
         public boolean equals(Object o) {
             if (this == o) {
                 return true;

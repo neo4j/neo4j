@@ -108,4 +108,9 @@ public class StubPagedFile implements PagedFile {
     public PageFileCounters pageFileCounters() {
         return PageFileSwapperTracer.NULL;
     }
+
+    @Override
+    public boolean isMultiVersioned() {
+        return false;
+    }
 }
