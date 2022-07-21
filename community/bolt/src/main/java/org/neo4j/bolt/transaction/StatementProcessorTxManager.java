@@ -22,8 +22,8 @@ package org.neo4j.bolt.transaction;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
@@ -44,6 +44,7 @@ import org.neo4j.values.virtual.MapValue;
 public class StatementProcessorTxManager implements TransactionManager {
     private final Map<String, StatementProcessor> statementProcessors = new ConcurrentHashMap<>();
     private final Map<String, StatementProcessorProvider> statementProcessorProviders = new ConcurrentHashMap<>();
+    private final AtomicLong txIdGenerator = new AtomicLong();
 
     @Override
     public String begin(
@@ -55,7 +56,7 @@ public class StatementProcessorTxManager implements TransactionManager {
             Duration transactionTimeout,
             String connectionId)
             throws KernelException {
-        String txId = UUID.randomUUID().toString();
+        String txId = Long.toString(txIdGenerator.incrementAndGet());
         StatementProcessor newTxProcessor = retrieveStatementProcessor(connectionId, loginContext, defaultDb, txId);
         var accessMode = isReadOnly ? AccessMode.READ : AccessMode.WRITE;
         newTxProcessor.beginTransaction(bookmarks, transactionTimeout, accessMode, transactionMetadata);
