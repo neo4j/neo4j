@@ -21,16 +21,12 @@ package org.neo4j.procedure.builtin.routing;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Set;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 
@@ -38,7 +34,6 @@ import static java.util.stream.Collectors.toSet;
 import static org.eclipse.collections.impl.set.mutable.UnifiedSet.newSetWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -55,9 +50,10 @@ class SingleInstanceRoutingProcedureInstallerTest
         var clientRoutingDomainChecker = mock( ClientRoutingDomainChecker.class );
         var config = Config.defaults();
         var logProvider = NullLogProvider.getInstance();
+        var defaultDatabaseResolver = mock( DefaultDatabaseResolver.class );
 
         var installer = new SingleInstanceRoutingProcedureInstaller( databaseAvailabilityChecker, clientRoutingDomainChecker,
-                                                                     portRegister, config, logProvider, databaseReferenceRepo );
+                                                                     portRegister, config, logProvider, databaseReferenceRepo, defaultDatabaseResolver );
         var procedures = spy( new GlobalProceduresRegistry() );
 
         installer.install( procedures );
