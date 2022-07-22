@@ -96,7 +96,7 @@ case object PlanUpdates extends UpdatesPlanner {
     firstPlannerQuery: Boolean,
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val eagerAnalyzer = new EagerAnalyzer(context)
+    val eagerAnalyzer = EagerAnalyzer(context)
     // Eagerness pass 1 -- does previously planned reads conflict with future writes?
     val plan =
       if (firstPlannerQuery)

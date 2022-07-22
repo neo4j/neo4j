@@ -19,6 +19,16 @@
  */
 package org.neo4j.configuration;
 
+import inet.ipaddr.IPAddressString;
+
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
+import java.util.Set;
+
+import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.graphdb.config.Setting;
+
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofMinutes;
@@ -41,14 +51,6 @@ import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 import static org.neo4j.configuration.SettingValueParsers.setOf;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
-
-import inet.ipaddr.IPAddressString;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.List;
-import java.util.Set;
-import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.graphdb.config.Setting;
 
 @ServiceProvider
 public class GraphDatabaseInternalSettings implements SettingsDeclaration {
@@ -373,6 +375,19 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     "internal.cypher.splitting_top_behavior",
                     ofEnum(SplittingTopBehavior.class),
                     SplittingTopBehavior.DEFAULT)
+            .build();
+
+    public enum EagerAnalysisImplementation {
+        IR,
+        LP
+    }
+
+    @Internal
+    @Description("Choose the Eager Analysis implementation")
+    public static final Setting<EagerAnalysisImplementation> cypher_eager_analysis_implementation = newBuilder(
+                    "internal.cypher.eager_analysis_implementation",
+                    ofEnum(EagerAnalysisImplementation.class),
+                    EagerAnalysisImplementation.IR)
             .build();
 
     @Internal

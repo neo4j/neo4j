@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 
 import java.io.File
-
 import scala.jdk.CollectionConverters.SetHasAsScala
 
 /**
@@ -102,6 +101,11 @@ class CypherConfiguration private (val config: Config) {
   val enableExtraSemanticFeatures: Set[String] =
     config.get(GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features).asScala.toSet
   val planningTextIndexesEnabled: Boolean = config.get(GraphDatabaseInternalSettings.planning_text_indexes_enabled)
+
+  val useLPEagerAnalyzer: Boolean = config.get(
+    GraphDatabaseInternalSettings.cypher_eager_analysis_implementation
+  ) == GraphDatabaseInternalSettings.EagerAnalysisImplementation.LP
+
   val planningRangeIndexesEnabled: Boolean = config.get(GraphDatabaseInternalSettings.planning_range_indexes_enabled)
   val planningPointIndexesEnabled: Boolean = config.get(GraphDatabaseInternalSettings.planning_point_indexes_enabled)
 

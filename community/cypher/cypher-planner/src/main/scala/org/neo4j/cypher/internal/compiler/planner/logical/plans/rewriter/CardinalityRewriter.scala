@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.phases.AttributeFullyAssigned
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.LogicalPlanContainsEagerIfNeeded
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -54,7 +55,10 @@ case object CardinalityRewriter extends LogicalPlanRewriter with StepSequencer.S
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // The rewriters operate on the LogicalPlan
     CompilationContains[LogicalPlan],
-    LogicalPlanRewritten
+    // This should happen after finding the final plan
+    LogicalPlanRewritten,
+    // This should happen after finding the final plan + Eager changes effective cardinality
+    LogicalPlanContainsEagerIfNeeded
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(
