@@ -110,6 +110,7 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
       argumentIds = dependencies,
       patternNodes = patternContent.nodeIds.toSet,
       patternRelationships = patternContent.rels.toSet,
+      quantifiedPathPatterns = patternContent.quantifiedPathPatterns.toSet,
       shortestPathPatterns =
         patternContent.shortestPaths.toSet, // Not really needed, PatternExpressions/PatternComprehension can't express shortestPath
       selections = Selections.from(uniquePredicates ++ extractedPredicates ++ maybePredicate)

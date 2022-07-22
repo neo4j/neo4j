@@ -1707,4 +1707,33 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
+  test("should convert quantified pattern inside EXISTS subquery") {
+    val query = buildSinglePlannerQuery("MATCH (a) WHERE EXISTS { (a) ((n)-[r]->(m))+ } RETURN 1")
+
+    val qpp = QuantifiedPathPattern(
+      leftBinding = NodeBinding("a", "n"),
+      rightBinding = NodeBinding("anon_0", "m"),
+      pattern = QueryGraph(
+        patternNodes = Set("n", "m"),
+        patternRelationships =
+          Set(PatternRelationship("r", ("n", "m"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
+      ),
+      repetition = Repetition(min = 1, max = UpperBound.Unlimited)
+    )
+
+    query.queryGraph.selections shouldBe Selections(ListSet(Predicate(
+      dependencies = Set("a"),
+      expr = ExistsIRExpression(
+        queryWith(
+          QueryGraph(
+            argumentIds = Set("a"),
+            patternNodes = Set("a", "anon_0"),
+            quantifiedPathPatterns = Set(qpp)
+          )
+        ),
+        "EXISTS { MATCH (a) ((n)-[r]->(m))+ (`anon_0`) }"
+      )(pos)
+    )))
+  }
+
 }
