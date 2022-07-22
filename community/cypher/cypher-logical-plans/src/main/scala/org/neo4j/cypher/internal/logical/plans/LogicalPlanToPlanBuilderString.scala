@@ -1286,6 +1286,10 @@ object LogicalPlanToPlanBuilderString {
         s"${objectName(EagernessReason.LabelReadRemoveConflict)}(LabelName(${wrapInQuotations(label.name)})(InputPosition.NONE))"
       case EagernessReason.ReadDeleteConflict(identifier) =>
         s"${objectName(EagernessReason.ReadDeleteConflict)}(${wrapInQuotations(identifier)})"
+      case EagernessReason.ReadCreateConflict => objectName(EagernessReason.ReadCreateConflict)
+      case EagernessReason.PropertyReadSetConflict(property) =>
+        s"${objectName(EagernessReason.PropertyReadSetConflict)}(PropertyKeyName(${wrapInQuotations(property.name)})(InputPosition.NONE))"
+      case EagernessReason.UnknownPropertyReadSetConflict => objectName(EagernessReason.UnknownPropertyReadSetConflict)
     }
     s"$prefix.$suffix"
   }

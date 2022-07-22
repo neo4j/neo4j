@@ -2283,6 +2283,12 @@ case class LogicalPlan2PlanDescription(
         pretty"read/remove conflict for label: ${asPrettyString(label)}"
       case EagernessReason.ReadDeleteConflict(identifier) =>
         pretty"read/delete conflict for variable: ${asPrettyString(identifier)}"
+      case EagernessReason.ReadCreateConflict =>
+        pretty"read/create conflict"
+      case EagernessReason.PropertyReadSetConflict(property) =>
+        pretty"read/set conflict for property: ${asPrettyString(property)}"
+      case EagernessReason.UnknownPropertyReadSetConflict =>
+        pretty"read/set conflict for some property"
     }
   }
 

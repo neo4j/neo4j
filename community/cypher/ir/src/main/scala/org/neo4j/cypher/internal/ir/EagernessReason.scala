@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
 
 object EagernessReason {
 
@@ -33,4 +34,10 @@ object EagernessReason {
   case class LabelReadRemoveConflict(label: LabelName) extends Reason
 
   case class ReadDeleteConflict(identifier: String) extends Reason
+
+  case object ReadCreateConflict extends Reason
+
+  case class PropertyReadSetConflict(property: PropertyKeyName) extends Reason
+
+  case object UnknownPropertyReadSetConflict extends Reason
 }
