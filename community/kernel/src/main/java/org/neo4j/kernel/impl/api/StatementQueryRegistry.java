@@ -73,5 +73,11 @@ public class StatementQueryRegistry implements QueryRegistry
     {
         statement.startQueryExecution( executingQuery );
     }
+
+    @Override
+    public void dispose()
+    {
+        factory.dispose();
+    }
 }
 

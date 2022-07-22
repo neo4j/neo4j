@@ -210,6 +210,11 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
         }
     }
 
+    public void dispose()
+    {
+        queryRegistry.dispose();
+    }
+
     private String getStatementNotClosedMessage( int leakedStatements )
     {
         String additionalInstruction = traceStatements ? StringUtils.EMPTY :
