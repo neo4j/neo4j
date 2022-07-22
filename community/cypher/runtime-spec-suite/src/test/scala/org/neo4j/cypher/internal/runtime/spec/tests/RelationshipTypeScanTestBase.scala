@@ -20,13 +20,7 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
-import org.neo4j.cypher.internal.InterpretedRuntime
-import org.neo4j.cypher.internal.InterpretedRuntimeName
-import org.neo4j.cypher.internal.ParallelRuntimeName
-import org.neo4j.cypher.internal.PipelinedRuntimeName
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.SlottedRuntime
-import org.neo4j.cypher.internal.SlottedRuntimeName
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.runtime.spec.Edition
@@ -312,10 +306,10 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then
-    val expectedDbHits: Int = runtime.name.toUpperCase() match {
-      case SlottedRuntimeName.name | InterpretedRuntimeName.name => sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/
-      case PipelinedRuntimeName.name                             => sizeHint + 1
-      case ParallelRuntimeName.name                              => 2 * sizeHint
+    val expectedDbHits: Int = runtimeUsed match {
+      case Slotted | Interpreted => sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/
+      case Pipelined             => sizeHint + 1
+      case Parallel              => 2 * sizeHint
     }
 
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe expectedDbHits
@@ -336,10 +330,10 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then
-    val expectedDbHits: Int = runtime.name.toUpperCase() match {
-      case SlottedRuntimeName.name | InterpretedRuntimeName.name => sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/
-      case PipelinedRuntimeName.name                             => sizeHint + 1
-      case ParallelRuntimeName.name                              => 2 * sizeHint
+    val expectedDbHits: Int = runtimeUsed match {
+      case Slotted | Interpreted => sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/
+      case Pipelined             => sizeHint + 1
+      case Parallel              => 2 * sizeHint
     }
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe expectedDbHits
   }

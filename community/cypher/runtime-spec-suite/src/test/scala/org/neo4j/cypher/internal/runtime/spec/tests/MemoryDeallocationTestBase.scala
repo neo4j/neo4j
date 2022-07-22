@@ -73,24 +73,6 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       runtime
     ) with InputStreams[CONTEXT] {
 
-  // -----------------------------------------------------------------
-  // A little helper to collect dependencies on runtime name in one place
-  sealed trait Runtime
-  case object Interpreted extends Runtime
-  case object Slotted extends Runtime
-  case object Pipelined extends Runtime
-  case object NotSupported extends Runtime
-
-  protected def runtimeUsed: Runtime = {
-    runtime.name.toLowerCase match {
-      case "interpreted" => Interpreted
-      case "slotted"     => Slotted
-      case "pipelined"   => Pipelined
-      case _             => NotSupported
-    }
-  }
-  // -----------------------------------------------------------------
-
   test("should deallocate memory between grouping aggregation - many groups") {
     // given
     val logicalQuery1 = new LogicalQueryBuilder(this)

@@ -23,8 +23,12 @@ import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.ExecutionPlan
+import org.neo4j.cypher.internal.InterpretedRuntimeName
 import org.neo4j.cypher.internal.LogicalQuery
+import org.neo4j.cypher.internal.ParallelRuntimeName
+import org.neo4j.cypher.internal.PipelinedRuntimeName
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.SlottedRuntimeName
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -212,6 +216,22 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
       dup <- if (rng.nextDouble() < duplicateProbability) Seq(thing, thing) else Seq(thing)
       nullifiedDup = if (rng.nextDouble() < nullProbability) null.asInstanceOf[X] else dup
     } yield nullifiedDup
+  }
+
+  // A little helper to collect dependencies on runtime name in one place
+  sealed trait Runtime
+  case object Interpreted extends Runtime
+  case object Slotted extends Runtime
+  case object Pipelined extends Runtime
+  case object Parallel extends Runtime
+
+  protected def runtimeUsed: Runtime = {
+    runtime.name.toUpperCase match {
+      case InterpretedRuntimeName.name => Interpreted
+      case SlottedRuntimeName.name     => Slotted
+      case PipelinedRuntimeName.name   => Pipelined
+      case ParallelRuntimeName.name    => Parallel
+    }
   }
 
   // EXECUTE

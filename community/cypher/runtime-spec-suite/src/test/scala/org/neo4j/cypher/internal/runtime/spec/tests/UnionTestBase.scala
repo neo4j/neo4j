@@ -875,7 +875,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("union must not initialize RHS before LHS is exhausted") {
-    assume(runtime.name.toLowerCase() != "parallel")
+    assume(!isParallel, "Parallel does not yet support `Create`")
 
     val nodes = given {
       nodeGraph(sizeHintAlignedToMorselSize)

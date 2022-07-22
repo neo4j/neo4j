@@ -160,8 +160,12 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
+    val expectedDbHits = runtimeUsed match {
+      case Interpreted | Slotted | Pipelined => sizeHint + 1
+      case Parallel                          => sizeHint
+    }
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() should (be(sizeHint) or be(sizeHint + 1)) // all nodes scan
+    queryProfile.operatorProfile(1).dbHits() shouldBe expectedDbHits // all nodes scan
   }
 
   test("should profile dbHits of label scan") {
@@ -181,10 +185,12 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
+    val expectedDbHits = runtimeUsed match {
+      case Interpreted | Slotted | Pipelined => sizeHint + 1 + costOfLabelLookup
+      case Parallel                          => sizeHint + costOfLabelLookup
+    }
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() should (be(sizeHint + costOfLabelLookup) or be(
-      sizeHint + 1 + costOfLabelLookup
-    )) // label scan
+    queryProfile.operatorProfile(1).dbHits() shouldBe expectedDbHits // label scan
   }
 
   test("should profile dbHits of union label scan") {
@@ -205,8 +211,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() should (be(6 + 2 /*label scan*/ + 2 * costOfLabelLookup) or be(
-      10
+    queryProfile.operatorProfile(1).dbHits() should (be(
+      6 + 2 /*label scan*/ + 2 * costOfLabelLookup
     )) // union label scan
   }
 
@@ -356,10 +362,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val result = profile(logicalQuery, runtime)
     consume(result)
 
-    // then, in interpreted runtime it is free to call relationshipById whereas in the other cases this is counted as a dbhit
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(sizeHint / 10 + 1) or be(
-      2 * (sizeHint / 10) + 1
-    ))
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should be(sizeHint / 10 + 1)
   }
 
   test("should profile dbHits of directed relationship index range seek") {
@@ -382,10 +385,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val result = profile(logicalQuery, runtime)
     consume(result)
 
-    // then, in interpreted runtime it is free to call relationshipById whereas in the other cases this is counted as a dbhit
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(sizeHint / 10 / 2 + 1) or be(
-      2 * (sizeHint / 10 / 2) + 1
-    ))
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should be(sizeHint / 10 / 2 + 1)
   }
 
   test("should profile dbHits of directed relationship multiple index exact seek") {
@@ -407,10 +407,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val result = profile(logicalQuery, runtime)
     consume(result)
 
-    // then, in interpreted runtime it is free to call relationshipById whereas in the other cases this is counted as a dbhit
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(sizeHint / 5 + 2) or be(
-      2 * (sizeHint / 5) + 2
-    ))
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should be(sizeHint / 5 + 2)
   }
 
   test("should profile dbHits of undirected relationship index exact seek") {
@@ -432,10 +429,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val result = profile(logicalQuery, runtime)
     consume(result)
 
-    // then, in interpreted runtime it is free to call relationshipById whereas in the other cases this is counted as a dbhit
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(sizeHint / 10 + 1) or be(
-      2 * (sizeHint / 10) + 1
-    ))
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should be(sizeHint / 10 + 1)
   }
 
   test("should profile dbHits of undirected relationship range index seek") {
@@ -458,10 +452,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val result = profile(logicalQuery, runtime)
     consume(result)
 
-    // then, in interpreted runtime it is free to call relationshipById whereas in the other cases this is counted as a dbhit
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(sizeHint / 10 / 2 + 1) or be(
-      2 * (sizeHint / 10 / 2) + 1
-    ))
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should be(sizeHint / 10 / 2 + 1)
   }
 
   test("should profile dbHits of undirected relationship multiple index exact seek") {
@@ -483,10 +474,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val result = profile(logicalQuery, runtime)
     consume(result)
 
-    // then, in interpreted runtime it is free to call relationshipById whereas in the other cases this is counted as a dbhit
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(sizeHint / 5 + 2) or be(
-      2 * (sizeHint / 5) + 2
-    ))
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(sizeHint / 5 + 2))
   }
 
   test("should profile dbHits of directed relationship index scan") {
@@ -508,10 +496,12 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val result = profile(logicalQuery, runtime)
     consume(result)
 
-    // then, in interpreted runtime it is free to call relationshipById whereas in the other cases this is counted as a dbhit
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(sizeHint / 10 + 1) or be(
-      2 * (sizeHint / 10) + 1
-    ))
+    // then
+    val expectedDbHits = runtimeUsed match {
+      case Interpreted | Slotted | Pipelined => sizeHint / 10 + 1
+      case Parallel                          => 2 * (sizeHint / 10) + 1
+    }
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe expectedDbHits
   }
 
   test("should profile dbHits of undirected relationship index scan") {
@@ -533,10 +523,12 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val result = profile(logicalQuery, runtime)
     consume(result)
 
-    // then, in interpreted runtime it is free to call relationshipById whereas in the other cases this is counted as a dbhit
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(sizeHint / 10 + 1) or be(
-      2 * (sizeHint / 10) + 1
-    ))
+    // then
+    val expectedDbHits = runtimeUsed match {
+      case Interpreted | Slotted | Pipelined => sizeHint / 10 + 1
+      case Parallel                          => 2 * (sizeHint / 10) + 1
+    }
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe expectedDbHits
   }
 
   test("should profile dbHits of node by id") {
@@ -615,18 +607,17 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
+    val expectedOptionalExpandAllDbHits = sizeHint * (costOfExpandGetRelCursor + costOfExpandOneRel) + extraNodes
+    val expectedNodeByLabelScanDbHits = runtimeUsed match {
+      case Interpreted | Slotted | Pipelined => sizeHint + extraNodes + 1 + costOfLabelLookup
+      case Parallel                          => sizeHint + extraNodes + costOfLabelLookup
+    }
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(
-      1
-    ).dbHits() shouldBe (sizeHint * (LegacyDbHitsTestBase.costOfExpandGetRelCursor + LegacyDbHitsTestBase.costOfExpandOneRel) + extraNodes) // optional expand all
-    // label scan, In non-parallel we count the actual labelscan-call as a dbhit whereas for parallel we don't
-    queryProfile.operatorProfile(2).dbHits() should (be(sizeHint + extraNodes + 1 + costOfLabelLookup) or be(
-      sizeHint + extraNodes + costOfLabelLookup
-    ))
+    queryProfile.operatorProfile(1).dbHits() shouldBe expectedOptionalExpandAllDbHits // optional expand all
+    queryProfile.operatorProfile(2).dbHits() shouldBe expectedNodeByLabelScanDbHits // node by label scan
   }
 
   test("should profile dbhits with optional expand into") {
-    // TODO: parallel scans don't seem on the rhs of apply are flaky, expected
     assume(!(isParallel && runOnlySafeScenarios))
     // given
     val n = Math.sqrt(sizeHint).toInt
@@ -678,6 +669,15 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
+    val expectedLabelScanRHS = runtimeUsed match {
+      case Interpreted | Slotted | Pipelined => be((n + extraNodes) * (n + extraNodes + 1) + costOfLabelLookup)
+      case Parallel => be >= (n + extraNodes) + costOfLabelLookup and
+          be <= (n + extraNodes) * (n + extraNodes) + costOfLabelLookup
+    }
+    val expectedLabelScanLHS = runtimeUsed match {
+      case Interpreted | Slotted | Pipelined => n + extraNodes + 1 + costOfLabelLookup
+      case Parallel                          => n + extraNodes + costOfLabelLookup
+    }
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     // optional expand into (uses legacy pipe). If no node is in the input twice the rel cache does not help and then you get
     // 2 (check start and end for `isDense`) + costOfExpand for each relationship on top.
@@ -685,14 +685,11 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
       1
     ).dbHits() shouldBe ((n + extraNodes) * 2 + n * costOfExpandOneRel) // optional expand into
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // apply
-    queryProfile.operatorProfile(3).dbHits() shouldBe (
-      (n + extraNodes) * (n + extraNodes) * 2 * (costOfGetPropertyChain + costOfProperty)
-    ) // filter (reads 2 properties))
-    // TODO: parallel scans don't seem to add up the dbhits correctly when on the rhs of apply, investigate why that is?
-    queryProfile.operatorProfile(4).dbHits() shouldBe (
-      (n + extraNodes) * (n + extraNodes + 1) + costOfLabelLookup
-    ) // label scan Y
-    queryProfile.operatorProfile(5).dbHits() shouldBe (n + extraNodes + 1 + costOfLabelLookup) // // label scan X
+    queryProfile.operatorProfile(
+      3
+    ).dbHits() shouldBe ((n + extraNodes) * (n + extraNodes) * 2 * (costOfGetPropertyChain + costOfProperty)) // filter (reads 2 properties))
+    queryProfile.operatorProfile(4).dbHits() should expectedLabelScanRHS // label scan Y
+    queryProfile.operatorProfile(5).dbHits() shouldBe expectedLabelScanLHS // // label scan X
   }
 
   test("should profile dbHits with node hash join") {
@@ -718,17 +715,19 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    val queryProfile = runtimeResult.runtimeResult.queryProfile()
     val fusedCostOfGetPropertyChain = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
+    val expectedFilterDbHits = sizeHint * (fusedCostOfGetPropertyChain + costOfProperty)
+    val expectedAllNodesScanDbHits = runtimeUsed match {
+      case Interpreted | Slotted | Pipelined => sizeHint + 1
+      case Parallel                          => sizeHint
+    }
+
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe 0 // node hash join
-    queryProfile.operatorProfile(
-      2
-    ).dbHits() shouldBe sizeHint * (fusedCostOfGetPropertyChain + costOfProperty) // filter
-    queryProfile.operatorProfile(3).dbHits() should (be(sizeHint) or be(sizeHint + 1)) // all node scan
-    queryProfile.operatorProfile(
-      4
-    ).dbHits() shouldBe sizeHint * (fusedCostOfGetPropertyChain + costOfProperty) // filter
-    queryProfile.operatorProfile(5).dbHits() should (be(sizeHint) or be(sizeHint + 1)) // all node scan
+    queryProfile.operatorProfile(2).dbHits() shouldBe expectedFilterDbHits // filter
+    queryProfile.operatorProfile(3).dbHits() shouldBe expectedAllNodesScanDbHits // all node scan
+    queryProfile.operatorProfile(4).dbHits() shouldBe expectedFilterDbHits // filter
+    queryProfile.operatorProfile(5).dbHits() shouldBe expectedAllNodesScanDbHits // all node scan
   }
 
   test("should profile dbHits with value hash join") {
@@ -752,10 +751,15 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
+    val expectedAllNodeScanDbHits = runtimeUsed match {
+      case Interpreted | Slotted | Pipelined => sizeHint + 1
+      case Parallel                          => sizeHint
+    }
+
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe 2 * sizeHint // value hash join
-    queryProfile.operatorProfile(2).dbHits() should (be(sizeHint) or be(sizeHint + 1)) // all node scan
-    queryProfile.operatorProfile(3).dbHits() should (be(sizeHint) or be(sizeHint + 1)) // all node scan
+    queryProfile.operatorProfile(2).dbHits() shouldBe expectedAllNodeScanDbHits // all node scan
+    queryProfile.operatorProfile(3).dbHits() shouldBe expectedAllNodeScanDbHits // all node scan
   }
 
   test("should profile dbHits of cached properties") {
@@ -831,18 +835,22 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val fusedCostOfGetPropertyChain = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
+    val expectedSecondFilterDbHits = (size / 2 * size) * (costOfGetPropertyChain + costOfProperty)
+    val expectedFirstFilterDbHits = size * size * (fusedCostOfGetPropertyChain + costOfProperty)
+    val expectedAllNodeScanRHS = runtimeUsed match {
+      case Interpreted | Slotted | Pipelined => be(size * (size + 1))
+      case Parallel                          => be >= size and be <= size * size
+    }
+    val expectedAllNodeScanLHS = runtimeUsed match {
+      case Interpreted | Slotted | Pipelined => size + 1
+      case Parallel                          => size
+    }
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(
-      1
-    ).dbHits() shouldBe (size / 2 * size) * (costOfGetPropertyChain + costOfProperty) // filter
+    queryProfile.operatorProfile(1).dbHits() shouldBe expectedSecondFilterDbHits // filter
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // apply
-    queryProfile.operatorProfile(
-      3
-    ).dbHits() shouldBe size * size * (fusedCostOfGetPropertyChain + costOfProperty) // filter
-    queryProfile.operatorProfile(
-      4
-    ).dbHits().toInt should be > size // all node scan (in parallel scans we can have different number of db hits here)
-    queryProfile.operatorProfile(5).dbHits() should (be(size) or be(size + 1)) // all node scan
+    queryProfile.operatorProfile(3).dbHits() shouldBe expectedFirstFilterDbHits // filter
+    queryProfile.operatorProfile(4).dbHits().toInt should expectedAllNodeScanRHS // all node scan Y
+    queryProfile.operatorProfile(5).dbHits() shouldBe expectedAllNodeScanLHS // all node scan X
   }
 
   test("should profile dbHits of expression reads") {
@@ -861,15 +869,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // then
     val fusedCostOfGetPropertyChain = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    // assertions on property dbHits are tricky because in pipelined more dbHits are reported for
-    // properties late in the chain, while in interpreted/slotted all property reads cost only 1 dbHit
-    queryProfile.operatorProfile(1).dbHits() should
-      (be(
-        sizeHint * (2 * (fusedCostOfGetPropertyChain + costOfProperty) + (fusedCostOfGetPropertyChain + costOfProperty))
-      ) or // prop is the first prop
-        be(
-          sizeHint * ((fusedCostOfGetPropertyChain + costOfProperty) + 2 * (fusedCostOfGetPropertyChain + costOfProperty))
-        )) // prop is the second prop
+    queryProfile.operatorProfile(1).dbHits() should be(
+      sizeHint * (2 * (fusedCostOfGetPropertyChain + costOfProperty) + (fusedCostOfGetPropertyChain + costOfProperty))
+    )
   }
 
   test("should profile dbHits of aggregation") {
@@ -933,12 +935,19 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val numberOfChunks = Math.ceil(size / cartesianProductChunkSize.toDouble).toInt
+    val expectedAllNodeScanRHS = runtimeUsed match {
+      case Interpreted | Slotted | Pipelined => be(numberOfChunks * (size + 1))
+      case Parallel                          => be >= numberOfChunks * size and be <= size * size
+    }
+    val expectedAllNodeScanLHS = runtimeUsed match {
+      case Interpreted | Slotted | Pipelined => size + 1
+      case Parallel                          => size
+    }
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 0 // cartesian product
-    // TODO: parallel scans don't seem to add up the dbhits correctly when on the rhs, investigate why that is?
-    result.runtimeResult.queryProfile().operatorProfile(2).dbHits() shouldBe (
-      numberOfChunks * (size + 1)
-    ) // all node scan b
-    result.runtimeResult.queryProfile().operatorProfile(3).dbHits() shouldBe (size + 1) // all node scan a
+    result.runtimeResult.queryProfile().operatorProfile(
+      2
+    ).dbHits().toInt should expectedAllNodeScanRHS // all node scan b
+    result.runtimeResult.queryProfile().operatorProfile(3).dbHits() shouldBe expectedAllNodeScanLHS // all node scan a
   }
 
   test("should profile dbHits of skip") {
@@ -958,12 +967,16 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
+    val expectedAllNodeScanDbHits = runtimeUsed match {
+      case Interpreted | Slotted | Pipelined => sizeHint + 1
+      case Parallel                          => sizeHint
+    }
     val propCost = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(0).dbHits() shouldBe 0 // produce result
     queryProfile.operatorProfile(1).dbHits() shouldBe 1 + propCost // projection
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // skip
-    queryProfile.operatorProfile(3).dbHits() should (be(sizeHint) or be(sizeHint + 1)) // allNodesScan
+    queryProfile.operatorProfile(3).dbHits() shouldBe expectedAllNodeScanDbHits // allNodesScan
   }
 
   test("should profile dbHits of union") {
@@ -983,9 +996,17 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then
+    val expectedAllNodeScanRHS = runtimeUsed match {
+      case Interpreted | Slotted | Pipelined => size + 1
+      case Parallel                          => size
+    }
+    val expectedAllNodeScanLHS = runtimeUsed match {
+      case Interpreted | Slotted | Pipelined => size + 1
+      case Parallel                          => size
+    }
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 0 // union
-    result.runtimeResult.queryProfile().operatorProfile(2).dbHits() should (be(size) or be(size + 1)) // all node scan
-    result.runtimeResult.queryProfile().operatorProfile(3).dbHits() should (be(size) or be(size + 1)) // all node scan
+    result.runtimeResult.queryProfile().operatorProfile(2).dbHits() shouldBe expectedAllNodeScanRHS // all node scan
+    result.runtimeResult.queryProfile().operatorProfile(3).dbHits() shouldBe expectedAllNodeScanLHS // all node scan
   }
 
   test("should profile dbHits with project endpoints") {
@@ -1007,9 +1028,13 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
+    val expectedProjectEndpointsDbHits = runtimeUsed match {
+      case Interpreted | Slotted             => 0 // we don't count rel.getStart, rel.getEnd as dbhits
+      case Pipelined if canFuseOverPipelines => 0
+      case Pipelined | Parallel              => aRels.size
+    }
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    // Note: in interpreted we don't count rel.getStart, rel.getEnd as dbhits
-    queryProfile.operatorProfile(1).dbHits() should (be(0) or be(aRels.size)) // project endpoints
+    queryProfile.operatorProfile(1).dbHits() shouldBe expectedProjectEndpointsDbHits // project endpoints
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // input
   }
 
@@ -1193,9 +1218,14 @@ trait ProcedureCallDbHitsTestBase[CONTEXT <: RuntimeContext] {
     consume(runtimeResult)
 
     // then
+    val expectedAllNodeScanDbHits = runtimeUsed match {
+      case Pipelined if canFuseOverPipelines => sizeHint
+      case Interpreted | Slotted | Pipelined => sizeHint + 1
+      case Parallel                          => sizeHint
+    }
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe OperatorProfile.NO_DATA // procedure call
-    queryProfile.operatorProfile(2).dbHits() should (be(sizeHint) or be(sizeHint + 1)) // all node scan
+    queryProfile.operatorProfile(2).dbHits() shouldBe expectedAllNodeScanDbHits // all node scan
   }
 }
 
@@ -1229,10 +1259,11 @@ trait TransactionForeachDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val numberOfNodesFoundByAllNodeScans = (1 + 2) * sizeHint
     // allNodeScan is the 5th operator in the plan
     val allNodeScanPlanId = 4
-    queryProfile.operatorProfile(allNodeScanPlanId).dbHits() should (
-      be(numberOfNodesFoundByAllNodeScans) or
-        be(numberOfNodesFoundByAllNodeScans + numberOfAllNodeScans)
-    )
+    val expectedDbHits = runtimeUsed match {
+      case Interpreted | Slotted => numberOfNodesFoundByAllNodeScans + numberOfAllNodeScans
+      case Pipelined | Parallel  => numberOfNodesFoundByAllNodeScans
+    }
+    queryProfile.operatorProfile(allNodeScanPlanId).dbHits() shouldBe expectedDbHits
   }
 }
 
@@ -1255,9 +1286,8 @@ trait NestedPlanDbHitsTestBase[CONTEXT <: RuntimeContext] {
     consume(result)
 
     // then
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(size * size) or be(
-      size * (size + 1)
-    )) // projection w. nested plan expression
+    val queryProfile = result.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(1).dbHits() shouldBe size * (size + 1) // projection w. nested plan expression
   }
 }
 

@@ -21,10 +21,8 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.CypherRuntime
-import org.neo4j.cypher.internal.InterpretedRuntimeName
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.SlottedRuntimeName
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.InputDataStream
@@ -993,9 +991,9 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
 
   test("should not kill transactional subquery if both inner and outer together exceed the limit") {
     // Determined empirically
-    val rowCount = runtime.name.toUpperCase() match {
-      case InterpretedRuntimeName.name => 32000
-      case SlottedRuntimeName.name     => 52000
+    val rowCount = runtimeUsed match {
+      case Interpreted => 32000
+      case Slotted     => 52000
     }
 
     // given
