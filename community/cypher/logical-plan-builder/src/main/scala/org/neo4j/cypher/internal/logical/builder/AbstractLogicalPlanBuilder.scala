@@ -1515,24 +1515,40 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def antiConditionalApply(items: String*): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => AntiConditionalApply(lhs, rhs, items)(_)))
 
-  def selectOrSemiApply(predicate: String): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SelectOrSemiApply(lhs, rhs, parseExpression(predicate))(_)))
+  def selectOrSemiApply(predicateString: String): IMPL = {
+    val predicate = parseExpression(predicateString)
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => {
+      val rewrittenPredicate = rewriteExpression(predicate)
+      SelectOrSemiApply(lhs, rhs, rewrittenPredicate)(_)
+    }))
+  }
 
   def selectOrSemiApply(predicate: Expression): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SelectOrSemiApply(lhs, rhs, predicate)(_)))
 
-  def selectOrAntiSemiApply(predicate: String): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SelectOrAntiSemiApply(lhs, rhs, parseExpression(predicate))(_)))
+  def selectOrAntiSemiApply(predicateString: String): IMPL = {
+    val predicate = parseExpression(predicateString)
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => {
+      val rewrittenPredicate = rewriteExpression(predicate)
+      SelectOrAntiSemiApply(lhs, rhs, rewrittenPredicate)(_)
+    }))
+  }
 
-  def letSelectOrSemiApply(idName: String, predicate: String): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
-      LetSelectOrSemiApply(lhs, rhs, idName, parseExpression(predicate))(_)
-    ))
+  def letSelectOrSemiApply(idName: String, predicateString: String): IMPL = {
+    val predicate = parseExpression(predicateString)
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => {
+      val rewrittenPredicate = rewriteExpression(predicate)
+      LetSelectOrSemiApply(lhs, rhs, idName, rewrittenPredicate)(_)
+    }))
+  }
 
-  def letSelectOrAntiSemiApply(idName: String, predicate: String): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
-      LetSelectOrAntiSemiApply(lhs, rhs, idName, parseExpression(predicate))(_)
-    ))
+  def letSelectOrAntiSemiApply(idName: String, predicateString: String): IMPL = {
+    val predicate = parseExpression(predicateString)
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => {
+      val rewrittenPredicate = rewriteExpression(predicate)
+      LetSelectOrAntiSemiApply(lhs, rhs, idName, rewrittenPredicate)(_)
+    }))
+  }
 
   def rollUpApply(collectionName: String, variableToCollect: String): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => RollUpApply(lhs, rhs, collectionName, variableToCollect)(_)))
