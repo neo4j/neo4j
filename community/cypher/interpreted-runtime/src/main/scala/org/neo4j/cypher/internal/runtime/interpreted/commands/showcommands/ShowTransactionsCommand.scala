@@ -107,13 +107,13 @@ case class ShowTransactionsCommand(
         }
 
         def getDurationOrNullFromMillis(long: lang.Long) = long match {
-          case l: java.lang.Long => Values.durationValue(Duration.ofMillis(l))
-          case _                 => Values.NO_VALUE
+          case l: lang.Long => Values.durationValue(Duration.ofMillis(l))
+          case _            => Values.NO_VALUE
         }
 
         def getDurationOrNullFromMicro(long: lang.Long) = long match {
-          case l: java.lang.Long => Values.durationValue(Duration.ofMillis(TimeUnit.MICROSECONDS.toMillis(l)))
-          case _                 => Values.NO_VALUE
+          case l: lang.Long => Values.durationValue(Duration.ofMillis(TimeUnit.MICROSECONDS.toMillis(l)))
+          case _            => Values.NO_VALUE
         }
 
         val statistic = transaction.transactionStatistic
@@ -186,8 +186,10 @@ case class ShowTransactionsCommand(
               val queryTransactionId = TransactionId(dbName, query.transactionId).toString
               val outerTransactionId = if (queryTransactionId == txId) EMPTY else queryTransactionId
               val parameters = query.obfuscatedQueryParameters().orElse(MapValue.EMPTY)
-              val planner = query.planner
-              val runtime = query.runtime
+              val maybePlanner = query.planner
+              val planner = if (maybePlanner == null) EMPTY else maybePlanner
+              val maybeRuntime = query.runtime
+              val runtime = if (maybeRuntime == null) EMPTY else maybeRuntime
               val indexes = VirtualValues.list(query.indexes.asScala.toList.map(m => {
                 val scalaMap = m.asScala
                 val keys = scalaMap.keys.toArray
