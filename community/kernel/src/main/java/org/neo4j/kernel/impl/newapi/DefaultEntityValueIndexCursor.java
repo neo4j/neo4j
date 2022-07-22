@@ -80,6 +80,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     private AccessMode accessMode;
     private boolean shortcutSecurity;
     private boolean needStoreFilter;
+    private PropertySelection propertySelection;
 
     DefaultEntityValueIndexCursor(CursorPool<CURSOR> pool, MemoryTracker memoryTracker) {
         super(pool);
@@ -103,6 +104,8 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
         this.indexOrder = constraints.order();
         this.needsValues = constraints.needsValues();
         this.needStoreFilter = needStoreFilter;
+        this.propertySelection = PropertySelection.selection(
+                stream(query).mapToInt(PropertyIndexQuery::propertyKeyId).toArray());
         sortedMergeJoin.initialize(indexOrder);
 
         this.query = query;
@@ -209,8 +212,6 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
         if (!needStoreFilter) {
             return true;
         }
-        var propertySelection = PropertySelection.selection(
-                stream(query).mapToInt(PropertyIndexQuery::propertyKeyId).toArray());
         return doStoreValuePassesQueryFilter(reference, propertySelection, query);
     }
 

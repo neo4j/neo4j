@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.function.Predicate;
+import org.apache.lucene.document.Document;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -71,10 +72,9 @@ class TrigramIndexPopulator implements IndexPopulator {
             // here
             // That is why we create a lazy Iterator and then Iterable
             writer.addDocuments(updates.size(), () -> updates.stream()
-                    .map(u -> (ValueIndexEntryUpdate<?>) u)
+                    .map(ValueIndexEntryUpdate.class::cast)
                     .filter(Predicate.not(ignoreStrategy::ignore))
-                    .map(update ->
-                            TrigramDocumentStructure.createLuceneDocument(update.getEntityId(), update.values()[0]))
+                    .map(TrigramIndexPopulator::updateAsDocument)
                     .iterator());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -133,5 +133,9 @@ class TrigramIndexPopulator implements IndexPopulator {
         } catch (IOException | IndexNotFoundKernelException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static Document updateAsDocument(ValueIndexEntryUpdate<?> update) {
+        return TrigramDocumentStructure.createLuceneDocument(update.getEntityId(), update.values()[0]);
     }
 }

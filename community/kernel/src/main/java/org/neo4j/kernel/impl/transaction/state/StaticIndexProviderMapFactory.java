@@ -31,7 +31,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.PointIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProviderFactory;
@@ -175,24 +174,23 @@ public class StaticIndexProviderMapFactory {
                         contextFactory,
                         pageCacheTracer));
 
-        TrigramIndexProvider trigramIndexProvider = null;
-        if (databaseConfig.get(GraphDatabaseInternalSettings.trigram_index)) {
-            trigramIndexProvider = life.add(new TrigramIndexProviderFactory()
-                    .create(
-                            pageCache,
-                            fs,
-                            logService,
-                            monitors,
-                            databaseConfig,
-                            readOnlyChecker,
-                            mode,
-                            recoveryCleanupWorkCollector,
-                            databaseLayout,
-                            tokenHolders,
-                            scheduler,
-                            contextFactory,
-                            pageCacheTracer));
-        }
+        var trigramIndexProvider = databaseConfig.get(GraphDatabaseInternalSettings.trigram_index)
+                ? life.add(new TrigramIndexProviderFactory()
+                        .create(
+                                pageCache,
+                                fs,
+                                logService,
+                                monitors,
+                                databaseConfig,
+                                readOnlyChecker,
+                                mode,
+                                recoveryCleanupWorkCollector,
+                                databaseLayout,
+                                tokenHolders,
+                                scheduler,
+                                contextFactory,
+                                pageCacheTracer))
+                : null;
 
         return new StaticIndexProviderMap(
                 tokenIndexProvider,

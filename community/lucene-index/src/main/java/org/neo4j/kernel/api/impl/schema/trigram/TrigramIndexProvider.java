@@ -165,7 +165,7 @@ public class TrigramIndexProvider extends AbstractLuceneIndexProvider {
             }
 
             return switch (queryType) {
-                case EXACT, STRING_PREFIX, STRING_CONTAINS, STRING_SUFFIX -> true;
+                case EXACT, RANGE, STRING_PREFIX, STRING_CONTAINS, STRING_SUFFIX -> true;
                 default -> false;
             };
         }

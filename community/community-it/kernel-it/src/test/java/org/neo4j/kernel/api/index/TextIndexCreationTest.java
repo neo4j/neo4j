@@ -32,17 +32,21 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-@ImpermanentDbmsExtension
+@ImpermanentDbmsExtension(configurationCallback = "configuration")
 public class TextIndexCreationTest {
     @Inject
     private GraphDatabaseAPI db;
@@ -51,6 +55,19 @@ public class TextIndexCreationTest {
     private int relTypeId;
     private int[] propertyIds;
     private int[] compositeKey;
+
+    /**
+     * To be overridden by subclass
+     */
+    @ExtensionCallback
+    void configuration(TestDatabaseManagementServiceBuilder builder) {}
+
+    /**
+     * To be overridden ny subclass
+     */
+    protected IndexProviderDescriptor getIndexProviderDescriptor() {
+        return TextIndexProvider.DESCRIPTOR;
+    }
 
     @BeforeEach
     void setup() throws Exception {
@@ -113,6 +130,7 @@ public class TextIndexCreationTest {
         try (Transaction tx = db.beginTx()) {
             var prototype = IndexPrototype.forSchema(schema)
                     .withIndexType(IndexType.TEXT)
+                    .withIndexProvider(getIndexProviderDescriptor())
                     .withName(name);
             var kernelTransaction = ((InternalTransaction) tx).kernelTransaction();
             kernelTransaction.schemaWrite().indexCreate(prototype);

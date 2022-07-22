@@ -81,8 +81,7 @@ public interface IndexProgressor extends AutoCloseable {
          * {@link #acceptEntity(long, float, Value...)} have already been filtered through, and merged with, the transaction state. If this is {@code true},
          * then the client does not need to do its own transaction state filtering. This is the case for the fulltext schema indexes, for instance.
          * Otherwise, if this parameter is {@code false}, then the client needs to filter and merge the transaction state in on their own.
-         * @param needStoreFilter {@code true} if the index might return false positives that need to be filtered
-         *                                    through the store, otherwise {@code false}.
+         * @param needStoreFilter {@code true} if the index might return false positives that need to be filtered through the store, otherwise {@code false}.
          * @param constraints Constraints on the produced results, like the required order the index should return entity ids in, or if the index should fetch
          * property values together with entity ids.
          * @param query The query of this progression
