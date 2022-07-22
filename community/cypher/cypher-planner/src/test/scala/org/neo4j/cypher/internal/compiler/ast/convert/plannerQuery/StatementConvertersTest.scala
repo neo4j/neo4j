@@ -1617,6 +1617,35 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
+  test("should convert a single quantified pattern with explicitly juxtaposed patterns with relationship types") {
+    val query = buildSinglePlannerQuery("MATCH (a)-[r1:R1]->(b) ((n)-[r2:R2]->(m)){3,} (x)-[r3:R3]->(y) RETURN 1")
+    query.queryGraph shouldBe QueryGraph(
+      patternNodes = Set("a", "b", "x", "y"),
+      patternRelationships = Set(
+        PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq(relTypeName("R1")), SimplePatternLength),
+        PatternRelationship("r3", ("x", "y"), SemanticDirection.OUTGOING, Seq(relTypeName("R3")), SimplePatternLength)
+      ),
+      quantifiedPathPatterns = Set(
+        QuantifiedPathPattern(
+          leftBinding = NodeBinding("b", "n"),
+          rightBinding = NodeBinding("x", "m"),
+          pattern = QueryGraph(
+            patternNodes = Set("n", "m"),
+            patternRelationships =
+              Set(PatternRelationship(
+                "r2",
+                ("n", "m"),
+                SemanticDirection.OUTGOING,
+                Seq(relTypeName("R2")),
+                SimplePatternLength
+              ))
+          ),
+          repetition = Repetition(min = 3, max = UpperBound.Unlimited)
+        )
+      )
+    )
+  }
+
   test("should convert consecutive quantified patterns") {
     val query = buildSinglePlannerQuery("MATCH ((n)-[r1]->(m))+ ((x)-[r2]->(y)){,3} RETURN 1")
     query.queryGraph shouldBe QueryGraph(
