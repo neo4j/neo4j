@@ -140,7 +140,7 @@ object LogicalPlans {
   def foldPlan[ACC](initialAcc: ACC)(
     root: LogicalPlan,
     f: (ACC, LogicalPlan) => ACC,
-    combineLeftAndRight: (ACC, ACC, LogicalPlan) => ACC,
+    combineLeftAndRight: (ACC, ACC, LogicalBinaryPlan) => ACC,
     mapArguments: (ACC, LogicalPlan) => ACC = (acc: ACC, _: LogicalPlan) => acc
   ): ACC = {
     var stack: List[LogicalPlan] = root :: Nil
@@ -191,11 +191,11 @@ object LogicalPlans {
           if (current.isInstanceOf[ApplyPlan]) {
             val ArgumentStackEntry(lhsAcc, _) = argumentStack.head
             argumentStack = argumentStack.tail
-            acc = combineLeftAndRight(lhsAcc, acc, current)
+            acc = combineLeftAndRight(lhsAcc, acc, current.asInstanceOf[LogicalBinaryPlan])
           } else {
             val lhsAcc = lhsStack.head
             lhsStack = lhsStack.tail
-            acc = combineLeftAndRight(lhsAcc, acc, current)
+            acc = combineLeftAndRight(lhsAcc, acc, current.asInstanceOf[LogicalBinaryPlan])
           }
         case (Some(_), Some(_)) =>
           throw new IllegalStateException(

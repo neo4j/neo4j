@@ -1,0 +1,150 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
+
+import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.FilterExpressions
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.ReadsAndWrites
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
+import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.ir.EagernessReason.UnknownPropertyReadSetConflict
+import org.neo4j.cypher.internal.ir.helpers.LabelExpressionEvaluator
+import org.neo4j.cypher.internal.ir.helpers.LabelExpressionEvaluator.NodesToCheckOverlap
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.TransactionApply
+
+import scala.collection.mutable
+
+/**
+ * Finds conflicts between plans that need Eager to solve them.
+ */
+object ConflictFinder {
+
+  /**
+   * Two plans that have a read/write conflict. The plans are in no particular order.
+   *
+   * @param first  one of the two plans.
+   * @param second the other plan.
+   * @param reasons the reasons of the conflict.
+   */
+  private[eager] case class ConflictingPlanPair(
+    first: LogicalPlan,
+    second: LogicalPlan,
+    reasons: Set[EagernessReason.Reason]
+  )
+
+  /**
+   * By inspecting the reads and writes, return a [[ConflictingPlanPair]] for each Read/write conflict.
+   * In the result there is only one ConflictingPlanPair per pair of plans, and the reasons are merged
+   * if plans conflicts because of several reasons.
+   */
+  private[eager] def findConflictingPlans(
+    readsAndWrites: ReadsAndWrites,
+    wholePlan: LogicalPlan
+  ): Seq[ConflictingPlanPair] = {
+    val map = mutable.Map[Set[LogicalPlan], Set[EagernessReason.Reason]]()
+
+    def addConflict(plan1: LogicalPlan, plan2: LogicalPlan, reasons: Set[EagernessReason.Reason]): Unit =
+      map(Set(plan1, plan2)) = map.getOrElse(Set(plan1, plan2), Set.empty[EagernessReason.Reason]) ++ reasons
+
+    // Conflict between a property read and a property write
+    for {
+      (prop, writePlans) <-
+        readsAndWrites.writes.sets.writtenProperties.entries ++ readsAndWrites.writes.creates.writtenProperties.entries
+      readPlan <- readsAndWrites.reads.plansReadingProperty(prop)
+      writePlan <- writePlans
+      if isValidConflict(readPlan, writePlan, wholePlan)
+    } addConflict(
+      writePlan,
+      readPlan,
+      Set(prop.map(EagernessReason.PropertyReadSetConflict).getOrElse(UnknownPropertyReadSetConflict))
+    )
+
+    // Conflicts between a label read and a label SET
+    for {
+      (label, writePlans) <- readsAndWrites.writes.sets.writtenLabels
+      readPlan <- readsAndWrites.reads.plansReadingLabel(label)
+      writePlan <- writePlans
+      if isValidConflict(readPlan, writePlan, wholePlan)
+    } addConflict(writePlan, readPlan, Set(EagernessReason.LabelReadSetConflict(label)))
+
+    // Conflicts between a label read (determined by a snapshot filterExpressions) and a label CREATE
+    for {
+      (writePlan, labels) <- readsAndWrites.writes.creates.writtenLabels
+      labelSet = labels.toSet
+      (variable, FilterExpressions(readPlans, expression)) <-
+        // If a variable exists in the snapshot, let's take it from there, but include other filterExpressions that are not in the snapshot
+        readsAndWrites.writes.creates.filterExpressionsSnapshots(writePlan).fuse(
+          readsAndWrites.reads.filterExpressions
+        )((x, _) => x)
+      if LabelExpressionEvaluator.labelExpressionEvaluator(
+        expression,
+        NodesToCheckOverlap(None, variable.name),
+        labelSet.map(_.name)
+      ).getOrElse(true)
+      readPlan <- readPlans
+      if isValidConflict(readPlan, writePlan, wholePlan)
+    } addConflict(writePlan, readPlan, labelSet.map(EagernessReason.LabelReadSetConflict))
+
+    // Conflicts between plans that create nodes and AllNodeScans
+    for {
+      writePlan <- readsAndWrites.writes.creates.plansThatCreateNodes
+      readPlan <- readsAndWrites.reads.allNodeReadPlans
+      if isValidConflict(readPlan, writePlan, wholePlan)
+    } addConflict(writePlan, readPlan, Set(EagernessReason.ReadCreateConflict))
+
+    map.map {
+      case (SetExtractor(plan1, plan2), reasons) => ConflictingPlanPair(plan1, plan2, reasons)
+    }.toSeq
+  }
+
+  private def isValidConflict(readPlan: LogicalPlan, writePlan: LogicalPlan, wholePlan: LogicalPlan): Boolean = {
+    // A plan can never conflict with itself
+    writePlan != readPlan &&
+    // currently, we consider the leftmost plan to be stable unless we are in a call in transactions
+    (readPlan != wholePlan.leftmostLeaf || isInTransactionalApply(
+      writePlan,
+      wholePlan
+    ))
+  }
+
+  private def isInTransactionalApply(plan: LogicalPlan, wholePlan: LogicalPlan): Boolean = {
+    val parents = parentsOfIn(plan, wholePlan).get
+    parents.exists {
+      case _: TransactionApply => true
+      case _                   => false
+    }
+  }
+
+  private def parentsOfIn(
+    innerPlan: LogicalPlan,
+    outerPlan: LogicalPlan,
+    acc: Seq[LogicalPlan] = Seq.empty
+  ): Option[Seq[LogicalPlan]] = {
+    outerPlan match {
+      case `innerPlan` => Some(acc)
+      case _ =>
+        def recurse = plan => parentsOfIn(innerPlan, plan, acc :+ outerPlan)
+        val maybeLhs = outerPlan.lhs.flatMap(recurse)
+        val maybeRhs = outerPlan.rhs.flatMap(recurse)
+        maybeLhs.orElse(maybeRhs)
+    }
+  }
+}

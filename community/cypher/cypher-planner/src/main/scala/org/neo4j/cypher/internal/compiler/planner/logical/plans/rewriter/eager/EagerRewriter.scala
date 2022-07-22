@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.compiler.defaultUpdateStrategy
+import org.neo4j.cypher.internal.compiler.eagerUpdateStrategy
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
@@ -29,8 +31,14 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
+import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.attribution.Attributes
+import org.neo4j.cypher.internal.util.attribution.SameId
+
+import scala.collection.immutable.ListSet
 
 case object LogicalPlanContainsEagerIfNeeded extends StepSequencer.Condition
 
@@ -46,8 +54,15 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
     if (!context.debugOptions.useLPEagerAnalyzer) return from
     if (from.logicalPlan.readOnly) return from
 
-    // TODO
-    from
+    val attributes: Attributes[LogicalPlan] = from.planningAttributes.asAttributes(context.logicalPlanIdGen)
+    val cardinalities = from.planningAttributes.cardinalities
+
+    val newPlan = context.updateStrategy match {
+      case `eagerUpdateStrategy`   => EagerEverywhereRewriter(attributes).eagerize(from.logicalPlan)
+      case `defaultUpdateStrategy` => EagerWhereNeededRewriter(cardinalities, attributes).eagerize(from.logicalPlan)
+    }
+
+    from.withMaybeLogicalPlan(Some(newPlan))
   }
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
@@ -68,4 +83,25 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
     pushdownPropertyReads: Boolean,
     semanticFeatures: Seq[SemanticFeature]
   ): Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] = this
+}
+
+abstract class EagerRewriter(attributes: Attributes[LogicalPlan]) {
+
+  /**
+   * Inserts Eager on top of the given plan. If the given plan is already Eager, merges the Eagerness reasons.
+   */
+  protected def eagerOnTopOf(plan: LogicalPlan, reasons: ListSet[EagernessReason.Reason]): Eager = {
+    plan match {
+      case eager @ Eager(innerPlan, moreReasons) => Eager(innerPlan, reasons ++ moreReasons)(SameId(eager.id))
+      case _                                     => Eager(plan, reasons)(attributes.copy(plan.id))
+    }
+  }
+
+  /**
+   * Insert Eager at least everywhere it's needed to maintain correct semantics.
+   *
+   * @param plan the whole logical plan
+   * @return the rewritten logical plan
+   */
+  def eagerize(plan: LogicalPlan): LogicalPlan
 }
