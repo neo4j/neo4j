@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.expressions.FixedQuantifier
 import org.neo4j.cypher.internal.expressions.IntervalQuantifier
 import org.neo4j.cypher.internal.expressions.PlusQuantifier
 import org.neo4j.cypher.internal.expressions.StarQuantifier
-import org.neo4j.cypher.internal.ir.helpers.PatternConverters.GraphPatternQuantifierToRepetitionSyntax
+import org.neo4j.cypher.internal.ir.helpers.PatternConverters.GraphPatternQuantifierToRepetitionConverter
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite

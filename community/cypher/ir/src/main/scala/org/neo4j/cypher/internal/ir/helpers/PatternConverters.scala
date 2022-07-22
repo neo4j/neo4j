@@ -146,9 +146,12 @@ object PatternConverters {
 
         case ((FoldState.EncounteredQuantifiedPath(leftNode, quantifiedPath), acc), rightPattern: SimplePattern) =>
           val qpp = {
-            // _left_ node of the _rightPattern_ becomes _right_ outer node of the QPP
-            val rightNode = leftNodeName(rightPattern)
-            makeQuantifiedPathPattern(leftNode, quantifiedPath, rightNode)
+            val leftNodeOfTheRightPattern = leftNodeName(rightPattern)
+            makeQuantifiedPathPattern(
+              outerLeft = leftNode,
+              quantifiedPath = quantifiedPath,
+              outerRight = leftNodeOfTheRightPattern
+            )
           }
 
           // _right_ node of the _rightPattern_ becomes _left_ outer node of the next QPP
@@ -175,7 +178,6 @@ object PatternConverters {
       outerRight: String
     ): QuantifiedPathPattern = {
       val (innerLeft, innerRight) = quantifiedPath.part.element match {
-        case node: NodePattern      => (node.variable.get.name, node.variable.get.name)
         case rel: RelationshipChain => (rel.leftNode.variable.get.name, rel.rightNode.variable.get.name)
       }
 
@@ -237,7 +239,7 @@ object PatternConverters {
     }
   }
 
-  implicit class GraphPatternQuantifierToRepetitionSyntax(gpq: GraphPatternQuantifier) {
+  implicit class GraphPatternQuantifierToRepetitionConverter(gpq: GraphPatternQuantifier) {
 
     def toRepetition: Repetition = {
       gpq match {
