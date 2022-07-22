@@ -487,7 +487,7 @@ public class Database extends LifecycleAdapter {
             MetadataProvider metadataProvider = storageEngine.metadataProvider();
             databaseDependencies.satisfyDependency(metadataProvider);
             initialiseContextFactory(metadataProvider::getLastClosedTransactionId);
-            elementIdMapper = new DefaultElementIdMapperV1(storageEngine, namedDatabaseId);
+            elementIdMapper = new DefaultElementIdMapperV1(namedDatabaseId);
 
             // Recreate the logFiles after storage engine to get access to dependencies
             var logFiles = getLogFiles();

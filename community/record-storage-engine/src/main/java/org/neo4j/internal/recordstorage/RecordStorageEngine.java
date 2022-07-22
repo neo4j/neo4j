@@ -28,7 +28,6 @@ import static org.neo4j.util.Preconditions.checkState;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -656,7 +655,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
 
     /**
      * @return the underlying {@link NeoStores} which should <strong>ONLY</strong> be accessed by tests
-     * until all tests are properly converted to not rely on access to {@link NeoStores}. Currently there
+     * until all tests are properly converted to not rely on access to {@link NeoStores}. Currently, there
      * are important tests which asserts details about the neo stores that are very important to test,
      * but to convert all those tests might be a bigger piece of work.
      */
@@ -707,36 +706,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     @Override
     public StoreEntityCounters storeEntityCounters() {
         return storeEntityCounters;
-    }
-
-    @Override
-    public byte[] encodeNodeId(long nodeId) {
-        return longAsByteArray(nodeId);
-    }
-
-    @Override
-    public byte[] encodeRelationshipId(long relationshipId) {
-        return longAsByteArray(relationshipId);
-    }
-
-    @Override
-    public long decodeNodeId(byte[] from, int offset) {
-        return decodeElementId(from, offset);
-    }
-
-    @Override
-    public long decodeRelationshipId(byte[] from, int offset) {
-        return decodeElementId(from, offset);
-    }
-
-    private long decodeElementId(byte[] from, int offset) {
-        return ByteBuffer.wrap(from, offset, Long.BYTES).getLong();
-    }
-
-    private byte[] longAsByteArray(long nodeId) {
-        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-        buffer.putLong(nodeId);
-        return buffer.array();
     }
 
     @Override
