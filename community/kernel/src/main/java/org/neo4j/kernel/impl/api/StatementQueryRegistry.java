@@ -66,4 +66,9 @@ public class StatementQueryRegistry implements QueryRegistry {
     public void registerExecutingQuery(ExecutingQuery executingQuery) {
         statement.startQueryExecution(executingQuery);
     }
+
+    @Override
+    public void dispose() {
+        factory.dispose();
+    }
 }

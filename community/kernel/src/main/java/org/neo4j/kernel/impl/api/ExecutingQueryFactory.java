@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
@@ -36,13 +37,16 @@ public class ExecutingQueryFactory {
     private final SystemNanoClock clock;
     private final AtomicReference<CpuClock> cpuClockRef;
     private final AtomicBoolean trackQueryAllocations;
+    private final SettingChangeListener<Boolean> configListener;
+    private final Config config;
 
     public ExecutingQueryFactory(SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef, Config config) {
         this.clock = clock;
         this.cpuClockRef = cpuClockRef;
         this.trackQueryAllocations = new AtomicBoolean(config.get(GraphDatabaseSettings.track_query_allocation));
-        config.addListener(
-                GraphDatabaseSettings.track_query_allocation, (before, after) -> trackQueryAllocations.set(after));
+        this.configListener = (before, after) -> trackQueryAllocations.set(after);
+        this.config = config;
+        config.addListener(GraphDatabaseSettings.track_query_allocation, configListener);
     }
 
     public ExecutingQuery createForStatement(KernelStatement statement, String queryText, MapValue queryParameters) {
@@ -92,5 +96,9 @@ public class ExecutingQueryFactory {
 
     public static void unbindFromTransaction(ExecutingQuery executingQuery, long userTransactionId) {
         executingQuery.onTransactionUnbound(userTransactionId);
+    }
+
+    public void dispose() {
+        config.removeListener(GraphDatabaseSettings.track_query_allocation, configListener);
     }
 }

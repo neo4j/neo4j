@@ -35,6 +35,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -770,6 +772,29 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         // when / then
         var rte = assertThrows(RuntimeException.class, transaction::txState);
         assertThat(rte).hasCauseInstanceOf(WriteOnReadOnlyAccessDbException.class);
+    }
+
+    @Test
+    void shouldDeregisterConfigListenersOnDispose() {
+        // given
+        var config = spy(Config.defaults());
+
+        var transaction = newNotInitializedTransaction(config);
+        transaction.initialize(
+                0,
+                BASE_TX_COMMIT_TIMESTAMP,
+                KernelTransaction.Type.IMPLICIT,
+                mock(SecurityContext.class),
+                0,
+                1L,
+                EMBEDDED_CONNECTION);
+
+        verify(config, times(4)).addListener(any(), any());
+
+        // when / then
+        transaction.dispose();
+
+        verify(config, times(4)).removeListener(any(), any());
     }
 
     @Test

@@ -60,4 +60,6 @@ public interface QueryRegistry {
      * This is used solely for snapshot retry. (see SnapshotExecutionEngine)
      */
     void registerExecutingQuery(ExecutingQuery executingQuery);
+
+    void dispose();
 }

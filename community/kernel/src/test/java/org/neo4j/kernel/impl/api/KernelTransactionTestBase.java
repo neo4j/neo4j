@@ -169,6 +169,11 @@ class KernelTransactionTestBase {
                 LeaseService.NO_LEASES, config, from(DEFAULT_DATABASE_NAME, UUID.randomUUID()));
     }
 
+    KernelTransactionImplementation newNotInitializedTransaction(Config config) {
+        return newNotInitializedTransaction(
+                LeaseService.NO_LEASES, config, from(DEFAULT_DATABASE_NAME, UUID.randomUUID()));
+    }
+
     KernelTransactionImplementation newNotInitializedTransaction(Config config, NamedDatabaseId databaseId) {
         return newNotInitializedTransaction(LeaseService.NO_LEASES, config, databaseId);
     }
