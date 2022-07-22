@@ -84,6 +84,13 @@ public interface TopologyGraphDbmsModel {
         public String statusName() {
             return statusName;
         }
+
+        public static DatabaseStatus fromName(String statusName) {
+            return Arrays.stream(values())
+                    .filter(databaseStatus -> databaseStatus.statusName().equals(statusName))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(String.format("No such status '%s'", statusName)));
+        }
     }
 
     enum DatabaseAccess {
