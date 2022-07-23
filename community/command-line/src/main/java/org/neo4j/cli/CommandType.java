@@ -52,6 +52,7 @@ public enum CommandType {
     SET_DEFAULT_ADMIN(DBMS),
     SET_INITIAL_PASSWORD(DBMS),
     SET_OPERATOR_PASSWORD(DBMS),
+    UNBIND_SYSTEM(DBMS),
     TEST(DBMS); // Used by test commands. Don't use this for any real command
 
     private final CommandGroup commandGroup;
