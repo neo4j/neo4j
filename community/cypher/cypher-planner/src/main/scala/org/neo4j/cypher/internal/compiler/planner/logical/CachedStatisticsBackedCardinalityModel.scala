@@ -31,25 +31,13 @@ import org.neo4j.cypher.internal.util.Cardinality
 
 class CachedStatisticsBackedCardinalityModel(wrapped: StatisticsBackedCardinalityModel) extends CardinalityModel {
 
-  private val singleCached = CachedFunction[
-    SinglePlannerQuery,
-    Metrics.QueryGraphSolverInput,
-    SemanticTable,
-    IndexCompatiblePredicatesProviderContext,
-    Cardinality
-  ] { (a, b, c, d) => wrapped.singlePlannerQueryCardinality(a, b, c, d) }
-
-  private val unionCached = CachedFunction[UnionQuery, Cardinality, Cardinality, Cardinality] { (a, b, c) =>
-    wrapped.combineUnion(a, b, c)
-  }
-
   private val cached = CachedFunction[
     PlannerQueryPart,
     Metrics.QueryGraphSolverInput,
     SemanticTable,
     IndexCompatiblePredicatesProviderContext,
     Cardinality
-  ] { (a, b, c, d) => cachedCardinality(a, b, c, d) }
+  ](cachedCardinality)
 
   private def cachedCardinality(
     queryPart: PlannerQueryPart,
@@ -58,12 +46,12 @@ class CachedStatisticsBackedCardinalityModel(wrapped: StatisticsBackedCardinalit
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
   ): Cardinality = queryPart match {
     case singlePlannerQuery: SinglePlannerQuery =>
-      singleCached(singlePlannerQuery, input, semanticTable, indexPredicateProviderContext)
-    case uq @ UnionQuery(part, query, _, _) =>
-      unionCached(
-        uq,
-        apply(part, input, semanticTable, indexPredicateProviderContext),
-        apply(query, input, semanticTable, indexPredicateProviderContext)
+      wrapped.singlePlannerQueryCardinality(singlePlannerQuery, input, semanticTable, indexPredicateProviderContext)
+    case unionQuery: UnionQuery =>
+      wrapped.combineUnion(
+        unionQuery,
+        cached(unionQuery.part, input, semanticTable, indexPredicateProviderContext),
+        cached(unionQuery.query, input, semanticTable, indexPredicateProviderContext)
       )
   }
 
