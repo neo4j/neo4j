@@ -20,10 +20,12 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_DISTINCT_SELECTIVITY
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_LIMIT_ROW_COUNT
@@ -65,42 +67,45 @@ class StatisticsBackedCardinalityModel(
 
   override def apply(
     queryPart: PlannerQueryPart,
-    input: QueryGraphSolverInput,
+    labelInfo: LabelInfo,
+    relTypeInfo: RelTypeInfo,
     semanticTable: SemanticTable,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
   ): Cardinality = queryPart match {
     case singlePlannerQuery: SinglePlannerQuery =>
-      singlePlannerQueryCardinality(singlePlannerQuery, input, semanticTable, indexPredicateProviderContext)
+      singlePlannerQueryCardinality(singlePlannerQuery, labelInfo, relTypeInfo, semanticTable, indexPredicateProviderContext)
     case uq @ UnionQuery(part, query, _, _) =>
       combineUnion(
         uq,
-        apply(part, input, semanticTable, indexPredicateProviderContext),
-        apply(query, input, semanticTable, indexPredicateProviderContext)
+        apply(part, labelInfo, relTypeInfo, semanticTable, indexPredicateProviderContext),
+        apply(query, labelInfo, relTypeInfo, semanticTable, indexPredicateProviderContext)
       )
   }
 
   def singlePlannerQueryCardinality(
     query: SinglePlannerQuery,
-    input: QueryGraphSolverInput,
+    labelInfo: LabelInfo,
+    relTypeInfo: RelTypeInfo,
     semanticTable: SemanticTable,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
   ): Cardinality = {
-    val output = query.fold(CardinalityAndInput(Cardinality.SINGLE, input)) {
-      case (CardinalityAndInput(inboundCardinality, input), plannerQuery) =>
-        val CardinalityAndInput(qgCardinality, afterQGInput) = calculateCardinalityForQueryGraph(
+    val output = query.fold(CardinalityAndInput(Cardinality.SINGLE, labelInfo, relTypeInfo)) {
+      case (CardinalityAndInput(inboundCardinality, labelInfo, relTypeInfo), plannerQuery) =>
+        val CardinalityAndInput(qgCardinality, labelInfoAfterQG, relTypeInfoAfterQG) = calculateCardinalityForQueryGraph(
           plannerQuery.queryGraph,
-          input,
+          labelInfo,
+          relTypeInfo,
           semanticTable,
           indexPredicateProviderContext
         )
         val beforeHorizonCardinality = qgCardinality * inboundCardinality
         val afterHorizon = calculateCardinalityForQueryHorizon(
-          CardinalityAndInput(beforeHorizonCardinality, afterQGInput),
+          CardinalityAndInput(beforeHorizonCardinality, labelInfoAfterQG, relTypeInfoAfterQG),
           plannerQuery.horizon,
           semanticTable,
           indexPredicateProviderContext
         )
-        afterHorizon.copy(input = afterHorizon.input.withFusedLabelInfo(plannerQuery.firstLabelInfo))
+        afterHorizon.withFusedLabelInfo(plannerQuery.firstLabelInfo)
     }
     output.cardinality
   }
@@ -126,7 +131,7 @@ class StatisticsBackedCardinalityModel(
       val cardinalityBeforeSelection =
         queryProjectionCardinalityWithLimit(cardinalityBeforeLimit, projection.queryPagination)
       queryProjectionCardinalityWithSelections(
-        CardinalityAndInput(cardinalityBeforeSelection, cardinalityAndInput.input),
+        CardinalityAndInput(cardinalityBeforeSelection, cardinalityAndInput.labelInfo, cardinalityAndInput.relTypeInfo),
         projection.selections,
         semanticTable,
         indexPredicateProviderContext
@@ -176,7 +181,7 @@ class StatisticsBackedCardinalityModel(
       cardinalityAndInput
 
     case CallSubqueryHorizon(subquery, _, true, _) =>
-      val subQueryCardinality = apply(subquery, cardinalityAndInput.input, semanticTable, indexPredicateProviderContext)
+      val subQueryCardinality = apply(subquery, cardinalityAndInput.labelInfo, cardinalityAndInput.relTypeInfo, semanticTable, indexPredicateProviderContext)
       // Cardinality of the subquery times current cardinality is the result
       cardinalityAndInput.copy(cardinality = cardinalityAndInput.cardinality * subQueryCardinality)
 
@@ -254,7 +259,7 @@ class StatisticsBackedCardinalityModel(
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
   ): CardinalityAndInput = {
     val inboundCardinality = inputBeforeSelection.cardinality
-    val fusedInput = inputBeforeSelection.input.withFusedLabelInfo(where.labelInfo)
+    val fusedInput = inputBeforeSelection.withFusedLabelInfo(where.labelInfo)
     val whereSelectivity = selectivityCalculator(
       where,
       fusedInput.labelInfo,
@@ -263,25 +268,32 @@ class StatisticsBackedCardinalityModel(
       indexPredicateProviderContext
     )
     val cardinality = inboundCardinality * whereSelectivity
-    CardinalityAndInput(cardinality, fusedInput)
+    CardinalityAndInput(cardinality, fusedInput.labelInfo, fusedInput.relTypeInfo)
   }
 
   private def calculateCardinalityForQueryGraph(
     graph: QueryGraph,
-    input: QueryGraphSolverInput,
+    labelInfo: LabelInfo,
+    relTypeInfo: RelTypeInfo,
     semanticTable: SemanticTable,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
   ): CardinalityAndInput = {
-    val fusedInput =
-      input.withFusedLabelInfo(graph.patternNodeLabels).withFusedRelTypeInfo(graph.patternRelationshipTypes)
-    val cardinality = queryGraphCardinalityModel(graph, fusedInput, semanticTable, indexPredicateProviderContext)
-    CardinalityAndInput(cardinality, fusedInput)
+    val fusedLabelInfo = labelInfo.fuse(graph.patternNodeLabels)(_ ++ _)
+    val fusedRelTypeInfo = relTypeInfo ++ graph.patternRelationshipTypes
+    val cardinality = queryGraphCardinalityModel(graph, fusedLabelInfo, fusedRelTypeInfo, semanticTable, indexPredicateProviderContext)
+    CardinalityAndInput(cardinality, fusedLabelInfo, fusedRelTypeInfo)
   }
 }
 
 object StatisticsBackedCardinalityModel {
 
-  case class CardinalityAndInput(cardinality: Cardinality, input: QueryGraphSolverInput)
+  case class CardinalityAndInput(cardinality: Cardinality, labelInfo: LabelInfo, relTypeInfo: RelTypeInfo) {
+    def withFusedLabelInfo(newLabelInfo: LabelInfo): CardinalityAndInput =
+      copy(labelInfo = labelInfo.fuse(newLabelInfo)(_ ++ _))
+
+    def withFusedRelTypeInfo(newRelTypeInfo: RelTypeInfo): CardinalityAndInput =
+      copy(relTypeInfo = relTypeInfo ++ newRelTypeInfo)
+  }
 
   def aggregateCardinalityEstimation(in: Cardinality, groupingExpressions: Map[String, Expression]): Cardinality =
     if (groupingExpressions.isEmpty)

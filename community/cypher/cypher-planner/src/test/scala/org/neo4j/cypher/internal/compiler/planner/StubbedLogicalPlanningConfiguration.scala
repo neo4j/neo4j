@@ -26,8 +26,10 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.Expression
@@ -262,7 +264,8 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
     new CardinalityModel {
       override def apply(
         pq: PlannerQueryPart,
-        input: QueryGraphSolverInput,
+        labelInfo: LabelInfo,
+        relTypeInfo: RelTypeInfo,
         semanticTable: SemanticTable,
         indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
       ): Cardinality = {
@@ -281,7 +284,8 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
         if (r.isDefinedAt(pq)) r.apply(pq)
         else parent.cardinalityModel(queryGraphCardinalityModel, selectivityCalculator, evaluator)(
           pq,
-          input,
+          labelInfo,
+          relTypeInfo,
           semanticTable,
           indexPredicateProviderContext
         )

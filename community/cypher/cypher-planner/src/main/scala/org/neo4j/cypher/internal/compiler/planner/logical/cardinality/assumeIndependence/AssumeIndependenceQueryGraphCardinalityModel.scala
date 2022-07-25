@@ -44,13 +44,14 @@ case class AssumeIndependenceQueryGraphCardinalityModel(
 
   private val relMultiplierCalculator = PatternRelationshipMultiplierCalculator(planContext.statistics, combiner)
 
-  def apply(
+  override def apply(
     queryGraph: QueryGraph,
-    input: QueryGraphSolverInput,
+    labelInfo: LabelInfo,
+    relTypeInfo: RelTypeInfo,
     semanticTable: SemanticTable,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
   ): Cardinality = {
-    val cardinalityAndInput = CardinalityAndInput(Cardinality.SINGLE, input)
+    val cardinalityAndInput = CardinalityAndInput(Cardinality.SINGLE, labelInfo, relTypeInfo)
     // Fold over query graph and optional query graphs, aggregating cardinality and label info using QueryGraphSolverInput
     val afterOuter = visitQueryGraph(queryGraph, cardinalityAndInput, semanticTable, indexPredicateProviderContext)
     val afterOptionalMatches = visitOptionalMatchQueryGraphs(
@@ -69,7 +70,7 @@ case class AssumeIndependenceQueryGraphCardinalityModel(
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
   ): CardinalityAndInput = {
     cardinalityAndInput.copy(cardinality =
-      cardinalityForQueryGraph(outer, cardinalityAndInput.input, semanticTable, indexPredicateProviderContext)
+      cardinalityForQueryGraph(outer, cardinalityAndInput.labelInfo, cardinalityAndInput.relTypeInfo, semanticTable, indexPredicateProviderContext)
     )
   }
 
@@ -90,28 +91,29 @@ case class AssumeIndependenceQueryGraphCardinalityModel(
     semanticTable: SemanticTable,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
   ): CardinalityAndInput = {
-    val inputWithKnownLabelInfo = cardinalityAndInput.input.withFusedLabelInfo(optional.selections.labelInfo)
+    val inputWithKnownLabelInfo = cardinalityAndInput.withFusedLabelInfo(optional.selections.labelInfo)
     val optionalCardinality = cardinalityAndInput.cardinality * cardinalityForQueryGraph(
       optional,
-      inputWithKnownLabelInfo,
+      inputWithKnownLabelInfo.labelInfo,
+      inputWithKnownLabelInfo.relTypeInfo,
       semanticTable,
       indexPredicateProviderContext
     )
     // OPTIONAL MATCH can't decrease cardinality
-    cardinalityAndInput.copy(
-      cardinality = Cardinality.max(cardinalityAndInput.cardinality, optionalCardinality),
-      input = inputWithKnownLabelInfo
+    inputWithKnownLabelInfo.copy(
+      cardinality = Cardinality.max(cardinalityAndInput.cardinality, optionalCardinality)
     )
   }
 
   private def cardinalityForQueryGraph(
     qg: QueryGraph,
-    input: QueryGraphSolverInput,
+    labelInfo: LabelInfo,
+    relTypeInfo: RelTypeInfo,
     semanticTable: SemanticTable,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
   ): Cardinality = {
     val patternMultiplier =
-      calculateMultiplier(qg, input.labelInfo, input.relTypeInfo, semanticTable, indexPredicateProviderContext)
+      calculateMultiplier(qg, labelInfo, relTypeInfo, semanticTable, indexPredicateProviderContext)
     val numberOfPatternNodes = qg.patternNodes.count { n =>
       !qg.argumentIds.contains(n) && !qg.patternRelationships.exists(r =>
         qg.argumentIds.contains(r.name) && Seq(r.left, r.right).contains(n)

@@ -68,7 +68,8 @@ object LimitSelectivity {
           ))
           val cardinalityModel = context.metrics.cardinality(
             _,
-            context.input,
+            context.input.labelInfo,
+            context.input.relTypeInfo,
             context.semanticTable,
             context.indexCompatiblePredicatesProviderContext
           )

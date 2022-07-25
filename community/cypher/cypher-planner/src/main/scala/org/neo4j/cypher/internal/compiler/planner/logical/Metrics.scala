@@ -117,7 +117,8 @@ object Metrics {
      */
     def apply(
       queryPart: PlannerQueryPart,
-      input: QueryGraphSolverInput,
+      labelInfo: LabelInfo,
+      relTypeInfo: RelTypeInfo,
       semanticTable: SemanticTable,
       indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
     ): Cardinality
@@ -132,7 +133,8 @@ object Metrics {
      */
     def apply(
       queryGraph: QueryGraph,
-      input: QueryGraphSolverInput,
+      labelInfo: LabelInfo,
+      relTypeInfo: RelTypeInfo,
       semanticTable: SemanticTable,
       indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
     ): Cardinality

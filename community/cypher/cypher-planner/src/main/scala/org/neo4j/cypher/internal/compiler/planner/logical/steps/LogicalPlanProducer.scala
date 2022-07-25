@@ -1742,13 +1742,15 @@ case class LogicalPlanProducer(
 
     val skipCardinality = cardinalityModel(
       solvedSkip,
-      context.input,
+      context.input.labelInfo,
+      context.input.relTypeInfo,
       context.semanticTable,
       context.indexCompatiblePredicatesProviderContext
     )
     val limitCardinality = cardinalityModel(
       solvedSkipAndLimit,
-      context.input,
+      context.input.labelInfo,
+      context.input.relTypeInfo,
       context.semanticTable,
       context.indexCompatiblePredicatesProviderContext
     )
@@ -2060,7 +2062,8 @@ case class LogicalPlanProducer(
     }
     val cardinality = context.cardinality.apply(
       solved,
-      context.input,
+      context.input.labelInfo,
+      context.input.relTypeInfo,
       context.semanticTable,
       context.indexCompatiblePredicatesProviderContext
     )
@@ -2533,7 +2536,7 @@ case class LogicalPlanProducer(
     assertNoBadExpressionsExists(plan)
     assertRhsDoesNotInvalidateLhsOrder(plan, providedOrder, context.executionModel)
     val cardinality =
-      cardinalityModel(solved, context.input, context.semanticTable, context.indexCompatiblePredicatesProviderContext)
+      cardinalityModel(solved, context.input.labelInfo, context.input.relTypeInfo, context.semanticTable, context.indexCompatiblePredicatesProviderContext)
     solveds.set(plan.id, solved)
     cardinalities.set(plan.id, cardinality)
     providedOrders.set(plan.id, providedOrder)
@@ -2742,7 +2745,7 @@ object LogicalPlanProducer {
       def sortCriteria(predicate: Expression): (CostPerRow, Selectivity) = {
         val costPerRow = CardinalityCostModel.costPerRowFor(predicate, semanticTable)
         val solved = solvedBeforePredicate.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
-        val cardinality = cardinalityModel(solved, queryGraphSolverInput, semanticTable, indexPredicateProviderContext)
+        val cardinality = cardinalityModel(solved, queryGraphSolverInput.labelInfo, queryGraphSolverInput.relTypeInfo, semanticTable, indexPredicateProviderContext)
         val selectivity = (cardinality / incomingCardinality).getOrElse(Selectivity.ONE)
         (costPerRow, selectivity)
       }

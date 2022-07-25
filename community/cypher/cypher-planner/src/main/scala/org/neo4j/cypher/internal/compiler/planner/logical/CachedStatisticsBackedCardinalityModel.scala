@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
-import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
@@ -32,50 +33,67 @@ import scala.collection.mutable
 
 class CachedStatisticsBackedCardinalityModel(wrapped: StatisticsBackedCardinalityModel) extends CardinalityModel {
 
-  type CacheKey =
-    (PlannerQueryPart, Metrics.QueryGraphSolverInput, SemanticTable, IndexCompatiblePredicatesProviderContext)
+  type CardinalityModelInput =
+    (PlannerQueryPart, LabelInfo, RelTypeInfo, SemanticTable, IndexCompatiblePredicatesProviderContext)
 
-  final private val cache: mutable.HashMap[CacheKey, Cardinality] = mutable.HashMap.empty
+  final private val cache: mutable.HashMap[CardinalityModelInput, Cardinality] = mutable.HashMap.empty
 
   private def cachedSinglePlannerQueryCardinality(
     singlePlannerQuery: SinglePlannerQuery,
-    input: QueryGraphSolverInput,
+    labelInfo: LabelInfo,
+    relTypeInfo: RelTypeInfo,
     semanticTable: SemanticTable,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
   ): Cardinality =
     cache.getOrElseUpdate(
-      (singlePlannerQuery, input, semanticTable, indexPredicateProviderContext),
-      wrapped.singlePlannerQueryCardinality(singlePlannerQuery, input, semanticTable, indexPredicateProviderContext)
+      (singlePlannerQuery, labelInfo, relTypeInfo, semanticTable, indexPredicateProviderContext),
+      wrapped.singlePlannerQueryCardinality(
+        singlePlannerQuery,
+        labelInfo,
+        relTypeInfo,
+        semanticTable,
+        indexPredicateProviderContext
+      )
     )
 
   private def unionQueryQueryCardinality(
     unionQuery: UnionQuery,
-    input: QueryGraphSolverInput,
+    labelInfo: LabelInfo,
+    relTypeInfo: RelTypeInfo,
     semanticTable: SemanticTable,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
   ): Cardinality = {
     var lhs = unionQuery.part
     var cardinality: Cardinality = null
-    val rhsCardinality = cachedSinglePlannerQueryCardinality(unionQuery.query, input, semanticTable, indexPredicateProviderContext)
+    val rhsCardinality =
+      cachedSinglePlannerQueryCardinality(
+        unionQuery.query,
+        labelInfo,
+        relTypeInfo,
+        semanticTable,
+        indexPredicateProviderContext
+      )
     val unions: mutable.Stack[(UnionQuery, Cardinality)] = mutable.Stack((unionQuery, rhsCardinality))
     while (cardinality == null) {
       lhs match {
         case singlePlannerQuery: SinglePlannerQuery =>
           cardinality = cachedSinglePlannerQueryCardinality(
             singlePlannerQuery,
-            input,
+            labelInfo,
+            relTypeInfo,
             semanticTable,
             indexPredicateProviderContext
           )
         case nestedUnionQuery: UnionQuery =>
-          cache.get((nestedUnionQuery, input, semanticTable, indexPredicateProviderContext)) match {
+          cache.get((nestedUnionQuery, labelInfo, relTypeInfo, semanticTable, indexPredicateProviderContext)) match {
             case Some(nestedUnionQueryCardinality) =>
               cardinality = nestedUnionQueryCardinality
             case None =>
               lhs = nestedUnionQuery.part
               val rhsCardinality = cachedSinglePlannerQueryCardinality(
                 nestedUnionQuery.query,
-                input,
+                labelInfo,
+                relTypeInfo,
                 semanticTable,
                 indexPredicateProviderContext
               )
@@ -86,25 +104,41 @@ class CachedStatisticsBackedCardinalityModel(wrapped: StatisticsBackedCardinalit
     unions.foreach {
       case (unionQuery, rhsCardinality) =>
         val unionCardinality = wrapped.combineUnion(unionQuery, cardinality, rhsCardinality)
-        cache.update((unionQuery, input, semanticTable, indexPredicateProviderContext), unionCardinality)
+        cache.update(
+          (unionQuery, labelInfo, relTypeInfo, semanticTable, indexPredicateProviderContext),
+          unionCardinality
+        )
         cardinality = unionCardinality
     }
     cardinality
   }
 
   override def apply(
-    queryPart: PlannerQueryPart,
-    input: QueryGraphSolverInput,
+    plannerQueryPart: PlannerQueryPart,
+    labelInfo: LabelInfo,
+    relTypeInfo: RelTypeInfo,
     semanticTable: SemanticTable,
-    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+    indexCompatiblePredicatesProviderContext: IndexCompatiblePredicatesProviderContext
   ): Cardinality =
     cache.getOrElseUpdate(
-      (queryPart, input, semanticTable, indexPredicateProviderContext),
-      queryPart match {
+      (plannerQueryPart, labelInfo, relTypeInfo, semanticTable, indexCompatiblePredicatesProviderContext),
+      plannerQueryPart match {
         case singlePlannerQuery: SinglePlannerQuery =>
-          wrapped.singlePlannerQueryCardinality(singlePlannerQuery, input, semanticTable, indexPredicateProviderContext)
+          wrapped.singlePlannerQueryCardinality(
+            singlePlannerQuery,
+            labelInfo,
+            relTypeInfo,
+            semanticTable,
+            indexCompatiblePredicatesProviderContext
+          )
         case unionQuery: UnionQuery =>
-          unionQueryQueryCardinality(unionQuery, input, semanticTable, indexPredicateProviderContext)
+          unionQueryQueryCardinality(
+            unionQuery,
+            labelInfo,
+            relTypeInfo,
+            semanticTable,
+            indexCompatiblePredicatesProviderContext
+          )
       }
     )
 }

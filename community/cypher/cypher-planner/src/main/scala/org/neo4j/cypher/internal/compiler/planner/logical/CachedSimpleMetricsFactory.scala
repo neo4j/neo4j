@@ -24,8 +24,10 @@ import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -99,20 +101,22 @@ object CachedSimpleMetricsFactory extends MetricsFactory {
       SimpleMetricsFactory.newQueryGraphCardinalityModel(planContext, selectivityCalculator)
     val cached = CachedFunction[
       QueryGraph,
-      Metrics.QueryGraphSolverInput,
+      Metrics.LabelInfo,
+      Metrics.RelTypeInfo,
       SemanticTable,
       IndexCompatiblePredicatesProviderContext,
       Cardinality
     ] {
-      (a, b, c, d) => wrapped(a, b, c, d)
+      (a, b, c, d, e) => wrapped(a, b, c, d, e)
     }
     (
       queryGraph: QueryGraph,
-      input: Metrics.QueryGraphSolverInput,
+      labelInfo: LabelInfo,
+      relTypeInfo: RelTypeInfo,
       semanticTable: SemanticTable,
       indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
     ) => {
-      cached.apply(queryGraph, input, semanticTable, indexPredicateProviderContext)
+      cached.apply(queryGraph, labelInfo, relTypeInfo, semanticTable, indexPredicateProviderContext)
     }
   }
 
