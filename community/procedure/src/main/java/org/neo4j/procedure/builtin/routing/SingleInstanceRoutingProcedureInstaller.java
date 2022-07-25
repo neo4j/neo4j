@@ -56,7 +56,7 @@ public final class SingleInstanceRoutingProcedureInstaller extends AbstractRouti
 
         return new GetRoutingTableProcedure(
                 namespace,
-                databaseContextProvider,
+                databaseContextProvider.databaseIdRepository(),
                 validator,
                 routingTableProvider,
                 clientRoutingDomainChecker,

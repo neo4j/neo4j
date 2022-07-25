@@ -37,7 +37,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
@@ -45,6 +44,7 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -61,7 +61,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
     public static final String ADDRESS_CONTEXT_KEY = "address";
 
     private final ProcedureSignature signature;
-    private final DatabaseContextProvider<?> databaseContextProvider;
+    private final DatabaseIdRepository databaseIdRepository;
 
     private final InternalLog log;
     private final RoutingTableProcedureValidator validator;
@@ -75,7 +75,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
 
     public GetRoutingTableProcedure(
             List<String> namespace,
-            DatabaseContextProvider<?> databaseContextProvider,
+            DatabaseIdRepository databaseIdRepository,
             RoutingTableProcedureValidator validator,
             SingleAddressRoutingTableProvider routingTableProvider,
             ClientRoutingDomainChecker clientRoutingDomainChecker,
@@ -84,7 +84,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
             InstanceClusterView instanceClusterView) {
         this(
                 namespace,
-                databaseContextProvider,
+                databaseIdRepository,
                 validator,
                 routingTableProvider,
                 routingTableProvider,
@@ -96,7 +96,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
 
     public GetRoutingTableProcedure(
             List<String> namespace,
-            DatabaseContextProvider<?> databaseContextProvider,
+            DatabaseIdRepository databaseIdRepository,
             RoutingTableProcedureValidator validator,
             ClientSideRoutingTableProvider clientSideRoutingTableProvider,
             ServerSideRoutingTableProvider serverSideRoutingTableProvider,
@@ -105,7 +105,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
             InternalLogProvider logProvider,
             InstanceClusterView instanceClusterView) {
         this.signature = buildSignature(namespace, DESCRIPTION);
-        this.databaseContextProvider = databaseContextProvider;
+        this.databaseIdRepository = databaseIdRepository;
         this.log = logProvider.getLog(getClass());
         this.validator = validator;
         this.clientSideRoutingTableProvider = clientSideRoutingTableProvider;
@@ -165,11 +165,9 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
         } else {
             throw new IllegalArgumentException("Illegal database name argument " + arg);
         }
-        var databaseId = databaseContextProvider
-                .databaseIdRepository()
+        return databaseIdRepository
                 .getByName(databaseName)
                 .orElseThrow(() -> BaseRoutingTableProcedureValidator.databaseNotFoundException(databaseName));
-        return databaseId;
     }
 
     private static void assertRoutingResultNotEmpty(RoutingResult result, NamedDatabaseId namedDatabaseId)

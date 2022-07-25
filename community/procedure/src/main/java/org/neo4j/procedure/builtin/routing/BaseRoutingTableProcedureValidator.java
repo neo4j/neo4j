@@ -22,22 +22,21 @@ package org.neo4j.procedure.builtin.routing;
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
 
-import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 public abstract class BaseRoutingTableProcedureValidator implements RoutingTableProcedureValidator {
-    protected final DatabaseContextProvider<?> databaseContextProvider;
+    protected final DatabaseIdRepository databaseIdRepository;
 
-    protected BaseRoutingTableProcedureValidator(DatabaseContextProvider<?> databaseContextProvider) {
-        this.databaseContextProvider = databaseContextProvider;
+    protected BaseRoutingTableProcedureValidator(DatabaseIdRepository databaseIdRepository) {
+        this.databaseIdRepository = databaseIdRepository;
     }
 
     @Override
     @SuppressWarnings("ReturnValueIgnored")
     public void assertDatabaseExists(NamedDatabaseId namedDatabaseId) throws ProcedureException {
-        databaseContextProvider
-                .databaseIdRepository()
+        databaseIdRepository
                 .getById(namedDatabaseId.databaseId())
                 .orElseThrow(() -> databaseNotFoundException(namedDatabaseId.name()));
     }

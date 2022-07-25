@@ -27,8 +27,12 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 public class LocalRoutingTableProcedureValidator extends BaseRoutingTableProcedureValidator {
+
+    private final DatabaseContextProvider<?> databaseContextProvider;
+
     public LocalRoutingTableProcedureValidator(DatabaseContextProvider<?> databaseContextProvider) {
-        super(databaseContextProvider);
+        super(databaseContextProvider.databaseIdRepository());
+        this.databaseContextProvider = databaseContextProvider;
     }
 
     @Override
