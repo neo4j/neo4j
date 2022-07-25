@@ -26,33 +26,70 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompa
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
-import org.neo4j.cypher.internal.ir.helpers.CachedFunction
 import org.neo4j.cypher.internal.util.Cardinality
+
+import scala.collection.mutable
 
 class CachedStatisticsBackedCardinalityModel(wrapped: StatisticsBackedCardinalityModel) extends CardinalityModel {
 
-  private val cached = CachedFunction[
-    PlannerQueryPart,
-    Metrics.QueryGraphSolverInput,
-    SemanticTable,
-    IndexCompatiblePredicatesProviderContext,
-    Cardinality
-  ](cachedCardinality)
+  type CacheKey =
+    (PlannerQueryPart, Metrics.QueryGraphSolverInput, SemanticTable, IndexCompatiblePredicatesProviderContext)
 
-  private def cachedCardinality(
-    queryPart: PlannerQueryPart,
+  final private val cache: mutable.HashMap[CacheKey, Cardinality] = mutable.HashMap.empty
+
+  private def cachedSinglePlannerQueryCardinality(
+    singlePlannerQuery: SinglePlannerQuery,
     input: QueryGraphSolverInput,
     semanticTable: SemanticTable,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
-  ): Cardinality = queryPart match {
-    case singlePlannerQuery: SinglePlannerQuery =>
+  ): Cardinality =
+    cache.getOrElseUpdate(
+      (singlePlannerQuery, input, semanticTable, indexPredicateProviderContext),
       wrapped.singlePlannerQueryCardinality(singlePlannerQuery, input, semanticTable, indexPredicateProviderContext)
-    case unionQuery: UnionQuery =>
-      wrapped.combineUnion(
-        unionQuery,
-        cached(unionQuery.part, input, semanticTable, indexPredicateProviderContext),
-        cached(unionQuery.query, input, semanticTable, indexPredicateProviderContext)
-      )
+    )
+
+  private def unionQueryQueryCardinality(
+    unionQuery: UnionQuery,
+    input: QueryGraphSolverInput,
+    semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+  ): Cardinality = {
+    var lhs = unionQuery.part
+    var cardinality: Cardinality = null
+    val rhsCardinality = cachedSinglePlannerQueryCardinality(unionQuery.query, input, semanticTable, indexPredicateProviderContext)
+    val unions: mutable.Stack[(UnionQuery, Cardinality)] = mutable.Stack((unionQuery, rhsCardinality))
+    while (cardinality == null) {
+      lhs match {
+        case singlePlannerQuery: SinglePlannerQuery =>
+          cardinality = cachedSinglePlannerQueryCardinality(
+            singlePlannerQuery,
+            input,
+            semanticTable,
+            indexPredicateProviderContext
+          )
+        case nestedUnionQuery: UnionQuery =>
+          cache.get((nestedUnionQuery, input, semanticTable, indexPredicateProviderContext)) match {
+            case Some(nestedUnionQueryCardinality) =>
+              cardinality = nestedUnionQueryCardinality
+            case None =>
+              lhs = nestedUnionQuery.part
+              val rhsCardinality = cachedSinglePlannerQueryCardinality(
+                nestedUnionQuery.query,
+                input,
+                semanticTable,
+                indexPredicateProviderContext
+              )
+              unions.push((nestedUnionQuery, rhsCardinality))
+          }
+      }
+    }
+    unions.foreach {
+      case (unionQuery, rhsCardinality) =>
+        val unionCardinality = wrapped.combineUnion(unionQuery, cardinality, rhsCardinality)
+        cache.update((unionQuery, input, semanticTable, indexPredicateProviderContext), unionCardinality)
+        cardinality = unionCardinality
+    }
+    cardinality
   }
 
   override def apply(
@@ -61,5 +98,13 @@ class CachedStatisticsBackedCardinalityModel(wrapped: StatisticsBackedCardinalit
     semanticTable: SemanticTable,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
   ): Cardinality =
-    cached(queryPart, input, semanticTable, indexPredicateProviderContext)
+    cache.getOrElseUpdate(
+      (queryPart, input, semanticTable, indexPredicateProviderContext),
+      queryPart match {
+        case singlePlannerQuery: SinglePlannerQuery =>
+          wrapped.singlePlannerQueryCardinality(singlePlannerQuery, input, semanticTable, indexPredicateProviderContext)
+        case unionQuery: UnionQuery =>
+          unionQueryQueryCardinality(unionQuery, input, semanticTable, indexPredicateProviderContext)
+      }
+    )
 }
