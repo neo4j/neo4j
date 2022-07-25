@@ -1473,6 +1473,20 @@ class OrLeafPlanningIntegrationTest
         .build()
   }
 
+  test("should not crash on XOR predicates that might get rewritten to Ors with a single predicate") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("L", 50)
+      .build()
+
+    noException should be thrownBy {
+      cfg.plan(
+        """MATCH (n:L) WHERE NOT(((NOT(toBoolean(true))) AND NOT(isEmpty(n.p))) XOR (isEmpty(n.p)))
+          |RETURN *
+          |""".stripMargin)
+    }
+  }
+
   private def runWithTimeout[T](timeout: Long)(f: => T): T = {
     Await.result(scala.concurrent.Future(f)(scala.concurrent.ExecutionContext.global), Duration.apply(timeout, "s"))
   }
