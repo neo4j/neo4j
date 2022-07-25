@@ -44,4 +44,6 @@ final class RecordDatabaseFileNames {
     static final String LABEL_TOKEN_NAMES_STORE = "neostore.labeltokenstore.db.names";
 
     static final String SCHEMA_STORE = "neostore.schemastore.db";
+
+    static final String INDEX_STATISTICS_STORE = "neostore.indexstats.db";
 }

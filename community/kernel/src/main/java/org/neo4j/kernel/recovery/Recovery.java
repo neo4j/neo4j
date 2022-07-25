@@ -215,7 +215,7 @@ public final class Recovery {
     public static boolean isRecoveryRequired(
             FileSystemAbstraction fs,
             PageCache pageCache,
-            DatabaseLayout databaseLayout,
+            DatabaseLayout layout,
             StorageEngineFactory storageEngineFactory,
             Config config,
             Optional<LogTailMetadata> logTailMetadata,
@@ -224,6 +224,7 @@ public final class Recovery {
             throws IOException {
         RecoveryRequiredChecker requiredChecker =
                 new RecoveryRequiredChecker(fs, pageCache, config, storageEngineFactory, databaseTracers);
+        final var databaseLayout = storageEngineFactory.formatSpecificDatabaseLayout(layout);
         return logTailMetadata.isPresent()
                 ? requiredChecker.isRecoveryRequiredAt(databaseLayout, logTailMetadata.get())
                 : requiredChecker.isRecoveryRequiredAt(databaseLayout, memoryTracker);
@@ -367,7 +368,7 @@ public final class Recovery {
                 context.pageCache,
                 context.tracers,
                 context.config,
-                context.databaseLayout,
+                storageEngineFactory.formatSpecificDatabaseLayout(context.databaseLayout),
                 storageEngineFactory,
                 context.forceRunRecovery,
                 context.logProvider,

@@ -29,17 +29,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
-import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles.DEFAULT_FILENAME_FILTER;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,12 +47,15 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.io.IOUtils;
+import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.StoreFileListing;
 import org.neo4j.kernel.impl.store.StoreFileProvider;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
@@ -65,6 +66,9 @@ import org.neo4j.test.utils.TestDirectory;
 
 @DbmsExtension
 class StoreFileListingTest {
+    private final Predicate<Path> DEFAULT_FILENAME_FILTER =
+            IOUtils.uncheckedPredicate(TransactionLogFiles.DEFAULT_FILENAME_FILTER::accept);
+
     @Inject
     private GraphDatabaseAPI db;
 
@@ -74,49 +78,6 @@ class StoreFileListingTest {
     @Inject
     private Database database;
 
-    private static final String[] STANDARD_STORE_DIR_FILES = new String[] {
-        "index",
-        "lock",
-        "debug.log",
-        "neostore",
-        "neostore.id",
-        "neostore.counts.db",
-        "neostore.labeltokenstore.db",
-        "neostore.labeltokenstore.db.id",
-        "neostore.labeltokenstore.db.names",
-        "neostore.labeltokenstore.db.names.id",
-        "neostore.nodestore.db",
-        "neostore.nodestore.db.id",
-        "neostore.nodestore.db.labels",
-        "neostore.nodestore.db.labels.id",
-        "neostore.propertystore.db",
-        "neostore.propertystore.db.arrays",
-        "neostore.propertystore.db.arrays.id",
-        "neostore.propertystore.db.id",
-        "neostore.propertystore.db.index",
-        "neostore.propertystore.db.index.id",
-        "neostore.propertystore.db.index.keys",
-        "neostore.propertystore.db.index.keys.id",
-        "neostore.propertystore.db.strings",
-        "neostore.propertystore.db.strings.id",
-        "neostore.relationshipgroupstore.db",
-        "neostore.relationshipgroupstore.db.id",
-        "neostore.relationshipstore.db",
-        "neostore.relationshipstore.db.id",
-        "neostore.relationshiptypestore.db",
-        "neostore.relationshiptypestore.db.id",
-        "neostore.relationshiptypestore.db.names",
-        "neostore.relationshiptypestore.db.names.id",
-        "neostore.schemastore.db",
-        "neostore.schemastore.db.id",
-        "neostore.transaction.db.0",
-        "neostore.transaction.db.1",
-        "neostore.transaction.db.2",
-        "store_lock"
-    };
-
-    private static final String[] STANDARD_STORE_DIR_DIRECTORIES = new String[] {"schema", "index", "branched"};
-
     @BeforeEach
     void setUp() throws IOException {
         createIndexDbFile();
@@ -125,17 +86,19 @@ class StoreFileListingTest {
     @Test
     void shouldCloseIndexSnapshots() throws Exception {
         // Given
+        String indexDir = "indexes";
         IndexingService indexingService = mock(IndexingService.class);
         DatabaseLayout databaseLayout = mock(DatabaseLayout.class);
         when(databaseLayout.metadataStore()).thenReturn(mock(Path.class));
         LogFiles logFiles = mock(LogFiles.class);
-        filesInStoreDirAre(databaseLayout, STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES);
+        filesInStoreDirAre(databaseLayout, indexDir);
         StorageEngine storageEngine = mock(StorageEngine.class);
         IdGeneratorFactory idGeneratorFactory = mock(IdGeneratorFactory.class);
         StoreFileListing fileListing =
                 new StoreFileListing(databaseLayout, logFiles, indexingService, storageEngine, idGeneratorFactory);
 
-        ResourceIterator<Path> indexSnapshot = indexFilesAre(indexingService, new String[] {"schema/index/my.index"});
+        ResourceIterator<Path> indexSnapshot =
+                indexFilesAre(indexingService, new String[] {indexDir + "/mock/my.index"});
 
         ResourceIterator<StoreFileMetadata> result =
                 fileListing.builder().excludeLogFiles().build();
@@ -167,44 +130,38 @@ class StoreFileListingTest {
 
     @Test
     void shouldListTxLogFiles() throws Exception {
-        assertTrue(database.listStoreFiles(true).stream()
-                .map(metaData -> metaData.path().getFileName())
-                .anyMatch(fileName -> {
-                    try {
-                        return DEFAULT_FILENAME_FILTER.accept(fileName);
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                }));
+        try (var storeFiles = database.listStoreFiles(true)) {
+            assertTrue(storeFiles.stream()
+                    .map(metaData -> metaData.path().getFileName())
+                    .anyMatch(DEFAULT_FILENAME_FILTER));
+        }
     }
 
     @Test
     void shouldNotListTxLogFiles() throws Exception {
-        assertTrue(database.listStoreFiles(false).stream()
-                .map(metaData -> metaData.path().getFileName())
-                .noneMatch(fileName -> {
-                    try {
-                        return DEFAULT_FILENAME_FILTER.accept(fileName);
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                }));
+        try (var storeFiles = database.listStoreFiles(false)) {
+            assertTrue(storeFiles.stream()
+                    .map(metaData -> metaData.path().getFileName())
+                    .noneMatch(DEFAULT_FILENAME_FILTER));
+        }
     }
 
     @Test
-    void shouldListNeostoreFiles() throws Exception {
-        DatabaseLayout layout = database.getDatabaseLayout();
-        Set<Path> expectedFiles = layout.storeFiles();
-        expectedFiles.remove(layout.indexStatisticsStore());
+    void shouldListStoreFiles() throws Exception {
+        final var layout = database.getDatabaseLayout();
+        final var statsPath = layout.pathForStore(CommonDatabaseStores.INDEX_STATISTICS);
+        final var expectedFiles = layout.storeFiles();
+        expectedFiles.remove(statsPath);
         // there was no rotation
-        StoreFileListing.Builder fileListingBuilder =
-                database.getStoreFileListing().builder();
+        final var fileListingBuilder = database.getStoreFileListing().builder();
         fileListingBuilder.excludeIdFiles();
         fileListingBuilder.excludeLogFiles();
         fileListingBuilder.excludeSchemaIndexStoreFiles();
-        Set<Path> listedStoreFiles =
-                fileListingBuilder.build().stream().map(StoreFileMetadata::path).collect(Collectors.toSet());
-        assertThat(listedStoreFiles).containsExactlyInAnyOrderElementsOf(expectedFiles);
+        try (var storeFiles = fileListingBuilder.build()) {
+            final var listedStoreFiles =
+                    storeFiles.stream().map(StoreFileMetadata::path).collect(Collectors.toSet());
+            assertThat(listedStoreFiles).containsExactlyInAnyOrderElementsOf(expectedFiles);
+        }
     }
 
     @Test
@@ -213,14 +170,15 @@ class StoreFileListingTest {
         MarkerFileProvider provider = new MarkerFileProvider();
         storeFileListing.registerStoreFileProvider(provider);
         storeFileListing.registerStoreFileProvider(provider);
-        ResourceIterator<StoreFileMetadata> metadataResourceIterator =
-                storeFileListing.builder().build();
-        assertEquals(
-                1,
-                metadataResourceIterator.stream()
-                        .filter(metadata ->
-                                "marker".equals(metadata.path().getFileName().toString()))
-                        .count());
+        try (ResourceIterator<StoreFileMetadata> storeFiles =
+                storeFileListing.builder().build()) {
+            assertEquals(
+                    1,
+                    storeFiles.stream()
+                            .filter(metadata -> "marker"
+                                    .equals(metadata.path().getFileName().toString()))
+                            .count());
+        }
     }
 
     private void verifyLogFilesWithCustomPathListing(Path path) throws IOException {
@@ -231,18 +189,63 @@ class StoreFileListingTest {
         GraphDatabaseAPI graphDatabase = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
         Database database = graphDatabase.getDependencyResolver().resolveDependency(Database.class);
         LogFiles logFiles = graphDatabase.getDependencyResolver().resolveDependency(LogFiles.class);
-        assertTrue(database.listStoreFiles(true).stream()
-                .anyMatch(metadata -> metadata.isLogFile() && logFiles.isLogFile(metadata.path())));
+        try (var storeFiles = database.listStoreFiles(true)) {
+            assertTrue(storeFiles.stream()
+                    .anyMatch(metadata -> metadata.isLogFile() && logFiles.isLogFile(metadata.path())));
+        }
         assertEquals(
                 path.getFileName().toString(),
                 logFiles.logFilesDirectory().getParent().getFileName().toString());
         managementService.shutdown();
     }
 
-    private static void filesInStoreDirAre(DatabaseLayout databaseLayout, String[] filenames, String[] dirs) {
+    private static void filesInStoreDirAre(DatabaseLayout databaseLayout, String indexDir) {
+        final String[] mockDbFiles = new String[] {
+            "biff",
+            "baff",
+            "boff.log",
+            "mockstore",
+            "mockstore.id",
+            "mockstore.counts.db",
+            "mockstore.labeltokenstore.db",
+            "mockstore.labeltokenstore.db.id",
+            "mockstore.labeltokenstore.db.names",
+            "mockstore.labeltokenstore.db.names.id",
+            "mockstore.nodestore.db",
+            "mockstore.nodestore.db.id",
+            "mockstore.nodestore.db.labels",
+            "mockstore.nodestore.db.labels.id",
+            "mockstore.propertystore.db",
+            "mockstore.propertystore.db.arrays",
+            "mockstore.propertystore.db.arrays.id",
+            "mockstore.propertystore.db.id",
+            "mockstore.propertystore.db.index",
+            "mockstore.propertystore.db.index.id",
+            "mockstore.propertystore.db.index.keys",
+            "mockstore.propertystore.db.index.keys.id",
+            "mockstore.propertystore.db.strings",
+            "mockstore.propertystore.db.strings.id",
+            "mockstore.relationshipgroupstore.db",
+            "mockstore.relationshipgroupstore.db.id",
+            "mockstore.relationshipstore.db",
+            "mockstore.relationshipstore.db.id",
+            "mockstore.relationshiptypestore.db",
+            "mockstore.relationshiptypestore.db.id",
+            "mockstore.relationshiptypestore.db.names",
+            "mockstore.relationshiptypestore.db.names.id",
+            "mockstore.schemastore.db",
+            "mockstore.schemastore.db.id",
+            "mockstore.transaction.db.0",
+            "mockstore.transaction.db.1",
+            "mockstore.transaction.db.2",
+            "mockstore_lock"
+        };
+
+        final String[] mockDirectories = new String[] {"foo", "bar", "baz", indexDir};
+
         List<Path> files = new ArrayList<>();
-        mockFiles(filenames, files, false);
-        mockFiles(dirs, files, true);
+        mockFiles(mockDbFiles, files, false);
+        mockFiles(mockDirectories, files, true);
         when(databaseLayout.listDatabaseFiles(any())).thenReturn(files.toArray(new Path[0]));
     }
 

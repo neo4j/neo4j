@@ -37,20 +37,22 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.database.DatabaseTracers;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-@Neo4jLayoutExtension
+@TestDirectoryExtension
 class RecoveryRequiredCheckerTest {
     @RegisterExtension
     static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
@@ -61,11 +63,11 @@ class RecoveryRequiredCheckerTest {
     @Inject
     private FileSystemAbstraction fileSystem;
 
-    @Inject
-    private RecordDatabaseLayout databaseLayout;
+    private DatabaseLayout databaseLayout;
 
     private Path storeDir;
-    private final StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
+
+    private StorageEngineFactory storageEngineFactory;
 
     @BeforeEach
     void setup() {
@@ -124,8 +126,10 @@ class RecoveryRequiredCheckerTest {
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat(testDirectory.directory("dir-without-store"));
 
         try (PageCache pageCache = pageCacheExtension.getPageCache(fileSystem)) {
-            RecoveryRequiredChecker checker =
-                    getRecoveryCheckerWithDefaultConfig(fileSystem, pageCache, storageEngineFactory);
+            RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig(
+                    fileSystem,
+                    pageCache,
+                    StorageEngineFactory.selectStorageEngine(fileSystem, databaseLayout, Config.defaults()));
             assertFalse(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
         }
     }
@@ -140,7 +144,7 @@ class RecoveryRequiredCheckerTest {
             checker = getRecoveryCheckerWithDefaultConfig(fileSystem, pageCache, storageEngineFactory);
             assertFalse(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
 
-            fileSystem.deleteFileOrThrow(databaseLayout.idNodeStore());
+            fileSystem.deleteFileOrThrow(Iterables.first(databaseLayout.idFiles()));
 
             assertTrue(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
         }
@@ -175,7 +179,7 @@ class RecoveryRequiredCheckerTest {
                     getRecoveryCheckerWithDefaultConfig(fileSystem, pageCache, storageEngineFactory);
             assertFalse(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
 
-            fileSystem.deleteFileOrThrow(databaseLayout.nodeStore());
+            fileSystem.deleteFileOrThrow(Iterables.first(databaseLayout.storeFiles()));
 
             assertTrue(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
         }
@@ -192,9 +196,9 @@ class RecoveryRequiredCheckerTest {
                     getRecoveryCheckerWithDefaultConfig(fileSystem, pageCache, storageEngineFactory);
             assertFalse(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
 
-            fileSystem.deleteFileOrThrow(databaseLayout.relationshipStore());
-            fileSystem.deleteFileOrThrow(databaseLayout.propertyStore());
-            fileSystem.deleteFileOrThrow(databaseLayout.relationshipTypeTokenStore());
+            fileSystem.deleteFileOrThrow(databaseLayout.pathForStore(CommonDatabaseStores.COUNTS));
+            fileSystem.deleteFileOrThrow(databaseLayout.pathForStore(CommonDatabaseStores.SCHEMAS));
+            fileSystem.deleteFileOrThrow(databaseLayout.pathForStore(CommonDatabaseStores.RELATIONSHIP_TYPE_TOKENS));
 
             assertTrue(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
         }
@@ -211,7 +215,7 @@ class RecoveryRequiredCheckerTest {
                     getRecoveryCheckerWithDefaultConfig(fileSystem, pageCache, storageEngineFactory);
             assertFalse(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
 
-            fileSystem.deleteFileOrThrow(databaseLayout.countStore());
+            fileSystem.deleteFileOrThrow(databaseLayout.pathForStore(CommonDatabaseStores.COUNTS));
 
             assertFalse(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
         }
@@ -228,7 +232,7 @@ class RecoveryRequiredCheckerTest {
                     getRecoveryCheckerWithDefaultConfig(fileSystem, pageCache, storageEngineFactory);
             assertFalse(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
 
-            fileSystem.deleteFileOrThrow(databaseLayout.indexStatisticsStore());
+            fileSystem.deleteFileOrThrow(databaseLayout.pathForStore(CommonDatabaseStores.INDEX_STATISTICS));
 
             assertFalse(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
         }
@@ -283,7 +287,7 @@ class RecoveryRequiredCheckerTest {
         return new RecoveryRequiredChecker(fileSystem, pageCache, config, storageEngineFactory, DatabaseTracers.EMPTY);
     }
 
-    private static EphemeralFileSystemAbstraction createSomeDataAndCrash(Path store, Config config) throws IOException {
+    private EphemeralFileSystemAbstraction createSomeDataAndCrash(Path store, Config config) throws IOException {
         try (EphemeralFileSystemAbstraction ephemeralFs = new EphemeralFileSystemAbstraction()) {
             DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(store)
                     .setFileSystem(ephemeralFs)
@@ -295,6 +299,10 @@ class RecoveryRequiredCheckerTest {
                 tx.createNode();
                 tx.commit();
             }
+
+            databaseLayout = ((GraphDatabaseAPI) db).databaseLayout();
+            storageEngineFactory =
+                    ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(StorageEngineFactory.class);
 
             EphemeralFileSystemAbstraction snapshot = ephemeralFs.snapshot();
             managementService.shutdown();
@@ -321,6 +329,10 @@ class RecoveryRequiredCheckerTest {
                 transaction.createNode();
                 transaction.commit();
             }
+
+            databaseLayout = ((GraphDatabaseAPI) database).databaseLayout();
+            storageEngineFactory =
+                    ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency(StorageEngineFactory.class);
         } finally {
             managementService.shutdown();
         }

@@ -26,7 +26,6 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
-import static org.neo4j.io.layout.recordstorage.RecordDatabaseLayout.convert;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStore;
@@ -177,7 +176,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             PageCache pageCache,
             LogService logService,
             CursorContextFactory contextFactory) {
-        return new RecordStoreVersionCheck(pageCache, convert(databaseLayout), config);
+        return new RecordStoreVersionCheck(pageCache, formatSpecificDatabaseLayout(databaseLayout), config);
     }
 
     @Override
@@ -235,7 +234,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer) {
         return new RecordStorageEngine(
-                convert(databaseLayout),
+                formatSpecificDatabaseLayout(databaseLayout),
                 config,
                 pageCache,
                 fs,
@@ -262,7 +261,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     @Override
     public List<Path> listStorageFiles(FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout)
             throws IOException {
-        if (!fileSystem.fileExists(convert(databaseLayout).metadataStore())) {
+        if (!fileSystem.fileExists(formatSpecificDatabaseLayout(databaseLayout).metadataStore())) {
             throw new IOException("No storage present at " + databaseLayout + " on " + fileSystem);
         }
 
@@ -274,7 +273,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
 
     @Override
     public boolean storageExists(FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout) {
-        return NeoStores.isStorePresent(fileSystem, convert(databaseLayout));
+        return NeoStores.isStorePresent(fileSystem, formatSpecificDatabaseLayout(databaseLayout));
     }
 
     @Override
@@ -303,7 +302,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             CursorContextFactory contextFactory,
             LogTailMetadata logTailMetadata,
             PageCacheTracer pageCacheTracer) {
-        RecordDatabaseLayout databaseLayout = convert(layout);
+        RecordDatabaseLayout databaseLayout = formatSpecificDatabaseLayout(layout);
         RecordFormats recordFormats = selectForStoreOrConfigForNewDbs(
                 config, databaseLayout, fs, pageCache, NullLogProvider.getInstance(), contextFactory);
         var idGeneratorFactory = readOnlyChecker.isReadOnly()
@@ -355,7 +354,10 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     public Optional<UUID> databaseIdUuid(
             FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext) {
         var fieldAccess = MetaDataStore.getFieldAccess(
-                pageCache, convert(databaseLayout).metadataStore(), databaseLayout.getDatabaseName(), cursorContext);
+                pageCache,
+                formatSpecificDatabaseLayout(databaseLayout).metadataStore(),
+                databaseLayout.getDatabaseName(),
+                cursorContext);
         try {
             return fieldAccess.readDatabaseUUID();
         } catch (IOException e) {
@@ -372,7 +374,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             DatabaseLayout layout,
             CursorContextFactory contextFactory,
             LogTailMetadata logTailMetadata) {
-        RecordDatabaseLayout recordDatabaseLayout = RecordDatabaseLayout.convert(layout);
+        RecordDatabaseLayout recordDatabaseLayout = formatSpecificDatabaseLayout(layout);
         RecordFormats recordFormats = RecordFormatSelector.selectForStore(
                 recordDatabaseLayout, fs, pageCache, NullLogProvider.getInstance(), contextFactory);
         if (recordFormats == null) {
@@ -446,7 +448,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             boolean lenient,
             Function<SchemaRule, SchemaRule> schemaRuleMigration,
             CursorContextFactory contextFactory) {
-        RecordDatabaseLayout databaseLayout = convert(layout);
+        RecordDatabaseLayout databaseLayout = formatSpecificDatabaseLayout(layout);
         StoreFactory factory = new StoreFactory(
                 databaseLayout,
                 config,
@@ -485,7 +487,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             PageCacheTracer pageCacheTracer,
             boolean lenient,
             CursorContextFactory contextFactory) {
-        RecordDatabaseLayout databaseLayout = convert(layout);
+        RecordDatabaseLayout databaseLayout = formatSpecificDatabaseLayout(layout);
         StoreFactory factory = new StoreFactory(
                 databaseLayout,
                 config,
@@ -568,9 +570,14 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     }
 
     @Override
+    public RecordDatabaseLayout formatSpecificDatabaseLayout(DatabaseLayout plainLayout) {
+        return databaseLayout(plainLayout.getNeo4jLayout(), plainLayout.getDatabaseName());
+    }
+
+    @Override
     public StorageFilesState checkStoreFileState(
             FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache) {
-        RecordDatabaseLayout recordLayout = convert(databaseLayout);
+        RecordDatabaseLayout recordLayout = formatSpecificDatabaseLayout(databaseLayout);
         Set<Path> storeFiles = recordLayout.storeFiles();
         // count store, relationship group degrees store and index statistics are not mandatory stores to have since
         // they can be automatically rebuilt
@@ -714,7 +721,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     @Override
     public long optimalAvailableConsistencyCheckerMemory(
             FileSystemAbstraction fs, DatabaseLayout layout, Config config, PageCache pageCache) {
-        RecordDatabaseLayout databaseLayout = convert(layout);
+        RecordDatabaseLayout databaseLayout = formatSpecificDatabaseLayout(layout);
         CursorContextFactory contextFactory = NULL_CONTEXT_FACTORY;
         RecordFormats recordFormats =
                 selectForStore(databaseLayout, fs, pageCache, NullLogProvider.getInstance(), contextFactory);
@@ -776,7 +783,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                     : ProgressMonitorFactory.NONE;
             try (RecordStorageConsistencyChecker checker = new RecordStorageConsistencyChecker(
                     fileSystem,
-                    RecordDatabaseLayout.convert(layout),
+                    formatSpecificDatabaseLayout(layout),
                     pageCache,
                     neoStores,
                     indexProviders,
@@ -803,7 +810,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     @Override
     public ImmutableSet<OpenOption> getStoreOpenOptions(
             FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, CursorContextFactory contextFactory) {
-        RecordDatabaseLayout recordDatabaseLayout = RecordDatabaseLayout.convert(layout);
+        RecordDatabaseLayout recordDatabaseLayout = formatSpecificDatabaseLayout(layout);
         RecordFormats recordFormats = RecordFormatSelector.selectForStore(
                 recordDatabaseLayout, fs, pageCache, NullLogProvider.getInstance(), contextFactory);
         if (recordFormats == null) {

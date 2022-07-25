@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.layout;
 
+import static org.neo4j.io.layout.DatabaseFile.ID_FILE_SUFFIX;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -107,12 +109,13 @@ public class DatabaseLayout {
         return databaseDirectory().resolve(BACKUP_TOOLS_FOLDER);
     }
 
-    public Path indexStatisticsStore() {
-        return file(CommonDatabaseFile.INDEX_STATISTICS_STORE.getName());
-    }
-
     public Path metadataStore() {
         return file(CommonDatabaseFile.METADATA_STORE.getName());
+    }
+
+    public Path pathForStore(CommonDatabaseStores store) {
+        throw new IllegalStateException(
+                "Can not get the path for the %s store from a plain DatabaseLayout.".formatted(store.name()));
     }
 
     public Set<Path> idFiles() {
@@ -127,7 +130,7 @@ public class DatabaseLayout {
     }
 
     protected Stream<DatabaseFile> databaseFiles() {
-        throw new IllegalStateException("Can not check database files for a plain DatabaseLayout.");
+        throw new IllegalStateException("Can not access the database files from a plain DatabaseLayout.");
     }
 
     public Optional<Path> idFile(DatabaseFile file) {
@@ -159,7 +162,7 @@ public class DatabaseLayout {
     }
 
     private static String idFileName(String storeName) {
-        return storeName + ".id";
+        return storeName + ID_FILE_SUFFIX;
     }
 
     @Override

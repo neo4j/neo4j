@@ -56,7 +56,6 @@ import static org.neo4j.kernel.recovery.RecoveryHelpers.removeLastCheckpointReco
 import static org.neo4j.kernel.recovery.facade.RecoveryCriteria.ALL;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.StorageEngineFactory.defaultStorageEngine;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
@@ -104,10 +103,10 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
-import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.IOController;
@@ -162,6 +161,18 @@ import org.neo4j.values.storable.Values;
 class RecoveryIT {
     private static final int TEN_KB = (int) ByteUnit.kibiBytes(10);
     private static final CursorContextFactory CONTEXT_FACTORY = NULL_CONTEXT_FACTORY;
+
+    private static final IdType TEST_NODE_TYPE = new IdType() {
+        @Override
+        public String name() {
+            return "TestNodeId";
+        }
+
+        @Override
+        public boolean highActivity() {
+            return false;
+        }
+    };
 
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
@@ -1001,7 +1012,7 @@ class RecoveryIT {
         try (IdGenerator idGenerator = idGeneratorFactory.open(
                 pageCache,
                 idFile,
-                RecordIdType.NODE,
+                TEST_NODE_TYPE,
                 () -> 0L /*will not be used*/,
                 10_000,
                 writable(),
@@ -1013,7 +1024,7 @@ class RecoveryIT {
             idGenerator.marker(NULL_CONTEXT).close();
         }
         assertFalse(isRecoveryRequired(layout));
-        assertTrue(idGeneratorIsDirty(idFile, RecordIdType.NODE, openOptions));
+        assertTrue(idGeneratorIsDirty(idFile, openOptions));
 
         // when
         MutableBoolean recoveryRunEvenThoughNoCommitsAfterLastCheckpoint = new MutableBoolean();
@@ -1026,7 +1037,6 @@ class RecoveryIT {
         Monitors monitors = new Monitors();
         monitors.addMonitorListener(monitor);
         Config config = Config.defaults();
-        StorageEngineFactory storageEngineFactory = defaultStorageEngine();
 
         Recovery.performRecovery(
                 Recovery.context(fileSystem, pageCache, EMPTY, config, layout, INSTANCE, IOController.DISABLED)
@@ -1039,10 +1049,11 @@ class RecoveryIT {
                         .force());
 
         // then
-        assertFalse(idGeneratorIsDirty(idFile, RecordIdType.NODE, openOptions));
+        assertFalse(idGeneratorIsDirty(idFile, openOptions));
         assertTrue(recoveryRunEvenThoughNoCommitsAfterLastCheckpoint.booleanValue());
     }
 
+    @SuppressWarnings("resource")
     @Test
     void resetCheckpointVersionOnMissingLogFiles() throws Exception {
         GraphDatabaseAPI db = createDatabase();
@@ -1050,12 +1061,11 @@ class RecoveryIT {
         DatabaseLayout layout = db.databaseLayout();
         DependencyResolver resolver = db.getDependencyResolver();
         LogFiles logFiles = resolver.resolveDependency(LogFiles.class);
-        MetadataProvider metadataProvider = resolver.resolveDependency(MetadataProvider.class);
         CheckpointFile checkpointFile = logFiles.getCheckpointFile();
         for (int i = 0; i < 10; i++) {
             checkpointFile.rotate();
         }
-        assertEquals(10, metadataProvider.getCheckpointLogVersion());
+        assertEquals(10, resolver.resolveDependency(MetadataProvider.class).getCheckpointLogVersion());
         managementService.shutdown();
 
         removeTransactionLogs();
@@ -1073,6 +1083,7 @@ class RecoveryIT {
                         .getCheckpointLogVersion());
     }
 
+    @SuppressWarnings("resource")
     @Test
     void recoverySetsCheckpointLogVersionSeveralCheckpointFiles() throws Exception {
         GraphDatabaseAPI db = createDatabase();
@@ -1375,14 +1386,13 @@ class RecoveryIT {
         assertFalse(isRecoveryRequired(layout));
     }
 
-    private boolean idGeneratorIsDirty(Path path, IdType idType, ImmutableSet<OpenOption> openOptions)
-            throws IOException {
+    private boolean idGeneratorIsDirty(Path path, ImmutableSet<OpenOption> openOptions) throws IOException {
         DefaultIdGeneratorFactory idGeneratorFactory =
                 new DefaultIdGeneratorFactory(fileSystem, immediate(), PageCacheTracer.NULL, "my db");
         try (IdGenerator idGenerator = idGeneratorFactory.open(
                 pageCache,
                 path,
-                idType,
+                TEST_NODE_TYPE,
                 () -> 0L /*will not be used*/,
                 10_000,
                 readOnly(),
@@ -1586,14 +1596,14 @@ class RecoveryIT {
     private static Path getStoreFile(DatabaseLayout layout) {
         Set<Path> files = new HashSet<>(layout.storeFiles());
         files.remove(layout.metadataStore());
-        files.remove(layout.indexStatisticsStore());
+        files.remove(layout.pathForStore(CommonDatabaseStores.INDEX_STATISTICS));
         return getFirstSortedOnName(files);
     }
 
     private static Path getFirstSortedOnName(Set<Path> path) {
         return path.stream()
                 .max(Comparator.comparing(p -> p.getFileName().toString())) // To be deterministic
-                .get();
+                .orElseThrow();
     }
 
     interface Dependencies {

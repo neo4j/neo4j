@@ -43,6 +43,6 @@ class StoreTypeTest {
 
     @Test
     void storeTypeofSomeInvalidFile() {
-        assertThat(StoreType.typeOf(CommonDatabaseFile.INDEX_STATISTICS_STORE)).isEmpty();
+        assertThat(StoreType.typeOf(RecordDatabaseFile.INDEX_STATISTICS_STORE)).isEmpty();
     }
 }

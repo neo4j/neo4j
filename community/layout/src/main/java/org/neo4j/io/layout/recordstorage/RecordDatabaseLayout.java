@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -124,6 +125,23 @@ public class RecordDatabaseLayout extends DatabaseLayout {
 
     public Path labelTokenNamesStore() {
         return file(RecordDatabaseFile.LABEL_TOKEN_NAMES_STORE.getName());
+    }
+
+    public Path indexStatisticsStore() {
+        return file(RecordDatabaseFile.INDEX_STATISTICS_STORE.getName());
+    }
+
+    @Override
+    public Path pathForStore(CommonDatabaseStores store) {
+        return switch (store) {
+            case COUNTS -> countStore();
+            case LABEL_TOKENS -> labelTokenStore();
+            case RELATIONSHIP_TYPE_TOKENS -> relationshipTypeTokenStore();
+            case PROPERTY_KEY_TOKENS -> propertyKeyTokenStore();
+            case SCHEMAS -> schemaStore();
+            case INDEX_STATISTICS -> indexStatisticsStore();
+            case METADATA -> metadataStore();
+        };
     }
 
     public Path idNodeStore() {

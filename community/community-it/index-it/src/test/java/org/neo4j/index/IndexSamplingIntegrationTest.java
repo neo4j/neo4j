@@ -27,6 +27,8 @@ import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -37,7 +39,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -49,7 +53,7 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 @Neo4jLayoutExtension
 class IndexSamplingIntegrationTest {
     @Inject
-    private DatabaseLayout databaseLayout;
+    private Neo4jLayout layout;
 
     private static final String TOKEN = "Person";
     private final String property = "name";
@@ -60,50 +64,40 @@ class IndexSamplingIntegrationTest {
     @ParameterizedTest
     @EnumSource(Entity.class)
     void shouldSampleNotUniqueIndex(Entity entity) throws Throwable {
-        GraphDatabaseService db;
-        DatabaseManagementService managementService = null;
-        long deletedNodes = 0;
-        try {
-            // Given
-            managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
-            db = managementService.database(DEFAULT_DATABASE_NAME);
-            try (Transaction tx = db.beginTx()) {
+        // Given / When
+        final var deletions = new MutableInt();
+        populateDatabaseThenTriggerIndexResamplingOnNextStartup(db -> {
+            try (var tx = db.beginTx()) {
                 entity.createIndex(tx, schemaName, TOKEN, property);
                 tx.commit();
             }
 
-            try (Transaction tx = db.beginTx()) {
+            try (var tx = db.beginTx()) {
                 tx.schema().awaitIndexOnline(schemaName, 1, TimeUnit.MINUTES);
                 tx.commit();
             }
 
-            try (Transaction tx = db.beginTx()) {
+            try (var tx = db.beginTx()) {
                 for (int i = 0; i < entities; i++) {
                     entity.createEntity(tx, TOKEN, property, names[i % names.length]);
                 }
                 tx.commit();
             }
 
-            try (Transaction tx = db.beginTx()) {
+            try (var tx = db.beginTx()) {
                 for (int i = 0; i < (entities / 10); i++) {
                     entity.deleteFirstFound(tx, TOKEN, property, names[i % names.length]);
-                    deletedNodes++;
+                    deletions.increment();
                 }
                 tx.commit();
             }
-        } finally {
-            if (managementService != null) {
-                managementService.shutdown();
-            }
-        }
-
-        // When
-        triggerIndexResamplingOnNextStartup();
+        });
 
         // Then
 
         // lucene will consider also the delete nodes, native won't
-        var indexSample = fetchIndexSamplingValues();
+        final var indexSample = fetchIndexSamplingValues();
+        final var deletedNodes = deletions.intValue();
         assertThat(indexSample.uniqueValues()).as("Unique values").isEqualTo(names.length);
         assertThat(indexSample.sampleSize())
                 .as("Sample size")
@@ -119,49 +113,54 @@ class IndexSamplingIntegrationTest {
             value = Entity.class,
             names = {"NODE"})
     void shouldSampleUniqueIndex(Entity entity) throws Throwable {
-        GraphDatabaseService db = null;
-        DatabaseManagementService managementService = null;
-        long deletedNodes = 0;
-        try {
-            // Given
-            managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
-            db = managementService.database(DEFAULT_DATABASE_NAME);
-            try (Transaction tx = db.beginTx()) {
+        // Given / When
+        final var deletions = new MutableInt();
+        populateDatabaseThenTriggerIndexResamplingOnNextStartup(db -> {
+            try (var tx = db.beginTx()) {
                 entity.createConstraint(tx, schemaName, TOKEN, property);
                 tx.commit();
             }
 
-            try (Transaction tx = db.beginTx()) {
+            try (var tx = db.beginTx()) {
                 for (int i = 0; i < entities; i++) {
                     entity.createEntity(tx, TOKEN, property, "" + i);
                 }
                 tx.commit();
             }
 
-            try (Transaction tx = db.beginTx()) {
+            try (var tx = db.beginTx()) {
                 for (int i = 0; i < entities; i++) {
                     if (i % 10 == 0) {
                         entity.deleteFirstFound(tx, TOKEN, property, "" + i);
-                        deletedNodes++;
+                        deletions.increment();
                     }
                 }
                 tx.commit();
             }
-        } finally {
-            if (db != null) {
-                managementService.shutdown();
-            }
-        }
-
-        // When
-        triggerIndexResamplingOnNextStartup();
+        });
 
         // Then
-        var indexSample = fetchIndexSamplingValues();
+        final var indexSample = fetchIndexSamplingValues();
+        final var deletedNodes = deletions.intValue();
         assertThat(indexSample.uniqueValues()).as("Unique values").isEqualTo(entities - deletedNodes);
         assertThat(indexSample.sampleSize()).as("Sample size").isEqualTo(entities - deletedNodes);
         assertThat(indexSample.updates()).as("Updates").isEqualTo(0);
         assertThat(indexSample.indexSize()).as("Index size").isEqualTo(entities - deletedNodes);
+    }
+
+    private void populateDatabaseThenTriggerIndexResamplingOnNextStartup(Consumer<GraphDatabaseService> consumer)
+            throws IOException {
+        final var managementService = new TestDatabaseManagementServiceBuilder(layout).build();
+        final DatabaseLayout databaseLayout;
+        try {
+            final var db = managementService.database(DEFAULT_DATABASE_NAME);
+            consumer.accept(db);
+            databaseLayout = ((GraphDatabaseAPI) db).databaseLayout();
+        } finally {
+            managementService.shutdown();
+        }
+
+        triggerIndexResamplingOnNextStartup(databaseLayout);
     }
 
     private IndexDescriptor indexId(KernelTransaction tx) {
@@ -172,7 +171,7 @@ class IndexSamplingIntegrationTest {
         DatabaseManagementService managementService = null;
         try {
             // Then
-            managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
+            managementService = new TestDatabaseManagementServiceBuilder(layout).build();
             GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             Kernel kernel = api.getDependencyResolver().resolveDependency(Kernel.class);
@@ -186,9 +185,9 @@ class IndexSamplingIntegrationTest {
         }
     }
 
-    private void triggerIndexResamplingOnNextStartup() throws IOException {
+    private void triggerIndexResamplingOnNextStartup(DatabaseLayout layout) throws IOException {
         // Trigger index resampling on next at startup
-        delete(databaseLayout.indexStatisticsStore());
+        delete(layout.pathForStore(CommonDatabaseStores.INDEX_STATISTICS));
     }
 
     private enum Entity {

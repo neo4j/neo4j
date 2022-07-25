@@ -39,6 +39,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.index.internal.gbptree.Writer;
+import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -88,7 +89,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
             throws IOException {
         this(
                 pageCache,
-                databaseLayout.indexStatisticsStore(),
+                databaseLayout.pathForStore(CommonDatabaseStores.INDEX_STATISTICS),
                 recoveryCleanupWorkCollector,
                 readOnlyChecker,
                 databaseLayout.getDatabaseName(),

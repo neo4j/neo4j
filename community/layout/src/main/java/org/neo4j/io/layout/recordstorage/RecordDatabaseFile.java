@@ -69,7 +69,10 @@ public enum RecordDatabaseFile implements DatabaseFile {
 
     COUNTS_STORE(RecordDatabaseFileNames.COUNTS_STORE, false),
 
-    RELATIONSHIP_GROUP_DEGREES_STORE(RecordDatabaseFileNames.RELATIONSHIP_GROUP_DEGREES_STORE, false);
+    RELATIONSHIP_GROUP_DEGREES_STORE(RecordDatabaseFileNames.RELATIONSHIP_GROUP_DEGREES_STORE, false),
+
+    INDEX_STATISTICS_STORE(RecordDatabaseFileNames.INDEX_STATISTICS_STORE, false);
+
     private final String name;
     private final boolean hasIdFile;
 
@@ -111,7 +114,6 @@ public enum RecordDatabaseFile implements DatabaseFile {
     }
 
     public static DatabaseFile[] allValues() {
-        return ArrayUtils.addAll(
-                ArrayUtils.addAll(new DatabaseFile[0], CommonDatabaseFile.values()), RecordDatabaseFile.values());
+        return ArrayUtils.addAll(new DatabaseFile[] {CommonDatabaseFile.METADATA_STORE}, RecordDatabaseFile.values());
     }
 }

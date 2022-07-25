@@ -302,6 +302,13 @@ public interface StorageEngineFactory {
      */
     DatabaseLayout databaseLayout(Neo4jLayout neo4jLayout, String databaseName);
 
+    /**
+     * Convert a plain database layout into the storage engine specific layout
+     * @param plainLayout the layout of database
+     * @return the format-specific layout representing the database
+     */
+    DatabaseLayout formatSpecificDatabaseLayout(DatabaseLayout plainLayout);
+
     BatchImporter batchImporter(
             DatabaseLayout databaseLayout,
             FileSystemAbstraction fileSystem,

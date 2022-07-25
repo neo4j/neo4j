@@ -58,7 +58,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DatabaseTracers;
@@ -437,9 +436,11 @@ public class ConsistencyCheckService {
             // assert recovered
             var storageEngineFactory =
                     StorageEngineFactory.selectStorageEngine(fileSystem, layout).orElseThrow();
-            assertRecovered(layout, pageCache, config, fileSystem, memoryTracker);
+            final var databaseLayout = storageEngineFactory.formatSpecificDatabaseLayout(layout);
+            assertRecovered(databaseLayout, pageCache, config, fileSystem, memoryTracker);
 
-            assertSupportedFormat(config, pageCache, storageEngineFactory);
+            assertSupportedFormat(
+                    databaseLayout, config, fileSystem, pageCache, storageEngineFactory, logProvider, contextFactory);
 
             // instantiate the inconsistencies report logging
             var outLog = logProvider.getLog(getClass());
@@ -457,9 +458,9 @@ public class ConsistencyCheckService {
             var recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.ignore();
             var monitors = new Monitors();
             var tokenHolders = storageEngineFactory.loadReadOnlyTokens(
-                    fileSystem, layout, config, pageCache, pageCacheTracer, true, contextFactory);
+                    fileSystem, databaseLayout, config, pageCache, pageCacheTracer, true, contextFactory);
             var extensions = life.add(instantiateExtensions(
-                    layout,
+                    databaseLayout,
                     fileSystem,
                     config,
                     new SimpleLogService(logProvider),
@@ -482,7 +483,7 @@ public class ConsistencyCheckService {
                     readOnly(),
                     HostedOnMode.SINGLE,
                     recoveryCleanupWorkCollector,
-                    layout,
+                    databaseLayout,
                     tokenHolders,
                     jobScheduler,
                     contextFactory,
@@ -498,11 +499,16 @@ public class ConsistencyCheckService {
 
             if (consistencyFlags.checkIndexStructure()) {
                 var openOptions =
-                        storageEngineFactory.getStoreOpenOptions(fileSystem, pageCache, layout, contextFactory);
+                        storageEngineFactory.getStoreOpenOptions(fileSystem, pageCache, databaseLayout, contextFactory);
                 var statisticsStore = getStatisticStore(
-                        pageCache, recoveryCleanupWorkCollector, contextFactory, pageCacheTracer, openOptions);
+                        pageCache,
+                        databaseLayout,
+                        recoveryCleanupWorkCollector,
+                        contextFactory,
+                        pageCacheTracer,
+                        openOptions);
                 life.add(statisticsStore);
-                consistencyCheckSingleCheckable(log, summary, statisticsStore, "INDEX_STATISTICS", NULL_CONTEXT);
+                consistencyCheckOnStatisticsStore(log, summary, statisticsStore);
             }
 
             var logTailExtractor =
@@ -511,7 +517,7 @@ public class ConsistencyCheckService {
             try {
                 storageEngineFactory.consistencyCheck(
                         fileSystem,
-                        layout,
+                        databaseLayout,
                         config,
                         pageCache,
                         indexProviders,
@@ -524,7 +530,7 @@ public class ConsistencyCheckService {
                         consistencyFlags,
                         contextFactory,
                         pageCacheTracer,
-                        logTailExtractor.getTailMetadata(layout, memoryTracker));
+                        logTailExtractor.getTailMetadata(databaseLayout, memoryTracker));
             } catch (Exception e) {
                 throw new ConsistencyCheckIncompleteException(e);
             }
@@ -540,9 +546,16 @@ public class ConsistencyCheckService {
         }
     }
 
-    private void assertSupportedFormat(Config config, PageCache pageCache, StorageEngineFactory storageEngineFactory) {
+    private static void assertSupportedFormat(
+            DatabaseLayout databaseLayout,
+            Config config,
+            FileSystemAbstraction fileSystem,
+            PageCache pageCache,
+            StorageEngineFactory storageEngineFactory,
+            InternalLogProvider logProvider,
+            CursorContextFactory contextFactory) {
         StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck(
-                fileSystem, layout, config, pageCache, new SimpleLogService(logProvider), contextFactory);
+                fileSystem, databaseLayout, config, pageCache, new SimpleLogService(logProvider), contextFactory);
 
         try (var cursorContext = contextFactory.create("consistencyCheck")) {
             if (!storeVersionCheck.isCurrentStoreVersionFullySupported(cursorContext)) {
@@ -569,7 +582,7 @@ public class ConsistencyCheckService {
                                 new MemoryPools())
                         .getOrCreatePageCache()) {
             StorageEngineFactory storageEngineFactory =
-                    StorageEngineFactory.selectStorageEngine(fileSystem, layout).get();
+                    StorageEngineFactory.selectStorageEngine(fileSystem, layout).orElseThrow();
             return storageEngineFactory.optimalAvailableConsistencyCheckerMemory(
                     fileSystem, layout, config, tempPageCache);
         } catch (Exception e) {
@@ -577,8 +590,9 @@ public class ConsistencyCheckService {
         }
     }
 
-    private IndexStatisticsStore getStatisticStore(
+    private static IndexStatisticsStore getStatisticStore(
             PageCache pageCache,
+            DatabaseLayout layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
@@ -597,18 +611,13 @@ public class ConsistencyCheckService {
         }
     }
 
-    private boolean consistencyCheckSingleCheckable(
-            InternalLog log,
-            ConsistencySummaryStatistics summary,
-            ConsistencyCheckable checkable,
-            String type,
-            CursorContext cursorContext) {
+    private void consistencyCheckOnStatisticsStore(
+            InternalLog log, ConsistencySummaryStatistics summary, ConsistencyCheckable checkable) {
         LoggingReporterFactoryInvocationHandler handler = new LoggingReporterFactoryInvocationHandler(log, true);
         ReporterFactory proxyFactory = new ReporterFactory(handler);
 
-        boolean consistent = checkable.consistencyCheck(proxyFactory, cursorContext);
-        summary.update(type, handler.errors(), handler.warnings());
-        return consistent;
+        checkable.consistencyCheck(proxyFactory, NULL_CONTEXT);
+        summary.update("INDEX_STATISTICS", handler.errors(), handler.warnings());
     }
 
     private static void assertRecovered(

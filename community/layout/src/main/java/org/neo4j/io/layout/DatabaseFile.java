@@ -20,6 +20,8 @@
 package org.neo4j.io.layout;
 
 public interface DatabaseFile {
+    String ID_FILE_SUFFIX = ".id";
+
     String getName();
 
     boolean hasIdFile();
