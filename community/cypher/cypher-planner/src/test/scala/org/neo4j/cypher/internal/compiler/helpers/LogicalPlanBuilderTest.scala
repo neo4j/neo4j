@@ -27,7 +27,9 @@ import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
+import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
@@ -251,6 +253,26 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
           "r" -> hasTypes("r", "R"),
           "v" -> hasLabelsOrTypes("v", "V")
         )
+    }
+  }
+
+  test("should correctly insert HasLabels/HasTypes/HasLabelsOrTypes in .filter in nested expression") {
+    val plan = new LogicalPlanBuilder()
+      .produceResults("n")
+      .filter("n:N OR true")
+      .allNodeScan("n")
+      .build()
+
+    plan should beLike {
+      case ProduceResult(
+          Selection(
+            Ands(SetExtractor(
+              Ors(SetExtractor(HasLabels(Variable("n"), Seq(LabelName("N"))), True()))
+            )),
+            _
+          ),
+          _
+        ) =>
     }
   }
 
