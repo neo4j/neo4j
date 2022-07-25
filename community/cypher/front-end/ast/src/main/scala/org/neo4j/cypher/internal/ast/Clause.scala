@@ -1104,7 +1104,7 @@ case class UnresolvedCall(
 
   override def semanticCheck: SemanticCheck = {
     val argumentCheck = declaredArguments.map(
-      SemanticExpressionCheck.check(SemanticContext.Results, _, Seq())
+      SemanticExpressionCheck.check(SemanticContext.Results, _)
     ).getOrElse(success)
     val resultsCheck = declaredResult.map(_.semanticCheck).getOrElse(success)
     val invalidExpressionsCheck = declaredArguments.map(_.map {

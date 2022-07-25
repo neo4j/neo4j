@@ -17,14 +17,9 @@
 package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
-import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
-import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalProperty
@@ -52,16 +47,11 @@ case class SetPropertyItem(property: LogicalProperty, expression: Expression)(va
     extends SetProperty {
 
   def semanticCheck =
-    checkForExists chain
-      SemanticExpressionCheck.simple(property) chain
+    SemanticExpressionCheck.simple(property) chain
       SemanticPatternCheck.checkValidPropertyKeyNames(Seq(property.propertyKey)) chain
       SemanticExpressionCheck.simple(expression) chain
       expectType(CTNode.covariant | CTRelationship.covariant, property.map)
 
-  private def checkForExists: SemanticCheck = {
-    val invalid: Option[Expression] = expression.folder.treeFind[Expression] { case _: ExistsSubClause => true }
-    invalid.map(exp => SemanticError("The EXISTS subclause is not valid inside a SET clause.", exp.position))
-  }
 }
 
 case class SetPropertyItems(map: Expression, items: Seq[(PropertyKeyName, Expression)])(val position: InputPosition)
@@ -71,20 +61,12 @@ case class SetPropertyItems(map: Expression, items: Seq[(PropertyKeyName, Expres
 
     val properties = items.map(_._1)
     val expressions = items.map(_._2)
-    checkForExists chain
       SemanticExpressionCheck.simple(map) chain
       semanticCheckFold(properties) { property =>
         SemanticPatternCheck.checkValidPropertyKeyNames(Seq(property))
       } chain
       SemanticExpressionCheck.simple(expressions) chain
       expectType(CTNode.covariant | CTRelationship.covariant, map)
-  }
-
-  private def checkForExists: SemanticCheck = (state: SemanticState) => {
-    val invalid = items.map(_._2).flatMap(e => e.folder.treeFind[Expression] { case _: ExistsSubClause => true })
-    val errors: Seq[SemanticError] =
-      invalid.map(exp => SemanticError("The EXISTS subclause is not valid inside a SET clause.", exp.position))
-    SemanticCheckResult(state, errors)
   }
 }
 

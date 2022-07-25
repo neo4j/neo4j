@@ -2149,4 +2149,42 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       )(pos)
     )
   }
+
+  test("should use GetDegree to plan EXISTS subclause in RETURN") {
+    val logicalPlan = planner.plan("MATCH (a) RETURN EXISTS { (a)-[:X]->() } AS exists")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("exists")
+        .projection(Map("exists" -> HasDegreeGreaterThan(
+          varFor("a"),
+          Some(RelTypeName("X")(pos)),
+          SemanticDirection.OUTGOING,
+          literalInt(0)
+        )(pos)))
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should use NestedPlanExpression to plan EXISTS subclause in CASE") {
+    val logicalPlan =
+      planner.plan("MATCH (a) RETURN CASE a.prop WHEN 1 THEN EXISTS { (a)-[r:X]->(b:Foo) } ELSE false END AS exists")
+
+    val expectedNestedPlan = planner.subPlanBuilder()
+      .filter("b:Foo")
+      .expand("(a)-[r:X]->(b)")
+      .argument("a")
+      .build()
+
+    val npeExpression = NestedPlanExistsExpression(expectedNestedPlan, "EXISTS { MATCH (a)-[r:X]->(b:Foo) }")(pos)
+    val caseExp = caseExpression(Some(prop("a", "prop")), Some(falseLiteral), literalInt(1) -> npeExpression)
+
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("exists")
+        .projection(Map("exists" -> caseExp))
+        .allNodeScan("a")
+        .build()
+    )
+  }
 }

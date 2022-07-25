@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
@@ -688,6 +689,12 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     function(Seq("point"), "distance", fromPoint, toPoint)
 
   def assertIsNode(v: String): AssertIsNode = AssertIsNode(varFor(v))(pos)
+
+  def caseExpression(
+    expression: Option[Expression],
+    default: Option[Expression],
+    alternatives: (Expression, Expression)*
+  ): CaseExpression = CaseExpression(expression, alternatives.toIndexedSeq, default)(pos)
 
   implicit class ExpressionOps(expr: Expression) {
     def as(name: String): ReturnItem = AliasedReturnItem(expr, varFor(name))(pos, isAutoAliased = false)
