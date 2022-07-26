@@ -140,7 +140,9 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     val projectionExpression = listComprehension(
       varFor("f"),
       varFor("friends"),
-      Some(NestedPlanExistsExpression(nestedPlan, "exists((f)-[`anon_1`:WORKS_AT]->(`anon_2`:ComedyClub))")(pos)),
+      Some(
+        NestedPlanExistsExpression(nestedPlan, "EXISTS { MATCH (f)-[`anon_1`:WORKS_AT]->(`anon_2`:ComedyClub) }")(pos)
+      ),
       None
     )
 
@@ -286,15 +288,13 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     )
   }
 
-  test("should build plans with Apply for a pattern predicate with 0=COUNT with WHERE inside") {
+  test("should build plans with AntiSemiApply for a pattern predicate with 0=COUNT with WHERE inside") {
     val logicalPlan =
       planner.plan("MATCH (a) WHERE 0=COUNT{(a)-[:X]->() WHERE a.prop = 'c'} RETURN a")
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
-        .filter("0 = anon_2")
-        .apply()
-        .|.aggregation(Seq.empty, Seq("count(*) AS anon_2"))
+        .antiSemiApply()
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
         .|.filter("a.prop = 'c'")
         .|.argument("a")
@@ -303,15 +303,13 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     )
   }
 
-  test("should build plans with Apply for a pattern predicate with 0<COUNT with WHERE inside") {
+  test("should build plans with SemiApply for a pattern predicate with 0<COUNT with WHERE inside") {
     val logicalPlan =
       planner.plan("MATCH (a) WHERE 0<COUNT{(a)-[:X]->(b) WHERE b.prop = 'c'} RETURN a")
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
-        .filter("0 < anon_1")
-        .apply()
-        .|.aggregation(Seq.empty, Seq("count(*) AS anon_1"))
+        .semiApply()
         .|.filter("b.prop = 'c'")
         .|.expandAll("(a)-[anon_0:X]->(b)")
         .|.argument("a")
@@ -1700,7 +1698,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     plan should equal(
       planner.subPlanBuilder()
         .projection(Map("foo" ->
-          NestedPlanExistsExpression(expectedNestedPlan, "exists((n)-[`anon_0`]->(`anon_1`)-[`anon_2`]->(`anon_3`))")(
+          NestedPlanExistsExpression(
+            expectedNestedPlan,
+            "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)-[`anon_2`]->(`anon_3`) }"
+          )(
             pos
           )))
         .allNodeScan("n")
@@ -1726,7 +1727,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     plan should equal(
       planner.subPlanBuilder()
         .projection(Map("foo" ->
-          NestedPlanExistsExpression(expectedNestedPlan, "exists((n)-[`anon_0`]->(`anon_1`:B))")(pos)))
+          NestedPlanExistsExpression(expectedNestedPlan, "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`:B) }")(pos)))
         .allNodeScan("n")
         .build()
     )
@@ -1752,7 +1753,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     plan should equal(
       planner.subPlanBuilder()
         .projection(Map("foo" ->
-          NestedPlanExistsExpression(expectedNestedPlan, "exists((n)-[`anon_0`]->(`anon_1`:B|C))")(pos)))
+          NestedPlanExistsExpression(expectedNestedPlan, "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`:B|C) }")(pos)))
         .allNodeScan("n")
         .build()
     )
@@ -1775,7 +1776,9 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     plan should equal(
       planner.subPlanBuilder()
         .projection(Map("foo" ->
-          NestedPlanExistsExpression(expectedNestedPlan, "exists((n)-[`anon_0`]->(`anon_1`:D {prop: 5}))")(pos)))
+          NestedPlanExistsExpression(expectedNestedPlan, "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`:D {prop: 5}) }")(
+            pos
+          )))
         .allNodeScan("n")
         .build()
     )

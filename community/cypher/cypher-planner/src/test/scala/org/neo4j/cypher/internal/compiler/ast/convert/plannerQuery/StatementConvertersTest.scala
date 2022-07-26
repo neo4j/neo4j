@@ -705,7 +705,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           )
         )
       ),
-      s"exists((a)-[`${relName}`]->(`${nodeName}`))"
+      s"EXISTS { MATCH (a)-[`$relName`]->(`$nodeName`) }"
     )(pos)
     val predicate = Predicate(Set("a"), exp)
     val selections = Selections(Set(predicate))
@@ -766,7 +766,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           )
         )
       ),
-      s"exists((a)-[`${relName}`]->(`${nodeName}`))"
+      s"EXISTS { MATCH (a)-[`$relName`]->(`$nodeName`) }"
     )(pos)
 
     val exp2 = in(prop("a", "prop"), listOfInt(42))
@@ -796,7 +796,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           )
         )
       ),
-      s"exists((a)-[`${relName}`]->(`${nodeName}`))"
+      s"EXISTS { MATCH (a)-[`$relName`]->(`$nodeName`) }"
     )(pos)
 
     val exp2 = in(prop("a", "prop"), listOfInt(42))
@@ -826,7 +826,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           )
         )
       ),
-      s"exists((a)-[`${relName}`]->(`${nodeName}`))"
+      s"EXISTS { MATCH (a)-[`$relName`]->(`$nodeName`) }"
     )(pos)
 
     val exp2 = in(prop("a", "prop"), listOfInt(42))
@@ -1177,7 +1177,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           )
         )
       ),
-      s"exists((`owner`)-[`$relName`]-(`$nodeName`))"
+      s"EXISTS { MATCH (`owner`)-[`$relName`]-(`$nodeName`) }"
     )(pos)
 
     val expectation = RegularSinglePlannerQuery(
