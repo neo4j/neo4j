@@ -70,7 +70,13 @@ case class AssumeIndependenceQueryGraphCardinalityModel(
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
   ): CardinalityAndInput = {
     cardinalityAndInput.copy(cardinality =
-      cardinalityForQueryGraph(outer, cardinalityAndInput.labelInfo, cardinalityAndInput.relTypeInfo, semanticTable, indexPredicateProviderContext)
+      cardinalityForQueryGraph(
+        outer,
+        cardinalityAndInput.labelInfo,
+        cardinalityAndInput.relTypeInfo,
+        semanticTable,
+        indexPredicateProviderContext
+      )
     )
   }
 

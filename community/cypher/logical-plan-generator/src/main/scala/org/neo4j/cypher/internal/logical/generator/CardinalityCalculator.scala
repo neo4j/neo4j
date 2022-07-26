@@ -136,7 +136,13 @@ object CardinalityCalculator {
         IndependenceCombiner
       )
       val expandCardinality =
-        qgCardinalityModel(qg, state.labelInfo, state.relTypeInfo, state.semanticTable, IndexCompatiblePredicatesProviderContext.default)
+        qgCardinalityModel(
+          qg,
+          state.labelInfo,
+          state.relTypeInfo,
+          state.semanticTable,
+          IndexCompatiblePredicatesProviderContext.default
+        )
       expandCardinality * inboundCardinality
   }
 

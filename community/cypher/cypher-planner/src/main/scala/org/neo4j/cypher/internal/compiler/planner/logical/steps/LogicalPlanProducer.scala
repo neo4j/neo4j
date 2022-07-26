@@ -2536,7 +2536,13 @@ case class LogicalPlanProducer(
     assertNoBadExpressionsExists(plan)
     assertRhsDoesNotInvalidateLhsOrder(plan, providedOrder, context.executionModel)
     val cardinality =
-      cardinalityModel(solved, context.input.labelInfo, context.input.relTypeInfo, context.semanticTable, context.indexCompatiblePredicatesProviderContext)
+      cardinalityModel(
+        solved,
+        context.input.labelInfo,
+        context.input.relTypeInfo,
+        context.semanticTable,
+        context.indexCompatiblePredicatesProviderContext
+      )
     solveds.set(plan.id, solved)
     cardinalities.set(plan.id, cardinality)
     providedOrders.set(plan.id, providedOrder)
@@ -2745,7 +2751,13 @@ object LogicalPlanProducer {
       def sortCriteria(predicate: Expression): (CostPerRow, Selectivity) = {
         val costPerRow = CardinalityCostModel.costPerRowFor(predicate, semanticTable)
         val solved = solvedBeforePredicate.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
-        val cardinality = cardinalityModel(solved, queryGraphSolverInput.labelInfo, queryGraphSolverInput.relTypeInfo, semanticTable, indexPredicateProviderContext)
+        val cardinality = cardinalityModel(
+          solved,
+          queryGraphSolverInput.labelInfo,
+          queryGraphSolverInput.relTypeInfo,
+          semanticTable,
+          indexPredicateProviderContext
+        )
         val selectivity = (cardinality / incomingCardinality).getOrElse(Selectivity.ONE)
         (costPerRow, selectivity)
       }
