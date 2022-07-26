@@ -2039,7 +2039,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     }
   }
 
-  test("Should plan semiApply with projectEndPoints for ExistsSubClause with already bound variables") {
+  test("Should plan semiApply with projectEndPoints for EXISTS with already bound variables") {
     val logicalPlan = planner.plan(
       "MATCH (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE EXISTS { (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE n.foo > 5} RETURN *"
     )
@@ -2061,7 +2061,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     )
   }
 
-  test("Should plan semiApply with expands for ExistsSubClause with new variables") {
+  test("Should plan semiApply with expands for EXISTS with new variables") {
     val logicalPlan = planner.plan("MATCH (n)-[r]->(m) WHERE EXISTS { (o)-[r2]->(m)-[r3]->(q) } RETURN *")
     logicalPlan should equal(
       planner.planBuilder()
@@ -2153,7 +2153,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     )
   }
 
-  test("should use GetDegree to plan EXISTS subclause in RETURN") {
+  test("should use GetDegree to plan EXISTS in RETURN") {
     val logicalPlan = planner.plan("MATCH (a) RETURN EXISTS { (a)-[:X]->() } AS exists")
     logicalPlan should equal(
       planner.planBuilder()
@@ -2169,7 +2169,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     )
   }
 
-  test("should use NestedPlanExpression to plan EXISTS subclause in CASE") {
+  test("should use NestedPlanExpression to plan EXISTS in CASE") {
     val logicalPlan =
       planner.plan("MATCH (a) RETURN CASE a.prop WHEN 1 THEN EXISTS { (a)-[r:X]->(b:Foo) } ELSE false END AS exists")
 

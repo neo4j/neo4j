@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.EveryPath
-import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.LessThan
@@ -52,7 +52,7 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
  *
  * MATCH (n) WHERE EXISTS { (n)-->(m) } RETURN n
  *
- * Any Exists FunctionInvocation is also rewritten to ExistsSubclause.
+ * Any Exists FunctionInvocation is also rewritten to [[ExistsExpression]].
  *
  * Rewrite equivalent expressions with `size` or `length` to `exists`.
  * This rewrite normalizes this cases and make it easier to plan correctly.
@@ -67,9 +67,9 @@ case class normalizeExistsPatternExpressions(
 
   private val instance = bottomUp(Rewriter.lift {
     case p: PatternExpression if semanticState.expressionType(p).expected.contains(symbols.CTBoolean.invariant) =>
-      ExistsSubClause(Pattern(Seq(EveryPath(p.pattern.element)))(p.position), None)(p.position, p.outerScope)
+      ExistsExpression(Pattern(Seq(EveryPath(p.pattern.element)))(p.position), None)(p.position, p.outerScope)
     case Exists(p: PatternExpression) =>
-      ExistsSubClause(Pattern(Seq(EveryPath(p.pattern.element)))(p.position), None)(p.position, p.outerScope)
+      ExistsExpression(Pattern(Seq(EveryPath(p.pattern.element)))(p.position), None)(p.position, p.outerScope)
 
     case GreaterThan(CountLikeToExistsConverter(exists), SignedDecimalIntegerLiteral("0")) => exists
     case LessThan(SignedDecimalIntegerLiteral("0"), CountLikeToExistsConverter(exists))    => exists
@@ -103,15 +103,15 @@ case object normalizeExistsPatternExpressions extends StepSequencer.Step with AS
 
 case object CountLikeToExistsConverter {
 
-  def unapply(expression: Expression): Option[ExistsSubClause] = expression match {
+  def unapply(expression: Expression): Option[ExistsExpression] = expression match {
 
     // size([pt = (n)--(m) | pt])
     case Size(p @ PatternComprehension(_, pattern, predicate, _)) =>
-      Some(ExistsSubClause(Pattern(Seq(EveryPath(pattern.element)))(p.position), predicate)(p.position, p.outerScope))
+      Some(ExistsExpression(Pattern(Seq(EveryPath(pattern.element)))(p.position), predicate)(p.position, p.outerScope))
 
     // COUNT { (n)--(m) }
     case ce @ CountExpression(pattern, predicate) =>
-      Some(ExistsSubClause(Pattern(Seq(EveryPath(pattern)))(ce.position), predicate)(ce.position, ce.outerScope))
+      Some(ExistsExpression(Pattern(Seq(EveryPath(pattern)))(ce.position), predicate)(ce.position, ce.outerScope))
 
     case _ =>
       None

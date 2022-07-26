@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -196,13 +196,13 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
     )
   )
 
-  test("should rewrite outer scope variables of exists subclause even if not used in subclause") {
+  test("should rewrite outer scope variables of EXISTS even if not used in expression") {
     val query = "MATCH (n) WHERE EXISTS { MATCH (p:Label) } WITH n as m, 1 as n RETURN m, n"
 
     val statement = prepareFrom(query, rewriterPhaseUnderTest).statement()
 
     val outerScope = statement.folder.treeFold(Set.empty[LogicalVariable]) {
-      case expr: ExistsSubClause =>
+      case expr: ExistsExpression =>
         acc => TraverseChildren(acc ++ expr.outerScope)
     }
 

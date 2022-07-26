@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
-import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
@@ -407,7 +407,7 @@ case class CommunityExpressionConverter(
         throw new InternalException("`NestedPlanExpression` should have been rewritten away")
       case _: internal.expressions.Parameter =>
         throw new InternalException("`Parameter` should have been rewritten away")
-      case _: ExistsSubClause       => throw new InternalException("`ExistsSubClause` should have been rewritten away")
+      case _: ExistsExpression      => throw new InternalException("`ExistsExpression` should have been rewritten away")
       case CoerceToPredicate(inner) => predicates.CoercedPredicate(self.toCommandExpression(id, inner))
       case e: internal.expressions.CollectAll =>
         commands.expressions.CollectAll(self.toCommandExpression(id, e.arguments.head))

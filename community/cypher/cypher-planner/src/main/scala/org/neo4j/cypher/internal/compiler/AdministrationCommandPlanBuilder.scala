@@ -111,7 +111,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.expressions.CountExpression
-import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
@@ -802,7 +802,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
               "You cannot include a COUNT expression on a system database",
               c.position
             )
-          case c: ExistsSubClause => throw context.cypherExceptionFactory.syntaxException(
+          case c: ExistsExpression => throw context.cypherExceptionFactory.syntaxException(
               "You cannot include an EXISTS expression on a system database",
               c.position
             )

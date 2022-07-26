@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.CountExpression
-import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Parameter
@@ -94,7 +94,7 @@ sealed trait ReadAdministrationCommand extends AdministrationCommand {
         case _: SubqueryExpression => true
       }
       invalid.map {
-        case exp: ExistsSubClause =>
+        case exp: ExistsExpression =>
           SemanticCheckResult.error(state, "The EXISTS expression is not valid on SHOW commands.", exp.position)
         case exp: CountExpression =>
           SemanticCheckResult.error(state, "The COUNT expression is not valid on SHOW commands.", exp.position)
@@ -840,8 +840,8 @@ object ShowAliases {
 }
 
 object AliasDriverSettingsCheck {
-  val existsErrorMessage = "The EXISTS clause is not valid in driver settings."
-  val countErrorMessage = "The COUNT clause is not valid in driver settings."
+  val existsErrorMessage = "The EXISTS expression is not valid in driver settings."
+  val countErrorMessage = "The COUNT expression is not valid in driver settings."
 
   def findInvalidDriverSettings(driverSettings: Option[Either[Map[String, Expression], Parameter]])
     : Option[Expression] = {
@@ -849,8 +849,8 @@ object AliasDriverSettingsCheck {
       case Some(Left(settings)) =>
         settings.values.flatMap(s =>
           s.folder.treeFind[Expression] {
-            case _: ExistsSubClause => true
-            case _: CountExpression => true
+            case _: ExistsExpression => true
+            case _: CountExpression  => true
           }
         ).headOption
       case _ => None
@@ -899,7 +899,7 @@ final case class CreateRemoteDatabaseAlias(
         position
       )
     case _ => AliasDriverSettingsCheck.findInvalidDriverSettings(driverSettings) match {
-        case Some(expr: ExistsSubClause) =>
+        case Some(expr: ExistsExpression) =>
           error(AliasDriverSettingsCheck.existsErrorMessage, expr.position)
         case Some(expr) =>
           error(AliasDriverSettingsCheck.countErrorMessage, expr.position)
@@ -935,7 +935,7 @@ final case class AlterRemoteDatabaseAlias(
     AliasDriverSettingsCheck.findInvalidDriverSettings(driverSettings) match {
       case Some(expr) =>
         expr match {
-          case _: ExistsSubClause =>
+          case _: ExistsExpression =>
             error(AliasDriverSettingsCheck.existsErrorMessage, expr.position)
           case _ =>
             error(AliasDriverSettingsCheck.countErrorMessage, expr.position)

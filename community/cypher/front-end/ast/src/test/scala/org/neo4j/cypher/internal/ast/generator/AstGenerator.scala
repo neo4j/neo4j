@@ -308,7 +308,7 @@ import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.EntityType
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.EveryPath
-import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ExtractScope
@@ -809,13 +809,13 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     pattern <- _shortestPaths
   } yield ShortestPathExpression(pattern)
 
-  def _existsSubClause: Gen[ExistsSubClause] = for {
+  def _existsExpression: Gen[ExistsExpression] = for {
     pattern <- _pattern
     where <- option(_expression)
     outerScope <- zeroOrMore(_variable)
-  } yield ExistsSubClause(pattern, where)(pos, outerScope.toSet)
+  } yield ExistsExpression(pattern, where)(pos, outerScope.toSet)
 
-  def _countSubClause: Gen[CountExpression] = for {
+  def _countExpression: Gen[CountExpression] = for {
     element <- _patternElement
     where <- option(_expression)
     outerScope <- zeroOrMore(_variable)
@@ -867,8 +867,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
         lzy(_listSlice),
         lzy(_listComprehension),
         lzy(_containerIndex),
-        lzy(_existsSubClause),
-        lzy(_countSubClause),
+        lzy(_existsExpression),
+        lzy(_countExpression),
         lzy(_patternComprehension)
       )
     )

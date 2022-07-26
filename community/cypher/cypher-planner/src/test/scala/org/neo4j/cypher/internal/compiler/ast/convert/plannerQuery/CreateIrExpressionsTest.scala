@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.EveryPath
-import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
@@ -453,8 +453,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )
   }
 
-  test("Rewrites ExistsSubClause") {
-    val esc = ExistsSubClause(n_r_m_r2_o_r3_q, None)(pos, Set())
+  test("Rewrites ExistsExpression") {
+    val esc = ExistsExpression(n_r_m_r2_o_r3_q, None)(pos, Set())
 
     val rewritten = rewrite(esc)
 
@@ -483,8 +483,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   }
 
   // MATCH (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE EXISTS { (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE r.foo > 5 }
-  test("Rewrites ExistsSubClause with where clause") {
-    val esc = ExistsSubClause(n_r_m_r2_o_r3_q, Some(rPred))(pos, Set())
+  test("Rewrites ExistsExpression with where clause") {
+    val esc = ExistsExpression(n_r_m_r2_o_r3_q, Some(rPred))(pos, Set())
 
     val rewritten = rewrite(esc)
 

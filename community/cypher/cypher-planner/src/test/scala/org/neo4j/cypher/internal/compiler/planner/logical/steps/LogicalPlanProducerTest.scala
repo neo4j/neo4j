@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.expressions.EveryPath
-import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.Pattern
@@ -900,7 +900,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planSemiApplyInHorizon(
         ctx.lhs,
         ctx.rhsWithUpdate,
-        ExistsSubClause(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None)(pos, Set.empty),
+        ExistsExpression(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None)(pos, Set.empty),
         ctx.context
       )
     )
@@ -911,7 +911,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planSemiApplyInHorizon(
         ctx.lhs,
         ctx.rhsWithoutUpdate,
-        ExistsSubClause(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None)(pos, Set.empty),
+        ExistsExpression(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None)(pos, Set.empty),
         ctx.context
       )
     )
@@ -922,7 +922,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planAntiSemiApplyInHorizon(
         ctx.lhs,
         ctx.rhsWithUpdate,
-        ExistsSubClause(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None)(pos, Set.empty),
+        ExistsExpression(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None)(pos, Set.empty),
         ctx.context
       )
     )
@@ -933,7 +933,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planAntiSemiApplyInHorizon(
         ctx.lhs,
         ctx.rhsWithoutUpdate,
-        ExistsSubClause(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None)(pos, Set.empty),
+        ExistsExpression(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None)(pos, Set.empty),
         ctx.context
       )
     )

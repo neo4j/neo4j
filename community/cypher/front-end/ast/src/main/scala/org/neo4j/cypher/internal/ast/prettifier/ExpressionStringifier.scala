@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ExtractScope
 import org.neo4j.cypher.internal.expressions.FilterScope
@@ -327,7 +327,7 @@ private class DefaultExpressionStringifier(
         // These are not really expressions, they are part of expressions
         ""
 
-      case ExistsSubClause(pat, where) =>
+      case ExistsExpression(pat, where) =>
         val p = patterns.apply(pat)
         val w = where.map(wh => s" WHERE ${inner(ast)(wh)}").getOrElse("")
         s"EXISTS { MATCH $p$w }"

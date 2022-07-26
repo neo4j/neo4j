@@ -41,7 +41,7 @@ import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.EntityType
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.expressions.ExtractScope
@@ -660,7 +660,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         x.semanticCheck(ctx)
 
       // EXISTS
-      case x: ExistsSubClause =>
+      case x: ExistsExpression =>
         SemanticState.recordCurrentScope(x) chain
           withScopedState { // saves us from leaking to the outside
             SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain

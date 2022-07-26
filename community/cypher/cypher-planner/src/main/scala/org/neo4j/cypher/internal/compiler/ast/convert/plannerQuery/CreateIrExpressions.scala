@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.EveryPath
-import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PathStep
@@ -76,7 +76,7 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
   }
 
   /**
-   * Get the [[PlannerQuery]] for a pattern from a [[PatternExpression]] or [[PatternComprehension]] or [[ExistsSubClause]].
+   * Get the [[PlannerQuery]] for a pattern from a [[PatternExpression]] or [[PatternComprehension]] or [[ExistsExpression]].
    *
    * @param pattern        the pattern
    * @param dependencies   the dependencies or the expression
@@ -139,14 +139,14 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
      * IR for MATCH (n)-[anon_0]->(anon_1:M)
      *
      */
-    case existsSubClause @ ExistsSubClause(pattern, optionalWhereExpression) =>
+    case existsExpression @ ExistsExpression(pattern, optionalWhereExpression) =>
       val query = getPlannerQuery(
         pattern,
-        existsSubClause.dependencies.map(_.name),
+        existsExpression.dependencies.map(_.name),
         optionalWhereExpression,
         RegularQueryProjection()
       )
-      ExistsIRExpression(query, stringifier(existsSubClause))(existsSubClause.position)
+      ExistsIRExpression(query, stringifier(existsExpression))(existsExpression.position)
 
     /**
      * Rewrites (n)-[anon_0]->(anon_1:M) into

@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 
-class CountSubClauseParserTest extends JavaccParserAstTestBase[Statement] {
+class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
   implicit private val parser: JavaccRule[Statement] = JavaccRule.Statement
 
@@ -42,7 +42,7 @@ class CountSubClauseParserTest extends JavaccParserAstTestBase[Statement] {
       |RETURN m""".stripMargin
   ) {
 
-    val countSubClause: CountExpression = CountExpression(
+    val countExpression: CountExpression = CountExpression(
       RelationshipChain(
         nodePat(Some("m")),
         RelationshipPattern(Some(Variable("r")(InputPosition(29, 2, 20))), None, None, None, None, OUTGOING)(
@@ -55,7 +55,7 @@ class CountSubClauseParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       query(
-        match_(nodePat(name = Some("m")), Some(where(gt(countSubClause, literal(1))))),
+        match_(nodePat(name = Some("m")), Some(where(gt(countExpression, literal(1))))),
         return_(variableReturnItem("m"))
       )
     }
@@ -66,7 +66,7 @@ class CountSubClauseParserTest extends JavaccParserAstTestBase[Statement] {
       |WHERE COUNT { (m)-[]->() } > 1
       |RETURN m""".stripMargin
   ) {
-    val countSubClause: CountExpression = CountExpression(
+    val countExpression: CountExpression = CountExpression(
       RelationshipChain(
         nodePat(Some("m")),
         RelationshipPattern(None, None, None, None, None, OUTGOING)(InputPosition(27, 2, 18)),
@@ -77,7 +77,7 @@ class CountSubClauseParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       query(
-        match_(nodePat(name = Some("m")), Some(where(gt(countSubClause, literal(1))))),
+        match_(nodePat(name = Some("m")), Some(where(gt(countExpression, literal(1))))),
         return_(variableReturnItem("m"))
       )
     }
@@ -88,11 +88,11 @@ class CountSubClauseParserTest extends JavaccParserAstTestBase[Statement] {
       |WHERE COUNT { (m) } > 1
       |RETURN m""".stripMargin
   ) {
-    val countSubClause: CountExpression = CountExpression(nodePat(Some("m")), None)(InputPosition(16, 2, 7), Set.empty)
+    val countExpression: CountExpression = CountExpression(nodePat(Some("m")), None)(InputPosition(16, 2, 7), Set.empty)
 
     givesIncludingPositions {
       query(
-        match_(nodePat(name = Some("m")), Some(where(gt(countSubClause, literal(1))))),
+        match_(nodePat(name = Some("m")), Some(where(gt(countExpression, literal(1))))),
         return_(variableReturnItem("m"))
       )
     }
@@ -104,12 +104,12 @@ class CountSubClauseParserTest extends JavaccParserAstTestBase[Statement] {
       |WHERE COUNT { (m) WHERE m.prop = 3 } > 1
       |RETURN m""".stripMargin
   ) {
-    val countSubClause: CountExpression =
+    val countExpression: CountExpression =
       CountExpression(nodePat(Some("m")), Some(propEquality("m", "prop", 3)))(InputPosition(16, 2, 7), Set.empty)
 
     givesIncludingPositions {
       query(
-        match_(nodePat(name = Some("m")), Some(where(gt(countSubClause, literal(1))))),
+        match_(nodePat(name = Some("m")), Some(where(gt(countExpression, literal(1))))),
         return_(variableReturnItem("m"))
       )
     }
@@ -120,7 +120,7 @@ class CountSubClauseParserTest extends JavaccParserAstTestBase[Statement] {
     """MATCH (m)
       |RETURN COUNT { (m)-[]->() }""".stripMargin
   ) {
-    val countSubClause: CountExpression = CountExpression(
+    val countExpression: CountExpression = CountExpression(
       RelationshipChain(
         nodePat(Some("m")),
         RelationshipPattern(None, None, None, None, None, OUTGOING)(InputPosition(28, 2, 19)),
@@ -132,7 +132,7 @@ class CountSubClauseParserTest extends JavaccParserAstTestBase[Statement] {
     givesIncludingPositions {
       query(
         match_(nodePat(name = Some("m"))),
-        return_(returnItem(countSubClause, "COUNT { (m)-[]->() }", InputPosition(17, 2, 8)))
+        return_(returnItem(countExpression, "COUNT { (m)-[]->() }", InputPosition(17, 2, 8)))
       )
     }
   }
@@ -143,7 +143,7 @@ class CountSubClauseParserTest extends JavaccParserAstTestBase[Statement] {
       |SET m.howMany = COUNT { (m)-[]->() }
     """.stripMargin
   ) {
-    val countSubClause: CountExpression = CountExpression(
+    val countExpression: CountExpression = CountExpression(
       RelationshipChain(
         nodePat(Some("m")),
         RelationshipPattern(None, None, None, None, None, OUTGOING)(InputPosition(37, 2, 28)),
@@ -155,7 +155,7 @@ class CountSubClauseParserTest extends JavaccParserAstTestBase[Statement] {
     givesIncludingPositions {
       query(
         match_(nodePat(name = Some("m"))),
-        set_(Seq(setPropertyItem("m", "howMany", countSubClause)))
+        set_(Seq(setPropertyItem("m", "howMany", countExpression)))
       )
     }
   }
@@ -166,7 +166,7 @@ class CountSubClauseParserTest extends JavaccParserAstTestBase[Statement] {
       |RETURN CASE WHEN COUNT { (m)-[]->() } > 0 THEN "hasProperty" ELSE "other" END
     """.stripMargin
   ) {
-    val countSubClause: CountExpression = CountExpression(
+    val countExpression: CountExpression = CountExpression(
       RelationshipChain(
         nodePat(Some("m")),
         RelationshipPattern(None, None, None, None, None, OUTGOING)(InputPosition(38, 2, 29)),
@@ -179,7 +179,7 @@ class CountSubClauseParserTest extends JavaccParserAstTestBase[Statement] {
       query(
         match_(nodePat(name = Some("m"))),
         return_(UnaliasedReturnItem(
-          CaseExpression(None, List((gt(countSubClause, literal(0)), literal("hasProperty"))), Some(literal("other")))(
+          CaseExpression(None, List((gt(countExpression, literal(0)), literal("hasProperty"))), Some(literal("other")))(
             pos
           ),
           "CASE WHEN COUNT { (m)-[]->() } > 0 THEN \"hasProperty\" ELSE \"other\" END"
@@ -192,7 +192,7 @@ class CountSubClauseParserTest extends JavaccParserAstTestBase[Statement] {
   test(
     """WITH COUNT { (m)-[]->() } AS result RETURN result""".stripMargin
   ) {
-    val countSubClause: CountExpression = CountExpression(
+    val countExpression: CountExpression = CountExpression(
       RelationshipChain(
         nodePat(Some("m")),
         RelationshipPattern(None, None, None, None, None, OUTGOING)(InputPosition(16, 1, 17)),
@@ -203,7 +203,7 @@ class CountSubClauseParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       query(
-        with_(AliasedReturnItem(countSubClause, Variable("result")(pos))(pos, isAutoAliased = false)),
+        with_(AliasedReturnItem(countExpression, Variable("result")(pos))(pos, isAutoAliased = false)),
         return_(UnaliasedReturnItem(Variable("result")(pos), "result")(pos))
       )
     }
@@ -213,14 +213,14 @@ class CountSubClauseParserTest extends JavaccParserAstTestBase[Statement] {
   test(
     """MATCH (a) WHERE COUNT{(a: Label)} > 1 RETURN a""".stripMargin
   ) {
-    val countSubClause: CountExpression = CountExpression(
+    val countExpression: CountExpression = CountExpression(
       nodePat(Some("a"), Some(LabelExpression.Leaf(LabelName("Label")(InputPosition(26, 1, 27))))),
       None
     )(InputPosition(16, 1, 17), Set.empty)
 
     givesIncludingPositions {
       query(
-        match_(nodePat(name = Some("a")), Some(where(gt(countSubClause, literal(1))))),
+        match_(nodePat(name = Some("a")), Some(where(gt(countExpression, literal(1))))),
         return_(variableReturnItem("a"))
       )
     }

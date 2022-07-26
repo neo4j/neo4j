@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.EveryPath
-import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.Property
@@ -37,8 +37,8 @@ class ExistsTest extends SemanticFunSuite {
   val property: Property = Property(variable("x"), PropertyKeyName("prop")(pos))(pos)
   val failingProperty: Property = Property(variable("missing"), PropertyKeyName("prop")(pos))(pos)
 
-  test("valid exists subclause passes semantic check") {
-    val expression = ExistsSubClause(pattern, Some(property))(pos, Set.empty)
+  test("valid exists expression passes semantic check") {
+    val expression = ExistsExpression(pattern, Some(property))(pos, Set.empty)
 
     val result = SemanticExpressionCheck.simple(expression)(SemanticState.clean)
 
@@ -47,7 +47,7 @@ class ExistsTest extends SemanticFunSuite {
 
   test("multiple patterns in inner match should not report error") {
     val multiPattern: Pattern = Pattern(Seq(EveryPath(x), EveryPath(n)))(pos)
-    val expression = ExistsSubClause(multiPattern, Some(property))(pos, Set.empty)
+    val expression = ExistsExpression(multiPattern, Some(property))(pos, Set.empty)
 
     val result = SemanticExpressionCheck.simple(expression)(SemanticState.clean)
 
@@ -55,15 +55,15 @@ class ExistsTest extends SemanticFunSuite {
   }
 
   test("inner where using missing identifier reports error") {
-    val expression = ExistsSubClause(pattern, Some(failingProperty))(pos, Set.empty)
+    val expression = ExistsExpression(pattern, Some(failingProperty))(pos, Set.empty)
 
     val result = SemanticExpressionCheck.simple(expression)(SemanticState.clean)
 
     result.errors shouldBe Seq(SemanticError("Variable `missing` not defined", pos))
   }
 
-  test("subclause cannot reuse identifier with different type") {
-    val expression = ExistsSubClause(pattern, Some(property))(pos, Set.empty)
+  test("EXISTS cannot reuse identifier with different type") {
+    val expression = ExistsExpression(pattern, Some(property))(pos, Set.empty)
 
     val semanticState = SemanticState.clean.declareVariable(variable("n"), CTBoolean).right.get
 

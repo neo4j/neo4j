@@ -328,7 +328,7 @@ import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.EveryPath
-import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.False
@@ -1090,7 +1090,7 @@ class Neo4jASTFactory(query: String)
   override def existsSubQuery(p: InputPosition, patterns: util.List[PatternPart], where: Expression): Expression = {
     val patternParts = patterns.asScala.toList
     val patternPos = patternParts.head.position
-    ExistsSubClause(Pattern(patternParts)(patternPos), Option(where))(p, Set.empty)
+    ExistsExpression(Pattern(patternParts)(patternPos), Option(where))(p, Set.empty)
   }
 
   override def countSubQuery(

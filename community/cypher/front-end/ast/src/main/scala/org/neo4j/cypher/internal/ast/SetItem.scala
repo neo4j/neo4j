@@ -61,7 +61,7 @@ case class SetPropertyItems(map: Expression, items: Seq[(PropertyKeyName, Expres
 
     val properties = items.map(_._1)
     val expressions = items.map(_._2)
-      SemanticExpressionCheck.simple(map) chain
+    SemanticExpressionCheck.simple(map) chain
       semanticCheckFold(properties) { property =>
         SemanticPatternCheck.checkValidPropertyKeyNames(Seq(property))
       } chain
