@@ -19,28 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.CreateIrExpressions
+import org.neo4j.cypher.internal.compiler.helpers.SeqSupport.RichSeq
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.HasLabels
-import org.neo4j.cypher.internal.expressions.LabelExpression
-import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
-import org.neo4j.cypher.internal.expressions.LabelExpression.disjoinRelTypesToLabelExpression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Ors
-import org.neo4j.cypher.internal.expressions.PatternExpression
-import org.neo4j.cypher.internal.expressions.RelationshipChain
-import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.Phase
@@ -49,15 +42,17 @@ import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransform
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.DistinctQueryProjection
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryProjection
+import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
+import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
@@ -65,19 +60,26 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.annotation.tailrec
+import scala.collection.immutable.ListSet
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.util.control.TailCalls
+import scala.util.control.TailCalls.TailRec
 
 case object UnnecessaryOptionalMatchesRemoved extends StepSequencer.Condition
 
 /**
- * Remove optional match when possible.
+ * Remove optional match, if possible.
+ *
+ * Move pattern parts of the optional match into a WHERE clause in the optional match, if possible.
  */
 case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer.Step
     with PlanPipelineTransformerFactory {
 
+  private val stringifier = ExpressionStringifier(_.asCanonicalStringVal)
+
   override def instance(from: LogicalPlanState, context: PlannerContext): Rewriter = {
-    val optionalMatchRewriter = topDown(
+    topDown(
       rewriter = Rewriter.lift {
         case RegularSinglePlannerQuery(
             graph,
@@ -88,7 +90,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
           ) if validAggregations(aggregations) =>
           val projectionDeps: Iterable[LogicalVariable] =
             (distinctExpressions.values ++ aggregations.values).flatMap(_.dependencies)
-          rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput, from.anonymousVariableNameGenerator)
+          rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput)
 
         case RegularSinglePlannerQuery(
             graph,
@@ -98,7 +100,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
             queryInput
           ) =>
           val projectionDeps: Iterable[LogicalVariable] = distinctExpressions.values.flatMap(_.dependencies)
-          rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput, from.anonymousVariableNameGenerator)
+          rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput)
 
         // Remove OPTIONAL MATCH if preceding MATCH solves the exact same query graph e.g.:
         // OPTIONAL MATCH (n)
@@ -111,9 +113,6 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
       },
       cancellation = context.cancellationChecker
     )
-    // The optionalMatchRewriter introduces PatternExpressions that should already have been
-    // rewritten away at this point, so we have to invoke CreateIrExpressions again.
-    optionalMatchRewriter andThen CreateIrExpressions(from.anonymousVariableNameGenerator)
   }
 
   private def rewrite(
@@ -122,8 +121,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     interestingOrder: InterestingOrder,
     proj: QueryProjection,
     tail: Option[SinglePlannerQuery],
-    queryInput: Option[Seq[String]],
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    queryInput: Option[Seq[String]]
   ): RegularSinglePlannerQuery = {
     val updateDeps = graph.mutatingPatterns.flatMap(_.dependencies)
     val dependencies: Set[String] = projectionDeps.map(_.name).toSet ++ updateDeps
@@ -173,8 +171,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
           val patternPredicates = patternsToFilter.map(toAst(
             elementsToKeep,
             predicatesForPatternExpression,
-            _,
-            anonymousVariableNameGenerator
+            _
           ))
 
           val newOptionalGraph = original.withPatternRelationships(patternsToKeep).withPatternNodes(
@@ -187,7 +184,6 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
 
     val matches = graph.withOptionalMatches(optionalMatches)
     RegularSinglePlannerQuery(matches, interestingOrder, horizon = proj, tail = tail, queryInput = queryInput)
-
   }
 
   /**
@@ -207,128 +203,96 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
   }
 
   /**
-   * @param predicatesForPatternExpression predicates that can get moved into PatternExpressions.
-   *                                       These are currently only `HasLabels`.
-   *                                       This is a map from node variable name to the label names.
-   * @param predicatesToKeep               predicate expressions that cannot be moved into patternExpressions
-   * @param elementsToKeep                 node and relationship variables that cannot be moved into patternExpressions
+   * @param predicatesForIRExpressions predicates that can get moved into [[ExistsIRExpression]]s..
+   *                                   These are currently only `HasLabels`.
+   *                                   This is a map from node variable name to the predicates.
+   * @param predicatesToKeep           predicate expressions that cannot be moved into [[ExistsIRExpression]]s.
+   * @param elementsToKeep             node and relationship variables that cannot be moved into [[ExistsIRExpression]]s.
    */
   case class ExtractionResult(
-    predicatesForPatternExpression: Map[String, LabelExpression],
+    predicatesForIRExpressions: Map[String, Expression],
     predicatesToKeep: Set[Expression],
     elementsToKeep: Set[String]
   )
 
   @tailrec
   private def extractElementsAndPatterns(original: QueryGraph, elementsToKeepInitial: Set[String]): ExtractionResult = {
-    val PartitionedPredicates(predicatesForPatterns, predicatesToKeep) =
+    val PartitionedPredicates(predicatesForIRExpressions, predicatesToKeep) =
       partitionPredicates(original.selections.predicates, elementsToKeepInitial)
 
     val variablesNeededForPredicates = predicatesToKeep.flatMap(expression => expression.dependencies.map(_.name))
     val elementsToKeep = smallestGraphIncluding(original, elementsToKeepInitial ++ variablesNeededForPredicates)
 
     if (elementsToKeep.equals(elementsToKeepInitial)) {
-      ExtractionResult(predicatesForPatterns, predicatesToKeep, elementsToKeep)
+      ExtractionResult(predicatesForIRExpressions, predicatesToKeep, elementsToKeep)
     } else {
       extractElementsAndPatterns(original, elementsToKeep)
     }
   }
 
   /**
-   * @param predicatesForPatternExpression predicates that can get moved into PatternExpressions.
-   *                                       These are currently only `HasLabels`.
-   *                                       This is a map from node variable name to the label names.
-   * @param predicatesToKeep               predicate expressions that cannot be moved into patternExpressions
+   * @param predicatesForIRExpressions predicates that can get moved into [[ExistsIRExpression]]s..
+   *                                   These are currently only `HasLabels`.
+   *                                   This is a map from node variable name to the label names.
+   * @param predicatesToKeep           predicate expressions that cannot be moved into [[ExistsIRExpression]]s.
    */
   case class PartitionedPredicates(
-    predicatesForPatternExpression: Map[String, LabelExpression],
+    predicatesForIRExpressions: Map[String, Expression],
     predicatesToKeep: Set[Expression]
   )
 
   /**
-   * This is inverting what `LabelExpressionNormalizer` does.
+   * Checks if an Expression is a composition of HasLabels on the same variable.
    */
-  def recreateLabelExpression(expression: Expression, variable: String): Option[LabelExpression] = expression match {
-    case HasLabels(Variable(varName), labels) if variable == varName =>
-      require(labels.size == 1) // We know there is only a single label here because AST rewriting
-      Some(Leaf(labels.head))
+  def checkLabelExpression(expression: Expression, variable: String): TailRec[Boolean] = {
+    expression match {
+      case HasLabels(Variable(varName), labels) if variable == varName =>
+        require(labels.size == 1) // We know there is only a single label here because AST rewriting
+        TailCalls.done(true)
 
-    case ands @ Ands(predicates) =>
-      recreateComposingLabelExpression(
-        variable,
-        predicates.toSeq,
-        (le1, le2) => LabelExpression.Conjunctions(Seq(le1, le2))(ands.position)
-      )
+      case Ands(predicates) => predicates.toSeq.forallTailRec(checkLabelExpression(_, variable))
+      case Ors(predicates)  => predicates.toSeq.forallTailRec(checkLabelExpression(_, variable))
+      case Not(predicate) =>
+        TailCalls.tailcall(checkLabelExpression(predicate, variable))
 
-    case ors @ Ors(predicates) =>
-      recreateComposingLabelExpression(
-        variable,
-        predicates.toSeq,
-        (le1, le2) => LabelExpression.Disjunctions(Seq(le1, le2))(ors.position)
-      )
-
-    case not @ Not(predicate) =>
-      recreateLabelExpression(predicate, variable).map(LabelExpression.Negation(_)(not.position))
-
-    case _ => None
-  }
-
-  private def recreateComposingLabelExpression(
-    variable: String,
-    predicates: Seq[Expression],
-    combiner: (LabelExpression, LabelExpression) => LabelExpression
-  ): Option[LabelExpression] = {
-    val labelExpressions = predicates.map(recreateLabelExpression(_, variable))
-    if (labelExpressions.exists(_.isEmpty)) {
-      None
-    } else {
-      labelExpressions.map(_.get).foldLeft[Option[LabelExpression]](None) {
-        case (None, rhs)      => Some(rhs)
-        case (Some(lhs), rhs) => Some(combiner(lhs, rhs))
-      }
+      case _ => TailCalls.done(false)
     }
   }
 
   /**
-   * This method extracts predicates that need to be part of pattern expressions
+   * This method extracts predicates that need to be part of [[ExistsIRExpression]]s.
    *
    * @param predicates All the original predicates of the QueryGraph
-   * @param kept       Set of all variables that should not be moved to pattern expressions
-   * @return Map of label predicates to move to pattern expressions,
-   *         and the set of remaining predicates
+   * @param kept       Set of all variables that should not be moved to [[ExistsIRExpression]]s.
+   * @return Map of label predicates to move to [[ExistsIRExpression]]s,
+   *         and the set of remaining predicates.
    */
   private def partitionPredicates(predicates: Set[Predicate], kept: Set[String]): PartitionedPredicates = {
 
-    val predicatesForPatternExpression = mutable.Map.empty[String, LabelExpression]
+    val predicatesForIRExpressions = mutable.Map.empty[String, Expression]
     val predicatesToKeep = mutable.Set.empty[Expression]
 
-    def addLabel(idName: String, newLabelExpression: LabelExpression): mutable.Map[String, LabelExpression] = {
-      val current = predicatesForPatternExpression.get(idName)
+    def addLabel(idName: String, newLabelExpression: Expression): Unit = {
+      val current = predicatesForIRExpressions.get(idName)
       val labelExpression = current match {
         case None =>
           newLabelExpression
-        case Some(labelExpression: LabelExpression) =>
-          LabelExpression.Conjunctions(Seq(labelExpression, newLabelExpression))(InputPosition.NONE)
+        case Some(labelExpression) =>
+          Ands(ListSet(labelExpression, newLabelExpression))(InputPosition.NONE)
       }
-      predicatesForPatternExpression += idName -> labelExpression
+      predicatesForIRExpressions += idName -> labelExpression
     }
 
     predicates.foreach {
-      case Predicate(deps, predicates) if deps.size == 1 && !kept(deps.head) =>
-        val labelExpression = recreateLabelExpression(predicates, deps.head)
-        if (labelExpression.isDefined) {
-          addLabel(deps.head, labelExpression.get)
-        } else {
-          predicatesToKeep += predicates
-        }
-        ()
+      case Predicate(deps, predicate)
+        if deps.size == 1 && !kept(deps.head) && checkLabelExpression(predicate, deps.head).result =>
+        addLabel(deps.head, predicate)
 
       case Predicate(_, expr) =>
         predicatesToKeep += expr
-        ()
     }
 
-    PartitionedPredicates(predicatesForPatternExpression.toMap, predicatesToKeep.toSet)
+    PartitionedPredicates(predicatesForIRExpressions.toMap, predicatesToKeep.toSet)
   }
 
   private def validAggregations(aggregations: Map[String, Expression]) =
@@ -340,38 +304,33 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
 
   private def toAst(
     elementsToKeep: Set[String],
-    predicates: Map[String, LabelExpression],
-    pattern: PatternRelationship,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    predicates: Map[String, Expression],
+    pattern: PatternRelationship
   ): Expression = {
-    def createVariable(name: String): Variable =
-      if (!elementsToKeep(name)) {
-        Variable(anonymousVariableNameGenerator.nextName)(InputPosition.NONE)
-      } else {
-        Variable(name)(InputPosition.NONE)
-      }
 
-    def createNode(name: String): NodePattern = {
-      val labelExpression = predicates.get(name)
-      NodePattern(Some(createVariable(name)), labelExpression, properties = None, predicate = None)(InputPosition.NONE)
+    val innerVars = Set(pattern.nodes._1, pattern.name, pattern.nodes._2)
+    val innerPreds = innerVars.flatMap(predicates.get)
+
+    val query = PlannerQuery(RegularSinglePlannerQuery(
+      queryGraph = QueryGraph(
+        argumentIds = innerVars.intersect(elementsToKeep),
+        patternNodes = Set(pattern.nodes._1, pattern.nodes._2),
+        patternRelationships = Set(pattern),
+        selections = Selections.from(innerPreds)
+      ),
+      horizon = RegularQueryProjection()
+    ))
+
+    val whereString = innerPreds match {
+      case SetExtractor()           => ""
+      case SetExtractor(singlePred) => " WHERE " + stringifier(singlePred)
+      case _                        => " WHERE " + stringifier(Ands(innerPreds)(InputPosition.NONE))
     }
 
-    val relName = createVariable(pattern.name)
-    val leftNode = createNode(pattern.nodes._1)
-    val rightNode = createNode(pattern.nodes._2)
-    val relPattern = RelationshipPattern(
-      Some(relName),
-      disjoinRelTypesToLabelExpression(pattern.types),
-      length = None,
-      properties = None,
-      predicate = None,
-      pattern.dir
+    ExistsIRExpression(
+      query,
+      s"EXISTS { MATCH $pattern$whereString }"
     )(InputPosition.NONE)
-    val chain = RelationshipChain(leftNode, relPattern, rightNode)(InputPosition.NONE)
-    val outerScope: Set[LogicalVariable] = elementsToKeep.map(createVariable)
-    Exists(PatternExpression(RelationshipsPattern(chain)(InputPosition.NONE))(
-      outerScope
-    ))(InputPosition.NONE)
   }
 
   implicit class FlatMapWithTailable(in: IndexedSeq[QueryGraph]) {

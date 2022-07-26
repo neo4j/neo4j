@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
+import scala.util.control.TailCalls
+import scala.util.control.TailCalls.TailRec
+
 object SeqSupport {
 
   implicit class RichSeq[T](inner: Seq[T]) {
@@ -76,5 +79,18 @@ object SeqSupport {
      * @return A sequence of tuples each containing a key `k = f(x)` and all the elements `x` of the sequence where `f(x)` is equal to `k`.
      */
     def sequentiallyGroupBy[K](f: T => K): Seq[(K, Seq[T])] = IterableHelper.sequentiallyGroupBy(inner)(f)
+
+    /**
+     * Analogous to `Seq.forall` but for `TailRec[Boolean]`.
+     */
+    def forallTailRec(f: T => TailRec[Boolean]): TailRec[Boolean] = {
+      if (inner.isEmpty) TailCalls.done(true)
+      else {
+        TailCalls.tailcall(f(inner.head)).flatMap {
+          case false => TailCalls.done(false)
+          case true  => inner.tail.forallTailRec(f)
+        }
+      }
+    }
   }
 }

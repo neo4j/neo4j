@@ -23,7 +23,7 @@ import scala.util.control.TailCalls
 import scala.util.control.TailCalls.TailRec
 
 /**
- * Wrapper around TailRec[Option[A]] which makes manipulating them easier without having to unwrap everything manually.
+ * Wrapper around `TailRec[Option[A]]` which makes manipulating them easier without having to unwrap everything manually.
  *
  * @param run unwrapped value
  */
