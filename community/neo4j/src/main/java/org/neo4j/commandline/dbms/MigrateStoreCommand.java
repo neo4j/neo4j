@@ -186,7 +186,7 @@ public class MigrateStoreCommand extends AbstractCommand {
                         SimpleLogService logService = new SimpleLogService(logProvider);
 
                         StorageEngineFactory currentStorageEngineFactory =
-                                getCurrentStorageEngineFactory(fs, databaseLayout, pageCache);
+                                getCurrentStorageEngineFactory(fs, databaseLayout);
                         var indexProviderMap = getIndexProviderMap(
                                 fs,
                                 databaseLayout,
@@ -337,7 +337,7 @@ public class MigrateStoreCommand extends AbstractCommand {
     }
 
     private StorageEngineFactory getCurrentStorageEngineFactory(
-            FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache) {
+            FileSystemAbstraction fs, DatabaseLayout databaseLayout) {
         return StorageEngineFactory.selectStorageEngine(fs, databaseLayout)
                 .orElseThrow(() -> new CommandFailedException(
                         "Current store format has not been recognised by any of the available storage engines"));
