@@ -94,6 +94,11 @@
             <artifactId>commons-text</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-configuration2</artifactId>
+            <version>2.7</version>
+        </dependency>
+        <dependency>
             <groupId>org.neo4j.licensing-proxy</groupId>
             <artifactId>zstd-proxy</artifactId>
             <version>${project.version}</version>
