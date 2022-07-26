@@ -19,9 +19,8 @@
  */
 package org.neo4j.fabric.eval
 
-import org.neo4j.kernel.database.DatabaseIdRepository
-import org.neo4j.kernel.database.NamedDatabaseId
-import org.neo4j.kernel.database.NormalizedDatabaseName
+import org.neo4j.cypher.internal.administration.BaseDatabaseInfoMapper.RichOptional
+import org.neo4j.kernel.database.{DatabaseIdRepository, DatabaseReference, DatabaseReferenceRepository, NamedDatabaseId, NormalizedDatabaseName}
 
 import scala.collection.SortedSet
 import scala.collection.immutable.SortedMap
@@ -52,21 +51,22 @@ object DatabaseLookup {
   implicit val databaseNameOrdering: Ordering[NormalizedDatabaseName] = Ordering.by(_.name)
   implicit val databaseIdOrdering: Ordering[NamedDatabaseId] = Ordering.by(_.name)
 
-  class Default(databaseIdRepository: DatabaseIdRepository) extends DatabaseLookup {
+  class Default(databaseRef: DatabaseReferenceRepository) extends DatabaseLookup {
 
     def databaseReferences: SortedMap[NormalizedDatabaseName, NamedDatabaseId] = {
-      val unsortedMap = databaseIdRepository.getAllDatabaseAliases.asScala
+      val unsortedMap = databaseRef.getInternalDatabaseReferences.asScala.map( ref => ref.alias -> ref.databaseId ).toMap
       SortedMap.empty[NormalizedDatabaseName, NamedDatabaseId] ++ unsortedMap
     }
 
     def databaseIds: SortedSet[NamedDatabaseId] = {
-      val unsortedSet = databaseIdRepository.getAllDatabaseIds.asScala
+      val unsortedSet = databaseRef.getInternalDatabaseReferences.asScala.map(_.databaseId)
       SortedSet.empty[NamedDatabaseId] ++ unsortedSet
     }
 
     def databaseId(databaseName: NormalizedDatabaseName): Option[NamedDatabaseId] = {
-      val maybeDatabaseId = databaseIdRepository.getByName(databaseName)
-      Option(maybeDatabaseId.get)
+      databaseRef.getByName(databaseName).asScala.collect {
+        case ref: DatabaseReference.Internal => ref.databaseId
+      }
     }
   }
 }

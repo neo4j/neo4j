@@ -31,12 +31,12 @@ import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 public abstract class FabricDatabaseManager {
-    private final DatabaseContextProvider<DatabaseContext> databaseContextProvider;
+    private final DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider;
     private final DatabaseIdRepository databaseIdRepository;
     private final boolean multiGraphEverywhere;
 
     public FabricDatabaseManager(
-            FabricConfig fabricConfig, DatabaseContextProvider<DatabaseContext> databaseContextProvider) {
+            FabricConfig fabricConfig, DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider) {
         this.databaseContextProvider = databaseContextProvider;
         this.databaseIdRepository = databaseContextProvider.databaseIdRepository();
         this.multiGraphEverywhere = fabricConfig.isEnabledByDefault();
@@ -75,7 +75,7 @@ public abstract class FabricDatabaseManager {
     public abstract boolean isFabricDatabase(String databaseNameRaw);
 
     public static class Community extends FabricDatabaseManager {
-        public Community(FabricConfig fabricConfig, DatabaseContextProvider<DatabaseContext> databaseContextProvider) {
+        public Community(FabricConfig fabricConfig, DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider) {
             super(fabricConfig, databaseContextProvider);
         }
 

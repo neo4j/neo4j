@@ -105,7 +105,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
     protected final SslPolicyLoader sslPolicyLoader;
     protected final GlobalModule globalModule;
     protected final ServerIdentity identityModule;
-    private final FabricServicesBootstrap fabricServicesBootstrap;
+    private FabricServicesBootstrap fabricServicesBootstrap;
 
     protected DatabaseStateService databaseStateService;
     protected ReadOnlyDatabases globalReadOnlyChecker;
@@ -132,9 +132,6 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
         globalDependencies.satisfyDependency(identityModule);
 
         connectionTracker = globalDependencies.satisfyDependency(createConnectionTracker());
-
-        fabricServicesBootstrap = new FabricServicesBootstrap.Community(
-                globalModule.getGlobalLife(), globalDependencies, globalModule.getLogService());
     }
 
     @Override
@@ -152,21 +149,17 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
         var rootDatabaseIdRepository = CommunityEditionModule.tryResolveOrCreate(
                 DatabaseIdRepository.class,
                 globalModule.getExternalDependencyResolver(),
-                () -> new SystemGraphDatabaseIdRepository(() -> databaseRepository
-                        .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
-                        .orElseThrow(() -> new DatabaseShutdownException(
-                                new DatabaseManagementException("Unable to retrieve the system database!")))));
+                () -> new SystemGraphDatabaseIdRepository(databaseRepository::getSystemDatabaseContext));
         var rootDatabaseReferenceRepository = CommunityEditionModule.tryResolveOrCreate(
                 DatabaseReferenceRepository.class,
                 globalModule.getExternalDependencyResolver(),
-                () -> new SystemGraphDatabaseReferenceRepository(() -> databaseRepository
-                        .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
-                        .orElseThrow(() -> new DatabaseShutdownException(
-                                new DatabaseManagementException("Unable to retrieve the system database!")))));
+                () -> new SystemGraphDatabaseReferenceRepository(databaseRepository::getSystemDatabaseContext));
         databaseIdRepo.setDelegate(rootDatabaseIdRepository);
         databaseReferenceRepo.setDelegate(rootDatabaseReferenceRepository);
         var databaseIdCacheCleaner = new DatabaseReferenceCacheClearingListener(databaseIdRepo, databaseReferenceRepo);
 
+        fabricServicesBootstrap = new FabricServicesBootstrap.Community(globalModule.getGlobalLife(),
+                globalModule.getGlobalDependencies(), globalModule.getLogService(), databaseRepository, databaseReferenceRepo);
         var databaseLifecycles = new DatabaseLifecycles(
                 databaseRepository,
                 globalModule.getGlobalConfig().get(default_database),

@@ -39,12 +39,12 @@ import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
 public class FabricStatementLifecycles {
-    private final DatabaseContextProvider<DatabaseContext> databaseContextProvider;
+    private final DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider;
     private final QueryExecutionMonitor dbmsMonitor;
     private final ExecutingQueryFactory executingQueryFactory;
 
     public FabricStatementLifecycles(
-            DatabaseContextProvider<DatabaseContext> databaseContextProvider,
+            DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider,
             Monitors dbmsMonitors,
             Config config,
             SystemNanoClock systemNanoClock) {

@@ -65,6 +65,7 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -85,15 +86,21 @@ public abstract class FabricServicesBootstrap {
     private final ServiceBootstrapper serviceBootstrapper;
     private final Config config;
     private final AvailabilityGuard availabilityGuard;
+    protected final DatabaseContextProvider<? extends DatabaseContext> databaseProvider;
+    private final DatabaseReferenceRepository databaseReferenceRepo;
 
     public FabricServicesBootstrap(
             LifeSupport lifeSupport,
             Dependencies dependencies,
             LogService logService,
-            AbstractSecurityLog securityLog) {
+            AbstractSecurityLog securityLog,
+            DatabaseContextProvider<? extends DatabaseContext> databaseProvider,
+            DatabaseReferenceRepository databaseReferenceRepo) {
         this.dependencies = dependencies;
         this.logService = logService;
         this.securityLog = securityLog;
+        this.databaseProvider = databaseProvider;
+        this.databaseReferenceRepo = databaseReferenceRepo;
 
         serviceBootstrapper = new ServiceBootstrapper(lifeSupport, dependencies);
 
@@ -155,8 +162,7 @@ public abstract class FabricServicesBootstrap {
         var cypherConfig = CypherConfiguration.fromConfig(config);
 
         Supplier<GlobalProcedures> proceduresSupplier = () -> resolve(GlobalProcedures.class);
-        var catalogManager =
-                register(createCatalogManger(databaseManager.databaseIdRepository()), CatalogManager.class);
+        var catalogManager = register(createCatalogManger(databaseReferenceRepo), CatalogManager.class);
         var signatureResolver = new SignatureResolver(proceduresSupplier);
         var statementLifecycles = new FabricStatementLifecycles(databaseManager, monitors, config, systemNanoClock);
         var monitoredExecutor = jobScheduler.monitoredJobExecutor(CYPHER_CACHE);
@@ -184,8 +190,8 @@ public abstract class FabricServicesBootstrap {
         register(new TransactionBookmarkManagerFactory(fabricDatabaseManager), TransactionBookmarkManagerFactory.class);
     }
 
-    protected DatabaseLookup createDatabaseLookup(DatabaseIdRepository databaseIdRepository) {
-        return new DatabaseLookup.Default(databaseIdRepository);
+    protected DatabaseLookup createDatabaseLookup(DatabaseReferenceRepository databaseReferenceRepository) {
+        return new DatabaseLookup.Default(databaseReferenceRepository);
     }
 
     public BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider(
@@ -201,9 +207,7 @@ public abstract class FabricServicesBootstrap {
 
         var transactionIdTracker = new TransactionIdTracker(managementService, monitors, clock);
 
-        var databaseManager = (DatabaseContextProvider<DatabaseContext>)
-                dependencies.resolveDependency(DatabaseContextProvider.class);
-        var databaseIdRepository = databaseManager.databaseIdRepository();
+        var databaseIdRepository = databaseProvider.databaseIdRepository();
         var transactionBookmarkManagerFactory = dependencies.resolveDependency(TransactionBookmarkManagerFactory.class);
 
         var localGraphTransactionIdTracker =
@@ -237,7 +241,7 @@ public abstract class FabricServicesBootstrap {
 
     protected abstract FabricDatabaseManager createFabricDatabaseManager(FabricConfig fabricConfig);
 
-    protected abstract CatalogManager createCatalogManger(DatabaseIdRepository databaseIdRepository);
+    protected abstract CatalogManager createCatalogManger(DatabaseReferenceRepository databaseReferenceRepo);
 
     protected abstract FabricDatabaseAccess createFabricDatabaseAccess();
 
@@ -246,20 +250,21 @@ public abstract class FabricServicesBootstrap {
     protected abstract FabricConfig bootstrapFabricConfig();
 
     public static class Community extends FabricServicesBootstrap {
-        public Community(LifeSupport lifeSupport, Dependencies dependencies, LogService logService) {
-            super(lifeSupport, dependencies, logService, CommunitySecurityLog.NULL_LOG);
+        public Community(LifeSupport lifeSupport, Dependencies dependencies, LogService logService,
+                         DatabaseContextProvider<? extends DatabaseContext> databaseProvider,
+                         DatabaseReferenceRepository databaseReferenceRepo) {
+            super(lifeSupport, dependencies, logService, CommunitySecurityLog.NULL_LOG, databaseProvider, databaseReferenceRepo);
         }
 
         @Override
         protected FabricDatabaseManager createFabricDatabaseManager(FabricConfig fabricConfig) {
-            var databaseManager = (DatabaseContextProvider<DatabaseContext>) resolve(DatabaseContextProvider.class);
-            return new FabricDatabaseManager.Community(fabricConfig, databaseManager);
+            return new FabricDatabaseManager.Community(fabricConfig, databaseProvider);
         }
 
         @Override
-        protected CatalogManager createCatalogManger(DatabaseIdRepository databaseIdRepository) {
+        protected CatalogManager createCatalogManger(DatabaseReferenceRepository databaseReferenceRepo) {
             var txEventListeners = resolve(GlobalTransactionEventListeners.class);
-            return new CommunityCatalogManager(createDatabaseLookup(databaseIdRepository), txEventListeners);
+            return new CommunityCatalogManager(createDatabaseLookup(databaseReferenceRepo), txEventListeners);
         }
 
         @Override
