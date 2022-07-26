@@ -21,6 +21,7 @@ package cypher.features
 
 import org.neo4j.kernel.api.exceptions.Status
 import org.opencypher.tools.tck.api.ExecutionFailed
+import org.opencypher.tools.tck.constants.TCKErrorDetails.AMBIGUOUS_AGGREGATION_EXPRESSION
 import org.opencypher.tools.tck.constants.TCKErrorDetails.COLUMN_NAME_CONFLICT
 import org.opencypher.tools.tck.constants.TCKErrorDetails.CREATING_VAR_LENGTH
 import org.opencypher.tools.tck.constants.TCKErrorDetails.DELETED_ENTITY_ACCESS
@@ -224,8 +225,7 @@ object Neo4jExceptionToExecutionFailed {
       msg.matches(semanticError(
         "Aggregation column contains implicit grouping expressions. .+"
       ))
-    )
-      UNDEFINED_VARIABLE // TODO: update here before merge
+    ) AMBIGUOUS_AGGREGATION_EXPRESSION
     else if (msg.matches(semanticError("PatternExpressions are not allowed to introduce new variables: .+")))
       UNDEFINED_VARIABLE
     else if (msg.matches(semanticError("Type mismatch: .+ defined with conflicting type .+ \\(expected .+\\)")))
@@ -322,6 +322,12 @@ object Neo4jExceptionToExecutionFailed {
       )
     )
       INVALID_AGGREGATION
+    else if (msg.startsWith("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN"))
+      UNDEFINED_VARIABLE
+    else if (msg.startsWith("Order by column contains implicit grouping expressions"))
+      AMBIGUOUS_AGGREGATION_EXPRESSION
+    else if (msg.startsWith("Illegal aggregation expression(s) in order by"))
+      AMBIGUOUS_AGGREGATION_EXPRESSION
     else if (msg.startsWith("Procedure call inside a query does not support passing arguments implicitly"))
       INVALID_ARGUMENT_PASSING_MODE
     else if (
