@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,10 +33,13 @@ import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TA
 
 import java.util.HashSet;
 import java.util.Set;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.eclipse.collections.impl.list.primitive.LongInterval;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.common.Primitive;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -123,7 +127,7 @@ class RecordRelationshipScanCursorTest {
         // given
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         int count = 100;
-        relationshipStore.setHighId(count);
+        relationshipStore.setHighId(count + 1);
         Set<Long> expected = new HashSet<>();
         try (var cursor = storeCursors.writeCursor(RELATIONSHIP_CURSOR)) {
             for (long id = 0; id < count; id++) {
@@ -137,6 +141,40 @@ class RecordRelationshipScanCursorTest {
 
         // when
         assertSeesRelationships(expected);
+    }
+
+    @Test
+    void shouldExhaustRelationshipsWithBatches() {
+        final var ids = LongInterval.oneTo(random.nextInt(23, 42)).toSet();
+        try (var pageCursor = storeCursors.writeCursor(RELATIONSHIP_CURSOR)) {
+            final var store = neoStores.getRelationshipStore();
+            store.setHighId(ids.size() + 1);
+            ids.forEach(id -> createRelationshipRecord(id, 1, store, pageCursor, true));
+        }
+
+        try (var rels = createRelationshipCursor()) {
+            final var scan = new RecordRelationshipScan();
+            final var found = LongSets.mutable.withInitialCapacity(ids.size());
+
+            // scan a quarter of the relationships
+            assertThat(rels.scanBatch(scan, Primitive.ceil(ids.size(), 4))).isTrue();
+            while (rels.next()) {
+                assertThat(found.add(rels.entityReference())).isTrue();
+            }
+            assertThat(ids.containsAll(found)).isTrue();
+
+            // scan the rest of the relationships
+            assertThat(rels.scanBatch(scan, Long.MAX_VALUE)).isTrue();
+            while (rels.next()) {
+                assertThat(found.add(rels.entityReference())).isTrue();
+            }
+            assertThat(found).isEqualTo(ids);
+
+            // attempt to scan anything more a few times
+            for (int i = 0, n = random.nextInt(2, 10); i < n; i++) {
+                assertThat(rels.scanBatch(scan, Long.MAX_VALUE)).isFalse();
+            }
+        }
     }
 
     private void assertSeesRelationships(Set<Long> expected) {

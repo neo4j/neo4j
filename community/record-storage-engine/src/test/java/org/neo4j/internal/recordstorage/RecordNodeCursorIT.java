@@ -27,12 +27,16 @@ import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
+import java.util.stream.LongStream;
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.common.Primitive;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -143,27 +147,52 @@ class RecordNodeCursorIT {
         }
     }
 
+    @Test
+    void shouldExhaustNodesWithBatches() {
+        final var ids = createNodes(random.nextInt(23, 42));
+
+        try (var nodes = new RecordNodeCursor(
+                nodeStore,
+                neoStores.getRelationshipStore(),
+                neoStores.getRelationshipGroupStore(),
+                null,
+                NULL_CONTEXT,
+                storeCursors)) {
+
+            final var scan = new RecordNodeScan();
+            final var found = LongSets.mutable.withInitialCapacity(ids.size());
+
+            // scan a quarter of the nodes
+            assertThat(nodes.scanBatch(scan, Primitive.ceil(ids.size(), 4))).isTrue();
+            while (nodes.next()) {
+                assertThat(found.add(nodes.entityReference())).isTrue();
+            }
+            assertThat(ids.containsAll(found)).isTrue();
+
+            // scan the rest of the nodes
+            assertThat(nodes.scanBatch(scan, Long.MAX_VALUE)).isTrue();
+            while (nodes.next()) {
+                assertThat(found.add(nodes.entityReference())).isTrue();
+            }
+            assertThat(found).isEqualTo(ids);
+
+            // attempt to scan anything more a few times
+            for (int i = 0, n = random.nextInt(2, 10); i < n; i++) {
+                assertThat(nodes.scanBatch(scan, Long.MAX_VALUE)).isFalse();
+            }
+        }
+    }
+
     private long createNodeWithRandomLabels(MutableLongSet labelsSet) {
         return createNodeWithRandomLabels(labelsSet, 100);
     }
 
     private long createNodeWithRandomLabels(MutableLongSet labelsSet, int numberOfLabelsBound) {
-        long[] labels = randomLabels(labelsSet, numberOfLabelsBound);
-        NodeRecord nodeRecord = nodeStore.newRecord();
-        nodeRecord.setId(nodeStore.nextId(NULL_CONTEXT));
-        nodeRecord.initialize(
-                true,
-                Record.NO_NEXT_PROPERTY.longValue(),
-                false,
-                Record.NO_NEXT_RELATIONSHIP.longValue(),
-                Record.NO_LABELS_FIELD.longValue());
-        nodeRecord.setCreated();
+        final var nodeRecord = createNodeRecord();
+        final var labels = randomLabels(labelsSet, numberOfLabelsBound);
         NodeLabelsField.parseLabelsField(nodeRecord)
                 .put(labels, nodeStore, nodeStore.getDynamicLabelStore(), NULL_CONTEXT, storeCursors, INSTANCE);
-        try (var writeCursor = storeCursors.writeCursor(NODE_CURSOR)) {
-            nodeStore.updateRecord(nodeRecord, writeCursor, NULL_CONTEXT, storeCursors);
-        }
-        return nodeRecord.getId();
+        return write(nodeRecord);
     }
 
     private long[] randomLabels(MutableLongSet labelsSet, int numberOfLabelsBound) {
@@ -175,5 +204,33 @@ class RecordNodeCursorIT {
             }
         }
         return labelsSet.toSortedArray();
+    }
+
+    private long createNode() {
+        return write(createNodeRecord());
+    }
+
+    private LongSet createNodes(int numberOfNodes) {
+        return LongSets.immutable.ofAll(LongStream.generate(this::createNode).limit(numberOfNodes));
+    }
+
+    private NodeRecord createNodeRecord() {
+        final var nodeRecord = nodeStore.newRecord();
+        nodeRecord.setId(nodeStore.nextId(NULL_CONTEXT));
+        nodeRecord.initialize(
+                true,
+                Record.NO_NEXT_PROPERTY.longValue(),
+                false,
+                Record.NO_NEXT_RELATIONSHIP.longValue(),
+                Record.NO_LABELS_FIELD.longValue());
+        nodeRecord.setCreated();
+        return nodeRecord;
+    }
+
+    private long write(NodeRecord nodeRecord) {
+        try (var writeCursor = storeCursors.writeCursor(NODE_CURSOR)) {
+            nodeStore.updateRecord(nodeRecord, writeCursor, NULL_CONTEXT, storeCursors);
+        }
+        return nodeRecord.getId();
     }
 }
