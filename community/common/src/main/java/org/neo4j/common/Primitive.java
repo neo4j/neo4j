@@ -27,4 +27,8 @@ public class Primitive {
     public static int ceil(int dividend, int divisor) {
         return ((dividend - 1) / divisor) + 1;
     }
+
+    public static long ceil(long dividend, long divisor) {
+        return ((dividend - 1) / divisor) + 1;
+    }
 }
