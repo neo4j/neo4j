@@ -19,7 +19,9 @@
  */
 package org.neo4j.server.startup;
 
-class BootProcessFailureException extends BootFailureException {
+import org.neo4j.cli.CommandFailedException;
+
+class BootProcessFailureException extends CommandFailedException {
     BootProcessFailureException(int exitCode) {
         super("Unexpected process failure. See log for info.", exitCode);
     }

@@ -53,7 +53,7 @@ public class CommunityEntryPoint implements EntryPoint {
     }
 
     @Override
-    public Priority getPriority() {
-        return Priority.LOW;
+    public int getPriority() {
+        return Priority.LOW.ordinal();
     }
 }

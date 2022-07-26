@@ -19,23 +19,22 @@
  */
 package org.neo4j.server.startup;
 
-import java.util.Comparator;
-import org.neo4j.annotations.service.Service;
-import org.neo4j.service.PrioritizedService;
-import org.neo4j.service.Services;
+import org.neo4j.cli.AbstractCommand;
+import org.neo4j.cli.ExecutionContext;
+import picocli.CommandLine;
 
-@Service
-public interface EntryPoint extends PrioritizedService {
-    enum Priority {
-        LOW, // Community
-        MEDIUM, // Enterprise
-        HIGH // Reserved for testing
+@CommandLine.Command(name = "restart", description = "Restart the server daemon.")
+public class RestartCommand extends AbstractCommand {
+
+    public RestartCommand(ExecutionContext ctx) {
+        super(ctx, false);
     }
 
-    static Class<? extends EntryPoint> serviceloadEntryPoint() {
-        return Services.loadAll(EntryPoint.class).stream()
-                .max(Comparator.comparingInt(PrioritizedService::getPriority))
-                .orElseThrow()
-                .getClass();
+    @Override
+    protected void execute() throws Exception {
+        var enhancedCtx = EnhancedExecutionContext.unwrapFromExecutionContext(ctx);
+        try (var bootloader = enhancedCtx.createDbmsBootloader()) {
+            bootloader.restart();
+        }
     }
 }

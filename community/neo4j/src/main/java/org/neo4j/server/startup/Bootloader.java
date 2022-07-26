@@ -21,20 +21,50 @@ package org.neo4j.server.startup;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.configuration.SettingValueParsers.INT;
+import static org.neo4j.configuration.SettingValueParsers.PATH;
+import static org.neo4j.function.Predicates.alwaysTrue;
+import static org.neo4j.function.Predicates.notNull;
 import static org.neo4j.server.startup.BootloaderOsAbstraction.UNKNOWN_PID;
+import static org.neo4j.server.startup.VerboseCommand.ARG_VERBOSE;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.collections.api.factory.Lists;
+import org.neo4j.cli.CommandFailedException;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.SettingValueParser;
+import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.graphdb.config.Configuration;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.io.IOUtils;
 import org.neo4j.time.Stopwatch;
+import org.neo4j.util.VisibleForTesting;
 
-class Bootloader {
+/**
+ * Bootloader is used for launching either a DBMS ({@link Bootloader.Dbms}) or a forked admin command ({@link Bootloader.Admin}).
+ */
+abstract class Bootloader implements AutoCloseable {
+
     static final int EXIT_CODE_OK = 0;
     static final int EXIT_CODE_RUNNING = 1;
     static final int EXIT_CODE_NOT_RUNNING = 3;
@@ -55,221 +85,474 @@ class Bootloader {
     static final Path DEFAULT_CONFIG_LOCATION = Path.of(Config.DEFAULT_CONFIG_DIR_NAME);
     static final int DEFAULT_NEO4J_SHUTDOWN_TIMEOUT = 120;
 
-    private final BootloaderContext ctx;
+    final Class<?> entrypoint;
+    final Environment environment;
+    final Collection<BootloaderExtension> extensions;
 
-    Bootloader(BootloaderContext ctx) {
-        this.ctx = ctx;
+    // init
+    final boolean verbose;
+    final boolean expandCommands;
+    final List<String> additionalArgs;
+
+    private final List<Closeable> closeableResources = new ArrayList<>();
+
+    // inferred
+    private Path home;
+    private Path conf;
+    private Configuration config;
+    private boolean fullConfig;
+    private BootloaderOsAbstraction os;
+    private ProcessManager processManager;
+
+    protected Bootloader(
+            Class<?> entrypoint,
+            Environment environment,
+            Collection<BootloaderExtension> extensions,
+            boolean expandCommands,
+            boolean verbose,
+            String... additionalArgs) {
+        this.entrypoint = entrypoint;
+        this.environment = environment;
+        this.extensions = extensions;
+
+        this.expandCommands = expandCommands;
+        this.verbose = verbose;
+        this.additionalArgs = Lists.mutable.with(additionalArgs);
     }
 
-    int start() {
-        BootloaderOsAbstraction os = ctx.os();
-        ctx.validateConfig();
-        Long pid = os.getPidIfRunning();
-        if (pid != null) {
-            ctx.out.printf("Neo4j is already running%s.%n", pidIfKnown(pid));
-            return EXIT_CODE_RUNNING;
-        }
-        printDirectories();
-        ctx.out.println("Starting Neo4j.");
+    String getEnv(String key) {
+        return getEnv(key, "", SettingValueParsers.STRING);
+    }
+
+    <T> T getEnv(String key, T defaultValue, SettingValueParser<T> parser) {
+        return getValue(key, defaultValue, parser, environment.envLookup());
+    }
+
+    String getProp(String key) {
+        return getProp(key, "", SettingValueParsers.STRING);
+    }
+
+    <T> T getProp(String key, T defaultValue, SettingValueParser<T> parser) {
+        return getValue(key, defaultValue, parser, environment.propLookup());
+    }
+
+    private <T> T getValue(String key, T defaultValue, SettingValueParser<T> parser, Function<String, String> lookup) {
+        String value = lookup.apply(key);
         try {
-            pid = os.start();
-        } catch (BootFailureException e) {
-            ctx.out.println("Unable to start. See user log for details.");
-            throw e;
+            return StringUtils.isNotEmpty(value) ? parser.parse(value) : defaultValue;
+        } catch (IllegalArgumentException e) {
+            throw new CommandFailedException("Failed to parse value for " + key + ". " + e.getMessage(), e, 1);
         }
-
-        String serverLocation;
-        Configuration config = ctx.config();
-        if (config.get(HttpsConnector.enabled)) {
-            serverLocation = "It is available at https://" + config.get(HttpsConnector.listen_address);
-        } else if (config.get(HttpConnector.enabled)) {
-            serverLocation = "It is available at http://" + config.get(HttpConnector.listen_address);
-        } else {
-            serverLocation = "Both http & https are disabled.";
-        }
-        ctx.out.printf("Started neo4j%s. %s%n", pidIfKnown(pid), serverLocation);
-        ctx.out.println("There may be a short delay until the server is ready.");
-        return EXIT_CODE_OK;
     }
 
-    private void printDirectories() {
-        Configuration config = ctx.config();
-
-        ctx.out.println("Directories in use:");
-        ctx.out.println("home:         " + ctx.home().toAbsolutePath());
-        ctx.out.println("config:       " + ctx.confDir().toAbsolutePath());
-        ctx.out.println("logs:         "
-                + config.get(GraphDatabaseSettings.logs_directory).toAbsolutePath());
-        ctx.out.println(
-                "plugins:      " + config.get(GraphDatabaseSettings.plugin_dir).toAbsolutePath());
-        ctx.out.println("import:       "
-                + config.get(GraphDatabaseSettings.load_csv_file_url_root).toAbsolutePath());
-        ctx.out.println("data:         "
-                + config.get(GraphDatabaseSettings.data_directory).toAbsolutePath());
-        ctx.out.println("certificates: "
-                + ctx.home().resolve("certificates").toAbsolutePath()); // this is no longer an individual setting
-        ctx.out.println("licenses:     "
-                + config.get(GraphDatabaseSettings.licenses_directory).toAbsolutePath());
-        ctx.out.println(
-                "run:          " + config.get(BootloaderSettings.run_directory).toAbsolutePath());
+    Path home() {
+        if (home == null) {
+            Path defaultHome = getProp(
+                    PROP_BASEDIR,
+                    Path.of("").toAbsolutePath().getParent(),
+                    PATH); // Basedir is provided by the app-assembler
+            home = getEnv(ENV_NEO4J_HOME, defaultHome, PATH).toAbsolutePath(); // But a NEO4J_HOME has higher prio
+        }
+        return home;
     }
 
-    int console(boolean dryRun) {
-        BootloaderOsAbstraction os = ctx.os();
-        ctx.validateConfig();
-
-        Long pid = os.getPidIfRunning();
-        boolean alreadyRunning = pid != null;
-        if (alreadyRunning) {
-            ctx.out.printf("Neo4j is already running%s.%n", pidIfKnown(pid));
+    Path confDir() {
+        if (conf == null) {
+            conf = getEnv(ENV_NEO4J_CONF, home().resolve(DEFAULT_CONFIG_LOCATION), PATH);
         }
+        return conf;
+    }
 
-        if (dryRun) {
-            List<String> args = os.buildStandardStartArguments();
-            String cmd = args.stream().map(Bootloader::quoteArgument).collect(Collectors.joining(" "));
-            ctx.out.println(cmd);
-            return alreadyRunning ? EXIT_CODE_RUNNING : EXIT_CODE_OK;
+    void validateConfig() {
+        config(true);
+    }
+
+    Configuration config() {
+        return config(false);
+    }
+
+    private Configuration config(boolean full) {
+        if (config == null || !fullConfig && full) {
+            this.config = buildConfig(full);
+            this.fullConfig = full;
         }
+        return config;
+    }
 
-        if (alreadyRunning) {
-            return EXIT_CODE_RUNNING;
+    private Configuration buildConfig(boolean full) {
+        Path confFile = confDir().resolve(Config.DEFAULT_CONFIG_FILE_NAME);
+        try {
+            Predicate<String> filter = full ? alwaysTrue() : settingsUsedByBootloader()::contains;
+
+            Configuration config = getConfigBuilder(full)
+                    .commandExpansion(expandCommands)
+                    .setDefaults(overriddenDefaultsValues())
+                    .set(GraphDatabaseSettings.neo4j_home, home())
+                    .fromFile(confFile, false, filter)
+                    .build();
+
+            return new Configuration() {
+                @Override
+                public <T> T get(Setting<T> setting) {
+                    if (filter.test(setting.name())) {
+                        return config.get(setting);
+                    }
+                    // This is to prevent silent error and should only be encountered while developing. Just add the
+                    // setting to the filter!
+                    throw new IllegalArgumentException(
+                            "Not allowed to read this setting " + setting.name() + ". It has been filtered out");
+                }
+            };
+        } catch (RuntimeException e) {
+            throw new CommandFailedException("Failed to read config " + confFile + ": " + e.getMessage(), e);
         }
+    }
 
-        printDirectories();
-        ctx.out.println("Starting Neo4j.");
-        os.console();
-        return EXIT_CODE_OK;
+    private Config.Builder getConfigBuilder(boolean loadPluginsSettings) {
+        if (loadPluginsSettings) {
+            // Locate plugin jar files and add them to the config class loader
+            try (Stream<Path> list = Files.list(config().get(GraphDatabaseSettings.plugin_dir))) {
+                URL[] urls = list.filter(path -> path.toString().endsWith(".jar"))
+                        .map(this::pathToURL)
+                        .filter(notNull())
+                        .toArray(URL[]::new);
+
+                if (urls.length > 0) {
+                    var classLoader = new URLClassLoader(urls, Bootloader.class.getClassLoader());
+                    closeableResources.add(classLoader);
+                    return Config.newBuilder(classLoader);
+                }
+            } catch (IOException e) {
+                if (verbose) {
+                    e.printStackTrace(environment.err());
+                }
+            }
+        }
+        return Config.newBuilder();
+    }
+
+    private URL pathToURL(Path p) {
+        try {
+            return p.toUri().toURL();
+        } catch (MalformedURLException e) {
+            if (verbose) {
+                e.printStackTrace(environment.err());
+            }
+            return null;
+        }
+    }
+
+    private Set<String> settingsUsedByBootloader() {
+        // These settings are the that might be used by the bootloader minor commands (stop/status etc..)
+        // Additional settings are used on the start/console path, but they use the full config anyway so not added
+        // here.
+        return Set.of(
+                GraphDatabaseSettings.neo4j_home.name(),
+                GraphDatabaseSettings.logs_directory.name(),
+                GraphDatabaseSettings.plugin_dir.name(),
+                GraphDatabaseSettings.store_user_log_path.name(),
+                GraphDatabaseSettings.strict_config_validation.name(),
+                GraphDatabaseInternalSettings.config_command_evaluation_timeout.name(),
+                BootloaderSettings.run_directory.name(),
+                BootloaderSettings.additional_jvm.name(),
+                BootloaderSettings.lib_directory.name(),
+                BootloaderSettings.windows_service_name.name(),
+                BootloaderSettings.windows_tools_directory.name(),
+                BootloaderSettings.pid_file.name());
+    }
+
+    protected abstract Map<Setting<?>, Object> overriddenDefaultsValues();
+
+    BootloaderOsAbstraction os() {
+        if (os == null) {
+            os = BootloaderOsAbstraction.getOsAbstraction(this);
+        }
+        return os;
+    }
+
+    ProcessManager processManager() {
+        if (processManager == null) {
+            processManager = new ProcessManager(this);
+        }
+        return processManager;
+    }
+
+    Runtime.Version version() {
+        return environment.version();
     }
 
     private static String pidIfKnown(long pid) {
         return pid != UNKNOWN_PID ? " (pid:" + pid + ")" : "";
     }
 
-    int stop() {
-        BootloaderOsAbstraction os = ctx.os();
-        Long pid = os.getPidIfRunning();
-        if (pid == null) {
-            ctx.out.println("Neo4j is not running.");
-            return EXIT_CODE_OK;
-        }
-        ctx.out.print("Stopping Neo4j.");
-        int timeout = ctx.getEnv(ENV_NEO4J_SHUTDOWN_TIMEOUT, DEFAULT_NEO4J_SHUTDOWN_TIMEOUT, INT);
-        Stopwatch stopwatch = Stopwatch.start();
-        os.stop(pid);
-        int printCount = 0;
-        do {
-            if (!os.isRunning(pid)) {
-                ctx.out.println(" stopped.");
-                return EXIT_CODE_OK;
-            }
+    protected void printDirectories() {
+        Configuration config = config();
 
-            if (stopwatch.hasTimedOut(printCount, SECONDS)) {
-                printCount++;
-                ctx.out.print(".");
+        var out = environment.out();
+        out.println("Directories in use:");
+        out.println("home:         " + home().toAbsolutePath());
+        out.println("config:       " + confDir().toAbsolutePath());
+        out.println("logs:         "
+                + config.get(GraphDatabaseSettings.logs_directory).toAbsolutePath());
+        out.println(
+                "plugins:      " + config.get(GraphDatabaseSettings.plugin_dir).toAbsolutePath());
+        out.println("import:       "
+                + config.get(GraphDatabaseSettings.load_csv_file_url_root).toAbsolutePath());
+        out.println("data:         "
+                + config.get(GraphDatabaseSettings.data_directory).toAbsolutePath());
+        out.println("certificates: "
+                + home().resolve("certificates").toAbsolutePath()); // this is no longer an individual setting
+        out.println("licenses:     "
+                + config.get(GraphDatabaseSettings.licenses_directory).toAbsolutePath());
+        out.println(
+                "run:          " + config.get(BootloaderSettings.run_directory).toAbsolutePath());
+    }
+
+    @Override
+    public void close() throws IOException {
+        IOUtils.closeAll(closeableResources);
+    }
+
+    public static class Dbms extends Bootloader {
+        public Dbms(Environment environment, boolean expandCommands, boolean verbose) {
+            this(
+                    EntryPoint.serviceloadEntryPoint(),
+                    environment,
+                    BootloaderExtension.serviceLoadExtensions(),
+                    expandCommands,
+                    verbose);
+        }
+
+        @VisibleForTesting
+        Dbms(
+                Class<?> entrypoint,
+                Environment environment,
+                Collection<BootloaderExtension> extensions,
+                boolean expandCommands,
+                boolean verbose) {
+            super(entrypoint, environment, extensions, expandCommands, verbose);
+            if (expandCommands) {
+                this.additionalArgs.add(ARG_EXPAND_COMMANDS);
             }
+            if (verbose) {
+                this.additionalArgs.add(ARG_VERBOSE);
+            }
+        }
+
+        @Override
+        protected Map<Setting<?>, Object> overriddenDefaultsValues() {
+            return GraphDatabaseSettings.SERVER_DEFAULTS;
+        }
+
+        void start() {
+            BootloaderOsAbstraction os = os();
+            validateConfig();
+            Long pid = os.getPidIfRunning();
+            if (pid != null) {
+                throw new CommandFailedException(
+                        String.format("Neo4j is already running%s.", pidIfKnown(pid)), EXIT_CODE_RUNNING);
+            }
+            printDirectories();
+            environment.out().println("Starting Neo4j.");
             try {
-                Thread.sleep(50);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
+                pid = os.start();
+            } catch (CommandFailedException e) {
+                throw new CommandFailedException("Unable to start. See user log for details.", e, e.getExitCode());
             }
-        } while (!stopwatch.hasTimedOut(timeout, SECONDS));
 
-        ctx.out.println(" failed to stop.");
-        ctx.out.printf("Neo4j%s took more than %d seconds to stop.%n", pidIfKnown(pid), stopwatch.elapsed(SECONDS));
-        ctx.out.printf("Please see %s for details.%n", ctx.config().get(GraphDatabaseSettings.store_user_log_path));
-        return EXIT_CODE_RUNNING;
-    }
-
-    int restart() {
-        int stopCode = stop();
-        if (stopCode != EXIT_CODE_OK) {
-            return stopCode;
-        }
-        return start();
-    }
-
-    int status() {
-        Long pid = ctx.os().getPidIfRunning();
-        if (pid == null) {
-            ctx.out.println("Neo4j is not running.");
-            return EXIT_CODE_NOT_RUNNING;
-        }
-        ctx.out.printf("Neo4j is running%s%n", pid != UNKNOWN_PID ? " at pid " + pid : "");
-        return EXIT_CODE_OK;
-    }
-
-    int installService() {
-        ctx.validateConfig();
-        if (ctx.os().serviceInstalled()) {
-            ctx.out.println("Neo4j service is already installed");
-            return EXIT_CODE_RUNNING;
-        }
-        ctx.os().installService();
-        ctx.out.println("Neo4j service installed.");
-        return EXIT_CODE_OK;
-    }
-
-    int uninstallService() {
-        if (!ctx.os().serviceInstalled()) {
-            ctx.out.println("Neo4j service is not installed");
-            return EXIT_CODE_OK;
-        }
-        ctx.os().uninstallService();
-        ctx.out.println("Neo4j service uninstalled.");
-        return EXIT_CODE_OK;
-    }
-
-    int updateService() {
-        ctx.validateConfig();
-        if (!ctx.os().serviceInstalled()) {
-            ctx.out.println("Neo4j service is not installed");
-            return EXIT_CODE_RUNNING;
-        }
-        ctx.os().updateService();
-        ctx.out.println("Neo4j service updated.");
-        return EXIT_CODE_OK;
-    }
-
-    int admin() {
-        ctx.err.printf(
-                "Selecting JVM - Version:%s, Name:%s, Vendor:%s%n",
-                ctx.version(), ctx.getProp(PROP_VM_NAME), ctx.getProp(PROP_VM_VENDOR));
-        try {
-            ctx.validateConfig();
-            ctx.os().admin();
-            return EXIT_CODE_OK;
-        } catch (BootProcessFailureException e) {
-            return e.getExitCode(); // NOTE! This is not the generic BootFailureException, it indicates a process
-            // non-zero exit, not bootloader failure.
-        }
-    }
-
-    /**
-     *  This is written with inspiration from apache commons-exec `StringUtils.quoteArgument()`.
-     *  That implementation contains a bug (fixed here) that could trim away quotes erroneously in the start or end of string
-     *  E.g turn "a partly 'quoted string'" to " a partly 'quoted string" missing the last single quote.
-     */
-    private static String quoteArgument(String arg) {
-
-        final String singleQuote = "'";
-        final String doubleQuote = "\"";
-        arg = arg.trim();
-        while (arg.length() > 2
-                && (arg.startsWith(singleQuote) && arg.endsWith(singleQuote)
-                        || arg.startsWith(doubleQuote) && arg.endsWith(doubleQuote))) {
-            arg = arg.substring(1, arg.length() - 1);
-        }
-
-        if (arg.contains(doubleQuote)) {
-            if (arg.contains(singleQuote)) {
-                throw new BootFailureException("`" + arg
-                        + "` contains both single and double quotes. Can not be correctly quoted for commandline.");
+            String serverLocation;
+            Configuration config = config();
+            if (config.get(HttpsConnector.enabled)) {
+                serverLocation = "It is available at https://" + config.get(HttpsConnector.listen_address);
+            } else if (config.get(HttpConnector.enabled)) {
+                serverLocation = "It is available at http://" + config.get(HttpConnector.listen_address);
+            } else {
+                serverLocation = "Both http & https are disabled.";
             }
-            arg = singleQuote + arg + singleQuote;
-        } else if (arg.contains(singleQuote) || arg.contains(" ")) {
-            arg = doubleQuote + arg + doubleQuote;
+            environment.out().printf("Started neo4j%s. %s%n", pidIfKnown(pid), serverLocation);
+            environment.out().println("There may be a short delay until the server is ready.");
         }
-        return arg;
+
+        void console(boolean dryRun) {
+            BootloaderOsAbstraction os = os();
+            validateConfig();
+
+            Long pid = os.getPidIfRunning();
+            boolean alreadyRunning = pid != null;
+
+            if (dryRun) {
+                List<String> args = os.buildStandardStartArguments();
+                String cmd = args.stream().map(Dbms::quoteArgument).collect(Collectors.joining(" "));
+                environment.out().println(cmd);
+
+                if (!alreadyRunning) {
+                    // If not already running, we are done.
+                    // If already running, we will error out in the next step.
+                    return;
+                }
+            }
+
+            if (alreadyRunning) {
+                throw new CommandFailedException(
+                        String.format("Neo4j is already running%s.", pidIfKnown(pid)), EXIT_CODE_RUNNING);
+            }
+
+            printDirectories();
+            environment.out().println("Starting Neo4j.");
+            os.console();
+        }
+
+        void stop() {
+            BootloaderOsAbstraction os = os();
+            Long pid = os.getPidIfRunning();
+            if (pid == null) {
+                environment.out().println("Neo4j is not running.");
+                return;
+            }
+            environment.out().print("Stopping Neo4j.");
+            int timeout = getEnv(ENV_NEO4J_SHUTDOWN_TIMEOUT, DEFAULT_NEO4J_SHUTDOWN_TIMEOUT, INT);
+            Stopwatch stopwatch = Stopwatch.start();
+            os.stop(pid);
+            int printCount = 0;
+            do {
+                if (!os.isRunning(pid)) {
+                    environment.out().println(" stopped.");
+                    return;
+                }
+
+                if (stopwatch.hasTimedOut(printCount, SECONDS)) {
+                    printCount++;
+                    environment.out().print(".");
+                }
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            } while (!stopwatch.hasTimedOut(timeout, SECONDS));
+
+            environment.out().println(" failed to stop.");
+            environment
+                    .out()
+                    .printf(
+                            "Neo4j%s took more than %d seconds to stop.%n",
+                            pidIfKnown(pid), stopwatch.elapsed(SECONDS));
+            environment
+                    .out()
+                    .printf("Please see %s for details.%n", config().get(GraphDatabaseSettings.store_user_log_path));
+            throw new CommandFailedException("Failed to stop", EXIT_CODE_RUNNING);
+        }
+
+        /**
+         * @throws CommandFailedException when something goes wrong. This exception is automatically handled by
+         *                                {@link org.neo4j.cli.AbstractCommand}
+         */
+        void restart() {
+            stop();
+            start();
+        }
+
+        /**
+         * @throws CommandFailedException when something goes wrong. This exception is automatically handled by
+         *                                {@link org.neo4j.cli.AbstractCommand}
+         */
+        void status() {
+            Long pid = os().getPidIfRunning();
+            if (pid == null) {
+                throw new CommandFailedException("Neo4j is not running.", EXIT_CODE_NOT_RUNNING);
+            }
+            environment.out().printf("Neo4j is running%s%n", pid != UNKNOWN_PID ? " at pid " + pid : "");
+        }
+
+        /**
+         * @throws CommandFailedException when something goes wrong. This exception is automatically handled by
+         *                                {@link org.neo4j.cli.AbstractCommand}
+         */
+        void installService() {
+            validateConfig();
+            if (os().serviceInstalled()) {
+                throw new CommandFailedException("Neo4j service is already installed.", EXIT_CODE_RUNNING);
+            }
+            os().installService();
+            environment.out().println("Neo4j service installed.");
+        }
+
+        /**
+         * @throws CommandFailedException when something goes wrong. This exception is automatically handled by
+         *                                {@link org.neo4j.cli.AbstractCommand}
+         */
+        void uninstallService() {
+            if (!os().serviceInstalled()) {
+                environment.out().println("Neo4j service is not installed");
+            }
+            os().uninstallService();
+            environment.out().println("Neo4j service uninstalled.");
+        }
+
+        void updateService() {
+            validateConfig();
+            if (!os().serviceInstalled()) {
+                throw new CommandFailedException("Neo4j service is not installed", EXIT_CODE_NOT_RUNNING);
+            }
+            os().updateService();
+            environment.out().println("Neo4j service updated.");
+        }
+
+        /**
+         *  This is written with inspiration from apache commons-exec `StringUtils.quoteArgument()`.
+         *  That implementation contains a bug (fixed here) that could trim away quotes erroneously in the start or end of string
+         *  E.g turn "a partly 'quoted string'" to " a partly 'quoted string" missing the last single quote.
+         */
+        private static String quoteArgument(String arg) {
+
+            final String singleQuote = "'";
+            final String doubleQuote = "\"";
+            arg = arg.trim();
+            while (arg.length() > 2
+                    && (arg.startsWith(singleQuote) && arg.endsWith(singleQuote)
+                            || arg.startsWith(doubleQuote) && arg.endsWith(doubleQuote))) {
+                arg = arg.substring(1, arg.length() - 1);
+            }
+
+            if (arg.contains(doubleQuote)) {
+                if (arg.contains(singleQuote)) {
+                    throw new CommandFailedException("`" + arg
+                            + "` contains both single and double quotes. Can not be correctly quoted for commandline.");
+                }
+                arg = singleQuote + arg + singleQuote;
+            } else if (arg.contains(singleQuote) || arg.contains(" ")) {
+                arg = doubleQuote + arg + doubleQuote;
+            }
+            return arg;
+        }
+    }
+
+    public static class Admin extends Bootloader {
+
+        public Admin(
+                Class<?> entrypoint,
+                Environment environment,
+                boolean expandCommands,
+                boolean verbose,
+                String... additionalArgs) {
+            super(entrypoint, environment, List.of(), expandCommands, verbose, additionalArgs);
+        }
+
+        @Override
+        protected Map<Setting<?>, Object> overriddenDefaultsValues() {
+            return Map.of();
+        }
+
+        int admin() {
+            try {
+                validateConfig();
+                os().admin();
+                return EXIT_CODE_OK;
+            } catch (BootProcessFailureException e) {
+                return e.getExitCode(); // NOTE! This is not the generic BootFailureException, it indicates a process
+                // non-zero exit, not bootloader failure.
+            }
+        }
     }
 }

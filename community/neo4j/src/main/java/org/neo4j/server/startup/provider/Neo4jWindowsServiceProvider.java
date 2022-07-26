@@ -25,13 +25,13 @@ import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.cli.CommandProvider;
 import org.neo4j.cli.CommandType;
 import org.neo4j.cli.ExecutionContext;
-import org.neo4j.server.startup.Neo4jCommand;
+import org.neo4j.server.startup.WindowsServiceCommand;
 
 @ServiceProvider
 public class Neo4jWindowsServiceProvider implements CommandProvider {
     @Override
-    public Neo4jServiceCommand createCommand(ExecutionContext ctx) {
-        return new Neo4jServiceCommand(new Neo4jCommand.Neo4jBootloaderContext());
+    public WindowsServiceCommand createCommand(ExecutionContext ctx) {
+        return new WindowsServiceCommand(ctx);
     }
 
     @Override

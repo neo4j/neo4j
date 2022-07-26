@@ -19,25 +19,26 @@
  */
 package org.neo4j.server.startup;
 
-import org.neo4j.cli.AdminTool;
+import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.ExecutionContext;
-import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
-@CommandLine.Command(name = "Neo4j", description = "Neo4j database server CLI.")
-public class Neo4jCommand extends Neo4jAdminCommand {
+@Command(name = "console", description = "Start server in console.")
+public class ConsoleCommand extends AbstractCommand {
 
-    public Neo4jCommand(Environment environment) {
-        super(AdminTool.Neo4jAlias.class, environment);
+    @Option(names = "--dry-run", hidden = true, description = "Print (only) the command line instead of executing it")
+    boolean dryRun; // Note that this is a hidden "unsupported" argument, not intended for usage outside official
+
+    public ConsoleCommand(ExecutionContext ctx) {
+        super(ctx, false);
     }
 
-    protected CommandLine getActualAdminCommand(ExecutionContext executionContext) {
-        return AdminTool.Neo4jAlias.getCommandLine(executionContext);
-    }
-
-    public static void main(String[] args) {
-        var environment = Environment.SYSTEM;
-        int exitCode = Neo4jCommand.asCommandLine(new Neo4jCommand(environment), environment)
-                .execute(args);
-        System.exit(exitCode);
+    @Override
+    protected void execute() throws Exception {
+        var enhancedCtx = EnhancedExecutionContext.unwrapFromExecutionContext(ctx);
+        try (var bootloader = enhancedCtx.createDbmsBootloader()) {
+            bootloader.console(dryRun);
+        }
     }
 }

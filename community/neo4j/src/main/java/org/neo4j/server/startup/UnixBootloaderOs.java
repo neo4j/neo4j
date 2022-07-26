@@ -20,11 +20,12 @@
 package org.neo4j.server.startup;
 
 import org.apache.commons.lang3.StringUtils;
+import org.neo4j.cli.CommandFailedException;
 
 class UnixBootloaderOs extends AbstractUnixBootloaderOs {
     private static final int MIN_ALLOWED_OPEN_FILES = 40000;
 
-    UnixBootloaderOs(BootloaderContext ctx) {
+    UnixBootloaderOs(Bootloader ctx) {
         super(ctx);
     }
 
@@ -44,7 +45,7 @@ class UnixBootloaderOs extends AbstractUnixBootloaderOs {
     }
 
     @Override
-    long console() throws BootFailureException {
+    long console() throws CommandFailedException {
         checkLimits();
         return super.console();
     }
@@ -52,9 +53,12 @@ class UnixBootloaderOs extends AbstractUnixBootloaderOs {
     private void checkLimits() {
         int limit = getFileHandleLimit();
         if (limit < MIN_ALLOWED_OPEN_FILES) {
-            ctx.err.printf(
-                    "WARNING: Max %s open files allowed, minimum of %s recommended. See the Neo4j manual.%n",
-                    limit, MIN_ALLOWED_OPEN_FILES);
+            bootloader
+                    .environment
+                    .err()
+                    .printf(
+                            "WARNING: Max %s open files allowed, minimum of %s recommended. See the Neo4j manual.%n",
+                            limit, MIN_ALLOWED_OPEN_FILES);
         }
     }
 }

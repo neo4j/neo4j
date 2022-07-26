@@ -25,9 +25,7 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 import static org.neo4j.server.startup.Bootloader.EXIT_CODE_OK;
-import static org.neo4j.server.startup.Bootloader.PROP_VM_NAME;
-import static org.neo4j.server.startup.Bootloader.PROP_VM_VENDOR;
-import static org.neo4j.server.startup.Neo4jCommandTestBase.isCurrentlyRunningAsWindowsAdmin;
+import static org.neo4j.server.startup.ServerCommandIT.isCurrentlyRunningAsWindowsAdmin;
 
 import java.io.PrintStream;
 import java.nio.file.Files;
@@ -139,8 +137,8 @@ class Neo4jAdminCommandTest {
                 Function<String, String> envLookup,
                 Function<String, String> propLookup,
                 Runtime.Version version) {
-            return Neo4jAdminCommand.asCommandLine(
-                    new Neo4jAdminCommand.Neo4jAdminBootloaderContext(out, err, envLookup, propLookup, version));
+            var environment = new Environment(out, err, envLookup, propLookup, version);
+            return Neo4jAdminCommand.asCommandLine(new Neo4jAdminCommand(environment), environment);
         }
     }
 
@@ -149,7 +147,7 @@ class Neo4jAdminCommandTest {
         @Test
         void shouldPrintUsageWhenNoArgument() {
             assertThat(execute()).isEqualTo(ExitCode.USAGE);
-            assertThat(out.toString())
+            assertThat(err.toString())
                     .containsSubsequence("Usage: neo4j-admin", "--verbose", "--expand-commands", "Commands:");
         }
 
@@ -163,13 +161,7 @@ class Neo4jAdminCommandTest {
         void shouldNotFailToPrintHelpWithConfigIssues() {
             addConf(BootloaderSettings.max_heap_size, "$(echo foo)");
             assertThat(execute()).isEqualTo(ExitCode.USAGE);
-            assertThat(out.toString()).contains("Usage: neo4j-admin", "Commands:");
-        }
-
-        @Test
-        void shouldPassParallelGcByDefault() {
-            assertThat(execute("dbms", "test-command")).isEqualTo(EXIT_CODE_OK);
-            assertThat(out.toString()).contains("-XX:+UseParallelGC");
+            assertThat(err.toString()).contains("Usage: neo4j-admin", "Commands:");
         }
 
         @Test
@@ -246,18 +238,6 @@ class Neo4jAdminCommandTest {
         }
 
         @Test
-        void shouldPrintJVMInfo() {
-            Runtime.Version version = Runtime.Version.parse("11.0.11+9-LTS");
-            Map<String, String> vm =
-                    Map.of(PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM", PROP_VM_VENDOR, "Oracle");
-            assertThat(execute(List.of("dbms", "test-command"), vm, version)).isEqualTo(EXIT_CODE_OK);
-            assertThat(err.toString())
-                    .containsSubsequence(String.format(
-                            "Selecting JVM - Version:%s, Name:%s, Vendor:%s%n",
-                            version, vm.get(PROP_VM_NAME), vm.get(PROP_VM_VENDOR)));
-        }
-
-        @Test
         void shouldHandleExpandCommandsAndPassItThrough() {
             if (IS_OS_WINDOWS) {
                 // This cannot run on Windows if the user is running as elevated to admin rights since this creates a
@@ -303,11 +283,19 @@ class Neo4jAdminCommandTest {
                 Function<String, String> envLookup,
                 Function<String, String> propLookup,
                 Runtime.Version version) {
-            Neo4jAdminCommand.Neo4jAdminBootloaderContext ctx =
-                    spy(new Neo4jAdminCommand.Neo4jAdminBootloaderContext(out, err, envLookup, propLookup, version));
-            ProcessManager pm = new FakeProcessManager(config, ctx, new ProcessHandler(), AdminTool.class);
-            doAnswer(inv -> pm).when(ctx).processManager();
-            return Neo4jAdminCommand.asCommandLine(ctx);
+            var environment = new Environment(out, err, envLookup, propLookup, version);
+            var command = new Neo4jAdminCommand(environment) {
+                @Override
+                protected Bootloader.Admin createAdminBootloader(String[] args) {
+                    var bootloader = spy(super.createAdminBootloader(args));
+                    ProcessManager pm =
+                            new FakeProcessManager(config, bootloader, new ProcessHandler(), AdminTool.class);
+                    doAnswer(inv -> pm).when(bootloader).processManager();
+                    return bootloader;
+                }
+            };
+
+            return Neo4jAdminCommand.asCommandLine(command, environment);
         }
     }
 

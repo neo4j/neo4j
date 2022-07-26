@@ -33,13 +33,14 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.neo4j.cli.CommandFailedException;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import sun.misc.Signal;
 
 class ProcessManager {
-    private final BootloaderContext ctx;
+    private final Bootloader bootloader;
 
     static class Behaviour {
         protected boolean inheritIO;
@@ -104,23 +105,25 @@ class ProcessManager {
         return new Behaviour();
     }
 
-    ProcessManager(BootloaderContext ctx) {
-        this.ctx = ctx;
+    ProcessManager(Bootloader bootloader) {
+        this.bootloader = bootloader;
     }
 
-    long run(List<String> command, Behaviour behaviour) throws BootFailureException {
+    long run(List<String> command, Behaviour behaviour) throws CommandFailedException {
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         if (behaviour.inheritIO) {
             processBuilder.inheritIO();
         }
         if (behaviour.redirectToUserLog) {
-            File userLog =
-                    ctx.config().get(GraphDatabaseSettings.store_user_log_path).toFile();
+            File userLog = bootloader
+                    .config()
+                    .get(GraphDatabaseSettings.store_user_log_path)
+                    .toFile();
             try {
                 // Convenience for creating necessary directories and the user log file if it doesn't exist
                 FileUtils.writeToFile(userLog.toPath(), "", true);
             } catch (IOException e) {
-                throw new BootFailureException(
+                throw new CommandFailedException(
                         "Failure to create the user log file " + userLog + " due to " + e.getMessage(), 1);
             }
             ProcessBuilder.Redirect redirect = ProcessBuilder.Redirect.appendTo(userLog);
@@ -130,14 +133,14 @@ class ProcessManager {
 
         if (behaviour.homeAndConfAsEnv) {
             Map<String, String> env = processBuilder.environment();
-            env.putIfAbsent(Bootloader.ENV_NEO4J_HOME, ctx.home().toString());
-            env.putIfAbsent(Bootloader.ENV_NEO4J_CONF, ctx.confDir().toString());
+            env.putIfAbsent(Bootloader.ENV_NEO4J_HOME, bootloader.home().toString());
+            env.putIfAbsent(Bootloader.ENV_NEO4J_CONF, bootloader.confDir().toString());
         }
 
         Process process = null;
         try {
-            if (ctx.verbose) {
-                ctx.out.println("Executing command line: " + String.join(" ", command));
+            if (bootloader.verbose) {
+                bootloader.environment.out().println("Executing command line: " + String.join(" ", command));
             }
             process = processBuilder.start();
 
@@ -150,13 +153,15 @@ class ProcessManager {
             if (behaviour.blocking) {
                 process.waitFor();
             } else {
-                process.waitFor(ctx.getEnv(ENV_NEO4J_START_WAIT, 0, INT), SECONDS);
+                process.waitFor(bootloader.getEnv(ENV_NEO4J_START_WAIT, 0, INT), SECONDS);
             }
 
             if (!process.isAlive()) {
                 if (!behaviour.inheritIO) {
-                    PrintStream out = behaviour.outputConsumer != null ? behaviour.outputConsumer : ctx.out;
-                    PrintStream err = behaviour.errorConsumer != null ? behaviour.errorConsumer : ctx.err;
+                    PrintStream out =
+                            behaviour.outputConsumer != null ? behaviour.outputConsumer : bootloader.environment.out();
+                    PrintStream err =
+                            behaviour.errorConsumer != null ? behaviour.errorConsumer : bootloader.environment.err();
                     out.write(process.getInputStream().readAllBytes());
                     err.write(process.getErrorStream().readAllBytes());
                 }
@@ -165,13 +170,13 @@ class ProcessManager {
                 }
             }
             return process.pid();
-        } catch (BootFailureException e) {
+        } catch (CommandFailedException e) {
             throw e; // rethrow
         } catch (Exception e) {
             if (process != null && process.isAlive()) {
                 process.destroy();
             }
-            throw new BootFailureException(
+            throw new CommandFailedException(
                     "Unexpected error while starting. Aborting. " + e.getClass().getSimpleName() + " : "
                             + e.getMessage(),
                     e);
@@ -214,13 +219,13 @@ class ProcessManager {
         try {
             return PidFileHelper.readPid(pidFile);
         } catch (AccessDeniedException e) {
-            throw new BootFailureException("Access denied reading pid file " + pidFile, 1);
+            throw new CommandFailedException("Access denied reading pid file " + pidFile, 1);
         } catch (IOException e) {
-            throw new BootFailureException("Unexpected error reading pid file " + pidFile, 1, e);
+            throw new CommandFailedException("Unexpected error reading pid file " + pidFile, e, 1);
         }
     }
 
-    ProcessHandle getProcessHandle(long pid) throws BootFailureException {
+    ProcessHandle getProcessHandle(long pid) throws CommandFailedException {
         Optional<ProcessHandle> handleOption = ProcessHandle.of(pid);
         if (handleOption.isEmpty() || !handleOption.get().isAlive()) {
             deletePid();
@@ -241,11 +246,14 @@ class ProcessManager {
             if (throwOnFailure) {
                 throw exception;
             }
-            ctx.err.printf("Failed to write PID file: Access denied at %s%n", pidFilePath.toAbsolutePath());
+            bootloader
+                    .environment
+                    .err()
+                    .printf("Failed to write PID file: Access denied at %s%n", pidFilePath.toAbsolutePath());
         }
     }
 
     private Path pidFile() {
-        return ctx.config().get(BootloaderSettings.pid_file);
+        return bootloader.config().get(BootloaderSettings.pid_file);
     }
 }

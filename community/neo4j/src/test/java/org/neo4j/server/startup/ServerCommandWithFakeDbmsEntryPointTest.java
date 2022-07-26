@@ -57,8 +57,9 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.eclipse.collections.api.factory.Lists;
-import org.eclipse.collections.impl.factory.Sets;
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -81,41 +82,20 @@ import picocli.CommandLine;
 import picocli.CommandLine.ExitCode;
 import sun.misc.Signal;
 
-class Neo4jCommandTest {
-    @Nested
-    class UsingFakeProcess extends Neo4jCommandTestBase {
-        private final ProcessHandler handler = new ProcessHandler();
+class ServerCommandWithFakeDbmsEntryPointTest {
+    abstract static class UsingFakeProcess extends ServerProcessTestBase {
+        final ProcessHandler handler = new ProcessHandler();
 
         @Test
         void shouldPrintUsageWhenNoArgument() {
             assertThat(execute()).isEqualTo(ExitCode.USAGE);
-            assertThat(err.toString()).contains("Usage: Neo4j");
-        }
-
-        @Test
-        void shouldPrintPlatformSpecificUsage() {
-            assertThat(execute("help")).isEqualTo(EXIT_CODE_OK);
-            String output = out.toString();
-            String[] availableCommands = new String[] {"start", "restart", "console", "status", "stop"};
-            if (SystemUtils.IS_OS_WINDOWS) {
-                availableCommands =
-                        ArrayUtils.addAll(availableCommands, "install-service", "uninstall-service", "update-service");
-            }
-            availableCommands = ArrayUtils.addAll(availableCommands, "version", "help");
-
-            assertThat(output).contains(availableCommands);
+            assertThat(err.toString()).contains("Usage: neo4j");
         }
 
         @Test
         void shouldPrintUsageWhenInvalidArgument() {
             assertThat(execute("foo")).isEqualTo(ExitCode.USAGE);
-            assertThat(err.toString()).contains("Usage: Neo4j");
-        }
-
-        @Test
-        void shouldPrintUsageOnHelp() {
-            assertThat(execute("help")).isEqualTo(EXIT_CODE_OK);
-            assertThat(out.toString()).contains("Usage: Neo4j");
+            assertThat(err.toString()).contains("Usage: neo4j");
         }
 
         @Test
@@ -123,13 +103,13 @@ class Neo4jCommandTest {
             execute("start");
             clearOutAndErr();
             executeWithoutInjection("start");
-            assertThat(out.toString()).contains("Neo4j is already running");
+            assertThat(err.toString()).contains("Neo4j is already running");
         }
 
         @Test
         void shouldDetectNeo4jNotRunningOnStatus() {
             assertThat(execute("status")).isEqualTo(EXIT_CODE_NOT_RUNNING);
-            assertThat(out.toString()).contains("Neo4j is not running");
+            assertThat(err.toString()).contains("Neo4j is not running");
         }
 
         @Test
@@ -195,7 +175,7 @@ class Neo4jCommandTest {
             clearOutAndErr();
             assertThat(execute("start", "--verbose")).isEqualTo(ExitCode.SOFTWARE);
             assertThat(err.toString()).doesNotContain("Run with '--verbose' for a more detailed error message.");
-            assertThat(err.toString()).contains("BootFailureException");
+            assertThat(err.toString()).contains("CommandFailedException");
         }
 
         @Test
@@ -337,12 +317,6 @@ class Neo4jCommandTest {
         }
 
         @Test
-        void shouldHideDryRunArgument() {
-            assertThat(execute("help", "console")).isEqualTo(EXIT_CODE_OK);
-            assertThat(out.toString()).doesNotContain("--dry-run");
-        }
-
-        @Test
         void shouldOnlyGetCommandLineFromDryRun() {
             assertThat(execute("console", "--dry-run")).isEqualTo(EXIT_CODE_OK);
             assertThat(out.toString()).hasLineCount(1);
@@ -419,7 +393,7 @@ class Neo4jCommandTest {
             assertThat(execute("console")).isEqualTo(EXIT_CODE_OK);
             clearOutAndErr();
             assertThat(execute("console")).isEqualTo(EXIT_CODE_RUNNING);
-            assertThat(out.toString()).contains("Neo4j is already running");
+            assertThat(err.toString()).contains("Neo4j is already running");
         }
 
         @Test
@@ -427,8 +401,8 @@ class Neo4jCommandTest {
             assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
             clearOutAndErr();
             assertThat(execute("console", "--dry-run")).isEqualTo(EXIT_CODE_RUNNING);
-            assertThat(out.toString())
-                    .containsSubsequence("Neo4j is already running", "java", "-cp", TestEntryPoint.class.getName());
+            assertThat(err.toString()).contains("Neo4j is already running");
+            assertThat(out.toString()).containsSubsequence("java", "-cp", TestEntryPoint.class.getName());
         }
 
         @Nested
@@ -462,20 +436,6 @@ class Neo4jCommandTest {
         }
 
         @Override
-        protected CommandLine createCommand(
-                PrintStream out,
-                PrintStream err,
-                Function<String, String> envLookup,
-                Function<String, String> propLookup,
-                Runtime.Version version) {
-            var ctx = spy(new Neo4jCommand.Neo4jBootloaderContext(
-                    out, err, envLookup, propLookup, entrypoint(), version, List.of()));
-            ProcessManager pm = new FakeProcessManager(config, ctx, handler, TestEntryPoint.class);
-            doAnswer(inv -> pm).when(ctx).processManager();
-            return Neo4jCommand.asCommandLine(ctx);
-        }
-
-        @Override
         protected int execute(List<String> args, Map<String, String> env, Runtime.Version version) {
             if (IS_OS_WINDOWS) {
                 if (!args.isEmpty() && args.get(0).equals("start")) {
@@ -498,27 +458,18 @@ class Neo4jCommandTest {
         }
 
         int executeWithoutInjection(String arg) {
-            return super.execute(List.of(arg), Map.of(), Runtime.version());
+            return execute(List.of(arg), Map.of(), Runtime.version());
         }
 
         @Override
         protected Optional<ProcessHandle> getProcess() {
             return handler.handle();
         }
-
-        @Override
-        protected Class<? extends EntryPoint> entrypoint() {
-            return TestEntryPoint.class;
-        }
     }
 
-    abstract static class Neo4jCommandTestWithExtensionBase extends Neo4jCommandTestBase {
-        private final ProcessHandler handler = new ProcessHandler();
-        private final BootloaderExtension extension;
-
-        Neo4jCommandTestWithExtensionBase(BootloaderExtension extension) {
-            this.extension = extension;
-        }
+    @Nested
+    @DisplayName("Using fake process with neo4j as root command")
+    class FakeProcessNeo4jRootCommand extends UsingFakeProcess {
 
         @Override
         protected CommandLine createCommand(
@@ -527,24 +478,110 @@ class Neo4jCommandTest {
                 Function<String, String> envLookup,
                 Function<String, String> propLookup,
                 Runtime.Version version) {
-            var ctx = spy(new Neo4jCommand.Neo4jBootloaderContext(
-                    out, err, envLookup, propLookup, entrypoint(), version, List.of(extension)));
-            ProcessManager pm = new FakeProcessManager(config, ctx, handler, TestEntryPoint.class);
-            doAnswer(inv -> pm).when(ctx).processManager();
-            return Neo4jCommand.asCommandLine(ctx);
+            var environment = new Environment(out, err, envLookup, propLookup, version);
+            var command = new Neo4jCommand(environment) {
+                @Override
+                protected Bootloader.Dbms createDbmsBootloader() {
+                    var bootloader = spy(
+                            new Bootloader.Dbms(TestEntryPoint.class, environment, List.of(), expandCommands, verbose));
+                    ProcessManager pm = new FakeProcessManager(config, bootloader, handler, TestEntryPoint.class);
+                    doAnswer(inv -> pm).when(bootloader).processManager();
+                    return bootloader;
+                }
+            };
+
+            return Neo4jCommand.asCommandLine(command, environment);
         }
 
-        @Override
-        protected Class<? extends EntryPoint> entrypoint() {
-            return TestEntryPoint.class;
+        @Test
+        void shouldPrintPlatformSpecificUsage() {
+            assertThat(execute("help")).isEqualTo(EXIT_CODE_OK);
+            String output = out.toString();
+            String[] availableCommands = new String[] {"start", "restart", "console", "status", "stop"};
+            if (SystemUtils.IS_OS_WINDOWS) {
+                availableCommands =
+                        ArrayUtils.addAll(availableCommands, "install-service", "uninstall-service", "update-service");
+            }
+            availableCommands = ArrayUtils.addAll(availableCommands, "version", "help");
+
+            assertThat(output).contains(availableCommands);
+        }
+
+        @Test
+        void shouldHideDryRunArgument() {
+            assertThat(execute("help", "console")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).doesNotContain("--dry-run");
+        }
+
+        @Test
+        void shouldPrintUsageOnHelp() {
+            assertThat(execute("help")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).contains("Usage: neo4j");
         }
     }
 
     @Nested
-    class UsingFakeProcessWithExtension extends Neo4jCommandTestWithExtensionBase {
-        UsingFakeProcessWithExtension() {
-            super(config -> new BootloaderExtension.BootloaderArguments(
-                    List.of("-Xmx38m", "-Xms26m"), List.of("-TestAdditionalArgument")));
+    @DisplayName("Using fake process with neo4j-admin as root command")
+    class FakeProcessNeo4jAdminRootCommand extends UsingFakeProcess {
+
+        @Override
+        protected CommandLine createCommand(
+                PrintStream out,
+                PrintStream err,
+                Function<String, String> envLookup,
+                Function<String, String> propLookup,
+                Runtime.Version version) {
+            var environment = new Environment(out, err, envLookup, propLookup, version);
+            var command = new Neo4jAdminCommand(environment) {
+                @Override
+                protected Bootloader.Dbms createDbmsBootloader() {
+                    var bootloader = spy(
+                            new Bootloader.Dbms(TestEntryPoint.class, environment, List.of(), expandCommands, verbose));
+                    ProcessManager pm = new FakeProcessManager(config, bootloader, handler, TestEntryPoint.class);
+                    doAnswer(inv -> pm).when(bootloader).processManager();
+                    return bootloader;
+                }
+            };
+
+            return Neo4jCommand.asCommandLine(command, environment);
+        }
+
+        @Override
+        protected int execute(List<String> args, Map<String, String> env, Runtime.Version version) {
+            List<String> newArgs = new ArrayList<>();
+            newArgs.add("server");
+            newArgs.addAll(args);
+
+            return super.execute(newArgs, env, version);
+        }
+    }
+
+    @Nested
+    class UsingFakeProcessWithExtension extends ServerProcessTestBase {
+        private final ProcessHandler handler = new ProcessHandler();
+        private final BootloaderExtension extension = config -> new BootloaderExtension.BootloaderArguments(
+                List.of("-Xmx38m", "-Xms26m"), List.of("-TestAdditionalArgument"));
+
+        @Override
+        protected CommandLine createCommand(
+                PrintStream out,
+                PrintStream err,
+                Function<String, String> envLookup,
+                Function<String, String> propLookup,
+                Runtime.Version version) {
+            var environment = new Environment(out, err, envLookup, propLookup, version);
+            var command = new Neo4jCommand(environment) {
+                @Override
+                protected Bootloader.Dbms createDbmsBootloader() {
+                    var bootloader = spy(new Bootloader.Dbms(
+                            TestEntryPoint.class, environment, List.of(extension), expandCommands, verbose));
+                    ProcessManager pm = new FakeProcessManager(config, bootloader, handler, TestEntryPoint.class);
+                    doAnswer(inv -> pm).when(bootloader).processManager();
+                    return bootloader;
+                }
+            };
+
+            return Neo4jCommand.asCommandLine(command, environment);
         }
 
         @Test
@@ -586,14 +623,32 @@ class Neo4jCommandTest {
     }
 
     @Nested
-    class UsingRealProcess extends Neo4jCommandTestBase {
+    class UsingRealProcess extends ServerProcessTestBase {
         private TestInFork fork;
 
         @Override
         @BeforeEach
-        void setUp() throws Exception {
+        protected void setUp() throws Exception {
             super.setUp();
             fork = new TestInFork(out, err);
+        }
+
+        @Override
+        protected CommandLine createCommand(
+                PrintStream out,
+                PrintStream err,
+                Function<String, String> envLookup,
+                Function<String, String> propLookup,
+                Runtime.Version version) {
+            var environment = new Environment(out, err, envLookup, propLookup, version);
+            var command = new Neo4jCommand(environment) {
+                @Override
+                protected Bootloader.Dbms createDbmsBootloader() {
+                    return new Bootloader.Dbms(TestEntryPoint.class, environment, List.of(), expandCommands, verbose);
+                }
+            };
+
+            return Neo4jCommand.asCommandLine(command, environment);
         }
 
         @Test
@@ -634,7 +689,9 @@ class Neo4jCommandTest {
         void shouldSeeErrorMessageOnTooSmallHeap() throws Exception {
             if (fork.run(() -> {
                 addConf(BootloaderSettings.max_heap_size, "1k");
+                addConf(BootloaderSettings.initial_heap_size, "1k");
                 assertThat(execute("console")).isEqualTo(ExitCode.SOFTWARE);
+                System.out.println(out);
             })) {
                 assertThat(out.toString()).contains("Too small maximum heap");
             }
@@ -677,7 +734,7 @@ class Neo4jCommandTest {
                 assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
                 assertThat(execute("console")).isEqualTo(ExitCode.SOFTWARE);
             })) {
-                assertThat(out.toString()).contains("Neo4j is already running");
+                assertThat(err.toString()).contains("Neo4j is already running");
             }
         }
 
@@ -733,11 +790,6 @@ class Neo4jCommandTest {
                                 "-Xlog:gc*,safepoint,age*=trace:file=", "gc.log", "::filecount=5,filesize=20480k");
             }
         }
-
-        @Override
-        protected Class<? extends EntryPoint> entrypoint() {
-            return TestEntryPoint.class;
-        }
     }
 
     private static class TestEntryPoint implements EntryPoint {
@@ -771,8 +823,8 @@ class Neo4jCommandTest {
         }
 
         @Override
-        public Priority getPriority() {
-            return Priority.HIGH;
+        public int getPriority() {
+            return Priority.HIGH.ordinal();
         }
     }
 }

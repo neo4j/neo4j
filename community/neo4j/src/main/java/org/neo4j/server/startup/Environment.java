@@ -19,27 +19,21 @@
  */
 package org.neo4j.server.startup;
 
-class BootFailureException extends RuntimeException {
-    private final int exitCode;
+import java.io.PrintStream;
+import java.util.function.Function;
 
-    BootFailureException(String msg) {
-        this(msg, 1);
-    }
+/**
+ * An abstraction over external environment where {@link Neo4jAdminCommand}
+ * and {@link Neo4jCommand} are executed. The main purpose of this abstraction is to
+ * make the commands testable. {@link #SYSTEM} should be used outside tests.
+ */
+public record Environment(
+        PrintStream out,
+        PrintStream err,
+        Function<String, String> envLookup,
+        Function<String, String> propLookup,
+        Runtime.Version version) {
 
-    BootFailureException(String msg, int exitCode) {
-        this(msg, exitCode, null);
-    }
-
-    BootFailureException(String msg, Throwable cause) {
-        this(msg, 1, cause);
-    }
-
-    BootFailureException(String msg, int exitCode, Throwable cause) {
-        super(msg, cause);
-        this.exitCode = exitCode;
-    }
-
-    int getExitCode() {
-        return exitCode;
-    }
+    public static final Environment SYSTEM =
+            new Environment(System.out, System.err, System::getenv, System::getProperty, Runtime.version());
 }

@@ -43,6 +43,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.list.MutableList;
+import org.neo4j.cli.CommandFailedException;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingValueParsers;
@@ -53,53 +54,55 @@ import org.neo4j.server.startup.BootloaderExtension.BootloaderArguments;
 abstract class BootloaderOsAbstraction {
     static final long UNKNOWN_PID = Long.MAX_VALUE;
 
-    protected final BootloaderContext ctx;
+    protected final Bootloader bootloader;
 
-    protected BootloaderOsAbstraction(BootloaderContext ctx) {
-        this.ctx = ctx;
+    protected BootloaderOsAbstraction(Bootloader bootloader) {
+        this.bootloader = bootloader;
     }
 
     abstract Long getPidIfRunning();
 
     abstract boolean isRunning(long pid);
 
-    abstract long start() throws BootFailureException;
+    abstract long start() throws CommandFailedException;
 
-    abstract void stop(long pid) throws BootFailureException;
+    abstract void stop(long pid) throws CommandFailedException;
 
-    long console() throws BootFailureException {
-        return ctx.processManager().run(buildStandardStartArguments(), consoleBehaviour());
+    long console() throws CommandFailedException {
+        return bootloader.processManager().run(buildStandardStartArguments(), consoleBehaviour());
     }
 
     protected ProcessManager.Behaviour consoleBehaviour() {
         return behaviour().blocking().inheritIO().withShutdownHook();
     }
 
-    long admin() throws BootFailureException {
+    long admin() throws CommandFailedException {
         MutableList<String> arguments = buildBaseArguments();
-        if (ctx.getEnv(ENV_HEAP_SIZE).isBlank()) {
+        if (bootloader.getEnv(ENV_HEAP_SIZE).isBlank()) {
             // Server config is used as one source of heap settings for admin commands.
             // That leads to ridiculous memory demands especially by simple admin commands
             // like getting store info.
             arguments = arguments.reject(argument -> argument.startsWith("-Xms"));
         }
-        return ctx.processManager()
+        return bootloader
+                .processManager()
                 .run(
-                        arguments.withAll(ctx.additionalArgs),
+                        arguments.withAll(bootloader.additionalArgs),
                         behaviour().blocking().inheritIO().homeAndConfAsEnv());
     }
 
-    abstract void installService() throws BootFailureException;
+    abstract void installService() throws CommandFailedException;
 
-    abstract void uninstallService() throws BootFailureException;
+    abstract void uninstallService() throws CommandFailedException;
 
-    abstract void updateService() throws BootFailureException;
+    abstract void updateService() throws CommandFailedException;
 
     abstract boolean serviceInstalled();
 
     protected List<String> buildStandardStartArguments() {
-        var extensionContext = new BootloaderExtension.ExtensionContext(ctx.config(), ctx.out, ctx.err);
-        var extensionArguments = ctx.extensions.stream()
+        var extensionContext = new BootloaderExtension.ExtensionContext(
+                bootloader.config(), bootloader.environment.out(), bootloader.environment.err());
+        var extensionArguments = bootloader.extensions.stream()
                 .map(e -> e.getBootloaderArguments(extensionContext))
                 .toList();
         var extensionJvmOptions = extensionArguments.stream()
@@ -111,9 +114,9 @@ abstract class BootloaderOsAbstraction {
                 .flatMap(Collection::stream)
                 .toList();
         return buildBaseArguments(extensionJvmOptions)
-                .with("--home-dir=" + ctx.home())
-                .with("--config-dir=" + ctx.confDir())
-                .withAll(ctx.additionalArgs)
+                .with("--home-dir=" + bootloader.home())
+                .with("--config-dir=" + bootloader.confDir())
+                .withAll(bootloader.additionalArgs)
                 .withAll(extensionAdditionalArgs);
     }
 
@@ -127,10 +130,10 @@ abstract class BootloaderOsAbstraction {
                 .with("-cp")
                 .with(getClassPath())
                 .withAll(getJvmOpts(extensionJvmOptions))
-                .with(ctx.entrypoint.getName());
+                .with(bootloader.entrypoint.getName());
     }
 
-    static BootloaderOsAbstraction getOsAbstraction(BootloaderContext context) {
+    static BootloaderOsAbstraction getOsAbstraction(Bootloader context) {
         return SystemUtils.IS_OS_WINDOWS
                 ? new WindowsBootloaderOs(context)
                 : SystemUtils.IS_OS_MAC_OSX ? new MacBootloaderOs(context) : new UnixBootloaderOs(context);
@@ -171,9 +174,10 @@ abstract class BootloaderOsAbstraction {
     }
 
     private void printBadRuntime() {
-        ctx.err.println("WARNING! You are using an unsupported Java runtime.");
-        ctx.err.println("* Please use Oracle(R) Java(TM) 17, OpenJDK(TM) 17 to run Neo4j.");
-        ctx.err.println("* Please see https://neo4j.com/docs/ for Neo4j installation instructions.");
+        var err = bootloader.environment.err();
+        err.println("WARNING! You are using an unsupported Java runtime.");
+        err.println("* Please use Oracle(R) Java(TM) 17, OpenJDK(TM) 17 to run Neo4j.");
+        err.println("* Please see https://neo4j.com/docs/ for Neo4j installation instructions.");
     }
 
     private static Path getJava() {
@@ -183,12 +187,12 @@ abstract class BootloaderOsAbstraction {
     }
 
     private void checkJavaVersion() {
-        if (ctx.version().feature() != 17) {
+        if (bootloader.environment.version().feature() != 17) {
             // too new java
             printBadRuntime();
         } else {
             // correct version
-            String runtime = ctx.getProp(PROP_VM_NAME);
+            String runtime = bootloader.getProp(PROP_VM_NAME);
             if (!runtime.matches("(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server|Client) VM")) {
                 printBadRuntime();
             }
@@ -204,14 +208,17 @@ abstract class BootloaderOsAbstraction {
         // If JAVA_OPTS is provided, it has the highest priority
         // and we just use that as it is without any modification
         // or added logic
-        String envJavaOptions = ctx.getEnv(ENV_JAVA_OPTS);
+        String envJavaOptions = bootloader.getEnv(ENV_JAVA_OPTS);
         if (isNotEmpty(envJavaOptions)) {
-            if (isNotEmpty(ctx.getEnv(ENV_HEAP_SIZE))) {
-                ctx.err.println("WARNING! HEAP_SIZE is ignored, because JAVA_OPTS is set");
+            if (isNotEmpty(bootloader.getEnv(ENV_HEAP_SIZE))) {
+                bootloader.environment.err().println("WARNING! HEAP_SIZE is ignored, because JAVA_OPTS is set");
             }
 
             if (!extensionJvmOptions.isEmpty()) {
-                ctx.err.println("WARNING! Extension provided JVM options are ignored, because JAVA_OPTS is set");
+                bootloader
+                        .environment
+                        .err()
+                        .println("WARNING! Extension provided JVM options are ignored, because JAVA_OPTS is set");
             }
 
             // We need to turn a list of JVM options provided as one string into a list of individual options.
@@ -227,7 +234,7 @@ abstract class BootloaderOsAbstraction {
     private List<String> buildJvmOpts(List<String> extensionJvmOptions) {
         MutableList<String> opts = Lists.mutable.empty();
 
-        var config = ctx.config();
+        var config = bootloader.config();
         String jvmAdditionals = config.get(BootloaderSettings.additional_jvm);
         if (isNotEmpty(jvmAdditionals)) {
             opts.withAll(List.of(jvmAdditionals.split(System.lineSeparator())));
@@ -249,14 +256,14 @@ abstract class BootloaderOsAbstraction {
     }
 
     private void selectHeapSettings(MutableList<String> opts, List<String> extensionJvmOptions) {
-        String envHeapSize = ctx.getEnv(ENV_HEAP_SIZE);
+        String envHeapSize = bootloader.getEnv(ENV_HEAP_SIZE);
         if (isNotEmpty(envHeapSize)) {
             // HEAP_SIZE env. variable has highest priority
             opts.with("-Xms" + envHeapSize).with("-Xmx" + envHeapSize);
             return;
         }
 
-        var config = ctx.config();
+        var config = bootloader.config();
         var extensionHasMs = extensionJvmOptions.stream().anyMatch(o -> o.startsWith("-Xms"));
         var extensionHasMx = extensionJvmOptions.stream().anyMatch(o -> o.startsWith("-Xmx"));
 
@@ -279,12 +286,12 @@ abstract class BootloaderOsAbstraction {
     }
 
     protected String getClassPath() {
-        String libCp = classPathFromDir(ctx.config().get(BootloaderSettings.lib_directory));
+        String libCp = classPathFromDir(bootloader.config().get(BootloaderSettings.lib_directory));
 
         List<String> paths = Lists.mutable.with(
-                classPathFromDir(ctx.config().get(GraphDatabaseSettings.plugin_dir)),
-                classPathFromDir(ctx.confDir()),
-                StringUtils.isNotBlank(libCp) ? libCp : ctx.getProp(PROP_JAVA_CP));
+                classPathFromDir(bootloader.config().get(GraphDatabaseSettings.plugin_dir)),
+                classPathFromDir(bootloader.confDir()),
+                StringUtils.isNotBlank(libCp) ? libCp : bootloader.getProp(PROP_JAVA_CP));
         return paths.stream().filter(StringUtils::isNotBlank).collect(Collectors.joining(File.pathSeparator));
     }
 

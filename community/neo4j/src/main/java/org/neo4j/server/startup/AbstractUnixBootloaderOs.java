@@ -21,21 +21,24 @@ package org.neo4j.server.startup;
 
 import static org.neo4j.server.startup.ProcessManager.behaviour;
 
+import org.neo4j.cli.CommandFailedException;
+
 abstract class AbstractUnixBootloaderOs extends BootloaderOsAbstraction {
-    AbstractUnixBootloaderOs(BootloaderContext ctx) {
-        super(ctx);
+    AbstractUnixBootloaderOs(Bootloader bootloader) {
+        super(bootloader);
     }
 
     @Override
     long start() {
-        return ctx.processManager()
+        return bootloader
+                .processManager()
                 .run(
                         buildStandardStartArguments(),
                         behaviour().redirectToUserLog().storePid());
     }
 
     @Override
-    void stop(long pid) throws BootFailureException {
+    void stop(long pid) throws CommandFailedException {
         ProcessHandle process = getProcessIfAlive(pid);
         if (process != null) {
             process.destroy();
@@ -48,17 +51,17 @@ abstract class AbstractUnixBootloaderOs extends BootloaderOsAbstraction {
     }
 
     @Override
-    void installService() throws BootFailureException {
+    void installService() throws CommandFailedException {
         throw new UnsupportedOperationException("Not supported on this OS");
     }
 
     @Override
-    void uninstallService() throws BootFailureException {
+    void uninstallService() throws CommandFailedException {
         throw new UnsupportedOperationException("Not supported on this OS");
     }
 
     @Override
-    void updateService() throws BootFailureException {
+    void updateService() throws CommandFailedException {
         throw new UnsupportedOperationException("Not supported on this OS");
     }
 
@@ -69,7 +72,7 @@ abstract class AbstractUnixBootloaderOs extends BootloaderOsAbstraction {
 
     @Override
     Long getPidIfRunning() {
-        ProcessHandle handle = getProcessIfAlive(ctx.processManager().getPidFromFile());
+        ProcessHandle handle = getProcessIfAlive(bootloader.processManager().getPidFromFile());
         return handle != null ? handle.pid() : null;
     }
 
@@ -80,7 +83,7 @@ abstract class AbstractUnixBootloaderOs extends BootloaderOsAbstraction {
 
     private ProcessHandle getProcessIfAlive(Long pid) {
         if (pid != null) {
-            return ctx.processManager().getProcessHandle(pid);
+            return bootloader.processManager().getProcessHandle(pid);
         }
         return null;
     }

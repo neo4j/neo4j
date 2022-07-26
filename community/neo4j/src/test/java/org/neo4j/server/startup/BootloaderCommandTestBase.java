@@ -64,6 +64,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
 import org.junit.platform.testkit.engine.EngineTestKit;
 import org.junit.platform.testkit.engine.Events;
+import org.neo4j.cli.CommandFailedException;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -377,21 +378,21 @@ abstract class BootloaderCommandTestBase {
     }
 
     protected static class FakeProcessManager extends ProcessManager {
-        private final BootloaderContext ctx;
+        private final Bootloader bootloader;
         private final ProcessHandler handler;
         private final Class<?> entryPoint;
         private final Config config;
 
-        FakeProcessManager(Config config, BootloaderContext ctx, ProcessHandler handler, Class<?> entryPoint) {
-            super(ctx);
-            this.ctx = ctx;
+        FakeProcessManager(Config config, Bootloader bootloader, ProcessHandler handler, Class<?> entryPoint) {
+            super(bootloader);
+            this.bootloader = bootloader;
             this.handler = handler;
             this.entryPoint = entryPoint;
             this.config = config;
         }
 
         @Override
-        long run(List<String> command, Behaviour behaviour) throws BootFailureException {
+        long run(List<String> command, Behaviour behaviour) throws CommandFailedException {
             // Here we're just trying to mimic the minimum required responses one would expect when executing the actual
             // command.
             // Responses depend on previously executed commands, held as state in the ProcessHandler
@@ -409,7 +410,7 @@ abstract class BootloaderCommandTestBase {
                     throw new BootProcessFailureException(1); // To simulate command when service is not installed
                 }
             } else if (commandMatches(command, entryPoint.getName())) {
-                ctx.out.println(String.join(System.lineSeparator(), command));
+                bootloader.environment.out().println(String.join(System.lineSeparator(), command));
                 boolean isWindowsInstallCommand = commandMatches(command, "//IS//");
                 handler.install();
                 if (!isWindowsInstallCommand) {
@@ -425,12 +426,12 @@ abstract class BootloaderCommandTestBase {
 
         @Override
         Long getPidFromFile() {
-            ctx.config().get(BootloaderSettings.pid_file); // Read from config to "simulate" real process manager
+            bootloader.config().get(BootloaderSettings.pid_file); // Read from config to "simulate" real process manager
             return handler.isRunning() ? handler.runningPid : null;
         }
 
         @Override
-        ProcessHandle getProcessHandle(long pid) throws BootFailureException {
+        ProcessHandle getProcessHandle(long pid) throws CommandFailedException {
             return handler.handle(pid);
         }
 

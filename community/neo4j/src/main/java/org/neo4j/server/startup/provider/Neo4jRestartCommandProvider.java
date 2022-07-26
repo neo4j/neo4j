@@ -25,13 +25,13 @@ import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.cli.CommandProvider;
 import org.neo4j.cli.CommandType;
 import org.neo4j.cli.ExecutionContext;
-import org.neo4j.server.startup.Neo4jCommand;
+import org.neo4j.server.startup.RestartCommand;
 
 @ServiceProvider
 public class Neo4jRestartCommandProvider implements CommandProvider {
     @Override
-    public Neo4jCommand.Restart createCommand(ExecutionContext ctx) {
-        return new Neo4jCommand.Restart();
+    public RestartCommand createCommand(ExecutionContext ctx) {
+        return new RestartCommand(ctx);
     }
 
     @Override

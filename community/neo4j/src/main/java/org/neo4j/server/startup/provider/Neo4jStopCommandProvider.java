@@ -25,13 +25,13 @@ import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.cli.CommandProvider;
 import org.neo4j.cli.CommandType;
 import org.neo4j.cli.ExecutionContext;
-import org.neo4j.server.startup.Neo4jCommand;
+import org.neo4j.server.startup.StopCommand;
 
 @ServiceProvider
 public class Neo4jStopCommandProvider implements CommandProvider {
     @Override
-    public Neo4jCommand.Stop createCommand(ExecutionContext ctx) {
-        return new Neo4jCommand.Stop();
+    public StopCommand createCommand(ExecutionContext ctx) {
+        return new StopCommand(ctx);
     }
 
     @Override

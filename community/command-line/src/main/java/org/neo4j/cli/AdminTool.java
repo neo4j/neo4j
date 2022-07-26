@@ -46,17 +46,17 @@ import picocli.CommandLine.Model.UsageMessageSpec;
         description = "Neo4j database administration tool.",
         mixinStandardHelpOptions = true,
         versionProvider = VersionProvider.class,
-        sortOptions = false,
         footerHeading = "\nEnvironment variables:\n",
         footer = {
             "  NEO4J_CONF    Path to directory which contains neo4j.conf.",
             "  NEO4J_DEBUG   Set to anything to enable debug output.",
             "  NEO4J_HOME    Neo4j home directory.",
             "  HEAP_SIZE     Set JVM maximum heap size during command execution. Takes a number and a unit, for example 512m.",
-            "  JAVA_OPTS     Used to pass custom setting to Java Virtual Machine. Refer to JVM documentation about the exact format. "
+            "  JAVA_OPTS     Used to pass custom setting to Java Virtual Machine executing the command. "
+                    + "Refer to JVM documentation about the exact format. "
                     + "This variable is incompatible with HEAP_SIZE and takes precedence over HEAP_SIZE."
         })
-public final class AdminTool {
+public class AdminTool {
     // Accept arguments also used by Neo4jAdminCommand, just to let them show in the usage
     @CommandLine.Option(
             names = "--expand-commands",
@@ -66,7 +66,7 @@ public final class AdminTool {
     @CommandLine.Option(names = "--verbose", description = "Prints additional information.")
     private boolean verbose;
 
-    private AdminTool() {
+    protected AdminTool() {
         // nope
     }
 
@@ -90,8 +90,28 @@ public final class AdminTool {
     }
 
     public static CommandLine getCommandLine(ExecutionContext ctx) {
-        CommandLine cmd = new CommandLine(new AdminTool());
-        registerCommands(cmd, ctx, Services.loadAll(CommandProvider.class));
+        return getCommandLine(ctx, new Strategy() {
+            @Override
+            public AdminTool createRootCommand() {
+                return new AdminTool();
+            }
+
+            @Override
+            public void registerCommandsFromGroup(
+                    CommandGroup commandGroup, CommandLine commandLine, Collection<CommandProvider> commandProviders) {
+                var messageSpec = new UsageMessageSpec().description(commandGroup.getDescription());
+                CommandSpec commandSpec =
+                        CommandSpec.create().name(commandGroup.getDisplayName()).usageMessage(messageSpec);
+                CommandLine groupCommandLine = new CommandLine(commandSpec);
+                registerGroupCommands(commandProviders, commandGroup, ctx, groupCommandLine);
+                commandLine.addSubcommand(groupCommandLine);
+            }
+        });
+    }
+
+    protected static CommandLine getCommandLine(ExecutionContext ctx, Strategy strategy) {
+        CommandLine cmd = new CommandLine(strategy.createRootCommand());
+        registerCommands(cmd, strategy, Services.loadAll(CommandProvider.class));
         cmd.setOut(new PrintWriter(ctx.out(), true))
                 .setErr(new PrintWriter(ctx.err(), true))
                 .setUsageHelpWidth(120)
@@ -100,15 +120,10 @@ public final class AdminTool {
     }
 
     private static void registerCommands(
-            CommandLine cmd, ExecutionContext ctx, Collection<CommandProvider> commandProviders) {
+            CommandLine cmd, Strategy strategy, Collection<CommandProvider> commandProviders) {
         CommandLine commandLine = cmd.addSubcommand(HelpCommand.class);
         for (CommandGroup commandGroup : CommandGroup.values()) {
-            var messageSpec = new UsageMessageSpec().description(commandGroup.getDescription());
-            CommandSpec commandSpec =
-                    CommandSpec.create().name(commandGroup.getDisplayName()).usageMessage(messageSpec);
-            CommandLine groupCommandLine = new CommandLine(commandSpec);
-            registerGroupCommands(commandProviders, commandGroup, ctx, groupCommandLine);
-            commandLine.addSubcommand(groupCommandLine);
+            strategy.registerCommandsFromGroup(commandGroup, commandLine, commandProviders);
         }
     }
 
@@ -161,6 +176,59 @@ public final class AdminTool {
         @Override
         public String[] getVersion() {
             return new String[] {Version.getNeo4jVersion()};
+        }
+    }
+
+    // 'neo4j <command>' is an alias for 'neo4j-admin server <command>'
+    // Implementations of this interface contain the code that make this 'alias' behaviour work.
+    private interface Strategy {
+
+        AdminTool createRootCommand();
+
+        void registerCommandsFromGroup(
+                CommandGroup commandGroup, CommandLine commandLine, Collection<CommandProvider> commandProviders);
+    }
+
+    // 'neo4j <command>' is an alias for 'neo4j-admin server <command>'
+    // This class is the entry point for the alias.
+    @Command(name = "neo4j", description = "An alias for 'neo4j-admin server'")
+    public static class Neo4jAlias extends AdminTool {
+        public static CommandLine getCommandLine(ExecutionContext ctx) {
+            return getCommandLine(ctx, new Strategy() {
+                @Override
+                public AdminTool createRootCommand() {
+                    return new Neo4jAlias();
+                }
+
+                @Override
+                public void registerCommandsFromGroup(
+                        CommandGroup commandGroup,
+                        CommandLine commandLine,
+                        Collection<CommandProvider> commandProviders) {
+                    if (commandGroup == CommandGroup.SERVER) {
+                        registerGroupCommands(commandProviders, commandGroup, ctx, commandLine);
+                    }
+                }
+            });
+        }
+
+        @SuppressWarnings("InstantiationOfUtilityClass")
+        @VisibleForTesting
+        public static int execute(ExecutionContext ctx, String... args) {
+            final CommandLine cmd = getCommandLine(ctx);
+            if (args.length == 0) {
+                cmd.usage(cmd.getOut());
+                return CommandLine.ExitCode.USAGE;
+            }
+            return cmd.execute(args);
+        }
+
+        public static void main(String[] args) {
+            final var homeDir = getDirOrExit("NEO4J_HOME");
+            final var confDir = getDirOrExit("NEO4J_CONF");
+            final var ctx = new ExecutionContext(homeDir, confDir);
+            final var exitCode = execute(ctx, args);
+            System.exit(exitCode);
         }
     }
 

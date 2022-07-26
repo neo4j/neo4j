@@ -17,22 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.startup.provider;
+package org.neo4j.server.startup;
 
-import org.neo4j.server.startup.BootloaderCommand;
-import org.neo4j.server.startup.Neo4jCommand;
-import picocli.CommandLine;
+import org.neo4j.cli.AbstractCommand;
+import org.neo4j.cli.ExecutionContext;
+import picocli.CommandLine.Command;
 
-@CommandLine.Command(
-        name = "windows-service",
-        description = "Neo4j windows service commands.",
-        subcommands = {
-            Neo4jCommand.InstallService.class,
-            Neo4jCommand.UpdateService.class,
-            Neo4jCommand.UninstallService.class
-        })
-class Neo4jServiceCommand extends BootloaderCommand {
-    Neo4jServiceCommand(Neo4jCommand.Neo4jBootloaderContext ctx) {
-        super(ctx);
+@Command(name = "start", description = "Start server as a daemon.")
+public class StartCommand extends AbstractCommand {
+
+    public StartCommand(ExecutionContext ctx) {
+        super(ctx, false);
+    }
+
+    @Override
+    protected void execute() throws Exception {
+        var enhancedCtx = EnhancedExecutionContext.unwrapFromExecutionContext(ctx);
+        try (var bootloader = enhancedCtx.createDbmsBootloader()) {
+            bootloader.start();
+        }
     }
 }

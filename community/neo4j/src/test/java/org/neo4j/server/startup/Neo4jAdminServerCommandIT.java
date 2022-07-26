@@ -20,15 +20,18 @@
 package org.neo4j.server.startup;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import org.junit.jupiter.api.parallel.Isolated;
 import picocli.CommandLine;
 
 /**
- * A test for some commands in 'neo4j' group.
+ * A test for some commands in 'neo4j-admin server' group.
  */
 @Isolated
-public class Neo4jCommandIT extends ServerCommandIT {
+public class Neo4jAdminServerCommandIT extends ServerCommandIT {
 
     @Override
     protected CommandLine createCommand(
@@ -38,6 +41,15 @@ public class Neo4jCommandIT extends ServerCommandIT {
             Function<String, String> propLookup,
             Runtime.Version version) {
         var environment = new Environment(out, err, envLookup, propLookup, version);
-        return Neo4jCommand.asCommandLine(new Neo4jCommand(environment), environment);
+        return Neo4jCommand.asCommandLine(new Neo4jAdminCommand(environment), environment);
+    }
+
+    @Override
+    protected int execute(List<String> args, Map<String, String> env, Runtime.Version version) {
+        List<String> newArgs = new ArrayList<>();
+        newArgs.add("server");
+        newArgs.addAll(args);
+
+        return super.execute(newArgs, env, version);
     }
 }

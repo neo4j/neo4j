@@ -17,25 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.startup;
+package org.neo4j.server.startup.provider;
 
-import java.util.Comparator;
-import org.neo4j.annotations.service.Service;
-import org.neo4j.service.PrioritizedService;
-import org.neo4j.service.Services;
+import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.cli.CommandProvider;
+import org.neo4j.cli.CommandType;
+import org.neo4j.cli.ExecutionContext;
+import org.neo4j.server.startup.ConsoleCommand;
 
-@Service
-public interface EntryPoint extends PrioritizedService {
-    enum Priority {
-        LOW, // Community
-        MEDIUM, // Enterprise
-        HIGH // Reserved for testing
+@ServiceProvider
+public class ConsoleCommandProvider implements CommandProvider {
+    @Override
+    public Object createCommand(ExecutionContext ctx) {
+        return new ConsoleCommand(ctx);
     }
 
-    static Class<? extends EntryPoint> serviceloadEntryPoint() {
-        return Services.loadAll(EntryPoint.class).stream()
-                .max(Comparator.comparingInt(PrioritizedService::getPriority))
-                .orElseThrow()
-                .getClass();
+    @Override
+    public CommandType commandType() {
+        return CommandType.NEO4J_CONSOLE;
     }
 }

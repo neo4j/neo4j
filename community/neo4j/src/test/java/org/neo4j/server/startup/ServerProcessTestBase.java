@@ -20,36 +20,39 @@
 package org.neo4j.server.startup;
 
 import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
+import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
+import static org.neo4j.test.proc.ProcessUtil.getModuleOptions;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.HttpConnector;
+import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.util.Preconditions;
-import picocli.CommandLine;
 
-abstract class Neo4jCommandTestBase extends BootloaderCommandTestBase {
+abstract class ServerProcessTestBase extends BootloaderCommandTestBase {
+
+    static final int MAX_HEAP_MB = 100;
+    static final int INITIAL_HEAP_MB = 10;
+
     Path pidFile;
 
     @Override
     @BeforeEach
-    void setUp() throws Exception {
+    protected void setUp() throws Exception {
         super.setUp();
         pidFile = config.get(BootloaderSettings.pid_file);
         if (IS_OS_WINDOWS) {
@@ -71,6 +74,24 @@ abstract class Neo4jCommandTestBase extends BootloaderCommandTestBase {
                 toolsInResources = Path.of(resource.toURI()).toAbsolutePath().getParent();
             }
             FileUtils.copyDirectory(toolsInResources, config.get(BootloaderSettings.windows_tools_directory));
+        }
+
+        // VM
+        addConf(BootloaderSettings.max_heap_size, String.format("%dm", MAX_HEAP_MB));
+        addConf(BootloaderSettings.initial_heap_size, String.format("%dm", INITIAL_HEAP_MB));
+        // DBMS
+        addConf(GraphDatabaseSettings.pagecache_memory, "8m");
+        addConf(GraphDatabaseSettings.logical_log_rotation_threshold, "128k");
+        addConf(GraphDatabaseSettings.store_internal_log_level, "debug");
+        // Connectors
+        addConf(HttpConnector.enabled, "true");
+        addConf(HttpConnector.listen_address, "localhost:0");
+        addConf(HttpConnector.advertised_address, ":0");
+        addConf(HttpsConnector.enabled, "false");
+        addConf(BoltConnector.enabled, "false");
+
+        for (String moduleOption : getModuleOptions()) {
+            addConf(additional_jvm, moduleOption);
         }
     }
 
@@ -120,27 +141,6 @@ abstract class Neo4jCommandTestBase extends BootloaderCommandTestBase {
             return "";
         }
     }
-
-    @Override
-    protected int execute(List<String> args, Map<String, String> env, Runtime.Version version) {
-        HashMap<String, String> environment = new HashMap<>(env);
-        environment.putIfAbsent(Bootloader.ENV_NEO4J_START_WAIT, "0");
-        return super.execute(args, environment, version);
-    }
-
-    @Override
-    protected CommandLine createCommand(
-            PrintStream out,
-            PrintStream err,
-            Function<String, String> envLookup,
-            Function<String, String> propLookup,
-            Runtime.Version version) {
-        var ctx = new Neo4jCommand.Neo4jBootloaderContext(
-                out, err, envLookup, propLookup, entrypoint(), version, List.of());
-        return Neo4jCommand.asCommandLine(ctx);
-    }
-
-    protected abstract Class<? extends EntryPoint> entrypoint();
 
     public static boolean isCurrentlyRunningAsWindowsAdmin() {
         // The problem: windows-tests in this class want to e.g. install and start the neo4j service to test it on the
