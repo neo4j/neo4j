@@ -25,4 +25,8 @@ object Extractors {
   object MapKeys {
     def unapplySeq[T](s: Map[T, _]): Option[Seq[T]] = Some(s.keys.toSeq)
   }
+
+  object MapExtractor {
+    def unapplySeq[T, V](s: Map[T, V]): Option[Seq[(T, V)]] = Some(s.toSeq)
+  }
 }

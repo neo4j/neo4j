@@ -20,7 +20,7 @@
 
 #encoding: utf-8
 
-Feature: IsNaNAcceptance
+Feature: NaNAcceptance
 
   Background:
     Given an empty graph
@@ -130,4 +130,113 @@ Feature: IsNaNAcceptance
     Then the result should be, in any order:
       | result |
       | true   |
+    And no side effects
+
+  Scenario: with NOT of a less than or greater than inequality
+    When executing query:
+      """
+      RETURN NOT(0.0 < (0.0/0.0)) AS result1, NOT(0.0 > (0.0/0.0)) AS result2
+      """
+    Then the result should be, in any order:
+      | result1 | result2 |
+      | true    | true    |
+    And no side effects
+
+  Scenario: with NOT of an inequality containing params
+    And parameters are:
+      | zero | 0.0 |
+    When executing query:
+      """
+      RETURN NOT(0.0 <= (0.0/$zero)) AS result1, NOT(0.0 >= (0.0/$zero)) AS result2
+      """
+    Then the result should be, in any order:
+      | result1 | result2 |
+      | true    | true    |
+    And no side effects
+
+  Scenario: with NOT of an inequality containing a function
+    When executing query:
+      """
+      RETURN NOT (ceil(0.0/0.0) < 0.0) AS result
+      """
+    Then the result should be, in any order:
+      | result |
+      | true   |
+    And no side effects
+
+  Scenario: with NOT of NOT of an inequality
+    When executing query:
+      """
+      RETURN NOT (NOT (0.0 < (0.0/0.0))) AS result
+      """
+    Then the result should be, in any order:
+      | result |
+      | false  |
+    And no side effects
+
+  Scenario: with NOT of an equality
+    When executing query:
+      """
+      RETURN NOT (0.0 = (0.0/0.0)) AS result
+      """
+    Then the result should be, in any order:
+      | result |
+      | true   |
+    And no side effects
+
+  Scenario: with NOT of an equality with NaN on both sides
+    When executing query:
+      """
+      RETURN NOT ((0.0/0.0) = (0.0/0.0)) AS result
+      """
+    Then the result should be, in any order:
+      | result |
+      | true   |
+    And no side effects
+
+  Scenario: with NOT of an inequality
+    When executing query:
+      """
+      RETURN NOT (0.0 <> (0.0/0.0)) AS result
+      """
+    Then the result should be, in any order:
+      | result |
+      | false   |
+    And no side effects
+
+  Scenario: with NOT of an inequality with NaN on both sides
+    When executing query:
+      """
+      RETURN NOT ((0.0/0.0) <> (0.0/0.0)) AS result
+      """
+    Then the result should be, in any order:
+      | result |
+      | false  |
+    And no side effects
+
+  Scenario: with NOT of an inequality with NaN in a variable
+    When executing query:
+      """
+      WITH (0.0/0.0) AS nan
+      RETURN NOT (nan < 0.0) AS result
+      """
+    Then the result should be, in any order:
+      | result |
+      | true  |
+    And no side effects
+
+  Scenario: with NOT of an inequality with NaN in a property
+    Given an empty graph
+    And having executed:
+    """
+    CREATE ({nan : (0.0/0.0)})
+    """
+    When executing query:
+      """
+      MATCH (n)
+      RETURN NOT (n.nan < 0.0) AS result
+      """
+    Then the result should be, in any order:
+      | result |
+      | true  |
     And no side effects

@@ -16,45 +16,67 @@
  */
 package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 
-import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.DoubleLiteral
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
-import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
-import org.neo4j.cypher.internal.rewriting.rewriters.ProjectionClausesHaveSemanticInfo
-import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTNumber
 import org.neo4j.cypher.internal.util.topDown
 
-case object normalizeSargablePredicates extends CnfPhase with ASTRewriterFactory {
+case class normalizeSargablePredicatesRewriter(semanticTable: SemanticTable) extends Rewriter {
 
-  override def preConditions: Set[StepSequencer.Condition] = Set.empty
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(NoInequalityInsideNot)
-
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
-    ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    PatternExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside PatternExpressions.
-  )
-
-  val instance: Rewriter = topDown(Rewriter.lift {
+  private def instance() = topDown(Rewriter.lift {
 
     // remove not from inequality expressions by negating them
-    case Not(inequality: InequalityExpression) =>
+    case Not(inequality: InequalityExpression)
+      // If one of the operands is of a different type than number, we can safely do this rewrite,
+      // because NOT("foo" > NaN) and "foo" <= NaN both evaluate to null.
+      if !couldContainNumber(inequality.lhs) ||
+        !couldContainNumber(inequality.rhs) ||
+        // If both operands cannot contain NaN, we can also safely do this rewrite.
+        (!couldContainNaN(inequality.lhs) && !couldContainNaN(inequality.rhs)) =>
       inequality.negated
   })
 
-  override def getRewriter(
-    semanticState: SemanticState,
-    parameterTypeMapping: Map[String, CypherType],
-    cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-  ): Rewriter = instance
+  private def couldContainNumber(expression: Expression): Boolean = {
+    semanticTable.getActualTypeFor(expression).containsAny(CTNumber)
+  }
 
-  override def getRewriter(from: BaseState, context: BaseContext): Rewriter = instance
+  /**
+   * Used to check if we can safely flip an inequality.
+   * E.g 0.0 > NaN = False, but: NOT(0.0 <= NaN) = True
+   * Therefore, the rewrite doesn't hold in this case and we consider the change unsafe.
+   */
+  private def couldContainNaN(expression: Expression): Boolean = {
+    expression match {
+      case e: DoubleLiteral =>
+        e.value.isNaN
+      case e =>
+        semanticTable.getActualTypeFor(e).contains(CTFloat)
+    }
+  }
+
+  def apply(that: AnyRef): AnyRef = instance().apply(that)
+}
+
+case object normalizeSargablePredicates extends CnfPhase {
+
+  override def preConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(NoInequalityInsideNot)
+
+  // Can invalidate semantic info as it may introduce a new AST
+  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
+
+  override def getRewriter(from: BaseState, context: BaseContext): Rewriter =
+    normalizeSargablePredicatesRewriter(from.semanticTable())
+
+  override def toString = "normalizeSargablePredicates"
 }

@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.mergeDuplicateBooleanOperators
-import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.normalizeSargablePredicates
 import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
 import org.neo4j.cypher.internal.rewriting.RewriterStep
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
@@ -73,7 +72,6 @@ object ASTRewriter {
         normalizePatternComprehensionPredicates,
         normalizeNotEquals,
         normalizeArgumentOrder,
-        normalizeSargablePredicates,
         AddUniquenessPredicates,
         simplifyIterablePredicates,
         replaceLiteralDynamicPropertyLookups,
