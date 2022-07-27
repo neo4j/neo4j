@@ -25,12 +25,16 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonDisjunction
 import org.neo4j.cypher.internal.expressions.Namespace
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
+import org.neo4j.cypher.internal.util.FixedLengthRelationshipInShortestPath
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.Ref
 
@@ -63,6 +67,12 @@ object Deprecations {
           Some(Ref(s) -> s.copy(expression =
             functionInvocationForSetProperties(s, e))(s.position)),
           Some(DeprecatedNodesOrRelationshipsInSetClauseNotification(e.position))
+        )
+
+      case ShortestPaths(RelationshipChain(_: NodePattern, relPat @ RelationshipPattern(_, _, None, _, _, _), _), _) =>
+        Deprecation(
+          None,
+          Some(FixedLengthRelationshipInShortestPath(relPat.position))
         )
     }
   }

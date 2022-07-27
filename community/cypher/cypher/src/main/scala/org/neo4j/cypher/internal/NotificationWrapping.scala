@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
+import org.neo4j.cypher.internal.util.FixedLengthRelationshipInShortestPath
 import org.neo4j.cypher.internal.util.HomeDatabaseNotPresent
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -197,6 +198,10 @@ object NotificationWrapping {
     case HomeDatabaseNotPresent(name) => NotificationCode.HOME_DATABASE_NOT_PRESENT.notification(
         InputPosition.NONE.asInputPosition,
         NotificationDetail.Factory.message("Not Found", s"HOME DATABASE: $name")
+      )
+    case FixedLengthRelationshipInShortestPath(pos) =>
+      NotificationCode.DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP.notification(
+        pos.withOffset(offset).asInputPosition
       )
 
     case _ => throw new IllegalStateException("Missing mapping for notification detail.")

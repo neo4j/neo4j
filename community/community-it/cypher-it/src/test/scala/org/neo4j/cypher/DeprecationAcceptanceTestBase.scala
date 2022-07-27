@@ -25,6 +25,7 @@ import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_NODE_OR_R
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR
+import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP
 import org.neo4j.graphdb.impl.notification.NotificationDetail
 import org.scalatest.BeforeAndAfterAll
 
@@ -76,5 +77,13 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "MATCH (g)-[r:KNOWS]->(k) SET g += k"
     )
     assertNotification(queries, true, DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE)
+  }
+
+  test("deprecate fixed length relationships in shortestPath and allShortestPaths") {
+    val queries = Seq(
+      "MATCH (a), (b), allShortestPaths((a)-[r]->(b)) RETURN b",
+      "MATCH (a), (b), shortestPath((a)-[r]->(b)) RETURN b"
+    )
+    assertNotification(queries, true, DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP)
   }
 }

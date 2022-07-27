@@ -77,6 +77,11 @@ public enum NotificationCode {
             Status.Statement.FeatureDeprecationWarning,
             "The use of nodes or relationships for setting properties is deprecated and will be removed in a future version. "
                     + "Please use properties() instead."),
+    DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The use of shortestPath and allShortestPaths with fixed length relationships is deprecated and will be removed in a future version. "
+                    + "Please use a path with a length of 1 [r*1..1] instead or a Match with a limit."),
     EAGER_LOAD_CSV(
             SeverityLevel.WARNING,
             Status.Statement.EagerOperatorWarning,
