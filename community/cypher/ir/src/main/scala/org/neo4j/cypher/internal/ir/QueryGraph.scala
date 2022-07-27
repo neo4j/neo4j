@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.PartialPredicate
+import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -109,9 +110,11 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
   lazy val allQGsWithLeafInfo: Seq[QgWithLeafInfo] = {
     val patternComprehensions = this.folder.findAllByClass[PatternComprehension].toSet.map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator))
     val patternExpressions = this.folder.findAllByClass[PatternExpression].toSet.map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator))
+    val patterns = this.folder.findAllByClass[Pattern].map((e: Pattern) => ExpressionConverters.asQueryGraph(e))
     val allQgsWithLeafInfo = Seq(this) ++
       patternComprehensions ++
-      patternExpressions
+      patternExpressions ++
+      patterns
     allQgsWithLeafInfo.map(QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves) ++
       optionalMatches.flatMap(_.allQGsWithLeafInfo)
   }

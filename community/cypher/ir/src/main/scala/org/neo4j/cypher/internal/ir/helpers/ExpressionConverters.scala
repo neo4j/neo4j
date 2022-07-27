@@ -24,13 +24,16 @@ import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasTypes
+import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.NodePatternExpression
+import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PatternLength
+import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
@@ -48,12 +51,20 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 
 object ExpressionConverters {
+  private case class NodesAndRelationshipPatterns(nodes: Set[String], relationshipPatterns: Set[PatternRelationship]) {
+    def addNodes(newNodes: Set[String]): NodesAndRelationshipPatterns =
+      NodesAndRelationshipPatterns(nodes ++ newNodes, relationshipPatterns)
+
+    def add(newNodes: Set[String], newRelationshipPatterns: Set[PatternRelationship]): NodesAndRelationshipPatterns =
+      NodesAndRelationshipPatterns(nodes ++ newNodes, relationshipPatterns ++ newRelationshipPatterns)
+  }
+
   private def normalizer(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) = MatchPredicateNormalizerChain(PropertyPredicateNormalizer(anonymousVariableNameGenerator), LabelPredicateNormalizer)
 
   private def getQueryGraphArguments(expr: Expression, availableSymbols: Set[String]) = {
     val dependencies = expr.dependencies.map(_.name)
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(dependencies.subsetOf(availableSymbols),
-      s"Trying to plan a PatternExpression where a dependency is not available. Dependencies: $dependencies. Available: ${availableSymbols}")
+      s"Trying to plan a PatternExpression where a dependency is not available. Dependencies: $dependencies. Available: $availableSymbols")
     dependencies
   }
 
@@ -77,7 +88,7 @@ object ExpressionConverters {
 
     val rewrittenChain = relChain.endoRewrite(topDown(Rewriter.lift(normalizer(anonymousVariableNameGenerator).replace)))
 
-    val patternContent = rewrittenChain.destructed
+    val patternContent = rewrittenChain.destructed(false)
     QueryGraph(
       patternRelationships = patternContent.rels.toSet,
       patternNodes = patternContent.nodeIds.toSet,
@@ -110,6 +121,32 @@ object ExpressionConverters {
   }
 
   /**
+   * Turn a Pattern into a query graph
+   * @param exp the Pattern expression
+   */
+  def asQueryGraph(exp: Pattern): QueryGraph = {
+    val predicates: Seq[Expression] = exp.patternParts.folder.fold[Seq[Expression]](Seq.empty) {
+      // We need to add a HasLabels predicate for the labels on the node pattern, since we ignore the labels when creating the node/relationship patterns below.
+      case n: NodePattern if n.variable.nonEmpty && n.labels.nonEmpty => acc => acc ++ n.predicate :+ HasLabels(n.variable.get, n.labels)(n.position)
+      case n: NodePattern => acc => acc ++ n.predicate
+    }
+
+    val nodesAndRelPatterns = exp.patternParts.map(_.element)
+      .foldLeft[NodesAndRelationshipPatterns](NodesAndRelationshipPatterns(Set.empty, Set.empty)) {
+        case (nodesAndRelPatterns, relChain: RelationshipChain) =>
+          val destructed = PatternConverters.PatternElementDestructor(relChain).destructed(ignoreLabels = true)
+          nodesAndRelPatterns.add(destructed.nodeIds.toSet, destructed.rels.toSet)
+        case (nodesAndRelPatterns, n: NodePattern) => nodesAndRelPatterns.addNodes(n.variable.map(_.name).toSet)
+      }
+
+    QueryGraph(
+      patternNodes = nodesAndRelPatterns.nodes,
+      patternRelationships = nodesAndRelPatterns.relationshipPatterns,
+      argumentIds = Set.empty
+    ).addPredicates(predicates: _*)
+  }
+
+  /**
    * Turn a PatternComprehension into a query graph.
    *
    * @param exp the pattern comprehension
@@ -129,7 +166,7 @@ object ExpressionConverters {
 
     val rewrittenChain = relChain.endoRewrite(topDown(Rewriter.lift(normalizer(anonymousVariableNameGenerator).replace)))
 
-    val patternContent = rewrittenChain.destructed
+    val patternContent = rewrittenChain.destructed(false)
     QueryGraph(
       patternRelationships = patternContent.rels.toSet,
       patternNodes = patternContent.nodeIds.toSet,
