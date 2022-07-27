@@ -119,8 +119,8 @@ class KernelTransactionTimeoutMonitorTest {
     private static KernelTransactionImplementation prepareTxMock(long userTxId, long startMillis, long timeoutMillis) {
         KernelTransactionImplementation transaction = mock(KernelTransactionImplementation.class);
         when(transaction.startTime()).thenReturn(startMillis);
-        when(transaction.getUserTransactionId()).thenReturn(userTxId);
-        when(transaction.getUserTransactionId()).thenReturn(EXPECTED_USER_TRANSACTION_ID);
+        when(transaction.getTransactionSequenceNumber()).thenReturn(userTxId);
+        when(transaction.getTransactionSequenceNumber()).thenReturn(EXPECTED_USER_TRANSACTION_ID);
         when(transaction.timeout()).thenReturn(timeoutMillis);
         when(transaction.markForTermination(EXPECTED_USER_TRANSACTION_ID, Status.Transaction.TransactionTimedOut))
                 .thenReturn(true);

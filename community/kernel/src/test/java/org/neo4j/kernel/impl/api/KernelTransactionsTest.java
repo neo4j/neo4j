@@ -164,7 +164,7 @@ class KernelTransactionsTest {
         KernelTransaction firstTxn = getKernelTransaction(transactions);
 
         // Then
-        assertThat(firstTxn.getUserTransactionId()).isNotEqualTo(0L);
+        assertThat(firstTxn.getTransactionSequenceNumber()).isNotEqualTo(0L);
     }
 
     @Test
@@ -485,19 +485,19 @@ class KernelTransactionsTest {
         try (KernelTransaction kernelTransaction =
                 kernelTransactions.newInstance(EXPLICIT, AnonymousContext.access(), EMBEDDED_CONNECTION, 0L)) {
             assertEquals(
-                    1, kernelTransactions.activeTransactions().iterator().next().getUserTransactionId());
+                    1, kernelTransactions.activeTransactions().iterator().next().getTransactionSequenceNumber());
         }
 
         try (KernelTransaction kernelTransaction =
                 kernelTransactions.newInstance(EXPLICIT, AnonymousContext.access(), EMBEDDED_CONNECTION, 0L)) {
             assertEquals(
-                    2, kernelTransactions.activeTransactions().iterator().next().getUserTransactionId());
+                    2, kernelTransactions.activeTransactions().iterator().next().getTransactionSequenceNumber());
         }
 
         try (KernelTransaction kernelTransaction =
                 kernelTransactions.newInstance(EXPLICIT, AnonymousContext.access(), EMBEDDED_CONNECTION, 0L)) {
             assertEquals(
-                    3, kernelTransactions.activeTransactions().iterator().next().getUserTransactionId());
+                    3, kernelTransactions.activeTransactions().iterator().next().getTransactionSequenceNumber());
         }
     }
 
@@ -775,6 +775,7 @@ class KernelTransactionsTest {
                 writable(),
                 TransactionExecutionMonitor.NO_OP,
                 snapshot -> true,
+                new TransactionIdSequence(),
                 NullLogProvider.getInstance());
     }
 
@@ -878,6 +879,7 @@ class KernelTransactionsTest {
                     writable(),
                     TransactionExecutionMonitor.NO_OP,
                     snapshot -> true,
+                    new TransactionIdSequence(),
                     NullLogProvider.getInstance());
         }
 

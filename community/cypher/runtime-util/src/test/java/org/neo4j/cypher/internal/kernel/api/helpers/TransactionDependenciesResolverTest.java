@@ -202,7 +202,7 @@ class TransactionDependenciesResolverTest {
         }
 
         @Override
-        public long getUserTransactionId() {
+        public long getTransactionSequenceNumber() {
             return userTxId;
         }
     }

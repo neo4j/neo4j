@@ -28,7 +28,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -155,7 +154,6 @@ class KernelTransactionTestBase {
                 LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG);
         tx.initialize(
                 lastTransactionIdWhenStarted,
-                BASE_TX_COMMIT_TIMESTAMP,
                 KernelTransaction.Type.EXPLICIT,
                 securityContext,
                 transactionTimeout,

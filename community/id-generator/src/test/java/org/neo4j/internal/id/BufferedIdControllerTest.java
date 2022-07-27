@@ -30,7 +30,6 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 import java.io.IOException;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -85,7 +84,7 @@ class BufferedIdControllerTest {
                 filesystem,
                 testDirectory.file("buffer"),
                 Config.defaults(),
-                () -> new IdController.TransactionSnapshot(LongSets.immutable.empty(), 0, 0),
+                () -> new IdController.TransactionSnapshot(10, 0, 0),
                 s -> true,
                 EmptyMemoryTracker.INSTANCE);
         life.add(controller);

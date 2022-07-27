@@ -104,7 +104,9 @@ class InnerTransactionHandlerImpl implements InnerTransactionHandler {
 
     private ImmutableLongObjectMap<KernelTransactionHandle> getTransactionHandlesById() {
         return LongObjectMaps.immutable.from(
-                kernelTransactions.executingTransactions(), KernelTransactionHandle::getUserTransactionId, a -> a);
+                kernelTransactions.executingTransactions(),
+                KernelTransactionHandle::getTransactionSequenceNumber,
+                a -> a);
     }
 
     private void terminateInnerTransaction(

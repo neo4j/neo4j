@@ -203,16 +203,6 @@ public class StubKernelTransaction implements KernelTransaction {
     }
 
     @Override
-    public long lastTransactionTimestampWhenStarted() {
-        throw new UnsupportedOperationException("not implemented");
-    }
-
-    @Override
-    public long lastTransactionIdWhenStarted() {
-        throw new UnsupportedOperationException("not implemented");
-    }
-
-    @Override
     public void bindToUserTransaction(InternalTransaction internalTransaction) {
         throw new UnsupportedOperationException("not implemented");
     }
@@ -248,7 +238,7 @@ public class StubKernelTransaction implements KernelTransaction {
     }
 
     @Override
-    public long getUserTransactionId() {
+    public long getTransactionSequenceNumber() {
         return 8;
     }
 

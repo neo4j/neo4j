@@ -58,7 +58,7 @@ public class TransactionDependenciesResolver {
 
     public String describeBlockingTransactions(KernelTransactionHandle handle) {
         Set<KernelTransactionHandle> allBlockers =
-                new TreeSet<>(Comparator.comparingLong(KernelTransactionHandle::getUserTransactionId));
+                new TreeSet<>(Comparator.comparingLong(KernelTransactionHandle::getTransactionSequenceNumber));
         Set<KernelTransactionHandle> handles = directDependencies.get(handle);
         if (handles != null) {
             Deque<KernelTransactionHandle> blockerQueue = new ArrayDeque<>(handles);

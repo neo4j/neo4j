@@ -33,7 +33,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.function.ThrowingIntFunction;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -114,12 +113,8 @@ class DiskBufferedIds implements BufferedIds {
         segment.put(HEADER_CHUNK);
         segment.putLong(snapshot.snapshotTimeMillis());
         segment.putLong(snapshot.lastCommittedTransactionId());
-        var userTransactionIds = snapshot.activeTransactions();
-        segment.putInt(userTransactionIds.size());
-        var userTransactionIdIterator = userTransactionIds.longIterator();
-        while (userTransactionIdIterator.hasNext()) {
-            segment.putLong(userTransactionIdIterator.next());
-        }
+        var currentSequenceNumber = snapshot.currentSequenceNumber();
+        segment.putLong(currentSequenceNumber);
 
         segment.putInt(idBuffers.size());
         for (var buffer : idBuffers) {
@@ -145,13 +140,9 @@ class DiskBufferedIds implements BufferedIds {
             Preconditions.checkState(header == HEADER_CHUNK, "Expecting to read header, but instead read %d", header);
             var timeMillis = segment.getLong();
             var lastCommittedTxId = segment.getLong();
-            var numUserTransactionIds = segment.getInt();
-            var userTransactionIds = LongSets.mutable.empty();
-            for (var i = 0; i < numUserTransactionIds; i++) {
-                userTransactionIds.add(segment.getLong());
-            }
+            var transactionSequenceNumber = segment.getLong();
             if (!visitor.startChunk(
-                    new IdController.TransactionSnapshot(userTransactionIds, timeMillis, lastCommittedTxId))) {
+                    new IdController.TransactionSnapshot(transactionSequenceNumber, timeMillis, lastCommittedTxId))) {
                 // Snapshot still open
                 break;
             }

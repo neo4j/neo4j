@@ -862,16 +862,6 @@ class QueryExecutionLocksIT {
         }
 
         @Override
-        public long lastTransactionTimestampWhenStarted() {
-            return internal.lastTransactionTimestampWhenStarted();
-        }
-
-        @Override
-        public long lastTransactionIdWhenStarted() {
-            return internal.lastTransactionIdWhenStarted();
-        }
-
-        @Override
         public void bindToUserTransaction(InternalTransaction internalTransaction) {
             internal.bindToUserTransaction(internalTransaction);
         }
@@ -907,8 +897,8 @@ class QueryExecutionLocksIT {
         }
 
         @Override
-        public long getUserTransactionId() {
-            return internal.getUserTransactionId();
+        public long getTransactionSequenceNumber() {
+            return internal.getTransactionSequenceNumber();
         }
 
         @Override

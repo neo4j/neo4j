@@ -116,13 +116,9 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     private final Supplier<StoreId> storeIdFactory;
     private volatile KernelVersion kernelVersion;
 
-    // This is not a field in the store, but something keeping track of which is the currently highest
-    // committed transaction id, together with its checksum.
     private final HighestTransactionId highestCommittedTransaction =
             new HighestTransactionId(NOT_INITIALIZED, (int) NOT_INITIALIZED, NOT_INITIALIZED);
 
-    // This is not a field in the store, but something keeping track of which of the committed
-    // transactions have been closed. Useful in rotation and shutdown.
     private final OutOfOrderSequence lastClosedTx = new ArrayQueueOutOfOrderSequence(-1, 200, new long[4]);
     private volatile boolean closed;
 

@@ -43,7 +43,6 @@ import org.neo4j.time.SystemNanoClock;
 class KernelTransactionImplementationHandle implements KernelTransactionHandle {
     private static final String USER_TRANSACTION_NAME_SEPARATOR = "-transaction-";
 
-    private final long lastTransactionTimestampWhenStarted;
     private final long startTime;
     private final long startTimeNanos;
     private final long timeoutMillis;
@@ -55,14 +54,13 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
     private final Optional<ExecutingQuery> executingQuery;
     private final Map<String, Object> metaData;
     private final String statusDetails;
-    private final long userTransactionId;
+    private final long transactionSequenceNumber;
     private final TransactionInitializationTrace initializationTrace;
     private final KernelTransactionStamp transactionStamp;
     private final String databaseName;
 
     KernelTransactionImplementationHandle(KernelTransactionImplementation tx, SystemNanoClock clock) {
         this.transactionStamp = new KernelTransactionStamp(tx);
-        this.lastTransactionTimestampWhenStarted = tx.lastTransactionTimestampWhenStarted();
         this.startTime = tx.startTime();
         this.startTimeNanos = tx.startTimeNanos();
         this.timeoutMillis = tx.timeout();
@@ -71,17 +69,12 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
         this.executingQuery = tx.executingQuery();
         this.metaData = tx.getMetaData();
         this.statusDetails = tx.statusDetails();
-        this.userTransactionId = tx.getUserTransactionId();
+        this.transactionSequenceNumber = tx.getTransactionSequenceNumber();
         this.initializationTrace = tx.getInitializationTrace();
         this.clientInfo = tx.clientInfo();
         databaseName = tx.getDatabaseName();
         this.tx = tx;
         this.clock = clock;
-    }
-
-    @Override
-    public long lastTransactionTimestampWhenStarted() {
-        return lastTransactionTimestampWhenStarted;
     }
 
     @Override
@@ -111,7 +104,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
 
     @Override
     public boolean markForTermination(Status reason) {
-        return tx.markForTermination(transactionStamp.getUserTransactionId(), reason);
+        return tx.markForTermination(transactionStamp.getTransactionSequenceNumber(), reason);
     }
 
     @Override
@@ -140,13 +133,13 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
     }
 
     @Override
-    public long getUserTransactionId() {
-        return userTransactionId;
+    public long getTransactionSequenceNumber() {
+        return transactionSequenceNumber;
     }
 
     @Override
     public String getUserTransactionName() {
-        return databaseName + USER_TRANSACTION_NAME_SEPARATOR + getUserTransactionId();
+        return databaseName + USER_TRANSACTION_NAME_SEPARATOR + getTransactionSequenceNumber();
     }
 
     @Override
@@ -202,7 +195,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
 
     @Override
     public String toString() {
-        return "KernelTransactionImplementationHandle{userTransactionId=" + transactionStamp.getUserTransactionId()
-                + ", tx=" + tx + "}";
+        return "KernelTransactionImplementationHandle{transactionSequenceNumber="
+                + transactionStamp.getTransactionSequenceNumber() + ", tx=" + tx + "}";
     }
 }

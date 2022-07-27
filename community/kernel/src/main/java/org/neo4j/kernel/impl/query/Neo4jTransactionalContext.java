@@ -53,7 +53,7 @@ public class Neo4jTransactionalContext implements TransactionalContext {
     private KernelTransaction kernelTransaction;
     private KernelStatement statement;
     private final ElementIdMapper elementIdMapper;
-    private long userTransactionId;
+    private long transactionSequenceNumber;
     private final ValueMapper<Object> valueMapper;
     private final KernelTransactionFactory transactionFactory;
     private volatile boolean isOpen = true;
@@ -82,7 +82,7 @@ public class Neo4jTransactionalContext implements TransactionalContext {
         this.kernelTransaction = transaction.kernelTransaction();
         this.statement = initialStatement;
         this.elementIdMapper = transaction.elementIdMapper();
-        this.userTransactionId = kernelTransaction.getUserTransactionId();
+        this.transactionSequenceNumber = kernelTransaction.getTransactionSequenceNumber();
         this.valueMapper = new DefaultValueMapper(transaction);
         this.transactionFactory = transactionFactory;
 
@@ -119,7 +119,7 @@ public class Neo4jTransactionalContext implements TransactionalContext {
         if (isOpen) {
             try {
                 // Unbind the new transaction/statement from the executingQuery
-                statement.queryRegistry().unbindExecutingQuery(executingQuery, userTransactionId);
+                statement.queryRegistry().unbindExecutingQuery(executingQuery, transactionSequenceNumber);
                 statement.close();
             } finally {
                 statement = null;
@@ -165,12 +165,12 @@ public class Neo4jTransactionalContext implements TransactionalContext {
         KernelTransaction oldKernelTx = transaction.kernelTransaction();
 
         // (2) Unregister the old transaction from the executing query
-        oldQueryRegistry.unbindExecutingQuery(executingQuery, userTransactionId);
+        oldQueryRegistry.unbindExecutingQuery(executingQuery, transactionSequenceNumber);
 
         // (3) Create and register new transaction
         kernelTransaction = transactionFactory.beginKernelTransaction(transactionType, securityContext, clientInfo);
         statement = (KernelStatement) kernelTransaction.acquireStatement();
-        userTransactionId = kernelTransaction.getUserTransactionId();
+        transactionSequenceNumber = kernelTransaction.getTransactionSequenceNumber();
         statement.queryRegistry().bindExecutingQuery(executingQuery);
         transaction.setTransaction(kernelTransaction);
 
@@ -202,7 +202,7 @@ public class Neo4jTransactionalContext implements TransactionalContext {
 
         // Create new InternalTransaction, creates new KernelTransaction
         InternalTransaction newTransaction = graph.beginTransaction(transactionType, securityContext, clientInfo);
-        long newTransactionId = newTransaction.kernelTransaction().getUserTransactionId();
+        long newTransactionId = newTransaction.kernelTransaction().getTransactionSequenceNumber();
         InnerTransactionHandler innerTransactionHandler = kernelTransaction.getInnerTransactionHandler();
         innerTransactionHandler.registerInnerTransaction(newTransactionId);
         // We rely on the close callback of the inner transaction to be called on close. Otherwise, the worst thing that

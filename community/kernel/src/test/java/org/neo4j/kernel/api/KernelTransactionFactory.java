@@ -120,7 +120,6 @@ public final class KernelTransactionFactory {
 
         transaction.initialize(
                 0,
-                0,
                 KernelTransaction.Type.IMPLICIT,
                 loginContext.authorize(
                         LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG),

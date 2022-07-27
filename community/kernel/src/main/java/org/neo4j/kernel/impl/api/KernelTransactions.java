@@ -29,9 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
-import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.Pool;
@@ -63,7 +60,6 @@ import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
-import org.neo4j.kernel.impl.util.MonotonicCounter;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -104,7 +100,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final SystemNanoClock clock;
     private final CursorContextFactory contextFactory;
     private final ReentrantReadWriteLock newTransactionsLock = new ReentrantReadWriteLock();
-    private final MonotonicCounter userTransactionIdCounter = MonotonicCounter.newAtomicMonotonicCounter();
+    private final TransactionIdSequence transactionIdSequence;
     private final TokenHolders tokenHolders;
     private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
     private final IdController.IdFreeCondition externalIdReuseCondition;
@@ -174,6 +170,7 @@ public class KernelTransactions extends LifecycleAdapter
             DatabaseReadOnlyChecker readOnlyDatabaseChecker,
             TransactionExecutionMonitor transactionExecutionMonitor,
             IdController.IdFreeCondition externalIdReuseCondition,
+            TransactionIdSequence transactionIdSequence,
             LogProvider internalLogProvider) {
         this.config = config;
         this.locks = locks;
@@ -204,6 +201,7 @@ public class KernelTransactions extends LifecycleAdapter
         this.constraintSemantics = constraintSemantics;
         this.schemaState = schemaState;
         this.leaseService = leaseService;
+        this.transactionIdSequence = transactionIdSequence;
         this.txPool = new MonitoredTransactionPool(
                 new GlobalKernelTransactionPool(
                         allTransactions, new KernelTransactionImplementationFactory(allTransactions, tracers)),
@@ -228,11 +226,10 @@ public class KernelTransactions extends LifecycleAdapter
                 KernelTransactionImplementation tx = txPool.acquire();
                 tx.initialize(
                         lastCommittedTransaction.transactionId(),
-                        lastCommittedTransaction.commitTimestamp(),
                         type,
                         securityContext,
                         timeout,
-                        userTransactionIdCounter.incrementAndGet(),
+                        transactionIdSequence.next(),
                         clientInfo);
                 return tx;
             } finally {
@@ -257,30 +254,15 @@ public class KernelTransactions extends LifecycleAdapter
                 .collect(toSet());
     }
 
-    /**
-     * Gets transactions that are neither closed nor terminated.
-     */
-    private LongSet activeUnterminatedUserTransactionIds() {
-        MutableLongSet userTransactionIds = LongSets.mutable.empty();
+    public long oldestActiveTransactionSequenceNumber() {
+        long oldestTransactionSequenceNumber = Long.MAX_VALUE;
         for (KernelTransactionImplementation transaction : allTransactions) {
             if (transaction.isOpen() && !transaction.isTerminated()) {
-                userTransactionIds.add(transaction.getUserTransactionId());
+                oldestTransactionSequenceNumber =
+                        Math.min(oldestTransactionSequenceNumber, transaction.getTransactionSequenceNumber());
             }
         }
-        return userTransactionIds;
-    }
-
-    /**
-     * Give an approximate set of all transactions stamps currently running.
-     * This is not guaranteed to be exact, as transactions may stop and start while this set is gathered.
-     *
-     * @return the (approximate) set of open transactions stamps.
-     */
-    public Set<KernelTransactionStamp> activeTransactionsStamps() {
-        return allTransactions.stream()
-                .map(KernelTransactionStamp::new)
-                .filter(KernelTransactionStamp::isOpen)
-                .collect(toSet());
+        return oldestTransactionSequenceNumber;
     }
 
     /**
@@ -351,7 +333,7 @@ public class KernelTransactions extends LifecycleAdapter
     @Override
     public IdController.TransactionSnapshot get() {
         return new IdController.TransactionSnapshot(
-                activeUnterminatedUserTransactionIds(),
+                transactionIdSequence.currentValue(),
                 clock.millis(),
                 transactionIdStore.getLastCommittedTransactionId());
     }
@@ -359,7 +341,7 @@ public class KernelTransactions extends LifecycleAdapter
     @Override
     public boolean eligibleForFreeing(IdController.TransactionSnapshot snapshot) {
         return externalIdReuseCondition.eligibleForFreeing(snapshot)
-                && !snapshot.activeTransactions().containsAny(activeUnterminatedUserTransactionIds());
+                && (snapshot.currentSequenceNumber() < oldestActiveTransactionSequenceNumber());
     }
 
     /**

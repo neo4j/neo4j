@@ -17,21 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.kernel.impl.api;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-public interface MonotonicCounter {
-    long incrementAndGet();
+public class TransactionIdSequence {
+    private final AtomicLong value = new AtomicLong(0L);
 
-    static MonotonicCounter newAtomicMonotonicCounter() {
-        return new MonotonicCounter() {
-            private final AtomicLong value = new AtomicLong(0L);
+    public long next() {
+        return value.incrementAndGet();
+    }
 
-            @Override
-            public long incrementAndGet() {
-                return value.incrementAndGet();
-            }
-        };
+    public long currentValue() {
+        return value.get();
     }
 }

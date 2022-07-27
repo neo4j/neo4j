@@ -37,13 +37,6 @@ import org.neo4j.lock.ActiveLock;
 public interface KernelTransactionHandle {
 
     /**
-     * The timestamp of the last transaction that was committed to the store when the underlying transaction started.
-     *
-     * @return the timestamp value obtained with {@link System#currentTimeMillis()}.
-     */
-    long lastTransactionTimestampWhenStarted();
-
-    /**
      * The start time of the underlying transaction. I.e. basically {@link System#currentTimeMillis()} when user
      * called {@link Kernel#beginTransaction(KernelTransaction.Type, LoginContext)}.
      *
@@ -122,7 +115,7 @@ public interface KernelTransactionHandle {
      * Should be unique across transactions.
      * @return user transaction id
      */
-    long getUserTransactionId();
+    long getTransactionSequenceNumber();
 
     /**
      * User transaction name of the underlying transaction.

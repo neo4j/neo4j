@@ -85,7 +85,7 @@ case class ShowTransactionsCommand(
     val askedForTransactions =
       if (ids.nonEmpty) allowedTransactions.filter {
         case (transaction: KernelTransactionHandle, _, dbName: String) =>
-          val txId = TransactionId(dbName, transaction.getUserTransactionId).toString
+          val txId = TransactionId(dbName, transaction.getTransactionSequenceNumber).toString
           ids.contains(txId)
       }
       else allowedTransactions
@@ -119,7 +119,7 @@ case class ShowTransactionsCommand(
         val statistic = transaction.transactionStatistic
         val clientInfo = transaction.clientInfo
 
-        val txId = TransactionId(dbName, transaction.getUserTransactionId).toString
+        val txId = TransactionId(dbName, transaction.getTransactionSequenceNumber).toString
         val username = transaction.subject.executingUser()
         val startTime = formatTime(transaction.startTime(), zoneId)
         val elapsedTime = getDurationOrNullFromMillis(statistic.getElapsedTimeMillis)

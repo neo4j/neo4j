@@ -21,19 +21,19 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.impl.util.MonotonicCounter;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
 public class ExecutingQueryFactory {
-    private static final MonotonicCounter lastQueryId = MonotonicCounter.newAtomicMonotonicCounter();
+    private static final AtomicLong lastQueryId = new AtomicLong();
     private final SystemNanoClock clock;
     private final AtomicReference<CpuClock> cpuClockRef;
     private final AtomicBoolean trackQueryAllocations;
@@ -91,7 +91,7 @@ public class ExecutingQueryFactory {
                 statement::getHits,
                 statement::getFaults,
                 () -> statement.locks().activeLockCount(),
-                statement.getTransaction().getUserTransactionId()));
+                statement.getTransaction().getTransactionSequenceNumber()));
     }
 
     public static void unbindFromTransaction(ExecutingQuery executingQuery, long userTransactionId) {

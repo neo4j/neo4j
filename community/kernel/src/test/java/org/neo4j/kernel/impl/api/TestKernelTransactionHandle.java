@@ -47,11 +47,6 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle {
     }
 
     @Override
-    public long lastTransactionTimestampWhenStarted() {
-        return tx.lastTransactionTimestampWhenStarted();
-    }
-
-    @Override
     public long startTime() {
         return tx.startTime();
     }
@@ -103,13 +98,13 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle {
     }
 
     @Override
-    public long getUserTransactionId() {
-        return tx.getUserTransactionId();
+    public long getTransactionSequenceNumber() {
+        return tx.getTransactionSequenceNumber();
     }
 
     @Override
     public String getUserTransactionName() {
-        return USER_TRANSACTION_NAME_PREFIX + getUserTransactionId();
+        return USER_TRANSACTION_NAME_PREFIX + getTransactionSequenceNumber();
     }
 
     @Override

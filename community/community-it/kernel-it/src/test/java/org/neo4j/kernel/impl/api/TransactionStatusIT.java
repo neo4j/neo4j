@@ -65,6 +65,6 @@ public class TransactionStatusIT {
         transaction.close();
         var handle = new KernelTransactionImplementationHandle(
                 (KernelTransactionImplementation) kernelTransaction, nanoClock());
-        assertDoesNotThrow(() -> new TransactionId("test", handle.getUserTransactionId()));
+        assertDoesNotThrow(() -> new TransactionId("test", handle.getTransactionSequenceNumber()));
     }
 }

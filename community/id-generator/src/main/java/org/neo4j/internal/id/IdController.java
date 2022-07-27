@@ -22,7 +22,6 @@ package org.neo4j.internal.id;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.Supplier;
-import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -45,7 +44,7 @@ public interface IdController extends Lifecycle {
         boolean eligibleForFreeing(TransactionSnapshot snapshot);
     }
 
-    record TransactionSnapshot(LongSet activeTransactions, long snapshotTimeMillis, long lastCommittedTransactionId) {}
+    record TransactionSnapshot(long currentSequenceNumber, long snapshotTimeMillis, long lastCommittedTransactionId) {}
 
     /**
      * Perform ids related maintenance.

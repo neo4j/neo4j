@@ -50,7 +50,6 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionValidationFailed;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -419,13 +418,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
 
         try (KernelTransactionImplementation transaction = newTransaction(loginContext(isWriteTx))) {
             transaction.initialize(
-                    5L,
-                    BASE_TX_COMMIT_TIMESTAMP,
-                    KernelTransaction.Type.IMPLICIT,
-                    SecurityContext.AUTH_DISABLED,
-                    0L,
-                    1L,
-                    EMBEDDED_CONNECTION);
+                    5L, KernelTransaction.Type.IMPLICIT, SecurityContext.AUTH_DISABLED, 0L, 1L, EMBEDDED_CONNECTION);
             transaction.txState().nodeDoCreate(1L);
             // WHEN committing it at a later point
             clock.forward(5, MILLISECONDS);
@@ -712,13 +705,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         });
         KernelTransactionImplementation transaction = newNotInitializedTransaction(leaseClient);
         transaction.initialize(
-                0,
-                BASE_TX_COMMIT_TIMESTAMP,
-                KernelTransaction.Type.IMPLICIT,
-                mock(SecurityContext.class),
-                0,
-                1L,
-                EMBEDDED_CONNECTION);
+                0, KernelTransaction.Type.IMPLICIT, mock(SecurityContext.class), 0, 1L, EMBEDDED_CONNECTION);
         assertEquals("KernelTransaction[lease:" + leaseId + "]", transaction.toString());
     }
 
@@ -739,13 +726,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         });
         var transaction = newNotInitializedTransaction(leaseService);
         transaction.initialize(
-                0,
-                BASE_TX_COMMIT_TIMESTAMP,
-                KernelTransaction.Type.IMPLICIT,
-                mock(SecurityContext.class),
-                0,
-                1L,
-                EMBEDDED_CONNECTION);
+                0, KernelTransaction.Type.IMPLICIT, mock(SecurityContext.class), 0, 1L, EMBEDDED_CONNECTION);
 
         // when / then
         assertThrows(LeaseException.class, transaction::txState);
@@ -761,13 +742,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
 
         var transaction = newNotInitializedTransaction(config, fooDb);
         transaction.initialize(
-                0,
-                BASE_TX_COMMIT_TIMESTAMP,
-                KernelTransaction.Type.IMPLICIT,
-                mock(SecurityContext.class),
-                0,
-                1L,
-                EMBEDDED_CONNECTION);
+                0, KernelTransaction.Type.IMPLICIT, mock(SecurityContext.class), 0, 1L, EMBEDDED_CONNECTION);
 
         // when / then
         var rte = assertThrows(RuntimeException.class, transaction::txState);
@@ -781,13 +756,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
 
         var transaction = newNotInitializedTransaction(config);
         transaction.initialize(
-                0,
-                BASE_TX_COMMIT_TIMESTAMP,
-                KernelTransaction.Type.IMPLICIT,
-                mock(SecurityContext.class),
-                0,
-                1L,
-                EMBEDDED_CONNECTION);
+                0, KernelTransaction.Type.IMPLICIT, mock(SecurityContext.class), 0, 1L, EMBEDDED_CONNECTION);
 
         verify(config, times(4)).addListener(any(), any());
 
@@ -810,13 +779,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
             // Increase limit and try again
             config.setDynamic(memory_transaction_max_size, mebiBytes(4), "test");
             transaction.initialize(
-                    5L,
-                    BASE_TX_COMMIT_TIMESTAMP,
-                    KernelTransaction.Type.IMPLICIT,
-                    SecurityContext.AUTH_DISABLED,
-                    0L,
-                    1L,
-                    EMBEDDED_CONNECTION);
+                    5L, KernelTransaction.Type.IMPLICIT, SecurityContext.AUTH_DISABLED, 0L, 1L, EMBEDDED_CONNECTION);
 
             transaction.memoryTracker().allocateHeap(mebiBytes(3));
         }
@@ -876,7 +839,6 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
             throws Exception {
         for (int i = 0; i < times; i++) {
             tx.initialize(
-                    i + 10,
                     i + 10,
                     KernelTransaction.Type.IMPLICIT,
                     loginContext(isWriteTx)

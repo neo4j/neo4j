@@ -23,27 +23,27 @@ import java.util.Objects;
 
 public class KernelTransactionStamp {
     private final KernelTransactionImplementation ktx;
-    private final long userTransactionId;
+    private final long transactionSequenceNumber;
 
     public KernelTransactionStamp(KernelTransactionImplementation ktx) {
-        this.userTransactionId = ktx.getUserTransactionId();
+        this.transactionSequenceNumber = ktx.getTransactionSequenceNumber();
         this.ktx = ktx;
     }
 
     public boolean isOpen() {
-        return ktx.isOpen() && userTransactionId == ktx.getUserTransactionId();
+        return ktx.isOpen() && transactionSequenceNumber == ktx.getTransactionSequenceNumber();
     }
 
     public boolean isClosing() {
-        return ktx.isClosing() && userTransactionId == ktx.getUserTransactionId();
+        return ktx.isClosing() && transactionSequenceNumber == ktx.getTransactionSequenceNumber();
     }
 
-    long getUserTransactionId() {
-        return userTransactionId;
+    long getTransactionSequenceNumber() {
+        return transactionSequenceNumber;
     }
 
     public boolean isNotExpired() {
-        return userTransactionId == ktx.getUserTransactionId();
+        return transactionSequenceNumber == ktx.getTransactionSequenceNumber();
     }
 
     @Override
@@ -55,11 +55,11 @@ public class KernelTransactionStamp {
             return false;
         }
         KernelTransactionStamp that = (KernelTransactionStamp) o;
-        return userTransactionId == that.userTransactionId && Objects.equals(ktx, that.ktx);
+        return transactionSequenceNumber == that.transactionSequenceNumber && Objects.equals(ktx, that.ktx);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(ktx, userTransactionId);
+        return Objects.hash(ktx, transactionSequenceNumber);
     }
 }

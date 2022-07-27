@@ -86,7 +86,7 @@ case class TerminateTransactionsCommand(
             val databaseContext = maybeDatabaseContext.get
             val dbScope = new AdminActionOnResource.DatabaseScope(dbName)
             TransactionCommandHelper.getExecutingTransactions(databaseContext).map(tx => {
-              val txIdRepresentation = TransactionId(dbName, tx.getUserTransactionId)
+              val txIdRepresentation = TransactionId(dbName, tx.getTransactionSequenceNumber)
               (txIdRepresentation, tx)
             }).filter {
               case (txIdRepresentation, tx) =>

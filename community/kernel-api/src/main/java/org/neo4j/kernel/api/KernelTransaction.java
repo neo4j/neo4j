@@ -328,16 +328,6 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable {
     AuthSubject subjectOrAnonymous();
 
     /**
-     * @return The timestamp of the last transaction that was committed to the store when this transaction started.
-     */
-    long lastTransactionTimestampWhenStarted();
-
-    /**
-     * @return The id of the last transaction that was committed to the store when this transaction started.
-     */
-    long lastTransactionIdWhenStarted();
-
-    /**
      * Bind this kernel transaction to a user transaction
      */
     void bindToUserTransaction(InternalTransaction internalTransaction);
@@ -381,10 +371,11 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable {
     long getTransactionId();
 
     /**
-     * Return the transaction id that is exposed to the users.
-     * @return transaction id.
+     * Return the sequential transaction number. Every new transaction will get value that is greater than any
+     * value in transactions before. Value can be exposed to users as some unique transaction id.
+     * @return transaction sequence number.
      */
-    long getUserTransactionId();
+    long getTransactionSequenceNumber();
 
     /**
      * Return transaction commit time (in millis) that assigned during transaction commit process.

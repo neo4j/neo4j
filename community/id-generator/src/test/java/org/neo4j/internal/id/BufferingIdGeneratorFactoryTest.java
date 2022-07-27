@@ -49,7 +49,6 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -239,7 +238,7 @@ class BufferingIdGeneratorFactoryTest {
 
         @Override
         public IdController.TransactionSnapshot get() {
-            mostRecentlyReturned = new IdController.TransactionSnapshot(LongSets.immutable.empty(), 0, 0);
+            mostRecentlyReturned = new IdController.TransactionSnapshot(10, 0, 0);
             if (automaticallyEnableConditions) {
                 enabledSnapshots.add(mostRecentlyReturned);
             }

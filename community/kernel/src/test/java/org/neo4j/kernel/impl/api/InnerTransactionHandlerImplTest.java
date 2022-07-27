@@ -47,7 +47,7 @@ class InnerTransactionHandlerImplTest {
         for (int i = 0; i < 100; i++) {
             KernelTransactionHandle innerHandle = mock(KernelTransactionHandle.class);
             long innerTransactionId = 42;
-            when(innerHandle.getUserTransactionId()).thenReturn(innerTransactionId);
+            when(innerHandle.getTransactionSequenceNumber()).thenReturn(innerTransactionId);
             when(kernelTransactions.executingTransactions()).thenReturn(Collections.singleton(innerHandle));
 
             InnerTransactionHandlerImpl terminationHandler = new InnerTransactionHandlerImpl(kernelTransactions);
@@ -66,7 +66,7 @@ class InnerTransactionHandlerImplTest {
     void testRegisterInnerTransactionBeforeTerminate() {
         KernelTransactionHandle innerHandle = mock(KernelTransactionHandle.class);
         long innerTransactionId = 42;
-        when(innerHandle.getUserTransactionId()).thenReturn(innerTransactionId);
+        when(innerHandle.getTransactionSequenceNumber()).thenReturn(innerTransactionId);
         when(kernelTransactions.executingTransactions()).thenReturn(Collections.singleton(innerHandle));
 
         InnerTransactionHandlerImpl terminationHandler = new InnerTransactionHandlerImpl(kernelTransactions);
@@ -80,7 +80,7 @@ class InnerTransactionHandlerImplTest {
     void testRegisterAfterTerminate() {
         KernelTransactionHandle innerHandle = mock(KernelTransactionHandle.class);
         long innerTransactionId = 42;
-        when(innerHandle.getUserTransactionId()).thenReturn(innerTransactionId);
+        when(innerHandle.getTransactionSequenceNumber()).thenReturn(innerTransactionId);
         when(kernelTransactions.executingTransactions()).thenReturn(Collections.singleton(innerHandle));
 
         InnerTransactionHandlerImpl terminationHandler = new InnerTransactionHandlerImpl(kernelTransactions);
@@ -94,7 +94,7 @@ class InnerTransactionHandlerImplTest {
     void testRegisterWithoutClose() {
         KernelTransactionHandle innerHandle = mock(KernelTransactionHandle.class);
         long innerTransactionId = 42;
-        when(innerHandle.getUserTransactionId()).thenReturn(innerTransactionId);
+        when(innerHandle.getTransactionSequenceNumber()).thenReturn(innerTransactionId);
         when(kernelTransactions.executingTransactions()).thenReturn(Collections.singleton(innerHandle));
 
         InnerTransactionHandlerImpl terminationHandler = new InnerTransactionHandlerImpl(kernelTransactions);

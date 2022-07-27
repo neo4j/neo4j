@@ -37,7 +37,6 @@ import java.nio.file.Path;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
@@ -107,7 +106,7 @@ class IdContextFactoryBuilderTest {
                         fs,
                         testDirectory.file("buffer"),
                         config,
-                        () -> new IdController.TransactionSnapshot(LongSets.immutable.empty(), 0, 0),
+                        () -> new IdController.TransactionSnapshot(10, 0, 0),
                         s -> true,
                         EmptyMemoryTracker.INSTANCE);
         life.add(idContext.getIdController());
@@ -171,7 +170,7 @@ class IdContextFactoryBuilderTest {
                 fs,
                 testDirectory.file("buffer"),
                 config,
-                () -> new IdController.TransactionSnapshot(LongSets.immutable.empty(), 0, 0),
+                () -> new IdController.TransactionSnapshot(10, 0, 0),
                 s -> true,
                 EmptyMemoryTracker.INSTANCE);
         life.add(idController);

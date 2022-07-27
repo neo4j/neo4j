@@ -186,7 +186,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final KernelStatement currentStatement;
     private SecurityContext securityContext;
     private volatile Locks.Client lockClient;
-    private volatile long userTransactionId;
+    private volatile long transactionSequenceNumber;
     private LeaseClient leaseClient;
     private volatile boolean closing;
     private volatile boolean closed;
@@ -197,7 +197,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile long startTimeNanos;
     private volatile long timeoutMillis;
     private long lastTransactionIdWhenStarted;
-    private volatile long lastTransactionTimestampWhenStarted;
     private final Statistics statistics;
     private TransactionEvent transactionEvent;
     private Type type;
@@ -222,7 +221,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * Lock prevents transaction {@link #markForTermination(Status)}  transaction termination} from interfering with
      * {@link #close() transaction commit} and specifically with {@link #reset()}.
      * Termination can run concurrently with commit and we need to make sure that it terminates the right lock client
-     * and the right transaction (with the right {@link #userTransactionId}) because {@link KernelTransactionImplementation}
+     * and the right transaction (with the right {@link #transactionSequenceNumber}) because {@link KernelTransactionImplementation}
      * instances are pooled.
      */
     private final Lock terminationReleaseLock = new ReentrantLock();
@@ -340,11 +339,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     public KernelTransactionImplementation initialize(
             long lastCommittedTx,
-            long lastTimeStamp,
             Type type,
             SecurityContext frozenSecurityContext,
             long transactionTimeout,
-            long userTransactionId,
+            long transactionSequenceNumber,
             ClientConnectionInfo clientInfo) {
         assert transactionMemoryPool.usedHeap() == 0;
         assert transactionMemoryPool.usedNative() == 0;
@@ -353,9 +351,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.accessCapability = accessCapabilityFactory.newAccessCapability(readOnlyDatabaseChecker);
         this.kernelTransactionMonitor = KernelTransaction.NO_MONITOR;
         this.type = type;
-        this.userTransactionId = userTransactionId;
+        this.transactionSequenceNumber = transactionSequenceNumber;
         this.leaseClient = leaseService.newClient();
-        this.lockClient.initialize(leaseClient, userTransactionId, memoryTracker, config);
+        this.lockClient.initialize(leaseClient, transactionSequenceNumber, memoryTracker, config);
         this.terminationReason = null;
         this.closing = false;
         this.closed = false;
@@ -366,7 +364,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.startTimeNanos = clocks.systemClock().nanos();
         this.timeoutMillis = transactionTimeout;
         this.lastTransactionIdWhenStarted = lastCommittedTx;
-        this.lastTransactionTimestampWhenStarted = lastTimeStamp;
         this.transactionEvent = transactionTracer.beginTransaction(cursorContext);
         this.securityContext = frozenSecurityContext;
         this.transactionId = NOT_COMMITTED_TRANSACTION_ID;
@@ -407,11 +404,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return timeoutMillis;
     }
 
-    @Override
-    public long lastTransactionIdWhenStarted() {
-        return lastTransactionIdWhenStarted;
-    }
-
     public void success() {
         this.success = true;
     }
@@ -434,10 +426,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return Optional.ofNullable(terminationReason);
     }
 
-    boolean markForTermination(long expectedUserTransactionId, Status reason) {
+    boolean markForTermination(long expectedTransactionSequenceNumber, Status reason) {
         terminationReleaseLock.lock();
         try {
-            return expectedUserTransactionId == userTransactionId && markForTerminationIfPossible(reason);
+            return expectedTransactionSequenceNumber == transactionSequenceNumber
+                    && markForTerminationIfPossible(reason);
         } finally {
             terminationReleaseLock.unlock();
         }
@@ -1028,7 +1021,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             statusDetails = EMPTY;
             clientInfo = null;
             internalTransaction = null;
-            userTransactionId = 0;
+            transactionSequenceNumber = 0;
             statistics.reset();
             releaseStatementResources();
             operations.release();
@@ -1055,11 +1048,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public boolean isTerminated() {
         return terminationReason != null;
-    }
-
-    @Override
-    public long lastTransactionTimestampWhenStarted() {
-        return lastTransactionTimestampWhenStarted;
     }
 
     @Override
@@ -1118,8 +1106,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public long getUserTransactionId() {
-        return userTransactionId;
+    public long getTransactionSequenceNumber() {
+        return transactionSequenceNumber;
     }
 
     TransactionInitializationTrace getInitializationTrace() {

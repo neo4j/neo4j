@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.tuple.Pair;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -282,12 +281,7 @@ class DiskBufferedIdsTest {
     }
 
     private TransactionSnapshot randomSnapshot(RandomValues random) {
-        var openTransactions = LongSets.mutable.empty();
-        var numOpenTransactions = random.intBetween(1, 100);
-        for (int i = 0; i < numOpenTransactions; i++) {
-            openTransactions.add(random.nextLong());
-        }
-        return new TransactionSnapshot(openTransactions, random.nextLong(), random.nextLong());
+        return new TransactionSnapshot(random.nextLong(), random.nextLong(), random.nextLong());
     }
 
     private List<IdBuffer> copy(List<IdBuffer> buffers) {
@@ -345,8 +339,8 @@ class DiskBufferedIdsTest {
         public void endChunk() {
             var expected = source.get();
             assertThat(expected).isNotNull();
-            assertThat(snapshot.activeTransactions())
-                    .isEqualTo(expected.getLeft().activeTransactions());
+            assertThat(snapshot.currentSequenceNumber())
+                    .isEqualTo(expected.getLeft().currentSequenceNumber());
             assertThat(snapshot.snapshotTimeMillis())
                     .isEqualTo(expected.getLeft().snapshotTimeMillis());
             assertThat(snapshot.lastCommittedTransactionId())

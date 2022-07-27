@@ -206,7 +206,7 @@ class Neo4jTransactionalContextIT {
         assertThat(executingQuery.rawQueryText()).isEqualTo(queryText);
         var snapshot = executingQuery.snapshot();
         assertThat(snapshot.transactionId())
-                .isEqualTo(outerTx.kernelTransaction().getUserTransactionId());
+                .isEqualTo(outerTx.kernelTransaction().getTransactionSequenceNumber());
     }
 
     @Test
@@ -604,7 +604,7 @@ class Neo4jTransactionalContextIT {
                 .flatMap(handle -> handle.executingQuery().stream()
                         .map(ExecutingQuery::snapshot)
                         .map(QuerySnapshot::transactionId)
-                        .filter(txnId -> txnId == kernelTransaction.getUserTransactionId()))
+                        .filter(txnId -> txnId == kernelTransaction.getTransactionSequenceNumber()))
                 .count();
         return transactionCountOnCurrentQuery > 1;
     }
@@ -825,7 +825,7 @@ class Neo4jTransactionalContextIT {
 
         // Then
         var expectedTransactionId = new TransactionId(
-                        outerTx.getDatabaseName(), outerTx.kernelTransaction().getUserTransactionId())
+                        outerTx.getDatabaseName(), outerTx.kernelTransaction().getTransactionSequenceNumber())
                 .toString();
         var expectedQueryId = String.format("query-%s", ctx.executingQuery().id());
 
@@ -849,7 +849,7 @@ class Neo4jTransactionalContextIT {
         var innerTx = innerCtx.transaction();
 
         // When
-        var userTransactionId = ctx.kernelTransaction().getUserTransactionId();
+        var userTransactionId = ctx.kernelTransaction().getTransactionSequenceNumber();
 
         // we are forcing the TERMINATE TRANSACTION to execute to completion
         // so that we can be ready to make assertions on the terminationReason
@@ -896,7 +896,7 @@ class Neo4jTransactionalContextIT {
         var snapshot = executingQuery.snapshot();
         // Actual assertion
         assertThat(snapshot.transactionId())
-                .isEqualTo(lastTx.kernelTransaction().getUserTransactionId());
+                .isEqualTo(lastTx.kernelTransaction().getTransactionSequenceNumber());
         assertThat(snapshot.pageHits()).isEqualTo(closedTxHits + lastHits);
         assertThat(snapshot.pageFaults()).isEqualTo(closedTxFaults + lastFaults);
     }

@@ -102,6 +102,7 @@ import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionIdSequence;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -224,6 +225,7 @@ public class Database extends LifecycleAdapter {
     private final ExternalIdReuseConditionProvider externalIdReuseConditionProvider;
 
     private Dependencies databaseDependencies;
+    private TransactionIdSequence transactionIdSequence;
     private LifeSupport life;
     private IndexProviderMap indexProviderMap;
     private DatabaseHealth databaseHealth;
@@ -333,6 +335,7 @@ public class Database extends LifecycleAdapter {
             new DatabaseDirectoriesCreator(fs, databaseLayout).createDirectories();
             databaseDependencies = new Dependencies(globalDependencies);
             ioController = ioControllerService.createIOController(databaseConfig, clock);
+            transactionIdSequence = new TransactionIdSequence();
             var versionStorage = versionStorageFactory.createVersionStorage(
                     globalPageCache, ioController, databaseLayout, databaseConfig);
             databasePageCache = new DatabasePageCache(globalPageCache, ioController, versionStorage);
@@ -348,6 +351,7 @@ public class Database extends LifecycleAdapter {
 
             databaseDependencies.satisfyDependency(this);
             databaseDependencies.satisfyDependency(ioController);
+            databaseDependencies.satisfyDependency(transactionIdSequence);
             databaseDependencies.satisfyDependency(readOnlyDatabaseChecker);
             databaseDependencies.satisfyDependency(databaseLayout);
             databaseDependencies.satisfyDependency(namedDatabaseId);
@@ -962,6 +966,7 @@ public class Database extends LifecycleAdapter {
                 readOnlyDatabaseChecker,
                 transactionExecutionMonitor,
                 externalIdReuseConditionProvider.get(transactionIdStore, clock),
+                transactionIdSequence,
                 internalLogProvider));
 
         buildTransactionMonitor(kernelTransactions, databaseConfig);
