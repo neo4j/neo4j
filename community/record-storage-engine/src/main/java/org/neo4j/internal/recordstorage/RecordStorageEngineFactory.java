@@ -576,7 +576,11 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
 
     @Override
     public RecordDatabaseLayout formatSpecificDatabaseLayout(DatabaseLayout plainLayout) {
-        return databaseLayout(plainLayout.getNeo4jLayout(), plainLayout.getDatabaseName());
+        if (plainLayout instanceof RecordDatabaseLayout recordLayout) {
+            return recordLayout;
+        } else {
+            return databaseLayout(plainLayout.getNeo4jLayout(), plainLayout.getDatabaseName());
+        }
     }
 
     @Override
