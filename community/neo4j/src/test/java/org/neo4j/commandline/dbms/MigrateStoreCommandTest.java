@@ -43,9 +43,8 @@ class MigrateStoreCommandTest {
 
                          USAGE
 
-                         migrate-store [--expand-commands] [--verbose] [--additional-config=<path>]
-                                       [--database=<database>] [--pagecache=<size>] [--to-format=<format
-                                       name>]
+                         migrate [--expand-commands] [--verbose] [--additional-config=<path>]
+                                 [--pagecache=<size>] [--to-format=<format name>] <database>
 
                          DESCRIPTION
 
@@ -53,15 +52,16 @@ class MigrateStoreCommandTest {
                          format. It always migrates the database to the latest combination of major and
                          minor version of the target format.
 
+                         PARAMETERS
+
+                               <database>           Name of the database to migrate. Can contain * and ?
+                                                      for globbing.
+
                          OPTIONS
 
                                --additional-config=<path>
                                                     Configuration file to supply additional
                                                       configuration in.
-                               --database=<database>
-                                                    Name of the database whose store to migrate. Can
-                                                      contain * and ? for globbing.
-                                                      Default: neo4j
                                --expand-commands    Allow command expansion in config value evaluation.
                                --pagecache=<size>   The size of the page cache to use for the migration
                                                       process. The general rule is that values up to the

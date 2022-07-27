@@ -96,10 +96,9 @@ public abstract class DatabaseMigrationITBase {
 
         // when
         StoreMigrationTestUtils.Result result = StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm(
-                layout, "--to-format", toRecordFormat, "--verbose");
+                layout, "--to-format", toRecordFormat, "--verbose", DEFAULT_DATABASE_NAME);
         assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
-        result = StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm(
-                layout, "--database", SYSTEM_DATABASE_NAME, "--verbose");
+        result = StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm(layout, "--verbose", SYSTEM_DATABASE_NAME);
         assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
 
         // then
@@ -132,11 +131,11 @@ public abstract class DatabaseMigrationITBase {
         systemDbMigration.zippedStore.unzip(targetDirectory);
 
         // when
-        StoreMigrationTestUtils.Result result =
-                StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm(neo4jLayout, "--verbose");
+        StoreMigrationTestUtils.Result result = StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm(
+                neo4jLayout, "--verbose", DEFAULT_DATABASE_NAME);
         assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
         result = StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm(
-                neo4jLayout, "--database", SYSTEM_DATABASE_NAME, "--verbose");
+                neo4jLayout, "--verbose", SYSTEM_DATABASE_NAME);
         assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
 
         var initialIndexStateMonitor = new InitialIndexStateMonitor(SYSTEM_DATABASE_NAME);

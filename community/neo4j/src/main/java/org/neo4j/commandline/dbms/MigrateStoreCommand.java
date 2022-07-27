@@ -20,7 +20,6 @@
 package org.neo4j.commandline.dbms;
 
 import static java.lang.String.format;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
@@ -91,19 +90,19 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.token.TokenHolders;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
 
 @Command(
-        name = "migrate-store",
+        name = "migrate",
         header = "Migrate a database",
         description = "Migrates a database from one format to another or between versions of the same format. "
                 + "It always migrates the database to the latest combination of major and minor "
                 + "version of the target format.")
 public class MigrateStoreCommand extends AbstractCommand {
-    @Option(
-            names = "--database",
+    @Parameters(
+            arity = "1",
             paramLabel = "<database>",
-            defaultValue = DEFAULT_DATABASE_NAME,
-            description = "Name of the database whose store to migrate. Can contain * and ? for globbing.",
+            description = "Name of the database to migrate. Can contain * and ? for globbing.",
             converter = Converters.DatabaseNamePatternConverter.class)
     private DatabaseNamePattern database;
 
@@ -241,9 +240,9 @@ public class MigrateStoreCommand extends AbstractCommand {
         }
 
         if (failedMigrations.isEmpty()) {
-            resultLog.info("Migrate-store completed successfully");
+            resultLog.info("Database migration completed successfully");
         } else {
-            StringJoiner failedDbs = new StringJoiner("', '", "Migrate-store failed for databases: '", "'");
+            StringJoiner failedDbs = new StringJoiner("', '", "Migration failed for databases: '", "'");
             Exception exceptions = null;
             for (FailedMigration failedMigration : failedMigrations) {
                 failedDbs.add(failedMigration.dbName);

@@ -83,7 +83,8 @@ public class LoadDumpExecutor {
         StoreVersionLoader.Result result = loader.getStoreVersion(fs, config, databaseLayout, contextFactory);
         if (result.migrationNeeded) {
             errorOutput.printf(
-                    "The loaded database is not on a supported version (current:%s). Use the migrate-store command%n",
+                    "The loaded database is not on a supported version (current:%s). "
+                            + "Use the 'neo4j-admin database migrate' command%n",
                     result.currentFormat.getStoreVersionUserString());
         }
     }
