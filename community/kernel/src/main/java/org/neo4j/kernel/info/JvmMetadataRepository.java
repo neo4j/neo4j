@@ -69,4 +69,13 @@ public class JvmMetadataRepository {
         }
         return reservedSize.get();
     }
+
+    public long getMaxMetaspaceSize() {
+        for (var memoryMXBean : ManagementFactory.getMemoryPoolMXBeans()) {
+            if ("Metaspace".equals(memoryMXBean.getName())) {
+                return memoryMXBean.getUsage().getMax();
+            }
+        }
+        return -1;
+    }
 }
