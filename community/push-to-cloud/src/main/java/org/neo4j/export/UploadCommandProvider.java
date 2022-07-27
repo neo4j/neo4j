@@ -16,7 +16,7 @@
  */
 package org.neo4j.export;
 
-import static org.neo4j.cli.CommandType.EXPORT;
+import static org.neo4j.cli.CommandType.UPLOAD;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.cli.CommandProvider;
@@ -24,14 +24,14 @@ import org.neo4j.cli.CommandType;
 import org.neo4j.cli.ExecutionContext;
 
 @ServiceProvider
-public class ExportCommandProvider implements CommandProvider {
+public class UploadCommandProvider implements CommandProvider {
     @Override
-    public ExportCommand createCommand(ExecutionContext ctx) {
-        return new ExportCommand(ctx, new HttpCopier(ctx), new RealDumpCreator(ctx), PushToCloudConsole.realConsole());
+    public UploadCommand createCommand(ExecutionContext ctx) {
+        return new UploadCommand(ctx, new HttpCopier(ctx), PushToCloudConsole.realConsole());
     }
 
     @Override
     public CommandType commandType() {
-        return EXPORT;
+        return UPLOAD;
     }
 }

@@ -17,108 +17,97 @@
 package org.neo4j.export;
 
 import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import java.io.BufferedInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.function.LongConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.CRC32;
-import org.apache.commons.io.FileUtils;
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.archive.Loader;
-import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
+import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
 
 @Command(
-        name = "export",
-        description =
-                "Push your local database to a Neo4j Aura instance. The database must be shutdown in order to take a dump to upload. "
-                        + "The target location is your Neo4j Aura Bolt URI. You will be asked your Neo4j Cloud username and password during "
-                        + "the push-to-cloud operation.")
-public class ExportCommand extends AbstractCommand {
+        name = "upload",
+        description = "Push a local database to a Neo4j Aura instance. "
+                + "The target location is a Neo4j Aura Bolt URI. If Neo4j Cloud username and password are not provided "
+                + "either as a command option or as an environment variable, they will be requested interactively ")
+public class UploadCommand extends AbstractCommand {
     private final Copier copier;
-    private final DumpCreator dumpCreator;
     private final PushToCloudConsole cons;
 
-    @Option(
-            names = "--database",
-            description = "Name of the database to push. " + "Defaults to " + DEFAULT_DATABASE_NAME + ". "
-                    + "This argument cannot be used together with --dump.",
+    @Parameters(
+            paramLabel = "<database>",
+            description = "Name of the database that should be uploaded. The name is used to select a dump file "
+                    + "which is expected to be named <database>.dump.",
             converter = Converters.DatabaseNameConverter.class)
     private NormalizedDatabaseName database;
 
     @Option(
-            names = "--dump",
-            description = "'/path/to/my-neo4j-database-dump-file' Path to an existing database dump for upload. "
-                    + "This argument cannot be used together with --database.")
-    private Path dump;
+            names = "--from-path",
+            description =
+                    "'/path/to/directory-containing-dump' Path to a directory containing a database dump to upload.",
+            required = true)
+    private Path dumpDirectory;
 
     @Option(
-            names = {"--temp-file-location", "--dump-to"},
-            description = "'/path/to/temp-file' Target path for temporary database dump file to be uploaded. "
-                    + "Used in combination with the --database argument.")
-    private Path tmpDumpFile;
-
-    @Option(
-            names = "--bolt-uri",
+            names = "--to-uri",
             arity = "1",
             required = true,
             description = "'neo4j://mydatabaseid.databases.neo4j.io' Bolt URI of target database")
     private String boltURI;
 
     @Option(
-            names = "--username",
+            names = "--to-user",
             defaultValue = "${NEO4J_USERNAME}",
             description =
-                    "Optional: Username of the target database to push this database to. Prompt will ask for username if not provided. "
+                    "Username of the target database to push this database to. Prompt will ask for username if not provided. "
                             + "Alternatively NEO4J_USERNAME environment variable can be used.")
     private String username;
 
     @Option(
-            names = "--password",
+            names = "--to-password",
             defaultValue = "${NEO4J_PASSWORD}",
             description =
-                    "Optional: Password of the target database to push this database to. Prompt will ask for password if not provided. "
+                    "Password of the target database to push this database to. Prompt will ask for password if not provided. "
                             + "Alternatively NEO4J_PASSWORD environment variable can be used.")
     private String password;
 
-    @Option(names = "--overwrite", description = "Optional: Overwrite the data in the target database.")
+    @Option(names = "--overwrite-destination", description = "Overwrite the data in the target database.")
     private boolean overwrite;
 
-    private static final double ACCEPTABLE_DUMP_CHANGE =
-            0.1; // Allow 10% deviation between measured database size, and actually stored dump
+    @Option(
+            names = "--to",
+            description = "The destination for the upload.",
+            defaultValue = "aura",
+            showDefaultValue = CommandLine.Help.Visibility.ALWAYS)
+    private String to;
 
-    public ExportCommand(ExecutionContext ctx, Copier copier, DumpCreator dumpCreator, PushToCloudConsole cons) {
+    public UploadCommand(ExecutionContext ctx, Copier copier, PushToCloudConsole cons) {
         super(ctx);
         this.copier = copier;
-        this.dumpCreator = dumpCreator;
         this.cons = cons;
     }
 
     @Override
     public void execute() {
         try {
-            if ((database == null || isBlank(database.name())) && (dump == null || isBlank(dump.toString()))) {
-                database = new NormalizedDatabaseName(DEFAULT_DATABASE_NAME);
+            if (!"aura".equals(to)) {
+                throw new CommandFailedException(
+                        format("'%s' is not a supported destination. Supported destinations are: 'aura'", to));
             }
+
             if (isBlank(username)) {
                 if (isBlank(username = cons.readLine("%s", "Neo4j aura username (default: neo4j):"))) {
                     username = "neo4j";
@@ -128,7 +117,7 @@ public class ExportCommand extends AbstractCommand {
             if (isBlank(password)) {
                 if ((pass = cons.readPassword("Neo4j aura password for %s:", username)).length == 0) {
                     throw new CommandFailedException(
-                            "Please supply a password, either by '--password' parameter, 'NEO4J_PASSWORD' environment variable, or prompt");
+                            "Please supply a password, either by '--to-password' parameter, 'NEO4J_PASSWORD' environment variable, or prompt");
                 }
             } else {
                 pass = password.toCharArray();
@@ -137,13 +126,10 @@ public class ExportCommand extends AbstractCommand {
             String consoleURL = buildConsoleURI(boltURI);
             String bearerToken = copier.authenticate(verbose, consoleURL, username, pass, overwrite);
 
-            Uploader uploader = prepareUploader(dump, database, tmpDumpFile);
+            Uploader uploader = makeDumpUploader(dumpDirectory, database.name());
             uploader.process(consoleURL, bearerToken);
         } catch (Exception e) {
-            if (verbose) {
-                e.printStackTrace(ctx.out());
-            }
-            throw e;
+            throw new CommandFailedException(e.getMessage());
         }
     }
 
@@ -183,32 +169,15 @@ public class ExportCommand extends AbstractCommand {
                 "https://console%s.neo4j.io/v1/databases/%s", environment == null ? "" : environment, databaseId);
     }
 
-    private Uploader prepareUploader(Path dump, NormalizedDatabaseName database, Path to)
-            throws CommandFailedException {
-        // Either a dump or database name (of a stopped database) can be provided
-        if (dump != null && database != null) {
-            throw new CommandFailedException("Provide either a dump or database name, not both");
-        } else if (dump != null) {
-            return makeDumpUploader(dump);
-        } else {
-            return makeFullUploader(to);
+    public DumpUploader makeDumpUploader(Path dump, String database) {
+        if (!Files.isDirectory(dump)) {
+            throw new CommandFailedException(format("The provided source directory '%s' doesn't exist", dump));
         }
-    }
-
-    public DumpUploader makeDumpUploader(Path dump) {
-        if (Files.notExists(dump)) {
-            throw new CommandFailedException(format("The provided dump '%s' file doesn't exist", dump));
+        Path dumpFile = dump.resolve(database + ".dump");
+        if (Files.notExists(dumpFile)) {
+            throw new CommandFailedException(format("Dump file '%s' does not exist", dumpFile.toAbsolutePath()));
         }
-        return new DumpUploader(new Source(dump, dumpSize(dump)));
-    }
-
-    public FullUploader makeFullUploader(Path to) {
-        Path dumpPath =
-                to != null ? to : ctx.homeDir().resolve("dump-of-" + database.name() + "-" + currentTimeMillis());
-        if (Files.exists(dumpPath)) {
-            throw new CommandFailedException(format("The provided dump-to target '%s' file already exists", dumpPath));
-        }
-        return new FullUploader(new Source(dumpPath, fullSize(ctx, database)));
+        return new DumpUploader(new Source(dumpFile, dumpSize(dumpFile)));
     }
 
     abstract static class Uploader {
@@ -220,10 +189,6 @@ public class ExportCommand extends AbstractCommand {
 
         long size() {
             return source.size();
-        }
-
-        Path path() {
-            return source.path();
         }
 
         abstract void process(String consoleURL, String bearerToken);
@@ -246,90 +211,10 @@ public class ExportCommand extends AbstractCommand {
         }
     }
 
-    class FullUploader extends Uploader {
-        FullUploader(Source source) {
-            super(source);
-        }
-
-        @Override
-        void process(String consoleURL, String bearerToken) {
-            // Check size of full database
-            verbose("Checking database size %s fits at %s\n", sizeText(size()), consoleURL);
-            copier.checkSize(verbose, consoleURL, size(), bearerToken);
-
-            // Dump database to dumpFile
-            Path dumpFile = dumpCreator.dumpDatabase(database.name(), path());
-            long sizeFromDump = dumpSize(dumpFile);
-            long sizeFromDatabase = size();
-            verbose("Validating sizes: fromDump=%d, fromDatabase=%d", sizeFromDump, sizeFromDatabase);
-            if (Math.abs(sizeFromDump - sizeFromDatabase) > ACCEPTABLE_DUMP_CHANGE * sizeFromDatabase) {
-                ctx.out()
-                        .printf(
-                                "Warning: unexpectedly large difference between size in dump, and original size: %d != %d",
-                                sizeFromDump, sizeFromDatabase);
-            }
-            source.setSize(sizeFromDump);
-
-            // Upload dumpFile
-            verbose("Uploading data of %s to %s\n", sizeText(size()), consoleURL);
-            copier.copy(verbose, consoleURL, boltURI, source, true, bearerToken);
-        }
-    }
-
-    private long fullSize(ExecutionContext ctx, NormalizedDatabaseName database) {
-        Path configFile = ctx.confDir().resolve(Config.DEFAULT_CONFIG_FILE_NAME);
-
-        DatabaseLayout layout = Neo4jLayout.of(getConfig(configFile)).databaseLayout(database.name());
-        long storeFilesSize = FileUtils.sizeOf(layout.databaseDirectory().toFile());
-        long txLogSize = readTxLogsSize(layout.getTransactionLogsDirectory());
-        long size = txLogSize + storeFilesSize;
-        verbose(
-                "Determined FullSize=%d bytes from storeFileSize=%d + txLogSize=%d in database '%s'\n",
-                size, storeFilesSize, txLogSize, database.name());
-        return size;
-    }
-
     private long dumpSize(Path dump) {
         long sizeInBytes = readSizeFromDumpMetaData(dump);
         verbose("Determined DumpSize=%d bytes from dump at %s\n", sizeInBytes, dump);
         return sizeInBytes;
-    }
-
-    private long readTxLogsSize(Path txLogs) {
-        long txLogSize = 0;
-        if (Files.exists(txLogs)) {
-            if (Files.isDirectory(txLogs)) {
-                String[] logs =
-                        txLogs.toFile().list((dir, name) -> name.startsWith(TransactionLogFilesHelper.DEFAULT_NAME));
-                if (logs != null && logs.length > 0) {
-                    TxSizeSetter setSize = new TxSizeSetter(logs.length);
-                    Arrays.stream(logs)
-                            .mapToLong(name -> new File(txLogs.toFile(), name).length())
-                            .max()
-                            .ifPresent(setSize);
-                    txLogSize = setSize.txLogSize;
-                }
-            } else {
-                throw new IllegalArgumentException(
-                        "Cannot determine size of transaction logs: " + txLogs + " is not a directory");
-            }
-        }
-        return txLogSize;
-    }
-
-    private static class TxSizeSetter implements LongConsumer {
-        long txLogSize;
-        final long count;
-
-        TxSizeSetter(int count) {
-            this.count = count;
-        }
-
-        @Override
-        public void accept(long size) {
-            // After uploading a full database, the transaction logs were observed to be truncated to 10 files
-            txLogSize = Math.min(10, count) * size;
-        }
     }
 
     public static long readSizeFromDumpMetaData(Path dump) {
@@ -340,21 +225,6 @@ public class ExportCommand extends AbstractCommand {
             throw new CommandFailedException("Unable to check size of database dump.", e);
         }
         return Long.parseLong(metaData.byteCount());
-    }
-
-    private Config getConfig(Path configFile) {
-        if (!ctx.fs().fileExists(configFile)) {
-            throw new CommandFailedException("Unable to find config file, tried: " + configFile.toAbsolutePath());
-        }
-        try {
-            return Config.newBuilder()
-                    .fromFile(configFile)
-                    .set(GraphDatabaseSettings.neo4j_home, ctx.homeDir().toAbsolutePath())
-                    .commandExpansion(allowCommandExpansion)
-                    .build();
-        } catch (Exception e) {
-            throw new CommandFailedException("Failed to read config file: " + configFile.toAbsolutePath(), e);
-        }
     }
 
     public static class Source {
@@ -456,9 +326,5 @@ public class ExportCommand extends AbstractCommand {
          * @throws CommandFailedException if the database won't fit on the aura instance
          */
         void checkSize(boolean verbose, String consoleURL, long size, String bearerToken) throws CommandFailedException;
-    }
-
-    public interface DumpCreator {
-        Path dumpDatabase(String databaseName, Path targetDumpFile) throws CommandFailedException;
     }
 }

@@ -324,8 +324,8 @@ class HttpCopierTest {
     void shouldHandleInsufficientSpaceInSizeRequest() {
         // given
         HttpCopier copier = new HttpCopier(ctx);
-        String errorBody = format(
-                "{\"Message\":\"Store is too big for this neo4j aura instance.\",\"Reason\":\"ImportExceedsMaxSize\"}");
+        String errorBody =
+                "{\"Message\":\"Store is too big for this neo4j aura instance.\",\"Reason\":\"ImportExceedsMaxSize\"}";
         ResponseDefinitionBuilder response =
                 aResponse().withStatus(HTTP_UNPROCESSABLE_ENTITY).withBody(errorBody);
         wireMock.stubFor(initiateSizeRequest("fakeToken", 100000000).willReturn(response));
@@ -921,15 +921,15 @@ class HttpCopierTest {
     }
 
     private void authenticateAndCopy(
-            ExportCommand.Copier copier,
+            UploadCommand.Copier copier,
             Path path,
             long databaseSize,
             boolean sourceProvided,
             String username,
             char[] password)
-            throws CommandFailedException, IOException {
+            throws CommandFailedException {
         String bearerToken = copier.authenticate(false, TEST_CONSOLE_URL, username, password, false);
-        ExportCommand.Source source = new ExportCommand.Source(path, databaseSize);
+        UploadCommand.Source source = new UploadCommand.Source(path, databaseSize);
         copier.copy(
                 true,
                 TEST_CONSOLE_URL,

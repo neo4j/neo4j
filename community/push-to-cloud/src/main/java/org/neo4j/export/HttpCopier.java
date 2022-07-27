@@ -33,7 +33,7 @@ import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.compress.utils.IOUtils.toByteArray;
-import static org.neo4j.export.ExportCommand.bytesToGibibytes;
+import static org.neo4j.export.UploadCommand.bytesToGibibytes;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -59,7 +59,7 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 
-public class HttpCopier implements ExportCommand.Copier {
+public class HttpCopier implements UploadCommand.Copier {
     static final int HTTP_RESUME_INCOMPLETE = 308;
     static final int HTTP_UNPROCESSABLE_ENTITY = 422;
     static final int HTTP_TOO_MANY_REQUESTS = 429;
@@ -161,7 +161,7 @@ public class HttpCopier implements ExportCommand.Copier {
             boolean verbose,
             String consoleURL,
             String boltUri,
-            ExportCommand.Source source,
+            UploadCommand.Source source,
             boolean deleteSourceAfterImport,
             String bearerToken) {
         try {
@@ -734,7 +734,7 @@ public class HttpCopier implements ExportCommand.Copier {
             if (ERROR_REASON_EXCEEDS_MAX_SIZE.equals(errorBody.getReason())) {
                 String trimmedMessage = StringUtils.removeEnd(message, ".");
                 message =
-                        format("%s. Minimum storage space required: %s", trimmedMessage, ExportCommand.sizeText(size));
+                        format("%s. Minimum storage space required: %s", trimmedMessage, UploadCommand.sizeText(size));
             }
 
             return formatCommandFailedExceptionError(message, errorBody.getUrl());
