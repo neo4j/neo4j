@@ -84,7 +84,7 @@ case class PatternComprehension(namedPath: Option[LogicalVariable], pattern: Rel
                                 override val outerScope: Set[LogicalVariable],
                                 override val variableToCollectName: String,
                                 override val collectionName: String)
-  extends ScopeExpression with ExpressionWithOuterScope with RollupApplySolvable {
+  extends ScopeExpression with ExpressionWithOuterScope with RollupApplySolvable with SubqueryExpression {
 
   self =>
 
