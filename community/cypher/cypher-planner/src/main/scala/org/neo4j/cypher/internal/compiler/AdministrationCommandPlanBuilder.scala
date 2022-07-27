@@ -111,9 +111,11 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.expressions.CountExpression
+import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
@@ -787,17 +789,25 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // Non-administration commands that are allowed on system database, e.g. SHOW PROCEDURES YIELD ...
       case q @ Query(SingleQuery(clauses)) if checkClausesAllowedOnSystem(clauses) =>
-        clauses.folder.treeExists {
+        q.folder.treeExists {
           case p: PatternExpression => throw context.cypherExceptionFactory.syntaxException(
-              "You cannot include a pattern expression in the RETURN clause on a system database",
+              "You cannot include a pattern expression on a system database",
               p.position
             )
           case p: PatternComprehension => throw context.cypherExceptionFactory.syntaxException(
-              "You cannot include a pattern comprehension in the RETURN clause on a system database",
+              "You cannot include a pattern comprehension on a system database",
               p.position
             )
           case c: CountExpression => throw context.cypherExceptionFactory.syntaxException(
-              "You cannot include a COUNT expression in the RETURN clause on a system database",
+              "You cannot include a COUNT expression on a system database",
+              c.position
+            )
+          case c: ExistsSubClause => throw context.cypherExceptionFactory.syntaxException(
+              "You cannot include an EXISTS expression on a system database",
+              c.position
+            )
+          case c: SubqueryExpression => throw context.cypherExceptionFactory.syntaxException(
+              "You cannot include a subquery expression on a system database",
               c.position
             )
         }
