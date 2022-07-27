@@ -94,7 +94,11 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
@@ -430,6 +434,24 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // Currently doesn't allow WITH, is this a problem for rewrites?
       case q@Query(None, SingleQuery(clauses))
         if clauses.exists(_.isInstanceOf[CommandClauseAllowedOnSystem]) && clauses.forall(_.isInstanceOf[ClauseAllowedOnSystem]) =>
+        q.folder.treeExists {
+          case p: PatternExpression => throw context.cypherExceptionFactory.syntaxException(
+            "You cannot include a pattern expression on a system database",
+            p.position
+          )
+          case p: PatternComprehension => throw context.cypherExceptionFactory.syntaxException(
+            "You cannot include a pattern comprehension on a system database",
+            p.position
+          )
+          case c: ExistsSubClause => throw context.cypherExceptionFactory.syntaxException(
+            "You cannot include an EXISTS expression on a system database",
+            c.position
+          )
+          case c: SubqueryExpression => throw context.cypherExceptionFactory.syntaxException(
+            "You cannot include a subquery expression on a system database",
+            c.position
+          )
+        }
         Some(plans.AllowedNonAdministrationCommands(q))
 
       case q =>

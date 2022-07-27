@@ -22,7 +22,7 @@ case class PatternExpression(pattern: RelationshipsPattern)
                             (override val outerScope: Set[Variable],
                              override val variableToCollectName: String,
                              override val collectionName: String)
-extends ScopeExpression with ExpressionWithOuterScope with RollupApplySolvable {
+extends ScopeExpression with ExpressionWithOuterScope with RollupApplySolvable with SubqueryExpression {
 
   override def position: InputPosition = pattern.position
 
