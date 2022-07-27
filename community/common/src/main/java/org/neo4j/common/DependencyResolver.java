@@ -67,8 +67,6 @@ public interface DependencyResolver {
         throw new UnsupportedOperationException("not implemented");
     }
 
-    <T> Supplier<T> provideDependency(Class<T> type, SelectionStrategy selector);
-
     <T> Supplier<T> provideDependency(Class<T> type);
 
     /**
@@ -125,11 +123,6 @@ public interface DependencyResolver {
         @Override
         public <T> T resolveDependency(Class<T> type) {
             return resolveDependency(type, SINGLE);
-        }
-
-        @Override
-        public <T> Supplier<T> provideDependency(final Class<T> type, final SelectionStrategy selector) {
-            return () -> resolveDependency(type, selector);
         }
 
         @Override

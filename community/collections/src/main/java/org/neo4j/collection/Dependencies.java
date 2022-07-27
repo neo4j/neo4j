@@ -75,11 +75,6 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
     }
 
     @Override
-    public <T> Supplier<T> provideDependency(final Class<T> type, final SelectionStrategy selector) {
-        return () -> resolveDependency(type, selector);
-    }
-
-    @Override
     public <T> Supplier<T> provideDependency(final Class<T> type) {
         return () -> resolveDependency(type);
     }
