@@ -45,6 +45,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.tuple.Pair;
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.Converters.ByteUnitConverter;
@@ -336,12 +337,11 @@ public class ImportCommand extends AbstractCommand {
     private CsvImporter.ImportMode mode;
 
     @Option(
-            names = "--storage-engine",
+            names = "--format",
             showDefaultValue = NEVER,
             hidden = true,
-            description = "Name of storage engine. Imported database will be created of the format of the specified"
-                    + " storage engine.")
-    private String storageEngineName;
+            description = "Name of database format. Imported database will be created of the specified format")
+    private String format;
 
     public ImportCommand(ExecutionContext ctx) {
         super(ctx);
@@ -378,8 +378,7 @@ public class ImportCommand extends AbstractCommand {
                     .withVerbose(verbose)
                     .withAutoSkipHeaders(autoSkipHeaders)
                     .withForce(force)
-                    .withMode(mode)
-                    .withStorageEngineName(storageEngineName);
+                    .withMode(mode);
 
             nodes.forEach(n -> importerBuilder.addNodeFiles(n.key, n.files));
 
@@ -394,12 +393,15 @@ public class ImportCommand extends AbstractCommand {
 
     @VisibleForTesting
     Config loadNeo4jConfig() {
-        Config cfg = Config.newBuilder()
+        Config.Builder builder = Config.newBuilder()
                 .set(GraphDatabaseSettings.neo4j_home, ctx.homeDir().toAbsolutePath())
                 .fromFileNoThrow(ctx.confDir().resolve(Config.DEFAULT_CONFIG_FILE_NAME))
                 .fromFileNoThrow(additionalConfig)
-                .commandExpansion(allowCommandExpansion)
-                .build();
+                .commandExpansion(allowCommandExpansion);
+        if (StringUtils.isNotEmpty(format)) {
+            builder.set(GraphDatabaseSettings.db_format, format);
+        }
+        Config cfg = builder.build();
         ConfigUtils.disableAllConnectors(cfg);
         return cfg;
     }

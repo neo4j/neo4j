@@ -19,9 +19,6 @@
  */
 package org.neo4j.storageengine.api;
 
-import static org.apache.commons.lang3.StringUtils.isNotEmpty;
-import static org.neo4j.internal.helpers.collection.Iterables.single;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -30,12 +27,14 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.ConsistencyFlags;
@@ -180,10 +179,21 @@ public interface StorageEngineFactory {
 
     /**
      * Check if a format is supported by the factory
+     *
      * @param format format to check if it is supported
+     * @param includeFormatsUnderDevelopment true if this check should include formats under development
      * @return true if supported, false otherwise
      */
-    boolean supportedFormat(String format);
+    default boolean supportedFormat(String format, boolean includeFormatsUnderDevelopment) {
+        return supportedFormats(includeFormatsUnderDevelopment).contains(format);
+    }
+
+    /**
+     * Get the name of all the supported formats
+     * @param includeFormatsUnderDevelopment true if this check should include formats under development
+     * @return a Set of format names
+     */
+    Set<String> supportedFormats(boolean includeFormatsUnderDevelopment);
 
     /**
      * Instantiates a read-only {@link TransactionIdStore} to be used outside of a {@link StorageEngine}.
@@ -417,7 +427,15 @@ public interface StorageEngineFactory {
      * @throws IllegalStateException if there were no storage engine factories to choose from.
      */
     static StorageEngineFactory defaultStorageEngine() {
-        return selectStorageEngine("record");
+        String name = "record";
+        return allAvailableStorageEngines().stream()
+                .filter(e -> e.name().equals(name))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No storage engine matching name '" + name + "'. Available storage engines are: "
+                                + allAvailableStorageEngines().stream()
+                                        .map(e -> "'" + e.name() + "'")
+                                        .collect(Collectors.joining(", "))));
     }
 
     /**
@@ -439,25 +457,6 @@ public interface StorageEngineFactory {
     }
 
     /**
-     * @param name the name returned by {@link StorageEngineFactory#name()}.
-     * @return the {@link StorageEngineFactory} that has the given {@code name}.
-     * @throws IllegalArgumentException if the storage engine with the given {@code name} couldn't be found.
-     */
-    static StorageEngineFactory selectStorageEngine(String name) {
-        Collection<StorageEngineFactory> storageEnginesWithThisName = allAvailableStorageEngines().stream()
-                .filter(e -> e.name().equals(name))
-                .collect(Collectors.toList());
-        if (storageEnginesWithThisName.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "No storage engine matching name '" + name + "'. Available storage engines are: "
-                            + allAvailableStorageEngines().stream()
-                                    .map(e -> "'" + e.name() + "'")
-                                    .collect(Collectors.joining(", ")));
-        }
-        return single(storageEnginesWithThisName);
-    }
-
-    /**
      * Selects storage engine which matches the store format found in the given {@link Configuration}, see {@link GraphDatabaseSettings#db_format}.
      *
      * @param configuration the {@link Configuration} to read the name from.
@@ -465,19 +464,7 @@ public interface StorageEngineFactory {
      * @throws IllegalArgumentException if no storage engine matching the store format with the given name was found.
      */
     static StorageEngineFactory selectStorageEngine(Configuration configuration) {
-        Collection<StorageEngineFactory> storageEngineFactories = allAvailableStorageEngines();
-        Optional<StorageEngineFactory> storageEngine = storageEngineFactories.stream()
-                .filter(engine -> engine.supportedFormat(configuration.get(GraphDatabaseSettings.db_format)))
-                .findFirst();
-        if (storageEngine.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "No storage engine supports format '" + configuration.get(GraphDatabaseSettings.db_format)
-                            + "'. Available storage engines are: "
-                            + allAvailableStorageEngines().stream()
-                                    .map(e -> "'" + e.name() + "'")
-                                    .collect(Collectors.joining(", ")));
-        }
-        return storageEngine.get();
+        return findEngineForFormatOrThrow(configuration);
     }
 
     /**
@@ -490,21 +477,6 @@ public interface StorageEngineFactory {
      */
     static StorageEngineFactory selectStorageEngine(
             FileSystemAbstraction fs, DatabaseLayout databaseLayout, Configuration configuration) {
-        return selectStorageEngine(
-                fs, databaseLayout, configuration != null ? configuration.get(GraphDatabaseSettings.db_format) : null);
-    }
-
-    /**
-     * Selects {@link StorageEngineFactory} first by looking at the store accessible in the provided file system at the given {@code databaseLayout},
-     * and if a store exists there and is recognized by any of the available factories will return it. Otherwise the factory specified by the
-     * {@code configuration} will be returned.
-     *
-     * @param specificNameOrNull the {@link StorageEngineFactory} name to default to if no store exists and can be recognized by any available factory.
-     * This parameter can be {@code null}, which then means to select use the default.
-     * @return the found {@link StorageEngineFactory}.
-     */
-    private static StorageEngineFactory selectStorageEngine(
-            FileSystemAbstraction fs, DatabaseLayout databaseLayout, String specificNameOrNull) {
         // - Does a store exist at this location? -> get the one able to open it
         // - Is there a specific name of a store format to look for? -> get the storage engine that recognizes it
         // - Use the default one
@@ -513,20 +485,24 @@ public interface StorageEngineFactory {
             return forExistingStore.get();
         }
 
-        if (isNotEmpty(specificNameOrNull)) {
-            Collection<StorageEngineFactory> storageEngineFactories = allAvailableStorageEngines();
-            return storageEngineFactories.stream()
-                    .filter(engine -> engine.supportedFormat(specificNameOrNull))
-                    .findFirst()
-                    .orElseThrow(() ->
-                            new IllegalArgumentException("No storage engine supports format '" + specificNameOrNull
-                                    + "'. Available storage engines are: "
-                                    + allAvailableStorageEngines().stream()
-                                            .map(e -> "'" + e.name() + "'")
-                                            .collect(Collectors.joining(", "))));
-        }
+        return configuration != null ? findEngineForFormatOrThrow(configuration) : defaultStorageEngine();
+    }
 
-        return defaultStorageEngine();
+    private static StorageEngineFactory findEngineForFormatOrThrow(Configuration configuration) {
+        String name = configuration.get(GraphDatabaseSettings.db_format);
+        boolean includeDevFormats = configuration.get(GraphDatabaseInternalSettings.include_versions_under_development);
+        Collection<StorageEngineFactory> storageEngineFactories = allAvailableStorageEngines();
+        return storageEngineFactories.stream()
+                .filter(engine -> engine.supportedFormat(name, includeDevFormats))
+                .findFirst()
+                .orElseThrow(() -> {
+                    String allFormats = allAvailableStorageEngines().stream()
+                            .flatMap(sef -> sef.supportedFormats(includeDevFormats).stream())
+                            .distinct()
+                            .collect(Collectors.joining("', '", "'", "'"));
+                    return new IllegalArgumentException(String.format(
+                            "No supported database format '%s'. Available formats are: %s.", name, allFormats));
+                });
     }
 
     @FunctionalInterface

@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
@@ -46,6 +47,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
@@ -277,9 +279,12 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     }
 
     @Override
-    public boolean supportedFormat(String format) {
+    public Set<String> supportedFormats(boolean includeFormatsUnderDevelopment) {
         return Iterables.stream(RecordFormatSelector.allFormats())
-                .anyMatch(f -> f.name().equals(format) && !f.onlyForMigration());
+                .filter(f -> includeFormatsUnderDevelopment || !f.formatUnderDevelopment())
+                .filter(not(RecordFormats::onlyForMigration))
+                .map(RecordFormats::name)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     @Override
