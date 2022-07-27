@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -946,4 +947,136 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     val expected = nodes.map(Array(_))
     runtimeResult should beColumns("x").withRows(inOrder(expected))
   }
+
+  test("should union of ordered union with apply") {
+    val size = sizeHint / 4
+    // given
+    val (as, bs, cs, ds) = given {
+      val as = nodeGraph(size, "A")
+      val bs = nodeGraph(size, "B")
+      val cs = nodeGraph(size, "C")
+      val ds = nodeGraph(size, "D")
+      (as, bs, cs, ds)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .distinct("x AS x")
+      .union()
+      .|.projection("x AS x")
+      .|.orderedDistinct(Seq("x"), "x AS x")
+      .|.orderedUnion(Seq(Ascending("x")))
+      .|.|.nodeByLabelScan("x", "D", IndexOrderAscending)
+      .|.nodeByLabelScan("x", "C", IndexOrderAscending)
+      .projection("x AS x")
+      .apply()
+      .|.orderedDistinct(Seq("x"), "y AS y", "x AS x")
+      .|.orderedUnion(Seq(Ascending("x")))
+      .|.|.nodeByLabelScan("x", "B", IndexOrderAscending, "y")
+      .|.nodeByLabelScan("x", "A", IndexOrderAscending, "y")
+      .unwind("[1, 2] AS y")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {
+      y <- as ++ bs ++ cs ++ ds
+    } yield Array(y)
+
+    runtimeResult should beColumns("x").withRows(expected)
+  }
+
+  test("should union of nested ordered union with apply") {
+    val size = sizeHint / 5
+    // given
+    val (as, bs, cs, ds, es) = given {
+      val as = nodeGraph(size, "A")
+      val bs = nodeGraph(size, "B")
+      val cs = nodeGraph(size, "C")
+      val ds = nodeGraph(size, "D")
+      val es = nodeGraph(size, "E")
+      (as, bs, cs, ds, es)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .distinct("x AS x")
+      .union()
+      .|.projection("x AS x")
+      .|.orderedDistinct(Seq("x"), "x AS x")
+      .|.orderedUnion(Seq(Ascending("x")))
+      .|.|.nodeByLabelScan("x", "E", IndexOrderAscending)
+      .|.orderedUnion(Seq(Ascending("x")))
+      .|.|.nodeByLabelScan("x", "D", IndexOrderAscending)
+      .|.nodeByLabelScan("x", "C", IndexOrderAscending)
+      .projection("x AS x")
+      .apply()
+      .|.orderedDistinct(Seq("x"), "y AS y", "x AS x")
+      .|.orderedUnion(Seq(Ascending("x")))
+      .|.|.nodeByLabelScan("x", "B", IndexOrderAscending, "y")
+      .|.nodeByLabelScan("x", "A", IndexOrderAscending, "y")
+      .unwind("[1, 2] AS y")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {
+      y <- as ++ bs ++ cs ++ ds ++ es
+    } yield Array(y)
+
+    runtimeResult should beColumns("x").withRows(expected)
+  }
+
+  test("should union of nested ordered union with aggregations") {
+    // given
+    given {
+      nodeGraph(sizeHint, "A", "B", "C", "D", "E", "F", "G", "H")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("`size(dst)`")
+      .distinct("`size(dst)` AS `size(dst)`")
+      .union()
+      .|.projection("`size(dst)` AS `size(dst)`")
+      .|.projection("size(`dst`) AS `size(dst)`")
+      .|.aggregation(Seq("`src` AS `src`", "`y` AS `y`"), Seq("COLLECT(DISTINCT `z`) AS `dst`"))
+      .|.apply()
+      .|.|.orderedDistinct(Seq("`z`"), "`src` AS `src`", "`y` AS `y`", "`z` AS `z`")
+      .|.|.orderedUnion(Seq(Ascending("z")))
+      .|.|.|.nodeByLabelScan("z", "H", IndexOrderAscending, "src", "y")
+      .|.|.nodeByLabelScan("z", "G", IndexOrderAscending, "src", "y")
+      .|.projection("[] AS y")
+      .|.aggregation(Seq(), Seq("COLLECT(DISTINCT `x`) AS `src`"))
+      .|.orderedDistinct(Seq("`x`"), "`x` AS `x`")
+      .|.orderedUnion(Seq(Ascending("x")))
+      .|.|.nodeByLabelScan("x", "F", IndexOrderAscending)
+      .|.orderedUnion(Seq(Ascending("x")))
+      .|.|.nodeByLabelScan("x", "E", IndexOrderAscending)
+      .|.nodeByLabelScan("x", "D", IndexOrderAscending)
+      .projection("`size(dst)` AS `size(dst)`")
+      .projection("size(`dst`) AS `size(dst)`")
+      .aggregation(Seq("`src` AS `src`", "`y` AS `y`"), Seq("COLLECT(DISTINCT `z`) AS `dst`"))
+      .apply()
+      .|.orderedDistinct(Seq("`z`"), "`src` AS `src`", "`y` AS `y`", "`z` AS `z`")
+      .|.orderedUnion(Seq(Ascending("z")))
+      .|.|.nodeByLabelScan("z", "C", IndexOrderAscending, "src", "y")
+      .|.nodeByLabelScan("z", "B", IndexOrderAscending, "src", "y")
+      .projection("[] AS y")
+      .aggregation(Seq(), Seq("COLLECT(DISTINCT `x`) AS `src`"))
+      .nodeByLabelScan("x", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("size(dst)").withRows(Array(Array(sizeHint)))
+  }
+
 }
