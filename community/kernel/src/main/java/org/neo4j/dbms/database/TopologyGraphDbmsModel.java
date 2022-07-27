@@ -111,7 +111,7 @@ public interface TopologyGraphDbmsModel {
     enum InstanceStatus {
         ENABLED,
         DEALLOCATING,
-        MARKED;
+        CORDONED;
 
         public static InstanceStatus getInstanceStatus(String value) {
             if (value.equals("active")) {
