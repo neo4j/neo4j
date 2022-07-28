@@ -357,6 +357,7 @@ abstract class Bootloader implements AutoCloseable {
             try {
                 pid = os.start();
             } catch (CommandFailedException e) {
+                environment.err().println(e.getMessage());
                 throw new CommandFailedException("Unable to start. See user log for details.", e, e.getExitCode());
             }
 
@@ -485,6 +486,7 @@ abstract class Bootloader implements AutoCloseable {
         void uninstallService() {
             if (!os().serviceInstalled()) {
                 environment.out().println("Neo4j service is not installed");
+                return;
             }
             os().uninstallService();
             environment.out().println("Neo4j service uninstalled.");

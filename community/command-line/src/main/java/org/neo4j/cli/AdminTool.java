@@ -102,7 +102,7 @@ public class AdminTool {
                 var messageSpec = new UsageMessageSpec().description(commandGroup.getDescription());
                 CommandSpec commandSpec =
                         CommandSpec.create().name(commandGroup.getDisplayName()).usageMessage(messageSpec);
-                CommandLine groupCommandLine = new CommandLine(commandSpec);
+                CommandLine groupCommandLine = new CommandLine(commandSpec, new ContextInjectingFactory(ctx));
                 registerGroupCommands(commandProviders, commandGroup, ctx, groupCommandLine);
                 commandLine.addSubcommand(groupCommandLine);
             }
@@ -110,7 +110,7 @@ public class AdminTool {
     }
 
     protected static CommandLine getCommandLine(ExecutionContext ctx, Strategy strategy) {
-        CommandLine cmd = new CommandLine(strategy.createRootCommand());
+        CommandLine cmd = new CommandLine(strategy.createRootCommand(), new ContextInjectingFactory(ctx));
         registerCommands(cmd, strategy, Services.loadAll(CommandProvider.class));
         cmd.setOut(new PrintWriter(ctx.out(), true))
                 .setErr(new PrintWriter(ctx.err(), true))

@@ -31,19 +31,13 @@ import picocli.CommandLine.Command;
             WindowsServiceCommand.Update.class,
             WindowsServiceCommand.Uninstall.class
         })
-public class WindowsServiceCommand extends AbstractCommand {
-    public WindowsServiceCommand(ExecutionContext ctx) {
-        super(ctx);
-    }
-
-    @Override
-    protected void execute() throws Exception {}
+public class WindowsServiceCommand {
 
     @Command(name = "install", description = "Install the Windows service.")
     public static class Install extends AbstractCommand {
 
-        protected Install(ExecutionContext ctx) {
-            super(ctx);
+        public Install(ExecutionContext ctx) {
+            super(ctx, false);
         }
 
         @Override
@@ -58,8 +52,8 @@ public class WindowsServiceCommand extends AbstractCommand {
     @Command(name = "uninstall", description = "Uninstall the Windows service.")
     public static class Uninstall extends AbstractCommand {
 
-        protected Uninstall(ExecutionContext ctx) {
-            super(ctx);
+        public Uninstall(ExecutionContext ctx) {
+            super(ctx, false);
         }
 
         @Override
@@ -74,8 +68,8 @@ public class WindowsServiceCommand extends AbstractCommand {
     @Command(name = "update-service", description = "Update the Windows service.")
     public static class Update extends AbstractCommand {
 
-        protected Update(ExecutionContext ctx) {
-            super(ctx);
+        public Update(ExecutionContext ctx) {
+            super(ctx, false);
         }
 
         @Override

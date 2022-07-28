@@ -422,26 +422,33 @@ class ServerCommandWithFakeDbmsEntryPointTest {
 
             @Test
             void shouldComplainIfAlreadyInstalled() {
-                assertThat(executeWithoutInjection("install-service")).isEqualTo(EXIT_CODE_OK);
+                assertThat(executeWithoutInjection("windows-service", "install"))
+                        .isEqualTo(EXIT_CODE_OK);
                 clearOutAndErr();
-                assertThat(executeWithoutInjection("install-service")).isEqualTo(ExitCode.SOFTWARE);
-                assertThat(out.toString()).contains("Neo4j service is already installed");
+                assertThat(executeWithoutInjection("windows-service", "install"))
+                        .isEqualTo(ExitCode.SOFTWARE);
+                assertThat(err.toString()).contains("Neo4j service is already installed");
             }
 
             @Test
             void shouldComplainIfUninstallingWhenNotInstalled() {
-                assertThat(executeWithoutInjection("uninstall-service")).isEqualTo(EXIT_CODE_OK);
+                assertThat(executeWithoutInjection("windows-service", "uninstall"))
+                        .isEqualTo(EXIT_CODE_OK);
                 assertThat(out.toString()).contains("Neo4j service is not installed");
             }
         }
 
         @Override
         protected int execute(List<String> args, Map<String, String> env, Runtime.Version version) {
+            // Depending on if this was invoked using neo4j or neo4j-admin root commands,
+            // the arguments can either be 'server ...' or just '...'.
+            int commandIdx = !args.isEmpty() && args.get(0).equals("server") ? 1 : 0;
             if (IS_OS_WINDOWS) {
-                if (!args.isEmpty() && args.get(0).equals("start")) {
+                if (args.size() > commandIdx && args.get(commandIdx).equals("start")) {
                     List<String> installArgs = new ArrayList<>(args);
-                    installArgs.remove(0);
-                    installArgs.add(0, "install-service");
+                    installArgs.remove(commandIdx);
+                    installArgs.add(commandIdx, "windows-service");
+                    installArgs.add(commandIdx + 1, "install");
                     int installExitCode = super.execute(installArgs, env, version);
                     if (installExitCode != EXIT_CODE_OK) {
                         return installExitCode;
@@ -450,15 +457,15 @@ class ServerCommandWithFakeDbmsEntryPointTest {
             }
             int exitCode = super.execute(args, env, version);
             if (IS_OS_WINDOWS) {
-                if (!args.isEmpty() && args.get(0).equals("stop") && exitCode == EXIT_CODE_OK) {
-                    return super.execute(List.of("uninstall-service"), env);
+                if (args.size() > commandIdx && args.get(commandIdx).equals("stop") && exitCode == EXIT_CODE_OK) {
+                    return super.execute(List.of("windows-service", "uninstall"), env);
                 }
             }
             return exitCode;
         }
 
-        int executeWithoutInjection(String arg) {
-            return execute(List.of(arg), Map.of(), Runtime.version());
+        int executeWithoutInjection(String... arg) {
+            return super.execute(List.of(arg), Map.of(), Runtime.version());
         }
 
         @Override
@@ -499,8 +506,7 @@ class ServerCommandWithFakeDbmsEntryPointTest {
             String output = out.toString();
             String[] availableCommands = new String[] {"start", "restart", "console", "status", "stop"};
             if (SystemUtils.IS_OS_WINDOWS) {
-                availableCommands =
-                        ArrayUtils.addAll(availableCommands, "install-service", "uninstall-service", "update-service");
+                availableCommands = ArrayUtils.addAll(availableCommands, "windows-service");
             }
             availableCommands = ArrayUtils.addAll(availableCommands, "version", "help");
 
@@ -553,6 +559,14 @@ class ServerCommandWithFakeDbmsEntryPointTest {
             newArgs.addAll(args);
 
             return super.execute(newArgs, env, version);
+        }
+
+        @Override
+        int executeWithoutInjection(String... arg) {
+            String[] newArgs = new String[arg.length + 1];
+            newArgs[0] = "server";
+            System.arraycopy(arg, 0, newArgs, 1, arg.length);
+            return super.executeWithoutInjection(newArgs);
         }
     }
 

@@ -31,7 +31,7 @@ import org.neo4j.server.startup.WindowsServiceCommand;
 public class Neo4jWindowsServiceProvider implements CommandProvider {
     @Override
     public WindowsServiceCommand createCommand(ExecutionContext ctx) {
-        return new WindowsServiceCommand(ctx);
+        return new WindowsServiceCommand();
     }
 
     @Override
