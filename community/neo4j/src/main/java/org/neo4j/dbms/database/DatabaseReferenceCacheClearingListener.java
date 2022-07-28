@@ -29,15 +29,14 @@ public final class DatabaseReferenceCacheClearingListener extends TransactionEve
     private final DatabaseIdRepository.Caching idRepository;
     private final DatabaseReferenceRepository.Caching refRepository;
 
-    public DatabaseReferenceCacheClearingListener( DatabaseIdRepository.Caching idRepository, DatabaseReferenceRepository.Caching refRepository )
-    {
+    public DatabaseReferenceCacheClearingListener(
+            DatabaseIdRepository.Caching idRepository, DatabaseReferenceRepository.Caching refRepository) {
         this.idRepository = idRepository;
         this.refRepository = refRepository;
     }
 
     @Override
-    public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
-    {
+    public void afterCommit(TransactionData data, Object state, GraphDatabaseService databaseService) {
         idRepository.invalidateAll();
         refRepository.invalidateAll();
     }

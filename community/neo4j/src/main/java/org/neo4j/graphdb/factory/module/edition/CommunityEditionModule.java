@@ -22,7 +22,6 @@ package org.neo4j.graphdb.factory.module.edition;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.dbms.database.DatabaseContextProviderDelegate.delegate;
-import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
 import java.util.function.Supplier;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
@@ -31,18 +30,16 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
 import org.neo4j.configuration.database.readonly.ConfigReadOnlyDatabaseListener;
 import org.neo4j.dbms.CommunityDatabaseStateService;
 import org.neo4j.dbms.DatabaseStateService;
-import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContextProvider;
-import org.neo4j.dbms.database.DatabaseReferenceCacheClearingListener;
 import org.neo4j.dbms.database.DatabaseInfoService;
 import org.neo4j.dbms.database.DatabaseLifecycles;
 import org.neo4j.dbms.database.DatabaseOperationCounts;
+import org.neo4j.dbms.database.DatabaseReferenceCacheClearingListener;
 import org.neo4j.dbms.database.DatabaseRepository;
 import org.neo4j.dbms.database.DefaultDatabaseContextFactory;
 import org.neo4j.dbms.database.DefaultDatabaseContextFactoryComponents;
@@ -58,15 +55,12 @@ import org.neo4j.dbms.identity.DefaultIdentityModule;
 import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.dbms.identity.ServerIdentityFactory;
 import org.neo4j.dbms.systemgraph.CommunityTopologyGraphComponent;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.fabric.bootstrap.FabricServicesBootstrap;
-import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
@@ -88,6 +82,7 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.builtin.routing.AbstractRoutingProcedureInstaller;
 import org.neo4j.procedure.builtin.routing.ClientRoutingDomainChecker;
+import org.neo4j.procedure.builtin.routing.DefaultDatabaseAvailabilityChecker;
 import org.neo4j.procedure.builtin.routing.SingleInstanceRoutingProcedureInstaller;
 import org.neo4j.server.CommunityNeoWebServer;
 import org.neo4j.server.config.AuthConfigProvider;
@@ -158,8 +153,12 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
         databaseReferenceRepo.setDelegate(rootDatabaseReferenceRepository);
         var databaseIdCacheCleaner = new DatabaseReferenceCacheClearingListener(databaseIdRepo, databaseReferenceRepo);
 
-        fabricServicesBootstrap = new FabricServicesBootstrap.Community(globalModule.getGlobalLife(),
-                globalModule.getGlobalDependencies(), globalModule.getLogService(), databaseRepository, databaseReferenceRepo);
+        fabricServicesBootstrap = new FabricServicesBootstrap.Community(
+                globalModule.getGlobalLife(),
+                globalModule.getGlobalDependencies(),
+                globalModule.getLogService(),
+                databaseRepository,
+                databaseReferenceRepo);
         var databaseLifecycles = new DatabaseLifecycles(
                 databaseRepository,
                 globalModule.getGlobalConfig().get(default_database),
@@ -238,20 +237,21 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
     }
 
     @Override
-    public void registerEditionSpecificProcedures(
-            GlobalProcedures globalProcedures, DatabaseContextProvider<?> databaseContextProvider)
-            throws KernelException {}
-
-    @Override
     protected AbstractRoutingProcedureInstaller createRoutingProcedureInstaller(
             GlobalModule globalModule,
             DatabaseContextProvider<?> databaseContextProvider,
             ClientRoutingDomainChecker clientRoutingDomainChecker) {
-        ConnectorPortRegister portRegister = globalModule.getConnectorPortRegister();
-        Config config = globalModule.getGlobalConfig();
-        InternalLogProvider logProvider = globalModule.getLogService().getInternalLogProvider();
+        var portRegister = globalModule.getConnectorPortRegister();
+        var config = globalModule.getGlobalConfig();
+        var logProvider = globalModule.getLogService().getInternalLogProvider();
+        var databaseAvailabilityChecker = new DefaultDatabaseAvailabilityChecker(databaseContextProvider);
         return new SingleInstanceRoutingProcedureInstaller(
-                databaseContextProvider, clientRoutingDomainChecker, portRegister, config, logProvider);
+                databaseAvailabilityChecker,
+                databaseReferenceRepo,
+                clientRoutingDomainChecker,
+                portRegister,
+                config,
+                logProvider);
     }
 
     @Override

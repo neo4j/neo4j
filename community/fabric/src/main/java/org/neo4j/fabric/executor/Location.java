@@ -21,7 +21,6 @@ package org.neo4j.fabric.executor;
 
 import java.util.Objects;
 import java.util.UUID;
-
 import org.neo4j.configuration.helpers.RemoteUri;
 
 public class Location {
@@ -156,5 +155,4 @@ public class Location {
             }
         }
     }
-
 }

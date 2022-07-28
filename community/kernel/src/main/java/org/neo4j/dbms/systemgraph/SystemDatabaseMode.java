@@ -22,8 +22,7 @@ package org.neo4j.dbms.systemgraph;
 import org.neo4j.annotations.api.PublicApi;
 
 @PublicApi
-public
-enum SystemDatabaseMode {
+public enum SystemDatabaseMode {
     PRIMARY,
     SECONDARY
 }

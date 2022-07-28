@@ -20,7 +20,11 @@
 package org.neo4j.fabric.eval
 
 import org.neo4j.cypher.internal.administration.BaseDatabaseInfoMapper.RichOptional
-import org.neo4j.kernel.database.{DatabaseIdRepository, DatabaseReference, DatabaseReferenceRepository, NamedDatabaseId, NormalizedDatabaseName}
+import org.neo4j.kernel.database.DatabaseIdRepository
+import org.neo4j.kernel.database.DatabaseReference
+import org.neo4j.kernel.database.DatabaseReferenceRepository
+import org.neo4j.kernel.database.NamedDatabaseId
+import org.neo4j.kernel.database.NormalizedDatabaseName
 
 import scala.collection.SortedSet
 import scala.collection.immutable.SortedMap
@@ -54,7 +58,7 @@ object DatabaseLookup {
   class Default(databaseRef: DatabaseReferenceRepository) extends DatabaseLookup {
 
     def databaseReferences: SortedMap[NormalizedDatabaseName, NamedDatabaseId] = {
-      val unsortedMap = databaseRef.getInternalDatabaseReferences.asScala.map( ref => ref.alias -> ref.databaseId ).toMap
+      val unsortedMap = databaseRef.getInternalDatabaseReferences.asScala.map(ref => ref.alias -> ref.databaseId).toMap
       SortedMap.empty[NormalizedDatabaseName, NamedDatabaseId] ++ unsortedMap
     }
 

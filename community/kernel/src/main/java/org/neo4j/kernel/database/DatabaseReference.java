@@ -22,7 +22,6 @@ package org.neo4j.kernel.database;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.UUID;
-
 import org.neo4j.configuration.helpers.RemoteUri;
 
 /**
@@ -34,10 +33,11 @@ import org.neo4j.configuration.helpers.RemoteUri;
  * A database may have multiple references, each with a different alias.
  * The reference whose {@link #alias()} corresponds to the database's original name is known as the primary reference.
  */
-public abstract class DatabaseReference implements Comparable<DatabaseReference>
-{
-    private static final Comparator<DatabaseReference> referenceComparator = Comparator.comparing( a -> a.alias().name(), String::compareToIgnoreCase );
-    private static final Comparator<DatabaseReference> nullSafeReferenceComparator = Comparator.nullsLast( referenceComparator );
+public abstract class DatabaseReference implements Comparable<DatabaseReference> {
+    private static final Comparator<DatabaseReference> referenceComparator =
+            Comparator.comparing(a -> a.alias().name(), String::compareToIgnoreCase);
+    private static final Comparator<DatabaseReference> nullSafeReferenceComparator =
+            Comparator.nullsLast(referenceComparator);
 
     /**
      * @return the alias associated with this database reference
@@ -60,23 +60,21 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
     public abstract UUID id();
 
     @Override
-    public int compareTo( DatabaseReference that )
-    {
-        return nullSafeReferenceComparator.compare( this, that );
+    public int compareTo(DatabaseReference that) {
+        return nullSafeReferenceComparator.compare(this, that);
     }
 
     /**
      * External references point to databases which are not stored within this DBMS.
      */
-    public static final class External extends DatabaseReference
-    {
+    public static final class External extends DatabaseReference {
         private final NormalizedDatabaseName targetName;
         private final NormalizedDatabaseName name;
         private final RemoteUri remoteUri;
         private final UUID uuid;
 
-        public External( NormalizedDatabaseName targetName, NormalizedDatabaseName name, RemoteUri remoteUri, UUID uuid )
-        {
+        public External(
+                NormalizedDatabaseName targetName, NormalizedDatabaseName name, RemoteUri remoteUri, UUID uuid) {
             this.targetName = targetName;
             this.name = name;
             this.remoteUri = remoteUri;
@@ -84,70 +82,60 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
         }
 
         @Override
-        public NormalizedDatabaseName alias()
-        {
+        public NormalizedDatabaseName alias() {
             return name;
         }
 
         @Override
-        public boolean isPrimary()
-        {
+        public boolean isPrimary() {
             return false;
         }
 
         @Override
-        public boolean isRemote()
-        {
+        public boolean isRemote() {
             return true;
         }
 
-        public RemoteUri remoteUri()
-        {
+        public RemoteUri remoteUri() {
             return remoteUri;
         }
 
-        public NormalizedDatabaseName remoteName()
-        {
+        public NormalizedDatabaseName remoteName() {
             return targetName;
         }
 
         @Override
-        public UUID id()
-        {
+        public UUID id() {
             return uuid;
         }
 
         @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
             }
-            if ( o == null || getClass() != o.getClass() )
-            {
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
             External remote = (External) o;
-            return Objects.equals( targetName, remote.targetName ) && Objects.equals( name, remote.name ) &&
-                    Objects.equals( remoteUri, remote.remoteUri ) && Objects.equals( uuid, remote.uuid );
+            return Objects.equals(targetName, remote.targetName)
+                    && Objects.equals(name, remote.name)
+                    && Objects.equals(remoteUri, remote.remoteUri)
+                    && Objects.equals(uuid, remote.uuid);
         }
 
         @Override
-        public int hashCode()
-        {
-            return Objects.hash( targetName, name, remoteUri, uuid );
+        public int hashCode() {
+            return Objects.hash(targetName, name, remoteUri, uuid);
         }
 
         @Override
-        public String toString()
-        {
-            return "DatabaseReference.External{" +
-                    "remoteName=" + targetName +
-                    ", name=" + name +
-                    ", remoteUri=" + remoteUri +
-                    ", uuid=" + uuid +
-                    '}';
+        public String toString() {
+            return "DatabaseReference.External{" + "remoteName="
+                    + targetName + ", name="
+                    + name + ", remoteUri="
+                    + remoteUri + ", uuid="
+                    + uuid + '}';
         }
     }
 
@@ -157,74 +145,59 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
      * Note, however, that a local reference may point to databases not stored on this physical instance.
      * Whether a reference points to a database present on this instance is represented by {@link #isRemote()}.
      */
-    public static final class Internal extends DatabaseReference
-    {
+    public static final class Internal extends DatabaseReference {
         private final NormalizedDatabaseName name;
         private final NamedDatabaseId namedDatabaseId;
 
-        public Internal( NormalizedDatabaseName name, NamedDatabaseId namedDatabaseId )
-        {
+        public Internal(NormalizedDatabaseName name, NamedDatabaseId namedDatabaseId) {
             this.name = name;
             this.namedDatabaseId = namedDatabaseId;
         }
 
-        public NamedDatabaseId databaseId()
-        {
+        public NamedDatabaseId databaseId() {
             return namedDatabaseId;
         }
 
         @Override
-        public NormalizedDatabaseName alias()
-        {
+        public NormalizedDatabaseName alias() {
             return name;
         }
 
         @Override
-        public boolean isPrimary()
-        {
-            return Objects.equals( name.name(), namedDatabaseId.name() );
+        public boolean isPrimary() {
+            return Objects.equals(name.name(), namedDatabaseId.name());
         }
 
         @Override
-        public boolean isRemote()
-        {
+        public boolean isRemote() {
             return false;
         }
 
         @Override
-        public UUID id()
-        {
+        public UUID id() {
             return namedDatabaseId.databaseId().uuid();
         }
 
         @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
+        public boolean equals(Object o) {
+            if (this == o) {
                 return true;
             }
-            if ( o == null || getClass() != o.getClass() )
-            {
+            if (o == null || getClass() != o.getClass()) {
                 return false;
             }
             Internal internal = (Internal) o;
-            return Objects.equals( name, internal.name ) && Objects.equals( namedDatabaseId, internal.namedDatabaseId );
+            return Objects.equals(name, internal.name) && Objects.equals(namedDatabaseId, internal.namedDatabaseId);
         }
 
         @Override
-        public int hashCode()
-        {
-            return Objects.hash( name, namedDatabaseId );
+        public int hashCode() {
+            return Objects.hash(name, namedDatabaseId);
         }
 
         @Override
-        public String toString()
-        {
-            return "DatabaseReference.Internal{" +
-                    "name=" + name +
-                    ", namedDatabaseId=" + namedDatabaseId +
-                    '}';
+        public String toString() {
+            return "DatabaseReference.Internal{" + "name=" + name + ", namedDatabaseId=" + namedDatabaseId + '}';
         }
     }
 }

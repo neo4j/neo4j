@@ -22,8 +22,7 @@ package org.neo4j.dbms.systemgraph;
 import org.neo4j.annotations.api.PublicApi;
 
 @PublicApi
-public
-enum InstanceModeConstraint {
+public enum InstanceModeConstraint {
     PRIMARY(true, false),
     SECONDARY(false, true),
     // Temporary value, to be removed when mode goes away.

@@ -28,7 +28,6 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.RemoteUri;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -86,94 +85,82 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
     }
 
     @Override
-    public Set<DatabaseReference> getAllDatabaseReferences()
-    {
-        var primaryRefs = getAllDatabaseIds().stream().map( this::primaryRefFromDatabaseId );
+    public Set<DatabaseReference> getAllDatabaseReferences() {
+        var primaryRefs = getAllDatabaseIds().stream().map(this::primaryRefFromDatabaseId);
         var internalAliasRefs = getAllInternalDatabaseReferences0();
-        var internalRefs = Stream.concat( primaryRefs, internalAliasRefs );
+        var internalRefs = Stream.concat(primaryRefs, internalAliasRefs);
         var externalRefs = getAllExternalDatabaseReferences0();
 
-        return Stream.concat( internalRefs, externalRefs ).collect( Collectors.toUnmodifiableSet() );
+        return Stream.concat(internalRefs, externalRefs).collect(Collectors.toUnmodifiableSet());
     }
 
     @Override
-    public Set<DatabaseReference.Internal> getAllInternalDatabaseReferences()
-    {
-        var primaryRefs = getAllDatabaseIds().stream().map( this::primaryRefFromDatabaseId );
+    public Set<DatabaseReference.Internal> getAllInternalDatabaseReferences() {
+        var primaryRefs = getAllDatabaseIds().stream().map(this::primaryRefFromDatabaseId);
         var localAliasRefs = getAllInternalDatabaseReferences0();
 
-        return Stream.concat( primaryRefs, localAliasRefs ).collect( Collectors.toUnmodifiableSet() );
+        return Stream.concat(primaryRefs, localAliasRefs).collect(Collectors.toUnmodifiableSet());
     }
 
-    private DatabaseReference.Internal primaryRefFromDatabaseId(NamedDatabaseId databaseId )
-    {
-        var alias = new NormalizedDatabaseName( databaseId.name() );
-        return new DatabaseReference.Internal( alias, databaseId );
+    private DatabaseReference.Internal primaryRefFromDatabaseId(NamedDatabaseId databaseId) {
+        var alias = new NormalizedDatabaseName(databaseId.name());
+        return new DatabaseReference.Internal(alias, databaseId);
     }
 
-    private Stream<DatabaseReference.Internal> getAllInternalDatabaseReferences0()
-    {
-        return tx.findNodes( DATABASE_NAME_LABEL ).stream()
-                .flatMap( alias -> getTargetedDatabase( alias )
-                        .flatMap( db -> createInternalReference( alias, db ) ).stream() );
+    private Stream<DatabaseReference.Internal> getAllInternalDatabaseReferences0() {
+        return tx.findNodes(DATABASE_NAME_LABEL).stream()
+                .flatMap(
+                        alias -> getTargetedDatabase(alias).flatMap(db -> createInternalReference(alias, db)).stream());
     }
 
-    private Optional<DatabaseReference.Internal> createInternalReference( Node alias, NamedDatabaseId targetedDatabase )
-    {
-        return ignoreConcurrentDeletes( () ->
-        {
-            var aliasName = new NormalizedDatabaseName( getPropertyOnNode( DATABASE_NAME, alias, NAME_PROPERTY, String.class ) );
-            return Optional.of( new DatabaseReference.Internal( aliasName, targetedDatabase ) );
-        } );
+    private Optional<DatabaseReference.Internal> createInternalReference(Node alias, NamedDatabaseId targetedDatabase) {
+        return ignoreConcurrentDeletes(() -> {
+            var aliasName =
+                    new NormalizedDatabaseName(getPropertyOnNode(DATABASE_NAME, alias, NAME_PROPERTY, String.class));
+            return Optional.of(new DatabaseReference.Internal(aliasName, targetedDatabase));
+        });
     }
 
     @Override
-    public Set<DatabaseReference.External> getAllExternalDatabaseReferences()
-    {
-        return getAllExternalDatabaseReferences0().collect( Collectors.toUnmodifiableSet() );
+    public Set<DatabaseReference.External> getAllExternalDatabaseReferences() {
+        return getAllExternalDatabaseReferences0().collect(Collectors.toUnmodifiableSet());
     }
 
-    private Stream<DatabaseReference.External> getAllExternalDatabaseReferences0()
-    {
-        return tx.findNodes( REMOTE_DATABASE_LABEL ).stream().flatMap( alias -> createExternalReference( alias ).stream() );
+    private Stream<DatabaseReference.External> getAllExternalDatabaseReferences0() {
+        return tx.findNodes(REMOTE_DATABASE_LABEL).stream().flatMap(alias -> createExternalReference(alias).stream());
     }
 
-    private Optional<DatabaseReference.External> createExternalReference( Node ref )
-    {
-        return ignoreConcurrentDeletes( () ->
-        {
-            var uriString = getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, ref, URL_PROPERTY, String.class );
-            var targetName = new NormalizedDatabaseName( getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, ref, TARGET_NAME_PROPERTY, String.class ) );
-            var aliasName = new NormalizedDatabaseName( getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, ref, NAME_PROPERTY, String.class ) );
+    private Optional<DatabaseReference.External> createExternalReference(Node ref) {
+        return ignoreConcurrentDeletes(() -> {
+            var uriString = getPropertyOnNode(REMOTE_DATABASE_LABEL_DESCRIPTION, ref, URL_PROPERTY, String.class);
+            var targetName = new NormalizedDatabaseName(
+                    getPropertyOnNode(REMOTE_DATABASE_LABEL_DESCRIPTION, ref, TARGET_NAME_PROPERTY, String.class));
+            var aliasName = new NormalizedDatabaseName(
+                    getPropertyOnNode(REMOTE_DATABASE_LABEL_DESCRIPTION, ref, NAME_PROPERTY, String.class));
 
-            var uri = URI.create( uriString );
-            var host = SocketAddressParser.socketAddress( uri, BoltConnector.DEFAULT_PORT, SocketAddress::new );
-            var remoteUri = new RemoteUri( uri.getScheme(), List.of( host ), uri.getQuery() );
-            var uuid = getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, ref, VERSION_PROPERTY, String.class );
-            return Optional.of( new DatabaseReference.External( targetName, aliasName, remoteUri, UUID.fromString( uuid ) ) );
-        } );
+            var uri = URI.create(uriString);
+            var host = SocketAddressParser.socketAddress(uri, BoltConnector.DEFAULT_PORT, SocketAddress::new);
+            var remoteUri = new RemoteUri(uri.getScheme(), List.of(host), uri.getQuery());
+            var uuid = getPropertyOnNode(REMOTE_DATABASE_LABEL_DESCRIPTION, ref, VERSION_PROPERTY, String.class);
+            return Optional.of(new DatabaseReference.External(targetName, aliasName, remoteUri, UUID.fromString(uuid)));
+        });
     }
 
     @Override
-    public Optional<DatabaseReference> getDatabaseRefByAlias( String databaseName )
-    {
+    public Optional<DatabaseReference> getDatabaseRefByAlias(String databaseName) {
         // A uniqueness constraint at the Cypher level should prevent two references from ever having the same name, but
         // in case they do, we simply prefer the internal reference.
-        return getInternalDatabaseReference( databaseName )
-                .or( () -> getExternalDatabaseReference( databaseName ) );
+        return getInternalDatabaseReference(databaseName).or(() -> getExternalDatabaseReference(databaseName));
     }
 
-    private Optional<DatabaseReference> getInternalDatabaseReference( String databaseName )
-    {
-        var aliasNode = Optional.ofNullable( tx.findNode( DATABASE_NAME_LABEL, NAME_PROPERTY, databaseName ) );
-        return aliasNode.flatMap( alias -> getTargetedDatabase( alias )
-                .flatMap( db -> createInternalReference( alias, db ) ) );
+    private Optional<DatabaseReference> getInternalDatabaseReference(String databaseName) {
+        var aliasNode = Optional.ofNullable(tx.findNode(DATABASE_NAME_LABEL, NAME_PROPERTY, databaseName));
+        return aliasNode.flatMap(alias -> getTargetedDatabase(alias).flatMap(db -> createInternalReference(alias, db)));
     }
 
-    private Optional<DatabaseReference> getExternalDatabaseReference( String databaseName )
-    {
-        return Optional.ofNullable( tx.findNode( REMOTE_DATABASE_LABEL, NAME_PROPERTY, databaseName ) )
-                .flatMap( this::createExternalReference );
+    private Optional<DatabaseReference> getExternalDatabaseReference(String databaseName) {
+        return Optional.ofNullable(tx.findNode(REMOTE_DATABASE_LABEL, NAME_PROPERTY, databaseName))
+                .flatMap(this::createExternalReference);
     }
 
     private Optional<NamedDatabaseId> getDatabaseIdByAlias0(String databaseName) {
@@ -215,25 +202,25 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
             }
         });
     }
+
     private static NamedDatabaseId getDatabaseId(Node databaseNode) {
         var name = (String) databaseNode.getProperty(DATABASE_NAME_PROPERTY);
         var uuid = UUID.fromString((String) databaseNode.getProperty(DATABASE_UUID_PROPERTY));
         return DatabaseIdFactory.from(name, uuid);
     }
 
-    private static <T> T getPropertyOnNode( String labelName, Node node, String key, Class<T> type )
-    {
-        var value = node.getProperty( key );
-        if ( value == null )
-        {
-            throw new IllegalStateException( String.format( "%s has no property %s.", labelName, key ) );
+    private static <T> T getPropertyOnNode(String labelName, Node node, String key, Class<T> type) {
+        var value = node.getProperty(key);
+        if (value == null) {
+            throw new IllegalStateException(String.format("%s has no property %s.", labelName, key));
         }
-        if ( !type.isInstance( value ) )
-        {
-            throw new IllegalStateException( String.format( "%s has non %s property %s.", labelName, type.getSimpleName(), key ) );
+        if (!type.isInstance(value)) {
+            throw new IllegalStateException(
+                    String.format("%s has non %s property %s.", labelName, type.getSimpleName(), key));
         }
-        return type.cast( value );
+        return type.cast(value);
     }
+
     private static <T> Optional<T> ignoreConcurrentDeletes(Supplier<Optional<T>> operation) {
         try {
             return operation.get();

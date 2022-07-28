@@ -19,43 +19,37 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
-import java.util.Optional;
-import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceRepository;
 
 public class LocalRoutingTableProcedureValidator extends BaseRoutingTableProcedureValidator {
 
-    private final DatabaseContextProvider<?> databaseContextProvider;
+    private final DatabaseAvailabilityChecker databaseAvailabilityChecker;
 
-    public LocalRoutingTableProcedureValidator(DatabaseContextProvider<?> databaseContextProvider) {
-        super(databaseContextProvider.databaseIdRepository());
-        this.databaseContextProvider = databaseContextProvider;
+    public LocalRoutingTableProcedureValidator(
+            DatabaseAvailabilityChecker databaseAvailabilityChecker,
+            DatabaseReferenceRepository databaseReferenceRepo) {
+        super(databaseReferenceRepo);
+        this.databaseAvailabilityChecker = databaseAvailabilityChecker;
     }
 
     @Override
-    public void isValidForServerSideRouting(NamedDatabaseId namedDatabaseId) throws ProcedureException {
-        assertDatabaseIsOperational(namedDatabaseId);
+    public void isValidForServerSideRouting(DatabaseReference.Internal databaseReference) throws ProcedureException {
+        assertDatabaseIsOperational(databaseReference);
     }
 
     @Override
-    public void isValidForClientSideRouting(NamedDatabaseId namedDatabaseId) throws ProcedureException {
-        assertDatabaseIsOperational(namedDatabaseId);
+    public void isValidForClientSideRouting(DatabaseReference.Internal databaseReference) throws ProcedureException {
+        assertDatabaseIsOperational(databaseReference);
     }
 
-    private void assertDatabaseIsOperational(NamedDatabaseId namedDatabaseId) throws ProcedureException {
-        Optional<Database> database = getDatabase(namedDatabaseId);
-        if (database.isEmpty()) {
-            throw databaseNotFoundException(namedDatabaseId.name());
+    private void assertDatabaseIsOperational(DatabaseReference.Internal databaseReference) throws ProcedureException {
+        if (!databaseAvailabilityChecker.isPresent(databaseReference)) {
+            throw databaseNotFoundException(databaseReference.alias().name());
         }
-        if (!database.get().getDatabaseAvailabilityGuard().isAvailable()) {
-            throw databaseNotAvailableException(namedDatabaseId.name());
+        if (!databaseAvailabilityChecker.isAvailable(databaseReference)) {
+            throw databaseNotAvailableException(databaseReference.alias().name());
         }
-    }
-
-    Optional<Database> getDatabase(NamedDatabaseId databaseId) {
-        return databaseContextProvider.getDatabaseContext(databaseId).map(DatabaseContext::database);
     }
 }

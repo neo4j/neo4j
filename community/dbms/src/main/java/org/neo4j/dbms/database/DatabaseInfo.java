@@ -23,8 +23,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseAccess;
 import org.neo4j.dbms.identity.ServerId;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseAccess;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 /**

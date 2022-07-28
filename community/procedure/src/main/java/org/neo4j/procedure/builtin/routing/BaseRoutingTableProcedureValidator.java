@@ -23,22 +23,23 @@ import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
 
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.database.DatabaseIdRepository;
-import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceRepository;
 
 public abstract class BaseRoutingTableProcedureValidator implements RoutingTableProcedureValidator {
-    protected final DatabaseIdRepository databaseIdRepository;
+    protected final DatabaseReferenceRepository databaseReferenceRepository;
 
-    protected BaseRoutingTableProcedureValidator(DatabaseIdRepository databaseIdRepository) {
-        this.databaseIdRepository = databaseIdRepository;
+    protected BaseRoutingTableProcedureValidator(DatabaseReferenceRepository databaseReferenceRepository) {
+        this.databaseReferenceRepository = databaseReferenceRepository;
     }
 
     @Override
     @SuppressWarnings("ReturnValueIgnored")
-    public void assertDatabaseExists(NamedDatabaseId namedDatabaseId) throws ProcedureException {
-        databaseIdRepository
-                .getById(namedDatabaseId.databaseId())
-                .orElseThrow(() -> databaseNotFoundException(namedDatabaseId.name()));
+    public void assertDatabaseExists(DatabaseReference databaseReference) throws ProcedureException {
+        databaseReferenceRepository
+                .getByName(databaseReference.alias())
+                .orElseThrow(() -> BaseRoutingTableProcedureValidator.databaseNotFoundException(
+                        databaseReference.alias().name()));
     }
 
     protected static ProcedureException databaseNotAvailableException(String databaseName) {

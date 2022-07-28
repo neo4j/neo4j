@@ -64,7 +64,6 @@ import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
-import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
@@ -250,10 +249,19 @@ public abstract class FabricServicesBootstrap {
     protected abstract FabricConfig bootstrapFabricConfig();
 
     public static class Community extends FabricServicesBootstrap {
-        public Community(LifeSupport lifeSupport, Dependencies dependencies, LogService logService,
-                         DatabaseContextProvider<? extends DatabaseContext> databaseProvider,
-                         DatabaseReferenceRepository databaseReferenceRepo) {
-            super(lifeSupport, dependencies, logService, CommunitySecurityLog.NULL_LOG, databaseProvider, databaseReferenceRepo);
+        public Community(
+                LifeSupport lifeSupport,
+                Dependencies dependencies,
+                LogService logService,
+                DatabaseContextProvider<? extends DatabaseContext> databaseProvider,
+                DatabaseReferenceRepository databaseReferenceRepo) {
+            super(
+                    lifeSupport,
+                    dependencies,
+                    logService,
+                    CommunitySecurityLog.NULL_LOG,
+                    databaseProvider,
+                    databaseReferenceRepo);
         }
 
         @Override

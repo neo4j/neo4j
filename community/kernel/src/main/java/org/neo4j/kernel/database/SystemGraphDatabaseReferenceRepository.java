@@ -19,73 +19,63 @@
  */
 package org.neo4j.kernel.database;
 
+import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
+import static org.neo4j.kernel.database.NamedDatabaseId.SYSTEM_DATABASE_NAME;
+
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
 import org.neo4j.dbms.api.DatabaseManagementException;
-import org.neo4j.dbms.systemgraph.CommunityTopologyGraphDbmsModel;
 import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.systemgraph.CommunityTopologyGraphDbmsModel;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 import org.neo4j.graphdb.DatabaseShutdownException;
 
-import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
-import static org.neo4j.kernel.database.NamedDatabaseId.SYSTEM_DATABASE_NAME;
-
-public class SystemGraphDatabaseReferenceRepository implements DatabaseReferenceRepository
-{
+public class SystemGraphDatabaseReferenceRepository implements DatabaseReferenceRepository {
     private static final DatabaseReference SYSTEM_DATABASE_REFERENCE =
-            new DatabaseReference.Internal( new NormalizedDatabaseName( SYSTEM_DATABASE_NAME ), NAMED_SYSTEM_DATABASE_ID );
+            new DatabaseReference.Internal(new NormalizedDatabaseName(SYSTEM_DATABASE_NAME), NAMED_SYSTEM_DATABASE_ID);
 
     private final Supplier<DatabaseContext> systemDatabaseSupplier;
 
-    public SystemGraphDatabaseReferenceRepository( Supplier<DatabaseContext> systemDatabaseSupplier )
-    {
+    public SystemGraphDatabaseReferenceRepository(Supplier<DatabaseContext> systemDatabaseSupplier) {
         this.systemDatabaseSupplier = systemDatabaseSupplier;
     }
 
     @Override
-    public Optional<DatabaseReference> getByName( NormalizedDatabaseName databaseName )
-    {
-        if ( Objects.equals( SYSTEM_DATABASE_NAME, databaseName.name() ) )
-        {
-            return Optional.of( SYSTEM_DATABASE_REFERENCE );
+    public Optional<DatabaseReference> getByName(NormalizedDatabaseName databaseName) {
+        if (Objects.equals(SYSTEM_DATABASE_NAME, databaseName.name())) {
+            return Optional.of(SYSTEM_DATABASE_REFERENCE);
         }
-        return execute( model -> model.getDatabaseRefByAlias( databaseName.name() ) );
+        return execute(model -> model.getDatabaseRefByAlias(databaseName.name()));
     }
 
     @Override
-    public Set<DatabaseReference> getAllDatabaseReferences()
-    {
-        return execute( TopologyGraphDbmsModel::getAllDatabaseReferences );
+    public Set<DatabaseReference> getAllDatabaseReferences() {
+        return execute(TopologyGraphDbmsModel::getAllDatabaseReferences);
     }
 
     @Override
-    public Set<DatabaseReference.Internal> getInternalDatabaseReferences()
-    {
-        return execute( TopologyGraphDbmsModel::getAllInternalDatabaseReferences );
+    public Set<DatabaseReference.Internal> getInternalDatabaseReferences() {
+        return execute(TopologyGraphDbmsModel::getAllInternalDatabaseReferences);
     }
 
     @Override
-    public Set<DatabaseReference.External> getExternalDatabaseReferences()
-    {
-        return execute( TopologyGraphDbmsModel::getAllExternalDatabaseReferences );
+    public Set<DatabaseReference.External> getExternalDatabaseReferences() {
+        return execute(TopologyGraphDbmsModel::getAllExternalDatabaseReferences);
     }
 
-    private <T> T execute( Function<TopologyGraphDbmsModel,T> operation )
-    {
+    private <T> T execute(Function<TopologyGraphDbmsModel, T> operation) {
         var databaseContext = systemDatabaseSupplier.get();
         var systemDb = databaseContext.databaseFacade();
-        if ( !systemDb.isAvailable( 100 ) )
-        {
-            throw new DatabaseShutdownException( new DatabaseManagementException( "System database is not (yet) available" ) );
+        if (!systemDb.isAvailable(100)) {
+            throw new DatabaseShutdownException(
+                    new DatabaseManagementException("System database is not (yet) available"));
         }
-        try ( var tx = systemDb.beginTx() )
-        {
-            var model = new CommunityTopologyGraphDbmsModel( tx );
-            return operation.apply( model );
+        try (var tx = systemDb.beginTx()) {
+            var model = new CommunityTopologyGraphDbmsModel(tx);
+            return operation.apply(model);
         }
     }
 }

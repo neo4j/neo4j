@@ -21,7 +21,6 @@ package org.neo4j.dbms.database;
 
 import java.util.NavigableMap;
 import java.util.Optional;
-
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.database.DatabaseId;
@@ -58,10 +57,10 @@ public interface DatabaseContextProvider<DB extends DatabaseContext> {
      *
      * @return the database context for the system database
      */
-    default DB getSystemDatabaseContext()
-    {
-        return getDatabaseContext( NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID )
-                .orElseThrow( () -> new DatabaseShutdownException( new DatabaseManagementException( "Unable to retrieve the system database!" ) ) );
+    default DB getSystemDatabaseContext() {
+        return getDatabaseContext(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID)
+                .orElseThrow(() -> new DatabaseShutdownException(
+                        new DatabaseManagementException("Unable to retrieve the system database!")));
     }
 
     /**

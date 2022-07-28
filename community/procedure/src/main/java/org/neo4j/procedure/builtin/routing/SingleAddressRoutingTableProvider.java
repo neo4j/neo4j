@@ -30,7 +30,7 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.values.virtual.MapValue;
@@ -63,8 +63,8 @@ public class SingleAddressRoutingTableProvider
     }
 
     @Override
-    public RoutingResult getRoutingResultForClientSideRouting(NamedDatabaseId databaseId, MapValue routingContext)
-            throws ProcedureException {
+    public RoutingResult getRoutingResultForClientSideRouting(
+            DatabaseReference.Internal databaseReference, MapValue routingContext) throws ProcedureException {
         return createSingleAddressRoutingResult(
                 findBoltAddressToUse(routingContext),
                 routingTableTTLProvider.nextTTL().toMillis(),
@@ -102,7 +102,7 @@ public class SingleAddressRoutingTableProvider
 
     @Override
     public RoutingResult getServerSideRoutingTable(Optional<SocketAddress> clientProvidedAddress) {
-        SocketAddress address = ensureBoltAddressIsUsable(clientProvidedAddress);
+        var address = ensureBoltAddressIsUsable(clientProvidedAddress);
         return createSingleAddressRoutingResult(
                 address, routingTableTTLProvider.nextTTL().toMillis(), routingOption);
     }

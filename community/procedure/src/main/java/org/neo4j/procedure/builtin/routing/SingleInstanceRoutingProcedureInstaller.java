@@ -24,23 +24,26 @@ import static org.neo4j.procedure.builtin.routing.RoutingTableTTLProvider.ttlFro
 import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.dbms.database.DatabaseContextProvider;
+import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.logging.InternalLogProvider;
 
 public final class SingleInstanceRoutingProcedureInstaller extends AbstractRoutingProcedureInstaller {
-    private final DatabaseContextProvider<?> databaseContextProvider;
+    private final DatabaseAvailabilityChecker databaseAvailabilityChecker;
+    private final DatabaseReferenceRepository databaseReferenceRepo;
     private final ClientRoutingDomainChecker clientRoutingDomainChecker;
     private final ConnectorPortRegister portRegister;
     private final Config config;
     private final InternalLogProvider logProvider;
 
     public SingleInstanceRoutingProcedureInstaller(
-            DatabaseContextProvider<?> databaseContextProvider,
+            DatabaseAvailabilityChecker databaseAvailabilityChecker,
+            DatabaseReferenceRepository databaseReferenceRepo,
             ClientRoutingDomainChecker clientRoutingDomainChecker,
             ConnectorPortRegister portRegister,
             Config config,
             InternalLogProvider logProvider) {
-        this.databaseContextProvider = databaseContextProvider;
+        this.databaseAvailabilityChecker = databaseAvailabilityChecker;
+        this.databaseReferenceRepo = databaseReferenceRepo;
         this.clientRoutingDomainChecker = clientRoutingDomainChecker;
         this.portRegister = portRegister;
         this.config = config;
@@ -50,13 +53,13 @@ public final class SingleInstanceRoutingProcedureInstaller extends AbstractRouti
     @Override
     public GetRoutingTableProcedure createProcedure(List<String> namespace) {
         LocalRoutingTableProcedureValidator validator =
-                new LocalRoutingTableProcedureValidator(databaseContextProvider);
+                new LocalRoutingTableProcedureValidator(databaseAvailabilityChecker, databaseReferenceRepo);
         SingleAddressRoutingTableProvider routingTableProvider = new SingleAddressRoutingTableProvider(
                 portRegister, RoutingOption.ROUTE_WRITE_AND_READ, config, logProvider, ttlFromConfig(config));
 
         return new GetRoutingTableProcedure(
                 namespace,
-                databaseContextProvider.databaseIdRepository(),
+                databaseReferenceRepo,
                 validator,
                 routingTableProvider,
                 clientRoutingDomainChecker,

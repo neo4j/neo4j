@@ -22,12 +22,9 @@ package org.neo4j.dbms.systemgraph;
 import static java.util.Objects.requireNonNull;
 
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-
-import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.database.DatabaseReference;
@@ -260,5 +257,5 @@ public interface TopologyGraphDbmsModel {
      * @param databaseName the database alias to resolve a {@link DatabaseReference} for.
      * @return the corresponding {@link DatabaseReference}
      */
-    Optional<DatabaseReference> getDatabaseRefByAlias( String databaseName );
+    Optional<DatabaseReference> getDatabaseRefByAlias(String databaseName);
 }

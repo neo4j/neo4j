@@ -19,7 +19,9 @@
  */
 package org.neo4j.dbms.systemgraph;
 
+import static org.neo4j.dbms.systemgraph.InstanceModeConstraint.PRIMARY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_CREATED_AT_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_DESIGNATED_SEEDER_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_INITIAL_SERVERS_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_LABEL;
@@ -376,24 +378,24 @@ public abstract class BaseTopologyGraphDbmsModelIT {
         }
     }
 
-    protected Node createLocalAliasForDatabase( Transaction tx, String name, boolean primary, NamedDatabaseId databaseId )
-    {
-        var databaseNode = findDatabase( databaseId, tx );
-        var aliasNode = tx.createNode( DATABASE_NAME_LABEL );
-        aliasNode.setProperty( PRIMARY_PROPERTY, primary );
-        aliasNode.setProperty( DATABASE_NAME_PROPERTY, name );
-        aliasNode.createRelationshipTo( databaseNode, TARGETS_RELATIONSHIP );
+    protected Node createLocalAliasForDatabase(
+            Transaction tx, String name, boolean primary, NamedDatabaseId databaseId) {
+        var databaseNode = findDatabase(databaseId, tx);
+        var aliasNode = tx.createNode(DATABASE_NAME_LABEL);
+        aliasNode.setProperty(PRIMARY_PROPERTY, primary);
+        aliasNode.setProperty(DATABASE_NAME_PROPERTY, name);
+        aliasNode.createRelationshipTo(databaseNode, TARGETS_RELATIONSHIP);
         return aliasNode;
     }
 
-    protected Node createRemoteAliasForDatabase( Transaction tx, String name, String targetName, RemoteUri uri )
-    {
-        var aliasNode = tx.createNode( REMOTE_DATABASE_LABEL, DATABASE_NAME_LABEL );
-        aliasNode.setProperty( PRIMARY_PROPERTY, false );
-        aliasNode.setProperty( DATABASE_NAME_PROPERTY, name );
-        aliasNode.setProperty( TARGET_NAME_PROPERTY, targetName );
-        var uriString = String.format( "%s://%s", uri.getScheme(), uri.getAddresses().get( 0 ) );
-        aliasNode.setProperty( URL_PROPERTY, uriString );
+    protected Node createRemoteAliasForDatabase(Transaction tx, String name, String targetName, RemoteUri uri) {
+        var aliasNode = tx.createNode(REMOTE_DATABASE_LABEL, DATABASE_NAME_LABEL);
+        aliasNode.setProperty(PRIMARY_PROPERTY, false);
+        aliasNode.setProperty(DATABASE_NAME_PROPERTY, name);
+        aliasNode.setProperty(TARGET_NAME_PROPERTY, targetName);
+        var uriString =
+                String.format("%s://%s", uri.getScheme(), uri.getAddresses().get(0));
+        aliasNode.setProperty(URL_PROPERTY, uriString);
         return aliasNode;
     }
 }

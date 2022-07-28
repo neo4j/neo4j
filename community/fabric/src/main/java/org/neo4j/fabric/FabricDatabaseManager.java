@@ -75,7 +75,8 @@ public abstract class FabricDatabaseManager {
     public abstract boolean isFabricDatabase(String databaseNameRaw);
 
     public static class Community extends FabricDatabaseManager {
-        public Community(FabricConfig fabricConfig, DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider) {
+        public Community(
+                FabricConfig fabricConfig, DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider) {
             super(fabricConfig, databaseContextProvider);
         }
 

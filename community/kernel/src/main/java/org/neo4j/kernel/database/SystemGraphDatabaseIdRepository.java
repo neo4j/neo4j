@@ -26,8 +26,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.neo4j.dbms.api.DatabaseManagementException;
-import org.neo4j.dbms.systemgraph.CommunityTopologyGraphDbmsModel;
 import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.systemgraph.CommunityTopologyGraphDbmsModel;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 import org.neo4j.graphdb.DatabaseShutdownException;
 
@@ -50,10 +50,10 @@ public class SystemGraphDatabaseIdRepository implements DatabaseIdRepository {
 
     @Override
     public Map<NormalizedDatabaseName, NamedDatabaseId> getAllDatabaseAliases() {
-        var databaseReferences = execute( TopologyGraphDbmsModel::getAllInternalDatabaseReferences );
+        var databaseReferences = execute(TopologyGraphDbmsModel::getAllInternalDatabaseReferences);
         return databaseReferences.stream()
-                .map( ref -> Map.entry( ref.alias(), ref.databaseId() ) )
-                              .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+                .map(ref -> Map.entry(ref.alias(), ref.databaseId()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Override

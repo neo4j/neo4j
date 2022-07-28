@@ -53,6 +53,7 @@ import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
+import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
@@ -83,6 +84,7 @@ public abstract class AbstractEditionModule {
     protected NetworkConnectionTracker connectionTracker;
     protected SecurityProvider securityProvider;
     protected DefaultDatabaseResolver defaultDatabaseResolver;
+    protected DatabaseReferenceRepository databaseReferenceRepo;
 
     public void registerProcedures(
             GlobalProcedures globalProcedures,
@@ -113,9 +115,9 @@ public abstract class AbstractEditionModule {
         return domainChecker;
     }
 
-    protected abstract void registerEditionSpecificProcedures(
+    protected void registerEditionSpecificProcedures(
             GlobalProcedures globalProcedures, DatabaseContextProvider<?> databaseContextProvider)
-            throws KernelException;
+            throws KernelException {}
 
     protected abstract AbstractRoutingProcedureInstaller createRoutingProcedureInstaller(
             GlobalModule globalModule,
