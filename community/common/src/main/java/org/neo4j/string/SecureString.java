@@ -102,7 +102,9 @@ public class SecureString {
 
         if (encryptionAvailable()) {
             try {
-                return cipher.doFinal(encryptedData);
+                synchronized (cipher) {
+                    return cipher.doFinal(encryptedData);
+                }
             } catch (Exception e) {
                 throw new RuntimeException("Data corruption, could not decrypt data", e);
             }
