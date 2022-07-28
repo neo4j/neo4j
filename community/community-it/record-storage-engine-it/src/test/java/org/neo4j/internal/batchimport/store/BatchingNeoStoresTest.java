@@ -138,9 +138,8 @@ class BatchingNeoStoresTest {
 
     @Test
     void shouldNotOpenStoreWithNodesOrRelationshipsInIt() throws Throwable {
-        Config config = Config.defaults();
         // GIVEN
-        someDataInTheDatabase(config);
+        someDataInTheDatabase();
 
         // WHEN
         DirectoryNotEmptyException exception = assertThrows(DirectoryNotEmptyException.class, () -> {
@@ -257,8 +256,7 @@ class BatchingNeoStoresTest {
     void shouldDecideToAllocateDoubleRelationshipRecordUnitsOnLargeAmountOfRelationshipsOnSupportedFormat()
             throws Exception {
         // given
-        Config config = Config.defaults(
-                GraphDatabaseSettings.db_format, ForcedSecondaryUnitRecordFormats.DEFAULT_RECORD_FORMATS.name());
+        Config config = configForForcedSecondaryUnitRecordFormats();
         try (BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache(
                 fileSystem,
                 pageCache,
@@ -287,8 +285,7 @@ class BatchingNeoStoresTest {
     void shouldNotDecideToAllocateDoubleRelationshipRecordUnitsonLowAmountOfRelationshipsOnSupportedFormat()
             throws Exception {
         // given
-        Config config = Config.defaults(
-                GraphDatabaseSettings.db_format, ForcedSecondaryUnitRecordFormats.DEFAULT_RECORD_FORMATS.name());
+        Config config = configForForcedSecondaryUnitRecordFormats();
         try (BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache(
                 fileSystem,
                 pageCache,
@@ -450,7 +447,7 @@ class BatchingNeoStoresTest {
         }
     }
 
-    private void someDataInTheDatabase(Config config) throws Exception {
+    private void someDataInTheDatabase() throws Exception {
         NullLog nullLog = NullLog.getInstance();
         try (JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
                 PageCache pageCache = new ConfiguringPageCacheFactory(
@@ -562,6 +559,13 @@ class BatchingNeoStoresTest {
                     storeCursors);
             storageEngine.apply(apply, TransactionApplicationMode.INTERNAL);
         }
+    }
+
+    private static Config configForForcedSecondaryUnitRecordFormats() {
+        return Config.newBuilder()
+                .set(GraphDatabaseSettings.db_format, ForcedSecondaryUnitRecordFormats.DEFAULT_RECORD_FORMATS.name())
+                .set(GraphDatabaseInternalSettings.include_versions_under_development, false)
+                .build();
     }
 
     private abstract static class DeferredInitializedTokenCreator implements TokenCreator {
