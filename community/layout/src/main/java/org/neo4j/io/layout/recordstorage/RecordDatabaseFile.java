@@ -21,6 +21,7 @@ package org.neo4j.io.layout.recordstorage;
 
 import static java.util.Objects.requireNonNull;
 
+import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.io.layout.CommonDatabaseFile;
@@ -32,7 +33,7 @@ import org.neo4j.io.layout.Neo4jLayout;
  * Enumeration of storage implementation specific files for particular database.
  * Any internal details of this enumeration is hidden and should not be visible to anyone except of implementation of specific database layout.
  * Should be used only for referencing back specific files in the database layout based on different store types.
- *
+ * <br>
  * Any database file that represented here can have internal details like several actual file names, other internal characteristic that are store specific.
  *
  * @see DatabaseLayout
@@ -116,4 +117,9 @@ public enum RecordDatabaseFile implements DatabaseFile {
     public static DatabaseFile[] allValues() {
         return ArrayUtils.addAll(new DatabaseFile[] {CommonDatabaseFile.METADATA_STORE}, RecordDatabaseFile.values());
     }
+
+    static final List<DatabaseFile> STORE_FILES = List.of(allValues());
+
+    static final List<RecordDatabaseFile> RECOVERABLE_STORE_FILES =
+            List.of(COUNTS_STORE, RELATIONSHIP_GROUP_DEGREES_STORE, INDEX_STATISTICS_STORE);
 }

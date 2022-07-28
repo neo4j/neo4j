@@ -20,7 +20,6 @@
 package org.neo4j.io.layout.recordstorage;
 
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.stream.Stream;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -202,6 +201,11 @@ public class RecordDatabaseLayout extends DatabaseLayout {
 
     @Override
     protected Stream<DatabaseFile> databaseFiles() {
-        return Arrays.stream(RecordDatabaseFile.allValues());
+        return RecordDatabaseFile.STORE_FILES.stream();
+    }
+
+    @Override
+    protected boolean isRecoverableStore(DatabaseFile file) {
+        return RecordDatabaseFile.RECOVERABLE_STORE_FILES.contains(file);
     }
 }

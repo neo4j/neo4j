@@ -129,6 +129,16 @@ public class DatabaseLayout {
         return databaseFiles().map(this::file).collect(Collectors.toSet());
     }
 
+    /**
+     * @return the store files required to be present for a database to be able to be recovered
+     */
+    public Set<Path> mandatoryStoreFiles() {
+        return databaseFiles()
+                .filter(Predicate.not(this::isRecoverableStore))
+                .map(this::file)
+                .collect(Collectors.toSet());
+    }
+
     protected Stream<DatabaseFile> databaseFiles() {
         throw new IllegalStateException("Can not access the database files from a plain DatabaseLayout.");
     }
@@ -159,6 +169,11 @@ public class DatabaseLayout {
 
     protected Path idFile(String name) {
         return file(idFileName(name));
+    }
+
+    protected boolean isRecoverableStore(DatabaseFile file) {
+        throw new IllegalStateException(
+                "Can not determine whether the store '%s' is recoverable in a plain layout".formatted(file.getName()));
     }
 
     private static String idFileName(String storeName) {

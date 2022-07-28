@@ -583,12 +583,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     public StorageFilesState checkStoreFileState(
             FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache) {
         RecordDatabaseLayout recordLayout = formatSpecificDatabaseLayout(databaseLayout);
-        Set<Path> storeFiles = recordLayout.storeFiles();
-        // count store, relationship group degrees store and index statistics are not mandatory stores to have since
-        // they can be automatically rebuilt
-        storeFiles.remove(recordLayout.countStore());
-        storeFiles.remove(recordLayout.relationshipGroupDegreesStore());
-        storeFiles.remove(recordLayout.indexStatisticsStore());
+        Set<Path> storeFiles = recordLayout.mandatoryStoreFiles();
         boolean allStoreFilesExist = storeFiles.stream().allMatch(fs::fileExists);
         if (!allStoreFilesExist) {
             return StorageFilesState.unrecoverableState(

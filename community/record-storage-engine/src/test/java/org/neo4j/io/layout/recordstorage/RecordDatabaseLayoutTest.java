@@ -147,22 +147,51 @@ class RecordDatabaseLayoutTest {
                 .map(Path::getFileName)
                 .map(Path::toString)
                 .collect(toSet());
-        assertThat(files).contains("neostore");
-        assertThat(files).contains("neostore.counts.db");
-        assertThat(files).contains("neostore.labeltokenstore.db");
-        assertThat(files).contains("neostore.labeltokenstore.db.names");
-        assertThat(files).contains("neostore.nodestore.db");
-        assertThat(files).contains("neostore.nodestore.db.labels");
-        assertThat(files).contains("neostore.propertystore.db");
-        assertThat(files).contains("neostore.propertystore.db.arrays");
-        assertThat(files).contains("neostore.propertystore.db.index");
-        assertThat(files).contains("neostore.propertystore.db.index.keys");
-        assertThat(files).contains("neostore.propertystore.db.strings");
-        assertThat(files).contains("neostore.relationshipgroupstore.db");
-        assertThat(files).contains("neostore.relationshipstore.db");
-        assertThat(files).contains("neostore.relationshiptypestore.db");
-        assertThat(files).contains("neostore.relationshiptypestore.db.names");
-        assertThat(files).contains("neostore.schemastore.db");
+        assertThat(files)
+                .containsExactlyInAnyOrder(
+                        "neostore",
+                        "neostore.counts.db",
+                        "neostore.labeltokenstore.db",
+                        "neostore.labeltokenstore.db.names",
+                        "neostore.nodestore.db",
+                        "neostore.nodestore.db.labels",
+                        "neostore.propertystore.db",
+                        "neostore.propertystore.db.arrays",
+                        "neostore.propertystore.db.index",
+                        "neostore.propertystore.db.index.keys",
+                        "neostore.propertystore.db.strings",
+                        "neostore.relationshipgroupstore.db",
+                        "neostore.relationshipgroupstore.degrees.db",
+                        "neostore.relationshipstore.db",
+                        "neostore.relationshiptypestore.db",
+                        "neostore.relationshiptypestore.db.names",
+                        "neostore.schemastore.db",
+                        "neostore.indexstats.db");
+    }
+
+    @Test
+    void allMandatoryStoreFiles() {
+        Set<String> files = layout.mandatoryStoreFiles().stream()
+                .map(Path::getFileName)
+                .map(Path::toString)
+                .collect(toSet());
+        assertThat(files)
+                .containsExactlyInAnyOrder(
+                        "neostore",
+                        "neostore.labeltokenstore.db",
+                        "neostore.labeltokenstore.db.names",
+                        "neostore.nodestore.db",
+                        "neostore.nodestore.db.labels",
+                        "neostore.propertystore.db",
+                        "neostore.propertystore.db.arrays",
+                        "neostore.propertystore.db.index",
+                        "neostore.propertystore.db.index.keys",
+                        "neostore.propertystore.db.strings",
+                        "neostore.relationshipgroupstore.db",
+                        "neostore.relationshipstore.db",
+                        "neostore.relationshiptypestore.db",
+                        "neostore.relationshiptypestore.db.names",
+                        "neostore.schemastore.db");
     }
 
     @Test

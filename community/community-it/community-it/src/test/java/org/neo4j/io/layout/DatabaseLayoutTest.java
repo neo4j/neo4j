@@ -20,6 +20,7 @@
 package org.neo4j.io.layout;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.IOException;
@@ -93,5 +94,19 @@ class DatabaseLayoutTest {
     void databaseLayoutProvideCorrectDatabaseName() {
         assertEquals("neo4j", databaseLayout.getDatabaseName());
         assertEquals("testdb", neo4jLayout.databaseLayout("testdb").getDatabaseName());
+    }
+
+    @Test
+    void storeFilesThrowsForPlainLayout() {
+        String database = "database";
+        DatabaseLayout databaseLayout = neo4jLayout.databaseLayout(database);
+        assertThrows(IllegalStateException.class, databaseLayout::storeFiles);
+    }
+
+    @Test
+    void mandatoryStoreFilesThrowsForPlainLayout() {
+        String database = "database";
+        DatabaseLayout databaseLayout = neo4jLayout.databaseLayout(database);
+        assertThrows(IllegalStateException.class, databaseLayout::mandatoryStoreFiles);
     }
 }
