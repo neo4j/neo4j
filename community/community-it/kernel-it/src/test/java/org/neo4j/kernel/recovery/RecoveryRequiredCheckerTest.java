@@ -29,6 +29,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -68,7 +69,7 @@ class RecoveryRequiredCheckerTest {
     private FileSystemAbstraction fileSystem;
 
     @Inject
-    private RandomSupport randomSupport;
+    private RandomSupport random;
 
     private DatabaseLayout databaseLayout;
 
@@ -176,6 +177,23 @@ class RecoveryRequiredCheckerTest {
     }
 
     @Test
+    void shouldNotWantToRecoveryWhenStoreExistenceFileIsMissing() throws Exception {
+        startStopAndCreateDefaultData();
+
+        assertStoreFilesExist();
+
+        try (PageCache pageCache = pageCacheExtension.getPageCache(fileSystem)) {
+            RecoveryRequiredChecker checker =
+                    getRecoveryCheckerWithDefaultConfig(fileSystem, pageCache, storageEngineFactory);
+            assertFalse(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
+
+            fileSystem.deleteFileOrThrow(databaseLayout.pathForExistsMarker());
+
+            assertFalse(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
+        }
+    }
+
+    @Test
     void recoveryRequiredWhenAnyMandatoryStoreFileIsMissing() throws Exception {
         startStopAndCreateDefaultData();
 
@@ -186,8 +204,9 @@ class RecoveryRequiredCheckerTest {
                     getRecoveryCheckerWithDefaultConfig(fileSystem, pageCache, storageEngineFactory);
             assertFalse(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
 
-            final var path = randomSupport.among(
-                    databaseLayout.mandatoryStoreFiles().stream().toList());
+            final var path = random.among(databaseLayout.mandatoryStoreFiles().stream()
+                    .filter(Predicate.not(databaseLayout.pathForExistsMarker()::equals))
+                    .toList());
             fileSystem.deleteFileOrThrow(path);
 
             assertTrue(checker.isRecoveryRequiredAt(databaseLayout, INSTANCE));
