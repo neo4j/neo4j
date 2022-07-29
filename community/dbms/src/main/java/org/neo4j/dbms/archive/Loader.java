@@ -152,7 +152,7 @@ public class Loader {
             throws FileAlreadyExistsException {
         if (StorageEngineFactory.selectStorageEngine(filesystem, databaseLayout).isPresent()) {
             throw new FileAlreadyExistsException(
-                    databaseLayout.pathForExistsMarker().toAbsolutePath().toString());
+                    "Database already exists at location: " + databaseLayout.databaseDirectory());
         }
     }
 
