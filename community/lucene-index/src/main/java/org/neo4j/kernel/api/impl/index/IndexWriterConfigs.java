@@ -56,6 +56,7 @@ public final class IndexWriterConfigs {
         writerConfig.setMaxBufferedDocs(config.get(lucene_writer_max_buffered_docs));
         writerConfig.setIndexDeletionPolicy(new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy()));
         writerConfig.setUseCompoundFile(true);
+        writerConfig.setMaxFullFlushMergeWaitMillis(0);
         writerConfig.setRAMBufferSizeMB(config.get(lucene_standard_ram_buffer_size));
 
         LogByteSizeMergePolicy mergePolicy = new LogByteSizeMergePolicy();

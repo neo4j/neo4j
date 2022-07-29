@@ -35,6 +35,7 @@ Apache Software License, Version 2.0
   Netty/Handler
   Netty/Resolver
   Netty/Transport
+  Netty/Transport/Native/Unix/Common
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API

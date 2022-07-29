@@ -38,15 +38,13 @@ Apache Software License, Version 2.0
   Netty/Handler
   Netty/Resolver
   Netty/Transport
+  Netty/Transport/Native/Unix/Common
   Non-Blocking Reactive Foundation for the JVM
 
 BSD License
   JLine JANSI Terminal
   JLine Reader
   JLine Terminal
-
-Creative Commons 0
-  reactive-streams
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
@@ -58,6 +56,9 @@ Eclipse Public License - v 1.0
 
 MIT License
   argparse4j
+
+MIT No Attribution License
+  reactive-streams
 
 Dependencies with multiple licenses
 -----------------------------------
