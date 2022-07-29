@@ -131,6 +131,11 @@ public class RecordDatabaseLayout extends DatabaseLayout {
     }
 
     @Override
+    public Path pathForExistsMarker() {
+        return file(RecordDatabaseFile.EXISTS_MARKER.getName());
+    }
+
+    @Override
     public Path pathForStore(CommonDatabaseStores store) {
         return switch (store) {
             case COUNTS -> countStore();

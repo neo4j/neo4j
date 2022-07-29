@@ -72,7 +72,8 @@ public enum RecordDatabaseFile implements DatabaseFile {
 
     RELATIONSHIP_GROUP_DEGREES_STORE(RecordDatabaseFileNames.RELATIONSHIP_GROUP_DEGREES_STORE, false),
 
-    INDEX_STATISTICS_STORE(RecordDatabaseFileNames.INDEX_STATISTICS_STORE, false);
+    INDEX_STATISTICS_STORE(RecordDatabaseFileNames.INDEX_STATISTICS_STORE, false),
+    EXISTS_MARKER(CommonDatabaseFile.METADATA_STORE);
 
     private final String name;
     private final boolean hasIdFile;
@@ -84,6 +85,12 @@ public enum RecordDatabaseFile implements DatabaseFile {
     RecordDatabaseFile(String name, boolean hasIdFile) {
         this.name = name;
         this.hasIdFile = hasIdFile;
+    }
+
+    // used for marker
+    RecordDatabaseFile(DatabaseFile file) {
+        this.name = file.getName();
+        this.hasIdFile = false;
     }
 
     @Override

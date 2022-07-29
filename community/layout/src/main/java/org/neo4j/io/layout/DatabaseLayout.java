@@ -113,6 +113,10 @@ public class DatabaseLayout {
         return file(CommonDatabaseFile.METADATA_STORE.getName());
     }
 
+    public Path pathForExistsMarker() {
+        throw new IllegalStateException("Can not get the exists marker path for a plain DatabaseLayout.");
+    }
+
     public Path pathForStore(CommonDatabaseStores store) {
         throw new IllegalStateException(
                 "Can not get the path for the %s store from a plain DatabaseLayout.".formatted(store.name()));
