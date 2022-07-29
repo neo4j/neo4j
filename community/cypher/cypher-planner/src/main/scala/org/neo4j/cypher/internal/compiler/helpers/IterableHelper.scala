@@ -28,7 +28,7 @@ object IterableHelper {
   /** Groups values according to some discriminator function, preserving the order in which the values are first encountered.
    *
    *  This is highly generic, and so type inference will probably get in your way, you probably should use a specialised version of it such as the one defined
-   *  in `RichSeq` inside [[ListSupport]].
+   *  in `RichSeq` inside [[SeqSupport]].
    *
    *  Also note that you probably only want to use this function if your values are in a specific order, like in a `Vector` or in a `ListSet`. It doesn't make
    *  much sense if you have an unordered collection such as a `Set`. You probably want to reach for the standard `groupBy` in that case.

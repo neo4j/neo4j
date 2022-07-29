@@ -19,10 +19,38 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
+import org.neo4j.cypher.internal.compiler.helpers.SeqSupport.RichSeq
 import org.scalatest.FunSuite
 import org.scalatest.Matchers
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class ListSupportTest extends FunSuite with Matchers with ListSupport {
+class SeqSupportTest extends FunSuite with Matchers with ScalaCheckPropertyChecks {
+
+  test("prefix strings with their offset using foldMap") {
+    val strings = Seq("foo", "", "a", "bar", "", "b", "a")
+    val result = strings.foldMap(0) {
+      case (offset, string) => (offset + string.length, s"$offset:$string")
+    }
+    result shouldEqual (9, List("0:foo", "3:", "3:a", "4:bar", "7:", "7:b", "8:a"))
+  }
+
+  test("prefix strings with their indices using foldMap") {
+    forAll { is: List[String] =>
+      val result = is.foldMap(0) {
+        case (index, string) => (index + 1, s"$index.$string")
+      }
+      val expected = is.zipWithIndex.map {
+        case (string, index) => s"$index.$string"
+      }
+      result shouldEqual (is.length, expected)
+    }
+  }
+
+  test("foldMap using the identity function returns the initial accumulator and the original sequence") {
+    forAll { (is: List[Int], c: Char) =>
+      is.foldMap(c)(Function.untupled(identity)) shouldEqual ((c, is))
+    }
+  }
 
   test("group strings by length preserving order") {
     val strings = Seq("foo", "", "a", "bar", "", "b", "a")
