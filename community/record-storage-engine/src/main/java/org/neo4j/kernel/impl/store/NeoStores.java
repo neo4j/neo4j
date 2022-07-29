@@ -610,6 +610,6 @@ public class NeoStores implements AutoCloseable {
     }
 
     public static boolean isStorePresent(FileSystemAbstraction fs, RecordDatabaseLayout databaseLayout) {
-        return fs.fileExists(databaseLayout.metadataStore());
+        return fs.fileExists(databaseLayout.pathForExistsMarker());
     }
 }
