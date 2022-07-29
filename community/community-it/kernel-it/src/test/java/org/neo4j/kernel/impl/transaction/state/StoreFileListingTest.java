@@ -33,7 +33,6 @@ import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -50,6 +49,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.database.Database;
@@ -76,6 +76,9 @@ class StoreFileListingTest {
 
     @Inject
     private TestDirectory testDirectory;
+
+    @Inject
+    private FileSystemAbstraction filesystem;
 
     @Inject
     private Database database;
@@ -248,7 +251,7 @@ class StoreFileListingTest {
         List<Path> files = new ArrayList<>();
         mockFiles(mockDbFiles, files, false);
         mockFiles(mockDirectories, files, true);
-        when(databaseLayout.listDatabaseFiles(any())).thenReturn(files.toArray(new Path[0]));
+        when(databaseLayout.listDatabaseFiles(any(), any())).thenReturn(files.toArray(new Path[0]));
     }
 
     private static ResourceIterator<Path> indexFilesAre(IndexingService indexingService, String[] fileNames)
@@ -263,9 +266,7 @@ class StoreFileListingTest {
     private void createIndexDbFile() throws IOException {
         DatabaseLayout databaseLayout = db.databaseLayout();
         final Path indexFile = databaseLayout.file("index.db");
-        if (Files.notExists(indexFile)) {
-            Files.createFile(indexFile);
-        }
+        filesystem.write(indexFile).close();
     }
 
     private static void mockFiles(String[] filenames, List<Path> files, boolean isDirectories) {

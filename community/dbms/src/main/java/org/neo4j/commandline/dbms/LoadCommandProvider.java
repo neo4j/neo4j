@@ -31,7 +31,7 @@ import org.neo4j.dbms.archive.Loader;
 public class LoadCommandProvider implements CommandProvider {
     @Override
     public LoadCommand createCommand(ExecutionContext ctx) {
-        return new LoadCommand(ctx, new Loader(ctx.err()));
+        return new LoadCommand(ctx, new Loader(ctx.fs(), ctx.err()));
     }
 
     @Override

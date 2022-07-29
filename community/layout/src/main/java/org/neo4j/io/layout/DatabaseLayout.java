@@ -23,7 +23,6 @@ import static org.neo4j.io.layout.DatabaseFile.ID_FILE_SUFFIX;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
@@ -33,6 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 
@@ -163,9 +163,9 @@ public class DatabaseLayout {
         return Stream.concat(idFile(databaseFile).stream(), Stream.of(file(databaseFile)));
     }
 
-    public Path[] listDatabaseFiles(Predicate<? super Path> filter) {
-        try (Stream<Path> list = Files.list(databaseDirectory)) {
-            return list.filter(filter).toArray(Path[]::new);
+    public Path[] listDatabaseFiles(FileSystemAbstraction fs, Predicate<? super Path> filter) {
+        try {
+            return fs.listFiles(databaseDirectory, filter::test);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

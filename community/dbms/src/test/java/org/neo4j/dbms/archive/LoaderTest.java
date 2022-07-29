@@ -19,9 +19,7 @@
  */
 package org.neo4j.dbms.archive;
 
-import static java.nio.file.Files.delete;
 import static java.util.Collections.emptySet;
-import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -33,14 +31,13 @@ import static org.neo4j.dbms.archive.TestUtils.withPermissions;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystemException;
-import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.Random;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -73,27 +70,31 @@ class LoaderTest {
 
         deleteLayoutFolders(databaseLayout);
 
-        NoSuchFileException exception = assertThrows(NoSuchFileException.class, () -> new Loader()
-                .load(databaseLayout, () -> Files.newInputStream(archive)));
+        NoSuchFileException exception = assertThrows(NoSuchFileException.class, () -> new Loader(fileSystem)
+                .load(databaseLayout, () -> fileSystem.openAsInputStream(archive)));
         assertEquals(archive.toString(), exception.getMessage());
     }
 
     @Test
     void shouldGiveAClearErrorMessageIfTheArchiveIsNotInGzipFormat() throws IOException {
         Path archive = testDirectory.file("the-archive.dump");
-        Files.write(archive, singletonList("some incorrectly formatted data"));
+        try (var outputStream = fileSystem.openAsOutputStream(archive, false);
+                var out = new PrintStream(outputStream)) {
+            out.println("some incorrectly formatted data");
+        }
 
         deleteLayoutFolders(databaseLayout);
 
-        var incorrectFormat = assertThrows(IncorrectFormat.class, () -> new Loader()
-                .load(databaseLayout, () -> Files.newInputStream(archive), archive.toString()));
+        var incorrectFormat = assertThrows(IncorrectFormat.class, () -> new Loader(fileSystem)
+                .load(databaseLayout, () -> fileSystem.openAsInputStream(archive), archive.toString()));
         assertEquals(archive.toString(), incorrectFormat.getMessage());
     }
 
     @Test
     void shouldGiveAClearErrorMessageIfTheArchiveIsNotInTarFormat() throws IOException {
         Path archive = testDirectory.file("the-archive.dump");
-        try (GzipCompressorOutputStream compressor = new GzipCompressorOutputStream(Files.newOutputStream(archive))) {
+        try (GzipCompressorOutputStream compressor =
+                new GzipCompressorOutputStream(fileSystem.openAsOutputStream(archive, false))) {
             byte[] bytes = new byte[1000];
             new Random().nextBytes(bytes);
             compressor.write(bytes);
@@ -101,8 +102,8 @@ class LoaderTest {
 
         deleteLayoutFolders(databaseLayout);
 
-        var incorrectFormat = assertThrows(IncorrectFormat.class, () -> new Loader()
-                .load(databaseLayout, () -> Files.newInputStream(archive), archive.toString()));
+        var incorrectFormat = assertThrows(IncorrectFormat.class, () -> new Loader(fileSystem)
+                .load(databaseLayout, () -> fileSystem.openAsInputStream(archive), archive.toString()));
         assertEquals(archive.toString(), incorrectFormat.getMessage());
     }
 
@@ -110,18 +111,18 @@ class LoaderTest {
     void shouldGiveAClearErrorMessageIfTheArchiveEntryPointsToRandomPlace() throws IOException {
         Path archive = testDirectory.file("the-archive.dump");
 
-        delete(databaseLayout.databaseDirectory());
-        delete(databaseLayout.getTransactionLogsDirectory());
+        deleteLayoutFolders(databaseLayout);
 
         final Path testFile = testDirectory.file("testFile");
         try (TarArchiveOutputStream tar = new TarArchiveOutputStream(
-                new GzipCompressorOutputStream(Files.newOutputStream(archive, StandardOpenOption.CREATE_NEW)))) {
+                new GzipCompressorOutputStream(fileSystem.openAsOutputStream(archive, false)))) {
             ArchiveEntry archiveEntry = tar.createArchiveEntry(testFile.toFile(), "../../../../etc/shadow");
             tar.putArchiveEntry(archiveEntry);
             tar.closeArchiveEntry();
         }
-        final InvalidDumpEntryException exception = assertThrows(InvalidDumpEntryException.class, () -> new Loader()
-                .load(databaseLayout, () -> Files.newInputStream(archive)));
+        final InvalidDumpEntryException exception =
+                assertThrows(InvalidDumpEntryException.class, () -> new Loader(fileSystem)
+                        .load(databaseLayout, () -> fileSystem.openAsInputStream(archive)));
         assertThat(exception.getMessage()).contains("points to a location outside of the destination database.");
     }
 
@@ -129,11 +130,12 @@ class LoaderTest {
     void shouldGiveAClearErrorIfTheDestinationTxLogAlreadyExists() throws IOException {
         Path archive = testDirectory.file("the-archive.dump");
 
-        delete(databaseLayout.databaseDirectory());
-        assertTrue(Files.exists(databaseLayout.getTransactionLogsDirectory()));
+        fileSystem.deleteRecursively(databaseLayout.databaseDirectory());
+        assertTrue(fileSystem.isDirectory(databaseLayout.getTransactionLogsDirectory()));
 
-        FileAlreadyExistsException exception = assertThrows(FileAlreadyExistsException.class, () -> new Loader()
-                .load(databaseLayout, () -> Files.newInputStream(archive)));
+        FileAlreadyExistsException exception =
+                assertThrows(FileAlreadyExistsException.class, () -> new Loader(fileSystem)
+                        .load(databaseLayout, () -> fileSystem.openAsInputStream(archive)));
         assertEquals(databaseLayout.getTransactionLogsDirectory().toString(), exception.getMessage());
     }
 
@@ -143,8 +145,8 @@ class LoaderTest {
         Path destination = Paths.get(testDirectory.absolutePath().toString(), "subdir", "the-destination");
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat(destination);
 
-        NoSuchFileException noSuchFileException = assertThrows(NoSuchFileException.class, () -> new Loader()
-                .load(databaseLayout, () -> Files.newInputStream(archive)));
+        NoSuchFileException noSuchFileException = assertThrows(NoSuchFileException.class, () -> new Loader(fileSystem)
+                .load(databaseLayout, () -> fileSystem.openAsInputStream(archive)));
         assertEquals(destination.getParent().toString(), noSuchFileException.getMessage());
     }
 
@@ -159,8 +161,8 @@ class LoaderTest {
                 .build();
         DatabaseLayout databaseLayout = DatabaseLayout.of(config);
         fileSystem.deleteRecursively(txLogsDestination);
-        NoSuchFileException noSuchFileException = assertThrows(NoSuchFileException.class, () -> new Loader()
-                .load(databaseLayout, () -> Files.newInputStream(archive)));
+        NoSuchFileException noSuchFileException = assertThrows(NoSuchFileException.class, () -> new Loader(fileSystem)
+                .load(databaseLayout, () -> fileSystem.openAsInputStream(archive)));
         assertEquals(txLogsDestination.toString(), noSuchFileException.getMessage());
     }
 
@@ -168,11 +170,15 @@ class LoaderTest {
     void shouldGiveAClearErrorMessageIfTheDestinationsParentDirectoryIsAFile() throws IOException {
         Path archive = testDirectory.file("the-archive.dump");
         Path destination = Paths.get(testDirectory.absolutePath().toString(), "subdir", "the-destination");
-        Files.write(destination.getParent(), new byte[0]);
+        try (var outputStream = fileSystem.openAsOutputStream(archive, false);
+                var out = new PrintStream(outputStream)) {
+            out.println("some incorrectly formatted data");
+        }
+        fileSystem.write(destination.getParent()).close();
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat(destination);
 
-        FileSystemException exception = assertThrows(FileSystemException.class, () -> new Loader()
-                .load(databaseLayout, () -> Files.newInputStream(archive)));
+        FileSystemException exception = assertThrows(FileSystemException.class, () -> new Loader(fileSystem)
+                .load(databaseLayout, () -> fileSystem.openAsInputStream(archive)));
         assertEquals(destination.getParent() + ": Not a directory", exception.getMessage());
     }
 
@@ -186,8 +192,8 @@ class LoaderTest {
 
         Path parentPath = databaseLayout.databaseDirectory().getParent();
         try (Closeable ignored = withPermissions(parentPath, emptySet())) {
-            AccessDeniedException exception = assertThrows(AccessDeniedException.class, () -> new Loader()
-                    .load(databaseLayout, () -> Files.newInputStream(archive)));
+            AccessDeniedException exception = assertThrows(AccessDeniedException.class, () -> new Loader(fileSystem)
+                    .load(databaseLayout, () -> fileSystem.openAsInputStream(archive)));
             assertEquals(parentPath.toString(), exception.getMessage());
         }
     }
@@ -207,8 +213,8 @@ class LoaderTest {
 
         Path txLogsRoot = databaseLayout.getTransactionLogsDirectory().getParent();
         try (Closeable ignored = withPermissions(txLogsRoot, emptySet())) {
-            AccessDeniedException exception = assertThrows(AccessDeniedException.class, () -> new Loader()
-                    .load(databaseLayout, () -> Files.newInputStream(archive)));
+            AccessDeniedException exception = assertThrows(AccessDeniedException.class, () -> new Loader(fileSystem)
+                    .load(databaseLayout, () -> fileSystem.openAsInputStream(archive)));
             assertEquals(txLogsRoot.toString(), exception.getMessage());
         }
     }

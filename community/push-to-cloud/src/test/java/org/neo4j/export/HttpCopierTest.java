@@ -65,7 +65,6 @@ import com.github.tomakehurst.wiremock.matching.UrlPattern;
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -130,7 +129,7 @@ class HttpCopierTest {
         Path source = createDump();
         runHappyPathTest(source, true);
         // assert dump was deleted
-        assertFalse(Files.exists(source));
+        assertFalse(fs.fileExists(source));
     }
 
     @Test
@@ -139,7 +138,7 @@ class HttpCopierTest {
         Path source = createDump();
         runHappyPathTest(source, false);
         // assert externally provided dump was not deleted
-        assertTrue(Files.exists(source));
+        assertTrue(fs.fileExists(source));
     }
 
     private void runHappyPathTest(Path source, boolean sourceProvided) throws CommandFailedException, IOException {
@@ -912,11 +911,11 @@ class HttpCopierTest {
     }
 
     private Path createDump() throws IOException {
-        Path file = directory.file("something");
-        Files.createFile(file);
-        Files.write(
-                file,
-                "this is simply some weird dump data, but may do the trick for this test of uploading it".getBytes());
+        final var file = directory.file("something");
+        try (var outputStream = fs.openAsOutputStream(file, false);
+                var out = new PrintStream(outputStream)) {
+            out.println("this is simply some weird dump data, but may do the trick for this test of uploading it");
+        }
         return file;
     }
 
@@ -929,7 +928,7 @@ class HttpCopierTest {
             char[] password)
             throws CommandFailedException {
         String bearerToken = copier.authenticate(false, TEST_CONSOLE_URL, username, password, false);
-        UploadCommand.Source source = new UploadCommand.Source(path, databaseSize);
+        UploadCommand.Source source = new UploadCommand.Source(fs, path, databaseSize);
         copier.copy(
                 true,
                 TEST_CONSOLE_URL,

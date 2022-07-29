@@ -19,10 +19,8 @@ package org.neo4j.export;
 import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,6 +30,7 @@ import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.dbms.archive.Loader;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -170,14 +169,14 @@ public class UploadCommand extends AbstractCommand {
     }
 
     public DumpUploader makeDumpUploader(Path dump, String database) {
-        if (!Files.isDirectory(dump)) {
+        if (!ctx.fs().isDirectory(dump)) {
             throw new CommandFailedException(format("The provided source directory '%s' doesn't exist", dump));
         }
         Path dumpFile = dump.resolve(database + ".dump");
-        if (Files.notExists(dumpFile)) {
+        if (!ctx.fs().fileExists(dumpFile)) {
             throw new CommandFailedException(format("Dump file '%s' does not exist", dumpFile.toAbsolutePath()));
         }
-        return new DumpUploader(new Source(dumpFile, dumpSize(dumpFile)));
+        return new DumpUploader(new Source(ctx.fs(), dumpFile, dumpSize(dumpFile)));
     }
 
     abstract static class Uploader {
@@ -212,65 +211,32 @@ public class UploadCommand extends AbstractCommand {
     }
 
     private long dumpSize(Path dump) {
-        long sizeInBytes = readSizeFromDumpMetaData(dump);
+        long sizeInBytes = readSizeFromDumpMetaData(ctx, dump);
         verbose("Determined DumpSize=%d bytes from dump at %s\n", sizeInBytes, dump);
         return sizeInBytes;
     }
 
-    public static long readSizeFromDumpMetaData(Path dump) {
+    public static long readSizeFromDumpMetaData(ExecutionContext ctx, Path dump) {
         Loader.DumpMetaData metaData;
         try {
-            metaData = new Loader(System.out).getMetaData(() -> Files.newInputStream(dump));
+            final var fileSystem = ctx.fs();
+            metaData = new Loader(fileSystem, System.out).getMetaData(() -> fileSystem.openAsInputStream(dump));
         } catch (IOException e) {
             throw new CommandFailedException("Unable to check size of database dump.", e);
         }
         return Long.parseLong(metaData.byteCount());
     }
 
-    public static class Source {
-        private final Path path;
-        private long size;
-
-        public Source(Path path, long size) {
-            this.path = path;
-            this.size = size;
-        }
-
-        public Path path() {
-            return path;
-        }
-
-        public long size() {
-            return size;
-        }
-
-        protected void setSize(long newSize) {
-            this.size = newSize;
-        }
-
+    public record Source(FileSystemAbstraction fs, Path path, long size) {
         long crc32Sum() throws IOException {
             CRC32 crc = new CRC32();
-            try (InputStream inputStream = new BufferedInputStream(Files.newInputStream(path))) {
+            try (InputStream inputStream = fs.openAsInputStream(path)) {
                 int cnt;
                 while ((cnt = inputStream.read()) != -1) {
                     crc.update(cnt);
                 }
             }
             return crc.getValue();
-        }
-
-        @Override
-        public int hashCode() {
-            return path.hashCode() + 31 * (int) size;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (obj instanceof Source other) {
-                return path.equals(other.path) && size == other.size;
-            } else {
-                return false;
-            }
         }
     }
 

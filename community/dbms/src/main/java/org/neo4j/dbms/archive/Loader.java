@@ -19,7 +19,6 @@
  */
 package org.neo4j.dbms.archive;
 
-import static java.nio.file.Files.exists;
 import static org.neo4j.dbms.archive.Utils.checkWritableDirectory;
 import static org.neo4j.dbms.archive.printer.ProgressPrinters.emptyPrinter;
 import static org.neo4j.dbms.archive.printer.ProgressPrinters.printStreamPrinter;
@@ -32,7 +31,6 @@ import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystemException;
-import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import org.apache.commons.compress.archivers.ArchiveEntry;
@@ -47,21 +45,24 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.util.VisibleForTesting;
 
 public class Loader {
+    private final FileSystemAbstraction filesystem;
     private final ArchiveProgressPrinter progressPrinter;
 
     @VisibleForTesting
-    public Loader() {
-        this(emptyPrinter());
+    public Loader(FileSystemAbstraction filesystem) {
+        this(filesystem, emptyPrinter());
     }
 
-    public Loader(PrintStream output) {
-        this(printStreamPrinter(output));
+    public Loader(FileSystemAbstraction filesystem, PrintStream output) {
+        this(filesystem, printStreamPrinter(output));
     }
 
-    private Loader(OutputProgressPrinter progressPrinter) {
+    private Loader(FileSystemAbstraction filesystem, OutputProgressPrinter progressPrinter) {
+        this.filesystem = filesystem;
         this.progressPrinter = new ArchiveProgressPrinter(progressPrinter);
     }
 
@@ -88,7 +89,7 @@ public class Loader {
                 validateDatabaseExistence,
                 validateLogsExistence,
                 selector,
-                () -> Files.newInputStream(archive),
+                () -> filesystem.openAsInputStream(archive),
                 archive.toString());
     }
 
@@ -103,13 +104,13 @@ public class Loader {
         Path databaseDestination = databaseLayout.databaseDirectory();
         Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
 
-        validatePath(databaseDestination, validateDatabaseExistence);
-        validatePath(transactionLogsDirectory, validateLogsExistence);
+        validatePath(filesystem, databaseDestination, validateDatabaseExistence);
+        validatePath(filesystem, transactionLogsDirectory, validateLogsExistence);
 
-        createDestination(databaseDestination);
-        createDestination(transactionLogsDirectory);
+        createDestination(filesystem, databaseDestination);
+        createDestination(filesystem, transactionLogsDirectory);
 
-        checkDatabasePresence(databaseLayout);
+        checkDatabasePresence(filesystem, databaseLayout);
 
         try (ArchiveInputStream stream = openArchiveIn(selector, streamSupplier, inputName);
                 Resource ignore = progressPrinter.startPrinting()) {
@@ -147,21 +148,23 @@ public class Loader {
         }
     }
 
-    private static void checkDatabasePresence(DatabaseLayout databaseLayout) throws FileAlreadyExistsException {
-        if (Files.exists(databaseLayout.pathForExistsMarker())) {
+    private static void checkDatabasePresence(FileSystemAbstraction filesystem, DatabaseLayout databaseLayout)
+            throws FileAlreadyExistsException {
+        if (StorageEngineFactory.selectStorageEngine(filesystem, databaseLayout).isPresent()) {
             throw new FileAlreadyExistsException(
                     databaseLayout.pathForExistsMarker().toAbsolutePath().toString());
         }
     }
 
-    private static void createDestination(Path destination) throws IOException {
-        if (!Files.exists(destination)) {
-            Files.createDirectories(destination);
+    private static void createDestination(FileSystemAbstraction filesystem, Path destination) throws IOException {
+        if (!filesystem.fileExists(destination)) {
+            filesystem.mkdirs(destination);
         }
     }
 
-    private static void validatePath(Path path, boolean validateExistence) throws FileSystemException {
-        if (validateExistence && exists(path)) {
+    private static void validatePath(FileSystemAbstraction filesystem, Path path, boolean validateExistence)
+            throws FileSystemException {
+        if (validateExistence && filesystem.fileExists(path)) {
             throw new FileAlreadyExistsException(path.toString());
         }
         checkWritableDirectory(path.getParent());
@@ -194,9 +197,9 @@ public class Loader {
         }
 
         if (entry.isDirectory()) {
-            Files.createDirectories(file);
+            filesystem.mkdirs(file);
         } else {
-            try (OutputStream output = Files.newOutputStream(file)) {
+            try (OutputStream output = filesystem.openAsOutputStream(file, false)) {
                 Utils.copy(stream, output, progressPrinter);
             }
         }

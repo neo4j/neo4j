@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,7 +58,7 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 @Neo4jLayoutExtension
 class RecordStoreMigratorTest {
     @Inject
-    private FileSystemAbstraction fileSystem;
+    private FileSystemAbstraction filesystem;
 
     @Inject
     private PageCache pageCache;
@@ -76,6 +75,7 @@ class RecordStoreMigratorTest {
 
     @BeforeEach
     void setUp() {
+        assumeThat(databaseLayout).isInstanceOf(RecordDatabaseLayout.class);
         jobScheduler = new ThreadPoolJobScheduler();
     }
 
@@ -88,18 +88,16 @@ class RecordStoreMigratorTest {
     void shouldNotMigrateFilesForVersionsWithSameCapability() throws Exception {
         // Prepare migrator and file
         RecordStorageMigrator migrator = newStoreMigrator();
-        RecordDatabaseLayout dbLayout = RecordDatabaseLayout.convert(databaseLayout);
-        Path neoStore = dbLayout.metadataStore();
-        Files.createFile(neoStore);
+        filesystem.write(databaseLayout.pathForExistsMarker()).close();
 
         // Monitor what happens
         MyProgressReporter progressReporter = new MyProgressReporter();
         // Migrate with two storeversions that have the same FORMAT capabilities
-        RecordDatabaseLayout migrationLayout = RecordDatabaseLayout.convert(neo4jLayout.databaseLayout("migrationDir"));
-        fileSystem.mkdirs(migrationLayout.databaseDirectory());
+        DatabaseLayout migrationLayout = RecordDatabaseLayout.of(neo4jLayout, "migrationDir");
+        filesystem.mkdirs(migrationLayout.databaseDirectory());
 
         var format = Standard.LATEST_RECORD_FORMATS;
-        fileSystem.write(migrationLayout.metadataStore()).close();
+        filesystem.write(migrationLayout.pathForExistsMarker()).close();
         var fieldAccess = MetaDataStore.getFieldAccess(
                 pageCache,
                 migrationLayout.metadataStore(),
@@ -119,7 +117,7 @@ class RecordStoreMigratorTest {
 
         var storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
         migrator.migrate(
-                dbLayout,
+                databaseLayout,
                 migrationLayout,
                 progressReporter,
                 storageEngineFactory.versionInformation(storeVersionIdentifier).orElseThrow(),
@@ -128,12 +126,12 @@ class RecordStoreMigratorTest {
                 LogTailMetadata.EMPTY_LOG_TAIL);
 
         // Should not have started any migration
-        assertFalse(progressReporter.started);
+        assertThat(progressReporter.started).isFalse();
     }
 
     private RecordStorageMigrator newStoreMigrator() {
         return new RecordStorageMigrator(
-                fileSystem,
+                filesystem,
                 pageCache,
                 PageCacheTracer.NULL,
                 Config.defaults(),

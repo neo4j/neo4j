@@ -27,7 +27,6 @@ import static org.mockito.Mockito.mock;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Set;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,11 +44,11 @@ import org.neo4j.commandline.dbms.MemoryRecommendationsCommand;
 import org.neo4j.commandline.dbms.StoreInfoCommand;
 import org.neo4j.commandline.dbms.UnbindCommand;
 import org.neo4j.configuration.BootloaderSettings;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.CheckConsistencyCommand;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.importer.ImportCommand;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -83,10 +82,13 @@ class AdminCommandsIT {
         home = testDirectory.homePath("home");
         dumpFolder = testDirectory.directory("dumpFolder");
         context = new ExecutionContext(home, confDir, out, err, testDirectory.getFileSystem());
-        Path configFile = confDir.resolve("neo4j.conf");
-        Files.createFile(configFile, PosixFilePermissions.asFileAttribute(Set.of(OWNER_READ, OWNER_WRITE)));
-        GraphDatabaseSettings.strict_config_validation.name();
-        Files.write(configFile, (BootloaderSettings.initial_heap_size.name() + "=$(expr 500)").getBytes());
+        final var configFile = confDir.resolve("neo4j.conf");
+        try (var outputStream = fs.openAsOutputStream(configFile, false);
+                var out = new PrintStream(outputStream)) {
+            out.printf("%s=%s%n", BootloaderSettings.initial_heap_size.name(), "$(expr 500)");
+        }
+        assertThat(fs).isInstanceOf(DefaultFileSystemAbstraction.class);
+        Files.setPosixFilePermissions(configFile, Set.of(OWNER_READ, OWNER_WRITE));
     }
 
     @Test
@@ -97,7 +99,7 @@ class AdminCommandsIT {
         assertSuccess(new CheckConsistencyCommand(context), "--expand-commands", "--database", "neo4j");
         assertSuccess(new DiagnosticsReportCommand(context), "--expand-commands");
         assertSuccess(
-                new LoadCommand(context, new Loader()),
+                new LoadCommand(context, new Loader(fs)),
                 "--expand-commands",
                 "--from-path=" + testDirectory.directory("dump").toAbsolutePath(),
                 "test");
@@ -119,7 +121,7 @@ class AdminCommandsIT {
         assertExpansionError(new CheckConsistencyCommand(context), "--database", "neo4j");
         assertExpansionError(new DiagnosticsReportCommand(context));
         assertExpansionError(
-                new LoadCommand(context, new Loader()),
+                new LoadCommand(context, new Loader(fs)),
                 "--from-path=" + testDirectory.directory("dump").toAbsolutePath(),
                 "test");
         assertExpansionError(new MemoryRecommendationsCommand(context));
