@@ -44,17 +44,17 @@ case class PlanSingleQuery(headPlanner: HeadPlanner = PlanHead(), tailPlanner: T
 
     val limitSelectivityConfigs = LimitSelectivityConfig.forAllParts(query, context)
 
-    val Some(bestPlan) = for {
+    val bestPlan = for {
       (plans, context) <- headPlanner.plan(query, context.withLimitSelectivityConfig(limitSelectivityConfigs.head))
       (plans, context) <- planRemainingParts(plans, query, context, limitSelectivityConfigs)
       (plans, context) <- unnestEager(plans, context.withLimitSelectivityConfig(LimitSelectivityConfig.default))
       pickBest = context.config.pickBestCandidate(context)
-      bestPlan <- pickBest(plans.allResults.toIterable, s"best finalized plan for ${query.queryGraph}")
+      bestPlan <- pickBest(plans.allResults.to(Iterable), s"best finalized plan for ${query.queryGraph}")
     } yield {
       bestPlan
     }
 
-    bestPlan
+    bestPlan.getOrElse(throw new IllegalStateException("Error planning single query, no best plan found"))
   }
 
   private def planRemainingParts(

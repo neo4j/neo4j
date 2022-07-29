@@ -253,6 +253,8 @@ object SubqueryExpressionSolver {
             rewriter = inner,
             stopper = {
               case _: ListIRExpression => false
+              // Note that ExistsIRExpression is a subtype of ScopeExpression (via IRExpression)
+              case _: ExistsIRExpression => true
               // Loops
               case _: ScopeExpression => true
               // Conditionals & List accesses
@@ -260,7 +262,6 @@ object SubqueryExpressionSolver {
               case _: ContainerIndex     => true
               case _: ListSlice          => true
               case f: FunctionInvocation => f.function == Exists || f.function == Coalesce || f.function == Head
-              case _: ExistsIRExpression => true
               case _                     => false
             },
             cancellation = context.cancellationChecker
@@ -361,7 +362,7 @@ object SubqueryExpressionSolver {
           // Only plan if the OR contains an EXISTS.
           if (existsExpressions.nonEmpty) {
             val (planWithPredicates, solvedPredicates) =
-              planPredicates(plan, existsExpressions.toSet, expressions.toSet, None, interestingOrderConfig, context)
+              planPredicates(plan, existsExpressions, expressions, None, interestingOrderConfig, context)
             AssertMacros.checkOnlyWhenAssertionsAreEnabled(
               exprs.forall(solvedPredicates.contains),
               "planPredicates is supposed to solve all predicates in an OR clause."

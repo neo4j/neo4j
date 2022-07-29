@@ -77,7 +77,7 @@ case class SingleComponentPlanner(
           iterationDurationLimit = solverConfig.iterationDurationLimit,
           extraRequirement = orderRequirement,
           monitor = monitor,
-          stopWatchFactory = Stopwatch.start
+          stopWatchFactory = () => Stopwatch.start()
         )
 
         monitor.initTableFor(qg)

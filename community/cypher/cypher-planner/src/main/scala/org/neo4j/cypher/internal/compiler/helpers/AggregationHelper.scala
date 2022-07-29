@@ -78,7 +78,7 @@ object AggregationHelper {
     def inner(
       expression: Expression,
       renamings: Map[String, Expression],
-      property: Option[Property] = None
+      property: Option[Property]
     ): Option[Property] = {
       expression match {
         case FunctionInvocation(_, _, _, Seq(expr, _*)) =>
@@ -86,7 +86,7 @@ object AggregationHelper {
           if (expr.isInstanceOf[FunctionInvocation])
             None
           else
-            inner(expr, renamings)
+            inner(expr, renamings, property)
         case prop @ Property(Variable(varName), _) =>
           if (renamings.contains(varName))
             inner(renamings(varName), renamings, Some(prop))
@@ -94,7 +94,7 @@ object AggregationHelper {
             Some(prop)
         case variable @ Variable(varName) =>
           if (renamings.contains(varName) && renamings(varName) != variable)
-            inner(renamings(varName), renamings)
+            inner(renamings(varName), renamings, property)
           else if (property.nonEmpty)
             Some(Property(variable, property.get.propertyKey)(property.get.position))
           else

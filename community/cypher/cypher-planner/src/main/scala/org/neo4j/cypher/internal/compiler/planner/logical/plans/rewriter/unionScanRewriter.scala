@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
@@ -67,6 +66,11 @@ case class unionScanRewriter(solveds: Solveds, attributes: Attributes[LogicalPla
             solveds.copy(outer.id, res.id)
             res
           }
+
+        case Some(groupingExpression) =>
+          throw new IllegalArgumentException(
+            s"Cannot rewrite union scan, unexpected grouping expression: $groupingExpression"
+          )
 
         case None => outer
       }

@@ -95,6 +95,8 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
         patternList.destructed(anonymousVariableNameGenerator)
       case patternElement: PatternElement =>
         patternElement.destructed
+      case _ =>
+        throw new IllegalArgumentException(s"Cannot get planner query, unexpected pattern: $pattern")
     }
 
     // Create predicates for relationship uniqueness

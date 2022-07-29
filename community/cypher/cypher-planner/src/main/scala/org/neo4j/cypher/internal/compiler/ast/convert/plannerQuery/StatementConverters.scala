@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.exceptions.InternalException
 
+import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 
 object StatementConverters {
@@ -75,13 +76,19 @@ object StatementConverters {
     builder: PlannerQueryBuilder,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): PlannerQueryBuilder = {
-    val flattenedClauses = flattenCreates(clauses)
-    val slidingClauses = (flattenedClauses :+ null).sliding(2)
-    slidingClauses.foldLeft(builder) {
-      case (acc, Seq(clause, nextClause)) if nextClause != null =>
-        addToLogicalPlanInput(acc, clause, Some(nextClause), anonymousVariableNameGenerator)
-      case (acc, Seq(clause, _*)) => addToLogicalPlanInput(acc, clause, None, anonymousVariableNameGenerator)
-    }
+    @tailrec
+    def addClausesToPlannerQueryBuilderRec(clauses: Seq[Clause], builder: PlannerQueryBuilder): PlannerQueryBuilder =
+      if (clauses.isEmpty)
+        builder
+      else {
+        val clause = clauses.head
+        val nextClauses = clauses.tail
+        val nextClause = nextClauses.headOption
+        val newBuilder = addToLogicalPlanInput(builder, clause, nextClause, anonymousVariableNameGenerator)
+        addClausesToPlannerQueryBuilderRec(nextClauses, newBuilder)
+      }
+
+    addClausesToPlannerQueryBuilderRec(flattenCreates(clauses), builder)
   }
 
   private val NODE_BLACKLIST: Set[Class[_ <: ASTNode]] = Set(

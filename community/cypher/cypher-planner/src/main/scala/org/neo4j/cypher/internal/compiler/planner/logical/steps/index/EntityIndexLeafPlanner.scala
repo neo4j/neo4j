@@ -58,8 +58,6 @@ import org.neo4j.cypher.internal.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.symbols.CTAny
-import org.neo4j.cypher.internal.util.symbols.CypherType
 
 /**
  * Common functionality of NodeIndexLeafPlanner and RelationshipIndexLeafPlanner.

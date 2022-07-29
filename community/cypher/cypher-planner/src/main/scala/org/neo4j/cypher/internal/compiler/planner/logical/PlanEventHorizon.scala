@@ -36,9 +36,7 @@ import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
-import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.exceptions.InternalException
 
 /*
@@ -95,7 +93,10 @@ case object PlanEventHorizon extends EventHorizonPlanner {
 
     if (currentPartHasRequiredOrder) {
       // Both best-overall and best-sorted plans must fulfill the required order, so at this point we can pick one of them
-      val Some(bestOverall) = pickBest(Seq(planSortIfSelfRequired) ++ maintainSort, "best overall plan with horizon")
+      val bestOverall = pickBest(
+        Seq(planSortIfSelfRequired) ++ maintainSort,
+        "best overall plan with horizon"
+      ).getOrElse(throw new IllegalStateException("Planner returned no best overall plan"))
       BestResults(bestOverall, None)
     } else if (tailHasRequiredOrder) {
       // For best-overall keep the current best-overall plan

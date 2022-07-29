@@ -376,13 +376,11 @@ object ClauseConverters {
     builder.amendQueryGraph(_.addMutatingPatterns(CreatePattern(nodes.toSeq, relationships.toSeq)))
   }
 
-  private def getLabelNameSet(labelExpression: Option[LabelExpression]): Set[LabelName] = {
-    labelExpression match {
-      case Some(Leaf(labelName: LabelName)) => Set(labelName)
-      case Some(ColonConjunction(lhs, rhs)) => getLabelNameSet(Some(lhs)) ++ getLabelNameSet(Some(rhs))
-      case None                             => Set.empty
-    }
-  }
+  private def getLabelNameSet(labelExpression: Option[LabelExpression]): Set[LabelName] =
+    labelExpression.collect {
+      case Leaf(labelName: LabelName) => Set(labelName)
+      case ColonConjunction(lhs, rhs) => getLabelNameSet(Some(lhs)) ++ getLabelNameSet(Some(rhs))
+    }.getOrElse(Set.empty)
 
   private def dedup(nodePatterns: Vector[CreateNodeCommand]) = {
     val seen = mutable.Set.empty[String]

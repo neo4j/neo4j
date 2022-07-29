@@ -50,23 +50,19 @@ object groupInequalityPredicates extends (ListSet[Predicate] => ListSet[Predicat
   override def apply(inputPredicates: ListSet[Predicate]): ListSet[Predicate] = {
 
     // categorize predicates according to whether they contain an inequality on a property or not
-    val (propertyInequalities, otherPredicates) = inputPredicates.partition {
-      case Predicate(_, InequalityExpression(Property(_: Variable, _), _)) => true
-      case _                                                               => false
+    val (propertyInequalities, otherPredicates) = inputPredicates.partitionMap {
+      case PropertyInequalityPredicateView(inequalityPredicate) => Left(inequalityPredicate)
+      case otherPredicate                                       => Right(otherPredicate)
     }
 
     // group by property lookup
-    val predicatesGroupedByProperty = propertyInequalities.groupBy {
-      case Predicate(_, InequalityExpression(prop: Property, _)) => prop
-    }
+    val predicatesGroupedByProperty = propertyInequalities.groupBy(_.propertyAndVariable)
 
     // collect together all inequalities over some property lookup
-    val rewrittenPropertyInequalities = predicatesGroupedByProperty.collect {
-      case (prop @ Property(variable: Variable, _), groupInequalities) =>
-        val dependencies = groupInequalities.flatMap(_.dependencies).toSet
-        val inequalityExpressions = groupInequalities.collect {
-          case Predicate(_, ie: InequalityExpression) => ie
-        }
+    val rewrittenPropertyInequalities = predicatesGroupedByProperty.map {
+      case ((prop, variable), groupInequalities) =>
+        val dependencies = groupInequalities.flatMap(_.predicate.dependencies)
+        val inequalityExpressions = groupInequalities.map(_.inequalityExpression)
         val newExpr = AndedPropertyInequalities(variable, prop, inequalityExpressions.toNonEmptyList)
         Predicate(dependencies, newExpr)
     }
@@ -88,4 +84,27 @@ object groupInequalityPredicates extends (ListSet[Predicate] => ListSet[Predicat
       val groupedExpressions = groupInequalityPredicates(predicates).map(_.expr)
       Ands.create(groupedExpressions)
   })
+
+  /**
+   * Utility class used for partitioning / grouping. Each field contains the following one, that is:
+   * predicate.expr == inequalityExpression, inequalityExpression.lhs == property, and property.map == variable
+   */
+  case class PropertyInequalityPredicateView(
+    predicate: Predicate,
+    inequalityExpression: InequalityExpression,
+    property: Property,
+    variable: Variable
+  ) {
+    def propertyAndVariable: (Property, Variable) = (property, variable)
+  }
+
+  object PropertyInequalityPredicateView {
+
+    def unapply(predicate: Predicate): Option[PropertyInequalityPredicateView] =
+      predicate match {
+        case Predicate(_, expression @ InequalityExpression(property @ Property(variable: Variable, _), _)) =>
+          Some(PropertyInequalityPredicateView(predicate, expression, property, variable))
+        case _ => None
+      }
+  }
 }
