@@ -58,6 +58,7 @@ import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseStartupController;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.database.GlobalAvailabilityGuardController;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -220,12 +221,14 @@ public class CommunityEditionModule extends StandaloneEditionModule
 
     @Override
     protected AbstractRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule, DatabaseManager<?> databaseManager,
-                                                                                 ClientRoutingDomainChecker clientRoutingDomainChecker )
+                                                                                 ClientRoutingDomainChecker clientRoutingDomainChecker,
+                                                                                 DefaultDatabaseResolver databaseResolver )
     {
         ConnectorPortRegister portRegister = globalModule.getConnectorPortRegister();
         Config config = globalModule.getGlobalConfig();
         LogProvider logProvider = globalModule.getLogService().getInternalLogProvider();
-        return new SingleInstanceRoutingProcedureInstaller( databaseManager, clientRoutingDomainChecker, portRegister, config, logProvider );
+        return new SingleInstanceRoutingProcedureInstaller( databaseManager, clientRoutingDomainChecker, portRegister, config, logProvider,
+                                                            databaseResolver );
     }
 
     @Override

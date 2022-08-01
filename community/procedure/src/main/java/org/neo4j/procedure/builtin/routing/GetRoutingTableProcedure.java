@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -69,21 +70,23 @@ public final class GetRoutingTableProcedure implements CallableProcedure
     private final ClientSideRoutingTableProvider clientSideRoutingTableProvider;
     private final ServerSideRoutingTableProvider serverSideRoutingTableProvider;
     private final ClientRoutingDomainChecker clientRoutingDomainChecker;
-    private final String defaultDatabaseName;
     private final Supplier<GraphDatabaseSettings.RoutingMode> defaultRouterSupplier;
     private final Supplier<Boolean> boltEnabled;
+    private final DefaultDatabaseResolver defaultDatabaseResolver;
 
     public GetRoutingTableProcedure( List<String> namespace, String description, DatabaseManager<?> databaseManager,
                                      RoutingTableProcedureValidator validator, SingleAddressRoutingTableProvider routingTableProvider,
-                                     ClientRoutingDomainChecker clientRoutingDomainChecker, Config config, LogProvider logProvider )
+                                     ClientRoutingDomainChecker clientRoutingDomainChecker, Config config, LogProvider logProvider,
+                                     DefaultDatabaseResolver defaultDatabaseResolver )
     {
-        this( namespace, description, databaseManager, validator, routingTableProvider, routingTableProvider, clientRoutingDomainChecker, config, logProvider );
+        this( namespace, description, databaseManager, validator, routingTableProvider, routingTableProvider, clientRoutingDomainChecker, config, logProvider,
+              defaultDatabaseResolver );
     }
 
     public GetRoutingTableProcedure( List<String> namespace, String description, DatabaseManager<?> databaseManager,
                                      RoutingTableProcedureValidator validator, ClientSideRoutingTableProvider clientSideRoutingTableProvider,
                                      ServerSideRoutingTableProvider serverSideRoutingTableProvider, ClientRoutingDomainChecker clientRoutingDomainChecker,
-                                     Config config, LogProvider logProvider )
+                                     Config config, LogProvider logProvider, DefaultDatabaseResolver defaultDatabaseResolver )
     {
         this.signature = buildSignature( namespace, description );
         this.databaseManager = databaseManager;
@@ -92,7 +95,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure
         this.clientSideRoutingTableProvider = clientSideRoutingTableProvider;
         this.serverSideRoutingTableProvider = serverSideRoutingTableProvider;
         this.clientRoutingDomainChecker = clientRoutingDomainChecker;
-        this.defaultDatabaseName = config.get( default_database );
+        this.defaultDatabaseResolver = defaultDatabaseResolver;
         this.defaultRouterSupplier = () -> config.get( GraphDatabaseSettings.routing_default_router );
         this.boltEnabled = () -> config.get( BoltConnector.enabled );
     }
@@ -106,7 +109,8 @@ public final class GetRoutingTableProcedure implements CallableProcedure
     @Override
     public RawIterator<AnyValue[],ProcedureException> apply( Context ctx, AnyValue[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
-        var databaseId = extractDatabaseId( input );
+        var user = ctx.securityContext().subject().username();
+        var databaseId = extractDatabaseId( input, user );
         var routingContext = extractRoutingContext( input );
 
         assertBoltConnectorEnabled( databaseId );
@@ -142,13 +146,13 @@ public final class GetRoutingTableProcedure implements CallableProcedure
         }
     }
 
-    private NamedDatabaseId extractDatabaseId( AnyValue[] input ) throws ProcedureException
+    private NamedDatabaseId extractDatabaseId( AnyValue[] input, String user ) throws ProcedureException
     {
         var arg = input[1];
         final String databaseName;
         if ( arg == Values.NO_VALUE )
         {
-            databaseName = defaultDatabaseName;
+            databaseName = defaultDatabaseResolver.defaultDatabase( user );
         }
         else if ( arg instanceof TextValue )
         {

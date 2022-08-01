@@ -29,6 +29,7 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 
@@ -49,12 +50,13 @@ class SingleInstanceRoutingProcedureInstallerTest
     {
         DatabaseManager<?> databaseManager = mock( DatabaseManager.class );
         ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
+        var databaseResolver = mock( DefaultDatabaseResolver.class );
         ClientRoutingDomainChecker clientRoutingDomainChecker = mock( ClientRoutingDomainChecker.class );
         Config config = Config.defaults();
         LogProvider logProvider = nullLogProvider();
 
-        SingleInstanceRoutingProcedureInstaller installer = new SingleInstanceRoutingProcedureInstaller( databaseManager, clientRoutingDomainChecker,
-                                                                                                         portRegister, config, logProvider );
+        SingleInstanceRoutingProcedureInstaller installer =
+                new SingleInstanceRoutingProcedureInstaller( databaseManager, clientRoutingDomainChecker, portRegister, config, logProvider, databaseResolver );
         GlobalProcedures procedures = spy( new GlobalProceduresRegistry() );
 
         installer.install( procedures );

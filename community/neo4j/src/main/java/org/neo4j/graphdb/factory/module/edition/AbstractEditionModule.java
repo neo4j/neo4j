@@ -115,7 +115,8 @@ public abstract class AbstractEditionModule
 
         registerEditionSpecificProcedures( globalProcedures, databaseManager );
         AbstractRoutingProcedureInstaller routingProcedureInstaller = createRoutingProcedureInstaller( globalModule, databaseManager,
-                                                                                                       createClientRoutingDomainChecker( globalModule ) );
+                                                                                                       createClientRoutingDomainChecker( globalModule ),
+                                                                                                       defaultDatabaseResolver );
         routingProcedureInstaller.install( globalProcedures );
     }
 
@@ -129,7 +130,8 @@ public abstract class AbstractEditionModule
             throws KernelException;
 
     protected abstract AbstractRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule, DatabaseManager<?> databaseManager,
-                                                                                          ClientRoutingDomainChecker clientRoutingDomainChecker );
+                                                                                          ClientRoutingDomainChecker clientRoutingDomainChecker,
+                                                                                          DefaultDatabaseResolver databaseResolver );
 
     public abstract <DB extends DatabaseContext> DatabaseManager<DB> createDatabaseManager( GlobalModule globalModule );
 
