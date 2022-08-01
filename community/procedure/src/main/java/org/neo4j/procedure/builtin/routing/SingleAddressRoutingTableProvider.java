@@ -101,8 +101,8 @@ public class SingleAddressRoutingTableProvider
     }
 
     @Override
-    public RoutingResult getServerSideRoutingTable(Optional<SocketAddress> clientProvidedAddress) {
-        var address = ensureBoltAddressIsUsable(clientProvidedAddress);
+    public RoutingResult getServerSideRoutingTable(MapValue routingContext) throws ProcedureException {
+        var address = findBoltAddressToUse(routingContext);
         return createSingleAddressRoutingResult(
                 address, routingTableTTLProvider.nextTTL().toMillis(), routingOption);
     }

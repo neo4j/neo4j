@@ -19,9 +19,9 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
-import java.util.Optional;
-import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.values.virtual.MapValue;
 
 public interface ServerSideRoutingTableProvider {
-    RoutingResult getServerSideRoutingTable(Optional<SocketAddress> clientProvidedAddress);
+    RoutingResult getServerSideRoutingTable(MapValue routingContext) throws ProcedureException;
 }

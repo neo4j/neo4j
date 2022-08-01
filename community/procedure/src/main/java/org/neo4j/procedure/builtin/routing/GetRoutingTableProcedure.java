@@ -150,7 +150,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
                 RoutingTableProcedureHelpers.findClientProvidedAddress(routingContext, BoltConnector.DEFAULT_PORT, log);
         var isInternalRef = databaseReference instanceof DatabaseReference.Internal;
         if (!isInternalRef) {
-            return serverSideRoutingTableProvider.getServerSideRoutingTable(clientProvidedAddress);
+            return serverSideRoutingTableProvider.getServerSideRoutingTable(routingContext);
         }
 
         var defaultRouter = defaultRouterSupplier.get();
@@ -160,7 +160,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
                     (DatabaseReference.Internal) databaseReference, routingContext);
         } else {
             validator.isValidForServerSideRouting((DatabaseReference.Internal) databaseReference);
-            return serverSideRoutingTableProvider.getServerSideRoutingTable(clientProvidedAddress);
+            return serverSideRoutingTableProvider.getServerSideRoutingTable(routingContext);
         }
     }
 
