@@ -34,7 +34,8 @@ public interface TopologyGraphDbmsModel {
     enum HostedOnMode {
         RAFT(1, "raft"),
         REPLICA(2, "replica"),
-        SINGLE(0, "single");
+        SINGLE(0, "single"),
+        VIRTUAL(3, "virtual");
 
         private final String modeName;
         private final byte code;
@@ -131,6 +132,7 @@ public interface TopologyGraphDbmsModel {
     String DATABASE_STATUS_PROPERTY = "status";
     String DATABASE_ACCESS_PROPERTY = "access";
     String DATABASE_DEFAULT_PROPERTY = "default";
+    String DATABASE_VIRTUAL_PROPERTY = "virtual";
     String DATABASE_UPDATE_ID_PROPERTY = "update_id";
     String DATABASE_STORE_RANDOM_ID_PROPERTY = "store_random_id";
     String DATABASE_DESIGNATED_SEEDER_PROPERTY = "designated_seeder";
