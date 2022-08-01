@@ -79,8 +79,8 @@ import org.neo4j.time.SystemNanoClock;
 public abstract class FabricServicesBootstrap {
 
     private final FabricConfig fabricConfig;
-    private final Dependencies dependencies;
-    private final LogService logService;
+    protected final Dependencies dependencies;
+    protected final LogService logService;
     private final ServiceBootstrapper serviceBootstrapper;
     private final Config config;
     private final AvailabilityGuard availabilityGuard;
@@ -267,7 +267,7 @@ public abstract class FabricServicesBootstrap {
 
         @Override
         protected FabricDatabaseManager createFabricDatabaseManager(FabricConfig fabricConfig) {
-            return new FabricDatabaseManager.Community(fabricConfig, databaseProvider, databaseReferenceRepo);
+            return new FabricDatabaseManager(fabricConfig, databaseProvider, databaseReferenceRepo);
         }
 
         @Override

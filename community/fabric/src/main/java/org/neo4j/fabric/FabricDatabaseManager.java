@@ -26,22 +26,22 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.config.FabricSettings;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
-public abstract class FabricDatabaseManager {
-
-    private final DatabaseReferenceRepository databaseReferenceRepo;
-    private final DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider;
+public class FabricDatabaseManager {
+    protected final FabricConfig fabricConfig;
+    protected final DatabaseReferenceRepository databaseReferenceRepo;
+    protected final DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider;
     private final boolean multiGraphEverywhere;
 
     public FabricDatabaseManager(
             FabricConfig fabricConfig,
             DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider,
             DatabaseReferenceRepository databaseReferenceRepo) {
+        this.fabricConfig = fabricConfig;
         this.databaseContextProvider = databaseContextProvider;
         this.databaseReferenceRepo = databaseReferenceRepo;
         this.multiGraphEverywhere = fabricConfig.isEnabledByDefault();
@@ -63,24 +63,30 @@ public abstract class FabricDatabaseManager {
         return multiGraphEverywhere;
     }
 
-    public GraphDatabaseAPI getDatabaseFacade(String databaseNameRaw) throws UnavailableException {
-        var databaseContext = databaseReferenceRepo
-                .getInternalByAlias(databaseNameRaw)
-                .map(DatabaseReference.Internal::databaseId)
-                .flatMap(databaseContextProvider::getDatabaseContext)
-                .orElseThrow(databaseNotFound(databaseNameRaw));
+    public DatabaseReference getDatabaseReference(String databaseNameRaw) throws UnavailableException {
+        var ref = databaseReferenceRepo.getByAlias(databaseNameRaw).orElseThrow(databaseNotFound(databaseNameRaw));
+        if (ref instanceof DatabaseReference.Internal internal) {
+            assertInternalDatabaseAvailable(internal);
+        }
+        return ref;
+    }
 
+    public GraphDatabaseAPI getDatabaseFacade(String databaseNameRaw) throws UnavailableException {
+        var databaseContext = getDatabaseContext(databaseNameRaw);
         databaseContext.database().getDatabaseAvailabilityGuard().assertDatabaseAvailable();
         return databaseContext.databaseFacade();
     }
 
-    public DatabaseReference getDatabaseReference(String databaseNameRaw) throws UnavailableException {
-        var ref = databaseReferenceRepo.getByAlias(databaseNameRaw).orElseThrow(databaseNotFound(databaseNameRaw));
-        var isInternal = ref instanceof DatabaseReference.Internal;
-        if (isInternal) {
-            assertInternalDatabaseAvailable((DatabaseReference.Internal) ref);
-        }
-        return ref;
+    private DatabaseContext getDatabaseContext(String databaseNameRaw) {
+        return databaseReferenceRepo
+                .getInternalByAlias(databaseNameRaw)
+                .map(DatabaseReference.Internal::databaseId)
+                .flatMap(databaseContextProvider::getDatabaseContext)
+                .orElseThrow(databaseNotFound(databaseNameRaw));
+    }
+
+    private static Supplier<DatabaseNotFoundException> databaseNotFound(String databaseNameRaw) {
+        return () -> new DatabaseNotFoundException("Database " + databaseNameRaw + " not found");
     }
 
     private void assertInternalDatabaseAvailable(DatabaseReference.Internal databaseReference)
@@ -91,38 +97,17 @@ public abstract class FabricDatabaseManager {
         ctx.database().getDatabaseAvailabilityGuard().assertDatabaseAvailable();
     }
 
-    private static Supplier<DatabaseNotFoundException> databaseNotFound(String databaseNameRaw) {
-        return () -> new DatabaseNotFoundException("Database " + databaseNameRaw + " not found");
+    public boolean isFabricDatabase(String databaseNameRaw) {
+        // a "Fabric" database with special capabilities cannot exist in CE
+        return false;
     }
 
-    public abstract boolean isFabricDatabasePresent();
+    public boolean isFabricDatabasePresent() {
+        return false;
+    }
 
-    public abstract void manageFabricDatabases(GraphDatabaseService system);
-
-    public abstract boolean isFabricDatabase(String databaseNameRaw);
-
-    public static class Community extends FabricDatabaseManager {
-        public Community(
-                FabricConfig fabricConfig,
-                DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider,
-                DatabaseReferenceRepository databaseReferenceRepo) {
-            super(fabricConfig, databaseContextProvider, databaseReferenceRepo);
-        }
-
-        @Override
-        public boolean isFabricDatabasePresent() {
-            return false;
-        }
-
-        @Override
-        public void manageFabricDatabases(GraphDatabaseService system) {
-            // a "Fabric" database with special capabilities cannot exist in CE
-        }
-
-        @Override
-        public boolean isFabricDatabase(String databaseNameRaw) {
-            // a "Fabric" database with special capabilities cannot exist in CE
-            return false;
-        }
+    public FabricConfig getFabricConfig() {
+        return fabricConfig;
     }
 }
+;

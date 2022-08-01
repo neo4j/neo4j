@@ -26,8 +26,6 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.commandline.dbms.MigrateStoreCommand;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
-import org.neo4j.fabric.FabricDatabaseManager;
-import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
@@ -92,9 +90,8 @@ public class SystemDbUpgrader {
         LifeSupport globalLife = globalModule.getGlobalLife();
 
         var databaseContextProvider = edition.createDatabaseContextProvider(globalModule);
-        var fabricDatabaseManager = new FabricDatabaseManager.Community(
-                FabricConfig.from(config), databaseContextProvider, edition.getDatabaseReferenceRepo());
-        globalDependencies.satisfyDependency(fabricDatabaseManager);
+
+        edition.bootstrapFabricServices();
 
         globalModule.getGlobalDependencies().satisfyDependency(new GlobalProceduresRegistry());
 
