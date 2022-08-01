@@ -29,7 +29,6 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -124,7 +123,7 @@ abstract class ServerCommandIT extends ServerProcessTestBase {
     }
 
     private void shouldBeAbleToStartAndStopRealServer(int initialHeapSize) {
-        int startSig = execute(List.of("start"), Map.of(Bootloader.ENV_NEO4J_START_WAIT, "3"));
+        int startSig = execute(List.of("start"), Map.of());
         assertThat(startSig).isEqualTo(EXIT_CODE_OK);
         assertEventually(
                 this::getDebugLogLines,
@@ -134,13 +133,6 @@ abstract class ServerCommandIT extends ServerProcessTestBase {
         assertEventually(this::getDebugLogLines, s -> s.contains(getVersion() + "NeoWebServer] ========"), 5, MINUTES);
         assertEventually(this::getUserLogLines, s -> s.contains("Remote interface available at"), 5, MINUTES);
         assertThat(execute("stop")).isEqualTo(EXIT_CODE_OK);
-    }
-
-    @Override
-    protected int execute(List<String> args, Map<String, String> env, Runtime.Version version) {
-        HashMap<String, String> environment = new HashMap<>(env);
-        environment.putIfAbsent(Bootloader.ENV_NEO4J_START_WAIT, "0");
-        return super.execute(args, environment, version);
     }
 
     protected String getVersion() {

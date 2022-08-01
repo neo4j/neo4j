@@ -72,7 +72,6 @@ abstract class Bootloader implements AutoCloseable {
     static final String ENV_NEO4J_HOME = "NEO4J_HOME";
     static final String ENV_NEO4J_CONF = "NEO4J_CONF";
     static final String ENV_NEO4J_SHUTDOWN_TIMEOUT = "NEO4J_SHUTDOWN_TIMEOUT";
-    static final String ENV_NEO4J_START_WAIT = "NEO4J_START_WAIT";
     static final String ENV_HEAP_SIZE = "HEAP_SIZE";
     static final String ENV_JAVA_OPTS = "JAVA_OPTS";
     static final String PROP_JAVA_CP = "java.class.path";

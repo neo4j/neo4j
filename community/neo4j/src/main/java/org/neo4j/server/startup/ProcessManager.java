@@ -19,11 +19,8 @@
  */
 package org.neo4j.server.startup;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.server.NeoBootstrapper.SIGINT;
 import static org.neo4j.server.NeoBootstrapper.SIGTERM;
-import static org.neo4j.server.startup.Bootloader.ENV_NEO4J_START_WAIT;
 
 import java.io.File;
 import java.io.IOException;
@@ -152,8 +149,6 @@ class ProcessManager {
             }
             if (behaviour.blocking) {
                 process.waitFor();
-            } else {
-                process.waitFor(bootloader.getEnv(ENV_NEO4J_START_WAIT, 0, INT), SECONDS);
             }
 
             if (!process.isAlive()) {
