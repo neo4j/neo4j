@@ -29,6 +29,8 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.SystemUtils;
 import org.neo4j.kernel.internal.Version;
@@ -103,7 +105,7 @@ public class AdminTool {
                 CommandSpec commandSpec =
                         CommandSpec.create().name(commandGroup.getDisplayName()).usageMessage(messageSpec);
                 CommandLine groupCommandLine = new CommandLine(commandSpec, new ContextInjectingFactory(ctx));
-                registerGroupCommands(commandProviders, commandGroup, ctx, groupCommandLine);
+                registerGroupCommands(commandProviders, commandGroup, ctx, groupCommandLine, type -> true);
                 commandLine.addSubcommand(groupCommandLine);
             }
         });
@@ -131,8 +133,10 @@ public class AdminTool {
             Collection<CommandProvider> commandProviders,
             CommandGroup commandGroup,
             ExecutionContext ctx,
-            CommandLine commandLine) {
+            CommandLine commandLine,
+            Predicate<CommandType> commandPredicate) {
         List<Object> subcommands = filterCommandProviders(commandProviders, commandGroup).stream()
+                .filter(c -> commandPredicate.test(c.commandType()))
                 .map(c -> c.createCommand(ctx))
                 .sorted(new CommandNameComparator())
                 .toList();
@@ -189,10 +193,22 @@ public class AdminTool {
                 CommandGroup commandGroup, CommandLine commandLine, Collection<CommandProvider> commandProviders);
     }
 
-    // 'neo4j <command>' is an alias for 'neo4j-admin server <command>'
+    // 'neo4j <command>' is a partial alias for 'neo4j-admin server <command>'
     // This class is the entry point for the alias.
-    @Command(name = "neo4j", description = "An alias for 'neo4j-admin server'")
+    @Command(
+            name = "neo4j",
+            description = "A partial alias for 'neo4j-admin server'. Commands for working with DBMS process "
+                    + "from 'neo4j-admin server' category can be invoked using this command.")
     public static class Neo4jAlias extends AdminTool {
+
+        private static final Set<CommandType> SUPPORTED_COMMANDS = Set.of(
+                CommandType.NEO4J_CONSOLE,
+                CommandType.NEO4J_START,
+                CommandType.NEO4J_RESTART,
+                CommandType.NEO4J_STATUS,
+                CommandType.NEO4J_STOP,
+                CommandType.NEO4J_SERVICE);
+
         public static CommandLine getCommandLine(ExecutionContext ctx) {
             return getCommandLine(ctx, new Strategy() {
                 @Override
@@ -206,7 +222,8 @@ public class AdminTool {
                         CommandLine commandLine,
                         Collection<CommandProvider> commandProviders) {
                     if (commandGroup == CommandGroup.SERVER) {
-                        registerGroupCommands(commandProviders, commandGroup, ctx, commandLine);
+                        registerGroupCommands(
+                                commandProviders, commandGroup, ctx, commandLine, SUPPORTED_COMMANDS::contains);
                     }
                 }
             });
