@@ -96,7 +96,7 @@ class CypherQueryCachesTest extends CypherFunSuite with GraphDatabaseTestSupport
     stats.executionPlanCacheEntries().shouldEqual(0)
     stats.executableQueryCacheEntries().shouldEqual(0)
 
-    eengine.compilerLibrary.clearCaches()
+    eengine.masterCompiler.clearCaches()
 
     stats.preParserCacheEntries().shouldEqual(0)
     stats.astCacheEntries().shouldEqual(0)

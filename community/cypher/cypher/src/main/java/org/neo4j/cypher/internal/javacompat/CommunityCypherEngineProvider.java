@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory;
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration;
 import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration;
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -57,8 +58,8 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider {
     @Override
     protected QueryExecutionEngine createEngine(
             Dependencies deps, GraphDatabaseAPI graphAPI, boolean isSystemDatabase, SPI spi) {
-        GraphDatabaseCypherService queryService = new GraphDatabaseCypherService(graphAPI);
-        deps.satisfyDependency(queryService);
+        GraphDatabaseCypherService queryService = deps.satisfyDependency(new GraphDatabaseCypherService(graphAPI));
+        deps.satisfyDependency(Neo4jTransactionalContextFactory.create(queryService));
         CypherConfiguration cypherConfig = CypherConfiguration.fromConfig(spi.config());
         CypherPlannerConfiguration plannerConfig =
                 CypherPlannerConfiguration.fromCypherConfiguration(cypherConfig, spi.config(), isSystemDatabase);

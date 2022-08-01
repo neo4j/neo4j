@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings.CypherReplanAlgorithm
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
@@ -30,16 +29,66 @@ object MasterCompiler {
   val CLOCK: Clock = Clock.systemUTC()
 }
 
-/**
- * Selects the correct cypher implementation based on a pre-parsed query.
- */
-class MasterCompiler(compilerLibrary: CompilerLibrary) {
+trait MasterCompiler {
 
   /**
    * Clear all compiler caches.
    *
    * @return the maximum number of entries clear from any cache
    */
+  def clearCaches(): Long
+
+  def clearExecutionPlanCaches(): Unit
+
+  /**
+   * Compile submitted query into executable query.
+   *
+   * @param query                query to convert
+   * @param tracer               compilation tracer to which events of the compilation process are reported
+   * @param transactionalContext transactional context to use during compilation (in logical and physical planning)
+   * @return a compiled and executable query
+   */
+  def compile(
+    query: InputQuery,
+    tracer: CompilationPhaseTracer,
+    transactionalContext: TransactionalContext,
+    params: MapValue
+  ): ExecutableQuery
+
+  def supportsAdministrativeCommands(): Boolean
+}
+
+/**
+ * MasterCompiler that uses a single compiler
+ */
+class SingleMasterCompiler(compiler: Compiler) extends MasterCompiler {
+
+  def clearCaches(): Long = compiler match {
+    case c: CypherCurrentCompiler[_] => c.clearCaches()
+    case _                           => 0
+  }
+
+  def clearExecutionPlanCaches(): Unit = compiler match {
+    case c: CypherCurrentCompiler[_] => c.clearExecutionPlanCache()
+    case _                           => ()
+  }
+
+  override def compile(
+    query: InputQuery,
+    tracer: CompilationPhaseTracer,
+    transactionalContext: TransactionalContext,
+    params: MapValue
+  ): ExecutableQuery =
+    compiler.compile(query, tracer, transactionalContext, params)
+
+  def supportsAdministrativeCommands(): Boolean = false
+}
+
+/**
+ * Selects the correct cypher implementation based on a pre-parsed query.
+ */
+class LibraryMasterCompiler(compilerLibrary: CompilerLibrary) extends MasterCompiler {
+
   def clearCaches(): Long = {
     compilerLibrary.clearCaches()
   }
@@ -48,14 +97,6 @@ class MasterCompiler(compilerLibrary: CompilerLibrary) {
     compilerLibrary.clearExecutionPlanCaches()
   }
 
-  /**
-   * Compile submitted query into executable query.
-   *
-   * @param query                   query to convert
-   * @param tracer                  compilation tracer to which events of the compilation process are reported
-   * @param transactionalContext    transactional context to use during compilation (in logical and physical planning)
-   * @return a compiled and executable query
-   */
   def compile(
     query: InputQuery,
     tracer: CompilationPhaseTracer,
@@ -72,4 +113,6 @@ class MasterCompiler(compilerLibrary: CompilerLibrary) {
 
     compiler.compile(query, tracer, transactionalContext, params)
   }
+
+  def supportsAdministrativeCommands(): Boolean = compilerLibrary.supportsAdministrativeCommands()
 }

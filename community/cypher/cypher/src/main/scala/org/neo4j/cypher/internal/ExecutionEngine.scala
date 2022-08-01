@@ -50,18 +50,16 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
  * This class constructs and initializes both the cypher compilers and runtimes, which are very expensive
  * operation. Please make sure this will be constructed only once and properly reused.
  */
-class ExecutionEngine(
+abstract class ExecutionEngine(
   val queryService: GraphDatabaseQueryService,
   val kernelMonitors: Monitors,
   val tracer: CompilationTracer,
   val config: CypherConfiguration,
-  val compilerLibrary: CompilerLibrary,
+  val masterCompiler: MasterCompiler,
   val queryCaches: CypherQueryCaches,
   val logProvider: InternalLogProvider,
   val clock: Clock = Clock.systemUTC()
 ) {
-
-  require(queryService != null, "Can't work with a null graph database")
 
   // HELPER OBJECTS
   private val defaultQueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
@@ -69,8 +67,6 @@ class ExecutionEngine(
   private val preParser = new PreParser(config, queryCaches.preParserCache)
 
   private val queryCache: QueryCache[CacheKey[String], ExecutableQuery] = queryCaches.executableQueryCache
-
-  private val masterCompiler: MasterCompiler = new MasterCompiler(compilerLibrary)
 
   private val schemaHelper = new SchemaHelper(queryCache, masterCompiler)
 
@@ -81,12 +77,12 @@ class ExecutionEngine(
    * This method assumes this is the only query running within the transaction, and therefor will register transaction closing
    * with the TaskCloser
    *
-   * @param query the query to execute
-   * @param params the parameters of the query
-   * @param context the transactional context in which to run the query
-   * @param profile if `true` run with profiling enabled
+   * @param query       the query to execute
+   * @param params      the parameters of the query
+   * @param context     the transactional context in which to run the query
+   * @param profile     if `true` run with profiling enabled
    * @param prePopulate if `true` pre populate all results
-   * @param subscriber the subscriber where results will be streamed
+   * @param subscriber  the subscriber where results will be streamed
    * @return a `QueryExecution` that controls the demand to the subscriber
    */
   def execute(
@@ -143,13 +139,13 @@ class ExecutionEngine(
    * This method assumes the query is running as one of many queries within a single transaction and therefor needs
    * to be told using the shouldCloseTransaction field if the TaskCloser needs to have a transaction close registered.
    *
-   * @param query the query to execute
-   * @param params the parameters of the query
-   * @param context the transactional context in which to run the query
+   * @param query            the query to execute
+   * @param params           the parameters of the query
+   * @param context          the transactional context in which to run the query
    * @param isOutermostQuery provide `true` if this is the outer-most query and should close the transaction when finished or error
-   * @param profile if `true` run with profiling enabled
-   * @param prePopulate if `true` pre populate all results
-   * @param subscriber the subscriber where results will be streamed
+   * @param profile          if `true` run with profiling enabled
+   * @param prePopulate      if `true` pre populate all results
+   * @param subscriber       the subscriber where results will be streamed
    * @return a `QueryExecution` that controls the demand to the subscriber
    */
   def executeSubquery(
@@ -163,7 +159,7 @@ class ExecutionEngine(
   ): QueryExecution = {
     val queryTracer = tracer.compileQuery(query)
     closing(context, queryTracer) {
-      val couldContainSensitiveFields = isOutermostQuery && compilerLibrary.supportsAdministrativeCommands()
+      val couldContainSensitiveFields = isOutermostQuery && masterCompiler.supportsAdministrativeCommands()
       val preParsedQuery = preParser.preParseQuery(query, profile, couldContainSensitiveFields)
       doExecute(
         preParsedQuery,

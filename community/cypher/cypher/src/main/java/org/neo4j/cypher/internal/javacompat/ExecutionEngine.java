@@ -71,13 +71,6 @@ public class ExecutionEngine implements QueryExecutionEngine {
                 new CompilerLibrary(compilerFactory, this::getCypherExecutionEngine));
     }
 
-    /**
-     * Creates an execution engine from the inner engine of a system execution engine
-     */
-    public ExecutionEngine(SystemExecutionEngine inner) {
-        cypherExecutionEngine = inner.normalExecutionEngine();
-    }
-
     protected ExecutionEngine() {}
 
     public org.neo4j.cypher.internal.ExecutionEngine getCypherExecutionEngine() {
@@ -95,7 +88,7 @@ public class ExecutionEngine implements QueryExecutionEngine {
         CypherConfiguration cypherConfiguration = CypherConfiguration.fromConfig(config);
         CompilationTracer tracer =
                 new TimingCompilationTracer(monitors.newMonitor(TimingCompilationTracer.EventListener.class));
-        return new org.neo4j.cypher.internal.ExecutionEngine(
+        return new org.neo4j.cypher.internal.DefaultExecutionEngine(
                 queryService,
                 monitors,
                 tracer,
