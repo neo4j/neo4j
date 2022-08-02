@@ -74,10 +74,9 @@ abstract class ServerCommandIT extends ServerProcessTestBase {
             int updatedSetting = 2 * INITIAL_HEAP_MB;
             addConf(BootloaderSettings.initial_heap_size, String.format("%dm", updatedSetting));
 
-            // Try a couple of times to issue the update-service call. There's an idea that on WindowsServer2019 there
-            // may be
-            // a delay between installing the service and it being available for being updated... so consider this
-            // temporary.
+            // Try a couple of times to issue the windows-service update call. There's an idea that on
+            // WindowsServer2019 there may be a delay between installing the service and it being
+            // available for being updated... so consider this temporary.
             int updateServiceResult = 0;
             for (int i = 0; i < 3; i++) {
                 updateServiceResult = execute("windows-service", "update");

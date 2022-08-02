@@ -65,7 +65,7 @@ public class WindowsServiceCommand {
         }
     }
 
-    @Command(name = "update-service", description = "Update the Windows service.")
+    @Command(name = "update", description = "Update the Windows service.")
     public static class Update extends AbstractCommand {
 
         public Update(ExecutionContext ctx) {
