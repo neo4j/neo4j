@@ -48,6 +48,11 @@ public class DelegatingPagedFile implements PagedFile {
     }
 
     @Override
+    public void increaseLastPageIdTo(long newLastPageId) {
+        delegate.increaseLastPageIdTo(newLastPageId);
+    }
+
+    @Override
     public int pageSize() {
         return delegate.pageSize();
     }

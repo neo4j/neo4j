@@ -241,6 +241,11 @@ public class DatabasePageCache implements PageCache {
         }
 
         @Override
+        public void increaseLastPageIdTo(long newLastPageId) {
+            delegate.increaseLastPageIdTo(newLastPageId);
+        }
+
+        @Override
         public void close() {
             invokeFileUnmapListeners(mappedListeners, this);
             delegate.close();

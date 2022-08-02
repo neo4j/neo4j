@@ -381,6 +381,9 @@ public class ByteArrayPageCursor extends PageCursor {
         }
 
         @Override
+        public void increaseLastPageIdTo(long newLastPageId) {}
+
+        @Override
         public void close() {}
 
         @Override

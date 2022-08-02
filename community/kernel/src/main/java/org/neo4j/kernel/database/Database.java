@@ -199,7 +199,7 @@ public class Database extends LifecycleAdapter {
     private final DependencyResolver globalDependencies;
     private final PageCache globalPageCache;
 
-    private final InternalLog msgLog;
+    private final InternalLog internalLog;
     private final DatabaseLogService databaseLogService;
     private final DatabaseLogProvider internalLogProvider;
     private final DatabaseLogProvider userLogProvider;
@@ -301,7 +301,7 @@ public class Database extends LifecycleAdapter {
         this.extensionFactories = context.getExtensionFactories();
         this.watcherServiceFactory = context.getWatcherServiceFactory();
         this.engineProvider = context.getEngineProvider();
-        this.msgLog = internalLogProvider.getLog(getClass());
+        this.internalLog = internalLogProvider.getLog(getClass());
         this.lockService = new ReentrantLockService();
         this.commitProcessFactory = context.getCommitProcessFactory();
         this.globalPageCache = context.getPageCache();
@@ -337,7 +337,14 @@ public class Database extends LifecycleAdapter {
             ioController = ioControllerService.createIOController(databaseConfig, clock);
             transactionIdSequence = new TransactionIdSequence();
             var versionStorage = versionStorageFactory.createVersionStorage(
-                    globalPageCache, ioController, databaseLayout, databaseConfig);
+                    globalPageCache,
+                    ioController,
+                    transactionIdSequence,
+                    scheduler,
+                    internalLogProvider,
+                    databaseDependencies,
+                    databaseLayout,
+                    databaseConfig);
             databasePageCache = new DatabasePageCache(globalPageCache, ioController, versionStorage);
             databaseMonitors = new Monitors(parentMonitors, internalLogProvider);
 
@@ -418,7 +425,7 @@ public class Database extends LifecycleAdapter {
         }
         init(); // Ensure we're initialized
         try {
-            databaseMonitors.addMonitorListener(new LoggingLogFileMonitor(msgLog));
+            databaseMonitors.addMonitorListener(new LoggingLogFileMonitor(internalLog));
             databaseMonitors.addMonitorListener(
                     new LoggingLogTailScannerMonitor(internalLogProvider.getLog(DetachedLogTailScanner.class)));
             databaseMonitors.addMonitorListener(new ReverseTransactionCursorLoggingMonitor(
@@ -695,11 +702,12 @@ public class Database extends LifecycleAdapter {
     private void handleStartupFailure(Throwable e) {
         // Something unexpected happened during startup
         databaseAvailabilityGuard.startupFailure(e);
-        msgLog.warn("Exception occurred while starting the database. Trying to stop already started components.", e);
+        internalLog.warn(
+                "Exception occurred while starting the database. Trying to stop already started components.", e);
         try {
             shutdown();
         } catch (Exception closeException) {
-            msgLog.error("Couldn't close database after startup failure", closeException);
+            internalLog.error("Couldn't close database after startup failure", closeException);
         }
         throw new RuntimeException(e);
     }
@@ -1072,14 +1080,14 @@ public class Database extends LifecycleAdapter {
     }
 
     private void awaitAllClosingTransactions() {
-        msgLog.info("Waiting for closing transactions.");
+        internalLog.info("Waiting for closing transactions.");
         KernelTransactions kernelTransactions = kernelModule.kernelTransactions();
         kernelTransactions.terminateTransactions();
 
         while (kernelTransactions.haveClosingTransaction()) {
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
         }
-        msgLog.info("All transactions are closed.");
+        internalLog.info("All transactions are closed.");
     }
 
     public Config getConfig() {

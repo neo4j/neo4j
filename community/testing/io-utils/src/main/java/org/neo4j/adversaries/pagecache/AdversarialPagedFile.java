@@ -96,6 +96,11 @@ public class AdversarialPagedFile implements PagedFile {
     }
 
     @Override
+    public void increaseLastPageIdTo(long newLastPageId) {
+        delegate.increaseLastPageIdTo(newLastPageId);
+    }
+
+    @Override
     public void close() {
         adversary.injectFailure(NoSuchFileException.class, SecurityException.class);
         delegate.close();

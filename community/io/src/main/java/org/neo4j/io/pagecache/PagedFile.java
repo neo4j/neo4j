@@ -177,6 +177,12 @@ public interface PagedFile extends AutoCloseable {
     long getLastPageId() throws IOException;
 
     /**
+     * Increase the paged file to have at least as many pages as requested by provided argument.
+     * @param newLastPageId provided new last page id
+     */
+    void increaseLastPageIdTo(long newLastPageId);
+
+    /**
      * Release a handle to a paged file.
      * <p>
      * If this is the last handle to the file, it will be flushed and closed.

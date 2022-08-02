@@ -24,7 +24,7 @@ import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 
 public interface VersionStorage extends AutoCloseable {
-    int NEXT_ID_OFFSET = Long.BYTES;
+    int NEXT_REFERENCE_OFFSET = Long.BYTES;
     int CHECKSUM_OFFSET = Long.BYTES * 2;
 
     VersionStorage EMPTY_STORAGE = new VersionStorage() {

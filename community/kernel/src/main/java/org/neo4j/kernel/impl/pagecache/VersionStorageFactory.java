@@ -19,17 +19,25 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
+import org.neo4j.kernel.impl.api.TransactionIdSequence;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
 
 @FunctionalInterface
 public interface VersionStorageFactory {
     VersionStorage createVersionStorage(
             PageCache pageCache,
             IOController ioController,
+            TransactionIdSequence idSequence,
+            JobScheduler scheduler,
+            LogProvider logProvider,
+            Dependencies dependencies,
             DatabaseLayout databaseLayout,
             DatabaseConfig databaseConfig);
 }

@@ -27,14 +27,11 @@ import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -101,37 +98,6 @@ interface ExecutorServiceFactory {
                 threadCount = getRuntime().availableProcessors();
             }
             return new ForkJoinPool(threadCount, factory, null, false);
-        };
-    }
-
-    /**
-     * Schedules jobs in a work-stealing (ForkJoin) thread pool, configuring to be in an "asynchronous" mode, which is more suitable for event-processing.
-     * <p>
-     * You can read more about asynchronous mode in the {@link ForkJoinPool} documentation.
-     * <p>
-     * {@link java.util.stream.Stream#parallel Parallel streams} and {@link ForkJoinTask}s started from within the scheduled jobs will also run inside the
-     * same {@link ForkJoinPool}.
-     */
-    static ExecutorServiceFactory workStealingAsync() {
-        return (group, factory, threadCount) -> {
-            if (threadCount == 0) {
-                threadCount = getRuntime().availableProcessors();
-            }
-            return new ForkJoinPool(threadCount, factory, null, true);
-        };
-    }
-
-    /**
-     * Execute jobs in fixed size pool of threads and if job queue fills up, the caller executes the job and thereby applying back pressure.
-     */
-    static ExecutorServiceFactory fixedWithBackPressure() {
-        return (group, factory, threadCount) -> {
-            if (threadCount == 0) {
-                threadCount = getRuntime().availableProcessors();
-            }
-            BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>(2 * threadCount);
-            RejectedExecutionHandler policy = new ThreadPoolExecutor.CallerRunsPolicy();
-            return new ThreadPoolExecutor(threadCount, threadCount, 0, TimeUnit.SECONDS, workQueue, factory, policy);
         };
     }
 

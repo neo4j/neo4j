@@ -89,6 +89,9 @@ public class StubPagedFile implements PagedFile {
     }
 
     @Override
+    public void increaseLastPageIdTo(long newLastPageId) {}
+
+    @Override
     public void close() {}
 
     @Override

@@ -65,14 +65,14 @@ public class KernelImpl extends LifecycleAdapter implements Kernel {
     private volatile boolean isRunning;
 
     public KernelImpl(
-            KernelTransactions transactionFactory,
+            KernelTransactions transactions,
             Health health,
             TransactionMonitor transactionMonitor,
             GlobalProcedures globalProcedures,
             Config config,
             StorageEngine storageEngine,
             TransactionExecutionMonitor transactionExecutionMonitor) {
-        this.transactions = transactionFactory;
+        this.transactions = transactions;
         this.health = health;
         this.transactionMonitor = transactionMonitor;
         this.globalProcedures = globalProcedures;

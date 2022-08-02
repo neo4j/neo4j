@@ -688,10 +688,8 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
         }
     }
 
-    /**
-     * Make sure that the lastPageId is at least the given pageId
-     */
-    void increaseLastPageIdTo(long newLastPageId) {
+    @Override
+    public void increaseLastPageIdTo(long newLastPageId) {
         long current;
         long update;
         long lastPageId;
