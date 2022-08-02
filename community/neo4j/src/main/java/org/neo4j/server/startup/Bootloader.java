@@ -402,7 +402,7 @@ abstract class Bootloader implements AutoCloseable {
             os.console();
         }
 
-        void stop() {
+        void stop(Integer maybeTimeout) {
             BootloaderOsAbstraction os = os();
             Long pid = os.getPidIfRunning();
             if (pid == null) {
@@ -410,7 +410,13 @@ abstract class Bootloader implements AutoCloseable {
                 return;
             }
             environment.out().print("Stopping Neo4j.");
-            int timeout = getEnv(ENV_NEO4J_SHUTDOWN_TIMEOUT, DEFAULT_NEO4J_SHUTDOWN_TIMEOUT, INT);
+            int timeout;
+            if (maybeTimeout != null) {
+                timeout = maybeTimeout;
+            } else {
+                timeout = getEnv(ENV_NEO4J_SHUTDOWN_TIMEOUT, DEFAULT_NEO4J_SHUTDOWN_TIMEOUT, INT);
+            }
+
             Stopwatch stopwatch = Stopwatch.start();
             os.stop(pid);
             int printCount = 0;
@@ -444,19 +450,11 @@ abstract class Bootloader implements AutoCloseable {
             throw new CommandFailedException("Failed to stop", EXIT_CODE_RUNNING);
         }
 
-        /**
-         * @throws CommandFailedException when something goes wrong. This exception is automatically handled by
-         *                                {@link org.neo4j.cli.AbstractCommand}
-         */
-        void restart() {
-            stop();
+        void restart(Integer maybeTimeout) {
+            stop(maybeTimeout);
             start();
         }
 
-        /**
-         * @throws CommandFailedException when something goes wrong. This exception is automatically handled by
-         *                                {@link org.neo4j.cli.AbstractCommand}
-         */
         void status() {
             Long pid = os().getPidIfRunning();
             if (pid == null) {

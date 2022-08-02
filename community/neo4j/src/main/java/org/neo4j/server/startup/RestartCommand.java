@@ -26,6 +26,16 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "restart", description = "Restart the server daemon.")
 public class RestartCommand extends AbstractCommand {
 
+    @CommandLine.Option(
+            names = "--shutdown-timeout",
+            description =
+                    "A time interval in seconds for how long the command will wait for the DBMS process to stop. The default is "
+                            + Bootloader.DEFAULT_NEO4J_SHUTDOWN_TIMEOUT
+                            + " seconds. The interval can also be configured using "
+                            + Bootloader.ENV_NEO4J_SHUTDOWN_TIMEOUT
+                            + " environment variable. If both are present, this option has higher priority than the environment variable.")
+    private Integer timeout;
+
     public RestartCommand(ExecutionContext ctx) {
         super(ctx, false);
     }
@@ -34,7 +44,7 @@ public class RestartCommand extends AbstractCommand {
     protected void execute() throws Exception {
         var enhancedCtx = EnhancedExecutionContext.unwrapFromExecutionContext(ctx);
         try (var bootloader = enhancedCtx.createDbmsBootloader()) {
-            bootloader.restart();
+            bootloader.restart(timeout);
         }
     }
 }

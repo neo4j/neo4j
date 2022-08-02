@@ -317,7 +317,7 @@ abstract class BootloaderCommandTestBase {
     protected static class ProcessHandler {
         private static final long PID_NOT_RUNNING = 0;
 
-        private long runningPid;
+        protected long runningPid;
         private long nextPid = 1;
 
         boolean serviceInstalled;
