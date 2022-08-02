@@ -1937,6 +1937,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       "appendAtCurrentIndent",
       "nestedPlanExistsExpressionProjection",
       "nestedPlanCollectExpressionProjection",
+      "nestedPlanGetByNameExpressionProjection",
       "pointDistanceNodeIndexSeekExpr",
       "pointDistanceRelationshipIndexSeekExpr",
       "pointBoundingBoxNodeIndexSeekExpr",
