@@ -78,6 +78,7 @@
     <module>buffers</module>
     <module>capabilities</module>
     <module>storage-engine-util</module>
+    <module>bootcheck</module>
   </modules>
 
   <licenses>

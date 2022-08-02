@@ -78,11 +78,11 @@
                     </platforms>
                     <programs>
                         <program>
-                            <mainClass>org.neo4j.server.startup.Neo4jCommand</mainClass>
+                            <mainClass>org.neo4j.server.startup.Neo4jBoot</mainClass>
                             <id>neo4j</id>
                         </program>
                         <program>
-                            <mainClass>org.neo4j.server.startup.Neo4jAdminCommand</mainClass>
+                            <mainClass>org.neo4j.server.startup.Neo4jAdminBoot</mainClass>
                             <id>neo4j-admin</id>
                         </program>
                     </programs>
@@ -158,7 +158,7 @@
     <dependencies>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j</artifactId>
+            <artifactId>neo4j-bootcheck</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
