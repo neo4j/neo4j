@@ -28,6 +28,7 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.Test;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
@@ -166,7 +167,7 @@ class MigrateConfigCommandTest {
         var configFile = createConfigFileInDefaultLocation(OLD_CONFIG);
         var result = runConfigMigrationCommand();
         assertEquals(0, result.exitCode);
-        assertThat(Files.readString(configFile)).isEqualTo(MIGRATED_CONFIG);
+        assertThat(Files.readString(configFile)).isEqualTo(maybeChangeLineSeparators(MIGRATED_CONFIG));
     }
 
     @Test
@@ -220,7 +221,9 @@ class MigrateConfigCommandTest {
         Files.createDirectories(sourceDir);
         var result = runConfigMigrationCommand("--from-path", sourceDir.toString());
         assertEquals(1, result.exitCode);
-        assertThat(result.err).contains("Resolved source file '").contains("somewhere/neo4j.conf' does not exist");
+        assertThat(result.err)
+                .contains("Resolved source file '")
+                .contains(Path.of("somewhere", "neo4j.conf") + "' does not exist");
     }
 
     @Test
@@ -271,11 +274,20 @@ class MigrateConfigCommandTest {
     }
 
     private Path createConfigFile(String dir, String content) throws IOException {
+        content = maybeChangeLineSeparators(content);
         var configDir = neo4jLayout.homeDirectory().resolve(dir);
         Files.createDirectories(configDir);
         Path confFile = configDir.resolve(Config.DEFAULT_CONFIG_FILE_NAME);
         Files.writeString(confFile, content);
         return confFile;
+    }
+
+    private String maybeChangeLineSeparators(String text) {
+        if (SystemUtils.IS_OS_WINDOWS) {
+            return text.replace("\n", "\r\n");
+        } else {
+            return text;
+        }
     }
 
     private Result runConfigMigrationCommand(String... args) {

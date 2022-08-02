@@ -19,7 +19,6 @@
  */
 package org.neo4j.commandline.dbms;
 
-import static java.lang.System.lineSeparator;
 import static org.apache.commons.lang3.StringUtils.defaultIfBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.join;
@@ -77,6 +76,16 @@ server.jvm.additional=-XX:-OmitStackTraceInFastThrow
 
  */
 class ConfigFileMigrator {
+
+    /*
+    The framework used for the migration, works a bit unexpected with comment separators.
+    It uses \n regardless of the platform when building the layout and then, if on Windows, replaces
+    \n with \r\n when writing to the file.
+    So if we did the seemingly right thing and used platform-specific separator on this level,
+    we would end up with \r\r\n on Windows.
+    */
+    private static final String COMMENT_LINE_SEPARATOR = "\n";
+
     private final PrintStream out;
     private final PrintStream err;
     private final Set<SettingMigrator> migrators = getSortedMigrators();
@@ -138,7 +147,7 @@ class ConfigFileMigrator {
                 // it means the previous setting was commented out.
                 // This means that the free lines should be part of the comment
                 // to be between the original previous setting and this one.
-                comment.append(join(lineSeparator().repeat(originalFreeLines)));
+                comment.append(join(COMMENT_LINE_SEPARATOR.repeat(originalFreeLines)));
             } else {
                 leadingEmptyLines = originalFreeLines;
             }
@@ -147,7 +156,7 @@ class ConfigFileMigrator {
                 // This comment and the comment from the previous key
                 // must be joined by a new line
                 if (!comment.isEmpty()) {
-                    comment.append(lineSeparator());
+                    comment.append(COMMENT_LINE_SEPARATOR);
                 }
                 comment.append(originalComment);
             }
@@ -204,12 +213,12 @@ class ConfigFileMigrator {
         }
         if (isNotEmpty(comment)) {
             layout.setFooterComment(
-                    join(lineSeparator().repeat(leadingEmptyLines), comment, layout.getFooterComment()));
+                    join(COMMENT_LINE_SEPARATOR.repeat(leadingEmptyLines), comment, layout.getFooterComment()));
         }
     }
 
     private void appendCommentedOutSetting(StringBuilder commentBuilder, String key, String value, String reason) {
-        commentBuilder.append(String.format("%n%s=%s %s SETTING", key, value, reason));
+        commentBuilder.append(COMMENT_LINE_SEPARATOR).append(String.format("%s=%s %s SETTING", key, value, reason));
     }
 
     private Optional<MigratedSetting> migrate(
