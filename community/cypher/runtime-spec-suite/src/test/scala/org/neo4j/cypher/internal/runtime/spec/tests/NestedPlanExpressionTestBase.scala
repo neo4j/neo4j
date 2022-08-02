@@ -354,4 +354,113 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("x").withSingleRow(true)
   }
+
+  test("should support nested plan get by name with no rows") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nestedPlanGetByNameExpressionProjection("count", "x")
+      .|.aggregation(Seq.empty, Seq("count(*) AS count"))
+      .|.expand("(a)-->(b)")
+      .|.allNodeScan("a")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withSingleRow(0)
+  }
+
+  test("should support nested plan get by name with rows, aggregation on RHS") {
+    // given
+    val size = Math.sqrt(sizeHint).toInt
+    given {
+      bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nestedPlanGetByNameExpressionProjection("count", "x")
+      .|.aggregation(Seq.empty, Seq("count(*) AS count"))
+      .|.expand("(a)-->(b)")
+      .|.allNodeScan("a")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withSingleRow(size * size)
+  }
+
+  test("should support nested plan get by name with rows, count store plan on RHS") {
+    // given
+    val size = Math.sqrt(sizeHint).toInt
+    given {
+      bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nestedPlanGetByNameExpressionProjection("count", "x")
+      .|.relationshipCountFromCountStore("count", None, Seq("R"), None)
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withSingleRow(size * size)
+  }
+
+  test("should support nested plan get by name with dependency") {
+    // given
+    val size = Math.sqrt(sizeHint).toInt
+    given {
+      bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nestedPlanGetByNameExpressionProjection("count", "x")
+      .|.aggregation(Seq.empty, Seq("count(*) AS count"))
+      .|.expand("(a)-->(b)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(Vector.fill(size)(size)))
+  }
+
+  test("should support nested plan get by name with null dependency") {
+    // given
+    val size = Math.sqrt(sizeHint).toInt
+    given {
+      bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nestedPlanGetByNameExpressionProjection("count", "x")
+      .|.aggregation(Seq.empty, Seq("count(*) AS count"))
+      .|.expand("(a)-->(b)")
+      .|.argument("a")
+      .optionalExpandAll("(b)-->(a)")
+      .nodeByLabelScan("b", "B", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(Vector.fill(size)(0)))
+  }
+
 }

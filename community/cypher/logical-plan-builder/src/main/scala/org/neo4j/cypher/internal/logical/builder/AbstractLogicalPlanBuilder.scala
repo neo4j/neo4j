@@ -138,6 +138,7 @@ import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
+import org.neo4j.cypher.internal.logical.plans.NestedPlanGetByNameExpression
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
@@ -1800,6 +1801,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def nestedPlanExistsExpressionProjection(resultList: String): IMPL = {
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
       Projection(lhs, Map(resultList -> NestedPlanExistsExpression(rhs, "exists(...)")(NONE)))(_)
+    ))
+  }
+
+  def nestedPlanGetByNameExpressionProjection(columnNameToGet: String, resultName: String): IMPL = {
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
+      Projection(lhs, Map(resultName -> NestedPlanGetByNameExpression(rhs, columnNameToGet, "getByName(...)")(NONE)))(_)
     ))
   }
 
