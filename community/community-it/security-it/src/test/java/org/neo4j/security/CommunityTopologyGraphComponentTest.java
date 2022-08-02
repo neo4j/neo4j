@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.dbms.database.ComponentVersion.COMMUNITY_TOPOLOGY_GRAPH_COMPONENT;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_ACCESS_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_LABEL;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_LABEL;
@@ -44,10 +45,12 @@ import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.dbms.systemgraph.CommunityTopologyGraphComponent;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -225,12 +228,44 @@ class CommunityTopologyGraphComponentTest {
         });
     }
 
+    @Test
+    void shouldHavePrimaryAliasOnUpgradeFromV0ToV1() throws Exception {
+        // GIVEN
+        initializeSystem();
+        CommunityTopologyGraphComponent component =
+                new CommunityTopologyGraphComponent(Config.defaults(), NullLogProvider.getInstance());
+        component.initializeSystemGraph(system, true);
+
+        inTx(tx -> {
+            // Remove all the :DatabaseName nodes from the created database to simulate pre-4.4 behavior
+            var nameNode = tx.findNode(DATABASE_NAME_LABEL, DATABASE_NAME_PROPERTY, DEFAULT_DATABASE_NAME);
+            nameNode.getRelationships().forEach(Relationship::delete);
+            nameNode.delete();
+        });
+        setComponentVersionTo(0);
+
+        // WHEN
+        component.upgradeToCurrent(system);
+
+        // THEN
+        inTx(tx -> shouldHavePrimaryAlias(DEFAULT_DATABASE_NAME, tx));
+    }
+
     private static void shouldHavePrimaryAlias(String dbName, Transaction tx) {
         Node dbAlias = tx.findNode(DATABASE_NAME_LABEL, DATABASE_NAME_PROPERTY, dbName);
+        assertThat(dbAlias)
+                .describedAs("No aliases found for database: " + dbName)
+                .isNotNull();
         assertThat(dbAlias.getProperty(PRIMARY_PROPERTY)).isEqualTo(true);
         Iterables.forEach(dbAlias.getRelationships(TARGETS_RELATIONSHIP), target -> assertThat(
                         target.getEndNode().hasLabel(DATABASE_LABEL))
                 .isTrue());
+    }
+
+    private static void setComponentVersionTo(int n) throws Exception {
+        // Set the component version back to a previous version to re-trigger upgrade from this point
+        inTx(tx -> Iterators.first(tx.findNodes(Label.label("Version")))
+                .setProperty(COMMUNITY_TOPOLOGY_GRAPH_COMPONENT, n));
     }
 
     private static void initializeSystem() throws Exception {

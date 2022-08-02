@@ -29,14 +29,17 @@ public enum CommunityTopologyGraphVersion implements ComponentVersion {
      *
      * Version 0 (Neo4j 4.4):
      *  - Introduced the access property on database nodes
+     * Version 1 (Neo4j 5.0):
+     *  - bug fix: Adding name nodes to fabric databases
      */
     COMMUNITY_TOPOLOGY_44(0, Neo4jVersions.VERSION_44),
+    COMMUNITY_TOPOLOGY_50(1, Neo4jVersions.VERSION_50),
 
     COMMUNITY_TOPOLOGY_UNKNOWN_VERSION(
             UNKNOWN_VERSION, String.format("no '%s' found", COMMUNITY_TOPOLOGY_GRAPH_COMPONENT));
 
     public static final int FIRST_VALID_COMMUNITY_TOPOLOGY_VERSION = COMMUNITY_TOPOLOGY_44.getVersion();
-    public static final int LATEST_COMMUNITY_TOPOLOGY_VERSION = COMMUNITY_TOPOLOGY_44.getVersion();
+    public static final int LATEST_COMMUNITY_TOPOLOGY_VERSION = COMMUNITY_TOPOLOGY_50.getVersion();
 
     CommunityTopologyGraphVersion(int version, String description) {
         this.version = version;
