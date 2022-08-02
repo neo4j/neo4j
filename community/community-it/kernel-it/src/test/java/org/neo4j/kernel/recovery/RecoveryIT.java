@@ -1541,7 +1541,7 @@ class RecoveryIT {
         return createDatabase(logical_log_rotation_threshold.defaultValue());
     }
 
-    private GraphDatabaseAPI createDatabase(long logThreshold) {
+    protected GraphDatabaseAPI createDatabase(long logThreshold) {
         createBuilder(logThreshold);
         managementService = builder.build();
         return (GraphDatabaseAPI) managementService.database(databaseLayout.getDatabaseName());
