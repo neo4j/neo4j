@@ -82,7 +82,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.ExitCode;
 import sun.misc.Signal;
 
-class ServerCommandWithFakeDbmsEntryPointTest {
+class FakeDbmsLaunchTest {
     abstract static class UsingFakeProcess extends ServerProcessTestBase {
         final ProcessHandler handler = new ProcessHandler();
 
@@ -476,7 +476,7 @@ class ServerCommandWithFakeDbmsEntryPointTest {
 
     @Nested
     @DisplayName("Using fake process with neo4j as root command")
-    class FakeProcessNeo4jRootCommand extends UsingFakeProcess {
+    class FakeProcessNeo4jCommand extends UsingFakeProcess {
 
         @Override
         protected CommandLine createCommand(
@@ -528,7 +528,7 @@ class ServerCommandWithFakeDbmsEntryPointTest {
 
     @Nested
     @DisplayName("Using fake process with neo4j-admin as root command")
-    class FakeProcessNeo4jAdminRootCommand extends UsingFakeProcess {
+    class FakeProcessNeo4jAdminCommand extends UsingFakeProcess {
 
         @Override
         protected CommandLine createCommand(
