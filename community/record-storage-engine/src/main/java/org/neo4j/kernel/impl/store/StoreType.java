@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.internal.recordstorage.RecordIdType;
-import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
 
 public enum StoreType {
@@ -121,17 +121,17 @@ public enum StoreType {
         }
     };
 
-    private final DatabaseFile databaseFile;
+    private final RecordDatabaseFile databaseFile;
     private final IdType idType;
 
-    StoreType(DatabaseFile databaseFile, IdType idType) {
+    StoreType(RecordDatabaseFile databaseFile, IdType idType) {
         this.databaseFile = databaseFile;
         this.idType = idType;
     }
 
     abstract CommonAbstractStore open(NeoStores neoStores);
 
-    public DatabaseFile getDatabaseFile() {
+    public RecordDatabaseFile getDatabaseFile() {
         return databaseFile;
     }
 
@@ -139,21 +139,19 @@ public enum StoreType {
         return idType;
     }
 
+    static final StoreType[] STORE_TYPES = values();
+
     /**
-     * Determine type of a store base on provided database file.
+     * Determine the type of store base on provided database file.
      *
-     * @param databaseFile - database file to map
+     * @param file - database file to map
      * @return an {@link Optional} that wraps the matching store type of the specified file,
      * or {@link Optional#empty()} if the given file name does not match any store files.
      */
-    public static Optional<StoreType> typeOf(DatabaseFile databaseFile) {
-        Objects.requireNonNull(databaseFile);
-        StoreType[] values = StoreType.values();
-        for (StoreType value : values) {
-            if (value.getDatabaseFile().equals(databaseFile)) {
-                return Optional.of(value);
-            }
-        }
-        return Optional.empty();
+    public static Optional<StoreType> typeOf(RecordDatabaseFile file) {
+        Objects.requireNonNull(file);
+        return Arrays.stream(STORE_TYPES)
+                .filter(type -> type.getDatabaseFile().equals(file))
+                .findFirst();
     }
 }

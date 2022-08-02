@@ -36,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -150,7 +151,7 @@ class StoreFileListingTest {
     void shouldListStoreFiles() throws Exception {
         final var layout = database.getDatabaseLayout();
         final var statsPath = layout.pathForStore(CommonDatabaseStores.INDEX_STATISTICS);
-        final var expectedFiles = layout.storeFiles();
+        final var expectedFiles = new HashSet<>(layout.storeFiles());
         expectedFiles.remove(statsPath);
         // there was no rotation
         final var fileListingBuilder = database.getStoreFileListing().builder();

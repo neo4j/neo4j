@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
@@ -160,7 +161,7 @@ class RecordStorageEngineTest {
         Set<Path> currentFiles = allFiles.stream().map(StoreFileMetadata::path).collect(Collectors.toSet());
 
         // then
-        Set<Path> allPossibleFiles = databaseLayout.storeFiles();
+        Set<Path> allPossibleFiles = new HashSet<>(databaseLayout.storeFiles());
         allPossibleFiles.remove(databaseLayout.indexStatisticsStore());
 
         assertEquals(allPossibleFiles, currentFiles);

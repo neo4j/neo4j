@@ -617,8 +617,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                 fileSystem,
                 migrationLayout,
                 directoryLayout,
-                Iterables.iterable(RecordDatabaseFile.allValues()),
-                true, // allow to skip non existent source files
+                Iterables.iterable(RecordDatabaseFile.values()),
+                true, // allow to skip non-existent source files
                 true,
                 ExistingTargetStrategy.OVERWRITE);
 

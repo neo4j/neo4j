@@ -450,8 +450,7 @@ public interface StorageEngineFactory {
      * {@link StorageEngineFactory#storageExists(FileSystemAbstraction, DatabaseLayout)} for the given {@code databaseLayout}.
      */
     static Optional<StorageEngineFactory> selectStorageEngine(FileSystemAbstraction fs, DatabaseLayout databaseLayout) {
-        Collection<StorageEngineFactory> storageEngineFactories = allAvailableStorageEngines();
-        return storageEngineFactories.stream()
+        return allAvailableStorageEngines().stream()
                 .filter(engine -> engine.storageExists(fs, databaseLayout))
                 .findFirst();
     }
@@ -480,19 +479,15 @@ public interface StorageEngineFactory {
         // - Does a store exist at this location? -> get the one able to open it
         // - Is there a specific name of a store format to look for? -> get the storage engine that recognizes it
         // - Use the default one
-        Optional<StorageEngineFactory> forExistingStore = StorageEngineFactory.selectStorageEngine(fs, databaseLayout);
-        if (forExistingStore.isPresent()) {
-            return forExistingStore.get();
-        }
-
-        return configuration != null ? findEngineForFormatOrThrow(configuration) : defaultStorageEngine();
+        return selectStorageEngine(fs, databaseLayout)
+                .orElseGet(() ->
+                        configuration != null ? findEngineForFormatOrThrow(configuration) : defaultStorageEngine());
     }
 
     private static StorageEngineFactory findEngineForFormatOrThrow(Configuration configuration) {
         String name = configuration.get(GraphDatabaseSettings.db_format);
         boolean includeDevFormats = configuration.get(GraphDatabaseInternalSettings.include_versions_under_development);
-        Collection<StorageEngineFactory> storageEngineFactories = allAvailableStorageEngines();
-        return storageEngineFactories.stream()
+        return allAvailableStorageEngines().stream()
                 .filter(engine -> engine.supportedFormat(name, includeDevFormats))
                 .findFirst()
                 .orElseThrow(() -> {

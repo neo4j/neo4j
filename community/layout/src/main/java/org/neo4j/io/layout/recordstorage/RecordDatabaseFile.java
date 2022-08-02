@@ -19,10 +19,10 @@
  */
 package org.neo4j.io.layout.recordstorage;
 
-import static java.util.Objects.requireNonNull;
-
-import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -89,7 +89,7 @@ public enum RecordDatabaseFile implements DatabaseFile {
     }
 
     // used for marker
-    RecordDatabaseFile(DatabaseFile file) {
+    RecordDatabaseFile(RecordDatabaseFile file) {
         this.name = file.getName();
         this.hasIdFile = false;
     }
@@ -111,23 +111,19 @@ public enum RecordDatabaseFile implements DatabaseFile {
      * @return an {@link Optional} that wraps the matching database file that matches to the specified name,
      * or {@link Optional#empty()} if the given file name does not match to any of database files.
      */
-    public static Optional<DatabaseFile> fileOf(String name) {
-        requireNonNull(name);
-        DatabaseFile[] databaseFiles = allValues();
-        for (DatabaseFile databaseFile : databaseFiles) {
-            if (databaseFile.getName().equals(name)) {
-                return Optional.of(databaseFile);
-            }
-        }
-        return Optional.empty();
+    public static Optional<RecordDatabaseFile> fileOf(String name) {
+        Objects.requireNonNull(name);
+        return ALL_FILES.stream()
+                .filter(file -> file.getName().equals(name))
+                // EXISTS_MARKER currently shares a name with METADATA_STORE, most likely user wants the METADATA_STORE
+                .filter(Predicate.not(EXISTS_MARKER::equals))
+                .findFirst();
     }
 
-    public static DatabaseFile[] allValues() {
-        return values();
-    }
+    private static final Set<RecordDatabaseFile> ALL_FILES = Set.of(values());
 
-    static final List<DatabaseFile> STORE_FILES = List.of(allValues());
+    static final Set<RecordDatabaseFile> STORE_FILES = ALL_FILES;
 
-    static final List<RecordDatabaseFile> RECOVERABLE_STORE_FILES =
-            List.of(COUNTS_STORE, RELATIONSHIP_GROUP_DEGREES_STORE, INDEX_STATISTICS_STORE);
+    static final Set<RecordDatabaseFile> RECOVERABLE_STORE_FILES =
+            Set.of(COUNTS_STORE, RELATIONSHIP_GROUP_DEGREES_STORE, INDEX_STATISTICS_STORE);
 }

@@ -126,11 +126,11 @@ public class DatabaseLayout {
         return databaseFiles()
                 .filter(DatabaseFile::hasIdFile)
                 .flatMap(value -> idFile(value).stream())
-                .collect(Collectors.toSet());
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     public Set<Path> storeFiles() {
-        return databaseFiles().map(this::file).collect(Collectors.toSet());
+        return databaseFiles().map(this::file).collect(Collectors.toUnmodifiableSet());
     }
 
     /**
@@ -140,10 +140,10 @@ public class DatabaseLayout {
         return databaseFiles()
                 .filter(Predicate.not(this::isRecoverableStore))
                 .map(this::file)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toUnmodifiableSet());
     }
 
-    protected Stream<DatabaseFile> databaseFiles() {
+    protected Stream<? extends DatabaseFile> databaseFiles() {
         throw new IllegalStateException("Can not access the database files from a plain DatabaseLayout.");
     }
 

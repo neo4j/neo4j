@@ -62,6 +62,24 @@ public class RecordDatabaseLayout extends DatabaseLayout {
         return of(Neo4jLayout.of(config), config.get(GraphDatabaseSettings.default_database));
     }
 
+    @Override
+    public Path pathForExistsMarker() {
+        return file(RecordDatabaseFile.EXISTS_MARKER.getName());
+    }
+
+    @Override
+    public Path pathForStore(CommonDatabaseStores store) {
+        return switch (store) {
+            case COUNTS -> countStore();
+            case LABEL_TOKENS -> labelTokenStore();
+            case RELATIONSHIP_TYPE_TOKENS -> relationshipTypeTokenStore();
+            case PROPERTY_KEY_TOKENS -> propertyKeyTokenStore();
+            case SCHEMAS -> schemaStore();
+            case INDEX_STATISTICS -> indexStatisticsStore();
+            case METADATA -> metadataStore();
+        };
+    }
+
     public Path countStore() {
         return file(RecordDatabaseFile.COUNTS_STORE.getName());
     }
@@ -131,21 +149,8 @@ public class RecordDatabaseLayout extends DatabaseLayout {
     }
 
     @Override
-    public Path pathForExistsMarker() {
-        return file(RecordDatabaseFile.EXISTS_MARKER.getName());
-    }
-
-    @Override
-    public Path pathForStore(CommonDatabaseStores store) {
-        return switch (store) {
-            case COUNTS -> countStore();
-            case LABEL_TOKENS -> labelTokenStore();
-            case RELATIONSHIP_TYPE_TOKENS -> relationshipTypeTokenStore();
-            case PROPERTY_KEY_TOKENS -> propertyKeyTokenStore();
-            case SCHEMAS -> schemaStore();
-            case INDEX_STATISTICS -> indexStatisticsStore();
-            case METADATA -> metadataStore();
-        };
+    public Path metadataStore() {
+        return file(RecordDatabaseFile.METADATA_STORE.getName());
     }
 
     public Path idNodeStore() {
@@ -205,12 +210,13 @@ public class RecordDatabaseLayout extends DatabaseLayout {
     }
 
     @Override
-    protected Stream<DatabaseFile> databaseFiles() {
+    protected Stream<RecordDatabaseFile> databaseFiles() {
         return RecordDatabaseFile.STORE_FILES.stream();
     }
 
     @Override
     protected boolean isRecoverableStore(DatabaseFile file) {
+        assert file instanceof RecordDatabaseFile;
         return RecordDatabaseFile.RECOVERABLE_STORE_FILES.contains(file);
     }
 }
