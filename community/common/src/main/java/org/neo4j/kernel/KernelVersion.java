@@ -33,6 +33,11 @@ import org.eclipse.collections.impl.factory.primitive.ByteObjectMaps;
  * and kernel will have a translation between the two.
  */
 public enum KernelVersion {
+    // Version V2_3 and V4_0 only here to keep support for old checkpoint records parsing.
+    // We do not support reading or writing anything else in those legacy formats.
+    V2_3((byte) -10), // 2.3 to 3.5.
+    V4_0((byte) 1), // 4.0 to 4.1. Added checksums to the log files.
+
     V4_2((byte) 2), // 4.2+. Removed checkpoint entries.
     // 4.3(some drop)+. Not a change to log entry format, but record storage engine log format change. Since record
     // storage commands
@@ -46,7 +51,6 @@ public enum KernelVersion {
     public static final KernelVersion EARLIEST = V4_2;
     public static final KernelVersion LATEST = V5_0;
     public static final KernelVersion VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED = V4_3_D4;
-    public static final KernelVersion VERSION_RANGE_POINT_TEXT_INDEX_TYPES_ARE_INTRODUCED = V4_4;
     public static final KernelVersion VERSION_LITTLE_ENDIAN_TX_LOG_INTRODUCED = V5_0;
     private static final ImmutableByteObjectMap<KernelVersion> versionMap =
             ByteObjectMaps.immutable.from(List.of(values()), KernelVersion::version, v -> v);

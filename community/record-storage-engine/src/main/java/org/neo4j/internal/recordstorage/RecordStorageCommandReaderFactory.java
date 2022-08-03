@@ -29,6 +29,8 @@ public class RecordStorageCommandReaderFactory implements CommandReaderFactory {
     @Override
     public LogCommandSerialization get(KernelVersion version) {
         return switch (version) {
+            case V2_3, V4_0 -> throw new IllegalStateException(
+                    "Serialization is not supported for legacy format version " + version);
             case V4_2 -> LogCommandSerializationV4_2.INSTANCE;
             case V4_3_D4 -> LogCommandSerializationV4_3_D3.INSTANCE;
             case V4_4 -> LogCommandSerializationV4_4.INSTANCE;

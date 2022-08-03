@@ -143,7 +143,9 @@ public class LegacyMetadataHandler {
         String versionString = versionLongToString(legacyVersion);
         var version = LEGACY_VERSION_MAPPING.get(versionString);
         if (version == null) {
-            throw new IllegalArgumentException("Unknown store version '" + versionString + "'");
+            throw new IllegalArgumentException(
+                    "Unable to read store with version '" + versionString + "'. "
+                            + "Please make sure that database is migrated properly to be supported by current version of neo4j.");
         }
         RecordFormats recordFormat = Iterables.stream(allFormats())
                 .filter(format -> format.getFormatFamily()

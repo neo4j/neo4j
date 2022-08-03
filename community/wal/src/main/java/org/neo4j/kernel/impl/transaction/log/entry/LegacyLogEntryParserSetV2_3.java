@@ -19,19 +19,18 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-public class LogEntryTypeCodes {
-    private LogEntryTypeCodes() {
-        throw new AssertionError(); // no instances are allowed
+import org.neo4j.io.fs.ReadableChecksumChannel;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.transaction.log.entry.legacy.InlineCheckpointLogEntryParser;
+
+class LegacyLogEntryParserSetV2_3 extends LogEntryParserSet {
+    LegacyLogEntryParserSetV2_3() {
+        super(KernelVersion.V2_3);
+        register(new InlineCheckpointLogEntryParser(false));
     }
 
-    public static final byte TX_START = (byte) 1;
-    public static final byte COMMAND = (byte) 3;
-    public static final byte TX_COMMIT = (byte) 5;
-    // Legacy inline checkpoint that can be encountered during migration of legacy databases
-    public static final byte LEGACY_CHECK_POINT = (byte) 7;
-    // Detached check point log entries lives in a separate file
-    public static final byte DETACHED_CHECK_POINT = (byte) 8;
-
-    // Checkpoint that contains transaction info (tx id, checksum, commit timestamp)
-    public static final byte DETACHED_CHECK_POINT_V5_0 = (byte) 9;
+    @Override
+    public ReadableChecksumChannel wrap(ReadableChecksumChannel channel) {
+        return new ByteReversingReadableChecksumChannel(channel);
+    }
 }
