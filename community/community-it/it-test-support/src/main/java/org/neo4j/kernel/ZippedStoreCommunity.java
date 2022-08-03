@@ -19,13 +19,7 @@
  */
 package org.neo4j.kernel;
 
-import static java.util.Objects.requireNonNull;
 import static org.neo4j.common.Edition.COMMUNITY;
-
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Path;
-import org.neo4j.test.Unzip;
 
 public enum ZippedStoreCommunity implements ZippedStore {
     // Stores with special node label index
@@ -128,28 +122,21 @@ public enum ZippedStoreCommunity implements ZippedStore {
                     4,
                     36));
 
-    private final String resourceName;
+    private final String zipFileName;
     private final DbStatistics statistics;
 
-    ZippedStoreCommunity(String resourceName, DbStatistics statistics) {
-        this.resourceName = resourceName;
+    ZippedStoreCommunity(String zipFileName, DbStatistics statistics) {
+        this.zipFileName = zipFileName;
         this.statistics = statistics;
-    }
-
-    @Override
-    public Path pathToZip() throws URISyntaxException {
-        var sourceUrl = requireNonNull(ZippedStoreCommunity.class.getResource(resourceName));
-        var sourceUri = sourceUrl.toURI();
-        return Path.of(sourceUri);
-    }
-
-    @Override
-    public void unzip(Path targetDirectory) throws IOException {
-        Unzip.unzip(ZippedStoreCommunity.class, resourceName, targetDirectory);
     }
 
     @Override
     public DbStatistics statistics() {
         return statistics;
+    }
+
+    @Override
+    public String zipFileName() {
+        return zipFileName;
     }
 }

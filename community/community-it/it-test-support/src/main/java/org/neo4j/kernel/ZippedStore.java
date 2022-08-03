@@ -19,18 +19,31 @@
  */
 package org.neo4j.kernel;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.test.Unzip;
 
 public interface ZippedStore {
-    Path pathToZip() throws URISyntaxException;
-
-    void unzip(Path targetDirectory) throws IOException;
-
     DbStatistics statistics();
 
     String name();
+
+    String zipFileName();
+
+    default void copyZipTo(FileSystemAbstraction fs, Path target) throws IOException {
+        var url = requireNonNull(getClass().getResource(zipFileName()));
+        try (var inputStream = url.openStream();
+                var outputStream = fs.openAsOutputStream(target, false)) {
+            inputStream.transferTo(outputStream);
+        }
+    }
+
+    default void unzip(Path targetDirectory) throws IOException {
+        Unzip.unzip(getClass(), zipFileName(), targetDirectory);
+    }
 
     default Path resolveDbPath(Path targetDirectory) {
         return targetDirectory.resolve("data/databases/neo4j");
