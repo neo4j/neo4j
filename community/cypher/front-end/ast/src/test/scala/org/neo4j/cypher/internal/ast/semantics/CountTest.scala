@@ -80,8 +80,8 @@ class CountTest extends SemanticFunSuite {
     )
   }
 
-  // COUNT { (n: Label) } should fail the semantic check
-  test("count expression cannot contain a node pattern with label") {
+  // COUNT { (n: Label) } should succeed the semantic check
+  test("count expression can contain a node pattern with label") {
     val expression =
       CountExpression(n.copy(labelExpression = Some(label))(pos), optionalWhereExpression = None)(pos, Set.empty)
 
@@ -89,16 +89,11 @@ class CountTest extends SemanticFunSuite {
 
     val result = SemanticExpressionCheck.simple(expression)(semanticState)
 
-    result.errors shouldBe Seq(
-      SemanticError(
-        "a single node pattern cannot have a label expression, properties or a WHERE clause inside a COUNT",
-        pos
-      )
-    )
+    result.errors shouldBe empty
   }
 
-  // COUNT { (n) } should fail the semantic check if n is not recorded in the outer scope
-  test("cannot contain a non declared variable in a single node pattern") {
+  // COUNT { (n) } should succeed the semantic check even if n is not recorded in the outer scope
+  test("can contain a non declared variable in a single node pattern") {
     val expression =
       CountExpression(n, optionalWhereExpression = None)(pos, Set.empty)
 
@@ -106,15 +101,10 @@ class CountTest extends SemanticFunSuite {
 
     val result = SemanticExpressionCheck.simple(expression)(semanticState)
 
-    result.errors shouldBe Seq(
-      SemanticError(
-        "a single node pattern inside COUNT must refer to an already bound variable",
-        pos
-      )
-    )
+    result.errors shouldBe empty
   }
 
-  test("COUNT { () } should fail the semantic check") {
+  test("COUNT { () } should succeed the semantic check") {
     val expression =
       CountExpression(NodePattern(None, None, None, None)(pos), optionalWhereExpression = None)(pos, Set.empty)
 
@@ -122,15 +112,10 @@ class CountTest extends SemanticFunSuite {
 
     val result = SemanticExpressionCheck.simple(expression)(semanticState)
 
-    result.errors shouldBe Seq(
-      SemanticError(
-        "a single node pattern inside COUNT must refer to an already bound variable",
-        pos
-      )
-    )
+    result.errors shouldBe empty
   }
 
-  test("COUNT { (:Label) } should fail the semantic check") {
+  test("COUNT { (:Label) } should succeed the semantic check") {
     val expression =
       CountExpression(NodePattern(None, Some(label), None, None)(pos), optionalWhereExpression = None)(pos, Set.empty)
 
@@ -138,20 +123,11 @@ class CountTest extends SemanticFunSuite {
 
     val result = SemanticExpressionCheck.simple(expression)(semanticState)
 
-    result.errors shouldBe Seq(
-      SemanticError(
-        "a single node pattern cannot have a label expression, properties or a WHERE clause inside a COUNT",
-        pos
-      ),
-      SemanticError(
-        "a single node pattern inside COUNT must refer to an already bound variable",
-        pos
-      )
-    )
+    result.errors shouldBe empty
   }
 
-  // COUNT { (n{name:"test"}) } should fail the semantic check
-  test("count expression cannot contain node properties in a single node match") {
+  // COUNT { (n{name:"test"}) } should succeed the semantic check
+  test("count expression can contain node properties in a single node match") {
     val expression =
       CountExpression(n.copy(properties = Some(nodeProperties))(pos), optionalWhereExpression = None)(pos, Set.empty)
 
@@ -159,16 +135,11 @@ class CountTest extends SemanticFunSuite {
 
     val result = SemanticExpressionCheck.simple(expression)(semanticState)
 
-    result.errors shouldBe Seq(
-      SemanticError(
-        "a single node pattern cannot have a label expression, properties or a WHERE clause inside a COUNT",
-        pos
-      )
-    )
+    result.errors shouldBe empty
   }
 
-  // COUNT { (n WHERE n.prop = "test") } should fail the semantic check
-  test("count expression cannot contain a node pattern with a where inside the node pattern") {
+  // COUNT { (n WHERE n.prop = "test") } should succeed the semantic check
+  test("count expression can contain a node pattern with a where inside the node pattern") {
     val expression =
       CountExpression(n.copy(predicate = Some(nodePredicate))(pos), optionalWhereExpression = None)(pos, Set.empty)
 
@@ -176,28 +147,18 @@ class CountTest extends SemanticFunSuite {
 
     val result = SemanticExpressionCheck.simple(expression)(semanticState)
 
-    result.errors shouldBe Seq(
-      SemanticError(
-        "a single node pattern cannot have a label expression, properties or a WHERE clause inside a COUNT",
-        pos
-      )
-    )
+    result.errors shouldBe empty
   }
 
-  // COUNT { (n) WHERE n.prop = "test" } should fail the semantic check
-  test("count expression cannot contain a node pattern with a where outside the node pattern") {
+  // COUNT { (n) WHERE n.prop = "test" } should succeed the semantic check
+  test("count expression can contain a node pattern with a where outside the node pattern") {
     val expression = CountExpression(n, optionalWhereExpression = Some(nodePredicate))(pos, Set.empty)
 
     val semanticState = SemanticState.clean.declareVariable(variable("n"), CTNode).right.get
 
     val result = SemanticExpressionCheck.simple(expression)(semanticState)
 
-    result.errors shouldBe Seq(
-      SemanticError(
-        "a single node pattern cannot have a label expression, properties or a WHERE clause inside a COUNT",
-        pos
-      )
-    )
+    result.errors shouldBe empty
   }
 
   // COUNT {(n)} should pass the semantic check

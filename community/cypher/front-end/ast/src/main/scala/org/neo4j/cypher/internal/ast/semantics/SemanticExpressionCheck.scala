@@ -672,48 +672,8 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           }
 
       // COUNT
-      case x @ CountExpression(pattern, maybeCountWhere) =>
-        def checkNodePatterns(state: SemanticState): SemanticCheckResult = {
-          pattern match {
-            case p @ NodePattern(_, maybeLabel, maybeProperties, maybeNodeWhere) =>
-              var errors = Seq.empty[SemanticError]
-              if (
-                maybeLabel.nonEmpty || maybeProperties.nonEmpty || maybeNodeWhere.nonEmpty || maybeCountWhere.nonEmpty
-              ) {
-                errors = errors.appended(
-                  SemanticError(
-                    "a single node pattern cannot have a label expression, properties or a WHERE clause inside a COUNT",
-                    x.position
-                  )
-                )
-              }
-              p.variable match {
-                case Some(variable) =>
-                  val varName = variable.name
-                  if (state.symbol(varName).isEmpty) {
-                    errors = errors.appended(
-                      SemanticError(
-                        s"a single node pattern inside COUNT must refer to an already bound variable",
-                        x.position
-                      )
-                    )
-                  }
-                case None =>
-                  errors = errors.appended(
-                    SemanticError(
-                      s"a single node pattern inside COUNT must refer to an already bound variable",
-                      x.position
-                    )
-                  )
-              }
-
-              SemanticCheckResult(state, errors)
-            case _ =>
-              SemanticCheckResult(state, Seq.empty)
-          }
-        }
-
-        SemanticState.recordCurrentScope(x) chain checkNodePatterns _ chain
+      case x @ CountExpression(_, maybeCountWhere) =>
+        SemanticState.recordCurrentScope(x) chain
           withScopedState { // saves us from leaking to the outside
             SemanticPatternCheck.checkPatternElement(Pattern.SemanticContext.Match, x.pattern) chain
               when(maybeCountWhere.isDefined) {
