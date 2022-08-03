@@ -21,6 +21,7 @@ package org.neo4j.tracers;
 
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
@@ -36,6 +37,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -59,6 +61,7 @@ class PropertyStoreTraceIT {
 
     @ExtensionCallback
     void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(db_format, RecordFormatSelector.defaultFormat().name());
         var dependencies = new Dependencies();
         // disabling periodic id buffers maintenance jobs
         dependencies.satisfyDependency(new CentralJobScheduler(Clocks.nanoClock(), NullLogProvider.getInstance()) {

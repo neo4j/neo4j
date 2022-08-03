@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.CountsDelta;
 import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -66,7 +65,7 @@ public class TransactionCountingStateVisitorTraceIT {
 
     @Test
     void traceDeletedRelationshipPageCacheAccess() throws KernelException {
-        traceStateWithChanges(tx -> tx.getRelationshipById(relationshipId).delete(), 2);
+        traceStateWithChanges(tx -> tx.getRelationshipById(relationshipId).delete());
     }
 
     @Test
@@ -80,7 +79,7 @@ public class TransactionCountingStateVisitorTraceIT {
     }
 
     private void traceStateWithChanges(Consumer<Transaction> transactionalOperation) throws KernelException {
-        traceStateWithChanges(transactionalOperation, 2);
+        traceStateWithChanges(transactionalOperation, 3);
     }
 
     private void traceStateWithChanges(Consumer<Transaction> transactionalOperation, int traceCount)
@@ -99,9 +98,15 @@ public class TransactionCountingStateVisitorTraceIT {
             var transactionState = kernelTransaction.txState();
             var counts = new CountsDelta();
 
+            kernelTransaction.storeCursors().reset(cursorContext);
             try (StorageReader storageReader = kernelTransaction.newStorageReader();
                     var stateVisitor = new TransactionCountingStateVisitor(
-                            EMPTY, storageReader, transactionState, counts, cursorContext, StoreCursors.NULL)) {
+                            EMPTY,
+                            storageReader,
+                            transactionState,
+                            counts,
+                            cursorContext,
+                            kernelTransaction.storeCursors())) {
                 transactionState.accept(stateVisitor);
             }
 
@@ -109,11 +114,11 @@ public class TransactionCountingStateVisitorTraceIT {
         }
     }
 
-    private static void assertCursorTracer(CursorContext cursorContext, int count) {
+    private static void assertCursorTracer(CursorContext cursorContext, int atMostCount) {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat(cursorTracer.pins()).isEqualTo(count);
-        assertThat(cursorTracer.hits()).isEqualTo(count);
-        assertThat(cursorTracer.unpins()).isEqualTo(count);
+        assertThat(cursorTracer.pins()).isLessThanOrEqualTo(atMostCount);
+        assertThat(cursorTracer.hits()).isLessThanOrEqualTo(atMostCount);
+        assertThat(cursorTracer.unpins()).isLessThanOrEqualTo(atMostCount);
     }
 
     private static void assertZeroCursor(CursorContext cursorContext) {

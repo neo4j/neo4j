@@ -30,7 +30,6 @@ import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incom
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingIterator;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingCursor;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingIterator;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.RelationshipType;
@@ -57,16 +56,16 @@ public class RelationshipSelectionsIT {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
-            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+            var cursorContext = kernelTransaction.cursorContext();
+            try (var nodeCursor = cursors.allocateNodeCursor(cursorContext)) {
                 setNodeCursor(nodeId, kernelTransaction, nodeCursor);
-                var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor(cursorContext);
+                assertCursorHits(cursorContext, 1);
 
                 try (var cursor = outgoingCursor(cursors, nodeCursor, new int[] {typeId}, cursorContext)) {
                     consumeCursor(cursor);
                 }
 
-                assertOneCursor(cursorContext);
+                assertCursorHits(cursorContext, 2);
             }
         }
     }
@@ -78,16 +77,16 @@ public class RelationshipSelectionsIT {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
-            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+            var cursorContext = kernelTransaction.cursorContext();
+            try (var nodeCursor = cursors.allocateNodeCursor(cursorContext)) {
                 setNodeCursor(nodeId, kernelTransaction, nodeCursor);
-                var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor(cursorContext);
+                assertCursorHits(cursorContext, 1);
 
                 try (var cursor = incomingCursor(cursors, nodeCursor, new int[] {typeId}, cursorContext)) {
                     consumeCursor(cursor);
                 }
 
-                assertOneCursor(cursorContext);
+                assertCursorHits(cursorContext, 2);
             }
         }
     }
@@ -100,16 +99,16 @@ public class RelationshipSelectionsIT {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
-            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+            var cursorContext = kernelTransaction.cursorContext();
+            try (var nodeCursor = cursors.allocateNodeCursor(cursorContext)) {
                 setNodeCursor(nodeId, kernelTransaction, nodeCursor);
-                var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor(cursorContext);
+                assertCursorHits(cursorContext, 1);
 
                 try (var cursor = allCursor(cursors, nodeCursor, new int[] {typeId}, cursorContext)) {
                     consumeCursor(cursor);
                 }
 
-                assertOneCursor(cursorContext);
+                assertCursorHits(cursorContext, 2);
             }
         }
     }
@@ -122,10 +121,10 @@ public class RelationshipSelectionsIT {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
-            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+            var cursorContext = kernelTransaction.cursorContext();
+            try (var nodeCursor = cursors.allocateNodeCursor(cursorContext)) {
                 setNodeCursor(nodeId, kernelTransaction, nodeCursor);
-                var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor(cursorContext);
+                assertCursorHits(cursorContext, 1);
 
                 try (var iterator = outgoingIterator(
                         cursors,
@@ -136,7 +135,7 @@ public class RelationshipSelectionsIT {
                     assertEquals(2, count(iterator));
                 }
 
-                assertOneCursor(cursorContext);
+                assertCursorHits(cursorContext, 2);
             }
         }
     }
@@ -149,10 +148,10 @@ public class RelationshipSelectionsIT {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
-            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+            var cursorContext = kernelTransaction.cursorContext();
+            try (var nodeCursor = cursors.allocateNodeCursor(cursorContext)) {
                 setNodeCursor(nodeId, kernelTransaction, nodeCursor);
-                var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor(cursorContext);
+                assertCursorHits(cursorContext, 1);
 
                 try (var iterator = incomingIterator(
                         cursors,
@@ -163,7 +162,7 @@ public class RelationshipSelectionsIT {
                     assertEquals(2, count(iterator));
                 }
 
-                assertOneCursor(cursorContext);
+                assertCursorHits(cursorContext, 2);
             }
         }
     }
@@ -176,10 +175,10 @@ public class RelationshipSelectionsIT {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
-            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+            var cursorContext = kernelTransaction.cursorContext();
+            try (var nodeCursor = cursors.allocateNodeCursor(cursorContext)) {
                 setNodeCursor(nodeId, kernelTransaction, nodeCursor);
-                var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor(cursorContext);
+                assertCursorHits(cursorContext, 1);
 
                 try (var iterator = allIterator(
                         cursors,
@@ -190,7 +189,7 @@ public class RelationshipSelectionsIT {
                     assertEquals(4, count(iterator));
                 }
 
-                assertOneCursor(cursorContext);
+                assertCursorHits(cursorContext, 2);
             }
         }
     }
@@ -202,16 +201,16 @@ public class RelationshipSelectionsIT {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
-            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+            var cursorContext = kernelTransaction.cursorContext();
+            try (var nodeCursor = cursors.allocateNodeCursor(cursorContext)) {
                 setNodeCursor(nodeId, kernelTransaction, nodeCursor);
-                var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor(cursorContext);
+                assertCursorHits(cursorContext, 1);
 
                 try (var cursor = outgoingCursor(cursors, nodeCursor, new int[] {typeId}, cursorContext)) {
                     consumeCursor(cursor);
                 }
 
-                assertTwoCursor(cursorContext);
+                assertCursorHits(cursorContext, 3);
             }
         }
     }
@@ -223,16 +222,16 @@ public class RelationshipSelectionsIT {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
-            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+            var cursorContext = kernelTransaction.cursorContext();
+            try (var nodeCursor = cursors.allocateNodeCursor(cursorContext)) {
                 setNodeCursor(nodeId, kernelTransaction, nodeCursor);
-                var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor(cursorContext);
+                assertCursorHits(cursorContext, 1);
 
                 try (var cursor = incomingCursor(cursors, nodeCursor, new int[] {typeId}, cursorContext)) {
                     consumeCursor(cursor);
                 }
 
-                assertTwoCursor(cursorContext);
+                assertCursorHits(cursorContext, 3);
             }
         }
     }
@@ -245,16 +244,16 @@ public class RelationshipSelectionsIT {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
-            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+            var cursorContext = kernelTransaction.cursorContext();
+            try (var nodeCursor = cursors.allocateNodeCursor(cursorContext)) {
                 setNodeCursor(nodeId, kernelTransaction, nodeCursor);
-                var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor(cursorContext);
+                assertCursorHits(cursorContext, 1);
 
                 try (var cursor = allCursor(cursors, nodeCursor, new int[] {typeId}, cursorContext)) {
                     consumeCursor(cursor);
                 }
 
-                assertTwoCursor(cursorContext);
+                assertCursorHits(cursorContext, 3);
             }
         }
     }
@@ -267,10 +266,10 @@ public class RelationshipSelectionsIT {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
-            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+            var cursorContext = kernelTransaction.cursorContext();
+            try (var nodeCursor = cursors.allocateNodeCursor(cursorContext)) {
                 setNodeCursor(nodeId, kernelTransaction, nodeCursor);
-                var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor(cursorContext);
+                assertCursorHits(cursorContext, 1);
 
                 try (var iterator = outgoingIterator(
                         cursors,
@@ -281,7 +280,7 @@ public class RelationshipSelectionsIT {
                     assertEquals(2, count(iterator));
                 }
 
-                assertTwoCursor(cursorContext);
+                assertCursorHits(cursorContext, 3);
             }
         }
     }
@@ -294,10 +293,10 @@ public class RelationshipSelectionsIT {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
-            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+            var cursorContext = kernelTransaction.cursorContext();
+            try (var nodeCursor = cursors.allocateNodeCursor(cursorContext)) {
                 setNodeCursor(nodeId, kernelTransaction, nodeCursor);
-                var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor(cursorContext);
+                assertCursorHits(cursorContext, 1);
 
                 try (var iterator = incomingIterator(
                         cursors,
@@ -308,7 +307,7 @@ public class RelationshipSelectionsIT {
                     assertEquals(2, count(iterator));
                 }
 
-                assertTwoCursor(cursorContext);
+                assertCursorHits(cursorContext, 3);
             }
         }
     }
@@ -321,10 +320,10 @@ public class RelationshipSelectionsIT {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType(relationshipType.name());
-            try (var nodeCursor = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+            var cursorContext = kernelTransaction.cursorContext();
+            try (var nodeCursor = cursors.allocateNodeCursor(cursorContext)) {
                 setNodeCursor(nodeId, kernelTransaction, nodeCursor);
-                var cursorContext = kernelTransaction.cursorContext();
-                assertZeroCursor(cursorContext);
+                assertCursorHits(cursorContext, 1);
 
                 try (var iterator = allIterator(
                         cursors,
@@ -335,7 +334,7 @@ public class RelationshipSelectionsIT {
                     assertEquals(4, count(iterator));
                 }
 
-                assertTwoCursor(cursorContext);
+                assertCursorHits(cursorContext, 3);
             }
         }
     }
@@ -387,29 +386,10 @@ public class RelationshipSelectionsIT {
         }
     }
 
-    private static void assertTwoCursor(CursorContext cursorContext) {
+    private static void assertCursorHits(CursorContext cursorContext, int atMostHits) {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat(cursorTracer.hits()).isEqualTo(2);
-        assertThat(cursorTracer.pins()).isEqualTo(2);
+        assertThat(cursorTracer.hits()).isLessThanOrEqualTo(atMostHits).isLessThanOrEqualTo(cursorTracer.pins());
         // Since the storage cursor is merely reset(), not closed the state of things is that not all unpins gets
-        // registered due to
-        // cursor context being closed before the storage cursor on KTI#commit()
-    }
-
-    private static void assertOneCursor(CursorContext cursorContext) {
-        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat(cursorTracer.hits()).isOne();
-        assertThat(cursorTracer.pins()).isOne();
-        // Since the storage cursor is merely reset(), not closed the state of things is that not all unpins gets
-        // registered due to
-        // cursor context being closed before the storage cursor on KTI#commit()
-    }
-
-    private static void assertZeroCursor(CursorContext cursorContext) {
-        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat(cursorTracer.hits()).isZero();
-        assertThat(cursorTracer.pins()).isZero();
-        assertThat(cursorTracer.unpins()).isZero();
-        assertThat(cursorTracer.faults()).isZero();
+        // registered due to cursor context being closed before the storage cursor on KTI#commit()
     }
 }

@@ -35,9 +35,11 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -72,15 +74,7 @@ class TransactionTracingIT {
                     .as("Number of expected nodes")
                     .isEqualTo(ENTITY_COUNT);
 
-            softly.assertThat(cursorContext.getCursorTracer().pins())
-                    .as("Number of cursor pins")
-                    .isEqualTo(2);
-            softly.assertThat(cursorContext.getCursorTracer().unpins())
-                    .as("Number of cursor unpins")
-                    .isEqualTo(2);
-            softly.assertThat(cursorContext.getCursorTracer().hits())
-                    .as("Number of cursor hits")
-                    .isEqualTo(2);
+            assertTraces(cursorContext, isRecordFormat() ? traces(2, 2, 2) : traces(16, 15, 16));
         }
     }
 
@@ -89,7 +83,8 @@ class TransactionTracingIT {
         try (InternalTransaction transaction = (InternalTransaction) database.beginTx()) {
             var cursorContext = transaction.kernelTransaction().cursorContext();
 
-            var commitCursorChecker = new CommitCursorChecker(cursorContext);
+            var commitCursorChecker = new CommitCursorChecker(
+                    cursorContext, isRecordFormat() ? traces(1001, 1001, 999, 2) : traces(2001, 2001, 1985, 16));
             managementService.registerTransactionEventListener(database.databaseName(), commitCursorChecker);
 
             for (int i = 0; i < ENTITY_COUNT; i++) {
@@ -122,15 +117,7 @@ class TransactionTracingIT {
                     .as("Number of expected relationships")
                     .isEqualTo(ENTITY_COUNT);
 
-            softly.assertThat(cursorContext.getCursorTracer().pins())
-                    .as("Number of cursor pins")
-                    .isEqualTo(5);
-            softly.assertThat(cursorContext.getCursorTracer().unpins())
-                    .as("Number of cursor unpins")
-                    .isEqualTo(5);
-            softly.assertThat(cursorContext.getCursorTracer().hits())
-                    .as("Number of cursor hits")
-                    .isEqualTo(5);
+            assertTraces(cursorContext, isRecordFormat() ? traces(5, 5, 5) : traces(32, 31, 32));
         }
     }
 
@@ -186,15 +173,7 @@ class TransactionTracingIT {
                     .as("Number of expected relationships")
                     .isEqualTo(ENTITY_COUNT);
 
-            softly.assertThat(cursorContext.getCursorTracer().pins())
-                    .as("Number of cursor pins")
-                    .isEqualTo(1);
-            softly.assertThat(cursorContext.getCursorTracer().unpins())
-                    .as("Number of cursor unpins")
-                    .isEqualTo(1);
-            softly.assertThat(cursorContext.getCursorTracer().hits())
-                    .as("Number of cursor hits")
-                    .isEqualTo(1);
+            assertTraces(cursorContext, isRecordFormat() ? traces(1, 1, 1) : traces(33, 32, 33));
         }
     }
 
@@ -217,39 +196,49 @@ class TransactionTracingIT {
 
             transaction.kernelTransaction().dataWrite().nodeDetachDelete(sourceId);
 
-            softly.assertThat(cursorContext.getCursorTracer().pins())
-                    .as("Number of cursor pins")
-                    .isEqualTo(5);
-            softly.assertThat(cursorContext.getCursorTracer().unpins())
-                    .as("Number of cursor unpins")
-                    .isEqualTo(1);
-            softly.assertThat(cursorContext.getCursorTracer().hits())
-                    .as("Number of cursor hits")
-                    .isEqualTo(5);
+            assertTraces(cursorContext, isRecordFormat() ? traces(5, 1, 5) : traces(1, 0, 1));
         }
     }
 
     private void assertZeroCursor(CursorContext cursorContext) {
+        assertTraces(cursorContext, traces(0, 0, 0, 0));
+    }
+
+    void assertTraces(CursorContext cursorContext, int[] traces) {
+        // [pins, unpins, hits, optional faults]
         softly.assertThat(cursorContext.getCursorTracer().pins())
                 .as("Number of cursor pins")
-                .isZero();
+                .isEqualTo(traces[0]);
         softly.assertThat(cursorContext.getCursorTracer().unpins())
                 .as("Number of cursor unpins")
-                .isZero();
+                .isEqualTo(traces[1]);
         softly.assertThat(cursorContext.getCursorTracer().hits())
                 .as("Number of cursor hits")
-                .isZero();
-        softly.assertThat(cursorContext.getCursorTracer().faults())
-                .as("Number of cursor faults")
-                .isZero();
+                .isEqualTo(traces[2]);
+        if (traces.length == 4) {
+            softly.assertThat(cursorContext.getCursorTracer().faults())
+                    .as("Number of cursor faults")
+                    .isEqualTo(traces[3]);
+        }
+    }
+
+    int[] traces(int... traces) {
+        return traces;
+    }
+
+    boolean isRecordFormat() {
+        return database.getDependencyResolver().resolveDependency(StorageEngine.class) instanceof RecordStorageEngine;
     }
 
     private class CommitCursorChecker extends TransactionEventListenerAdapter<Object> {
+
         private final CursorContext cursorContext;
+        private final int[] traces;
         private volatile boolean invoked;
 
-        CommitCursorChecker(CursorContext cursorContext) {
+        CommitCursorChecker(CursorContext cursorContext, int[] traces) {
             this.cursorContext = cursorContext;
+            this.traces = traces;
         }
 
         public boolean isInvoked() {
@@ -258,18 +247,7 @@ class TransactionTracingIT {
 
         @Override
         public void afterCommit(TransactionData data, Object state, GraphDatabaseService databaseService) {
-            softly.assertThat(cursorContext.getCursorTracer().pins())
-                    .as("Number of cursor pins")
-                    .isEqualTo(1001);
-            softly.assertThat(cursorContext.getCursorTracer().unpins())
-                    .as("Number of cursor unpins")
-                    .isEqualTo(1001);
-            softly.assertThat(cursorContext.getCursorTracer().hits())
-                    .as("Number of cursor hits")
-                    .isEqualTo(999);
-            softly.assertThat(cursorContext.getCursorTracer().faults())
-                    .as("Number of cursor faults")
-                    .isEqualTo(2);
+            assertTraces(cursorContext, traces);
             invoked = true;
         }
     }

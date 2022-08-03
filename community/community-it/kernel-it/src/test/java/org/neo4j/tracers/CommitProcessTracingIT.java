@@ -21,6 +21,7 @@ package org.neo4j.tracers;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
@@ -45,6 +46,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockTracer;
@@ -72,6 +74,7 @@ public class CommitProcessTracingIT {
     void configure(TestDatabaseManagementServiceBuilder builder) {
         // Disable the additional lock verification since this tests really only uses the raw storage engine
         builder.setConfig(GraphDatabaseInternalSettings.additional_lock_verification, false);
+        builder.setConfig(db_format, RecordFormatSelector.defaultFormat().name());
     }
 
     @Test
