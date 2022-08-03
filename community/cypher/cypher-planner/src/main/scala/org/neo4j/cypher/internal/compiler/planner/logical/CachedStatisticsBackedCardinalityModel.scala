@@ -38,107 +38,92 @@ class CachedStatisticsBackedCardinalityModel(wrapped: StatisticsBackedCardinalit
 
   final private val cache: mutable.HashMap[CardinalityModelInput, Cardinality] = mutable.HashMap.empty
 
-  private def cachedSinglePlannerQueryCardinality(
-    singlePlannerQuery: SinglePlannerQuery,
-    labelInfo: LabelInfo,
-    relTypeInfo: RelTypeInfo,
-    semanticTable: SemanticTable,
-    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
-  ): Cardinality =
-    cache.getOrElseUpdate(
-      (singlePlannerQuery, labelInfo, relTypeInfo, semanticTable, indexPredicateProviderContext),
-      wrapped.singlePlannerQueryCardinality(
-        singlePlannerQuery,
-        labelInfo,
-        relTypeInfo,
-        semanticTable,
-        indexPredicateProviderContext
-      )
-    )
-
-  private def unionQueryQueryCardinality(
-    unionQuery: UnionQuery,
-    labelInfo: LabelInfo,
-    relTypeInfo: RelTypeInfo,
-    semanticTable: SemanticTable,
-    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
-  ): Cardinality = {
-    var lhs = unionQuery.part
-    var cardinality: Cardinality = null
-    val rhsCardinality =
-      cachedSinglePlannerQueryCardinality(
-        unionQuery.query,
-        labelInfo,
-        relTypeInfo,
-        semanticTable,
-        indexPredicateProviderContext
-      )
-    val unions: mutable.Stack[(UnionQuery, Cardinality)] = mutable.Stack((unionQuery, rhsCardinality))
-    while (cardinality == null) {
-      lhs match {
-        case singlePlannerQuery: SinglePlannerQuery =>
-          cardinality = cachedSinglePlannerQueryCardinality(
-            singlePlannerQuery,
-            labelInfo,
-            relTypeInfo,
-            semanticTable,
-            indexPredicateProviderContext
-          )
-        case nestedUnionQuery: UnionQuery =>
-          cache.get((nestedUnionQuery, labelInfo, relTypeInfo, semanticTable, indexPredicateProviderContext)) match {
-            case Some(nestedUnionQueryCardinality) =>
-              cardinality = nestedUnionQueryCardinality
-            case None =>
-              lhs = nestedUnionQuery.part
-              val rhsCardinality = cachedSinglePlannerQueryCardinality(
-                nestedUnionQuery.query,
-                labelInfo,
-                relTypeInfo,
-                semanticTable,
-                indexPredicateProviderContext
-              )
-              unions.push((nestedUnionQuery, rhsCardinality))
-          }
-      }
-    }
-    unions.foreach {
-      case (unionQuery, rhsCardinality) =>
-        val unionCardinality = wrapped.combineUnion(unionQuery, cardinality, rhsCardinality)
-        cache.update(
-          (unionQuery, labelInfo, relTypeInfo, semanticTable, indexPredicateProviderContext),
-          unionCardinality
-        )
-        cardinality = unionCardinality
-    }
-    cardinality
-  }
-
   override def apply(
     plannerQueryPart: PlannerQueryPart,
     labelInfo: LabelInfo,
     relTypeInfo: RelTypeInfo,
     semanticTable: SemanticTable,
     indexCompatiblePredicatesProviderContext: IndexCompatiblePredicatesProviderContext
-  ): Cardinality =
+  ): Cardinality = {
+    def cacheKey(part: PlannerQueryPart): CardinalityModelInput =
+      (part, labelInfo, relTypeInfo, semanticTable, indexCompatiblePredicatesProviderContext)
+
+    def singlePlannerQueryCardinality(singlePlannerQuery: SinglePlannerQuery): Cardinality =
+      wrapped.singlePlannerQueryCardinality(
+        singlePlannerQuery,
+        labelInfo,
+        relTypeInfo,
+        semanticTable,
+        indexCompatiblePredicatesProviderContext
+      )
+
+    def cachedSinglePlannerQueryCardinality(singlePlannerQuery: SinglePlannerQuery): Cardinality =
+      cache.getOrElseUpdate(cacheKey(singlePlannerQuery), singlePlannerQueryCardinality(singlePlannerQuery))
+
+    // First, try to retrieve the cardinality from the cache
     cache.getOrElseUpdate(
-      (plannerQueryPart, labelInfo, relTypeInfo, semanticTable, indexCompatiblePredicatesProviderContext),
+      cacheKey(plannerQueryPart),
+      // If it isn't in the cache, then check the type of the query
       plannerQueryPart match {
+        // If it's a simple SinglePlannerQuery, our base case, we hand it over to the underlying cardinality model, and then store the result
         case singlePlannerQuery: SinglePlannerQuery =>
-          wrapped.singlePlannerQueryCardinality(
-            singlePlannerQuery,
-            labelInfo,
-            relTypeInfo,
-            semanticTable,
-            indexCompatiblePredicatesProviderContext
-          )
+          singlePlannerQueryCardinality(singlePlannerQuery)
+
+        /*
+        If it's a UnionQuery however, which is defined recursively, then it's a bit more involved.
+        The naive implementation would look like this:
+        wrapped.combineUnion(
+          unionQuery,
+          apply(unionQuery.part, labelInfo, relTypeInfo, semanticTable, indexCompatiblePredicatesProviderContext),
+          apply(unionQuery.query, labelInfo, relTypeInfo, semanticTable, indexCompatiblePredicatesProviderContext)
+        )
+        But note how the recursive call to apply is not in tail position, and so will stack overflow on a deep enough query.
+        The solution here is to "peel off" layers of the union, storing them in a stack, until we reach either a cached cardinality or the final SinglePlannerQuery at the bottom.
+        Once we have the base cardinality, we can pop union layers from the stack one by one and feed them to combineUnion, updating cardinality and populating the cache as we go along.
+        When the stack is empty, we can return the final cardinality value.
+
+        "Layers! Unions have layers, ogres have layers, you get it, we both have layers." – Shrek (2001)
+         */
         case unionQuery: UnionQuery =>
-          unionQueryQueryCardinality(
-            unionQuery,
-            labelInfo,
-            relTypeInfo,
-            semanticTable,
-            indexCompatiblePredicatesProviderContext
-          )
+          // the accumulator that we return at the end
+          var cardinality: Cardinality = null
+          // the stack of union layers that we peel off to get to a cached value / the base layer
+          lazy val unions: mutable.Stack[(UnionQuery, Cardinality)] =
+            mutable.Stack((unionQuery, cachedSinglePlannerQueryCardinality(unionQuery.query)))
+          // pointer to the current layer
+          var part: PlannerQueryPart = unionQuery.part
+          // Phase 1: "peel off" layers of the union until we hit the SinglePlannerQuery at the bottom, or if one of the nested unions is already in the cache
+          while (cardinality == null) {
+            part match {
+              case singlePlannerQuery: SinglePlannerQuery =>
+                // We have reached the base layer, try to get the value from the cache or else calculate and store it
+                cardinality = cachedSinglePlannerQueryCardinality(singlePlannerQuery)
+
+              case nestedUnionQuery: UnionQuery =>
+                // We haven't reached the base layer, first try to find the cardinality of the nested query in the cache
+                cache.get(cacheKey(nestedUnionQuery)) match {
+                  case Some(unionQueryCardinality) =>
+                    // If it is in the cache, we don't need to dig deeper, we can move on to the next step
+                    cardinality = unionQueryCardinality
+
+                  case None =>
+                    // If it isn't in the cache, then we move the pointer one layer deeper, and push the nexted union in the cache
+                    part = nestedUnionQuery.part
+                    unions.push((nestedUnionQuery, cachedSinglePlannerQueryCardinality(nestedUnionQuery.query)))
+                }
+            }
+          }
+          // Phase 2: repeatedly pop union layers from the stack
+          unions.foreach {
+            case (stackedUnionQuery, queryCardinality) =>
+              // Update the cardinality accumulator
+              cardinality = wrapped.combineUnion(stackedUnionQuery, cardinality, queryCardinality)
+              // Populate the cache for future use
+              cache.update(cacheKey(stackedUnionQuery), cardinality)
+          }
+          // We can return the final value
+          cardinality
       }
     )
+  }
 }
