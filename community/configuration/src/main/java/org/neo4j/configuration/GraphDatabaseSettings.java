@@ -554,7 +554,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
                     + "For example, \"10 days\" will prune logical logs that only contain transactions older than 10 days."
                     + "Alternatively, \"100k txs\" will keep the 100k latest transactions from each database and prune any older transactions.")
     public static final Setting<String> keep_logical_logs = newBuilder(
-                    "db.tx_log.rotation.retention_policy", STRING, "7 days")
+                    "db.tx_log.rotation.retention_policy", STRING, "2 days")
             .dynamic()
             .addConstraint(SettingConstraints.matches(
                     "^(true|keep_all|false|keep_none|(\\d+[KkMmGg]?( (files|size|txs|entries|hours|days))))$",
