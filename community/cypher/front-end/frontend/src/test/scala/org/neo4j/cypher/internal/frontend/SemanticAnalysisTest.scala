@@ -1992,6 +1992,14 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     )
   }
 
+  test("should fail for size(COUNT{...})") {
+    val query = "RETURN size(COUNT{ (n) }) AS foo"
+    expectErrorsFrom(
+      query,
+      Set(SemanticError("Type mismatch: expected String or List<T> but was Integer", InputPosition(12, 1, 13)))
+    )
+  }
+
   // ------- Helpers ------------------------------
 
   private def expectNoErrorsFrom(

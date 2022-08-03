@@ -681,7 +681,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
                 check(ctx, whereExpression) chain
                   expectType(CTBoolean.covariant, whereExpression)
               }
-          } chain expectType(CTInteger, x)
+          } chain specifyType(CTInteger, x)
 
       case x: Expression => semanticCheckFallback(ctx, x)
     }
