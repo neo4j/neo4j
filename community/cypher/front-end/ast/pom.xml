@@ -72,6 +72,12 @@
             <artifactId>scalacheck_${scala.binary.version}</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-reflect</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
 </project>
