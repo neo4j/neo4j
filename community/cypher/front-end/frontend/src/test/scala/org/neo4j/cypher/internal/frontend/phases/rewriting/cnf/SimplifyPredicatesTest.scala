@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.Ors
@@ -82,6 +83,11 @@ class SimplifyPredicatesTest extends CypherFunSuite {
   test("NOT IS NULL is rewritten") {
     // not(isNull(P)) <=> isNotNull(P)
     assertRewrittenMatches("NOT( 'P' IS NULL )", { case IsNotNull(StringLiteral("P")) => () })
+  }
+
+  test("NOT IS NOT NULL is rewritten") {
+    // not(isNotNull(P)) <=> isNull(P)
+    assertRewrittenMatches("NOT( 'P' IS NOT NULL )", { case IsNull(StringLiteral("P")) => () })
   }
 
   test("Simplify OR of identical expressions with interspersed condition") {

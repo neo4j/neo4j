@@ -55,8 +55,9 @@ case class simplifyPredicates(semanticState: SemanticState) extends Rewriter {
   }
 
   private def computeReplacement: Expression => Expression = {
-    case n @ Not(Not(innerExpression))    => simplifyToInnerExpression(n, innerExpression)
-    case n @ Not(IsNull(innerExpression)) => IsNotNull(innerExpression)(n.position)
+    case n @ Not(Not(innerExpression))       => simplifyToInnerExpression(n, innerExpression)
+    case n @ Not(IsNull(innerExpression))    => IsNotNull(innerExpression)(n.position)
+    case n @ Not(IsNotNull(innerExpression)) => IsNull(innerExpression)(n.position)
     case Ands(exps) if exps.isEmpty =>
       throw new IllegalStateException("Found an instance of Ands with empty expressions")
     case Ors(exps) if exps.isEmpty => throw new IllegalStateException("Found an instance of Ors with empty expressions")
