@@ -1326,6 +1326,23 @@ class ConfigTest {
     }
 
     @Test
+    void shouldHaveSettingSourceLocation() {
+        // Given
+        TestConnectionGroupSetting group = TestConnectionGroupSetting.group("default");
+        Config config = Config.emptyBuilder()
+                .addGroupSettingClass(TestConnectionGroupSetting.class)
+                .addSettingsClass(TestSettings.class)
+                .set(group.port, 7474)
+                .build();
+
+        // Then
+        assertThat(((SettingImpl<?>) config.getSetting(TestSettings.intSetting.name())).sourceLocation())
+                .isEqualTo("org.neo4j.configuration.ConfigTest.TestSettings.intSetting");
+        assertThat(((SettingImpl<?>) config.getSetting(group.port.name())).sourceLocation())
+                .isEqualTo("org.neo4j.configuration.ConfigTest.TestConnectionGroupSetting.port");
+    }
+
+    @Test
     void shouldConcatenateMultipleJvmAdditionals() {
         // Given
         Config config = Config.newBuilder()

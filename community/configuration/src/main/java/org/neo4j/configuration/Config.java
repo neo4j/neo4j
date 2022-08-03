@@ -1092,6 +1092,9 @@ public class Config implements Configuration {
                         if (field.isAnnotationPresent(Deprecated.class)) {
                             setting.setDeprecated();
                         }
+                        Class<?> owningClass = field.getDeclaringClass();
+                        String name = Objects.requireNonNullElse(owningClass.getCanonicalName(), owningClass.getName());
+                        setting.setSourceLocation(name + "." + field.getName());
                         settings.put(setting.name(), setting);
                     } catch (Exception e) {
                         throw new RuntimeException(
