@@ -70,12 +70,11 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
-import java.util.Optional
-
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.jdk.CollectionConverters.SetHasAsJava
+import scala.jdk.OptionConverters.RichOptional
 import scala.util.Try
 import scala.util.Using
 
@@ -126,11 +125,13 @@ case class ShowDatabasesExecutionPlanner(
            |props.replicationLag as replicationLag,
            |d.$DATABASE_CREATED_AT_PROPERTY as creationTime,
            |d.$DATABASE_STARTED_AT_PROPERTY as lastStartTime,
-           |d.$DATABASE_STOPPED_AT_PROPERTY as lastStopTime
+           |d.$DATABASE_STOPPED_AT_PROPERTY as lastStopTime,
+           |props.store as store
            |""".stripMargin
       } else ""
     val verboseNames =
-      if (verbose) ", databaseID, serverID, creationTime, lastStartTime, lastStopTime, lastCommittedTxn, replicationLag"
+      if (verbose)
+        ", databaseID, serverID, creationTime, lastStartTime, lastStopTime, store, lastCommittedTxn, replicationLag"
       else ""
     val returnClause = AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("name"))
 
@@ -313,7 +314,7 @@ case class ShowDatabasesExecutionPlanner(
 
   private def requiresDetailedLookup(yields: Yield): Boolean =
     yields.returnItems.includeExisting || yields.returnItems.items.map(_.expression).exists {
-      case Variable(name) => Set("lastCommittedTxn", "replicationLag").contains(name)
+      case Variable(name) => Set("store", "lastCommittedTxn", "replicationLag").contains(name)
       case _              => false
     }
 
@@ -350,7 +351,7 @@ object BaseDatabaseInfoMapper extends DatabaseInfoMapper[DatabaseInfo] {
       getDatabaseId(databaseManagementService, extendedDatabaseInfo.namedDatabaseId().name()).map(
         Values.stringValue
       ).getOrElse(Values.NO_VALUE),
-      extendedDatabaseInfo.serverId().asScala.map(srvId => Values.stringValue(srvId.uuid().toString)).getOrElse(
+      extendedDatabaseInfo.serverId().toScala.map(srvId => Values.stringValue(srvId.uuid().toString)).getOrElse(
         Values.NO_VALUE
       )
     )
@@ -366,10 +367,6 @@ object BaseDatabaseInfoMapper extends DatabaseInfoMapper[DatabaseInfo] {
       }
     )
   }
-
-  implicit class RichOptional[T](v: Optional[T]) {
-    def asScala: Option[T] = if (v.isPresent) Some(v.get()) else None
-  }
 }
 
 object CommunityExtendedDatabaseInfoMapper extends DatabaseInfoMapper[ExtendedDatabaseInfo] {
@@ -380,8 +377,9 @@ object CommunityExtendedDatabaseInfoMapper extends DatabaseInfoMapper[ExtendedDa
   ): MapValue =
     BaseDatabaseInfoMapper.toMapValue(databaseManagementService, extendedDatabaseInfo).updatedWith(
       VirtualValues.map(
-        Array("lastCommittedTxn", "replicationLag"),
+        Array("store", "lastCommittedTxn", "replicationLag"),
         Array(
+          extendedDatabaseInfo.storeId().toScala.map(Values.stringValue).getOrElse(Values.NO_VALUE),
           Values.NO_VALUE,
           Values.longValue(0)
         )
