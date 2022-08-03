@@ -107,6 +107,7 @@ BSD License 2-clause
   zstd-jni
 
 Bouncy Castle License
+  Bouncy Castle ASN.1 Extension and Utility APIs
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
   Bouncy Castle Provider
 
