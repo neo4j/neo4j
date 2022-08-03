@@ -30,7 +30,6 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
@@ -40,6 +39,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider;
+import org.neo4j.kernel.api.impl.schema.TextIndexCapability;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -48,12 +48,10 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
-import org.neo4j.util.Preconditions;
-import org.neo4j.values.storable.ValueCategory;
 
 public class TrigramIndexProvider extends AbstractLuceneIndexProvider {
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("text-trigram", "1.0");
-    public static final IndexCapability CAPABILITY = new TrigramIndexCapability();
+    public static final IndexCapability CAPABILITY = new TextIndexCapability(true);
 
     private final FileSystemAbstraction fileSystem;
     private final Config config;
@@ -134,55 +132,5 @@ public class TrigramIndexProvider extends AbstractLuceneIndexProvider {
             StorageEngineFactory storageEngineFactory,
             CursorContextFactory contextFactory) {
         return null;
-    }
-
-    public static class TrigramIndexCapability implements IndexCapability {
-        @Override
-        public boolean supportsOrdering() {
-            return false;
-        }
-
-        @Override
-        public boolean supportsReturningValues() {
-            return false;
-        }
-
-        @Override
-        public boolean areValueCategoriesAccepted(ValueCategory... valueCategories) {
-            Preconditions.requireNonEmpty(valueCategories);
-            Preconditions.requireNoNullElements(valueCategories);
-            return valueCategories.length == 1 && valueCategories[0] == ValueCategory.TEXT;
-        }
-
-        @Override
-        public boolean isQuerySupported(IndexQuery.IndexQueryType queryType, ValueCategory valueCategory) {
-            if (queryType == IndexQuery.IndexQueryType.ALL_ENTRIES) {
-                return true;
-            }
-
-            if (!areValueCategoriesAccepted(valueCategory)) {
-                return false;
-            }
-
-            return switch (queryType) {
-                case EXACT, RANGE, STRING_PREFIX, STRING_CONTAINS, STRING_SUFFIX -> true;
-                default -> false;
-            };
-        }
-
-        @Override
-        public double getCostMultiplier(IndexQuery.IndexQueryType... queryTypes) {
-            // Trigram index is superior only for 'CONTAINS' and 'ENDS WITH' operations
-            // which are currently not supported by any other type of index,
-            // so if there are other choices, it is better not to use trigram index.
-            return 1.1;
-        }
-
-        @Override
-        public boolean supportPartitionedScan(IndexQuery... queries) {
-            Preconditions.requireNonEmpty(queries);
-            Preconditions.requireNoNullElements(queries);
-            return false;
-        }
     }
 }

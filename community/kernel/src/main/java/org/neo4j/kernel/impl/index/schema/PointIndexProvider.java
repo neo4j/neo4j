@@ -230,7 +230,7 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey, PointLayou
 
         @Override
         public double getCostMultiplier(IndexQueryType... queryTypes) {
-            return 1.0;
+            return COST_MULTIPLIER_STANDARD;
         }
 
         @Override

@@ -17,25 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.fulltext;
+package org.neo4j.kernel.api.impl.schema;
 
-import org.neo4j.internal.schema.IndexBehaviour;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
 
-public class FulltextIndexCapability implements IndexCapability {
-    private static final IndexBehaviour[] EVENTUALLY_CONSISTENT_BEHAVIOUR = {
-        IndexBehaviour.EVENTUALLY_CONSISTENT, IndexBehaviour.SKIP_AND_LIMIT
-    };
-    private static final IndexBehaviour[] NORMAL_BEHAVIOUR = {IndexBehaviour.SKIP_AND_LIMIT};
+public class TextIndexCapability implements IndexCapability {
+    private static final double COST_MULTIPLIER_TRIGRAM_GOOD = COST_MULTIPLIER_STANDARD - 0.1;
+    private static final double COST_MULTIPLIER_TRIGRAM_BAD = COST_MULTIPLIER_STANDARD + 0.1;
+    private static final double COST_MULTIPLIER_TEXT_GOOD = COST_MULTIPLIER_STANDARD - 0.05;
+    private static final double COST_MULTIPLIER_TEXT_BAD = COST_MULTIPLIER_STANDARD + 0.05;
+    private final boolean isTrigram;
 
-    private final boolean isEventuallyConsistent;
-
-    public FulltextIndexCapability(boolean isEventuallyConsistent) {
-        this.isEventuallyConsistent = isEventuallyConsistent;
+    public TextIndexCapability(boolean isTrigram) {
+        this.isTrigram = isTrigram;
     }
 
     @Override
@@ -52,27 +50,36 @@ public class FulltextIndexCapability implements IndexCapability {
     public boolean areValueCategoriesAccepted(ValueCategory... valueCategories) {
         Preconditions.requireNonEmpty(valueCategories);
         Preconditions.requireNoNullElements(valueCategories);
-        var anyValidCategory = false;
-        for (final var valueCategory : valueCategories) {
-            switch (valueCategory) {
-                case TEXT -> anyValidCategory = true;
-                case NO_CATEGORY -> {}
-                default -> {
-                    return false;
-                }
-            }
-        }
-        return anyValidCategory;
+        return valueCategories.length == 1 && valueCategories[0] == ValueCategory.TEXT;
     }
 
     @Override
     public boolean isQuerySupported(IndexQueryType queryType, ValueCategory valueCategory) {
-        return queryType == IndexQueryType.FULLTEXT_SEARCH && areValueCategoriesAccepted(valueCategory);
+
+        if (queryType == IndexQueryType.ALL_ENTRIES) {
+            return true;
+        }
+
+        if (!areValueCategoriesAccepted(valueCategory)) {
+            return false;
+        }
+
+        return switch (queryType) {
+            case EXACT, RANGE, STRING_PREFIX, STRING_CONTAINS, STRING_SUFFIX -> true;
+            default -> false;
+        };
     }
 
     @Override
     public double getCostMultiplier(IndexQueryType... queryTypes) {
-        return COST_MULTIPLIER_STANDARD;
+        Preconditions.checkState(queryTypes.length == 1, "Does not support composite queries");
+        var queryType = queryTypes[0];
+        return switch (queryType) {
+            case STRING_SUFFIX, STRING_CONTAINS -> isTrigram ? COST_MULTIPLIER_TRIGRAM_GOOD : COST_MULTIPLIER_TEXT_GOOD;
+            case EXACT, RANGE, STRING_PREFIX -> isTrigram ? COST_MULTIPLIER_TRIGRAM_BAD : COST_MULTIPLIER_TEXT_BAD;
+            case ALL_ENTRIES -> COST_MULTIPLIER_STANDARD;
+            default -> throw new IllegalStateException("Unexpected value: " + queryType);
+        };
     }
 
     @Override
@@ -80,10 +87,5 @@ public class FulltextIndexCapability implements IndexCapability {
         Preconditions.requireNonEmpty(queries);
         Preconditions.requireNoNullElements(queries);
         return false;
-    }
-
-    @Override
-    public IndexBehaviour[] behaviours() {
-        return isEventuallyConsistent ? EVENTUALLY_CONSISTENT_BEHAVIOUR : NORMAL_BEHAVIOUR;
     }
 }

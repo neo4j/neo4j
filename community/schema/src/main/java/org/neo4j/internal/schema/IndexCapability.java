@@ -32,6 +32,7 @@ import org.neo4j.values.storable.ValueCategory;
  * index state. Rather, it describes the functionality that the index provides given that it is available.
  */
 public interface IndexCapability {
+    double COST_MULTIPLIER_STANDARD = 1.0;
     IndexBehaviour[] BEHAVIOURS_NONE = new IndexBehaviour[0];
 
     /**
@@ -135,7 +136,7 @@ public interface IndexCapability {
 
         @Override
         public double getCostMultiplier(IndexQueryType... queryTypes) {
-            return 1.0;
+            return COST_MULTIPLIER_STANDARD;
         }
 
         @Override
