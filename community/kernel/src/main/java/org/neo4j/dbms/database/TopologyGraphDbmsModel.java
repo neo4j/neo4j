@@ -210,6 +210,9 @@ public interface TopologyGraphDbmsModel {
 
     Label TOPOLOGY_GRAPH_SETTINGS_LABEL = Label.label("TopologyGraphSettings");
     String TOPOLOGY_GRAPH_SETTINGS_ALLOCATOR_PROPERTY = "allocator";
+    String TOPOLOGY_GRAPH_SETTINGS_DEFAULT_NUMBER_OF_PRIMARIES_PROPERTY = "default_number_of_primaries";
+    String TOPOLOGY_GRAPH_SETTINGS_DEFAULT_NUMBER_OF_SECONDARIES_PROPERTY = "default_number_of_secondaries";
+    String TOPOLOGY_GRAPH_SETTINGS_DEFAULT_DATABASE_PROPERTY = "default_database";
 
     Set<NamedDatabaseId> getAllDatabaseIds();
 
