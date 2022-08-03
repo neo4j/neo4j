@@ -93,7 +93,7 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
       case Coalesce =>
         checkMinArgs(invocation, 1) chain
           expectType(CTAny.covariant, invocation.arguments) chain
-          specifyType(leastUpperBoundsOfTypes(invocation.arguments), invocation)
+          specifyType(unionOfTypes(invocation.arguments), invocation)
 
       case Collect =>
         checkTypeSignatures(ctx, Collect, invocation) ifOkChain {
