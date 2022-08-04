@@ -39,9 +39,6 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.TokenHolders;
 
 public class TextIndexProviderFactory extends AbstractIndexProviderFactory<TextIndexProvider> {
-    private static final String KEY = "text";
-    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor(KEY, "1.0");
-
     @Override
     protected Class<?> loggingClass() {
         return TextIndexProvider.class;
@@ -49,7 +46,7 @@ public class TextIndexProviderFactory extends AbstractIndexProviderFactory<TextI
 
     @Override
     public IndexProviderDescriptor descriptor() {
-        return DESCRIPTOR;
+        return TextIndexProvider.DESCRIPTOR;
     }
 
     @Override

@@ -25,16 +25,25 @@ import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
 
-public class TextIndexCapability implements IndexCapability {
+public abstract class TextIndexCapability implements IndexCapability {
     private static final double COST_MULTIPLIER_TRIGRAM_GOOD = COST_MULTIPLIER_STANDARD - 0.1;
     private static final double COST_MULTIPLIER_TRIGRAM_BAD = COST_MULTIPLIER_STANDARD + 0.1;
     private static final double COST_MULTIPLIER_TEXT_GOOD = COST_MULTIPLIER_STANDARD - 0.05;
     private static final double COST_MULTIPLIER_TEXT_BAD = COST_MULTIPLIER_STANDARD + 0.05;
-    private final boolean isTrigram;
 
-    public TextIndexCapability(boolean isTrigram) {
-        this.isTrigram = isTrigram;
+    private TextIndexCapability() {}
+
+    public static TextIndexCapability trigram() {
+        return new Trigram();
     }
+
+    public static TextIndexCapability text() {
+        return new Text();
+    }
+
+    protected abstract double costMultiplierBad();
+
+    protected abstract double costMultiplierGood();
 
     @Override
     public boolean supportsOrdering() {
@@ -75,8 +84,8 @@ public class TextIndexCapability implements IndexCapability {
         Preconditions.checkState(queryTypes.length == 1, "Does not support composite queries");
         var queryType = queryTypes[0];
         return switch (queryType) {
-            case STRING_SUFFIX, STRING_CONTAINS -> isTrigram ? COST_MULTIPLIER_TRIGRAM_GOOD : COST_MULTIPLIER_TEXT_GOOD;
-            case EXACT, RANGE, STRING_PREFIX -> isTrigram ? COST_MULTIPLIER_TRIGRAM_BAD : COST_MULTIPLIER_TEXT_BAD;
+            case STRING_SUFFIX, STRING_CONTAINS -> costMultiplierGood();
+            case EXACT, RANGE, STRING_PREFIX -> costMultiplierBad();
             case ALL_ENTRIES -> COST_MULTIPLIER_STANDARD;
             default -> throw new IllegalStateException("Unexpected value: " + queryType);
         };
@@ -87,5 +96,31 @@ public class TextIndexCapability implements IndexCapability {
         Preconditions.requireNonEmpty(queries);
         Preconditions.requireNoNullElements(queries);
         return false;
+    }
+
+    private static class Text extends TextIndexCapability {
+
+        @Override
+        protected double costMultiplierBad() {
+            return COST_MULTIPLIER_TEXT_BAD;
+        }
+
+        @Override
+        protected double costMultiplierGood() {
+            return COST_MULTIPLIER_TEXT_GOOD;
+        }
+    }
+
+    private static class Trigram extends TextIndexCapability {
+
+        @Override
+        protected double costMultiplierBad() {
+            return COST_MULTIPLIER_TRIGRAM_BAD;
+        }
+
+        @Override
+        protected double costMultiplierGood() {
+            return COST_MULTIPLIER_TRIGRAM_GOOD;
+        }
     }
 }

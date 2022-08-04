@@ -24,21 +24,23 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 final class TrigramTokenStream extends TokenStream {
+    // 'n' value in 'ngram'
+    private static final int N = 3;
+    private static final int MAX_CHARS = N * Character.charCount(Character.MAX_CODE_POINT);
     private final CodePointBuffer codePointBuffer;
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     private int offset = -1;
 
     public TrigramTokenStream(String text) {
         codePointBuffer = getCodePoints(text);
-        // a trigram consisting of 3 unicode code points can be up to 6 Java chars long
-        termAtt.resizeBuffer(6);
+        termAtt.resizeBuffer(MAX_CHARS);
     }
 
     @Override
     public boolean incrementToken() {
         clearAttributes();
         if (offset == -1) {
-            if (codePointBuffer.codePointCount < 3) {
+            if (codePointBuffer.codePointCount < N) {
                 int length = CharacterUtils.toChars(
                         codePointBuffer.codePoints, 0, codePointBuffer.codePointCount, termAtt.buffer(), 0);
                 termAtt.setLength(length);
@@ -49,11 +51,11 @@ final class TrigramTokenStream extends TokenStream {
 
         offset++;
 
-        if (codePointBuffer.codePointCount - offset < 3) {
+        if (codePointBuffer.codePointCount - offset < N) {
             return false;
         }
 
-        int length = CharacterUtils.toChars(codePointBuffer.codePoints, offset, 3, termAtt.buffer(), 0);
+        int length = CharacterUtils.toChars(codePointBuffer.codePoints, offset, N, termAtt.buffer(), 0);
         termAtt.setLength(length);
         return true;
     }

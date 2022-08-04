@@ -139,12 +139,6 @@ class IndexCapabilityTest {
         assertThat(TEXT.getCostMultiplier(STRING_CONTAINS)).isGreaterThan(TRIGRAM.getCostMultiplier(STRING_CONTAINS));
     }
 
-    // todo: tests for
-    //   supportPartitionedScan
-    //   behaviours
-    //   areValueCategoriesSupportedComposite
-    //
-
     public static Stream<Arguments> supportedQueries() {
         return Stream.of(
                 // TOKEN_LOOKUP

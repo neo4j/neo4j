@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.schema.reader;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
@@ -109,7 +108,7 @@ public class PartitionedValueIndexReader extends AbstractValueIndexReader {
     public IndexSampler createSampler() {
         List<IndexSampler> indexSamplers = indexReaders.parallelStream()
                 .map(ValueIndexReader::createSampler)
-                .collect(Collectors.toList());
+                .toList();
         return new AggregatingIndexSampler(indexSamplers);
     }
 

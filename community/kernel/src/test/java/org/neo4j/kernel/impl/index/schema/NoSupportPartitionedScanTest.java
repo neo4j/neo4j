@@ -19,23 +19,12 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
 
 import org.junit.jupiter.api.Nested;
-import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
-import org.neo4j.internal.schema.IndexCapability;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptors;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider;
-import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.fulltext.FulltextIndexCapability;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
-import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.logging.InternalLog;
-import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.token.TokenHolders;
+import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 
 public class NoSupportPartitionedScanTest extends SupportPartitionedScanTestSuite {
     NoSupportPartitionedScanTest() {
@@ -59,35 +48,16 @@ public class NoSupportPartitionedScanTest extends SupportPartitionedScanTestSuit
     }
 
     @Nested
-    class Fulltext extends SupportPartitionedScanTestSuite {
-        Fulltext() {
-            super(fusionCapability(), NO_SUPPORT);
+    class Trigram extends SupportPartitionedScanTestSuite {
+        Trigram() {
+            super(TrigramIndexProvider.CAPABILITY, NO_SUPPORT);
         }
     }
 
-    private static IndexCapability fusionCapability() {
-        // require the IndexProvider to complete the configuration of the IndexDescriptor
-        // such that the IndexCapability is correctly set, and not just IndexCapability.NO_CAPABILITY
-        // mock unimportant things to the test
-        final var descriptor = FulltextIndexProviderFactory.DESCRIPTOR;
-        final var provider = new FulltextIndexProvider(
-                descriptor,
-                mock(IndexDirectoryStructure.Factory.class),
-                mock(FileSystemAbstraction.class),
-                Config.defaults(),
-                mock(TokenHolders.class),
-                mock(DirectoryFactory.class),
-                mock(DatabaseReadOnlyChecker.class),
-                mock(JobScheduler.class),
-                mock(InternalLog.class));
-
-        final var ids = idGenerator();
-        final var index = provider.completeConfiguration(
-                IndexPrototype.forSchema(SchemaDescriptors.forLabel(ids.getAsInt(), ids.getAsInt(), ids.getAsInt()))
-                        .withName("Fulltext")
-                        .withIndexProvider(descriptor)
-                        .materialise(ids.getAsInt()));
-
-        return index.getCapability();
+    @Nested
+    class Fulltext extends SupportPartitionedScanTestSuite {
+        Fulltext() {
+            super(new FulltextIndexCapability(false), NO_SUPPORT);
+        }
     }
 }

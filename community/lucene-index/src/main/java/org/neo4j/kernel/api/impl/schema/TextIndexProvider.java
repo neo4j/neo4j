@@ -45,7 +45,7 @@ import org.neo4j.monitoring.Monitors;
 
 public class TextIndexProvider extends AbstractLuceneIndexProvider {
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("text", "1.0");
-    public static final IndexCapability CAPABILITY = new TextIndexCapability(false);
+    public static final IndexCapability CAPABILITY = TextIndexCapability.text();
 
     private final FileSystemAbstraction fileSystem;
     private final Config config;

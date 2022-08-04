@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.schema.trigram;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
@@ -68,9 +67,9 @@ class TrigramIndex extends AbstractLuceneIndex<ValueIndexReader> {
     protected PartitionedValueIndexReader createPartitionedReader(List<AbstractIndexPartition> partitions)
             throws IOException {
         List<ValueIndexReader> readers = acquireSearchers(partitions).stream()
-                .map(partitionSearcher ->
+                .map(partitionSearcher -> (ValueIndexReader)
                         new TrigramValueIndexReader(partitionSearcher, descriptor, samplingConfig, taskCoordinator))
-                .collect(Collectors.toList());
+                .toList();
         return new PartitionedValueIndexReader(descriptor, readers);
     }
 }

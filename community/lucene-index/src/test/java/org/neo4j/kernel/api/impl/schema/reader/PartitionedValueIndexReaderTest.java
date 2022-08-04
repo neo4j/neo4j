@@ -31,13 +31,15 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.values.storable.Values.stringValue;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
+import org.eclipse.collections.api.list.primitive.BooleanList;
 import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.impl.factory.primitive.BooleanLists;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
@@ -70,7 +72,7 @@ class PartitionedValueIndexReaderTest {
     private final SimpleValueIndexReader indexReader3 = mock(SimpleValueIndexReader.class);
 
     @Test
-    void partitionedReaderCloseAllSearchers() throws IOException {
+    void partitionedReaderCloseAllReaders() {
         PartitionedValueIndexReader partitionedIndexReader = createPartitionedReader();
 
         partitionedIndexReader.close();
@@ -201,19 +203,20 @@ class PartitionedValueIndexReaderTest {
 
     @ParameterizedTest
     @MethodSource("needStoreFilters")
-    void propagateNeedStoreFilter1(boolean[] needStoreFilters) throws IndexNotApplicableKernelException {
+    void propagateNeedStoreFilter1(BooleanList needStoreFilters, boolean needStoreFilter)
+            throws IndexNotApplicableKernelException {
         var query = mock(PropertyIndexQuery.class);
         var client = new GatheringNodeValueClient();
 
         // Update mocked sub-readers with value for needStoreFilter
-        setNeedStoreFilter(indexReader1, needStoreFilters[0]);
-        setNeedStoreFilter(indexReader2, needStoreFilters[1]);
-        setNeedStoreFilter(indexReader3, needStoreFilters[2]);
+        setNeedStoreFilter(indexReader1, needStoreFilters.get(0));
+        setNeedStoreFilter(indexReader2, needStoreFilters.get(1));
+        setNeedStoreFilter(indexReader3, needStoreFilters.get(2));
 
         PartitionedValueIndexReader indexReader = createPartitionedReaderFromReaders();
         indexReader.query(client, QueryContext.NULL_CONTEXT, Static.READ, unconstrained(), query);
 
-        assertThat(client.needStoreFilter).isEqualTo(needStoreFilters[3]);
+        assertThat(client.needStoreFilter).isEqualTo(needStoreFilter);
     }
 
     private void setNeedStoreFilter(SimpleValueIndexReader indexReader, boolean needStoreFilter)
@@ -235,14 +238,14 @@ class PartitionedValueIndexReaderTest {
                 .query(any(), any(), any(), any(), any());
     }
 
-    public static Stream<boolean[]> needStoreFilters() {
+    public static Stream<Arguments> needStoreFilters() {
         return Stream.of(
-                // Fourth value is expected result from ORing the first three
-                new boolean[] {false, false, false, false},
-                new boolean[] {true, false, false, true},
-                new boolean[] {false, true, false, true},
-                new boolean[] {false, false, true, true},
-                new boolean[] {true, true, true, true});
+                        BooleanLists.immutable.of(false, false, false),
+                        BooleanLists.immutable.of(true, false, false),
+                        BooleanLists.immutable.of(false, true, false),
+                        BooleanLists.immutable.of(false, false, true),
+                        BooleanLists.immutable.of(true, true, true))
+                .map(bs -> Arguments.of(bs, bs.contains(true)));
     }
 
     private static LongSet queryResultAsSet(PartitionedValueIndexReader indexReader, PropertyIndexQuery query)
