@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
@@ -37,9 +38,11 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -107,6 +110,9 @@ class SchemaRecoveryIT {
         Label label = label("User");
         String property = "email";
         startDb();
+        assumeThat(db.getDependencyResolver().resolveDependency(StorageEngineFactory.class))
+                .as("Separate tokens & token names is a record storage thing")
+                .isInstanceOf(RecordStorageEngineFactory.class);
 
         long initialConstraintCount;
         long initialIndexCount;

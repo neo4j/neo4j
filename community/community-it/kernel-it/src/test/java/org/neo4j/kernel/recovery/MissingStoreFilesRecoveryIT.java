@@ -20,13 +20,15 @@
 package org.neo4j.kernel.recovery;
 
 import static java.lang.String.valueOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.function.Predicate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,7 +39,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -58,7 +60,7 @@ class MissingStoreFilesRecoveryIT {
     private FileSystemAbstraction fileSystem;
 
     private DatabaseManagementService managementService;
-    private RecordDatabaseLayout databaseLayout;
+    private DatabaseLayout databaseLayout;
     private TestDatabaseManagementServiceBuilder serviceBuilder;
     private NamedDatabaseId defaultNamedDatabaseId;
     private static final Label testNodes = Label.label("testNodes");
@@ -69,7 +71,7 @@ class MissingStoreFilesRecoveryIT {
         managementService = serviceBuilder.build();
         var databaseApi = defaultDatabase(managementService);
         createSomeData(databaseApi);
-        databaseLayout = RecordDatabaseLayout.cast(databaseApi.databaseLayout());
+        databaseLayout = databaseApi.databaseLayout();
 
         defaultNamedDatabaseId = getDatabaseManager()
                 .databaseIdRepository()
@@ -88,12 +90,16 @@ class MissingStoreFilesRecoveryIT {
 
     @Test
     void databaseStartFailingOnMissingFilesAndMissedTxLogs() throws IOException {
-        fileSystem.deleteFile(databaseLayout.nodeStore());
+        Path storeFile = getStoreFile(databaseLayout);
+        fileSystem.deleteFile(storeFile);
         fileSystem.deleteRecursively(databaseLayout.getTransactionLogsDirectory());
 
         managementService = serviceBuilder.build();
         var dbStateService = getDatabaseStateService();
-        assertTrue(dbStateService.causeOfFailure(defaultNamedDatabaseId).isPresent());
+        assertThat(dbStateService.causeOfFailure(defaultNamedDatabaseId).orElseThrow())
+                .hasRootCauseMessage(String.format(
+                        "Store files [%s] is(are) missing and recovery is not possible. Please restore from a consistent backup.",
+                        storeFile.toAbsolutePath()));
     }
 
     @Test
@@ -101,12 +107,20 @@ class MissingStoreFilesRecoveryIT {
         LogFiles logFiles = prepareDatabaseWithTwoTxLogFiles();
 
         fileSystem.deleteFile(logFiles.getLogFile().getLogFileForVersion(0));
-        fileSystem.deleteFile(databaseLayout.nodeStore());
+        Path storeFile = getStoreFile(databaseLayout);
+        fileSystem.deleteFile(storeFile);
 
         var dbStateService = getDatabaseStateService();
         var failure = dbStateService.causeOfFailure(defaultNamedDatabaseId);
         assertFalse(failure.isPresent());
-        assertFalse(fileSystem.fileExists(databaseLayout.nodeStore()));
+        assertFalse(fileSystem.fileExists(storeFile));
+    }
+
+    private static Path getStoreFile(DatabaseLayout layout) {
+        return layout.mandatoryStoreFiles().stream()
+                .filter(Predicate.not(layout.pathForExistsMarker()::equals))
+                .findAny()
+                .orElseThrow();
     }
 
     private LogFiles prepareDatabaseWithTwoTxLogFiles() throws IOException {
