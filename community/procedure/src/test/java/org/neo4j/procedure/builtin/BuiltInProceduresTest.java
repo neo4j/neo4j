@@ -189,26 +189,6 @@ class BuiltInProceduresTest {
     }
 
     @Test
-    void shouldListAllIndexes() throws Throwable {
-        // Given
-        givenIndex("User", "name");
-
-        // When/Then
-        assertThat(call("db.indexes"))
-                .contains(record(
-                        1000L,
-                        "index_1000",
-                        "ONLINE",
-                        100D,
-                        "NONUNIQUE",
-                        "RANGE",
-                        "NODE",
-                        singletonList("User"),
-                        singletonList("name"),
-                        "no-index-provider-1.0"));
-    }
-
-    @Test
     void lookupComponentProviders() {
         assertNotNull(procs.lookupComponentProvider(Transaction.class, true));
         assertNotNull(procs.lookupComponentProvider(Transaction.class, false));
@@ -218,26 +198,6 @@ class BuiltInProceduresTest {
 
         assertNull(procs.lookupComponentProvider(DependencyResolver.class, true));
         assertNotNull(procs.lookupComponentProvider(DependencyResolver.class, false));
-    }
-
-    @Test
-    void shouldListAllUniqueIndexes() throws Throwable {
-        // Given
-        givenUniqueConstraint("User", "name");
-
-        // When/Then
-        assertThat(call("db.indexes"))
-                .contains(record(
-                        1000L,
-                        "constraint_1000",
-                        "ONLINE",
-                        100D,
-                        "UNIQUE",
-                        "RANGE",
-                        "NODE",
-                        singletonList("User"),
-                        singletonList("name"),
-                        "no-index-provider-1.0"));
     }
 
     @Test
@@ -265,49 +225,6 @@ class BuiltInProceduresTest {
 
         // When/Then
         assertThat(call("db.relationshipTypes")).contains(record("EATS"), record("SPROUTS"));
-    }
-
-    @Test
-    void shouldListConstraints() throws Throwable {
-        // Given
-        givenUniqueConstraint("User", "name");
-        givenNodePropExistenceConstraint("User", "name");
-        givenNodeKeys("User", "name");
-        // When/Then
-        assertThat(call("db.constraints"))
-                .contains(
-                        record(
-                                "MyExistenceConstraint",
-                                "CONSTRAINT ON ( user:User ) ASSERT (user.name) IS NOT NULL",
-                                "Constraint( name='MyExistenceConstraint', type='NODE PROPERTY EXISTENCE', schema=(:User {name}) )"),
-                        record(
-                                "MyNodeKeyConstraint",
-                                "CONSTRAINT ON ( user:User ) ASSERT (user.name) IS NODE KEY",
-                                "Constraint( name='MyNodeKeyConstraint', type='NODE KEY', schema=(:User {name}) )"),
-                        record(
-                                "constraint_1000",
-                                "CONSTRAINT ON ( user:User ) ASSERT (user.name) IS UNIQUE",
-                                "Constraint( name='constraint_1000', type='UNIQUENESS', schema=(:User {name}) )"));
-    }
-
-    @Test
-    void shouldEscapeLabelNameContainingColons() throws Throwable {
-        // Given
-        givenUniqueConstraint("FOO:BAR", "x.y");
-        givenNodePropExistenceConstraint("FOO:BAR", "x.y");
-
-        // When/Then
-        List<Object[]> call = call("db.constraints");
-        assertThat(call)
-                .contains(
-                        record(
-                                "MyExistenceConstraint",
-                                "CONSTRAINT ON ( `foo:bar`:`FOO:BAR` ) ASSERT (`foo:bar`.x.y) IS NOT NULL",
-                                "Constraint( name='MyExistenceConstraint', type='NODE PROPERTY EXISTENCE', schema=(:`FOO:BAR` {x.y}) )"),
-                        record(
-                                "constraint_1000",
-                                "CONSTRAINT ON ( `foo:bar`:`FOO:BAR` ) ASSERT (`foo:bar`.x.y) IS UNIQUE",
-                                "Constraint( name='constraint_1000', type='UNIQUENESS', schema=(:`FOO:BAR` {x.y}) )"));
     }
 
     @Test

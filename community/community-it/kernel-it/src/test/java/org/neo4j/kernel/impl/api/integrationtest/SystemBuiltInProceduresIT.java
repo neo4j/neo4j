@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -38,7 +37,6 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -147,41 +145,6 @@ class SystemBuiltInProceduresIT extends KernelIntegrationTest implements Procedu
     }
 
     @Test
-    void listAllIndexes() throws Throwable {
-        // Given
-        KernelTransaction transaction = newTransaction(AUTH_DISABLED);
-        int labelId1 = transaction.tokenWrite().labelGetOrCreateForName("Person");
-        int labelId2 = transaction.tokenWrite().labelGetOrCreateForName("Age");
-        int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName("foo");
-        int propertyKeyId2 = transaction.tokenWrite().propertyKeyGetOrCreateForName("bar");
-        LabelSchemaDescriptor personFooDescriptor = forLabel(labelId1, propertyKeyId1);
-        LabelSchemaDescriptor ageFooDescriptor = forLabel(labelId2, propertyKeyId1);
-        LabelSchemaDescriptor personFooBarDescriptor = forLabel(labelId1, propertyKeyId1, propertyKeyId2);
-        transaction
-                .schemaWrite()
-                .indexCreate(IndexPrototype.forSchema(personFooDescriptor).withName("person foo index"));
-        transaction
-                .schemaWrite()
-                .uniquePropertyConstraintCreate(
-                        uniqueForSchema(ageFooDescriptor).withName("constraint name"));
-        transaction
-                .schemaWrite()
-                .indexCreate(IndexPrototype.forSchema(personFooBarDescriptor).withName("person foo bar index"));
-        commit();
-
-        // let indexes come online
-        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
-            tx.schema().awaitIndexesOnline(2, MINUTES);
-            tx.commit();
-        }
-
-        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
-            // When & Then
-            assertFalse(tx.execute("CALL db.indexes").hasNext());
-        }
-    }
-
-    @Test
     void awaitIndexes() throws Throwable {
         // Given
         KernelTransaction transaction = newTransaction(AUTH_DISABLED);
@@ -227,24 +190,6 @@ class SystemBuiltInProceduresIT extends KernelIntegrationTest implements Procedu
             // When & Then
             // this will always be true because that procedure returns void BUT it proves that it runs on system
             assertFalse(tx.execute("CALL db.awaitIndex('person foo index',10)").hasNext());
-        }
-    }
-
-    @Test
-    void listConstraints() throws Throwable {
-        // Given
-        KernelTransaction transaction = newTransaction(AUTH_DISABLED);
-        TokenWrite tokenWrite = transaction.tokenWrite();
-        int labelId = tokenWrite.labelGetOrCreateForName("Label");
-        int propId = tokenWrite.propertyKeyGetOrCreateForName("property");
-        SchemaWrite schemaWrite = transaction.schemaWrite();
-        schemaWrite.uniquePropertyConstraintCreate(
-                uniqueForSchema(forLabel(labelId, propId)).withName("my_constraint"));
-        commit();
-
-        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
-            // When & Then
-            assertFalse(tx.execute("CALL db.constraints").hasNext());
         }
     }
 

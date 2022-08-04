@@ -19,7 +19,6 @@
  */
 package org.neo4j.procedure.builtin;
 
-import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.helpers.collection.Iterators.stream;
 import static org.neo4j.kernel.impl.api.TokenAccess.LABELS;
 import static org.neo4j.kernel.impl.api.TokenAccess.PROPERTY_KEYS;
@@ -30,15 +29,11 @@ import static org.neo4j.storageengine.util.StoreIdDecodeUtils.decodeId;
 
 import java.security.NoSuchAlgorithmException;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Label;
@@ -46,19 +41,12 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.PopulationProgress;
-import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -136,7 +124,7 @@ public class BuiltInProcedures {
 
         List<PropertyKeyResult> propertyKeys = stream(PROPERTY_KEYS.all(kernelTransaction))
                 .map(PropertyKeyResult::new)
-                .collect(Collectors.toList());
+                .toList();
         return propertyKeys.stream();
     }
 
@@ -160,81 +148,6 @@ public class BuiltInProcedures {
                     .collect(Collectors.toList());
         }
         return relTypesInUse.stream();
-    }
-
-    @Deprecated(since = "4.2.0", forRemoval = true)
-    @SystemProcedure
-    @Description("List all indexes in the database.")
-    @Procedure(name = "db.indexes", mode = READ, deprecatedBy = "SHOW INDEXES command")
-    public Stream<IndexResult> listIndexes() {
-        if (callContext.isSystemDatabase()) {
-            return Stream.empty();
-        }
-
-        TokenRead tokenRead = kernelTransaction.tokenRead();
-        IndexingService indexingService = resolver.resolveDependency(IndexingService.class);
-
-        SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
-        List<IndexDescriptor> indexes = asList(schemaRead.indexesGetAll());
-
-        List<IndexResult> result = new ArrayList<>();
-        for (IndexDescriptor index : indexes) {
-            IndexResult indexResult;
-            indexResult = asIndexResult(tokenRead, schemaRead, index);
-            result.add(indexResult);
-        }
-        result.sort(Comparator.comparing(r -> r.name));
-        return result.stream();
-    }
-
-    private static IndexResult asIndexResult(
-            TokenNameLookup tokenLookup, SchemaReadCore schemaRead, IndexDescriptor index) {
-        SchemaDescriptor schema = index.schema();
-        long id = index.getId();
-        String name = index.getName();
-        IndexStatus status = getIndexStatus(schemaRead, index);
-        String uniqueness = IndexUniqueness.getUniquenessOf(index);
-        String type = index.getIndexType().name();
-        String entityType = index.schema().entityType().name();
-        List<String> labelsOrTypes =
-                Arrays.asList(tokenLookup.entityTokensGetNames(schema.entityType(), schema.getEntityTokenIds()));
-        List<String> properties = propertyNames(tokenLookup, index);
-        String provider = index.getIndexProvider().name();
-
-        return new IndexResult(
-                id,
-                name,
-                status.state,
-                status.populationProgress,
-                uniqueness,
-                type,
-                entityType,
-                labelsOrTypes,
-                properties,
-                provider);
-    }
-
-    private static IndexStatus getIndexStatus(SchemaReadCore schemaRead, IndexDescriptor index) {
-        IndexStatus status = new IndexStatus();
-        try {
-            InternalIndexState internalIndexState = schemaRead.indexGetState(index);
-            status.state = internalIndexState.toString();
-            PopulationProgress progress = schemaRead.indexGetPopulationProgress(index);
-            status.populationProgress = progress.toIndexPopulationProgress().getCompletedPercentage();
-            status.failureMessage =
-                    internalIndexState == InternalIndexState.FAILED ? schemaRead.indexGetFailure(index) : "";
-        } catch (IndexNotFoundKernelException e) {
-            status.state = "NOT FOUND";
-            status.populationProgress = 0D;
-            status.failureMessage = "Index not found. It might have been concurrently dropped.";
-        }
-        return status;
-    }
-
-    private static class IndexStatus {
-        String state;
-        String failureMessage;
-        double populationProgress;
     }
 
     @SystemProcedure
@@ -340,28 +253,6 @@ public class BuiltInProcedures {
         return Stream.of(new SchemaProcedure((InternalTransaction) transaction).buildSchemaGraph());
     }
 
-    @Deprecated(since = "4.2.0", forRemoval = true)
-    @SystemProcedure
-    @Description("List all constraints in the database.")
-    @Procedure(name = "db.constraints", mode = READ, deprecatedBy = "SHOW CONSTRAINTS command")
-    public Stream<ConstraintResult> listConstraints() {
-        if (callContext.isSystemDatabase()) {
-            return Stream.empty();
-        }
-
-        SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
-
-        List<ConstraintResult> result = new ArrayList<>();
-        final List<ConstraintDescriptor> constraintDescriptors = asList(schemaRead.constraintsGetAll());
-        for (ConstraintDescriptor constraint : constraintDescriptors) {
-            String description = ConstraintsProcedureUtil.prettyPrint(constraint, kernelTransaction.tokenRead());
-            String details = constraint.userDescription(kernelTransaction.tokenRead());
-            result.add(new ConstraintResult(constraint.getName(), description, details));
-        }
-        result.sort(Comparator.comparing(r -> r.name));
-        return result.stream();
-    }
-
     @SystemProcedure(allowExpiredCredentials = true)
     @Procedure(name = "db.ping", mode = READ)
     @Description(
@@ -370,15 +261,6 @@ public class BuiltInProcedures {
                     + "procedure.")
     public Stream<BooleanResult> ping() {
         return Stream.of(new BooleanResult(Boolean.TRUE));
-    }
-
-    private static List<String> propertyNames(TokenNameLookup tokens, IndexDescriptor index) {
-        int[] propertyIds = index.schema().getPropertyIds();
-        List<String> propertyNames = new ArrayList<>(propertyIds.length);
-        for (int propertyId : propertyIds) {
-            propertyNames.add(tokens.propertyKeyGetName(propertyId));
-        }
-        return propertyNames;
     }
 
     private ZoneId getConfiguredTimeZone() {
@@ -402,13 +284,7 @@ public class BuiltInProcedures {
         }
     }
 
-    public static class PropertyKeyResult {
-        public final String propertyKey;
-
-        private PropertyKeyResult(String propertyKey) {
-            this.propertyKey = propertyKey;
-        }
-    }
+    public record PropertyKeyResult(String propertyKey) {}
 
     public record DatabaseInfo(String id, String name, String creationDate) {}
 
@@ -422,69 +298,6 @@ public class BuiltInProcedures {
 
     public record BooleanResult(Boolean success) {}
 
-    public static class IndexResult {
-        public final long id; // 1
-        public final String name; // "myIndex"
-        public final String state; // "ONLINE", "FAILED", "POPULATING"
-        public final double populationPercent; // 0.0, 100.0, 75.1
-        public final String uniqueness; // "UNIQUE", "NONUNIQUE"
-        public final String type; // "FULLTEXT", "BTREE"
-        public final String entityType; // "NODE", "RELATIONSHIP"
-        public final List<String> labelsOrTypes; // ["Label1", "Label2"], ["RelType1", "RelType2"]
-        public final List<String> properties; // ["propKey", "propKey2"]
-        public final String provider; // "native-btree-1.0", "lucene+native-3.0"
-
-        private IndexResult(
-                long id,
-                String name,
-                String state,
-                double populationPercent,
-                String uniqueness,
-                String type,
-                String entityType,
-                List<String> labelsOrTypes,
-                List<String> properties,
-                String provider) {
-            this.id = id;
-            this.name = name;
-            this.state = state;
-            this.populationPercent = populationPercent;
-            this.uniqueness = uniqueness;
-            this.type = type;
-            this.entityType = entityType;
-            this.labelsOrTypes = labelsOrTypes;
-            this.properties = properties;
-            this.provider = provider;
-        }
-    }
-
-    public static class SchemaStatementResult {
-        public final String name; // "MY INDEX", "constraint_5837f24"
-        public final String type; // "INDEX", "CONSTRAINT"
-        public final String
-                createStatement; // "CREATE ... INDEX ... FOR ...", "CREATE CONSTRAINT ... FOR ... REQUIRE ..."
-        public final String dropStatement; // "DROP INDEX `My Index`", "DROP CONSTRAINT `My Constraint`"
-
-        public SchemaStatementResult(String name, String type, String createStatement, String dropStatement) {
-            this.name = name;
-            this.type = type;
-            this.createStatement = createStatement;
-            this.dropStatement = dropStatement;
-        }
-    }
-
-    public static class ConstraintResult {
-        public final String name;
-        public final String description;
-        public final String details;
-
-        private ConstraintResult(String name, String description, String details) {
-            this.name = name;
-            this.description = description;
-            this.details = details;
-        }
-    }
-
     public record NodeResult(Node node) {}
 
     public record WeightedNodeResult(Node node, double weight) {}
@@ -492,13 +305,4 @@ public class BuiltInProcedures {
     public record WeightedRelationshipResult(Relationship relationship, double weight) {}
 
     public record RelationshipResult(Relationship relationship) {}
-
-    private enum IndexUniqueness {
-        UNIQUE,
-        NONUNIQUE;
-
-        private static String getUniquenessOf(IndexDescriptor index) {
-            return index.isUnique() ? UNIQUE.name() : NONUNIQUE.name();
-        }
-    }
 }
