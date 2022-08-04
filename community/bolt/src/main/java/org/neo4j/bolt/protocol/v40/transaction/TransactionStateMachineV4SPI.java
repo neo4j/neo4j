@@ -28,7 +28,7 @@ import org.neo4j.bolt.protocol.common.message.result.BoltResultHandle;
 import org.neo4j.bolt.protocol.common.transaction.AbstractTransactionStateMachineSPI;
 import org.neo4j.bolt.protocol.common.transaction.result.AdaptingBoltQuerySubscriber;
 import org.neo4j.bolt.protocol.common.transaction.statement.StatementProcessorReleaseManager;
-import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.time.SystemNanoClock;
@@ -37,7 +37,7 @@ import org.neo4j.values.virtual.MapValue;
 public class TransactionStateMachineV4SPI extends AbstractTransactionStateMachineSPI {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(TransactionStateMachineV4SPI.class);
 
-    protected final NamedDatabaseId namedDatabaseId;
+    protected final DatabaseReference databaseReference;
 
     public TransactionStateMachineV4SPI(
             BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI,
@@ -46,7 +46,7 @@ public class TransactionStateMachineV4SPI extends AbstractTransactionStateMachin
             StatementProcessorReleaseManager resourceReleaseManager,
             String transactionId) {
         super(boltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManager, transactionId);
-        this.namedDatabaseId = boltGraphDatabaseServiceSPI.getNamedDatabaseId();
+        this.databaseReference = boltGraphDatabaseServiceSPI.getDatabaseReference();
     }
 
     @Override
@@ -68,7 +68,8 @@ public class TransactionStateMachineV4SPI extends AbstractTransactionStateMachin
 
         @Override
         protected BoltResult newBoltResult(QueryExecution result, AdaptingBoltQuerySubscriber subscriber, Clock clock) {
-            return new CypherAdapterStreamV4(result, subscriber, clock, namedDatabaseId.name());
+            return new CypherAdapterStreamV4(
+                    result, subscriber, clock, databaseReference.alias().name());
         }
     }
 }

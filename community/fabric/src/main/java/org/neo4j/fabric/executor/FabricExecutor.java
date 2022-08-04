@@ -65,6 +65,7 @@ import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.logging.InternalLog;
@@ -121,7 +122,8 @@ public class FabricExecutor {
         try {
             String defaultGraphName = fabricTransaction
                     .getTransactionInfo()
-                    .getSessionDatabaseId()
+                    .getSessionDatabaseReference()
+                    .alias()
                     .name();
 
             FabricPlanner.PlannerInstance plannerInstance =
@@ -201,10 +203,11 @@ public class FabricExecutor {
     @Deprecated
     public InternalTransaction forceKernelTxCreation(FabricTransaction fabricTransaction) {
         try {
-            var dbId = fabricTransaction.getTransactionInfo().getSessionDatabaseId();
-            var dbName = dbId.name();
+            var dbRef = (DatabaseReference.Internal)
+                    fabricTransaction.getTransactionInfo().getSessionDatabaseReference();
+            var dbName = dbRef.alias().name();
             var graph = catalogManager.currentCatalog().resolve(CatalogName.apply(dbName, List$.MODULE$.empty()));
-            var location = (Location.Local) catalogManager.locationOf(dbId, graph, false, false);
+            var location = (Location.Local) catalogManager.locationOf(dbRef, graph, false, false);
             var internalTransaction = new CompletableFuture<InternalTransaction>();
             fabricTransaction.execute(ctx -> {
                 FabricKernelTransaction fabricKernelTransaction =
@@ -356,8 +359,8 @@ public class FabricExecutor {
 
             Catalog.Graph graph = evalUse(fragment.use().graphSelection(), argumentValues);
             var transactionMode = getTransactionMode(fragment.queryType(), graph.toString());
-            Location location = catalogManager.locationOf(
-                    ctx.getSessionDatabaseId(),
+            var location = catalogManager.locationOf(
+                    ctx.getSessionDatabaseReference(),
                     graph,
                     transactionMode.requiresWrite(),
                     routingContext.isServerRoutingEnabled());

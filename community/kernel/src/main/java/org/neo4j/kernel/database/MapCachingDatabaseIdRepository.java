@@ -21,7 +21,6 @@ package org.neo4j.kernel.database;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Caching {
@@ -65,18 +64,6 @@ public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Cach
                 uuid, id -> delegate.getById(id).orElse(null)));
         dbId.ifPresent(id -> databaseIdsByName.put(id.name(), id));
         return dbId;
-    }
-
-    @Override
-    public Map<NormalizedDatabaseName, NamedDatabaseId> getAllDatabaseAliases() {
-        // Can't cache getAll call
-        return delegate.getAllDatabaseAliases();
-    }
-
-    @Override
-    public Set<NamedDatabaseId> getAllDatabaseIds() {
-        // Can't cache getAll call
-        return delegate.getAllDatabaseIds();
     }
 
     /**

@@ -48,7 +48,7 @@ import org.neo4j.fabric.planning.StatementType;
 import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -148,8 +148,8 @@ public class FabricTransactionImpl
     }
 
     @Override
-    public NamedDatabaseId getSessionDatabaseId() {
-        return transactionInfo.getSessionDatabaseId();
+    public DatabaseReference getSessionDatabaseReference() {
+        return transactionInfo.getSessionDatabaseReference();
     }
 
     @Override

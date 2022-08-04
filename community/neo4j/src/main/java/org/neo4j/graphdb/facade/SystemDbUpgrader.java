@@ -92,9 +92,8 @@ public class SystemDbUpgrader {
         LifeSupport globalLife = globalModule.getGlobalLife();
 
         var databaseContextProvider = edition.createDatabaseContextProvider(globalModule);
-
-        var fabricDatabaseManager =
-                new FabricDatabaseManager.Community(FabricConfig.from(config), databaseContextProvider);
+        var fabricDatabaseManager = new FabricDatabaseManager.Community(
+                FabricConfig.from(config), databaseContextProvider, edition.getDatabaseReferenceRepo());
         globalDependencies.satisfyDependency(fabricDatabaseManager);
 
         globalModule.getGlobalDependencies().satisfyDependency(new GlobalProceduresRegistry());

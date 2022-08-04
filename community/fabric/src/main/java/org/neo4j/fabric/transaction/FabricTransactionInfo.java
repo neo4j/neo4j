@@ -25,13 +25,13 @@ import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.database.DatabaseReference;
 
 public class FabricTransactionInfo {
     private final AccessMode accessMode;
     private final LoginContext loginContext;
     private final ClientConnectionInfo clientConnectionInfo;
-    private final NamedDatabaseId sessionDatabaseId;
+    private final DatabaseReference sessionDatabaseReference;
     private final boolean implicitTransaction;
     private final Duration txTimeout;
     private final RoutingContext routingContext;
@@ -41,7 +41,7 @@ public class FabricTransactionInfo {
             AccessMode accessMode,
             LoginContext loginContext,
             ClientConnectionInfo clientConnectionInfo,
-            NamedDatabaseId sessionDatabaseId,
+            DatabaseReference sessionDatabaseReference,
             boolean implicitTransaction,
             Duration txTimeout,
             Map<String, Object> txMetadata,
@@ -49,7 +49,7 @@ public class FabricTransactionInfo {
         this.accessMode = accessMode;
         this.loginContext = loginContext;
         this.clientConnectionInfo = clientConnectionInfo;
-        this.sessionDatabaseId = sessionDatabaseId;
+        this.sessionDatabaseReference = sessionDatabaseReference;
         this.implicitTransaction = implicitTransaction;
         this.txTimeout = txTimeout;
         this.txMetadata = txMetadata;
@@ -68,8 +68,8 @@ public class FabricTransactionInfo {
         return clientConnectionInfo;
     }
 
-    public NamedDatabaseId getSessionDatabaseId() {
-        return sessionDatabaseId;
+    public DatabaseReference getSessionDatabaseReference() {
+        return sessionDatabaseReference;
     }
 
     public boolean isImplicitTransaction() {

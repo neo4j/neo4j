@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.database;
 
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.systemgraph.CommunityTopologyGraphDbmsModel;
@@ -46,19 +43,6 @@ public class SystemGraphDatabaseIdRepository implements DatabaseIdRepository {
     @Override
     public Optional<NamedDatabaseId> getById(DatabaseId databaseId) {
         return execute(model -> model.getDatabaseIdByUUID(databaseId.uuid()));
-    }
-
-    @Override
-    public Map<NormalizedDatabaseName, NamedDatabaseId> getAllDatabaseAliases() {
-        var databaseReferences = execute(TopologyGraphDbmsModel::getAllInternalDatabaseReferences);
-        return databaseReferences.stream()
-                .map(ref -> Map.entry(ref.alias(), ref.databaseId()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
-
-    @Override
-    public Set<NamedDatabaseId> getAllDatabaseIds() {
-        return execute(TopologyGraphDbmsModel::getAllDatabaseIds);
     }
 
     private <T> T execute(Function<TopologyGraphDbmsModel, T> operation) {

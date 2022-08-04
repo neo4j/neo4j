@@ -84,7 +84,6 @@ public abstract class AbstractEditionModule {
     protected NetworkConnectionTracker connectionTracker;
     protected SecurityProvider securityProvider;
     protected DefaultDatabaseResolver defaultDatabaseResolver;
-    protected DatabaseReferenceRepository databaseReferenceRepo;
 
     public void registerProcedures(
             GlobalProcedures globalProcedures,
@@ -135,6 +134,8 @@ public abstract class AbstractEditionModule {
             SystemGraphComponents systemGraphComponents, GlobalModule globalModule);
 
     public abstract void createSecurityModule(GlobalModule globalModule);
+
+    public abstract DatabaseReferenceRepository getDatabaseReferenceRepo();
 
     protected static NetworkConnectionTracker createConnectionTracker() {
         return new DefaultNetworkConnectionTracker();

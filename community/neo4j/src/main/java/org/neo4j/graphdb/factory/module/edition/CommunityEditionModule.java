@@ -100,6 +100,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
     protected final SslPolicyLoader sslPolicyLoader;
     protected final GlobalModule globalModule;
     protected final ServerIdentity identityModule;
+    private final MapCachingDatabaseReferenceRepository databaseReferenceRepo;
     private FabricServicesBootstrap fabricServicesBootstrap;
 
     protected DatabaseStateService databaseStateService;
@@ -127,6 +128,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
         globalDependencies.satisfyDependency(identityModule);
 
         connectionTracker = globalDependencies.satisfyDependency(createConnectionTracker());
+        databaseReferenceRepo = new MapCachingDatabaseReferenceRepository();
     }
 
     @Override
@@ -139,7 +141,6 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                 this);
 
         var databaseIdRepo = new MapCachingDatabaseIdRepository();
-        var databaseReferenceRepo = new MapCachingDatabaseReferenceRepository();
         var databaseRepository = new DatabaseRepository<StandaloneDatabaseContext>(databaseIdRepo);
         var rootDatabaseIdRepository = CommunityEditionModule.tryResolveOrCreate(
                 DatabaseIdRepository.class,
@@ -301,6 +302,11 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
     @Override
     public void createSecurityModule(GlobalModule globalModule) {
         setSecurityProvider(makeSecurityModule(globalModule));
+    }
+
+    @Override
+    public DatabaseReferenceRepository getDatabaseReferenceRepo() {
+        return databaseReferenceRepo;
     }
 
     private SecurityProvider makeSecurityModule(GlobalModule globalModule) {

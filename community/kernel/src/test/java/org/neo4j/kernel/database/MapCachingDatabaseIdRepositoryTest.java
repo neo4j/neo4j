@@ -31,7 +31,6 @@ import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID
 
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -133,23 +132,5 @@ class MapCachingDatabaseIdRepositoryTest {
 
         verify(delegate, times(2)).getByName(otherNamedDbId.name());
         verify(delegate, times(2)).getById(randomDbId);
-    }
-
-    @Test
-    void shouldAlwaysDelegateGetAllAliases() {
-        var aliasSnapshots = Stream.generate(databaseIdRepository::getAllDatabaseAliases);
-        var n = 10;
-        aliasSnapshots.limit(n).forEach(ignored -> {});
-
-        verify(delegate, times(n)).getAllDatabaseAliases();
-    }
-
-    @Test
-    void shouldAlwaysDelegateGetAllIds() {
-        var idSnapshots = Stream.generate(databaseIdRepository::getAllDatabaseIds);
-        var n = 10;
-        idSnapshots.limit(n).forEach(ignored -> {});
-
-        verify(delegate, times(n)).getAllDatabaseIds();
     }
 }

@@ -28,7 +28,7 @@ import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.database.DatabaseReference;
 
 /**
  * A database representation as seen and used by Bolt.
@@ -44,7 +44,7 @@ public interface BoltGraphDatabaseServiceSPI {
             Map<String, Object> txMetadata,
             RoutingContext routingContext);
 
-    NamedDatabaseId getNamedDatabaseId();
+    DatabaseReference getDatabaseReference();
 
     void freeTransaction();
 }

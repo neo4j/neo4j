@@ -37,6 +37,8 @@ import org.neo4j.bolt.dbapi.BookmarkMetadata;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.transaction.statement.StatementProcessorReleaseManager;
 import org.neo4j.bolt.protocol.v40.bookmark.BookmarkWithDatabaseId;
+import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.time.SystemNanoClock;
 
 class TransactionStateMachineV4SPITest {
@@ -44,8 +46,10 @@ class TransactionStateMachineV4SPITest {
     void shouldCheckDatabaseIdInBookmark() {
         // Given
         var dbSpi = mock(BoltGraphDatabaseServiceSPI.class);
-        var databaseId = from("morty", UUID.randomUUID());
-        when(dbSpi.getNamedDatabaseId()).thenReturn(databaseId);
+        var databaseName = new NormalizedDatabaseName("morty");
+        var databaseId = from(databaseName.name(), UUID.randomUUID());
+        var databaseRef = new DatabaseReference.Internal(databaseName, databaseId);
+        when(dbSpi.getDatabaseReference()).thenReturn(databaseRef);
 
         var spi = new TransactionStateMachineV4SPI(
                 dbSpi,
@@ -68,10 +72,12 @@ class TransactionStateMachineV4SPITest {
         // Given
         var dbSpi = mock(BoltGraphDatabaseServiceSPI.class);
         var tx = mock(BoltTransaction.class);
+        var databaseName = new NormalizedDatabaseName("morty");
+        var databaseId = from(databaseName.name(), UUID.randomUUID());
+        var databaseRef = new DatabaseReference.Internal(databaseName, databaseId);
 
-        var databaseId = from("morty", UUID.randomUUID());
         when(tx.getBookmarkMetadata()).thenReturn(new BookmarkMetadata(42L, databaseId));
-        when(dbSpi.getNamedDatabaseId()).thenReturn(databaseId);
+        when(dbSpi.getDatabaseReference()).thenReturn(databaseRef);
 
         var spi = new TransactionStateMachineV4SPI(
                 dbSpi,

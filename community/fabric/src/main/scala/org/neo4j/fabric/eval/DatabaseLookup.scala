@@ -19,26 +19,23 @@
  */
 package org.neo4j.fabric.eval
 
-import org.neo4j.cypher.internal.administration.BaseDatabaseInfoMapper.RichOptional
-import org.neo4j.kernel.database.DatabaseIdRepository
 import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.database.NormalizedDatabaseName
 
 import scala.collection.SortedSet
-import scala.collection.immutable.SortedMap
-import scala.jdk.CollectionConverters.MapHasAsScala
 import scala.jdk.CollectionConverters.SetHasAsScala
+import scala.jdk.OptionConverters.RichOptional
 
 trait DatabaseLookup {
 
   /**
-    * Returns all known databaseName/databaseId pairs for this DBMS.
+    * Returns all known databases references.
     *
-    * Note: returned map is sorted lexicographically by databaseName, to provide stable iteration order.
+    * Note: returned set is sorted lexicographically by the reference's alias, to provide stable iteration order.
     */
-  def databaseReferences: SortedMap[NormalizedDatabaseName, NamedDatabaseId]
+  def databaseReferences: SortedSet[DatabaseReference]
 
   /**
    * Returns all known database Ids for this DBMS.
@@ -57,9 +54,9 @@ object DatabaseLookup {
 
   class Default(databaseRef: DatabaseReferenceRepository) extends DatabaseLookup {
 
-    def databaseReferences: SortedMap[NormalizedDatabaseName, NamedDatabaseId] = {
-      val unsortedMap = databaseRef.getInternalDatabaseReferences.asScala.map(ref => ref.alias -> ref.databaseId).toMap
-      SortedMap.empty[NormalizedDatabaseName, NamedDatabaseId] ++ unsortedMap
+    def databaseReferences: SortedSet[DatabaseReference] = {
+      val unsortedSet = databaseRef.getInternalDatabaseReferences.asScala
+      SortedSet.empty[DatabaseReference] ++ unsortedSet
     }
 
     def databaseIds: SortedSet[NamedDatabaseId] = {
@@ -68,7 +65,7 @@ object DatabaseLookup {
     }
 
     def databaseId(databaseName: NormalizedDatabaseName): Option[NamedDatabaseId] = {
-      databaseRef.getByName(databaseName).asScala.collect {
+      databaseRef.getByName(databaseName).toScala.collect {
         case ref: DatabaseReference.Internal => ref.databaseId
       }
     }

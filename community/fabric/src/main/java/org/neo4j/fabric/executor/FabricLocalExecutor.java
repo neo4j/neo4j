@@ -160,7 +160,7 @@ public class FabricLocalExecutor {
 
         private GraphDatabaseFacade getDatabaseFacade(Location.Local location) {
             try {
-                return dbms.getDatabase(location.getDatabaseName());
+                return dbms.getDatabaseFacade(location.getDatabaseName());
             } catch (UnavailableException e) {
                 throw new FabricException(Status.Database.DatabaseUnavailable, e);
             }

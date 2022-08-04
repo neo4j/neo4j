@@ -19,6 +19,7 @@
  */
 package org.neo4j.fabric;
 
+import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.dbms.database.DatabaseContext;
@@ -27,18 +28,22 @@ import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.config.FabricSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.availability.UnavailableException;
-import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 public abstract class FabricDatabaseManager {
+
+    private final DatabaseReferenceRepository databaseReferenceRepo;
     private final DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider;
-    private final DatabaseIdRepository databaseIdRepository;
     private final boolean multiGraphEverywhere;
 
     public FabricDatabaseManager(
-            FabricConfig fabricConfig, DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider) {
+            FabricConfig fabricConfig,
+            DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider,
+            DatabaseReferenceRepository databaseReferenceRepo) {
         this.databaseContextProvider = databaseContextProvider;
-        this.databaseIdRepository = databaseContextProvider.databaseIdRepository();
+        this.databaseReferenceRepo = databaseReferenceRepo;
         this.multiGraphEverywhere = fabricConfig.isEnabledByDefault();
     }
 
@@ -46,8 +51,8 @@ public abstract class FabricDatabaseManager {
         return config.get(FabricSettings.enabled_by_default);
     }
 
-    public DatabaseIdRepository databaseIdRepository() {
-        return databaseIdRepository;
+    public DatabaseReferenceRepository databaseReferenceRepository() {
+        return databaseReferenceRepo;
     }
 
     public boolean hasMultiGraphCapabilities(String databaseNameRaw) {
@@ -58,14 +63,36 @@ public abstract class FabricDatabaseManager {
         return multiGraphEverywhere;
     }
 
-    public GraphDatabaseFacade getDatabase(String databaseNameRaw) throws UnavailableException {
-        var databaseContext = databaseIdRepository
-                .getByName(databaseNameRaw)
+    public GraphDatabaseFacade getDatabaseFacade(String databaseNameRaw) throws UnavailableException {
+        var databaseContext = databaseReferenceRepo
+                .getInternalByName(databaseNameRaw)
+                .map(DatabaseReference.Internal::databaseId)
                 .flatMap(databaseContextProvider::getDatabaseContext)
-                .orElseThrow(() -> new DatabaseNotFoundException("Database " + databaseNameRaw + " not found"));
+                .orElseThrow(databaseNotFound(databaseNameRaw));
 
         databaseContext.database().getDatabaseAvailabilityGuard().assertDatabaseAvailable();
         return databaseContext.databaseFacade();
+    }
+
+    public DatabaseReference getDatabaseReference(String databaseNameRaw) throws UnavailableException {
+        var ref = databaseReferenceRepo.getByName(databaseNameRaw).orElseThrow(databaseNotFound(databaseNameRaw));
+        var isInternal = ref instanceof DatabaseReference.Internal;
+        if (isInternal) {
+            assertInternalDatabaseAvailable((DatabaseReference.Internal) ref);
+        }
+        return ref;
+    }
+
+    private void assertInternalDatabaseAvailable(DatabaseReference.Internal databaseReference)
+            throws UnavailableException {
+        var ctx = databaseContextProvider
+                .getDatabaseContext(databaseReference.databaseId())
+                .orElseThrow(databaseNotFound(databaseReference.alias().name()));
+        ctx.database().getDatabaseAvailabilityGuard().assertDatabaseAvailable();
+    }
+
+    private static Supplier<DatabaseNotFoundException> databaseNotFound(String databaseNameRaw) {
+        return () -> new DatabaseNotFoundException("Database " + databaseNameRaw + " not found");
     }
 
     public abstract boolean isFabricDatabasePresent();
@@ -76,8 +103,10 @@ public abstract class FabricDatabaseManager {
 
     public static class Community extends FabricDatabaseManager {
         public Community(
-                FabricConfig fabricConfig, DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider) {
-            super(fabricConfig, databaseContextProvider);
+                FabricConfig fabricConfig,
+                DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider,
+                DatabaseReferenceRepository databaseReferenceRepo) {
+            super(fabricConfig, databaseContextProvider, databaseReferenceRepo);
         }
 
         @Override
