@@ -189,9 +189,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
   }
 
   // COUNT in a WITH statement
-  test(
-    """WITH COUNT { (m)-[]->() } AS result RETURN result""".stripMargin
-  ) {
+  test("WITH COUNT { (m)-[]->() } AS result RETURN result") {
     val countExpression: CountExpression = CountExpression(
       RelationshipChain(
         nodePat(Some("m")),
@@ -209,10 +207,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
     }
   }
 
-  // This would parse but would not pass the semantic check
-  test(
-    """MATCH (a) WHERE COUNT{(a: Label)} > 1 RETURN a""".stripMargin
-  ) {
+  test("MATCH (a) WHERE COUNT{(a: Label)} > 1 RETURN a") {
     val countExpression: CountExpression = CountExpression(
       nodePat(Some("a"), Some(LabelExpression.Leaf(LabelName("Label")(InputPosition(26, 1, 27))))),
       None
@@ -222,6 +217,20 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       query(
         match_(nodePat(name = Some("a")), Some(where(gt(countExpression, literal(1))))),
         return_(variableReturnItem("a"))
+      )
+    }
+  }
+
+  test("MATCH (a) RETURN COUNT{ MATCH (a) }") {
+    val countExpression: CountExpression = CountExpression(
+      nodePat(Some("a"), None),
+      None
+    )(InputPosition(17, 1, 18), Set.empty)
+
+    givesIncludingPositions {
+      query(
+        match_(nodePat(name = Some("a")), None),
+        return_(returnItem(countExpression, "COUNT{ MATCH (a) }"))
       )
     }
   }
