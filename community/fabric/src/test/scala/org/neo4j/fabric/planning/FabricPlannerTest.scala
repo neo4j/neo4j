@@ -400,37 +400,6 @@ class FabricPlannerTest
       )
       local.state.queryText should endWith("RETURN true AS `true`")
     }
-
-    "FabricFrontEnd.parseAndPrepare anonymous names should not clash with FabricFrontEnd.checkAndFinalize anonymous names" in {
-      // Parsing (which assign anonymous variables to PatternComprehension) is part of FabricFrontEnd.parseAndPrepare and
-      // AddUniquenessPredicates is part of FabricFrontEnd.checkAndFinalize
-      // These two phases both make use of the AnonymousVariableNameGenerator. This test is to show that they use the same AnonymousVariableNameGenerator
-      // and no clashing names are generated.
-
-      val inst = instance(
-        """
-          |MATCH (a)-[r]-(b)-[q*]-(c)
-          |RETURN [(d)-[s]-(t) | d] AS p
-          |""".stripMargin
-      )
-      val exec = inst.plan.query.as[Fragment.Exec]
-      val statement = inst.asLocal(exec).query.state.statement()
-
-      val whereAnons = statement.folder
-        .treeFindByClass[Where].get.folder
-        .findAllByClass[Variable]
-        .map(_.name)
-        .map(NameDeduplicator.removeGeneratedNamesAndParams)
-
-      val pc = statement.folder.treeFindByClass[PatternComprehension].get
-      val pAnons = Seq(pc.variableToCollectName, pc.collectionName)
-        .map(NameDeduplicator.removeGeneratedNamesAndParams)
-
-      pAnons should contain noElementsOf whereAnons
-      // To protect from future changes, lets make sure we find anonymous variables in both cases
-      whereAnons should not be empty
-      pAnons should not be empty
-    }
   }
 
   "Read/Write: " - {

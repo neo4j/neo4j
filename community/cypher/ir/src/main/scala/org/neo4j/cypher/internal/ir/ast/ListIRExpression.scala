@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.ir.ast
 
-import org.neo4j.cypher.internal.expressions.RollupApplySolvable
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.util.InputPosition
 
@@ -28,8 +27,8 @@ import org.neo4j.cypher.internal.util.InputPosition
  */
 case class ListIRExpression(
   override val query: PlannerQuery,
-  override val variableToCollectName: String,
-  override val collectionName: String,
+  variableToCollectName: String,
+  collectionName: String,
   solvedExpressionAsString: String
 )(val position: InputPosition)
-    extends IRExpression(query, solvedExpressionAsString) with RollupApplySolvable
+    extends IRExpression(query, solvedExpressionAsString)

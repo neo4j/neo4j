@@ -458,7 +458,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       |RETURN COUNT(DISTINCT a) as count""".stripMargin
   ) {
     assert_that(testName).is_rewritten_to(
-      """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:B) AND (a)-[`  UNNAMED4`:R2]->(`  UNNAMED5`:C)
+      """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:B) AND (a)-[`  UNNAMED2`:R2]->(`  UNNAMED3`:C)
         |RETURN COUNT(DISTINCT a) as count""".stripMargin
     )
   }
@@ -468,7 +468,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       |RETURN COUNT(DISTINCT a) as count""".stripMargin
   ) {
     assert_that(testName).is_rewritten_to(
-      """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:B|C) AND (a)-[`  UNNAMED4`:R2]->(`  UNNAMED5`:C)
+      """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:B|C) AND (a)-[`  UNNAMED2`:R2]->(`  UNNAMED3`:C)
         |RETURN COUNT(DISTINCT a) as count""".stripMargin
     )
   }
@@ -478,7 +478,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       |RETURN COUNT(DISTINCT a) as count""".stripMargin
   ) {
     assert_that(testName).is_rewritten_to(
-      """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:B&C) AND (a)-[`  UNNAMED4`:R2]->(`  UNNAMED5`:C)
+      """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:B&C) AND (a)-[`  UNNAMED2`:R2]->(`  UNNAMED3`:C)
         |RETURN COUNT(DISTINCT a) as count""".stripMargin
     )
   }
@@ -488,7 +488,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       |RETURN COUNT(DISTINCT a) as count""".stripMargin
   ) {
     assert_that(testName).is_rewritten_to(
-      """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:!(B&C)) AND (a)-[`  UNNAMED4`:R2]->(`  UNNAMED5`:C)
+      """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:!(B&C)) AND (a)-[`  UNNAMED2`:R2]->(`  UNNAMED3`:C)
         |RETURN COUNT(DISTINCT a) as count""".stripMargin
     )
   }
@@ -498,7 +498,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       |RETURN COUNT(DISTINCT a) as count""".stripMargin
   ) {
     assert_that(testName).is_rewritten_to(
-      """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:(B&C)|D) AND (a)-[`  UNNAMED4`:R2]->(`  UNNAMED5`:C)
+      """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:(B&C)|D) AND (a)-[`  UNNAMED2`:R2]->(`  UNNAMED3`:C)
         |RETURN COUNT(DISTINCT a) as count""".stripMargin
     )
   }
@@ -525,7 +525,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       |RETURN COUNT(DISTINCT a) as count""".stripMargin
   ) {
     assert_that(testName).is_rewritten_to(
-      """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:B|C) AND (a)-[`  UNNAMED4`:R2]->(`  UNNAMED5`:C)
+      """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:B|C) AND (a)-[`  UNNAMED2`:R2]->(`  UNNAMED3`:C)
         |RETURN COUNT(DISTINCT a) as count""".stripMargin
     )
   }
@@ -549,7 +549,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB""".stripMargin
   ) {
     assert_that(testName).is_rewritten_to(
-      """OPTIONAL MATCH (a)-[r:R]->(b) WHERE b:B AND (b)-[`  UNNAMED0`:R2]->(`  UNNAMED1`:C) AND (a)-[`  UNNAMED4`:R3]-(`  UNNAMED5`:D)
+      """OPTIONAL MATCH (a)-[r:R]->(b) WHERE b:B AND (b)-[`  UNNAMED0`:R2]->(`  UNNAMED1`:C) AND (a)-[`  UNNAMED2`:R3]-(`  UNNAMED3`:D)
         |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB""".stripMargin
     )
   }
@@ -580,10 +580,10 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     assert_that(testName).is_rewritten_to(
       """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c)
         |WHERE a:A
-        | AND (b)-[`  UNNAMED8`:R4]-(`  UNNAMED9`:E)
+        | AND (b)-[`  UNNAMED4`:R4]-(`  UNNAMED5`:E)
         | AND c.prop = 2
         | AND a.prop = 0
-        | AND (a)-[`  UNNAMED4`:R3]-(`  UNNAMED5`:D)
+        | AND (a)-[`  UNNAMED2`:R3]-(`  UNNAMED3`:D)
         | AND (c)-[`  UNNAMED0`:R5]-(`  UNNAMED1`:F)
         | AND b.prop = 1
         | AND c:C

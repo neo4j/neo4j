@@ -70,8 +70,6 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   private val r2 = varFor("r2")
   private val r3 = varFor("r3")
   private val path = varFor("p")
-  private val variableToCollectName = "c"
-  private val collectionName = "col"
 
   private val rPred = greaterThan(prop(r.name, "foo"), literalInt(5))
   private val rLessPred = lessThan(prop(r.name, "foo"), literalInt(10))
@@ -182,8 +180,12 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("Rewrites PatternExpression") {
-    val pe = PatternExpression(n_r_m)(Set(n), variableToCollectName, collectionName)
+    val pe = PatternExpression(n_r_m)(Set(n))
     val pathExpression = PathExpressionBuilder.node(n.name).bothTo(r.name, m.name).build()
+
+    val nameGenerator = makeAnonymousVariableNameGenerator()
+    val variableToCollectName = nameGenerator.nextName
+    val collectionName = nameGenerator.nextName
 
     val rewritten = rewrite(pe)
 
@@ -206,8 +208,12 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("Rewrites PatternExpression with varlength relationship") {
-    val pe = PatternExpression(n_r25_m)(Set(n), variableToCollectName, collectionName)
+    val pe = PatternExpression(n_r25_m)(Set(n))
     val pathExpression = PathExpressionBuilder.node(n.name).bothToVarLength(r.name, m.name).build()
+
+    val nameGenerator = makeAnonymousVariableNameGenerator()
+    val variableToCollectName = nameGenerator.nextName
+    val collectionName = nameGenerator.nextName
 
     val rewritten = rewrite(pe)
 
@@ -230,8 +236,12 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("Rewrites PatternExpression with longer pattern and inlined predicates") {
-    val pe = PatternExpression(n_r_m_withPreds)(Set(n), variableToCollectName, collectionName)
+    val pe = PatternExpression(n_r_m_withPreds)(Set(n))
     val pathExpression = PathExpressionBuilder.node(n.name).outTo(r.name, m.name).inTo(r2.name, o.name).build()
+
+    val nameGenerator = makeAnonymousVariableNameGenerator()
+    val variableToCollectName = nameGenerator.nextName
+    val collectionName = nameGenerator.nextName
 
     val rewritten = rewrite(pe)
 
@@ -270,7 +280,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("Rewrites exists(PatternExpression) with Node label disjunction") {
-    val pe = PatternExpression(n_r_m_withLabelDisjunction)(Set(n), variableToCollectName, collectionName)
+    val pe = PatternExpression(n_r_m_withLabelDisjunction)(Set(n))
 
     val rewritten = rewrite(Exists(pe)(pos))
 
@@ -297,7 +307,11 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
       n_r_m,
       None,
       literalInt(5)
-    )(pos, Set(n), variableToCollectName, collectionName)
+    )(pos, Set(n))
+
+    val nameGenerator = makeAnonymousVariableNameGenerator()
+    val variableToCollectName = nameGenerator.nextName
+    val collectionName = nameGenerator.nextName
 
     val rewritten = rewrite(pc)
 
@@ -325,7 +339,11 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
       n_r_m,
       None,
       path
-    )(pos, Set(n), variableToCollectName, collectionName)
+    )(pos, Set(n))
+
+    val nameGenerator = makeAnonymousVariableNameGenerator()
+    val variableToCollectName = nameGenerator.nextName
+    val collectionName = nameGenerator.nextName
 
     val pathExpression = PathExpressionBuilder.node(n.name).bothTo(r.name, m.name).build()
 
@@ -357,7 +375,11 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
       n_r_m,
       Some(rPred),
       prop(m, "foo")
-    )(pos, Set(n), variableToCollectName, collectionName)
+    )(pos, Set(n))
+
+    val nameGenerator = makeAnonymousVariableNameGenerator()
+    val variableToCollectName = nameGenerator.nextName
+    val collectionName = nameGenerator.nextName
 
     val rewritten = rewrite(pc)
 
@@ -389,7 +411,11 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
       n_r_m_withPreds,
       None,
       literalInt(5)
-    )(pos, Set(n), variableToCollectName, collectionName)
+    )(pos, Set(n))
+
+    val nameGenerator = makeAnonymousVariableNameGenerator()
+    val variableToCollectName = nameGenerator.nextName
+    val collectionName = nameGenerator.nextName
 
     val rewritten = rewrite(pc)
 

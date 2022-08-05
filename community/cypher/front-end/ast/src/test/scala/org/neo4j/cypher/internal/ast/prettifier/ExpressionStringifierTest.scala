@@ -40,9 +40,7 @@ class ExpressionStringifierTest extends CypherFunSuite with AstConstructionTestS
         projection = prop("u2", "id")
       )(
         pos,
-        outerScope = Set(varFor("u.id"), varFor("u")),
-        variableToCollectName = "p",
-        collectionName = "v"
+        outerScope = Set(varFor("u.id"), varFor("u"))
       ),
       "[(u)-[r:FOLLOWS]->(u2) WHERE u2:User | u2.id]"
     ),
@@ -58,9 +56,7 @@ class ExpressionStringifierTest extends CypherFunSuite with AstConstructionTestS
         projection = prop("u2", "id")
       )(
         pos,
-        outerScope = Set(varFor("u.id"), varFor("u")),
-        variableToCollectName = "p",
-        collectionName = "v"
+        outerScope = Set(varFor("u.id"), varFor("u"))
       ),
       "[(u)-[r:FOLLOWS]->(u2:User) | u2.id]"
     )

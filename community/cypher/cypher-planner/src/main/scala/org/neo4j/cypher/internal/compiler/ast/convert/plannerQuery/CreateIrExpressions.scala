@@ -153,14 +153,17 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
      * IR for MATCH (n)-[anon_0]->(anon_1:M) RETURN PathExpression(NodePathStep(n, RelationshipPathStep(anon_0, NodePathStep(anon_1, NilPathStep))))
      */
     case pe @ PatternExpression(pattern) =>
+      val variableToCollectName = anonymousVariableNameGenerator.nextName
+      val collectionName = anonymousVariableNameGenerator.nextName
+
       val pathExpression = createPathExpression(pe)
       val query = getPlannerQuery(
         pattern,
         pe.dependencies.map(_.name),
         None,
-        RegularQueryProjection(Map(pe.variableToCollectName -> pathExpression))
+        RegularQueryProjection(Map(variableToCollectName -> pathExpression))
       )
-      ListIRExpression(query, pe.variableToCollectName, pe.collectionName, stringifier(pe))(pe.position)
+      ListIRExpression(query, variableToCollectName, collectionName, stringifier(pe))(pe.position)
 
     /**
      * namedPaths in PatternComprehensions have already been rewritten away by [[inlineNamedPathsInPatternComprehensions]].
@@ -168,13 +171,16 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
      * IR for MATCH (n)-->(:M) WHERE n.prop > 0 RETURN n.foo
      */
     case pc @ PatternComprehension(None, pattern, predicate, projection) =>
+      val variableToCollectName = anonymousVariableNameGenerator.nextName
+      val collectionName = anonymousVariableNameGenerator.nextName
+
       val query = getPlannerQuery(
         pattern,
         pc.dependencies.map(_.name),
         predicate,
-        RegularQueryProjection(Map(pc.variableToCollectName -> projection))
+        RegularQueryProjection(Map(variableToCollectName -> projection))
       )
-      ListIRExpression(query, pc.variableToCollectName, pc.collectionName, stringifier(pc))(pc.position)
+      ListIRExpression(query, variableToCollectName, collectionName, stringifier(pc))(pc.position)
 
     /**
      * Rewrites COUNT { (n)-[anon_0]->(anon_1:M) } into

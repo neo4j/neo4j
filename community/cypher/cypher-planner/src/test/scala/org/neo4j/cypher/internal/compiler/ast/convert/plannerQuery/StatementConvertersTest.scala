@@ -692,8 +692,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("match (a) where (a)-->() return a")
 
     // Then inner pattern query graph
-    val relName = "anon_2"
-    val nodeName = "anon_3"
+    val relName = "anon_0"
+    val nodeName = "anon_1"
     val exp = ExistsIRExpression(
       PlannerQuery(
         RegularSinglePlannerQuery(
@@ -752,8 +752,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("match (a) where a.prop = 42 OR (a)-->() return a")
 
     // Then inner pattern query graph
-    val relName = "anon_2"
-    val nodeName = "anon_3"
+    val relName = "anon_0"
+    val nodeName = "anon_1"
 
     val exp1 = ExistsIRExpression(
       PlannerQuery(
@@ -782,8 +782,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("match (a) where (a)-->() OR a.prop = 42 return a")
 
     // Then inner pattern query graph
-    val relName = "anon_2"
-    val nodeName = "anon_3"
+    val relName = "anon_0"
+    val nodeName = "anon_1"
 
     val exp1 = ExistsIRExpression(
       PlannerQuery(
@@ -812,8 +812,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("match (a) where a.prop2 = 21 OR (a)-->() OR a.prop = 42 return a")
 
     // Then inner pattern query graph
-    val relName = "anon_2"
-    val nodeName = "anon_3"
+    val relName = "anon_0"
+    val nodeName = "anon_1"
 
     val exp1 = ExistsIRExpression(
       PlannerQuery(
@@ -1162,19 +1162,22 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val result =
       buildSinglePlannerQuery("MATCH (owner) WITH owner, COUNT(*) AS collected WHERE (owner)--() RETURN owner")
 
-    // (owner)-[anon_2]-(anon_3)
+    val relName = "anon_0"
+    val nodeName = "anon_1"
+
+    // (owner)-[relName]-(nodeName)
     val subqueryExpression = ExistsIRExpression(
       PlannerQuery(
         RegularSinglePlannerQuery(
           QueryGraph(
             argumentIds = Set("owner"),
-            patternNodes = Set("owner", "anon_3"),
+            patternNodes = Set("owner", nodeName),
             patternRelationships =
-              Set(PatternRelationship("anon_2", ("owner", "anon_3"), BOTH, Seq(), SimplePatternLength))
+              Set(PatternRelationship(relName, ("owner", nodeName), BOTH, Seq(), SimplePatternLength))
           )
         )
       ),
-      s"exists((`owner`)-[`anon_2`]-(`anon_3`))"
+      s"exists((`owner`)-[`$relName`]-(`$nodeName`))"
     )(pos)
 
     val expectation = RegularSinglePlannerQuery(

@@ -53,7 +53,7 @@ case object inlineNamedPathsInPatternComprehensions extends Step with ASTRewrite
         namedPath = None,
         predicate = predicate.map(_.inline(path, patternElement)),
         projection = projection.inline(path, patternElement)
-      )(expr.position, expr.outerScope, expr.variableToCollectName, expr.collectionName)
+      )(expr.position, expr.outerScope)
   })
 
   implicit final private class InliningExpression(val expr: Expression) extends AnyVal {

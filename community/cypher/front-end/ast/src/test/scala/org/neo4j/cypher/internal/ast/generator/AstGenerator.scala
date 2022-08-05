@@ -798,7 +798,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _patternExpr: Gen[PatternExpression] = for {
     pattern <- _relationshipsPattern
-  } yield PatternExpression(pattern)(Set.empty, "", "")
+  } yield PatternExpression(pattern)(Set.empty)
 
   def _shortestPaths: Gen[ShortestPaths] = for {
     element <- _patternElement
@@ -827,7 +827,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     predicate <- option(_expression)
     projection <- _expression
     outerScope <- zeroOrMore(_variable)
-  } yield PatternComprehension(namedPath, pattern, predicate, projection)(pos, outerScope.toSet, "", "")
+  } yield PatternComprehension(namedPath, pattern, predicate, projection)(pos, outerScope.toSet)
 
   // Expression
   // ----------------------------------

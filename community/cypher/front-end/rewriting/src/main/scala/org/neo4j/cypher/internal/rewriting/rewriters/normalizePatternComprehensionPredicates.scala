@@ -59,7 +59,7 @@ case object normalizePatternComprehensionPredicates extends StepSequencer.Step w
       p.copy(
         pattern = p.pattern.endoRewrite(topDown(Rewriter.lift(normalizer.replace))),
         predicate = newPredicate
-      )(p.position, p.outerScope, p.variableToCollectName, p.collectionName)
+      )(p.position, p.outerScope)
   }
 
   val instance: Rewriter = topDown(rewriter)

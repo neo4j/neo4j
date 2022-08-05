@@ -370,9 +370,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     val chain = RelationshipChain(leftNode, relPattern, rightNode)(InputPosition.NONE)
     val outerScope: Set[LogicalVariable] = elementsToKeep.map(createVariable)
     Exists(PatternExpression(RelationshipsPattern(chain)(InputPosition.NONE))(
-      outerScope,
-      anonymousVariableNameGenerator.nextName,
-      anonymousVariableNameGenerator.nextName
+      outerScope
     ))(InputPosition.NONE)
   }
 

@@ -111,7 +111,7 @@ final case class CountLikeToExistsConverter(anonymousVariableNameGenerator: Anon
     // size([pt = (n)--(m) | pt])
     case Size(p @ PatternComprehension(maybePt, pattern, None, _)) if p.introducedVariables == maybePt.toSet =>
       val exists =
-        Exists(PatternExpression(pattern)(p.outerScope, p.variableToCollectName, p.collectionName))(p.position)
+        Exists(PatternExpression(pattern)(p.outerScope))(p.position)
       Some(exists)
 
     // COUNT { (n)--(m) }
@@ -120,7 +120,7 @@ final case class CountLikeToExistsConverter(anonymousVariableNameGenerator: Anon
       val variableToCollectName = anonymousVariableNameGenerator.nextName
       val collectionName = anonymousVariableNameGenerator.nextName
       val exists =
-        Exists(PatternExpression(relPattern)(ce.outerScope, variableToCollectName, collectionName))(ce.position)
+        Exists(PatternExpression(relPattern)(ce.outerScope))(ce.position)
       Some(exists)
 
     case _ =>

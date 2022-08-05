@@ -54,7 +54,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     ) _
     val expr: Expression = listComprehension(
       varFor("x"),
-      PatternExpression(pat)(Set(varFor("n"), varFor("k")), "", ""),
+      PatternExpression(pat)(Set(varFor("n"), varFor("k"))),
       None,
       Some(function("head", function("nodes", varFor("x"))))
     )
@@ -79,7 +79,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     )
     val expr: Expression = listComprehension(
       varFor("x"),
-      PatternExpression(pat)(Set(varFor("n"), varFor("k")), "", ""),
+      PatternExpression(pat)(Set(varFor("n"), varFor("k"))),
       None,
       Some(innerExpr)
     )
@@ -101,7 +101,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
       pattern = pat,
       predicate = None,
       projection = varFor("k")
-    )(pos, Set.empty, "", "")
+    )(pos, Set.empty)
 
     expr.withOuterScope(Set(varFor("n"), varFor("k"))).dependencies should equal(Set(varFor("n"), varFor("k")))
     expr.withOuterScope(Set.empty).dependencies should equal(Set.empty)
@@ -121,7 +121,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
       pattern = pat,
       predicate = None,
       projection = varFor("dep")
-    )(pos, Set.empty, "", "")
+    )(pos, Set.empty)
 
     expr.withOuterScope(Set(varFor("n"), varFor("k"), varFor("dep"))).dependencies should equal(Set(
       varFor("n"),
@@ -144,7 +144,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
       pattern = pat,
       predicate = Some(varFor("dep")),
       projection = varFor("k")
-    )(pos, Set.empty, "", "")
+    )(pos, Set.empty)
 
     expr.withOuterScope(Set(varFor("n"), varFor("k"), varFor("dep"))).dependencies should equal(Set(
       varFor("n"),
@@ -243,7 +243,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
         RelationshipPattern(None, None, None, None, None, SemanticDirection.OUTGOING) _,
         NodePattern(Some(varFor("k")), None, None, None) _
       ) _
-    ) _)(Set.empty, "", "")
+    ) _)(Set.empty)
 
     val callNodes: Expression = function("nodes", varFor("x"))
     val callHead: Expression = function("head", callNodes)
