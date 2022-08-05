@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.CreateIrExpre
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.getDegreeRewriterTest.relPattern
 import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.GetDegree
 import org.neo4j.cypher.internal.expressions.GreaterThan
@@ -37,6 +38,7 @@ import org.neo4j.cypher.internal.expressions.LabelExpression.disjoinRelTypesToLa
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -178,7 +180,7 @@ class GetDegreeRewriterCountExpressionTest extends GetDegreeRewriterCountLikeTes
     predicate: Option[Expression]
   ): Expression = {
     CountExpression(
-      pattern = relPattern(from, to, relationships).element,
+      pattern = Pattern(Seq(EveryPath(relPattern(from, to, relationships).element)))(pos),
       optionalWhereExpression = predicate
     )(
       position = pos,

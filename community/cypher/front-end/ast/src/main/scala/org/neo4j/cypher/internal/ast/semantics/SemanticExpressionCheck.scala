@@ -675,7 +675,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x @ CountExpression(_, maybeCountWhere) =>
         SemanticState.recordCurrentScope(x) chain
           withScopedState { // saves us from leaking to the outside
-            SemanticPatternCheck.checkPatternElement(Pattern.SemanticContext.Match, x.pattern) chain
+            SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain
               when(maybeCountWhere.isDefined) {
                 val whereExpression = maybeCountWhere.get
                 check(ctx, whereExpression) chain

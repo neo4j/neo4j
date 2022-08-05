@@ -122,7 +122,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )(pos)
   )(pos))(pos)
 
-  // WHERE EXISTS { (n)-[r1]-(m), (o)-[r2]-(m)-[r3]-(q) }
+  // { (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) }
   private val n_r_m_r2_o_r3_q = Pattern(Seq(
     EveryPath(RelationshipChain(
       nodePat(Some("n")),
@@ -136,24 +136,6 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         nodePat(Some("m"))
       )(pos),
       relPat(Some("r3")),
-      nodePat(Some("q"))
-    )(pos))
-  ))(pos)
-
-  // WHERE EXISTS { (n)--(m), (o)--(m)--(q) }
-  private val n_m_o_q = Pattern(Seq(
-    EveryPath(RelationshipChain(
-      nodePat(Some("n")),
-      relPat(),
-      nodePat(Some("m"))
-    )(pos)),
-    EveryPath(RelationshipChain(
-      RelationshipChain(
-        nodePat(Some("o")),
-        relPat(),
-        nodePat(Some("m"))
-      )(pos),
-      relPat(),
       nodePat(Some("q"))
     )(pos))
   ))(pos)
@@ -482,7 +464,6 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )
   }
 
-  // MATCH (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE EXISTS { (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE r.foo > 5 }
   test("Rewrites ExistsExpression with where clause") {
     val esc = ExistsExpression(n_r_m_r2_o_r3_q, Some(rPred))(pos, Set())
 
@@ -514,7 +495,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("should rewrite COUNT { (n)-[r]-(m) }") {
-    val countExpr = CountExpression(n_r_m.element, None)(pos, Set(n))
+    val p = Pattern(Seq(EveryPath(n_r_m.element)))(pos)
+    val countExpr = CountExpression(p, None)(pos, Set(n))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariableName = nameGenerator.nextName
@@ -537,7 +519,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("should rewrite COUNT { (n)-[r]-(m) WHERE r.foo > 5}") {
-    val countExpr = CountExpression(n_r_m.element, Some(rPred))(pos, Set(n))
+    val p = Pattern(Seq(EveryPath(n_r_m.element)))(pos)
+    val countExpr = CountExpression(p, Some(rPred))(pos, Set(n))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariableName = nameGenerator.nextName
@@ -561,7 +544,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("should rewrite count expression with longer pattern and inlined predicates") {
-    val countExpr = CountExpression(n_r_m_withPreds.element, None)(pos, Set(n))
+    val p = Pattern(Seq(EveryPath(n_r_m_withPreds.element)))(pos)
+    val countExpr = CountExpression(p, None)(pos, Set(n))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariableName = nameGenerator.nextName
@@ -600,7 +584,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("should rewrite COUNT { (m) } and add a type check") {
-    val countExpr = CountExpression(n_r_m.element.rightNode, None)(pos, Set(m))
+    val p = Pattern(Seq(EveryPath(n_r_m.element.rightNode)))(pos)
+    val countExpr = CountExpression(p, None)(pos, Set(m))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariableName = nameGenerator.nextName
@@ -622,7 +607,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("should rewrite COUNT { (n)-[r]-(m) WHERE r.foo > 5 AND r.foo < 10 } and group predicates") {
-    val countExpr = CountExpression(n_r_m.element, Some(and(rPred, rLessPred)))(pos, Set(n))
+    val p = Pattern(Seq(EveryPath(n_r_m.element)))(pos)
+    val countExpr = CountExpression(p, Some(and(rPred, rLessPred)))(pos, Set(n))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariableName = nameGenerator.nextName
@@ -642,6 +628,37 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         ),
         countVariableName,
         s"COUNT { (n)-[r]-(m) WHERE r.foo > 5 AND r.foo < 10 }"
+      )(pos)
+  }
+
+  test("Should rewrite COUNT { (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) }") {
+    val countExpr = CountExpression(n_r_m_r2_o_r3_q, None)(pos, Set(n, o))
+
+    val nameGenerator = makeAnonymousVariableNameGenerator()
+    val countVariableName = nameGenerator.nextName
+
+    rewrite(countExpr) shouldBe
+      CountIRExpression(
+        queryWith(
+          qg = QueryGraph(
+            patternNodes = Set(n.name, m.name, o.name, q.name),
+            argumentIds = Set(n.name, o.name),
+            patternRelationships = Set(
+              PatternRelationship(r.name, (n.name, m.name), OUTGOING, Seq.empty, SimplePatternLength),
+              PatternRelationship(r2.name, (o.name, m.name), OUTGOING, Seq.empty, SimplePatternLength),
+              PatternRelationship(r3.name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
+            ),
+            selections = Selections.from(Seq(
+              not(equals(r, r2)),
+              not(equals(r, r3)),
+              not(equals(r2, r3))
+            ))
+          ),
+          horizon =
+            Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(pos))))
+        ),
+        countVariableName,
+        s"COUNT { (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) }"
       )(pos)
   }
 

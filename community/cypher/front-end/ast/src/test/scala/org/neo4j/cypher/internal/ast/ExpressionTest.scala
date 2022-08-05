@@ -190,11 +190,13 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should compute dependencies for count expression with node predicate") {
     // COUNT { (n)-[r]->(p) WHERE n.prop = p.prop }
-    val pattern = RelationshipChain(
+    val relChain = RelationshipChain(
       NodePattern(Some(varFor("n")), None, None, None) _,
       RelationshipPattern(Some(varFor("r")), None, None, None, None, SemanticDirection.OUTGOING) _,
       NodePattern(Some(varFor("p")), None, None, None) _
     ) _
+
+    val pattern = Pattern(Seq(EveryPath(relChain))) _
 
     val where = equals(prop(varFor("n"), "prop"), prop(varFor("p"), "prop"))
 
@@ -205,11 +207,13 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should compute dependencies for count expression with relationship predicate") {
     // WHERE COUNT { (n)-[r2]->(p2) WHERE r1.prop = r2.prop }
-    val pattern = RelationshipChain(
+    val relChain = RelationshipChain(
       NodePattern(Some(varFor("n")), None, None, None) _,
       RelationshipPattern(Some(varFor("r2")), None, None, None, None, SemanticDirection.OUTGOING) _,
       NodePattern(Some(varFor("p2")), None, None, None) _
     ) _
+
+    val pattern = Pattern(Seq(EveryPath(relChain))) _
 
     val where = equals(prop(varFor("r1"), "prop"), prop(varFor("r2"), "prop"))
 

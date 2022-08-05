@@ -18,24 +18,30 @@ package org.neo4j.cypher.internal.expressions
 
 import org.neo4j.cypher.internal.util.InputPosition
 
-case class CountExpression(pattern: PatternElement, optionalWhereExpression: Option[Expression])(
+case class CountExpression(pattern: Pattern, optionalWhereExpression: Option[Expression])(
   val position: InputPosition,
   override val outerScope: Set[LogicalVariable]
 ) extends ScopeExpression with ExpressionWithOuterScope with SubqueryExpression {
 
   self =>
 
-  override def scopeDependencies: Set[LogicalVariable] =
-    (pattern.allVariables ++
-      optionalWhereExpression.fold(Set.empty[LogicalVariable])(_.dependencies)) intersect outerScope
+  private val patternElements: Seq[PatternElement] = pattern.patternParts.map(_.element)
+
+  private val allVariablesInPatternElements: Set[LogicalVariable] =
+    patternElements.folder.findAllByClass[LogicalVariable].toSet
+
+  override val introducedVariables: Set[LogicalVariable] = allVariablesInPatternElements -- outerScope
 
   override def withOuterScope(outerScope: Set[LogicalVariable]): CountExpression = copy()(position, outerScope)
 
-  override val introducedVariables: Set[LogicalVariable] = pattern.allVariables -- outerScope
+  override def scopeDependencies: Set[LogicalVariable] =
+    (allVariablesInPatternElements ++ optionalWhereExpression.fold(Set.empty[LogicalVariable])(
+      _.dependencies
+    )) intersect outerScope
 
   override def dup(children: Seq[AnyRef]): this.type = {
     CountExpression(
-      children(0).asInstanceOf[PatternElement],
+      children(0).asInstanceOf[Pattern],
       children(1).asInstanceOf[Option[Expression]]
     )(position, outerScope).asInstanceOf[this.type]
   }

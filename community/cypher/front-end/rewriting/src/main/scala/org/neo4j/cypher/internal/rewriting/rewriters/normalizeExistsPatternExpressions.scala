@@ -111,7 +111,7 @@ case object CountLikeToExistsConverter {
 
     // COUNT { (n)--(m) }
     case ce @ CountExpression(pattern, predicate) =>
-      Some(ExistsExpression(Pattern(Seq(EveryPath(pattern)))(ce.position), predicate)(ce.position, ce.outerScope))
+      Some(ExistsExpression(pattern, predicate)(ce.position, ce.outerScope))
 
     case _ =>
       None

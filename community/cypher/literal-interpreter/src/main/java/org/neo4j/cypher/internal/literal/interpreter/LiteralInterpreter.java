@@ -1386,13 +1386,13 @@ public class LiteralInterpreter
     }
 
     @Override
-    public Object existsSubQuery(NULL p, List<NULL> nulls, Object where) {
-        throw new UnsupportedOperationException("existsSubQuery is not a literal");
+    public Object existsExpression(NULL p, List<NULL> nulls, Object where) {
+        throw new UnsupportedOperationException("existsExpression is not a literal");
     }
 
     @Override
-    public Object countSubQuery(NULL p, NULL aNull, Object where) {
-        throw new UnsupportedOperationException("countSubQuery is not a literal");
+    public Object countExpression(NULL p, List<NULL> aNull, Object where) {
+        throw new UnsupportedOperationException("countExpression is not a literal");
     }
 
     @Override

@@ -2755,8 +2755,8 @@ EXPRESSION Expression1() :
         | LOOKAHEAD( 3 ) e=CaseExpression()
         | LOOKAHEAD( 3 ) t=<COUNT> <LPAREN> <TIMES> <RPAREN> { e = astFactory.newCountStar( pos( t ) ); }
         | LOOKAHEAD( 3 ) e=MapLiteral()
-        | LOOKAHEAD( 3 ) e=ExistsSubQuery() // `exists { match` should not be a map-projection
-        | LOOKAHEAD( 3 ) e=CountSubQuery()
+        | LOOKAHEAD( 3 ) e=ExistsExpression() // `exists { match` should not be a map-projection
+        | LOOKAHEAD( 3 ) e=CountExpression()
         | LOOKAHEAD( 2 ) e=MapProjection()
         | LOOKAHEAD( 3 ) e=ListComprehension() // before literal because it takes precedence
         | LOOKAHEAD( PatternComprehensionPrefix() ) e=PatternComprehension() // Only after matching up to "WHERE" or "|" can we be sure it is a PatternComprehension and not a ListLiteral.
@@ -2986,7 +2986,7 @@ MAP_PROJECTION_ITEM MapProjectionItem() :
     | <DOT> t=<TIMES> { return astFactory.mapProjectionAll( pos( t ) ); }
 }
 
-EXPRESSION ExistsSubQuery() :
+EXPRESSION ExistsExpression() :
 {
     Token t;
     List<PATTERN> patterns;
@@ -2995,21 +2995,21 @@ EXPRESSION ExistsSubQuery() :
 {
     t=<EXISTS> <LCURLY> ( LOOKAHEAD( 2 ) <MATCH> )? patterns=PatternList() ( <WHERE> where=Expression() )? <RCURLY>
     {
-        return astFactory.existsSubQuery( pos( t ), patterns, where );
-    }
+    return astFactory.existsExpression( pos( t ), patterns, where );
+}
 }
 
-EXPRESSION CountSubQuery() :
+EXPRESSION CountExpression() :
 {
     Token t;
-    PATTERN pattern;
+    List<PATTERN> patterns;
     EXPRESSION where = null;
 }
 {
-    t=<COUNT> <LCURLY> ( LOOKAHEAD( 2 ) <MATCH> )? pattern=EveryPathPattern()( <WHERE> where=Expression() )? <RCURLY>
+    t=<COUNT> <LCURLY> ( LOOKAHEAD( 2 ) <MATCH> )? patterns=PatternList() ( <WHERE> where=Expression() )? <RCURLY>
     {
-        return astFactory.countSubQuery( pos( t ), pattern, where );
-    }
+    return astFactory.countExpression( pos( t ), patterns, where );
+}
 }
 
 EXPRESSION StringLiteral() :

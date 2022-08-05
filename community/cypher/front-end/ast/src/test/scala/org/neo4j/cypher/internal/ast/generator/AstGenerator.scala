@@ -816,10 +816,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield ExistsExpression(pattern, where)(pos, outerScope.toSet)
 
   def _countExpression: Gen[CountExpression] = for {
-    element <- _patternElement
+    pattern <- _pattern
     where <- option(_expression)
     outerScope <- zeroOrMore(_variable)
-  } yield CountExpression(element, where)(pos, outerScope.toSet)
+  } yield CountExpression(pattern, where)(pos, outerScope.toSet)
 
   def _patternComprehension: Gen[PatternComprehension] = for {
     namedPath <- option(_variable)

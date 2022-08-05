@@ -25,14 +25,14 @@ case class ExistsExpression(pattern: Pattern, optionalWhereExpression: Option[Ex
 
   self =>
 
-  val patternElements: Seq[PatternElement] = pattern.patternParts.map(_.element)
-
-  override def withOuterScope(outerScope: Set[LogicalVariable]): ExistsExpression = copy()(position, outerScope)
+  private val patternElements: Seq[PatternElement] = pattern.patternParts.map(_.element)
 
   private val allVariablesInPatternElements: Set[LogicalVariable] =
     patternElements.folder.findAllByClass[LogicalVariable].toSet
 
   override val introducedVariables: Set[LogicalVariable] = allVariablesInPatternElements -- outerScope
+
+  override def withOuterScope(outerScope: Set[LogicalVariable]): ExistsExpression = copy()(position, outerScope)
 
   override def scopeDependencies: Set[LogicalVariable] =
     (allVariablesInPatternElements ++ optionalWhereExpression.fold(Set.empty[LogicalVariable])(

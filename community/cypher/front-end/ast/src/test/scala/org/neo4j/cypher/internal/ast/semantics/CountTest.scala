@@ -16,19 +16,18 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
-import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
-import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
@@ -38,18 +37,19 @@ import scala.collection.compat.immutable.ArraySeq
 
 class CountTest extends SemanticFunSuite {
 
-  val n: NodePattern = NodePattern(Some(variable("n")), None, None, None)(pos)
-  val x: NodePattern = expressions.NodePattern(Some(variable("x")), None, None, None)(pos)
-  val r: RelationshipPattern = RelationshipPattern(None, None, None, None, None, SemanticDirection.OUTGOING)(pos)
-  val label = Leaf(LabelName("Label")(pos))
-  val pattern = RelationshipChain(n, r, x)(pos)
+  private val n: NodePattern = nodePat(Some("n"))
+  private val x: NodePattern = nodePat(Some("x"))
+  private val r: RelationshipPattern = relPat()
+  private val label = Leaf(labelName("Label"))
+  private val relChain = RelationshipChain(n, r, x)(pos)
+  private val pattern: Pattern = Pattern(Seq(EveryPath(relChain)))(pos)
 
-  val nodePredicate =
+  private val nodePredicate =
     Equals(Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos), StringLiteral("test")(pos))(pos)
-  val property: Property = Property(variable("x"), PropertyKeyName("prop")(pos))(pos)
-  val failingProperty: Property = Property(variable("missing"), PropertyKeyName("prop")(pos))(pos)
+  private val property: Property = Property(variable("x"), PropertyKeyName("prop")(pos))(pos)
+  private val failingProperty: Property = Property(variable("missing"), PropertyKeyName("prop")(pos))(pos)
 
-  val nodeProperties: Expression =
+  private val nodeProperties: Expression =
     MapExpression(ArraySeq((PropertyKeyName("name")(pos), StringLiteral("test")(pos))))(pos)
 
   test("valid count expression passes semantic check") {
@@ -82,8 +82,8 @@ class CountTest extends SemanticFunSuite {
 
   // COUNT { (n: Label) } should succeed the semantic check
   test("count expression can contain a node pattern with label") {
-    val expression =
-      CountExpression(n.copy(labelExpression = Some(label))(pos), optionalWhereExpression = None)(pos, Set.empty)
+    val p = Pattern(Seq(EveryPath(nodePat(Some("n"), labelExpression = Some(label)))))(pos)
+    val expression = CountExpression(p, optionalWhereExpression = None)(pos, Set.empty)
 
     val semanticState = SemanticState.clean.declareVariable(variable("n"), CTNode).right.get
 
@@ -94,8 +94,8 @@ class CountTest extends SemanticFunSuite {
 
   // COUNT { (n) } should succeed the semantic check even if n is not recorded in the outer scope
   test("can contain a non declared variable in a single node pattern") {
-    val expression =
-      CountExpression(n, optionalWhereExpression = None)(pos, Set.empty)
+    val p = Pattern(Seq(EveryPath(nodePat(Some("n")))))(pos)
+    val expression = CountExpression(p, optionalWhereExpression = None)(pos, Set.empty)
 
     val semanticState = SemanticState.clean.declareVariable(variable("x"), CTNode).right.get
 
@@ -105,8 +105,8 @@ class CountTest extends SemanticFunSuite {
   }
 
   test("COUNT { () } should succeed the semantic check") {
-    val expression =
-      CountExpression(NodePattern(None, None, None, None)(pos), optionalWhereExpression = None)(pos, Set.empty)
+    val p = Pattern(Seq(EveryPath(nodePat())))(pos)
+    val expression = CountExpression(p, optionalWhereExpression = None)(pos, Set.empty)
 
     val semanticState = SemanticState.clean.declareVariable(variable("x"), CTNode).right.get
 
@@ -116,8 +116,8 @@ class CountTest extends SemanticFunSuite {
   }
 
   test("COUNT { (:Label) } should succeed the semantic check") {
-    val expression =
-      CountExpression(NodePattern(None, Some(label), None, None)(pos), optionalWhereExpression = None)(pos, Set.empty)
+    val p = Pattern(Seq(EveryPath(nodePat(None, labelExpression = Some(label)))))(pos)
+    val expression = CountExpression(p, optionalWhereExpression = None)(pos, Set.empty)
 
     val semanticState = SemanticState.clean.declareVariable(variable("x"), CTNode).right.get
 
@@ -128,8 +128,8 @@ class CountTest extends SemanticFunSuite {
 
   // COUNT { (n{name:"test"}) } should succeed the semantic check
   test("count expression can contain node properties in a single node match") {
-    val expression =
-      CountExpression(n.copy(properties = Some(nodeProperties))(pos), optionalWhereExpression = None)(pos, Set.empty)
+    val p = Pattern(Seq(EveryPath(nodePat(None, properties = Some(nodeProperties)))))(pos)
+    val expression = CountExpression(p, optionalWhereExpression = None)(pos, Set.empty)
 
     val semanticState = SemanticState.clean.declareVariable(variable("n"), CTNode).right.get
 
@@ -140,8 +140,8 @@ class CountTest extends SemanticFunSuite {
 
   // COUNT { (n WHERE n.prop = "test") } should succeed the semantic check
   test("count expression can contain a node pattern with a where inside the node pattern") {
-    val expression =
-      CountExpression(n.copy(predicate = Some(nodePredicate))(pos), optionalWhereExpression = None)(pos, Set.empty)
+    val p = Pattern(Seq(EveryPath(nodePat(None, predicates = Some(nodePredicate)))))(pos)
+    val expression = CountExpression(p, optionalWhereExpression = None)(pos, Set.empty)
 
     val semanticState = SemanticState.clean.declareVariable(variable("n"), CTNode).right.get
 
@@ -152,7 +152,8 @@ class CountTest extends SemanticFunSuite {
 
   // COUNT { (n) WHERE n.prop = "test" } should succeed the semantic check
   test("count expression can contain a node pattern with a where outside the node pattern") {
-    val expression = CountExpression(n, optionalWhereExpression = Some(nodePredicate))(pos, Set.empty)
+    val p = Pattern(Seq(EveryPath(nodePat())))(pos)
+    val expression = CountExpression(p, optionalWhereExpression = Some(nodePredicate))(pos, Set.empty)
 
     val semanticState = SemanticState.clean.declareVariable(variable("n"), CTNode).right.get
 
@@ -163,7 +164,8 @@ class CountTest extends SemanticFunSuite {
 
   // COUNT {(n)} should pass the semantic check
   test("count expression with a standalone node pattern is valid") {
-    val expression = CountExpression(n, optionalWhereExpression = None)(pos, Set.empty)
+    val p = Pattern(Seq(EveryPath(nodePat(Some("n")))))(pos)
+    val expression = CountExpression(p, optionalWhereExpression = None)(pos, Set.empty)
 
     val semanticState = SemanticState.clean.declareVariable(variable("n"), CTNode).right.get
 

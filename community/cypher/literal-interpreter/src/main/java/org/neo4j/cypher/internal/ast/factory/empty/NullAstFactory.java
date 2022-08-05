@@ -408,12 +408,12 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL existsSubQuery(NULL p, List<NULL> nulls, NULL where) {
+    public NULL existsExpression(NULL p, List<NULL> nulls, NULL where) {
         return null;
     }
 
     @Override
-    public NULL countSubQuery(NULL p, NULL aNull, NULL where) {
+    public NULL countExpression(NULL p, List<NULL> aNull, NULL where) {
         return null;
     }
 

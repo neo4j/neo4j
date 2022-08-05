@@ -24,10 +24,15 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.CountExpression
+import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.LabelExpression
+import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.NamedPatternPart
+import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
@@ -43,13 +48,17 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
   ) {
 
     val countExpression: CountExpression = CountExpression(
-      RelationshipChain(
-        nodePat(Some("m")),
-        RelationshipPattern(Some(Variable("r")(InputPosition(29, 2, 20))), None, None, None, None, OUTGOING)(
-          InputPosition(27, 2, 18)
-        ),
-        nodePat(Some("p"))
-      )(InputPosition(27, 2, 18)),
+      Pattern(Seq(
+        EveryPath(
+          RelationshipChain(
+            nodePat(Some("m")),
+            RelationshipPattern(Some(Variable("r")(InputPosition(29, 2, 20))), None, None, None, None, OUTGOING)(
+              InputPosition(27, 2, 18)
+            ),
+            nodePat(Some("p"))
+          )(pos)
+        )
+      ))(InputPosition(24, 2, 15)),
       None
     )(InputPosition(16, 2, 7), Set.empty)
 
@@ -67,11 +76,15 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       |RETURN m""".stripMargin
   ) {
     val countExpression: CountExpression = CountExpression(
-      RelationshipChain(
-        nodePat(Some("m")),
-        RelationshipPattern(None, None, None, None, None, OUTGOING)(InputPosition(27, 2, 18)),
-        nodePat(None)
-      )(InputPosition(27, 2, 18)),
+      Pattern(Seq(
+        EveryPath(
+          RelationshipChain(
+            nodePat(Some("m")),
+            RelationshipPattern(None, None, None, None, None, OUTGOING)(InputPosition(27, 2, 18)),
+            nodePat(None)
+          )(pos)
+        )
+      ))(InputPosition(24, 2, 15)),
       None
     )(InputPosition(16, 2, 7), Set.empty)
 
@@ -88,7 +101,14 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       |WHERE COUNT { (m) } > 1
       |RETURN m""".stripMargin
   ) {
-    val countExpression: CountExpression = CountExpression(nodePat(Some("m")), None)(InputPosition(16, 2, 7), Set.empty)
+    val countExpression: CountExpression = CountExpression(
+      Pattern(Seq(
+        EveryPath(
+          nodePat(Some("m"))
+        )
+      ))(InputPosition(24, 2, 15)),
+      None
+    )(InputPosition(16, 2, 7), Set.empty)
 
     givesIncludingPositions {
       query(
@@ -105,7 +125,14 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       |RETURN m""".stripMargin
   ) {
     val countExpression: CountExpression =
-      CountExpression(nodePat(Some("m")), Some(propEquality("m", "prop", 3)))(InputPosition(16, 2, 7), Set.empty)
+      CountExpression(
+        Pattern(Seq(
+          EveryPath(
+            nodePat(Some("m"))
+          )
+        ))(InputPosition(24, 2, 15)),
+        Some(propEquality("m", "prop", 3))
+      )(InputPosition(16, 2, 7), Set.empty)
 
     givesIncludingPositions {
       query(
@@ -121,11 +148,15 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       |RETURN COUNT { (m)-[]->() }""".stripMargin
   ) {
     val countExpression: CountExpression = CountExpression(
-      RelationshipChain(
-        nodePat(Some("m")),
-        RelationshipPattern(None, None, None, None, None, OUTGOING)(InputPosition(28, 2, 19)),
-        nodePat(None)
-      )(InputPosition(28, 2, 19)),
+      Pattern(Seq(
+        EveryPath(
+          RelationshipChain(
+            nodePat(Some("m")),
+            RelationshipPattern(None, None, None, None, None, OUTGOING)(InputPosition(28, 2, 19)),
+            nodePat(None)
+          )(pos)
+        )
+      ))(InputPosition(25, 2, 16)),
       None
     )(InputPosition(17, 2, 8), Set.empty)
 
@@ -144,11 +175,15 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
     """.stripMargin
   ) {
     val countExpression: CountExpression = CountExpression(
-      RelationshipChain(
-        nodePat(Some("m")),
-        RelationshipPattern(None, None, None, None, None, OUTGOING)(InputPosition(37, 2, 28)),
-        nodePat(None)
-      )(InputPosition(37, 2, 28)),
+      Pattern(Seq(
+        EveryPath(
+          RelationshipChain(
+            nodePat(Some("m")),
+            RelationshipPattern(None, None, None, None, None, OUTGOING)(InputPosition(37, 2, 28)),
+            nodePat(None)
+          )(pos)
+        )
+      ))(InputPosition(34, 2, 25)),
       None
     )(InputPosition(26, 2, 17), Set.empty)
 
@@ -167,11 +202,15 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
     """.stripMargin
   ) {
     val countExpression: CountExpression = CountExpression(
-      RelationshipChain(
-        nodePat(Some("m")),
-        RelationshipPattern(None, None, None, None, None, OUTGOING)(InputPosition(38, 2, 29)),
-        nodePat(None)
-      )(InputPosition(38, 2, 29)),
+      Pattern(Seq(
+        EveryPath(
+          RelationshipChain(
+            nodePat(Some("m")),
+            RelationshipPattern(None, None, None, None, None, OUTGOING)(InputPosition(38, 2, 29)),
+            nodePat(None)
+          )(pos)
+        )
+      ))(InputPosition(35, 2, 26)),
       None
     )(InputPosition(27, 2, 18), Set.empty)
 
@@ -191,11 +230,15 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
   // COUNT in a WITH statement
   test("WITH COUNT { (m)-[]->() } AS result RETURN result") {
     val countExpression: CountExpression = CountExpression(
-      RelationshipChain(
-        nodePat(Some("m")),
-        RelationshipPattern(None, None, None, None, None, OUTGOING)(InputPosition(16, 1, 17)),
-        nodePat(None)
-      )(InputPosition(16, 1, 17)),
+      Pattern(Seq(
+        EveryPath(
+          RelationshipChain(
+            nodePat(Some("m")),
+            RelationshipPattern(None, None, None, None, None, OUTGOING)(InputPosition(16, 1, 17)),
+            nodePat(None)
+          )(pos)
+        )
+      ))(InputPosition(13, 1, 14)),
       None
     )(InputPosition(5, 1, 6), Set.empty)
 
@@ -209,7 +252,11 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
   test("MATCH (a) WHERE COUNT{(a: Label)} > 1 RETURN a") {
     val countExpression: CountExpression = CountExpression(
-      nodePat(Some("a"), Some(LabelExpression.Leaf(LabelName("Label")(InputPosition(26, 1, 27))))),
+      Pattern(Seq(
+        EveryPath(
+          nodePat(Some("a"), Some(LabelExpression.Leaf(LabelName("Label")(InputPosition(26, 1, 27)))))
+        )
+      ))(InputPosition(22, 1, 23)),
       None
     )(InputPosition(16, 1, 17), Set.empty)
 
@@ -223,7 +270,11 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
   test("MATCH (a) RETURN COUNT{ MATCH (a) }") {
     val countExpression: CountExpression = CountExpression(
-      nodePat(Some("a"), None),
+      Pattern(Seq(
+        EveryPath(
+          nodePat(Some("a"), None)
+        )
+      ))(InputPosition(30, 1, 31)),
       None
     )(InputPosition(17, 1, 18), Set.empty)
 
@@ -241,12 +292,56 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       |RETURN a, b
       |""".stripMargin
   ) {
-    failsToParse
+    val countExpression: CountExpression = CountExpression(
+      Pattern(Seq(
+        EveryPath(
+          RelationshipChain(
+            nodePat(Some("a")),
+            relPat(None, Some(Leaf(relTypeName("FOLLOWS"))), None, None, None, OUTGOING),
+            nodePat(Some("b"))
+          )(pos)
+        ),
+        EveryPath(
+          RelationshipChain(
+            nodePat(Some("a")),
+            relPat(None, Some(Leaf(relTypeName("FOLLOWS"))), None, None, None, INCOMING),
+            nodePat(Some("b"))
+          )(pos)
+        )
+      ))(InputPosition(27, 2, 13)),
+      None
+    )(InputPosition(21, 2, 7), Set.empty)
+
+    givesIncludingPositions {
+      query(
+        match_(Seq(nodePat(name = Some("a")), nodePat(name = Some("b"))), Some(where(gt(countExpression, literal(0))))),
+        return_(variableReturnItem("a"), variableReturnItem("b"))
+      )
+    }
   }
 
-  test(
-    """MATCH (a) WHERE COUNT{pt = (a)-[]->(b)} > 1 RETURN a""".stripMargin
-  ) {
-    failsToParse
+  test("MATCH (a) WHERE COUNT { pt = (a)-[]->(b) } > 1 RETURN a") {
+    val countExpression: CountExpression = CountExpression(
+      Pattern(Seq(
+        NamedPatternPart(
+          varFor("pt"),
+          EveryPath(
+            RelationshipChain(
+              nodePat(Some("a")),
+              relPat(),
+              nodePat(Some("b"))
+            )(pos)
+          )
+        )(InputPosition(24, 1, 25))
+      ))(InputPosition(24, 1, 25)),
+      None
+    )(InputPosition(16, 1, 17), Set.empty)
+
+    givesIncludingPositions {
+      query(
+        match_(nodePat(name = Some("a")), Some(where(gt(countExpression, literal(1))))),
+        return_(variableReturnItem("a"))
+      )
+    }
   }
 }

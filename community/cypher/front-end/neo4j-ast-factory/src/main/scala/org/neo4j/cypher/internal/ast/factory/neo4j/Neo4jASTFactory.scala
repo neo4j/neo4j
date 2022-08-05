@@ -1087,18 +1087,20 @@ class Neo4jASTFactory(query: String)
         )
     }
 
-  override def existsSubQuery(p: InputPosition, patterns: util.List[PatternPart], where: Expression): Expression = {
+  override def existsExpression(p: InputPosition, patterns: util.List[PatternPart], where: Expression): Expression = {
     val patternParts = patterns.asScala.toList
     val patternPos = patternParts.head.position
     ExistsExpression(Pattern(patternParts)(patternPos), Option(where))(p, Set.empty)
   }
 
-  override def countSubQuery(
+  override def countExpression(
     p: InputPosition,
-    pattern: PatternPart,
+    patterns: util.List[PatternPart],
     where: Expression
   ): Expression = {
-    CountExpression(pattern.element, Option(where))(p, Set.empty)
+    val patternParts = patterns.asScala.toList
+    val patternPos = patternParts.head.position
+    CountExpression(Pattern(patternParts)(patternPos), Option(where))(p, Set.empty)
   }
 
   override def mapProjection(p: InputPosition, v: Variable, items: util.List[MapProjectionElement]): Expression =

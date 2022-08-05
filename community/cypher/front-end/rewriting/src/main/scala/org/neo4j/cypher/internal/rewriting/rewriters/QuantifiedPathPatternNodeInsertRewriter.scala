@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PathConcatenation
@@ -65,16 +64,8 @@ case object QuantifiedPathPatternNodeInsertRewriter extends StepSequencer.Step w
     )
 
   val instance: Rewriter = topDown(Rewriter.lift {
-    // A `PatternElement` occurs only in `ShortestPaths`, `EveryPath` and `CountExpressions`
-    // However, `ShortestPaths` may only contain `RelationshipChain`s. That's why we
-    // only need to check the other 2.
-    case ce @ CountExpression(p @ PathConcatenation(factors), _) =>
-      val newFactors = padQuantifiedPathPatterns(factors)
-      ce.copy(PathConcatenation(newFactors)(p.position))(ce.position, ce.outerScope)
-
-    case ce @ CountExpression(q: QuantifiedPath, _) =>
-      ce.copy(PathConcatenation(Seq(filler, q, filler))(q.position))(ce.position, ce.outerScope)
-
+    // A `PatternElement` occurs only in `ShortestPaths` and `EveryPath`
+    // However, `ShortestPaths` may only contain `RelationshipChain`s.
     case EveryPath(p @ PathConcatenation(factors)) =>
       val newFactors = padQuantifiedPathPatterns(factors)
       EveryPath(PathConcatenation(newFactors)(p.position))

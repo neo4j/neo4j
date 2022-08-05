@@ -591,6 +591,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def match_(pattern: PatternElement, where: Option[Where] = None): Match =
     Match(optional = false, Pattern(Seq(EveryPath(pattern)))(pos), Seq(), where)(pos)
 
+  def match_(patterns: Seq[PatternElement], where: Option[Where]): Match =
+    Match(optional = false, Pattern(patterns.map(EveryPath))(pos), Seq(), where)(pos)
+
   def with_(items: ReturnItem*): With =
     With(ReturnItems(includeExisting = false, items)(pos))(pos)
 

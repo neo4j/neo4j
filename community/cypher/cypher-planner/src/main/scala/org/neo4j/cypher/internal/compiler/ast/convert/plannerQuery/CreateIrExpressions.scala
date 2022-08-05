@@ -186,11 +186,11 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
      * Rewrites COUNT { (n)-[anon_0]->(anon_1:M) } into
      * IR for MATCH (n)-[anon_0]->(anon_1:M) RETURN count(*)
      */
-    case ce @ CountExpression(patternElement, where) =>
+    case ce @ CountExpression(pattern, where) =>
       val countVariableName = anonymousVariableNameGenerator.nextName
 
       val query = getPlannerQuery(
-        patternElement,
+        pattern,
         ce.dependencies.map(_.name),
         where,
         AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(ce.position)))
