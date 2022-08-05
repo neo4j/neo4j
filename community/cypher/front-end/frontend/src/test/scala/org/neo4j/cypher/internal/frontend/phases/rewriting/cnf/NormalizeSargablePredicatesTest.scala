@@ -124,9 +124,9 @@ class NormalizeSargablePredicatesTest extends CypherFunSuite with AstConstructio
 
   private def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {
     val original =
-      JavaCCParser.parse(originalQuery, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
+      JavaCCParser.parse(originalQuery, OpenCypherExceptionFactory(None))
     val expected =
-      JavaCCParser.parse(expectedQuery, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
+      JavaCCParser.parse(expectedQuery, OpenCypherExceptionFactory(None))
 
     val checkResult = original.semanticCheck(SemanticState.clean)
     val semanticTable = SemanticTable(types = checkResult.state.typeTable)

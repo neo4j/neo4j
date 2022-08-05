@@ -117,8 +117,7 @@ class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers 
   private def parse(query: String): Statement = {
     canonicalizeUnaliasedReturnItem(JavaCCParser.parse(
       query,
-      OpenCypherExceptionFactory(None),
-      new AnonymousVariableNameGenerator
+      OpenCypherExceptionFactory(None)
     ))
   }
 

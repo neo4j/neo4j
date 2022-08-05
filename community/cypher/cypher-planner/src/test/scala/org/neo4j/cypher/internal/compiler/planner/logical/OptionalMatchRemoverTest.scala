@@ -838,7 +838,6 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
 
   private def parseForRewriting(queryText: String) = parser.parse(
     queryText.replace("\r\n", "\n"),
-    Neo4jCypherExceptionFactory(queryText, None),
-    new AnonymousVariableNameGenerator
+    Neo4jCypherExceptionFactory(queryText, None)
   )
 }

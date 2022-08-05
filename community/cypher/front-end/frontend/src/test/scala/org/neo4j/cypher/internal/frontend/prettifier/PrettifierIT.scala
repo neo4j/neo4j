@@ -1897,7 +1897,7 @@ class PrettifierIT extends CypherFunSuite {
     case (inputString, expected) =>
       test(inputString) {
         val parsingResults: Statement =
-          JavaCCParser.parse(inputString, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator())
+          JavaCCParser.parse(inputString, OpenCypherExceptionFactory(None))
         val str = prettifier.asString(parsingResults)
         str should equal(expected)
       }

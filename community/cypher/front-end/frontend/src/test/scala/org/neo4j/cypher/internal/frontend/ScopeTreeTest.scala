@@ -320,7 +320,7 @@ class ScopeTreeTest extends CypherFunSuite {
   }
 
   def parse(queryText: String): Statement = {
-    val statement = JavaCCParser.parse(queryText, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
+    val statement = JavaCCParser.parse(queryText, OpenCypherExceptionFactory(None))
     // We have to project unions to materialize the UnionMappings so that we can find the Variables in them.
     statement.endoRewrite(Namespacer.projectUnions)
   }

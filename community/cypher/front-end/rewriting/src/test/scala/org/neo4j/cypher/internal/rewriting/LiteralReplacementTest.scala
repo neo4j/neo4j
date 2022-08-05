@@ -172,9 +172,8 @@ class LiteralReplacementTest extends CypherFunSuite {
     extractLiterals: LiteralExtractionStrategy = IfNoParameter
   ): Unit = {
     val exceptionFactory = OpenCypherExceptionFactory(None)
-    val nameGenerator = new AnonymousVariableNameGenerator
-    val original = JavaCCParser.parse(originalQuery, exceptionFactory, nameGenerator)
-    val expected = JavaCCParser.parse(expectedQuery, exceptionFactory, nameGenerator)
+    val original = JavaCCParser.parse(originalQuery, exceptionFactory)
+    val expected = JavaCCParser.parse(expectedQuery, exceptionFactory)
 
     val (rewriter, replacedLiterals) = literalReplacement(original, extractLiterals)
 

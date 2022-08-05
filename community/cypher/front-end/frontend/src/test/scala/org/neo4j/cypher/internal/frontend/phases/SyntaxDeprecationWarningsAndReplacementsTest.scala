@@ -64,8 +64,7 @@ class SyntaxDeprecationWarningsAndReplacementsTest extends CypherFunSuite {
 
   private def parse(queryText: String): Statement = JavaCCParser.parse(
     queryText.replace("\r\n", "\n"),
-    OpenCypherExceptionFactory(None),
-    new AnonymousVariableNameGenerator()
+    OpenCypherExceptionFactory(None)
   )
 
 }

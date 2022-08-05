@@ -31,11 +31,10 @@ class nameAllPatternElementsTest extends CypherFunSuite {
 
   private def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {
     val nameGenerator = new AnonymousVariableNameGenerator()
-    val original = parser.parse(originalQuery, exceptionFactory, new AnonymousVariableNameGenerator)
+    val original = parser.parse(originalQuery, exceptionFactory)
     val expected = removeGeneratedNamesAndParamsOnTree(parser.parse(
       expectedQuery,
-      exceptionFactory,
-      new AnonymousVariableNameGenerator
+      exceptionFactory
     ))
     val result = removeGeneratedNamesAndParamsOnTree(original.rewrite(nameAllPatternElements(nameGenerator)))
 
@@ -121,7 +120,7 @@ class nameAllPatternElementsTest extends CypherFunSuite {
 
   test("should not change names of already named things") {
     val original =
-      parser.parse("RETURN [p=(a)-[r]->(b) | 'foo'] AS foo", exceptionFactory, new AnonymousVariableNameGenerator)
+      parser.parse("RETURN [p=(a)-[r]->(b) | 'foo'] AS foo", exceptionFactory)
 
     val result = original.rewrite(nameAllPatternElements(new AnonymousVariableNameGenerator))
     assert(result === original)
@@ -133,8 +132,7 @@ class nameAllPatternElementsTest extends CypherFunSuite {
         |MATCH (a:A), (b:B)
         |WITH shortestPath((a)-[:REL]->(b)) AS x
         |RETURN x AS x""".stripMargin,
-      exceptionFactory,
-      new AnonymousVariableNameGenerator
+      exceptionFactory
     )
 
     val result = original.rewrite(nameAllPatternElements(new AnonymousVariableNameGenerator))

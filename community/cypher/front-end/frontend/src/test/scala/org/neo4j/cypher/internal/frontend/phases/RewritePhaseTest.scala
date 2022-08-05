@@ -99,7 +99,7 @@ trait RewritePhaseTest {
   private def parseAndRewrite(queryText: String, features: SemanticFeature*): Statement = {
     val exceptionFactory = OpenCypherExceptionFactory(None)
     val nameGenerator = new AnonymousVariableNameGenerator
-    val parsedAst = JavaCCParser.parse(queryText, exceptionFactory, nameGenerator)
+    val parsedAst = JavaCCParser.parse(queryText, exceptionFactory)
     val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory, devNullLogger)))
     if (astRewriteAndAnalyze) {
       ASTRewriter.rewrite(

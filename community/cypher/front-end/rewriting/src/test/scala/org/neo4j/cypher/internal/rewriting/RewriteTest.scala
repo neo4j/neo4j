@@ -51,7 +51,7 @@ trait RewriteTest {
 
   protected def parseForRewriting(queryText: String): Statement = {
     val preparedQuery = queryText.replace("\r\n", "\n")
-    JavaCCParser.parse(preparedQuery, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
+    JavaCCParser.parse(preparedQuery, OpenCypherExceptionFactory(None))
   }
 
   protected def rewrite(original: Statement): AnyRef =
@@ -61,7 +61,7 @@ trait RewriteTest {
     original.endoRewrite(rewriterUnderTest)
 
   protected def assertIsNotRewritten(query: String): Unit = {
-    val original = JavaCCParser.parse(query, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
+    val original = JavaCCParser.parse(query, OpenCypherExceptionFactory(None))
     val result = original.rewrite(rewriterUnderTest)
     assert(
       result === original,

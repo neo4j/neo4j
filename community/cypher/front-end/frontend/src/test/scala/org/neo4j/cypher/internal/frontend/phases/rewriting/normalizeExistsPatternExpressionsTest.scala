@@ -194,9 +194,9 @@ class normalizeExistsPatternExpressionsTest extends CypherFunSuite with AstConst
 
   private def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {
     val original =
-      JavaCCParser.parse(originalQuery, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
+      JavaCCParser.parse(originalQuery, OpenCypherExceptionFactory(None))
     val expected =
-      JavaCCParser.parse(expectedQuery, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
+      JavaCCParser.parse(expectedQuery, OpenCypherExceptionFactory(None))
 
     val checkResult = original.semanticCheck(SemanticState.clean)
     val rewriter =

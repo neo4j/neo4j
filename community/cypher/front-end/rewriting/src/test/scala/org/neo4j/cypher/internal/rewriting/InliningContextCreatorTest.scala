@@ -26,10 +26,9 @@ class InliningContextCreatorTest extends CypherFunSuite with AstRewritingTestSup
   private val identA = varFor("a")
   private val identB = varFor("b")
   private val exceptionFactory = OpenCypherExceptionFactory(None)
-  private val nameGenerator = new AnonymousVariableNameGenerator
 
   test("should not spoil aliased node variables") {
-    val ast = parser.parse("match (a) with a as b match (b) return b", exceptionFactory, nameGenerator)
+    val ast = parser.parse("match (a) with a as b match (b) return b", exceptionFactory)
 
     val context = inliningContextCreator(ast)
 
@@ -38,7 +37,7 @@ class InliningContextCreatorTest extends CypherFunSuite with AstRewritingTestSup
   }
 
   test("should ignore named shortest paths") {
-    val ast = parser.parse("match p = shortestPath((a)-[r]->(b)) return p", exceptionFactory, nameGenerator)
+    val ast = parser.parse("match p = shortestPath((a)-[r]->(b)) return p", exceptionFactory)
 
     val context = inliningContextCreator(ast)
 
@@ -46,7 +45,7 @@ class InliningContextCreatorTest extends CypherFunSuite with AstRewritingTestSup
   }
 
   test("should not spoil aliased relationship variables") {
-    val ast = parser.parse("match ()-[a]->() with a as b match ()-[b]->() return b", exceptionFactory, nameGenerator)
+    val ast = parser.parse("match ()-[a]->() with a as b match ()-[b]->() return b", exceptionFactory)
 
     val context = inliningContextCreator(ast)
 
@@ -56,7 +55,7 @@ class InliningContextCreatorTest extends CypherFunSuite with AstRewritingTestSup
 
   test("should spoil all the variables when WITH has aggregations") {
     val ast =
-      parser.parse("match (a)-[r]->(b) with a as `x1`, count(r) as `x2` return x1, x2", exceptionFactory, nameGenerator)
+      parser.parse("match (a)-[r]->(b) with a as `x1`, count(r) as `x2` return x1, x2", exceptionFactory)
 
     val context = inliningContextCreator(ast)
 

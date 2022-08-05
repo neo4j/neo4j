@@ -268,7 +268,6 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private def prepRewrite(q: String, rewriteShowCommand: Boolean = false) = {
     val exceptionFactory = OpenCypherExceptionFactory(None)
-    val nameGenerator = new AnonymousVariableNameGenerator
     val rewriter =
       if (rewriteShowCommand)
         inSequence(
@@ -278,7 +277,7 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
         )
       else
         inSequence(normalizeWithAndReturnClauses(exceptionFactory, devNullLogger))
-    JavaCCParser.parse(q, exceptionFactory, nameGenerator).endoRewrite(rewriter)
+    JavaCCParser.parse(q, exceptionFactory).endoRewrite(rewriter)
   }
 
   private def updateClauses(statement: Statement, updateClauses: Seq[Clause] => Seq[Clause]): Statement = {

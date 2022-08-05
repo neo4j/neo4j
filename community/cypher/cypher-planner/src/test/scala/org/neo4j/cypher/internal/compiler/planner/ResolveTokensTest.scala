@@ -222,7 +222,7 @@ class ResolveTokensTest extends CypherFunSuite {
 
   def parseTest(queryText: String)(f: Query => Unit): Unit = test(queryText) {
     val parsed =
-      JavaCCParser.parse(queryText, Neo4jCypherExceptionFactory(queryText, None), new AnonymousVariableNameGenerator)
+      JavaCCParser.parse(queryText, Neo4jCypherExceptionFactory(queryText, None))
     val rewriter = LabelExpressionPredicateNormalizer.instance andThen
       normalizeHasLabelsAndHasType(SemanticChecker.check(parsed).state)
     rewriter(parsed) match {

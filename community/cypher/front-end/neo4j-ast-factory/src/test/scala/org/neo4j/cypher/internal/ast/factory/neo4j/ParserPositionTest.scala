@@ -50,7 +50,7 @@ class ParserPositionTest extends CypherFunSuite with TestName {
   private val exceptionFactory = new OpenCypherExceptionFactory(None)
 
   private val javaCcAST: String => Try[Statement] =
-    (query: String) => Try(JavaCCParser.parse(query, exceptionFactory, new AnonymousVariableNameGenerator()))
+    (query: String) => Try(JavaCCParser.parse(query, exceptionFactory))
 
   test("MATCH (n) RETURN n.prop") {
     validatePosition(testName, _.isInstanceOf[Property], InputPosition(17, 1, 18))

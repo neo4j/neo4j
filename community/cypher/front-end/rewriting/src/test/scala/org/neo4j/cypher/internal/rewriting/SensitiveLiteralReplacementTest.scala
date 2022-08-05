@@ -32,12 +32,10 @@ import java.nio.charset.StandardCharsets
 
 class SensitiveLiteralReplacementTest extends CypherFunSuite {
 
-  val exceptionFactory = OpenCypherExceptionFactory(None)
+  private val exceptionFactory = OpenCypherExceptionFactory(None)
 
-  val nameGenerator = new AnonymousVariableNameGenerator
-
-  val passwordBytes = "password".getBytes(StandardCharsets.UTF_8)
-  val currentBytes = "current".getBytes(StandardCharsets.UTF_8)
+  private val passwordBytes = "password".getBytes(StandardCharsets.UTF_8)
+  private val currentBytes = "current".getBytes(StandardCharsets.UTF_8)
 
   test("should extract password") {
     val expectedPattern: Matcher[Any] =
@@ -77,7 +75,7 @@ class SensitiveLiteralReplacementTest extends CypherFunSuite {
   test("should ignore queries with no passwords") {
     val query = "MATCH (n:Node{name:'foo'}) RETURN n"
 
-    val expected = JavaCCParser.parse(query, exceptionFactory, nameGenerator)
+    val expected = JavaCCParser.parse(query, exceptionFactory)
     val expectedPattern: Matcher[Any] = matchPattern { case `expected` => }
 
     assertRewrite(query, expectedPattern, Map())
@@ -88,7 +86,7 @@ class SensitiveLiteralReplacementTest extends CypherFunSuite {
     matchExpectedPattern: Matcher[Any],
     replacements: Map[String, Any]
   ): Unit = {
-    val original = JavaCCParser.parse(originalQuery, exceptionFactory, nameGenerator)
+    val original = JavaCCParser.parse(originalQuery, exceptionFactory)
 
     val (rewriter, replacedLiterals) = sensitiveLiteralReplacement(original)
 

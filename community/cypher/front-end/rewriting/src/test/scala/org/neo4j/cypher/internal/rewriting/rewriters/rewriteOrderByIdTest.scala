@@ -47,9 +47,9 @@ class rewriteOrderByIdTest extends CypherFunSuite {
 
   private def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {
     val original =
-      JavaCCParser.parse(originalQuery, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
+      JavaCCParser.parse(originalQuery, OpenCypherExceptionFactory(None))
     val expected =
-      JavaCCParser.parse(expectedQuery, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
+      JavaCCParser.parse(expectedQuery, OpenCypherExceptionFactory(None))
 
     val checkResult = original.semanticCheck(SemanticState.clean)
     val rewriter = rewriteOrderById(checkResult.state)
@@ -62,7 +62,7 @@ class rewriteOrderByIdTest extends CypherFunSuite {
   }
 
   private def assertIsNotRewritten(query: String): Unit = {
-    val original = JavaCCParser.parse(query, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
+    val original = JavaCCParser.parse(query, OpenCypherExceptionFactory(None))
 
     val checkResult = original.semanticCheck(SemanticState.clean)
     val rewriter = rewriteOrderById(checkResult.state)

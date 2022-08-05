@@ -84,8 +84,7 @@ class DesugarDesugaredMapProjectionTest extends CypherFunSuite {
         val sequence: Rewriter = inSequence(normalizeWithAndReturnClauses(exceptionFactory, devNullLogger))
         val originalAst = JavaCCParser.parse(
           q,
-          OpenCypherExceptionFactory(None),
-          new AnonymousVariableNameGenerator
+          OpenCypherExceptionFactory(None)
         ).endoRewrite(sequence)
         val semanticCheckResult = originalAst.semanticCheck(SemanticState.clean)
         val withScopes = originalAst.endoRewrite(recordScopes(semanticCheckResult.state))

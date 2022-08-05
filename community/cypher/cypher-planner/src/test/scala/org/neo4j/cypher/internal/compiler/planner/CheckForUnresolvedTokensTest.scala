@@ -279,7 +279,7 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstConstructionTe
   }
 
   private def parse(query: String): Query =
-    JavaCCParser.parse(query, Neo4jCypherExceptionFactory(query, None), new AnonymousVariableNameGenerator) match {
+    JavaCCParser.parse(query, Neo4jCypherExceptionFactory(query, None)) match {
       case q: Query => q
       case _        => fail("Must be a Query")
     }

@@ -35,11 +35,10 @@ case object JavaCCParser {
    */
   def parse(
     queryText: String,
-    cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    cypherExceptionFactory: CypherExceptionFactory
   ): Statement = {
     val charStream = new CypherCharStream(queryText)
-    val astFactory = new Neo4jASTFactory(queryText, anonymousVariableNameGenerator)
+    val astFactory = new Neo4jASTFactory(queryText)
     val astExceptionFactory = new Neo4jASTExceptionFactory(cypherExceptionFactory)
 
     val statements = new Cypher(astFactory, astExceptionFactory, charStream).Statements()

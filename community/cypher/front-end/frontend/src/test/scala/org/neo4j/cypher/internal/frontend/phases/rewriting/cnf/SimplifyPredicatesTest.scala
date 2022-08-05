@@ -129,7 +129,7 @@ class SimplifyPredicatesTest extends CypherFunSuite {
   private val exceptionFactory = new OpenCypherExceptionFactory(None)
 
   private def assertRewrittenMatches(originalQuery: String, matcher: PartialFunction[Any, Unit]): Unit = {
-    val original = JavaCCParser.parse("RETURN " + originalQuery, exceptionFactory, new AnonymousVariableNameGenerator())
+    val original = JavaCCParser.parse("RETURN " + originalQuery, exceptionFactory)
     val checkResult = original.semanticCheck(SemanticState.clean)
     val rewriter = flattenBooleanOperators andThen simplifyPredicates(checkResult.state)
     val result = original.endoRewrite(rewriter)

@@ -119,7 +119,7 @@ class HintsParserTest extends CypherFunSuite with TestName with AstConstructionT
   private val exceptionFactory = OpenCypherExceptionFactory(None)
 
   private def parseAndFind[T: ClassTag](query: String): Seq[T] = {
-    val ast = JavaCCParser.parse(query, exceptionFactory, new AnonymousVariableNameGenerator())
+    val ast = JavaCCParser.parse(query, exceptionFactory)
     ast.folder.findAllByClass[T]
   }
 }

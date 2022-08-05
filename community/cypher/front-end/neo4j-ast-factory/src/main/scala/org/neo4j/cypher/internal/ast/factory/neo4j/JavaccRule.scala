@@ -33,7 +33,6 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.parser.javacc.Cypher
 import org.neo4j.cypher.internal.parser.javacc.CypherCharStream
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 
 trait JavaccRule[+T] {
@@ -96,7 +95,7 @@ object JavaccRule {
   // noinspection TypeAnnotation
   val cypherJavaccParserFactory = ParserFactory { queryText: String =>
     val charStream = new CypherCharStream(queryText)
-    val astFactory = new Neo4jASTFactory(queryText, new AnonymousVariableNameGenerator())
+    val astFactory = new Neo4jASTFactory(queryText)
     val astExceptionFactory = new Neo4jASTExceptionFactory(exceptionFactory)
     new Cypher(astFactory, astExceptionFactory, charStream)
   }

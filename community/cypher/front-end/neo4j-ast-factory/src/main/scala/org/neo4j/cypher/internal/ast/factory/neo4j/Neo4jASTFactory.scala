@@ -430,7 +430,6 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsScala
 import scala.language.implicitConversions
-import scala.util.Either
 
 final case class Privilege(
   privilegeType: PrivilegeType,
@@ -453,7 +452,7 @@ object TupleConverter extends DecorateTuple
 
 import org.neo4j.cypher.internal.ast.factory.neo4j.TupleConverter.asScalaEither
 
-class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVariableNameGenerator)
+class Neo4jASTFactory(query: String)
     extends ASTFactory[
       Statement,
       Query,

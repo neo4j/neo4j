@@ -60,8 +60,7 @@ class ParameterTypeValueReplacementTest extends CypherFunSuite {
 
   private def assertRewrite(originalQuery: String, parameterTypes: Map[String, CypherType]): Unit = {
     val exceptionFactory = OpenCypherExceptionFactory(None)
-    val nameGenerator = new AnonymousVariableNameGenerator
-    val original: Statement = JavaCCParser.parse(originalQuery, exceptionFactory, nameGenerator)
+    val original: Statement = JavaCCParser.parse(originalQuery, exceptionFactory)
 
     original.folder.findAllByClass[Parameter].size should equal(
       parameterTypes.size

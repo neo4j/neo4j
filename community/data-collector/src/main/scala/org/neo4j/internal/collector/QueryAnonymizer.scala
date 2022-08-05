@@ -69,8 +69,7 @@ case class IdAnonymizer(tokens: TokenRead) extends QueryAnonymizer {
     val preParsedQuery = IdAnonymizer.preParser.preParseQuery(queryText)
     val originalAst = parser.parse(
       preParsedQuery.statement,
-      Neo4jCypherExceptionFactory(queryText, Some(preParsedQuery.options.offset)),
-      new AnonymousVariableNameGenerator
+      Neo4jCypherExceptionFactory(queryText, Some(preParsedQuery.options.offset))
     )
     val anonymizer = anonymizeQuery(new IdAnonymizerState(tokens, prettifier))
     val rewrittenAst = anonymizer(originalAst).asInstanceOf[Statement]

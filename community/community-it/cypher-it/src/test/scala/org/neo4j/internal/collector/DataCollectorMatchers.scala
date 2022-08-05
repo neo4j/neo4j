@@ -283,12 +283,11 @@ object DataCollectorMatchers {
   case class BeCypherMatcher(expected: String) extends Matcher[AnyRef] {
 
     val parser: JavaCCParser.type = JavaCCParser
-    private val preParsedQuery: PreParsedQuery = preParser.preParseQuery(expected, profile = false)
+    private val preParsedQuery: PreParsedQuery = preParser.preParseQuery(expected)
 
     private val expectedAst = parser.parse(
       preParsedQuery.statement,
-      Neo4jCypherExceptionFactory(expected, Some(preParsedQuery.options.offset)),
-      new AnonymousVariableNameGenerator
+      Neo4jCypherExceptionFactory(expected, Some(preParsedQuery.options.offset))
     )
 
     override def apply(left: AnyRef): MatchResult =
@@ -298,8 +297,7 @@ object DataCollectorMatchers {
             val preParsedQuery1 = preParser.preParseQuery(text)
             parser.parse(
               preParsedQuery1.statement,
-              Neo4jCypherExceptionFactory(text, Some(preParsedQuery1.options.offset)),
-              new AnonymousVariableNameGenerator
+              Neo4jCypherExceptionFactory(text, Some(preParsedQuery1.options.offset))
             ) == expectedAst
           case _ => false
         },
@@ -335,10 +333,10 @@ object DataCollectorMatchers {
       obj match {
         case seq: Seq[_] =>
           seq.size == array.length &&
-            seq.zip(array).forall(pair => arraySafeEquals(pair._1, pair._2))
+          seq.zip(array).forall(pair => arraySafeEquals(pair._1, pair._2))
         case otherArray: Array[_] =>
           otherArray.length == array.length &&
-            otherArray.zip(array).forall(pair => arraySafeEquals(pair._1, pair._2))
+          otherArray.zip(array).forall(pair => arraySafeEquals(pair._1, pair._2))
         case _ => false
       }
     }
