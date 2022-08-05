@@ -19,6 +19,7 @@
  */
 package org.neo4j.configuration;
 
+import inet.ipaddr.IPAddressString;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
@@ -68,6 +69,7 @@ import static org.neo4j.configuration.SettingConstraints.min;
 import static org.neo4j.configuration.SettingConstraints.range;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
+import static org.neo4j.configuration.SettingValueParsers.CIDR_IP;
 import static org.neo4j.configuration.SettingValueParsers.DOUBLE;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
 import static org.neo4j.configuration.SettingValueParsers.DURATION_RANGE;
@@ -313,6 +315,16 @@ class SettingTest
         assertEquals( ZoneId.from( ZoneOffset.UTC ), setting.parse( "+00:00" ) );
         assertEquals( ZoneId.from( ZoneOffset.UTC ), setting.parse( " +00:00 " ) );
         assertThrows( IllegalArgumentException.class, () -> setting.parse( "foo" ) );
+    }
+
+    @Test
+    void testCidrIp()
+    {
+        var setting = (SettingImpl<IPAddressString>) setting( "setting", CIDR_IP );
+        assertEquals( new IPAddressString( "1.1.1.0/8" ),
+                      setting.parse( "1.1.1.0/8" ) );
+        assertThrows( IllegalArgumentException.class,
+                      () -> setting.parse( "garbage" ) );
     }
 
     @Test

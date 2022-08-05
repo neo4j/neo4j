@@ -44,6 +44,13 @@ public class URLAccessRules
         return FILE_ACCESS;
     }
 
+    private static final URLAccessRule WEB_ACCESS = new WebURLAccessRule();
+
+    public static URLAccessRule webAccess()
+    {
+        return WEB_ACCESS;
+    }
+
     public static URLAccessRule combined( final Map<String,URLAccessRule> urlAccessRules )
     {
         return ( config, url ) ->
