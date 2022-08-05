@@ -1847,6 +1847,45 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       .build())
   }
 
+  test("should solve COUNT expression with GetDegree") {
+    val q =
+      """
+        |MATCH (a)
+        |RETURN COUNT { (a)-[:FOO]->() } AS foos
+      """.stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection(Map("foos" -> GetDegree(
+        varFor("a"),
+        Some(RelTypeName("FOO")(pos)),
+        SemanticDirection.OUTGOING
+      )(pos)))
+      .allNodeScan("a")
+      .build())
+  }
+
+  test("should solve COUNT inequality expression with GetDegree") {
+    val q =
+      """
+        |MATCH (a)
+        |RETURN COUNT { (a)-[:FOO]->() } > 10 AS moreThan10Foos
+      """.stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection(Map("moreThan10Foos" -> HasDegreeGreaterThan(
+        varFor("a"),
+        Some(RelTypeName("FOO")(pos)),
+        SemanticDirection.OUTGOING,
+        literalInt(10)
+      )(pos)))
+      .allNodeScan("a")
+      .build())
+  }
+
   test("should honor relationship uniqueness for pattern expression") {
     val logicalPlan = planner.plan("MATCH (a) WHERE (a)-->()-->() RETURN a")
     logicalPlan should equal(

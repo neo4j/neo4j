@@ -119,7 +119,10 @@ object SubqueryExpressionSolver {
         throw new IllegalArgumentException("You cannot solve more expressions after obtaining the rewritten plan.")
       }
       if (qualifiesForRewriting(expression, context)) {
-        val RewriteResult(plan, solvedExp, introducedVariables) = expression match {
+        // Try to rewrite using the getDegreeRewriter first.
+        val expressionWithGetDegree = expression.endoRewrite(getDegreeRewriter)
+
+        val RewriteResult(plan, solvedExp, introducedVariables) = expressionWithGetDegree match {
           case expression: ListIRExpression =>
             val (newPlan, newVar) =
               solveUsingRollUpApply(resultPlan, expression, maybeKey, context)
@@ -131,10 +134,8 @@ object SubqueryExpressionSolver {
             RewriteResult(newPlan, newVar, Set(newVar.name))
 
           case inExpression =>
-            // Try to rewrite using the getDegreeRewriter first.
-            val expression = inExpression.endoRewrite(getDegreeRewriter)
-            // Any remaining ListIRExpressions are rewritten with RollUpApply or NestedPlanExpression
-            rewriteInnerExpressions(resultPlan, expression, context)
+            // Any remaining IRExpressions are rewritten with RollUpApply or NestedPlanExpression
+            rewriteInnerExpressions(resultPlan, inExpression, context)
         }
         resultPlan = plan
         arguments ++= introducedVariables
