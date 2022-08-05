@@ -87,6 +87,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     .setRelationshipCardinality("()-[:REL]-()", 10)
     .setRelationshipCardinality("()-[:X]-()", 10)
     .setRelationshipCardinality("()-[:X]-(:Foo)", 10)
+    .setRelationshipCardinality("(:Foo)-[]->()", 10)
+    .setRelationshipCardinality("()-[]->(:Foo)", 10)
     .setRelationshipCardinality("()-[:Y]-()", 20)
     .setRelationshipCardinality("()-[]->(:B)", 10)
     .setRelationshipCardinality("()-[]->(:C)", 10)
@@ -2190,6 +2192,38 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         "COUNT { (c:Person)-[k:KNOWS]->(d) }"
       )(pos)
     )
+  }
+
+  test("should plan COUNT expression with multiple patterns") {
+    val plan = planner.plan(
+      "MATCH (a:Foo) RETURN COUNT { MATCH (a)-[r]->(b), (a)<-[r2]-(b) } AS bidirectionalConnections"
+    ).stripProduceResults
+    plan shouldBe planner.subPlanBuilder()
+      .apply()
+      .|.aggregation(Seq.empty, Seq("count(*) AS bidirectionalConnections"))
+      .|.filter("not r = r2")
+      .|.expandInto("(a)-[r]->(b)")
+      .|.expandAll("(a)<-[r2]-(b)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "Foo")
+      .build()
+  }
+
+  test("should plan COUNT expression with multiple disconnected patterns") {
+    val plan = planner.plan(
+      "MATCH (a:Person), (b:Person) RETURN COUNT { MATCH (a)-[r:KNOWS]->(c), (b)-[r2:KNOWS]->(d) WHERE c.name = d.name } AS sameNameFriends"
+    ).stripProduceResults
+    plan shouldBe planner.subPlanBuilder()
+      .apply()
+      .|.aggregation(Seq.empty, Seq("count(*) AS sameNameFriends"))
+      .|.filter("not r = r2", "c.name = d.name")
+      .|.expandAll("(a)-[r:KNOWS]->(c)")
+      .|.expandAll("(b)-[r2:KNOWS]->(d)")
+      .|.argument("a", "b")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "Person")
+      .nodeByLabelScan("a", "Person")
+      .build()
   }
 
   test("should use GetDegree to plan EXISTS in RETURN") {
