@@ -199,7 +199,6 @@ public interface TopologyGraphDbmsModel {
     String INSTANCE_DENIED_DATABASES_PROPERTY = "deniedDatabases";
     String INSTANCE_MODE_CONSTRAINT_PROPERTY = "modeConstraint";
     String REMOVED_INSTANCE_REMOVED_AT_PROPERTY = "removed_at";
-    String REMOVED_INSTANCE_ALIASES_PROPERTY = "aliases";
 
     RelationshipType HOSTED_ON_RELATIONSHIP = RelationshipType.withName("HOSTED_ON");
     RelationshipType WAS_HOSTED_ON_RELATIONSHIP = RelationshipType.withName("WAS_HOSTED_ON");
