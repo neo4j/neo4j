@@ -116,7 +116,7 @@ public interface TopologyGraphDbmsModel {
         public static InstanceStatus getInstanceStatus(String value) {
             if (value.equals("active")) {
                 return InstanceStatus.ENABLED;
-            } else if (value.equals("draining")) {
+            } else if (value.equals("deallocating")) {
                 return InstanceStatus.DEALLOCATING;
             }
             return InstanceStatus.valueOf(value);
