@@ -19,6 +19,8 @@
  */
 package org.neo4j.configuration;
 
+import inet.ipaddr.IPAddressString;
+
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -36,6 +38,7 @@ import static org.neo4j.configuration.SettingConstraints.min;
 import static org.neo4j.configuration.SettingConstraints.range;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
+import static org.neo4j.configuration.SettingValueParsers.CIDR_IP;
 import static org.neo4j.configuration.SettingValueParsers.DOUBLE;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
 import static org.neo4j.configuration.SettingValueParsers.INT;
@@ -49,6 +52,16 @@ import static org.neo4j.io.ByteUnit.kibiBytes;
 @ServiceProvider
 public class GraphDatabaseInternalSettings implements SettingsDeclaration
 {
+
+    //=========================================================================
+    // LOAD CSV and apoc.load.json input URI restrictions
+    //=========================================================================
+    @Internal
+    @Description( "A list of CIDR-notation IPv4 or IPv6 addresses to block when accessing URLs." +
+                  "This list is checked when LOAD CSV or apoc.load.json is called." )
+    public static final Setting<List<IPAddressString>> cypher_ip_blocklist =
+            newBuilder( "unsupported.dbms.cypher_ip_blocklist", listOf( CIDR_IP ), List.of() ).build();
+
     @Internal
     public static final Setting<Path> databases_root_path =
             newBuilder( "unsupported.dbms.directories.databases.root", PATH, Path.of( GraphDatabaseSettings.DEFAULT_DATABASES_ROOT_DIR_NAME ) )
