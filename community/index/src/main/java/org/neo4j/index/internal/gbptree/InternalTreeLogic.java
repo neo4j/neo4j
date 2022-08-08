@@ -1048,6 +1048,7 @@ class InternalTreeLogic<KEY, VALUE> {
             }
 
             if (structurePropagation.hasLeftKeyReplace && levels[currentLevel].covers(structurePropagation.leftKey)) {
+                assert pos > 0 : "attempt to replace key left to the leftmost key";
                 structurePropagation.hasLeftKeyReplace = false;
                 switch (structurePropagation.keyReplaceStrategy) {
                     case REPLACE -> overwriteKeyInternal(
@@ -1470,6 +1471,7 @@ class InternalTreeLogic<KEY, VALUE> {
             throws IOException {
         // Read the right-most key from the right sibling to use when comparing whether or not
         // a common parent covers the keys in right sibling too
+        assert rightSiblingKeyCount > 0 : "trying to read the last key from the empty leaf";
         bTreeNode.keyAt(
                 rightSiblingCursor, structurePropagation.rightKey, rightSiblingKeyCount - 1, LEAF, cursorContext);
         merge(
@@ -1503,6 +1505,7 @@ class InternalTreeLogic<KEY, VALUE> {
             throws IOException {
         // Read the left-most key from the left sibling to use when comparing whether or not
         // a common parent covers the keys in left sibling too
+        assert leftSiblingKeyCount > 0 : "trying to read the first key from the empty leaf";
         bTreeNode.keyAt(leftSiblingCursor, structurePropagation.leftKey, 0, LEAF, cursorContext);
         merge(
                 leftSiblingCursor,

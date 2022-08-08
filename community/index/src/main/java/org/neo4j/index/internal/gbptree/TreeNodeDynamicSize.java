@@ -799,7 +799,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
         int leftActiveSpace = totalActiveSpace(leftCursor, leftKeyCount, LEAF);
         int rightActiveSpace = totalActiveSpace(rightCursor, rightKeyCount, LEAF);
 
-        if (leftActiveSpace + rightActiveSpace < totalSpace) {
+        if (leftActiveSpace + rightActiveSpace <= totalSpace) {
             // We can merge
             return -1;
         }
