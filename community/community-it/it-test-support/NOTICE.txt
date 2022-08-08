@@ -47,6 +47,7 @@ Apache Software License, Version 2.0
   Apache Shiro :: Lang
   AssertJ fluent assertions
   Caffeine cache
+  IPAddress
   Jackson module: Old JAXB Annotations (javax.xml.bind)
   Jackson-annotations
   Jackson-core

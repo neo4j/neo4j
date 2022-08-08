@@ -50,9 +50,9 @@ public class GraphDatabaseDependencies implements ExternalDependencies
         Iterable<ExtensionFactory<?>> extensions = getExtensions( Services.loadAll( ExtensionFactory.class ).iterator() );
 
         Map<String,URLAccessRule> urlAccessRules = new HashMap<>();
-        urlAccessRules.put( "http", URLAccessRules.alwaysPermitted() );
-        urlAccessRules.put( "https", URLAccessRules.alwaysPermitted() );
-        urlAccessRules.put( "ftp", URLAccessRules.alwaysPermitted() );
+        urlAccessRules.put( "http", URLAccessRules.webAccess() );
+        urlAccessRules.put( "https", URLAccessRules.webAccess() );
+        urlAccessRules.put( "ftp", URLAccessRules.webAccess() );
         urlAccessRules.put( "file", URLAccessRules.fileAccess() );
 
         return new GraphDatabaseDependencies( null, null, null, extensions,
