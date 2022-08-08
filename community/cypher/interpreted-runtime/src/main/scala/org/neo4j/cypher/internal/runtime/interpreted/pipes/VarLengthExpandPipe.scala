@@ -65,10 +65,11 @@ case class VarLengthExpandPipe(
     maxDepth: Option[Int],
     row: CypherRow
   ): ClosingIterator[(VirtualNodeValue, RelationshipContainer)] = {
+    val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
     val stack = HeapTrackingCollections.newArrayDeque[(VirtualNodeValue, RelationshipContainer)](
-      state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
+      memoryTracker
     )
-    stack.push((node, RelationshipContainer.EMPTY))
+    stack.push((node, RelationshipContainer.empty(memoryTracker)))
 
     new ClosingIterator[(VirtualNodeValue, RelationshipContainer)] {
       def next(): (VirtualNodeValue, RelationshipContainer) = {

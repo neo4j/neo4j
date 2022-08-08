@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_LIST
@@ -26,17 +27,23 @@ import org.neo4j.values.virtual.VirtualValues.EMPTY_LIST
 /**
  * Utility class that has constant time `append`, `contains`, and `size` methods
  */
-case class RelationshipContainer(asList: ListValue, size: Int, set: Set[Long]) {
+class RelationshipContainer private (val asList: ListValue, val size: Int, set: HeapTrackingLongImmutableSet) {
 
   def append(rel: VirtualRelationshipValue): RelationshipContainer = {
-    RelationshipContainer(asList.append(rel), size + 1, set + rel.id())
+    new RelationshipContainer(asList.append(rel), size + 1, set + rel.id())
   }
   def contains(rel: VirtualRelationshipValue): Boolean = set.contains(rel.id())
   def contains(relId: Long): Boolean = set.contains(relId)
 
-  def reverse: RelationshipContainer = copy(asList = asList.reverse())
+  def reverse: RelationshipContainer = new RelationshipContainer(asList.reverse(), size, set)
+
+  def close(): Unit = {
+    set.close()
+  }
 }
 
 object RelationshipContainer {
-  val EMPTY = new RelationshipContainer(EMPTY_LIST, 0, Set.empty)
+
+  def empty(memoryTracker: MemoryTracker) =
+    new RelationshipContainer(EMPTY_LIST, 0, HeapTrackingLongImmutableSet.emptySet(memoryTracker))
 }

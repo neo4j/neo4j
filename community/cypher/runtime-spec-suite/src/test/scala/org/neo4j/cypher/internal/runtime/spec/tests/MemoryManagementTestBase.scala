@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.helpers.ArrayUtil
 import org.neo4j.io.ByteUnit
 import org.neo4j.kernel.api.KernelTransaction
@@ -886,6 +888,33 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     a[MemoryLimitExceededException] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
+  }
+
+  test("should kill var-length query with long pattern before it runs out of memory") {
+    // given
+    given {
+      var start = tx.createNode(Label.label("START"))
+      var i = 1
+      while (i <= 1000000) {
+        val next = tx.createNode()
+        start.createRelationshipTo(next, RelationshipType.withName("R"))
+        start = next
+
+        if (i % 100 == 0) {
+          restartTx()
+          start = tx.getNodeById(start.getId)
+        }
+        i += 1
+      }
+    }
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .expand("(x)-[r*]->(y)")
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    // then
+    a[MemoryLimitExceededException] should be thrownBy { countRows(logicalQuery, runtime) }
   }
 
   protected def assertHeapHighWaterMark(
