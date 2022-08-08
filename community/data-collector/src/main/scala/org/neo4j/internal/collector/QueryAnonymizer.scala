@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.rewriting.rewriters.anonymizeQuery
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.values.ValueMapper
 import org.neo4j.values.virtual.MapValue

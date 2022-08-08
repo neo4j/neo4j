@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.config.CypherConfiguration
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.scalatest.Matchers.equal
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher

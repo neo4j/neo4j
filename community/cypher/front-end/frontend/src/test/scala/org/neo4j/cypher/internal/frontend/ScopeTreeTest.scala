@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.pathCollectionSym
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.scope
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.typedSymbol
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.symbols.StorableType

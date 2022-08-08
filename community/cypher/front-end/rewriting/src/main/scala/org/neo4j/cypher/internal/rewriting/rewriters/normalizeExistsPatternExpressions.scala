@@ -117,10 +117,7 @@ final case class CountLikeToExistsConverter(anonymousVariableNameGenerator: Anon
     // COUNT { (n)--(m) }
     case ce @ CountExpression(pattern: RelationshipChain, None) if ce.introducedVariables.isEmpty =>
       val relPattern = RelationshipsPattern(pattern)(pattern.position)
-      val variableToCollectName = anonymousVariableNameGenerator.nextName
-      val collectionName = anonymousVariableNameGenerator.nextName
-      val exists =
-        Exists(PatternExpression(relPattern)(ce.outerScope))(ce.position)
+      val exists = Exists(PatternExpression(relPattern)(ce.outerScope))(ce.position)
       Some(exists)
 
     case _ =>

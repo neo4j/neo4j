@@ -46,7 +46,6 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
