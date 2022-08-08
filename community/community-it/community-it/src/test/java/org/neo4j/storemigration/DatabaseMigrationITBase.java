@@ -89,6 +89,11 @@ public abstract class DatabaseMigrationITBase {
 
     protected abstract void verifySystemDbSchema(GraphDatabaseService system, SystemDbMigration systemDbMigration);
 
+    protected void migrateSystemDatabase(ZippedStore zippedStore, Neo4jLayout layout) throws IOException {
+        var result = StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm(layout, SYSTEM_DATABASE_NAME);
+        assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
+    }
+
     protected void doShouldMigrateDatabase(ZippedStore zippedStore, String toRecordFormat)
             throws IOException, ConsistencyCheckIncompleteException {
         // given
@@ -99,8 +104,8 @@ public abstract class DatabaseMigrationITBase {
         StoreMigrationTestUtils.Result result = StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm(
                 layout, "--to-format", toRecordFormat, "--verbose", DEFAULT_DATABASE_NAME);
         assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
-        result = StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm(layout, "--verbose", SYSTEM_DATABASE_NAME);
-        assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
+
+        migrateSystemDatabase(zippedStore, layout);
 
         // then
         DatabaseManagementService dbms = newDbmsBuilder(homeDir).build();
