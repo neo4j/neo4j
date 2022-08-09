@@ -226,14 +226,18 @@ public final class CypherFunctions {
             int precision = asIntExact(precisionValue, () -> "Invalid input for precision value in function 'round()'");
             if (precision < 0) {
                 throw new InvalidArgumentException("Precision argument to 'round()' cannot be negative");
-            }
-            // For the default values, standard Java round is faster
-            else if (precision == 0 && mode.equals(HALF_UP)) {
-                return doubleValue(Math.round(((NumberValue) in).doubleValue()));
             } else {
-                return doubleValue(BigDecimal.valueOf(((NumberValue) in).doubleValue())
-                        .setScale(precision, mode)
-                        .doubleValue());
+                double value = ((NumberValue) in).doubleValue();
+                if (Double.isInfinite(value) || Double.isNaN(value)) {
+                    return doubleValue(value);
+                }
+                // For the default values, standard Java round is faster
+                else if (precision == 0 && mode.equals(HALF_UP)) {
+                    return doubleValue(Math.round(value));
+                } else {
+                    return doubleValue(
+                            BigDecimal.valueOf(value).setScale(precision, mode).doubleValue());
+                }
             }
         } else {
             throw needsNumbers("round()");
