@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.configuration;
 
+import inet.ipaddr.AddressStringException;
+import inet.ipaddr.IPAddressString;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -193,7 +195,7 @@ public class Settings
      * @param <T> the concrete type of the setting.
      */
     @Nonnull
-    public static <T> Setting<T> setting( @Nonnull final String name, @Nonnull final Function<String,T> parser,
+    public static <T> Setting<T> setting( @Nonnull final String name, @Nonnull final Function<String, T> parser,
             @Nullable final String defaultValue )
     {
         return new SettingBuilder<>( name, parser, defaultValue ).build();
@@ -518,6 +520,30 @@ public class Settings
         public String toString()
         {
             return "a hostname and port";
+        }
+    };
+
+    public static final Function<String, IPAddressString> CIDR_IP = new Function<String, IPAddressString>()
+    {
+        @Override
+        public IPAddressString apply( String value )
+        {
+            IPAddressString ipAddress = new IPAddressString( value.trim() );
+            try
+            {
+                ipAddress.validate();
+            }
+            catch ( AddressStringException e )
+            {
+                throw new IllegalArgumentException( format( "'%s' is not a valid CIDR ip", value ), e );
+            }
+            return ipAddress;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "an ip with subnet in CDIR format. e.g. 127.168.0.1/8";
         }
     };
 

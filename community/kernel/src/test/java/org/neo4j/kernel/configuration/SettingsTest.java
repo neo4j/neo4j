@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.configuration;
 
+import inet.ipaddr.IPAddressString;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -42,9 +43,11 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.configuration.Settings.CIDR_IP;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.LONG;
@@ -259,6 +262,25 @@ class SettingsTest
         InvalidSettingException exception =
                 assertThrows( InvalidSettingException.class, () -> setting.apply( map( stringMap( "foo.bar", "2gigaseconds" ) ) ) );
         assertThat( exception.getMessage(), containsString( "Unrecognized unit 'gigaseconds'" ) );
+    }
+
+    @Test
+    void testCidrIp()
+    {
+        Setting<IPAddressString> setting = buildSetting( "foo.bar", CIDR_IP ).build();
+        assertEquals( new IPAddressString( "1.1.1.0/8" ), setting.apply( map( stringMap( "foo.bar", "1.1.1.0/8" ) ) ) );
+        assertThrows( InvalidSettingException.class, () -> setting.apply( map( stringMap( "foo.bar", "garbage" ) ) ) );
+    }
+
+    @Test
+    void testCidrIpList()
+    {
+        Setting<List<IPAddressString>> setting = setting( "foo.bar", list( ",", CIDR_IP ), "" );
+        assertEquals( Arrays.asList( new IPAddressString( "1.1.1.0/8" ) ), setting.apply( map( stringMap( "foo.bar", "1.1.1.0/8" ) ) ) );
+        assertEquals( Arrays.asList( new IPAddressString( "1.1.1.0/8" ), new IPAddressString( "124.0.255.255/1" ) ),
+                setting.apply( map( stringMap( "foo.bar", "1.1.1.0/8,124.0.255.255/1" ) ) ) );
+        assertEquals( Arrays.asList() , setting.apply( map( stringMap( "foo.bar", "" ) ) ) );
+        assertThrows( InvalidSettingException.class, () -> setting.apply( map( stringMap( "foo.bar", "garbage" ) ) ) );
     }
 
     @Test

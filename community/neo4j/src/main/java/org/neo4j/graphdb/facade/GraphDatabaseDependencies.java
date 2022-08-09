@@ -64,9 +64,9 @@ public class GraphDatabaseDependencies implements GraphDatabaseFacadeFactory.Dep
                 getKernelExtensions(Service.load( KernelExtensionFactory.class ).iterator()));
 
         ImmutableMap<String,URLAccessRule> urlAccessRules = ImmutableMapFactoryImpl.INSTANCE.of(
-                "http", URLAccessRules.alwaysPermitted(),
-                "https", URLAccessRules.alwaysPermitted(),
-                "ftp", URLAccessRules.alwaysPermitted(),
+                "http", URLAccessRules.webAccess(),
+                "https", URLAccessRules.webAccess(),
+                "ftp", URLAccessRules.webAccess(),
                 "file", URLAccessRules.fileAccess()
         );
 

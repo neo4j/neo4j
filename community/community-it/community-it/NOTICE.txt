@@ -32,6 +32,7 @@ Apache Software License, Version 2.0
   Caffeine cache
   ConcurrentLinkedHashMap
   error-prone annotations
+  IPAddress
   jPowerShell
   jProcesses
   Lucene codecs

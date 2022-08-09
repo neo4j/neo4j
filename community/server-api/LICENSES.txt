@@ -8,6 +8,7 @@ Apache Software License, Version 2.0
   Apache Commons Lang
   Commons Lang
   Commons Logging
+  IPAddress
   Lucene Core
   Netty/All-in-One
 ------------------------------------------------------------------------------

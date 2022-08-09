@@ -86,5 +86,10 @@ the relevant Commercial Agreement.
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.github.seancfoley</groupId>
+            <artifactId>ipaddress</artifactId>
+            <version>5.3.3</version>
+        </dependency>
     </dependencies>
 </project>

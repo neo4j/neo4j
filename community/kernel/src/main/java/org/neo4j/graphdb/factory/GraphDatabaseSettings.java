@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb.factory;
 
+import inet.ipaddr.IPAddressString;
+
 import java.io.File;
 import java.time.Duration;
 import java.time.ZoneId;
@@ -55,6 +57,7 @@ import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.DOUBLE;
+import static org.neo4j.kernel.configuration.Settings.CIDR_IP;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
@@ -110,6 +113,15 @@ public class GraphDatabaseSettings implements LoadableConfig
             "configured explicitly." )
     public static final Setting<File> neo4j_home =
             setting( "unsupported.dbms.directories.neo4j_home", PATH, NO_DEFAULT );
+
+    /**
+     * LOAD CSV and apoc.load.json input URI restrictions
+     */
+    @Internal
+    @Description( "A list of CIDR-notation IPv4 or IPv6 addresses to block when accessing URLs." +
+            "This list is checked when LOAD CSV or apoc.load.json is called." )
+    public static final Setting<List<IPAddressString>> cypher_ip_blocklist = setting(
+            "unsupported.dbms.cypher_ip_blocklist", list( ",", CIDR_IP ), "" );
 
     /**
      * @deprecated This setting is deprecated and will be removed in 4.0.

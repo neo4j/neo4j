@@ -20,6 +20,7 @@ Apache Software License, Version 2.0
   Apache Commons Compress
   Apache Commons Lang
   Apache Commons Text
+  IPAddress
   Jackson-annotations
   Jackson-core
   jackson-databind
