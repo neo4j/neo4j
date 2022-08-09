@@ -76,7 +76,7 @@ public class LazyCsvInputChunk implements CsvInputChunk {
             closeCurrentParser();
             this.visitor = null;
             this.parser = new CsvInputParser(
-                    seeker(processingChunk, config), delimiter, idType, new Header(header), badCollector, extractors);
+                    seeker(processingChunk, config), delimiter, idType, header, badCollector, extractors);
             return header.entries().length != 0;
         }
         return false;

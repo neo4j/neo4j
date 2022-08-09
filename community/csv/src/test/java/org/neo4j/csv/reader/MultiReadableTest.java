@@ -131,14 +131,14 @@ class MultiReadableTest {
     private void assertNextLine(String[] line, CharSeeker seeker, Mark mark, Extractors extractors) throws IOException {
         for (String value : line) {
             assertTrue(seeker.seek(mark, delimiter));
-            assertEquals(value, seeker.extract(mark, extractors.string()).value());
+            assertEquals(value, seeker.extract(mark, extractors.string()));
         }
         assertTrue(mark.isEndOfLine());
     }
 
     private RawIterator<CharReadable, IOException> readerIteratorFromStrings(
             final String[][] data, final Character lineEnding) {
-        return new RawIterator<CharReadable, IOException>() {
+        return new RawIterator<>() {
             private int cursor;
 
             @Override

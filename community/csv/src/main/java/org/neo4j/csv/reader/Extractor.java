@@ -40,33 +40,26 @@ public interface Extractor<T> extends Cloneable {
      * @param data characters in a buffer.
      * @param offset offset into the buffer where the value starts.
      * @param length number of characters from the offset to extract.
-     * @param hadQuotes whether or not there were skipped characters, f.ex. quotation.
+     * @param hadQuotes whether there were skipped characters, f.ex. quotation.
      * @param optionalData optional data to be used for spatial or temporal values or null if csv header did not use it
-     * @return {@code true} if a value was extracted, otherwise {@code false}.
+     * @return the extracted value, or {@code null} (or similar) if no value was extracted.
      */
-    boolean extract(char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData);
+    T extract(char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData);
 
     /**
      * Extracts value of type {@code T} from the given character data.
      * @param data characters in a buffer.
      * @param offset offset into the buffer where the value starts.
      * @param length number of characters from the offset to extract.
-     * @param hadQuotes whether or not there were skipped characters, f.ex. quotation.
-     * @return {@code true} if a value was extracted, otherwise {@code false}.
+     * @param hadQuotes whether there were skipped characters, f.ex. quotation.
+     * @return the extracted value, or {@code null} (or similar) if no value was extracted.
      */
-    boolean extract(char[] data, int offset, int length, boolean hadQuotes);
-
-    /**
-     * @return the most recently extracted value.
-     */
-    T value();
+    T extract(char[] data, int offset, int length, boolean hadQuotes);
 
     /**
      * @return string representation of what type of value of produces. Also used as key in {@link Extractors}.
      */
     String name();
-
-    Extractor<T> clone();
 
     /**
      * Normalizes this extractor to that of a broader type, if possible. E.g. an extractor for {@code int} becomes {@code long}.
@@ -75,4 +68,13 @@ public interface Extractor<T> extends Cloneable {
      * @return an extractor which potentially is of a broader type than this extractor.
      */
     Extractor<?> normalize();
+
+    /**
+     * Asks whether a certain extracted value is empty. Some extractors may not return {@code null} as their
+     * "there's nothing here" value.
+     *
+     * @param value a value from a previous {@link #extract(char[], int, int, boolean) extraction}.
+     * @return whether the value is empty.
+     */
+    boolean isEmpty(Object value);
 }

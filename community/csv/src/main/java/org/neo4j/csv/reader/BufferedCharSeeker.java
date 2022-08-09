@@ -172,7 +172,7 @@ public class BufferedCharSeeker implements CharSeeker {
     }
 
     @Override
-    public <EXTRACTOR extends Extractor<?>> EXTRACTOR extract(Mark mark, EXTRACTOR extractor) {
+    public <T> T extract(Mark mark, Extractor<T> extractor) {
         return extract(mark, extractor, null);
     }
 
@@ -251,24 +251,24 @@ public class BufferedCharSeeker implements CharSeeker {
     }
 
     @Override
-    public <EXTRACTOR extends Extractor<?>> EXTRACTOR extract(
-            Mark mark, EXTRACTOR extractor, CSVHeaderInformation optionalData) {
-        if (!tryExtract(mark, extractor, optionalData)) {
+    public <T> T extract(Mark mark, Extractor<T> extractor, CSVHeaderInformation optionalData) {
+        T value = tryExtract(mark, extractor, optionalData);
+        if (extractor.isEmpty(value)) {
             throw new IllegalStateException(extractor + " didn't extract value for " + mark
                     + ". For values which are optional please use tryExtract method instead");
         }
-        return extractor;
+        return value;
     }
 
     @Override
-    public boolean tryExtract(Mark mark, Extractor<?> extractor, CSVHeaderInformation optionalData) {
+    public <T> T tryExtract(Mark mark, Extractor<T> extractor, CSVHeaderInformation optionalData) {
         int from = mark.startPosition();
         int to = mark.position();
         return extractor.extract(buffer, from, to - from, mark.isQuoted(), optionalData);
     }
 
     @Override
-    public boolean tryExtract(Mark mark, Extractor<?> extractor) {
+    public <T> T tryExtract(Mark mark, Extractor<T> extractor) {
         return tryExtract(mark, extractor, null);
     }
 

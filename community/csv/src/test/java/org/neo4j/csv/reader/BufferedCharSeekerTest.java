@@ -86,18 +86,18 @@ class BufferedCharSeekerTest {
         assertTrue(seeker.seek(mark, TAB));
         assertEquals('\t', mark.character());
         assertFalse(mark.isEndOfLine());
-        assertEquals("abcdefg", seeker.extract(mark, extractors.string()).value());
+        assertEquals("abcdefg", seeker.extract(mark, extractors.string()));
 
         // second value
         assertTrue(seeker.seek(mark, TAB));
         assertEquals('\t', mark.character());
         assertFalse(mark.isEndOfLine());
-        assertEquals("hijklmnop", seeker.extract(mark, extractors.string()).value());
+        assertEquals("hijklmnop", seeker.extract(mark, extractors.string()));
 
         // third value
         assertTrue(seeker.seek(mark, TAB));
         assertTrue(mark.isEndOfLine());
-        assertEquals("qrstuvxyz", seeker.extract(mark, extractors.string()).value());
+        assertEquals("qrstuvxyz", seeker.extract(mark, extractors.string()));
 
         // no more values
         assertFalse(seeker.seek(mark, TAB));
@@ -160,53 +160,17 @@ class BufferedCharSeekerTest {
         seeker = seeker("here,comes,Windows\r\n" + "and,it,has\r" + "other,line,endings", threadAhead);
 
         // WHEN/THEN
-        assertEquals(
-                "here",
-                seeker.seek(mark, COMMA)
-                        ? seeker.extract(mark, extractors.string()).value()
-                        : "");
-        assertEquals(
-                "comes",
-                seeker.seek(mark, COMMA)
-                        ? seeker.extract(mark, extractors.string()).value()
-                        : "");
-        assertEquals(
-                "Windows",
-                seeker.seek(mark, COMMA)
-                        ? seeker.extract(mark, extractors.string()).value()
-                        : "");
+        assertEquals("here", seeker.seek(mark, COMMA) ? seeker.extract(mark, extractors.string()) : "");
+        assertEquals("comes", seeker.seek(mark, COMMA) ? seeker.extract(mark, extractors.string()) : "");
+        assertEquals("Windows", seeker.seek(mark, COMMA) ? seeker.extract(mark, extractors.string()) : "");
         assertTrue(mark.isEndOfLine());
-        assertEquals(
-                "and",
-                seeker.seek(mark, COMMA)
-                        ? seeker.extract(mark, extractors.string()).value()
-                        : "");
-        assertEquals(
-                "it",
-                seeker.seek(mark, COMMA)
-                        ? seeker.extract(mark, extractors.string()).value()
-                        : "");
-        assertEquals(
-                "has",
-                seeker.seek(mark, COMMA)
-                        ? seeker.extract(mark, extractors.string()).value()
-                        : "");
+        assertEquals("and", seeker.seek(mark, COMMA) ? seeker.extract(mark, extractors.string()) : "");
+        assertEquals("it", seeker.seek(mark, COMMA) ? seeker.extract(mark, extractors.string()) : "");
+        assertEquals("has", seeker.seek(mark, COMMA) ? seeker.extract(mark, extractors.string()) : "");
         assertTrue(mark.isEndOfLine());
-        assertEquals(
-                "other",
-                seeker.seek(mark, COMMA)
-                        ? seeker.extract(mark, extractors.string()).value()
-                        : "");
-        assertEquals(
-                "line",
-                seeker.seek(mark, COMMA)
-                        ? seeker.extract(mark, extractors.string()).value()
-                        : "");
-        assertEquals(
-                "endings",
-                seeker.seek(mark, COMMA)
-                        ? seeker.extract(mark, extractors.string()).value()
-                        : "");
+        assertEquals("other", seeker.seek(mark, COMMA) ? seeker.extract(mark, extractors.string()) : "");
+        assertEquals("line", seeker.seek(mark, COMMA) ? seeker.extract(mark, extractors.string()) : "");
+        assertEquals("endings", seeker.seek(mark, COMMA) ? seeker.extract(mark, extractors.string()) : "");
         assertTrue(mark.isEndOfLine());
     }
 
@@ -224,9 +188,7 @@ class BufferedCharSeekerTest {
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
                 assertTrue(seeker.seek(mark, TAB));
-                assertEquals(
-                        data[row][col],
-                        seeker.extract(mark, extractors.string()).value());
+                assertEquals(data[row][col], seeker.extract(mark, extractors.string()));
             }
             assertTrue(mark.isEndOfLine());
         }
@@ -359,11 +321,11 @@ class BufferedCharSeekerTest {
     void shouldHandleDoubleCharValues(boolean threadAhead) throws IOException {
         seeker = seeker("v\uD800\uDC00lue one\t\"v\uD801\uDC01lue two\"\tv\uD804\uDC03lue three", threadAhead);
         assertTrue(seeker.seek(mark, TAB));
-        assertEquals("v𐀀lue one", seeker.extract(mark, extractors.string()).value());
+        assertEquals("v𐀀lue one", seeker.extract(mark, extractors.string()));
         assertTrue(seeker.seek(mark, TAB));
-        assertEquals("v𐐁lue two", seeker.extract(mark, extractors.string()).value());
+        assertEquals("v𐐁lue two", seeker.extract(mark, extractors.string()));
         assertTrue(seeker.seek(mark, TAB));
-        assertEquals("v𑀃lue three", seeker.extract(mark, extractors.string()).value());
+        assertEquals("v𑀃lue three", seeker.extract(mark, extractors.string()));
     }
 
     @ParameterizedTest(name = "thread-ahead: {0}")
@@ -374,13 +336,13 @@ class BufferedCharSeekerTest {
 
         // WHEN/THEN
         assertTrue(seeker.seek(mark, TAB));
-        assertEquals("value one", seeker.extract(mark, extractors.string()).value());
+        assertEquals("value one", seeker.extract(mark, extractors.string()));
 
         assertTrue(seeker.seek(mark, TAB));
-        assertEquals("value two", seeker.extract(mark, extractors.string()).value());
+        assertEquals("value two", seeker.extract(mark, extractors.string()));
 
         assertTrue(seeker.seek(mark, TAB));
-        assertEquals("value three", seeker.extract(mark, extractors.string()).value());
+        assertEquals("value three", seeker.extract(mark, extractors.string()));
     }
 
     @ParameterizedTest(name = "thread-ahead: {0}")
@@ -391,13 +353,13 @@ class BufferedCharSeekerTest {
 
         // WHEN/THEN
         assertTrue(seeker.seek(mark, TAB));
-        assertEquals("value one", seeker.extract(mark, extractors.string()).value());
+        assertEquals("value one", seeker.extract(mark, extractors.string()));
 
         assertTrue(seeker.seek(mark, TAB));
-        assertEquals("value\ttwo", seeker.extract(mark, extractors.string()).value());
+        assertEquals("value\ttwo", seeker.extract(mark, extractors.string()));
 
         assertTrue(seeker.seek(mark, TAB));
-        assertEquals("value three", seeker.extract(mark, extractors.string()).value());
+        assertEquals("value three", seeker.extract(mark, extractors.string()));
     }
 
     @ParameterizedTest(name = "thread-ahead: {0}")
@@ -408,13 +370,13 @@ class BufferedCharSeekerTest {
 
         // WHEN/THEN
         assertTrue(seeker.seek(mark, TAB));
-        assertEquals("value one", seeker.extract(mark, extractors.string()).value());
+        assertEquals("value one", seeker.extract(mark, extractors.string()));
 
         assertTrue(seeker.seek(mark, TAB));
-        assertEquals("value\ntwo", seeker.extract(mark, extractors.string()).value());
+        assertEquals("value\ntwo", seeker.extract(mark, extractors.string()));
 
         assertTrue(seeker.seek(mark, TAB));
-        assertEquals("value three", seeker.extract(mark, extractors.string()).value());
+        assertEquals("value three", seeker.extract(mark, extractors.string()));
     }
 
     @ParameterizedTest(name = "thread-ahead: {0}")
@@ -429,14 +391,13 @@ class BufferedCharSeekerTest {
 
         // WHEN/THEN
         assertTrue(seeker.seek(mark, TAB));
-        assertEquals("value \"one\"", seeker.extract(mark, extractors.string()).value());
+        assertEquals("value \"one\"", seeker.extract(mark, extractors.string()));
 
         assertTrue(seeker.seek(mark, TAB));
-        assertEquals("\"value\" two", seeker.extract(mark, extractors.string()).value());
+        assertEquals("\"value\" two", seeker.extract(mark, extractors.string()));
 
         assertTrue(seeker.seek(mark, TAB));
-        assertEquals(
-                "va\"lue\" three", seeker.extract(mark, extractors.string()).value());
+        assertEquals("va\"lue\" three", seeker.extract(mark, extractors.string()));
     }
 
     @ParameterizedTest(name = "thread-ahead: {0}")
@@ -450,14 +411,13 @@ class BufferedCharSeekerTest {
 
         // WHEN/THEN
         assertTrue(seeker.seek(mark, TAB));
-        assertEquals("value \"one\"", seeker.extract(mark, extractors.string()).value());
+        assertEquals("value \"one\"", seeker.extract(mark, extractors.string()));
 
         assertTrue(seeker.seek(mark, TAB));
-        assertEquals("\"value\" two", seeker.extract(mark, extractors.string()).value());
+        assertEquals("\"value\" two", seeker.extract(mark, extractors.string()));
 
         assertTrue(seeker.seek(mark, TAB));
-        assertEquals(
-                "va\"lue\" three", seeker.extract(mark, extractors.string()).value());
+        assertEquals("va\"lue\" three", seeker.extract(mark, extractors.string()));
     }
 
     @ParameterizedTest(name = "thread-ahead: {0}")
@@ -847,12 +807,13 @@ class BufferedCharSeekerTest {
 
     private void assertNextValue(CharSeeker seeker, Mark mark, int delimiter, String expectedValue) throws IOException {
         assertTrue(seeker.seek(mark, delimiter));
-        assertEquals(expectedValue, seeker.extract(mark, extractors.string()).value());
+        assertEquals(expectedValue, seeker.extract(mark, extractors.string()));
     }
 
     private void assertNextValueNotExtracted(CharSeeker seeker, Mark mark, int delimiter) throws IOException {
         assertTrue(seeker.seek(mark, delimiter));
-        assertFalse(seeker.tryExtract(mark, extractors.string()));
+        var extractor = extractors.string();
+        assertTrue(extractor.isEmpty(seeker.tryExtract(mark, extractor)));
     }
 
     private static void assertEnd(CharSeeker seeker, Mark mark, int delimiter) throws IOException {
@@ -863,7 +824,7 @@ class BufferedCharSeekerTest {
     private String[] nextLineOfAllStrings(CharSeeker seeker, Mark mark) throws IOException {
         List<String> line = new ArrayList<>();
         while (seeker.seek(mark, COMMA)) {
-            line.add(seeker.extract(mark, extractors.string()).value());
+            line.add(seeker.extract(mark, extractors.string()));
             if (mark.isEndOfLine()) {
                 break;
             }

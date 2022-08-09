@@ -65,41 +65,38 @@ public interface CharSeeker extends Closeable, SourceTraceability {
      * @param mark the {@link Mark} specifying which part of a bigger piece of data contains the found value.
      * @param extractor {@link Extractor} capable of extracting the value.
      * @param optionalData holds additional information for spatial and temporal values or null
-     * @return the supplied {@link Extractor}, which after the call carries the extracted value itself,
-     * where either {@link Extractor#value()} or a more specific accessor method can be called to access the value.
+     * @return the extracted value.
      * @throws IllegalStateException if the {@link Extractor#extract(char[], int, int, boolean, org.neo4j.values.storable.CSVHeaderInformation) extraction}
-     * returns {@code false}.
+     * extracted no value.
      */
-    <EXTRACTOR extends Extractor<?>> EXTRACTOR extract(
-            Mark mark, EXTRACTOR extractor, CSVHeaderInformation optionalData);
+    <T> T extract(Mark mark, Extractor<T> extractor, CSVHeaderInformation optionalData);
 
     /**
      * Extracts the value specified by the {@link Mark}, previously populated by a call to {@link #seek(Mark, int)}.
      * @param mark the {@link Mark} specifying which part of a bigger piece of data contains the found value.
      * @param extractor {@link Extractor} capable of extracting the value.
-     * @return the supplied {@link Extractor}, which after the call carries the extracted value itself,
-     * where either {@link Extractor#value()} or a more specific accessor method can be called to access the value.
+     * @return the extracted value.
      * @throws IllegalStateException if the {@link Extractor#extract(char[], int, int, boolean, org.neo4j.values.storable.CSVHeaderInformation) extraction}
-     * returns {@code false}.
+     * extracted no value.
      */
-    <EXTRACTOR extends Extractor<?>> EXTRACTOR extract(Mark mark, EXTRACTOR extractor);
+    <T> T extract(Mark mark, Extractor<T> extractor);
 
     /**
      * Extracts the value specified by the {@link Mark}, previously populated by a call to {@link #seek(Mark, int)}.
      * @param mark the {@link Mark} specifying which part of a bigger piece of data contains the found value.
      * @param extractor {@link Extractor} capable of extracting the value.
      * @param optionalData holds additional information for spatial and temporal values or null
-     * @return {@code true} if a value was extracted, otherwise {@code false}. Probably the only reason for
-     * returning {@code false} would be if the data to extract was empty.
+     * @return the extracted value, or {@code null} (or similar) if no value was extracted. Different extractors
+     * can return other values than {@code null} to represent empty value, see {@link Extractor#isEmpty(Object)}.
      */
-    boolean tryExtract(Mark mark, Extractor<?> extractor, CSVHeaderInformation optionalData);
+    <T> T tryExtract(Mark mark, Extractor<T> extractor, CSVHeaderInformation optionalData);
 
     /**
      * Extracts the value specified by the {@link Mark}, previously populated by a call to {@link #seek(Mark, int)}.
      * @param mark the {@link Mark} specifying which part of a bigger piece of data contains the found value.
      * @param extractor {@link Extractor} capable of extracting the value.
-     * @return {@code true} if a value was extracted, otherwise {@code false}. Probably the only reason for
-     * returning {@code false} would be if the data to extract was empty.
+     * @return the extracted value, or {@code null} (or similar) if no value was extracted. Different extractors
+     * can return other values than {@code null} to represent empty value, see {@link Extractor#isEmpty(Object)}.
      */
-    boolean tryExtract(Mark mark, Extractor<?> extractor);
+    <T> T tryExtract(Mark mark, Extractor<T> extractor);
 }

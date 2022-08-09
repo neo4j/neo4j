@@ -74,13 +74,6 @@ public class Header {
         return Arrays.toString(entries);
     }
 
-    public Header(Header other) {
-        this.entries = new Entry[other.entries.length];
-        for (int i = 0; i < other.entries.length; i++) {
-            this.entries[i] = new Entry(other.entries[i]);
-        }
-    }
-
     public record Entry(
             String name,
             Type type,
@@ -93,16 +86,6 @@ public class Header {
 
         public Entry(String name, Type type, Group group, Extractor<?> extractor) {
             this(name, type, group, extractor, Collections.emptyMap(), null);
-        }
-
-        Entry(Entry other) {
-            this(
-                    other.name,
-                    other.type,
-                    other.group,
-                    other.extractor != null ? other.extractor.clone() : null,
-                    other.rawOptions,
-                    other.optionalParameter);
         }
     }
 

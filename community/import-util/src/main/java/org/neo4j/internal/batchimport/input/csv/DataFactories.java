@@ -187,10 +187,9 @@ public class DataFactories {
             int delimiter = config.delimiter();
             List<Entry> columns = new ArrayList<>();
             for (int i = 0; !mark.isEndOfLine() && dataSeeker.seek(mark, delimiter); i++) {
-                String entryString = dataSeeker.tryExtract(mark, extractors.string())
-                        ? extractors.string().value()
-                        : null;
-                HeaderEntrySpec spec = entryString != null ? parseHeaderEntrySpec(entryString) : null;
+                String entryString = dataSeeker.tryExtract(mark, extractors.string());
+                HeaderEntrySpec spec =
+                        !extractors.string().isEmpty(entryString) ? parseHeaderEntrySpec(entryString) : null;
                 if (spec == null || Type.IGNORE.name().equals(spec.type())) {
                     columns.add(new Entry(null, Type.IGNORE, Group.GLOBAL, null));
                 } else {

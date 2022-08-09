@@ -27,7 +27,6 @@ import java.lang.reflect.Array;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
-import org.neo4j.csv.reader.Extractors.LongExtractor;
 import org.neo4j.csv.reader.Mark;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.IdType;
@@ -81,88 +80,79 @@ public class CsvInputParser implements Closeable {
                     return false;
                 }
 
+                if (entry.type() == Type.IGNORE) {
+                    continue;
+                }
+
+                var extractor = entry.extractor();
+                Object value = seeker.tryExtract(mark, extractor, entry.optionalParameter());
+                if (extractor.isEmpty(value)) {
+                    continue;
+                }
+
                 switch (entry.type()) {
                     case ID:
-                        if (seeker.tryExtract(mark, entry.extractor())) {
-                            switch (idType) {
-                                case STRING:
-                                case INTEGER:
-                                    Object idValue = entry.extractor().value();
-                                    doContinue = visitor.id(idValue, entry.group());
-                                    if (entry.name() != null) {
-                                        doContinue = visitor.property(entry.name(), idValue);
-                                    }
-                                    break;
-                                case ACTUAL:
-                                    doContinue = visitor.id(((LongExtractor) entry.extractor()).longValue());
-                                    break;
-                                default:
-                                    throw new IllegalArgumentException(idType.name());
-                            }
+                        switch (idType) {
+                            case STRING:
+                            case INTEGER:
+                                doContinue = visitor.id(value, entry.group());
+                                if (entry.name() != null) {
+                                    doContinue = visitor.property(entry.name(), value);
+                                }
+                                break;
+                            case ACTUAL:
+                                doContinue = visitor.id((Long) value);
+                                break;
+                            default:
+                                throw new IllegalArgumentException(idType.name());
                         }
                         break;
                     case START_ID:
-                        if (seeker.tryExtract(mark, entry.extractor())) {
-                            switch (idType) {
-                                case STRING:
-                                    doContinue =
-                                            visitor.startId(entry.extractor().value(), entry.group());
-                                    break;
-                                case INTEGER:
-                                    doContinue =
-                                            visitor.startId(entry.extractor().value(), entry.group());
-                                    break;
-                                case ACTUAL:
-                                    doContinue = visitor.startId(((LongExtractor) entry.extractor()).longValue());
-                                    break;
-                                default:
-                                    throw new IllegalArgumentException(idType.name());
-                            }
+                        switch (idType) {
+                            case STRING:
+                                doContinue = visitor.startId(value, entry.group());
+                                break;
+                            case INTEGER:
+                                doContinue = visitor.startId(value, entry.group());
+                                break;
+                            case ACTUAL:
+                                doContinue = visitor.startId((Long) value);
+                                break;
+                            default:
+                                throw new IllegalArgumentException(idType.name());
                         }
                         break;
                     case END_ID:
-                        if (seeker.tryExtract(mark, entry.extractor())) {
-                            switch (idType) {
-                                case STRING:
-                                    doContinue = visitor.endId(entry.extractor().value(), entry.group());
-                                    break;
-                                case INTEGER:
-                                    doContinue = visitor.endId(entry.extractor().value(), entry.group());
-                                    break;
-                                case ACTUAL:
-                                    doContinue = visitor.endId(((LongExtractor) entry.extractor()).longValue());
-                                    break;
-                                default:
-                                    throw new IllegalArgumentException(idType.name());
-                            }
+                        switch (idType) {
+                            case STRING:
+                                doContinue = visitor.endId(value, entry.group());
+                                break;
+                            case INTEGER:
+                                doContinue = visitor.endId(value, entry.group());
+                                break;
+                            case ACTUAL:
+                                doContinue = visitor.endId((Long) value);
+                                break;
+                            default:
+                                throw new IllegalArgumentException(idType.name());
                         }
                         break;
                     case TYPE:
-                        if (seeker.tryExtract(mark, entry.extractor())) {
-                            doContinue = visitor.type((String) entry.extractor().value());
-                        }
+                        doContinue = visitor.type((String) value);
                         break;
                     case PROPERTY:
-                        if (seeker.tryExtract(mark, entry.extractor(), entry.optionalParameter())) {
-                            // TODO since PropertyStore#encodeValue takes Object there's no point splitting up
-                            // into different primitive types
-                            Object value = entry.extractor().value();
-                            if (!isEmptyArray(value)) {
-                                doContinue = visitor.property(entry.name(), value);
-                            }
+                        // TODO since PropertyStore#encodeValue takes Object there's no point splitting up
+                        // into different primitive types
+                        if (!isEmptyArray(value)) {
+                            doContinue = visitor.property(entry.name(), value);
                         }
                         break;
                     case LABEL:
-                        if (seeker.tryExtract(mark, entry.extractor())) {
-                            Object labelsValue = entry.extractor().value();
-                            if (labelsValue.getClass().isArray()) {
-                                doContinue = visitor.labels((String[]) labelsValue);
-                            } else {
-                                doContinue = visitor.labels(new String[] {(String) labelsValue});
-                            }
+                        if (value.getClass().isArray()) {
+                            doContinue = visitor.labels((String[]) value);
+                        } else {
+                            doContinue = visitor.labels(new String[] {(String) value});
                         }
-                        break;
-                    case IGNORE:
                         break;
                     default:
                         throw new IllegalArgumentException(entry.type().toString());
@@ -177,8 +167,8 @@ public class CsvInputParser implements Closeable {
             while (!mark.isEndOfLine()) {
                 seeker.seek(mark, delimiter);
                 if (doContinue) {
-                    seeker.tryExtract(mark, stringExtractor, entry.optionalParameter());
-                    badCollector.collectExtraColumns(seeker.sourceDescription(), lineNumber, stringExtractor.value());
+                    var value = seeker.tryExtract(mark, stringExtractor, entry.optionalParameter());
+                    badCollector.collectExtraColumns(seeker.sourceDescription(), lineNumber, value);
                 }
             }
             visitor.endOfEntity();
@@ -187,9 +177,7 @@ public class CsvInputParser implements Closeable {
             String stringValue = null;
             try {
                 Extractors extractors = new Extractors('?');
-                if (seeker.tryExtract(mark, extractors.string(), entry.optionalParameter())) {
-                    stringValue = extractors.string().value();
-                }
+                stringValue = seeker.tryExtract(mark, extractors.string(), entry.optionalParameter());
             } catch (Exception e1) { // OK
             }
 

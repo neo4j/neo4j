@@ -51,10 +51,10 @@ class ExtractorsTest {
         // WHEN
         @SuppressWarnings("unchecked")
         Extractor<String[]> extractor = (Extractor<String[]>) extractors.valueOf("STRING[]");
-        extractor.extract(data.toCharArray(), 0, data.length(), false);
+        var extractedValue = extractor.extract(data.toCharArray(), 0, data.length(), false);
 
         // THEN
-        assertArrayEquals(new String[] {"abcde", "fghijkl", "mnopq"}, extractor.value());
+        assertArrayEquals(new String[] {"abcde", "fghijkl", "mnopq"}, extractedValue);
     }
 
     @Test
@@ -67,10 +67,10 @@ class ExtractorsTest {
         // WHEN
         @SuppressWarnings("unchecked")
         Extractor<long[]> extractor = (Extractor<long[]>) extractors.valueOf("long[]");
-        extractor.extract(data.toCharArray(), 0, data.length(), false);
+        var extractedValue = extractor.extract(data.toCharArray(), 0, data.length(), false);
 
         // THEN
-        assertArrayEquals(longData, extractor.value());
+        assertArrayEquals(longData, extractedValue);
     }
 
     @Test
@@ -82,10 +82,10 @@ class ExtractorsTest {
 
         // WHEN
         Extractor<boolean[]> extractor = extractors.booleanArray();
-        extractor.extract(data.toCharArray(), 0, data.length(), false);
+        var extractedValue = extractor.extract(data.toCharArray(), 0, data.length(), false);
 
         // THEN
-        assertBooleanArrayEquals(booleanData, extractor.value());
+        assertBooleanArrayEquals(booleanData, extractedValue);
     }
 
     @Test
@@ -97,10 +97,10 @@ class ExtractorsTest {
 
         // WHEN
         Extractor<double[]> extractor = extractors.doubleArray();
-        extractor.extract(data.toCharArray(), 0, data.length(), false);
+        var extractedValue = extractor.extract(data.toCharArray(), 0, data.length(), false);
 
         // THEN
-        assertArrayEquals(doubleData, extractor.value(), 0.001);
+        assertArrayEquals(doubleData, extractedValue, 0.001);
     }
 
     @Test
@@ -138,10 +138,11 @@ class ExtractorsTest {
         char[] asChars = "Point{latitude: 56.7, longitude: 13.2}".toCharArray();
         Extractors.PointExtractor extractor = extractors.point();
         String headerInfo = "{crs:WGS-84}";
-        extractor.extract(asChars, 0, asChars.length, false, PointValue.parseHeaderInformation(headerInfo));
+        var extractedValue =
+                extractor.extract(asChars, 0, asChars.length, false, PointValue.parseHeaderInformation(headerInfo));
 
         // THEN
-        assertEquals(value, extractor.value);
+        assertEquals(value, extractedValue);
     }
 
     @Test
@@ -153,10 +154,10 @@ class ExtractorsTest {
         // WHEN
         char[] asChars = String.valueOf(value).toCharArray();
         IntExtractor extractor = extractors.int_();
-        extractor.extract(asChars, 0, asChars.length, false);
+        var extractedValue = extractor.extract(asChars, 0, asChars.length, false);
 
         // THEN
-        assertEquals(value, extractor.intValue());
+        assertEquals(value, extractedValue);
     }
 
     @Test
@@ -167,10 +168,10 @@ class ExtractorsTest {
 
         // WHEN
         Extractor<String[]> extractor = extractors.stringArray();
-        extractor.extract(value.toCharArray(), 0, value.length(), false);
+        var extractedValue = extractor.extract(value.toCharArray(), 0, value.length(), false);
 
         // THEN
-        assertEquals(0, extractor.value().length);
+        assertEquals(0, extractedValue.length);
     }
 
     @Test
@@ -181,10 +182,10 @@ class ExtractorsTest {
 
         // WHEN
         Extractor<long[]> extractor = extractors.longArray();
-        extractor.extract(value.toCharArray(), 0, value.length(), false);
+        var extractedValue = extractor.extract(value.toCharArray(), 0, value.length(), false);
 
         // THEN
-        assertEquals(0, extractor.value().length);
+        assertEquals(0, extractedValue.length);
     }
 
     @Test
@@ -195,10 +196,10 @@ class ExtractorsTest {
 
         // WHEN
         Extractor<String[]> extractor = extractors.stringArray();
-        extractor.extract(value.toCharArray(), 0, value.length(), false);
+        var extractedValue = extractor.extract(value.toCharArray(), 0, value.length(), false);
 
         // THEN
-        assertArrayEquals(new String[] {"", ""}, extractor.value());
+        assertArrayEquals(new String[] {"", ""}, extractedValue);
     }
 
     @Test
@@ -209,10 +210,10 @@ class ExtractorsTest {
 
         // WHEN
         Extractor<String> extractor = extractors.string();
-        extractor.extract(value.toCharArray(), 0, value.length(), true);
+        var extractedValue = extractor.extract(value.toCharArray(), 0, value.length(), true);
 
         // THEN
-        assertEquals("", extractor.value());
+        assertEquals("", extractedValue);
     }
 
     @Test
@@ -222,11 +223,10 @@ class ExtractorsTest {
         Extractor<String> extractor = extractors.string();
 
         // WHEN
-        extractor.extract(new char[0], 0, 0, true);
-        String extracted = extractor.value();
+        var extractedValue = extractor.extract(new char[0], 0, 0, true);
 
         // THEN
-        assertNull(extracted);
+        assertNull(extractedValue);
     }
 
     @Test
@@ -238,10 +238,10 @@ class ExtractorsTest {
         // WHEN
         char[] asChars = value.toCharArray();
         Extractor<String[]> extractor = extractors.stringArray();
-        extractor.extract(asChars, 0, asChars.length, true);
+        var extractedValue = extractor.extract(asChars, 0, asChars.length, true);
 
         // THEN
-        assertArrayEquals(new String[] {"ab", "cd", "ef", "gh"}, extractor.value());
+        assertArrayEquals(new String[] {"ab", "cd", "ef", "gh"}, extractedValue);
     }
 
     @Test
@@ -253,30 +253,10 @@ class ExtractorsTest {
         // WHEN
         char[] asChars = value.toCharArray();
         Extractor<String[]> extractor = extractors.stringArray();
-        extractor.extract(asChars, 0, asChars.length, true);
+        var extractedValue = extractor.extract(asChars, 0, asChars.length, true);
 
         // THEN
-        assertArrayEquals(new String[] {"ab", "cd ", " ef", " gh "}, extractor.value());
-    }
-
-    @Test
-    void shouldCloneExtractor() {
-        // GIVEN
-        Extractors extractors = new Extractors(';');
-        Extractor<String> e1 = extractors.string();
-        Extractor<String> e2 = e1.clone();
-
-        // WHEN
-        String v1 = "abc";
-        e1.extract(v1.toCharArray(), 0, v1.length(), false);
-        assertEquals(v1, e1.value());
-        assertNull(e2.value());
-
-        // THEN
-        String v2 = "def";
-        e2.extract(v2.toCharArray(), 0, v2.length(), false);
-        assertEquals(v2, e2.value());
-        assertEquals(v1, e1.value());
+        assertArrayEquals(new String[] {"ab", "cd ", " ef", " gh "}, extractedValue);
     }
 
     @Test
@@ -297,13 +277,14 @@ class ExtractorsTest {
         String headerInfo = "{crs:WGS-84}";
 
         // WHEN
-        extractor.extract(asChars, 0, asChars.length, false, PointValue.parseHeaderInformation(headerInfo));
+        var extractedValue =
+                extractor.extract(asChars, 0, asChars.length, false, PointValue.parseHeaderInformation(headerInfo));
 
         var value = Values.pointArray(array(
                 Values.pointValue(CoordinateReferenceSystem.WGS_84, 13.2, 56.7),
                 Values.pointValue(CoordinateReferenceSystem.WGS_84, 0.25, 0.7)));
         // THEN
-        assertEquals(value, extractor.value());
+        assertEquals(value, extractedValue);
     }
 
     @Test
@@ -314,11 +295,11 @@ class ExtractorsTest {
         var extractor = extractors.dateArray();
 
         // WHEN
-        extractor.extract(asChars, 0, asChars.length, false);
+        var extractedValue = extractor.extract(asChars, 0, asChars.length, false);
 
         var value = Values.dateArray(array(LocalDate.of(1985, 4, 20), LocalDate.of(2030, 12, 12)));
         // THEN
-        assertEquals(value, extractor.value());
+        assertEquals(value, extractedValue);
     }
 
     @Test
@@ -330,13 +311,14 @@ class ExtractorsTest {
         String headerInformation = "{timezone:+10:00}";
 
         // WHEN
-        extractor.extract(asChars, 0, asChars.length, false, TimeValue.parseHeaderInformation(headerInformation));
+        var extractedValue = extractor.extract(
+                asChars, 0, asChars.length, false, TimeValue.parseHeaderInformation(headerInformation));
 
         var value = Values.timeArray(array(
                 OffsetTime.of(2, 41, 34, 0, ZoneOffset.ofHours(10)),
                 OffsetTime.of(18, 3, 51, 0, ZoneOffset.ofHours(10))));
         // THEN
-        assertEquals(value, extractor.value());
+        assertEquals(value, extractedValue);
     }
 
     @Test
@@ -348,13 +330,14 @@ class ExtractorsTest {
         String headerInformation = "{timezone:+10:00}";
 
         // WHEN
-        extractor.extract(asChars, 0, asChars.length, false, TimeValue.parseHeaderInformation(headerInformation));
+        var extractedValue = extractor.extract(
+                asChars, 0, asChars.length, false, TimeValue.parseHeaderInformation(headerInformation));
 
         var value = Values.dateTimeArray(array(
                 ZonedDateTime.of(1985, 4, 20, 2, 41, 34, 0, ZoneOffset.ofHours(10)),
                 ZonedDateTime.of(2030, 12, 12, 18, 3, 51, 0, ZoneOffset.ofHours(10))));
         // THEN
-        assertEquals(value, extractor.value());
+        assertEquals(value, extractedValue);
     }
 
     @Test
@@ -365,11 +348,11 @@ class ExtractorsTest {
         var extractor = extractors.localTimeArray();
 
         // WHEN
-        extractor.extract(asChars, 0, asChars.length, false);
+        var extractedValue = extractor.extract(asChars, 0, asChars.length, false);
 
         var value = Values.localTimeArray(array(LocalTime.of(2, 41, 34, 0), LocalTime.of(18, 3, 51, 0)));
         // THEN
-        assertEquals(value, extractor.value());
+        assertEquals(value, extractedValue);
     }
 
     @Test
@@ -381,12 +364,13 @@ class ExtractorsTest {
         String headerInformation = "{timezone:+10:00}";
 
         // WHEN
-        extractor.extract(asChars, 0, asChars.length, false, TimeValue.parseHeaderInformation(headerInformation));
+        var extractedValue = extractor.extract(
+                asChars, 0, asChars.length, false, TimeValue.parseHeaderInformation(headerInformation));
 
         var value = Values.localDateTimeArray(
                 array(LocalDateTime.of(1985, 4, 20, 2, 41, 34, 0), LocalDateTime.of(2030, 12, 12, 18, 3, 51, 0)));
         // THEN
-        assertEquals(value, extractor.value());
+        assertEquals(value, extractedValue);
     }
 
     @Test
@@ -397,11 +381,11 @@ class ExtractorsTest {
         var extractor = extractors.durationArray();
 
         // WHEN
-        extractor.extract(asChars, 0, asChars.length, false);
+        var extractedValue = extractor.extract(asChars, 0, asChars.length, false);
 
         var value = Values.durationArray(array(Duration.of(60, ChronoUnit.SECONDS), Duration.of(2, ChronoUnit.HOURS)));
         // THEN
-        assertEquals(value, extractor.value());
+        assertEquals(value, extractedValue);
     }
 
     private static String toString(long[] values, char delimiter) {

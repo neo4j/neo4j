@@ -105,8 +105,8 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
 
         try {
           while (seeker.seek(mark, intDelimiter)) {
-            val success = seeker.tryExtract(mark, extractor)
-            buffer += (if (success) extractor.value() else Values.NO_VALUE)
+            val value = seeker.tryExtract(mark, extractor)
+            buffer += (if (!extractor.isEmpty(value)) value else Values.NO_VALUE)
             if (mark.isEndOfLine) return if (buffer.isEmpty) null else buffer.toArray
           }
         } catch {
