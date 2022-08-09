@@ -20,12 +20,13 @@
 package org.neo4j.kernel.impl.api;
 
 import java.util.Objects;
+import org.neo4j.kernel.api.KernelTransaction;
 
 public class KernelTransactionStamp {
-    private final KernelTransactionImplementation ktx;
+    private final KernelTransaction ktx;
     private final long transactionSequenceNumber;
 
-    public KernelTransactionStamp(KernelTransactionImplementation ktx) {
+    public KernelTransactionStamp(KernelTransaction ktx) {
         this.transactionSequenceNumber = ktx.getTransactionSequenceNumber();
         this.ktx = ktx;
     }

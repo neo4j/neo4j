@@ -30,7 +30,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 public abstract class FabricDatabaseManager {
 
@@ -63,7 +63,7 @@ public abstract class FabricDatabaseManager {
         return multiGraphEverywhere;
     }
 
-    public GraphDatabaseFacade getDatabaseFacade(String databaseNameRaw) throws UnavailableException {
+    public GraphDatabaseAPI getDatabaseFacade(String databaseNameRaw) throws UnavailableException {
         var databaseContext = databaseReferenceRepo
                 .getInternalByAlias(databaseNameRaw)
                 .map(DatabaseReference.Internal::databaseId)

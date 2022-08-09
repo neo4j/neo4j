@@ -22,17 +22,17 @@ package org.neo4j.dbms.database;
 import static java.util.Objects.requireNonNull;
 
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 public class StandaloneDatabaseContext implements DatabaseContext {
     private final Database database;
-    private final GraphDatabaseFacade databaseFacade;
+    private final GraphDatabaseAPI databaseFacade;
     private volatile Throwable failureCause;
 
     public StandaloneDatabaseContext(Database database) {
         requireNonNull(database);
         this.database = database;
-        this.databaseFacade = database.getDatabaseFacade();
+        this.databaseFacade = database.getDatabaseAPI();
     }
 
     @Override
@@ -41,7 +41,7 @@ public class StandaloneDatabaseContext implements DatabaseContext {
     }
 
     @Override
-    public GraphDatabaseFacade databaseFacade() {
+    public GraphDatabaseAPI databaseFacade() {
         return databaseFacade;
     }
 

@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import static java.lang.String.format;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
 import java.util.Collections;
@@ -59,8 +57,6 @@ import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.internal.kernel.api.security.AdminAccessMode;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
@@ -68,22 +64,15 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.IndexReaderCache;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
-import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
-import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CountsDelta;
@@ -105,6 +94,7 @@ public class AllStoreHolder extends Read {
     private final IndexReaderCache<ValueIndexReader> valueIndexReaderCache;
     private final IndexReaderCache<TokenIndexReader> tokenIndexReaderCache;
     private final ReadSupport readSupport;
+    private final ProcedureCaller procedureCaller;
 
     public AllStoreHolder(
             StorageReader storageReader,
@@ -130,6 +120,7 @@ public class AllStoreHolder extends Read {
         this.databaseDependencies = databaseDependencies;
         this.memoryTracker = memoryTracker;
         this.readSupport = new ReadSupport(storageReader, cursors, this);
+        this.procedureCaller = new ProcedureCaller(ktx, globalProcedures, databaseDependencies);
     }
 
     @Override
@@ -881,45 +872,45 @@ public class AllStoreHolder extends Read {
     @Override
     public RawIterator<AnyValue[], ProcedureException> procedureCallRead(
             int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
-        return callProcedure(id, arguments, AccessMode.Static.READ, context);
+        return procedureCaller.callProcedure(id, arguments, AccessMode.Static.READ, context);
     }
 
     @Override
     public RawIterator<AnyValue[], ProcedureException> procedureCallWrite(
             int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
-        return callProcedure(id, arguments, AccessMode.Static.TOKEN_WRITE, context);
+        return procedureCaller.callProcedure(id, arguments, AccessMode.Static.TOKEN_WRITE, context);
     }
 
     @Override
     public RawIterator<AnyValue[], ProcedureException> procedureCallSchema(
             int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
-        return callProcedure(id, arguments, AccessMode.Static.SCHEMA, context);
+        return procedureCaller.callProcedure(id, arguments, AccessMode.Static.SCHEMA, context);
     }
 
     @Override
     public RawIterator<AnyValue[], ProcedureException> procedureCallDbms(
             int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
-        return callProcedure(id, arguments, AccessMode.Static.ACCESS, context);
+        return procedureCaller.callProcedure(id, arguments, AccessMode.Static.ACCESS, context);
     }
 
     @Override
     public AnyValue functionCall(int id, AnyValue[] arguments) throws ProcedureException {
-        return callFunction(id, arguments);
+        return procedureCaller.callFunction(id, arguments);
     }
 
     @Override
     public AnyValue builtInFunctionCall(int id, AnyValue[] arguments) throws ProcedureException {
-        return callBuiltInFunction(id, arguments);
+        return procedureCaller.callBuiltInFunction(id, arguments);
     }
 
     @Override
     public UserAggregator aggregationFunction(int id) throws ProcedureException {
-        return createAggregationFunction(id);
+        return procedureCaller.createAggregationFunction(id);
     }
 
     @Override
     public UserAggregator builtInAggregationFunction(int id) throws ProcedureException {
-        return createBuiltInAggregationFunction(id);
+        return procedureCaller.createBuiltInAggregationFunction(id);
     }
 
     @Override
@@ -935,145 +926,6 @@ public class AllStoreHolder extends Read {
     @Override
     public boolean transactionStateHasChanges() {
         return ktx.hasTxStateWithChanges();
-    }
-
-    private RawIterator<AnyValue[], ProcedureException> callProcedure(
-            int id, AnyValue[] input, final AccessMode.Static procedureMode, ProcedureCallContext procedureCallContext)
-            throws ProcedureException {
-        ktx.assertOpen();
-
-        AccessMode mode = ktx.securityContext().mode();
-        if (!mode.allowsExecuteProcedure(id).allowsAccess()) {
-            String message = format(
-                    "Executing procedure is not allowed for %s.",
-                    ktx.securityContext().description());
-            throw ktx.securityAuthorizationHandler().logAndGetAuthorizationException(ktx.securityContext(), message);
-        }
-
-        final SecurityContext procedureSecurityContext =
-                mode.shouldBoostProcedure(id).allowsAccess()
-                        ? ktx.securityContext()
-                                .withMode(new OverriddenAccessMode(mode, procedureMode))
-                                .withMode(AdminAccessMode.FULL)
-                        : ktx.securityContext().withMode(new RestrictedAccessMode(mode, procedureMode));
-
-        final RawIterator<AnyValue[], ProcedureException> procedureCall;
-        try (KernelTransaction.Revertable ignore = ktx.overrideWith(procedureSecurityContext);
-                Statement statement = ktx.acquireStatement()) {
-            procedureCall = globalProcedures.callProcedure(
-                    prepareContext(procedureSecurityContext, procedureCallContext), id, input, statement);
-        }
-        return createIterator(procedureSecurityContext, procedureCall);
-    }
-
-    private RawIterator<AnyValue[], ProcedureException> createIterator(
-            SecurityContext procedureSecurityContext, RawIterator<AnyValue[], ProcedureException> procedureCall) {
-        return new RawIterator<>() {
-            @Override
-            public boolean hasNext() throws ProcedureException {
-                try (KernelTransaction.Revertable ignore = ktx.overrideWith(procedureSecurityContext)) {
-                    return procedureCall.hasNext();
-                }
-            }
-
-            @Override
-            public AnyValue[] next() throws ProcedureException {
-                try (KernelTransaction.Revertable ignore = ktx.overrideWith(procedureSecurityContext)) {
-                    return procedureCall.next();
-                }
-            }
-        };
-    }
-
-    private AnyValue callFunction(int id, AnyValue[] input) throws ProcedureException {
-        ktx.assertOpen();
-
-        AccessMode mode = ktx.securityContext().mode();
-        if (!mode.allowsExecuteFunction(id).allowsAccess()) {
-            String message = format(
-                    "Executing a user defined function is not allowed for %s.",
-                    ktx.securityContext().description());
-            throw ktx.securityAuthorizationHandler().logAndGetAuthorizationException(ktx.securityContext(), message);
-        }
-
-        final SecurityContext securityContext = mode.shouldBoostFunction(id).allowsAccess()
-                ? ktx.securityContext().withMode(new OverriddenAccessMode(mode, AccessMode.Static.READ))
-                : ktx.securityContext().withMode(new RestrictedAccessMode(mode, AccessMode.Static.READ));
-
-        try (KernelTransaction.Revertable ignore = ktx.overrideWith(securityContext)) {
-            return globalProcedures.callFunction(
-                    prepareContext(securityContext, ProcedureCallContext.EMPTY), id, input);
-        }
-    }
-
-    private AnyValue callBuiltInFunction(int id, AnyValue[] input) throws ProcedureException {
-        ktx.assertOpen();
-        return globalProcedures.callFunction(
-                prepareContext(ktx.securityContext(), ProcedureCallContext.EMPTY), id, input);
-    }
-
-    private UserAggregator createAggregationFunction(int id) throws ProcedureException {
-        ktx.assertOpen();
-
-        AccessMode mode = ktx.securityContext().mode();
-        if (!mode.allowsExecuteAggregatingFunction(id).allowsAccess()) {
-            String message = format(
-                    "Executing a user defined aggregating function is not allowed for %s.",
-                    ktx.securityContext().description());
-            throw ktx.securityAuthorizationHandler().logAndGetAuthorizationException(ktx.securityContext(), message);
-        }
-
-        final SecurityContext securityContext =
-                mode.shouldBoostAggregatingFunction(id).allowsAccess()
-                        ? ktx.securityContext().withMode(new OverriddenAccessMode(mode, AccessMode.Static.READ))
-                        : ktx.securityContext().withMode(new RestrictedAccessMode(mode, AccessMode.Static.READ));
-
-        try (KernelTransaction.Revertable ignore = ktx.overrideWith(securityContext)) {
-            UserAggregator aggregator = globalProcedures.createAggregationFunction(
-                    prepareContext(securityContext, ProcedureCallContext.EMPTY), id);
-            return new UserAggregator() {
-                @Override
-                public void update(AnyValue[] input) throws ProcedureException {
-                    try (KernelTransaction.Revertable ignore = ktx.overrideWith(securityContext)) {
-                        aggregator.update(input);
-                    }
-                }
-
-                @Override
-                public AnyValue result() throws ProcedureException {
-                    try (KernelTransaction.Revertable ignore = ktx.overrideWith(securityContext)) {
-                        return aggregator.result();
-                    }
-                }
-            };
-        }
-    }
-
-    private UserAggregator createBuiltInAggregationFunction(int id) throws ProcedureException {
-        ktx.assertOpen();
-
-        UserAggregator aggregator = globalProcedures.createAggregationFunction(
-                prepareContext(ktx.securityContext(), ProcedureCallContext.EMPTY), id);
-        return new UserAggregator() {
-            @Override
-            public void update(AnyValue[] input) throws ProcedureException {
-                aggregator.update(input);
-            }
-
-            @Override
-            public AnyValue result() throws ProcedureException {
-                return aggregator.result();
-            }
-        };
-    }
-
-    private Context prepareContext(SecurityContext securityContext, ProcedureCallContext procedureContext) {
-        final InternalTransaction internalTransaction = ktx.internalTransaction();
-        return buildContext(databaseDependencies, new DefaultValueMapper(internalTransaction))
-                .withTransaction(internalTransaction)
-                .withSecurityContext(securityContext)
-                .withProcedureCallContext(procedureContext)
-                .context();
     }
 
     static void assertValidIndex(IndexDescriptor index) throws IndexNotFoundKernelException {

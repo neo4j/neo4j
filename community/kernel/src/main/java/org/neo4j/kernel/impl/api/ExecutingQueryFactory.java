@@ -49,15 +49,14 @@ public class ExecutingQueryFactory {
         config.addListener(GraphDatabaseSettings.track_query_allocation, configListener);
     }
 
-    public ExecutingQuery createForStatement(KernelStatement statement, String queryText, MapValue queryParameters) {
-        KernelTransactionImplementation transaction = statement.getTransaction();
+    public ExecutingQuery createForStatement(StatementInfo statement, String queryText, MapValue queryParameters) {
         ExecutingQuery executingQuery = createUnbound(
                 queryText,
                 queryParameters,
-                transaction.clientInfo(),
+                statement.clientInfo(),
                 statement.executingUser(),
                 statement.authenticatedUser(),
-                transaction.getMetaData());
+                statement.getMetaData());
         bindToStatement(executingQuery, statement);
         return executingQuery;
     }
@@ -85,13 +84,13 @@ public class ExecutingQueryFactory {
                 trackQueryAllocations.get());
     }
 
-    public static void bindToStatement(ExecutingQuery executingQuery, KernelStatement statement) {
+    public static void bindToStatement(ExecutingQuery executingQuery, StatementInfo statement) {
         executingQuery.onTransactionBound(new ExecutingQuery.TransactionBinding(
                 statement.namedDatabaseId(),
                 statement::getHits,
                 statement::getFaults,
-                () -> statement.locks().activeLockCount(),
-                statement.getTransaction().getTransactionSequenceNumber()));
+                statement::activeLockCount,
+                statement.getTransactionSequenceNumber()));
     }
 
     public static void unbindFromTransaction(ExecutingQuery executingQuery, long userTransactionId) {

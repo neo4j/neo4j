@@ -51,6 +51,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.database.AbstractDatabase;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -143,6 +144,7 @@ class BoltKernelGraphDatabaseServiceProviderBookmarkTest {
         when(dependencyResolver.resolveDependency(DatabaseAvailabilityGuard.class))
                 .thenReturn(availabilityGuard);
         when(dependencyResolver.resolveDependency(TransactionIdStore.class)).thenReturn(txIdStore);
+        when(dependencyResolver.resolveDependency(AbstractDatabase.class)).thenReturn(db);
         when(dependencyResolver.resolveDependency(Database.class)).thenReturn(db);
 
         when(db.getDependencyResolver()).thenReturn(dependencyResolver);

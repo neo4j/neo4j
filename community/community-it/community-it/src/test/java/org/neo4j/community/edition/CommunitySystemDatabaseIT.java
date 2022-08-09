@@ -47,7 +47,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -65,8 +64,8 @@ class CommunitySystemDatabaseIT {
 
     private GraphDatabaseService database;
     private DatabaseContextProvider<?> databaseContextProvider;
-    private GraphDatabaseFacade defaultDb;
-    private GraphDatabaseFacade systemDb;
+    private GraphDatabaseAPI defaultDb;
+    private GraphDatabaseAPI systemDb;
     private DatabaseManagementService managementService;
 
     @BeforeEach
@@ -207,7 +206,7 @@ class CommunitySystemDatabaseIT {
         return new ConsistencyCheckService(databaseLayout).runFullConsistencyCheck();
     }
 
-    private static int countTransactionInLogicalStore(GraphDatabaseFacade facade) throws IOException {
+    private static int countTransactionInLogicalStore(GraphDatabaseAPI facade) throws IOException {
         LogicalTransactionStore transactionStore =
                 facade.getDependencyResolver().resolveDependency(LogicalTransactionStore.class);
         try (TransactionCursor cursor = transactionStore.getTransactions(TransactionIdStore.BASE_TX_ID + 1)) {
@@ -219,7 +218,7 @@ class CommunitySystemDatabaseIT {
         }
     }
 
-    private static GraphDatabaseFacade getDatabaseByName(
+    private static GraphDatabaseAPI getDatabaseByName(
             DatabaseContextProvider<?> databaseContextProvider, NamedDatabaseId namedDatabaseId) {
         return databaseContextProvider
                 .getDatabaseContext(namedDatabaseId)

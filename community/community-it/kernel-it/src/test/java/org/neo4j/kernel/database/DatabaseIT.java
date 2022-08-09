@@ -47,6 +47,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.collection.Dependencies;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.index.internal.gbptree.GBPTreeStructure;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
@@ -299,7 +300,7 @@ class DatabaseIT {
     @Test
     void shouldFlushDatabaseFilesOnCheckpoint() throws Exception {
         // Given
-        Dependencies dependencyResolver = database.getDependencyResolver();
+        DependencyResolver dependencyResolver = database.getDependencyResolver();
         Map<PageFileWrapper, Integer> flushCounts = new HashMap<>();
         Set<PageFileWrapper> mappedFiles = pageCacheWrapper.getMappedFilesForDatabase(
                 database.getNamedDatabaseId().name());

@@ -28,7 +28,7 @@ import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.dbms.systemgraph.CommunityTopologyGraphDbmsModel;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 
@@ -45,7 +45,7 @@ public final class SystemGraphReadOnlyDatabaseLookupFactory implements ReadOnlyD
         this.log = logProvider.getLog(getClass());
     }
 
-    private Optional<GraphDatabaseFacade> systemDatabase() {
+    private Optional<GraphDatabaseAPI> systemDatabase() {
         var systemDb = databaseContextProvider.getDatabaseContext(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID);
         var started = systemDb.map(db -> db.databaseFacade().isAvailable()).orElse(false);
 
@@ -76,7 +76,7 @@ public final class SystemGraphReadOnlyDatabaseLookupFactory implements ReadOnlyD
         return next;
     }
 
-    private Set<NamedDatabaseId> lookupReadOnlyDatabases(GraphDatabaseFacade db) {
+    private Set<NamedDatabaseId> lookupReadOnlyDatabases(GraphDatabaseAPI db) {
         try (var tx = db.beginTx()) {
             var model = new CommunityTopologyGraphDbmsModel(tx);
             var databaseAccess = model.getAllDatabaseAccess();

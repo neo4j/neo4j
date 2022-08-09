@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
 import org.neo4j.collection.Dependencies;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.DatabaseContext;
@@ -90,18 +91,20 @@ public class DbmsDiagnosticsManager {
         if (values.size() > CONCISE_DATABASE_DUMP_THRESHOLD) {
             dumpConciseDiagnostics(values, log);
         } else {
-            values.forEach(dbCtx -> dumpDatabaseDiagnostics(dbCtx.database(), log, true));
+            values.stream()
+                    .flatMap(ctx -> ctx.optionalDatabase().stream())
+                    .forEach(db -> dumpDatabaseDiagnostics(db, log, true));
         }
     }
 
     private static void dumpConciseDiagnostics(
             Collection<? extends DatabaseContext> databaseContexts, InternalLog log) {
         var startedDbs = databaseContexts.stream()
-                .map(DatabaseContext::database)
+                .flatMap(ctx -> ctx.optionalDatabase().stream())
                 .filter(Database::isStarted)
                 .collect(toList());
         var stoppedDbs = databaseContexts.stream()
-                .map(DatabaseContext::database)
+                .flatMap(ctx -> ctx.optionalDatabase().stream())
                 .filter(not(Database::isStarted))
                 .collect(toList());
 
@@ -158,7 +161,7 @@ public class DbmsDiagnosticsManager {
                             return;
                         }
                     }
-                    Dependencies databaseResolver = database.getDependencyResolver();
+                    DependencyResolver databaseResolver = database.getDependencyResolver();
                     DbmsInfo dbmsInfo = databaseResolver.resolveDependency(DbmsInfo.class);
                     FileSystemAbstraction fs = databaseResolver.resolveDependency(FileSystemAbstraction.class);
                     StorageEngineFactory storageEngineFactory =

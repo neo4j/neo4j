@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.StringUtils;
@@ -36,6 +37,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.QueryRegistry;
@@ -66,7 +68,7 @@ import org.neo4j.resources.CpuClock;
  * instance again, when it's initialized.</li>
  * </ol>
  */
-public class KernelStatement extends CloseableResourceManager implements Statement, AssertOpen {
+public class KernelStatement extends CloseableResourceManager implements AssertOpen, Statement, StatementInfo {
     private static final int EMPTY_COUNTER = 0;
     private static final int STATEMENT_TRACK_HISTORY_MAX_SIZE = 100;
     private static final Deque<StackTraceElement[]> EMPTY_STATEMENT_HISTORY = new ArrayDeque<>(0);
@@ -107,8 +109,19 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
         return queryRegistry;
     }
 
+    @Override
     public NamedDatabaseId namedDatabaseId() {
         return namedDatabaseId;
+    }
+
+    @Override
+    public ClientConnectionInfo clientInfo() {
+        return transaction.clientInfo();
+    }
+
+    @Override
+    public Map<String, Object> getMetaData() {
+        return transaction.getMetaData();
     }
 
     @Override
@@ -148,6 +161,12 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
         return tracer == null ? systemLockTracer : systemLockTracer.combine(tracer);
     }
 
+    @Override
+    public long activeLockCount() {
+        return lockClient.activeLockCount();
+    }
+
+    @Override
     public long getHits() {
         /*
          * The cursor tracer is shared between queries in the same transaction.
@@ -164,6 +183,7 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
                 : EMPTY_COUNTER;
     }
 
+    @Override
     public long getFaults() {
         // Comment on getHits also applies here.
         return isAcquired()
@@ -212,12 +232,19 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
                 leakedStatements, additionalInstruction);
     }
 
-    final String authenticatedUser() {
+    @Override
+    public final String authenticatedUser() {
         return transaction.securityContext().subject().authenticatedUser();
     }
 
-    final String executingUser() {
+    @Override
+    public final String executingUser() {
         return transaction.securityContext().subject().executingUser();
+    }
+
+    @Override
+    public long getTransactionSequenceNumber() {
+        return transaction.getTransactionSequenceNumber();
     }
 
     final Optional<ExecutingQuery> executingQuery() {

@@ -19,12 +19,23 @@
  */
 package org.neo4j.dbms.database;
 
+import java.util.Optional;
 import org.neo4j.collection.Dependencies;
+import org.neo4j.common.DependencyResolver;
+import org.neo4j.kernel.database.AbstractDatabase;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 public interface DatabaseContext {
-    Database database();
+    AbstractDatabase database();
+
+    default Optional<Database> optionalDatabase() {
+        if (database() instanceof Database db) {
+            return Optional.of(db);
+        } else {
+            return Optional.empty();
+        }
+    }
 
     /**
      * Returns a per-database {@link Dependencies} object.
@@ -35,9 +46,9 @@ public interface DatabaseContext {
      *
      * @return dependencies service for this database
      */
-    default Dependencies dependencies() {
+    default DependencyResolver dependencies() {
         return database().getDependencyResolver();
     }
 
-    GraphDatabaseFacade databaseFacade();
+    GraphDatabaseAPI databaseFacade();
 }

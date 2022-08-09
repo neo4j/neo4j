@@ -26,7 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
-import org.neo4j.collection.Dependencies;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.internal.helpers.Exceptions;
@@ -50,7 +50,7 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider {
 
     @Override
     public void dump(DiagnosticsLogger logger) {
-        Dependencies dependencyResolver = database.getDependencyResolver();
+        DependencyResolver dependencyResolver = database.getDependencyResolver();
         FileSystemAbstraction fileSystem = dependencyResolver.resolveDependency(FileSystemAbstraction.class);
 
         LogFiles logFiles = dependencyResolver.resolveDependency(LogFiles.class);

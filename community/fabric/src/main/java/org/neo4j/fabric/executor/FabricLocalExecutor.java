@@ -37,13 +37,13 @@ import org.neo4j.fabric.transaction.CompositeTransaction;
 import org.neo4j.fabric.transaction.FabricTransactionInfo;
 import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
+import org.neo4j.kernel.impl.query.TransactionalContextFactory;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.virtual.MapValue;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -146,20 +146,19 @@ public class FabricLocalExecutor {
             }
         }
 
-        private FabricKernelTransaction beginKernelTx(GraphDatabaseFacade databaseFacade, AccessMode accessMode) {
+        private FabricKernelTransaction beginKernelTx(GraphDatabaseAPI databaseFacade, AccessMode accessMode) {
             var dependencyResolver = databaseFacade.getDependencyResolver();
             var executionEngine = dependencyResolver.resolveDependency(ExecutionEngine.class);
 
             var internalTransaction = beginInternalTransaction(databaseFacade, transactionInfo);
 
-            var queryService = dependencyResolver.resolveDependency(GraphDatabaseQueryService.class);
-            var transactionalContextFactory = Neo4jTransactionalContextFactory.create(queryService);
+            var transactionalContextFactory = dependencyResolver.resolveDependency(TransactionalContextFactory.class);
 
             return new FabricKernelTransaction(
                     executionEngine, transactionalContextFactory, internalTransaction, config);
         }
 
-        private GraphDatabaseFacade getDatabaseFacade(Location.Local location) {
+        private GraphDatabaseAPI getDatabaseFacade(Location.Local location) {
             try {
                 var facade = dbms.getDatabaseFacade(location.getDatabaseName());
                 if (!Objects.equals(facade.databaseId().databaseId().uuid(), location.getUuid())) {
@@ -176,17 +175,20 @@ public class FabricLocalExecutor {
         }
 
         private InternalTransaction beginInternalTransaction(
-                GraphDatabaseFacade databaseFacade, FabricTransactionInfo transactionInfo) {
+                GraphDatabaseAPI databaseAPI, FabricTransactionInfo transactionInfo) {
             KernelTransaction.Type kernelTransactionType = getKernelTransactionType(transactionInfo);
-            var loginContext = databaseAccess.maybeRestrictLoginContext(
-                    transactionInfo.getLoginContext(), databaseFacade.databaseName());
 
-            var internalTransaction = databaseFacade.beginTransaction(
-                    kernelTransactionType,
-                    loginContext,
-                    transactionInfo.getClientConnectionInfo(),
-                    compositeTransaction::childTransactionTerminated,
-                    this::transformTerminalOperationError);
+            InternalTransaction internalTransaction = databaseAPI instanceof GraphDatabaseFacade facade
+                    ? facade.beginTransaction(
+                            kernelTransactionType,
+                            transactionInfo.getLoginContext(),
+                            transactionInfo.getClientConnectionInfo(),
+                            compositeTransaction::childTransactionTerminated,
+                            this::transformTerminalOperationError)
+                    : databaseAPI.beginTransaction(
+                            kernelTransactionType,
+                            transactionInfo.getLoginContext(),
+                            transactionInfo.getClientConnectionInfo());
 
             if (transactionInfo.getTxMetadata() != null) {
                 internalTransaction.setMetaData(transactionInfo.getTxMetadata());

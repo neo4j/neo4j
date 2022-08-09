@@ -27,6 +27,7 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.database.AbstractDatabase;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
@@ -39,23 +40,31 @@ public class DatabaseSizeServiceImpl implements DatabaseSizeService {
 
     @Override
     public long getDatabaseTotalSize(NamedDatabaseId databaseId) throws IOException {
-        var database = getDatabase(databaseId);
-        var fs = getFileSystem(database);
-        return getTotalSize(fs, database.getDatabaseLayout());
+        var abstractDatabase = getDatabase(databaseId);
+        if (abstractDatabase instanceof Database database) {
+            var fs = getFileSystem(database);
+            return getTotalSize(fs, database.getDatabaseLayout());
+        } else {
+            return 0L;
+        }
     }
 
     @Override
     public long getDatabaseDataSize(NamedDatabaseId databaseId) throws IOException {
-        var database = getDatabase(databaseId);
-        var fs = getFileSystem(database);
-        return getDataDirectorySize(fs, database.getDatabaseLayout());
+        var abstractDatabase = getDatabase(databaseId);
+        if (abstractDatabase instanceof Database database) {
+            var fs = getFileSystem(database);
+            return getDataDirectorySize(fs, database.getDatabaseLayout());
+        } else {
+            return 0L;
+        }
     }
 
     private static FileSystemAbstraction getFileSystem(Database database) {
         return database.getDependencyResolver().resolveDependency(FileSystemAbstraction.class);
     }
 
-    private Database getDatabase(NamedDatabaseId databaseId) {
+    private AbstractDatabase getDatabase(NamedDatabaseId databaseId) {
         return databaseContextProvider
                 .getDatabaseContext(databaseId)
                 .orElseThrow(() -> new DatabaseNotFoundException("Database " + databaseId.name() + " not found."))

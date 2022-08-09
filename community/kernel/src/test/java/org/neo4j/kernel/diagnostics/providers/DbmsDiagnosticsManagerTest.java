@@ -95,6 +95,7 @@ class DbmsDiagnosticsManagerTest {
         dependencies.satisfyDependency(databaseContextProvider);
 
         when(defaultContext.database()).thenReturn(defaultDatabase);
+        when(defaultContext.optionalDatabase()).thenReturn(Optional.of(defaultDatabase));
         when(databaseContextProvider.getDatabaseContext(DEFAULT_DATABASE_ID)).thenReturn(Optional.of(defaultContext));
         when(databaseContextProvider.registeredDatabases())
                 .thenReturn(new TreeMap<>(singletonMap(DEFAULT_DATABASE_ID, defaultContext)));

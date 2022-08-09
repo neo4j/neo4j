@@ -30,7 +30,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.KernelTransactionHandle
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.database.NormalizedDatabaseName
-import org.neo4j.kernel.impl.api.KernelTransactions
+import org.neo4j.kernel.impl.api.TransactionRegistry
 import org.neo4j.values.storable.StringValue
 import org.neo4j.values.virtual.ListValue
 
@@ -51,7 +51,7 @@ case object TransactionCommandHelper {
   def getExecutingTransactions(databaseContext: DatabaseContext): Set[KernelTransactionHandle] = {
     val dependencies = databaseContext.dependencies
     if (dependencies != null)
-      dependencies.resolveDependency(classOf[KernelTransactions]).executingTransactions.asScala.toSet
+      dependencies.resolveDependency(classOf[TransactionRegistry]).executingTransactions.asScala.toSet
     else Set.empty
   }
 

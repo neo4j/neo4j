@@ -82,7 +82,7 @@ import org.neo4j.token.TokenHolders;
  * ones requires no synchronization (although the live list is not guaranteed to be exact).
  */
 public class KernelTransactions extends LifecycleAdapter
-        implements Supplier<IdController.TransactionSnapshot>, IdController.IdFreeCondition {
+        implements TransactionRegistry, Supplier<IdController.TransactionSnapshot>, IdController.IdFreeCondition {
     public static final long SYSTEM_TRANSACTION_ID = 0;
     private final Locks locks;
     private final ConstraintIndexCreator constraintIndexCreator;
@@ -247,6 +247,7 @@ public class KernelTransactions extends LifecycleAdapter
      *
      * @return the (approximate) set of open transactions.
      */
+    @Override
     public Set<KernelTransactionHandle> activeTransactions() {
         return allTransactions.stream()
                 .map(this::createHandle)
@@ -271,6 +272,7 @@ public class KernelTransactions extends LifecycleAdapter
      *
      * @return the (approximate) set of executing transactions.
      */
+    @Override
     public Set<KernelTransactionHandle> executingTransactions() {
         return allTransactions.stream()
                 .map(this::createHandle)

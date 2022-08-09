@@ -44,6 +44,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.database.AbstractDatabase;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -75,7 +76,7 @@ class TransactionIdTrackerTest {
         when(db.getDependencyResolver()).thenReturn(resolver);
         when(db.getDatabaseAvailabilityGuard()).thenReturn(databaseAvailabilityGuard);
 
-        when(resolver.resolveDependency(Database.class)).thenReturn(db);
+        when(resolver.resolveDependency(AbstractDatabase.class)).thenReturn(db);
         when(resolver.resolveDependency(TransactionIdStore.class)).thenReturn(transactionIdStore);
 
         when(databaseAvailabilityGuard.isAvailable()).thenReturn(true);

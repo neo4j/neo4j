@@ -28,7 +28,7 @@ import java.time.Duration;
 import java.util.concurrent.locks.LockSupport;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
-import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.AbstractDatabase;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
@@ -129,24 +129,24 @@ public class TransactionIdTracker {
         LockSupport.parkNanos(100);
     }
 
-    private static long currentTransactionId(Database db) {
+    private static long currentTransactionId(AbstractDatabase db) {
         // await for the last closed transaction id to to have at least the expected value
         // it has to be "last closed" and not "last committed" because all transactions before the expected one should
         // also be committed
         return transactionIdStore(db).getLastClosedTransactionId();
     }
 
-    private static TransactionIdStore transactionIdStore(Database db) {
+    private static TransactionIdStore transactionIdStore(AbstractDatabase db) {
         // We need to resolve this as late as possible in case the database has been restarted as part of store copy.
         // This causes TransactionIdStore staleness and we could get a MetaDataStore closed exception.
         // Ideally we'd fix this with some life cycle wizardry but not going to do that for now.
         return db.getDependencyResolver().resolveDependency(TransactionIdStore.class);
     }
 
-    private Database database(NamedDatabaseId namedDatabaseId) {
+    private AbstractDatabase database(NamedDatabaseId namedDatabaseId) {
         try {
             var dbApi = (GraphDatabaseAPI) managementService.database(namedDatabaseId.name());
-            var db = dbApi.getDependencyResolver().resolveDependency(Database.class);
+            var db = dbApi.getDependencyResolver().resolveDependency(AbstractDatabase.class);
             if (isNotAvailable(db)) {
                 throw databaseUnavailable(db);
             }
@@ -156,7 +156,7 @@ public class TransactionIdTracker {
         }
     }
 
-    private static boolean isNotAvailable(Database db) {
+    private static boolean isNotAvailable(AbstractDatabase db) {
         return !db.getDatabaseAvailabilityGuard().isAvailable();
     }
 
@@ -165,22 +165,22 @@ public class TransactionIdTracker {
                 DatabaseNotFound, "Database '" + namedDatabaseId.name() + "' does not exist");
     }
 
-    private static TransactionIdTrackerException databaseUnavailable(Database db) {
+    private static TransactionIdTrackerException databaseUnavailable(AbstractDatabase db) {
         return databaseUnavailable(db, null);
     }
 
-    private static TransactionIdTrackerException databaseUnavailable(Database db, Throwable cause) {
+    private static TransactionIdTrackerException databaseUnavailable(AbstractDatabase db, Throwable cause) {
         return new TransactionIdTrackerException(
                 DatabaseUnavailable, "Database '" + db.getNamedDatabaseId().name() + "' unavailable", cause);
     }
 
     private static TransactionIdTrackerException unreachableDatabaseVersion(
-            Database db, long lastTransactionId, long oldestAcceptableTxId) {
+            AbstractDatabase db, long lastTransactionId, long oldestAcceptableTxId) {
         return unreachableDatabaseVersion(db, lastTransactionId, oldestAcceptableTxId, null);
     }
 
     private static TransactionIdTrackerException unreachableDatabaseVersion(
-            Database db, long lastTransactionId, long oldestAcceptableTxId, Throwable cause) {
+            AbstractDatabase db, long lastTransactionId, long oldestAcceptableTxId, Throwable cause) {
         return new TransactionIdTrackerException(
                 BookmarkTimeout,
                 "Database '" + db.getNamedDatabaseId().name() + "' not up to the requested version: "

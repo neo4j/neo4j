@@ -38,7 +38,7 @@ import org.neo4j.kernel.availability.AvailabilityRequirement;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
-import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.AbstractDatabase;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
@@ -127,7 +127,7 @@ class DatabaseAvailabilityIT {
         DatabaseContext databaseContext = databaseContextProvider
                 .getDatabaseContext(defaultNamedDatabaseId)
                 .get();
-        Database database = databaseContext.database();
+        AbstractDatabase database = databaseContext.database();
 
         executeTransactionOnDefaultDatabase();
 
