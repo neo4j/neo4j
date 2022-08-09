@@ -73,6 +73,15 @@ public class TokenIndexImporter implements IndexImporter {
     }
 
     @Override
+    public void remove(long entity, long[] tokens) {
+        try {
+            updater.process(IndexEntryUpdate.change(entity, index, tokens, EMPTY_LONG_ARRAY));
+        } catch (IndexEntryConflictException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public void close() throws IOException {
         closeAll(
                 updater,

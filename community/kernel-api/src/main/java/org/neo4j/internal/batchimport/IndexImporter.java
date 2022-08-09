@@ -35,9 +35,14 @@ public interface IndexImporter extends Closeable {
      */
     void add(long entity, long[] tokens);
 
+    void remove(long entity, long[] tokens);
+
     class EmptyIndexImporter implements IndexImporter {
         @Override
         public void add(long entity, long[] tokens) {}
+
+        @Override
+        public void remove(long entity, long[] tokens) {}
 
         @Override
         public void close() throws IOException {}
