@@ -20,7 +20,11 @@
 package org.neo4j.dbms.systemgraph;
 
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.Objects;
+import java.util.Optional;
 import org.neo4j.logging.Level;
+import org.neo4j.values.storable.DurationValue;
 
 public final class DriverSettings {
     enum Keys {
@@ -38,22 +42,24 @@ public final class DriverSettings {
         }
     }
 
-    private final boolean sslEnabled;
+    private final Boolean sslEnabled;
     private final Duration connectionTimeout;
     private final Duration connectionMaxLifetime;
     private final Duration connectionPoolAcquisitionTimeout;
     private final Duration connectionPoolIdleTest;
-    private final int connectionPoolMaxSize;
+    private final Integer connectionPoolMaxSize;
     private final Level loggingLevel;
+    private final String sslPolicy;
 
-    DriverSettings(
-            boolean sslEnabled,
+    private DriverSettings(
+            Boolean sslEnabled,
             Duration connectionTimeout,
             Duration connectionMaxLifetime,
             Duration connectionPoolAcquisitionTimeout,
             Duration connectionPoolIdleTest,
-            int connectionPoolMaxSize,
-            Level loggingLevel) {
+            Integer connectionPoolMaxSize,
+            Level loggingLevel,
+            String sslPolicy) {
         this.sslEnabled = sslEnabled;
         this.connectionTimeout = connectionTimeout;
         this.connectionMaxLifetime = connectionMaxLifetime;
@@ -61,33 +67,154 @@ public final class DriverSettings {
         this.connectionPoolIdleTest = connectionPoolIdleTest;
         this.connectionPoolMaxSize = connectionPoolMaxSize;
         this.loggingLevel = loggingLevel;
+        this.sslPolicy = sslPolicy;
     }
 
-    public boolean isSslEnabled() {
-        return sslEnabled;
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public Duration connectionTimeout() {
-        return connectionTimeout;
+    public Optional<Boolean> isSslEnabled() {
+        return Optional.ofNullable(sslEnabled);
     }
 
-    public Duration connectionMaxLifetime() {
-        return connectionMaxLifetime;
+    public Optional<Duration> connectionTimeout() {
+        return Optional.ofNullable(connectionTimeout);
     }
 
-    public Duration connectionPoolAcquisitionTimeout() {
-        return connectionPoolAcquisitionTimeout;
+    public Optional<Duration> connectionMaxLifetime() {
+        return Optional.ofNullable(connectionMaxLifetime);
     }
 
-    public Duration connectionPoolIdleTest() {
-        return connectionPoolIdleTest;
+    public Optional<Duration> connectionPoolAcquisitionTimeout() {
+        return Optional.ofNullable(connectionPoolAcquisitionTimeout);
     }
 
-    public int connectionPoolMaxSize() {
-        return connectionPoolMaxSize;
+    public Optional<Duration> connectionPoolIdleTest() {
+        return Optional.ofNullable(connectionPoolIdleTest);
     }
 
-    public Level loggingLevel() {
-        return loggingLevel;
+    public Optional<Integer> connectionPoolMaxSize() {
+        return Optional.ofNullable(connectionPoolMaxSize);
+    }
+
+    public Optional<Level> loggingLevel() {
+        return Optional.ofNullable(loggingLevel);
+    }
+
+    public Optional<String> sslPolicy() {
+        return Optional.ofNullable(sslPolicy);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        DriverSettings that = (DriverSettings) o;
+        return Objects.equals(sslEnabled, that.sslEnabled)
+                && Objects.equals(connectionTimeout, that.connectionTimeout)
+                && Objects.equals(connectionMaxLifetime, that.connectionMaxLifetime)
+                && Objects.equals(connectionPoolAcquisitionTimeout, that.connectionPoolAcquisitionTimeout)
+                && Objects.equals(connectionPoolIdleTest, that.connectionPoolIdleTest)
+                && Objects.equals(connectionPoolMaxSize, that.connectionPoolMaxSize)
+                && loggingLevel == that.loggingLevel
+                && Objects.equals(sslPolicy, that.sslPolicy);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                sslEnabled,
+                connectionTimeout,
+                connectionMaxLifetime,
+                connectionPoolAcquisitionTimeout,
+                connectionPoolIdleTest,
+                connectionPoolMaxSize,
+                loggingLevel);
+    }
+
+    static class Builder {
+        private Boolean sslEnabled;
+        private Duration connectionTimeout;
+        private Duration connectionMaxLifetime;
+        private Duration connectionPoolAcquisitionTimeout;
+        private Duration connectionPoolIdleTest;
+        private Integer connectionPoolMaxSize;
+        private Level loggingLevel;
+        private String sslPolicy;
+
+        private Builder() {}
+
+        Builder withSSlEnabled(boolean sslEnabled) {
+            this.sslEnabled = sslEnabled;
+            return this;
+        }
+
+        Builder withConnectionTimeout(DurationValue connectionTimeout) {
+            this.connectionTimeout = convertDurationValue(connectionTimeout, Keys.CONNECTION_TIMEOUT.toString());
+            return this;
+        }
+
+        Builder withConnectionMaxLifeTime(DurationValue connectionMaxLifetime) {
+            this.connectionMaxLifetime =
+                    convertDurationValue(connectionMaxLifetime, Keys.CONNECTION_MAX_LIFETIME.toString());
+            return this;
+        }
+
+        Builder withConnectionPoolAcquisitionTimeout(DurationValue connectionPoolAcquisitionTimeout) {
+            this.connectionPoolAcquisitionTimeout = convertDurationValue(
+                    connectionPoolAcquisitionTimeout, Keys.CONNECTION_POOL_ACQUISITION_TIMEOUT.toString());
+            return this;
+        }
+
+        Builder withConnectionPoolIdleTest(DurationValue connectionPoolIdleTest) {
+            this.connectionPoolIdleTest =
+                    convertDurationValue(connectionPoolIdleTest, Keys.CONNECTION_POOL_IDLE_TEST.toString());
+            return this;
+        }
+
+        Builder withConnectionPoolMaxSize(int connectionPoolMaxSize) {
+            this.connectionPoolMaxSize = connectionPoolMaxSize;
+            return this;
+        }
+
+        Builder withLoggingLevel(Level loggingLevel) {
+            this.loggingLevel = loggingLevel;
+            return this;
+        }
+
+        Builder withSSLPolicy(String sslPolicy) {
+            this.sslPolicy = sslPolicy;
+            return this;
+        }
+
+        DriverSettings build() {
+            return new DriverSettings(
+                    sslEnabled,
+                    connectionTimeout,
+                    connectionMaxLifetime,
+                    connectionPoolAcquisitionTimeout,
+                    connectionPoolIdleTest,
+                    connectionPoolMaxSize,
+                    loggingLevel,
+                    sslPolicy);
+        }
+
+        private Duration convertDurationValue(DurationValue durationValue, String durationName) {
+            // Need a max value which is guaranteed not to be estimated (i.e. not have months or years in the duration)
+            //  in order to safely convert to java duration.
+            if (durationValue.compareTo(DurationValue.duration(Duration.ofHours(24))) > 0) {
+                throw new IllegalStateException(String.format(
+                        "Driver setting %s is a duration of %s. "
+                                + "This is greater than the max of 24 hours! Please reduce it.",
+                        durationName, durationValue.prettyPrint()));
+            }
+            var seconds = durationValue.get(ChronoUnit.SECONDS);
+            return Duration.ofSeconds(seconds);
+        }
     }
 }

@@ -19,7 +19,15 @@
  */
 package org.neo4j.dbms.systemgraph;
 
+import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_MAX_LIFETIME;
+import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_POOL_ACQUISITION_TIMEOUT;
+import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_POOL_IDLE_TEST;
+import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_POOL_MAX_SIZE;
+import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_TIMEOUT;
+import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.LOGGING_LEVEL;
+import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.SSL_ENABLED;
 import static org.neo4j.dbms.systemgraph.InstanceModeConstraint.PRIMARY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.CONNECTS_WITH_RELATIONSHIP;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_CREATED_AT_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_DESIGNATED_SEEDER_PROPERTY;
@@ -37,6 +45,7 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UPDATE_
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DELETED_DATABASE_DUMP_DATA_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DELETED_DATABASE_LABEL;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DRIVER_SETTINGS_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseStatus.OFFLINE;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HOSTED_ON_BOOTSTRAPPER_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HOSTED_ON_MODE_PROPERTY;
@@ -378,24 +387,52 @@ public abstract class BaseTopologyGraphDbmsModelIT {
         }
     }
 
-    protected Node createLocalAliasForDatabase(
+    protected Node createInternalReferenceForDatabase(
             Transaction tx, String name, boolean primary, NamedDatabaseId databaseId) {
         var databaseNode = findDatabase(databaseId, tx);
-        var aliasNode = tx.createNode(DATABASE_NAME_LABEL);
-        aliasNode.setProperty(PRIMARY_PROPERTY, primary);
-        aliasNode.setProperty(DATABASE_NAME_PROPERTY, name);
-        aliasNode.createRelationshipTo(databaseNode, TARGETS_RELATIONSHIP);
-        return aliasNode;
+        var referenceNode = tx.createNode(DATABASE_NAME_LABEL);
+        referenceNode.setProperty(PRIMARY_PROPERTY, primary);
+        referenceNode.setProperty(DATABASE_NAME_PROPERTY, name);
+        referenceNode.createRelationshipTo(databaseNode, TARGETS_RELATIONSHIP);
+        return referenceNode;
     }
 
-    protected Node createRemoteAliasForDatabase(Transaction tx, String name, String targetName, RemoteUri uri) {
-        var aliasNode = tx.createNode(REMOTE_DATABASE_LABEL, DATABASE_NAME_LABEL);
-        aliasNode.setProperty(PRIMARY_PROPERTY, false);
-        aliasNode.setProperty(DATABASE_NAME_PROPERTY, name);
-        aliasNode.setProperty(TARGET_NAME_PROPERTY, targetName);
+    protected Node createExternalReferenceForDatabase(
+            Transaction tx, String name, String targetName, RemoteUri uri, UUID uuid) {
+        var referenceNode = tx.createNode(REMOTE_DATABASE_LABEL, DATABASE_NAME_LABEL);
+        referenceNode.setProperty(PRIMARY_PROPERTY, false);
+        referenceNode.setProperty(DATABASE_NAME_PROPERTY, name);
+        referenceNode.setProperty(TARGET_NAME_PROPERTY, targetName);
         var uriString =
                 String.format("%s://%s", uri.getScheme(), uri.getAddresses().get(0));
-        aliasNode.setProperty(URL_PROPERTY, uriString);
-        return aliasNode;
+        referenceNode.setProperty(URL_PROPERTY, uriString);
+        return referenceNode;
+    }
+
+    protected Node createDriverSettingsForExternalAlias(
+            Transaction tx, Node externalRefNode, DriverSettings driverSettings) {
+        var settingsNode = tx.createNode(DRIVER_SETTINGS_LABEL);
+        driverSettings.isSslEnabled().ifPresent(enabled -> settingsNode.setProperty(SSL_ENABLED.toString(), enabled));
+        driverSettings
+                .connectionTimeout()
+                .ifPresent(timeout -> settingsNode.setProperty(CONNECTION_TIMEOUT.toString(), timeout));
+        driverSettings
+                .connectionMaxLifetime()
+                .ifPresent(lifetime -> settingsNode.setProperty(CONNECTION_MAX_LIFETIME.toString(), lifetime));
+        driverSettings
+                .connectionPoolAcquisitionTimeout()
+                .ifPresent(
+                        timeout -> settingsNode.setProperty(CONNECTION_POOL_ACQUISITION_TIMEOUT.toString(), timeout));
+        driverSettings
+                .connectionPoolIdleTest()
+                .ifPresent(test -> settingsNode.setProperty(CONNECTION_POOL_IDLE_TEST.toString(), test));
+        driverSettings
+                .connectionPoolMaxSize()
+                .ifPresent(size -> settingsNode.setProperty(CONNECTION_POOL_MAX_SIZE.toString(), size));
+        driverSettings
+                .loggingLevel()
+                .ifPresent(level -> settingsNode.setProperty(LOGGING_LEVEL.toString(), level.toString()));
+        externalRefNode.createRelationshipTo(settingsNode, CONNECTS_WITH_RELATIONSHIP);
+        return settingsNode;
     }
 }
