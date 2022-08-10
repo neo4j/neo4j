@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.newapi;
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 import static org.neo4j.storageengine.api.LongReference.NULL_REFERENCE;
 
-import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
@@ -41,7 +40,6 @@ import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.Degrees;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
-import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
@@ -287,8 +285,6 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
     }
 
     private void fillDegrees(RelationshipSelection selection, Degrees.Mutator degrees) {
-        boolean hasChanges = hasChanges();
-        NodeState nodeTxState = hasChanges ? read.txState().getNodeState(nodeReference()) : null;
         if (currentAddedInTx == NO_ID) {
             if (allowsTraverseAll()) {
                 storeCursor.degrees(selection, degrees);
@@ -296,27 +292,11 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
                 readRestrictedDegrees(selection, degrees);
             }
         }
+        boolean hasChanges = hasChanges();
+        NodeState nodeTxState = hasChanges ? read.txState().getNodeState(nodeReference()) : null;
         if (nodeTxState != null) {
             // Then add the remaining types that's only present in the tx-state
-            IntIterator txTypes =
-                    nodeTxState.getAddedAndRemovedRelationshipTypes().intIterator();
-            while (txTypes.hasNext()) {
-                int type = txTypes.next();
-                if (selection.test(type)) {
-                    int outgoing = selection.test(RelationshipDirection.OUTGOING)
-                            ? nodeTxState.augmentDegree(RelationshipDirection.OUTGOING, 0, type)
-                            : 0;
-                    int incoming = selection.test(RelationshipDirection.INCOMING)
-                            ? nodeTxState.augmentDegree(RelationshipDirection.INCOMING, 0, type)
-                            : 0;
-                    int loop = selection.test(RelationshipDirection.LOOP)
-                            ? nodeTxState.augmentDegree(RelationshipDirection.LOOP, 0, type)
-                            : 0;
-                    if (!degrees.add(type, outgoing, incoming, loop)) {
-                        return;
-                    }
-                }
-            }
+            nodeTxState.fillDegrees(selection, degrees);
         }
     }
 

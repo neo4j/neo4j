@@ -187,9 +187,9 @@ class CachingExpandIntoTest {
         try (KernelTransaction tx = transaction()) {
             start = nodeWithDegree(tx, 0);
             end = nodeWithDegree(tx, 0);
-            r1 = relate(tx, start, "R1", end);
-            r2 = relate(tx, start, "R2", end);
-            r3 = relate(tx, end, "R3", start);
+            r1 = relate(tx, start, "R1", end); // 0
+            r2 = relate(tx, start, "R2", end); // 1
+            r3 = relate(tx, end, "R3", start); // 2
             tx.commit();
         }
 
@@ -226,7 +226,7 @@ class CachingExpandIntoTest {
                 RelationshipTraversalCursor traversalCursor =
                         tx.cursors().allocateRelationshipTraversalCursor(tx.cursorContext())) {
 
-            CachingExpandInto expandInto = new CachingExpandInto(tx.dataRead(), OUTGOING, MEMORY_TRACKER);
+            CachingExpandInto expandInto = new CachingExpandInto(tx.queryContext(), OUTGOING, MEMORY_TRACKER);
             assertThat(toSet(expandInto.connectingRelationships(nodeCursor, traversalCursor, start, null, end)))
                     .isEqualTo(immutable.of(r1, r2));
             assertThat(toSet(expandInto.connectingRelationships(nodeCursor, traversalCursor, end, null, start)))
@@ -263,7 +263,7 @@ class CachingExpandIntoTest {
                         tx.cursors().allocateRelationshipTraversalCursor(tx.cursorContext())) {
 
             int[] types = {t1, t3};
-            CachingExpandInto expandInto = new CachingExpandInto(tx.dataRead(), OUTGOING, MEMORY_TRACKER);
+            CachingExpandInto expandInto = new CachingExpandInto(tx.queryContext(), OUTGOING, MEMORY_TRACKER);
 
             assertThat(toSet(expandInto.connectingRelationships(nodeCursor, traversalCursor, start, types, end)))
                     .isEqualTo(immutable.of(r1));
@@ -308,7 +308,7 @@ class CachingExpandIntoTest {
                         tx.cursors().allocatePropertyCursor(tx.cursorContext(), tx.memoryTracker())) {
 
             int[] types = {t2, t3};
-            CachingExpandInto expandInto = new CachingExpandInto(tx.dataRead(), INCOMING, MEMORY_TRACKER);
+            CachingExpandInto expandInto = new CachingExpandInto(tx.queryContext(), INCOMING, MEMORY_TRACKER);
 
             // Find r3 first time
             RelationshipTraversalCursor cursor =
@@ -388,7 +388,7 @@ class CachingExpandIntoTest {
             Read read = tx.dataRead();
             CursorFactory cursors = tx.cursors();
             try (NodeCursor nodes = cursors.allocateNodeCursor(tx.cursorContext())) {
-                CachingExpandInto expand = new CachingExpandInto(tx.dataRead(), OUTGOING, MEMORY_TRACKER);
+                CachingExpandInto expand = new CachingExpandInto(tx.queryContext(), OUTGOING, MEMORY_TRACKER);
 
                 read.singleNode(node, nodes);
                 assertThat(nodes.next()).isTrue();
@@ -425,7 +425,7 @@ class CachingExpandIntoTest {
             Read read = tx.dataRead();
             CursorFactory cursors = tx.cursors();
             try (NodeCursor nodes = cursors.allocateNodeCursor(tx.cursorContext())) {
-                CachingExpandInto expand = new CachingExpandInto(tx.dataRead(), OUTGOING, MEMORY_TRACKER);
+                CachingExpandInto expand = new CachingExpandInto(tx.queryContext(), OUTGOING, MEMORY_TRACKER);
                 read.singleNode(node, nodes);
                 assertThat(nodes.next()).isTrue();
                 assertThat(nodes.supportsFastDegreeLookup()).isTrue();
@@ -465,7 +465,7 @@ class CachingExpandIntoTest {
                 var nodeCursor = tx.cursors().allocateNodeCursor(tx.cursorContext());
                 RelationshipTraversalCursor traversalCursor =
                         tx.cursors().allocateRelationshipTraversalCursor(tx.cursorContext())) {
-            var expandInto = new CachingExpandInto(tx.dataRead(), BOTH, MEMORY_TRACKER);
+            var expandInto = new CachingExpandInto(tx.queryContext(), BOTH, MEMORY_TRACKER);
 
             var cursor = expandInto.connectingRelationships(nodeCursor, traversalCursor, nodeA, relTypes, nodeB);
             assertThat(cursor.getClass().getSimpleName()).doesNotContain("FromCachedSelectionCursor");
@@ -485,7 +485,7 @@ class CachingExpandIntoTest {
             assertThat(cursor.next()).isFalse();
 
             // Reset cache
-            expandInto = new CachingExpandInto(tx.dataRead(), BOTH, MEMORY_TRACKER);
+            expandInto = new CachingExpandInto(tx.queryContext(), BOTH, MEMORY_TRACKER);
 
             cursor = expandInto.connectingRelationships(nodeCursor, traversalCursor, nodeB, relTypes, nodeA);
             assertThat(cursor.getClass().getSimpleName()).doesNotContain("FromCachedSelectionCursor");
@@ -521,7 +521,7 @@ class CachingExpandIntoTest {
                     ? null
                     : stream(types).mapToInt(tx.tokenRead()::relationshipType).toArray();
 
-            CachingExpandInto expandInto = new CachingExpandInto(tx.dataRead(), direction, MEMORY_TRACKER);
+            CachingExpandInto expandInto = new CachingExpandInto(tx.queryContext(), direction, MEMORY_TRACKER);
             return toSet(expandInto.connectingRelationships(nodeCursor, traversalCursor, start, typeIds, end));
         }
     }

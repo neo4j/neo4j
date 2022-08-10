@@ -24,6 +24,7 @@ import static org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.createR
 import static org.neo4j.kernel.impl.util.diffsets.TrackableDiffSets.newMutableLongDiffSets;
 
 import org.eclipse.collections.api.IntIterable;
+import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
@@ -34,7 +35,9 @@ import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.Degrees;
 import org.neo4j.storageengine.api.RelationshipDirection;
+import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.RelationshipVisitorWithProperties;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
@@ -78,8 +81,8 @@ class NodeStateImpl extends EntityStateImpl implements NodeState {
         }
 
         @Override
-        public int augmentDegree(RelationshipDirection direction, int degree, int typeId) {
-            return degree;
+        public void fillDegrees(RelationshipSelection selection, Degrees.Mutator degree) {
+            // do nothing
         }
 
         @Override
@@ -184,8 +187,8 @@ class NodeStateImpl extends EntityStateImpl implements NodeState {
         }
     }
 
-    @Override
-    public int augmentDegree(RelationshipDirection direction, int degree, int typeId) {
+    private int augmentDegree(RelationshipDirection direction, int typeId) {
+        int degree = 0;
         if (hasAddedRelationships()) {
             degree = relationshipsAdded.augmentDegree(direction, degree, typeId);
         }
@@ -193,6 +196,28 @@ class NodeStateImpl extends EntityStateImpl implements NodeState {
             degree = relationshipsRemoved.augmentDegree(direction, degree, typeId);
         }
         return degree;
+    }
+
+    @Override
+    public void fillDegrees(RelationshipSelection selection, Degrees.Mutator degrees) {
+        IntIterator txTypes = getAddedAndRemovedRelationshipTypes().intIterator();
+        while (txTypes.hasNext()) {
+            int type = txTypes.next();
+            if (selection.test(type)) {
+                int outgoing = selection.test(RelationshipDirection.OUTGOING)
+                        ? augmentDegree(RelationshipDirection.OUTGOING, type)
+                        : 0;
+                int incoming = selection.test(RelationshipDirection.INCOMING)
+                        ? augmentDegree(RelationshipDirection.INCOMING, type)
+                        : 0;
+                int loop = selection.test(RelationshipDirection.LOOP)
+                        ? augmentDegree(RelationshipDirection.LOOP, type)
+                        : 0;
+                if (!degrees.add(type, outgoing, incoming, loop)) {
+                    return;
+                }
+            }
+        }
     }
 
     boolean hasAddedRelationships() {

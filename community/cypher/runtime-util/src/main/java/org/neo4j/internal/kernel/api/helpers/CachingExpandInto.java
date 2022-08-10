@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -47,6 +48,10 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
+import org.neo4j.storageengine.api.RelationshipSelection;
+import org.neo4j.storageengine.api.txstate.NodeState;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.storageengine.util.SingleDegree;
 
 /**
  * Utility for performing Expand(Into)
@@ -73,18 +78,22 @@ public class CachingExpandInto extends DefaultCloseListenable {
     private final Read read;
 
     @Unmetered
+    private final ReadableTransactionState txState;
+
+    @Unmetered
     private final Direction direction;
 
     private final MemoryTracker scopedMemoryTracker;
 
-    public CachingExpandInto(Read read, Direction direction, MemoryTracker memoryTracker) {
-        this(read, direction, memoryTracker, DEFAULT_CAPACITY);
+    public CachingExpandInto(QueryContext context, Direction direction, MemoryTracker memoryTracker) {
+        this(context, direction, memoryTracker, DEFAULT_CAPACITY);
     }
 
-    public CachingExpandInto(Read read, Direction direction, MemoryTracker memoryTracker, int capacity) {
+    public CachingExpandInto(QueryContext context, Direction direction, MemoryTracker memoryTracker, int capacity) {
         this.scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
         this.scopedMemoryTracker.allocateHeap(CACHING_EXPAND_INTO_SHALLOW_SIZE);
-        this.read = read;
+        this.read = context.getRead();
+        this.txState = context.getTransactionStateOrNull();
         this.direction = direction;
         this.relationshipCache = new RelationshipCache(capacity, scopedMemoryTracker);
         this.degreeCache = new NodeDegreeCache(capacity, scopedMemoryTracker);
@@ -155,7 +164,7 @@ public class CachingExpandInto extends DefaultCloseListenable {
 
         // Both can determine degree cheaply, start with the one with the lesser degree
         if (firstNodeHasCheapDegrees && secondNodeHasCheapDegrees) {
-            // Note that we have already position the cursor at firstNode
+            // Note that we have already positioned the cursor at firstNode
             int firstDegree =
                     degreeCache.getIfAbsentPut(firstNode, () -> calculateTotalDegree(nodeCursor, direction, types));
             long toNode;
@@ -190,10 +199,30 @@ public class CachingExpandInto extends DefaultCloseListenable {
                     firstNode,
                     secondNode);
         } else {
-            // Both are sparse
-            long toNode = secondNode;
-            return connectingRelationshipsCursor(
-                    relationshipsCursor(traversalCursor, nodeCursor, types, direction), toNode, firstNode, secondNode);
+            // Both nodes have a costly degree to compute, in general this means that both nodes are non-dense
+            // we'll use the degree in the tx-state to decide what node to start with. If nothing is in tx-state
+            // or both nodes have the same tx-state degree we start on firstNode since that is where the cursor
+            // currently is positioned.
+            int txStateDegreeFirst = calculateDegreeInTxState(firstNode, selection(types, direction));
+            int txStateDegreeSecond = calculateDegreeInTxState(secondNode, selection(types, reverseDirection));
+            if (txStateDegreeSecond >= txStateDegreeFirst) {
+                // we are already positioned on the first node
+                long toNode = secondNode;
+                return connectingRelationshipsCursor(
+                        relationshipsCursor(traversalCursor, nodeCursor, types, direction),
+                        toNode,
+                        firstNode,
+                        secondNode);
+            } else {
+                // must move to secondNode
+                singleNode(read, nodeCursor, secondNode);
+                long toNode = firstNode;
+                return connectingRelationshipsCursor(
+                        relationshipsCursor(traversalCursor, nodeCursor, types, reverseDirection),
+                        toNode,
+                        firstNode,
+                        secondNode);
+            }
         }
     }
 
@@ -206,6 +235,21 @@ public class CachingExpandInto extends DefaultCloseListenable {
             CursorContext cursorContext) {
         return connectingRelationships(
                 nodeCursor, cursors.allocateRelationshipTraversalCursor(cursorContext), fromNode, types, toNode);
+    }
+
+    private int calculateDegreeInTxState(long node, RelationshipSelection selection) {
+        if (txState == null) {
+            return 0;
+        } else {
+            NodeState nodeState = txState.getNodeState(node);
+            if (nodeState == null) {
+                return 0;
+            } else {
+                SingleDegree degrees = new SingleDegree();
+                nodeState.fillDegrees(selection, degrees);
+                return degrees.getTotal();
+            }
+        }
     }
 
     private static int calculateTotalDegreeIfCheap(

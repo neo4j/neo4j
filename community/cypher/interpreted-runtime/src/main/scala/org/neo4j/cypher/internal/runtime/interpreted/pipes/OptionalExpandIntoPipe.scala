@@ -60,7 +60,7 @@ case class OptionalExpandIntoPipe(
   ): ClosingIterator[CypherRow] = {
     val query = state.query
     val expandInto = new CachingExpandInto(
-      query.transactionalContext.dataRead,
+      query.transactionalContext.kernelQueryContext,
       kernelDirection,
       state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
     )
