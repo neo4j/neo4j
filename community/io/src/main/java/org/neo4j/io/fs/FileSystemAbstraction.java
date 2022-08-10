@@ -372,7 +372,7 @@ public interface FileSystemAbstraction extends Closeable {
 
     /**
      * Return a stream of {@link FileHandle file handles} for every file in the given directory, and its
-     * sub-directories.
+     * subdirectories.
      * <p>
      * Alternatively, if the {@link Path} given as an argument refers to a file instead of a directory, then a stream
      * will be returned with a file handle for just that file.
@@ -380,17 +380,28 @@ public interface FileSystemAbstraction extends Closeable {
      * The stream is based on a snapshot of the file tree, so changes made to the tree using the returned file handles
      * will not be reflected in the stream.
      * <p>
-     * No directories will be returned. Only files. If a file handle ends up leaving a directory empty through a
-     * rename or a delete, then the empty directory will automatically be deleted as well.
-     * Likewise, if a file is moved to a path where not all of the directories in the path exists, then those missing
-     * directories will be created prior to the file rename.
+     * If a file handle ends up leaving a directory empty through a rename or a delete, then the empty directory will
+     * automatically be deleted as well. Likewise, if a file is moved to a path where not all of the directories in
+     * the path exists, then those missing directories will be created prior to the file rename.
      *
-     * @param directory The base directory to start streaming files from, or the specific individual file to stream.
-     * @return A stream of all files in the tree.
-     * @throws NoSuchFileException If the given base directory or file does not exists.
-     * @throws IOException If an I/O error occurs, possibly with the canonicalisation of the paths.
+     * @param path The base directory to start streaming files from, or the specific individual file to stream.
+     * @param includeDirectories @code true} to include directories in the {@link Stream}, {@code false} otherwise.
+     * @return A {@link Stream} of all files in the tree.
+     * @throws NoSuchFileException If the given base directory or file does not exist.
+     * @throws IOException  If an I/O error occurs, possibly with the canonicalization of the paths.
      */
-    Stream<FileHandle> streamFilesRecursive(Path directory) throws IOException;
+    default Stream<FileHandle> streamFilesRecursive(Path path, boolean includeDirectories) throws IOException {
+        return StreamFilesRecursive.streamFilesRecursive(this, path, includeDirectories);
+    }
+
+    /**
+     * Convenience method for calling {@link #streamFilesRecursive(Path,boolean)}, with an {@code includeDirectories}
+     * of {@code false}; thus no directories are returned within the {@link Stream}, only files.
+     * @see #streamFilesRecursive(Path, boolean)
+     */
+    default Stream<FileHandle> streamFilesRecursive(Path directory) throws IOException {
+        return streamFilesRecursive(directory, false);
+    }
 
     /**
      * Get underlying store channel file descriptor.

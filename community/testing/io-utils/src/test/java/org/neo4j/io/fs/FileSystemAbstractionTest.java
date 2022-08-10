@@ -20,7 +20,6 @@
 package org.neo4j.io.fs;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -313,7 +312,7 @@ public abstract class FileSystemAbstractionTest {
         Path b = existingFile("b");
         Path c = existingFile("c");
         Stream<FileHandle> stream = fsa.streamFilesRecursive(a.getParent());
-        List<Path> filepaths = stream.map(FileHandle::getPath).collect(toList());
+        List<Path> filepaths = stream.map(FileHandle::getPath).toList();
         assertThat(filepaths)
                 .contains(
                         a.toAbsolutePath().normalize(),
@@ -332,7 +331,7 @@ public abstract class FileSystemAbstractionTest {
         ensureExists(c);
 
         Stream<FileHandle> stream = fsa.streamFilesRecursive(a.getParent());
-        List<Path> filepaths = stream.map(FileHandle::getPath).collect(toList());
+        List<Path> filepaths = stream.map(FileHandle::getPath).toList();
         assertThat(filepaths)
                 .contains(
                         a.toAbsolutePath().normalize(),
@@ -354,9 +353,36 @@ public abstract class FileSystemAbstractionTest {
         ensureExists(c);
 
         Stream<FileHandle> stream = fsa.streamFilesRecursive(a.getParent());
-        List<Path> filepaths = stream.map(FileHandle::getPath).collect(toList());
+        List<Path> filepaths = stream.map(FileHandle::getPath).toList();
         assertThat(filepaths)
-                .contains(
+                .containsOnly(
+                        a.toAbsolutePath().normalize(),
+                        b.toAbsolutePath().normalize(),
+                        c.toAbsolutePath().normalize());
+    }
+
+    @Test
+    void streamFilesRecursiveIncludingDirectoriesMustListSubDirectories() throws Exception {
+        Path sub1 = existingDirectory("sub1");
+        Path sub2 = existingDirectory("sub2");
+        Path sub2sub1 = sub2.resolve("sub1");
+        ensureDirectoryExists(sub2sub1);
+        Path sub3 = existingDirectory("sub3");
+        Path a = existingFile("a");
+        Path b = sub1.resolve("b");
+        Path c = sub2.resolve("c");
+        ensureExists(b);
+        ensureExists(c);
+
+        Stream<FileHandle> stream = fsa.streamFilesRecursive(a.getParent(), true);
+        List<Path> filepaths = stream.map(FileHandle::getPath).toList();
+        assertThat(filepaths)
+                .containsOnly(
+                        path.toAbsolutePath().normalize(),
+                        sub1.toAbsolutePath().normalize(),
+                        sub2.toAbsolutePath().normalize(),
+                        sub2sub1.toAbsolutePath().normalize(),
+                        sub3.toAbsolutePath().normalize(),
                         a.toAbsolutePath().normalize(),
                         b.toAbsolutePath().normalize(),
                         c.toAbsolutePath().normalize());
@@ -369,7 +395,7 @@ public abstract class FileSystemAbstractionTest {
         ensureExists(a);
 
         Stream<FileHandle> stream = fsa.streamFilesRecursive(sub.getParent());
-        List<Path> filepaths = stream.map(FileHandle::getPath).collect(toList());
+        List<Path> filepaths = stream.map(FileHandle::getPath).toList();
         assertThat(filepaths).contains(a.toAbsolutePath().normalize()); // file in our sub directory
     }
 
@@ -392,7 +418,7 @@ public abstract class FileSystemAbstractionTest {
         Path a = existingFile("a");
 
         Stream<FileHandle> stream = fsa.streamFilesRecursive(a);
-        List<Path> filepaths = stream.map(FileHandle::getPath).collect(toList());
+        List<Path> filepaths = stream.map(FileHandle::getPath).toList();
         assertThat(filepaths).contains(a); // note that we don't go into 'sub'
     }
 
@@ -404,7 +430,7 @@ public abstract class FileSystemAbstractionTest {
         Path queryForA = sub.resolve("..").resolve("a");
 
         Stream<FileHandle> stream = fsa.streamFilesRecursive(queryForA);
-        List<Path> filepaths = stream.map(FileHandle::getPath).collect(toList());
+        List<Path> filepaths = stream.map(FileHandle::getPath).toList();
         assertThat(filepaths).contains(a.toAbsolutePath().normalize()); // note that we don't go into 'sub'
     }
 
@@ -421,7 +447,7 @@ public abstract class FileSystemAbstractionTest {
         Path base = a.getParent();
         fsa.streamFilesRecursive(base).forEach(handleRename(b));
         List<Path> filepaths =
-                fsa.streamFilesRecursive(base).map(FileHandle::getPath).collect(toList());
+                fsa.streamFilesRecursive(base).map(FileHandle::getPath).toList();
         assertThat(filepaths).contains(b.toAbsolutePath().normalize());
     }
 
@@ -442,7 +468,7 @@ public abstract class FileSystemAbstractionTest {
     @Test
     void streamFilesRecursiveMustThrowWhenDeletingNonExistingFile() throws Exception {
         Path a = existingFile("a");
-        FileHandle handle = fsa.streamFilesRecursive(a).findAny().get();
+        FileHandle handle = fsa.streamFilesRecursive(a).findAny().orElseThrow();
         fsa.deleteFile(a);
         assertThrows(NoSuchFileException.class, handle::delete);
     }
@@ -451,7 +477,7 @@ public abstract class FileSystemAbstractionTest {
     void streamFilesRecursiveMustThrowWhenTargetFileOfRenameAlreadyExists() throws Exception {
         Path a = existingFile("a");
         Path b = existingFile("b");
-        FileHandle handle = fsa.streamFilesRecursive(a).findAny().get();
+        FileHandle handle = fsa.streamFilesRecursive(a).findAny().orElseThrow();
         assertThrows(FileAlreadyExistsException.class, () -> handle.rename(b));
     }
 
@@ -459,7 +485,7 @@ public abstract class FileSystemAbstractionTest {
     void streamFilesRecursiveMustNotThrowWhenTargetFileOfRenameAlreadyExistsAndUsingReplaceExisting() throws Exception {
         Path a = existingFile("a");
         Path b = existingFile("b");
-        FileHandle handle = fsa.streamFilesRecursive(a).findAny().get();
+        FileHandle handle = fsa.streamFilesRecursive(a).findAny().orElseThrow();
         handle.rename(b, StandardCopyOption.REPLACE_EXISTING);
     }
 
@@ -565,10 +591,10 @@ public abstract class FileSystemAbstractionTest {
     @Test
     void streamFilesRecursiveMustCreateMissingPathDirectoriesImpliedByFileRename() throws Exception {
         Path a = existingFile("a");
-        Path sub = path.resolve("sub"); // does not exists
+        Path sub = path.resolve("sub"); // does not exist
         Path target = sub.resolve("b");
 
-        FileHandle handle = fsa.streamFilesRecursive(a).findAny().get();
+        FileHandle handle = fsa.streamFilesRecursive(a).findAny().orElseThrow();
         handle.rename(target);
 
         assertTrue(fsa.isDirectory(sub));
@@ -626,7 +652,7 @@ public abstract class FileSystemAbstractionTest {
         Path a = existingFile("a").resolve("poke").resolve("..");
         Path b = nonExistingFile("b");
 
-        FileHandle handle = fsa.streamFilesRecursive(a).findAny().get();
+        FileHandle handle = fsa.streamFilesRecursive(a).findAny().orElseThrow();
         handle.rename(b); // must not throw
     }
 
@@ -636,7 +662,7 @@ public abstract class FileSystemAbstractionTest {
         // Thus, this should not throw a NoSuchFileException for the 'poke' directory.
         Path a = existingFile("a");
         Path b = path.resolve("b").resolve("poke").resolve("..");
-        FileHandle handle = fsa.streamFilesRecursive(a).findAny().get();
+        FileHandle handle = fsa.streamFilesRecursive(a).findAny().orElseThrow();
         handle.rename(b);
     }
 
@@ -644,7 +670,7 @@ public abstract class FileSystemAbstractionTest {
     void streamFilesRecursiveRenameTargetFileMustBeRenamed() throws Exception {
         Path a = existingFile("a");
         Path b = nonExistingFile("b");
-        FileHandle handle = fsa.streamFilesRecursive(a).findAny().get();
+        FileHandle handle = fsa.streamFilesRecursive(a).findAny().orElseThrow();
         handle.rename(b);
         assertTrue(fsa.fileExists(b));
     }
@@ -653,7 +679,7 @@ public abstract class FileSystemAbstractionTest {
     void streamFilesRecursiveSourceFileMustNotBeMappableAfterRename() throws Exception {
         Path a = existingFile("a");
         Path b = nonExistingFile("b");
-        FileHandle handle = fsa.streamFilesRecursive(a).findAny().get();
+        FileHandle handle = fsa.streamFilesRecursive(a).findAny().orElseThrow();
         handle.rename(b);
         assertFalse(fsa.fileExists(a));
     }
@@ -663,7 +689,7 @@ public abstract class FileSystemAbstractionTest {
         Path a = existingFile("a");
         Path b = nonExistingFile("b");
         generateFileWithRecords(a, recordCount);
-        FileHandle handle = fsa.streamFilesRecursive(a).findAny().get();
+        FileHandle handle = fsa.streamFilesRecursive(a).findAny().orElseThrow();
         handle.rename(b);
         verifyRecordsInFile(b, recordCount);
     }
@@ -689,7 +715,7 @@ public abstract class FileSystemAbstractionTest {
         }
 
         // Do the rename
-        FileHandle handle = fsa.streamFilesRecursive(a).findAny().get();
+        FileHandle handle = fsa.streamFilesRecursive(a).findAny().orElseThrow();
         handle.rename(b, REPLACE_EXISTING);
 
         // Then verify that the old random data we put in 'b' has been replaced with the contents of 'a'
@@ -702,7 +728,7 @@ public abstract class FileSystemAbstractionTest {
         Path a = existingFile("./home/a");
 
         List<Path> filepaths =
-                fsa.streamFilesRecursive(dir).map(FileHandle::getRelativePath).collect(toList());
+                fsa.streamFilesRecursive(dir).map(FileHandle::getRelativePath).toList();
         assertThat(filepaths).contains(a.getFileName());
     }
 

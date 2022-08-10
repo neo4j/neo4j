@@ -27,7 +27,6 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Set;
-import java.util.stream.Stream;
 import org.neo4j.io.fs.watcher.FileWatcher;
 
 public class DelegatingFileSystemAbstraction implements FileSystemAbstraction {
@@ -85,11 +84,6 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction {
     @Override
     public void deleteFileOrThrow(Path file) throws IOException {
         delegate.deleteFileOrThrow(file);
-    }
-
-    @Override
-    public Stream<FileHandle> streamFilesRecursive(Path directory) throws IOException {
-        return StreamFilesRecursive.streamFilesRecursive(directory, this);
     }
 
     @Override

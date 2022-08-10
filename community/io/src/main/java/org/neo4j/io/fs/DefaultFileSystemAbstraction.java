@@ -199,11 +199,6 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
     }
 
     @Override
-    public Stream<FileHandle> streamFilesRecursive(Path directory) throws IOException {
-        return StreamFilesRecursive.streamFilesRecursive(directory, this);
-    }
-
-    @Override
     public int getFileDescriptor(StoreChannel channel) {
         return channel.getFileDescriptor();
     }

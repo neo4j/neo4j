@@ -53,7 +53,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.helpers.collection.CombiningIterator;
@@ -475,11 +474,6 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction {
             throw new NoSuchFileException(file.toAbsolutePath().toString());
         }
         deleteFile(file);
-    }
-
-    @Override
-    public Stream<FileHandle> streamFilesRecursive(Path directory) throws IOException {
-        return StreamFilesRecursive.streamFilesRecursive(directory, this);
     }
 
     @Override
