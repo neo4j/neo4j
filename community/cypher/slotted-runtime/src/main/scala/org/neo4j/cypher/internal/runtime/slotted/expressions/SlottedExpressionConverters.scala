@@ -435,7 +435,7 @@ case class SlottedExpressionConverters(physicalPlan: PhysicalPlan, maybeOwningPi
       case e: NestedPipeGetByNameExpression =>
         Some(slotted.expressions.NestedPipeGetByNameSlottedExpression(
           e.pipe,
-          e.columnNameToGet,
+          physicalPlan.slotConfigurations(e.pipe.id)(e.columnNameToGet),
           physicalPlan.nestedPlanArgumentConfigurations(e.pipe.id),
           e.availableExpressionVariables.map(commands.expressions.ExpressionVariable.of).toArray,
           id

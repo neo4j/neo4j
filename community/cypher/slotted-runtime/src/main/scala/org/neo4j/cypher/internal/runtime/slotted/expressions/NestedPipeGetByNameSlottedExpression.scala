@@ -19,7 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.expressions
 
+import org.neo4j.cypher.internal.physicalplanning.Slot
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
+import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -34,17 +37,19 @@ import org.neo4j.values.AnyValue
  */
 case class NestedPipeGetByNameSlottedExpression(
   pipe: Pipe,
-  columnToGet: String,
+  columnToGetSlot: Slot,
   slots: SlotConfiguration,
   availableExpressionVariables: Array[ExpressionVariable],
   owningPlanId: Id
 ) extends NestedPipeSlottedExpression(pipe, slots, availableExpressionVariables, owningPlanId) {
 
+  private val getResult: CypherRow => AnyValue = SlotConfigurationUtils.makeGetValueFromSlotFunctionFor(columnToGetSlot)
+
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
     val results = createNestedResults(row, state)
     val resultRow = results.next()
     results.close()
-    resultRow.getByName(columnToGet)
+    getResult(resultRow)
   }
 
   override def rewrite(f: Expression => Expression): Expression = f(this)
