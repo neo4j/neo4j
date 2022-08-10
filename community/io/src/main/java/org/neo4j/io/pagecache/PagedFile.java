@@ -223,4 +223,13 @@ public interface PagedFile extends AutoCloseable {
      * True if mapped in multi versioned mode.
      */
     boolean isMultiVersioned();
+
+    /**
+     * Truncate the underlying page file and keep only the requested number of pages.
+     * As a result of calling this method pages that are higher than the number of pages we need to
+     * keep will be discarded and the actual file will be truncated to cover only the necessary amount of pages.
+     * This method does not protect from any concurrent readers of writers in locations that will be truncated.
+     * If any such protection or guarantees are required those should be done elsewhere.
+     */
+    void truncate(long pagesToKeep) throws IOException;
 }

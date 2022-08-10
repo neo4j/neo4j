@@ -106,4 +106,9 @@ public class DelegatingPagedFile implements PagedFile {
     public boolean isMultiVersioned() {
         return delegate.isMultiVersioned();
     }
+
+    @Override
+    public void truncate(long pagesToKeep) throws IOException {
+        delegate.truncate(pagesToKeep);
+    }
 }

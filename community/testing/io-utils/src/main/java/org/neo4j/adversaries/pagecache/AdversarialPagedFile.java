@@ -132,6 +132,12 @@ public class AdversarialPagedFile implements PagedFile {
     }
 
     @Override
+    public void truncate(long pagesToKeep) throws IOException {
+        adversary.injectFailure(IOException.class);
+        delegate.truncate(pagesToKeep);
+    }
+
+    @Override
     public String toString() {
         return "AdversarialPagedFile{" + "delegate=" + delegate + '}';
     }

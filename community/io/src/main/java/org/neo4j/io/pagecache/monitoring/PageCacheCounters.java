@@ -85,6 +85,11 @@ public interface PageCacheCounters {
     long bytesWritten();
 
     /**
+     * @return The sum total of bytes truncated through truncate thus far.
+     */
+    long bytesTruncated();
+
+    /**
      * @return The number of file mappings observed thus far.
      */
     long filesMapped();
@@ -93,6 +98,11 @@ public interface PageCacheCounters {
      * @return The number of file unmappings observed thus far.
      */
     long filesUnmapped();
+
+    /**
+     * @return The number truncate operations so far.
+     */
+    long filesTruncated();
 
     /**
      * @return The number of page evictions that have thrown exceptions thus far.

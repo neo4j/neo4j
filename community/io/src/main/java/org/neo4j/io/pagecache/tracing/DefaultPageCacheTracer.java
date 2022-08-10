@@ -44,9 +44,11 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     protected final LongAdder merges = new LongAdder();
     protected final LongAdder bytesRead = new LongAdder();
     protected final LongAdder bytesWritten = new LongAdder();
+    protected final LongAdder bytesTruncated = new LongAdder();
 
     protected final LongAdder filesMapped = new LongAdder();
     protected final LongAdder filesUnmapped = new LongAdder();
+    protected final LongAdder fileTruncations = new LongAdder();
 
     protected final LongAdder evictionExceptions = new LongAdder();
     protected final LongAdder iopqPerformed = new LongAdder();
@@ -63,6 +65,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
 
     private final EvictionEvent evictionEvent = new PageCacheEvictionEvent();
     private final EvictionRunEvent evictionRunEvent = new DefaultEvictionRunEvent();
+    private final FileTruncateEvent fileTruncateEvent = new DefaultFileTruncateEvent();
     private final DatabaseFlushEvent databaseFlushEvent = new DatabaseFlushEvent(new DefaultPageCacheFileFlushEvent());
 
     public DefaultPageCacheTracer() {
@@ -101,6 +104,11 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     @Override
     public EvictionRunEvent beginEviction() {
         return evictionRunEvent;
+    }
+
+    @Override
+    public FileTruncateEvent beginFileTruncate() {
+        return fileTruncateEvent;
     }
 
     @Override
@@ -179,6 +187,11 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
+    public long bytesTruncated() {
+        return bytesTruncated.sum();
+    }
+
+    @Override
     public long filesMapped() {
         return filesMapped.sum();
     }
@@ -186,6 +199,11 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     @Override
     public long filesUnmapped() {
         return filesUnmapped.sum();
+    }
+
+    @Override
+    public long filesTruncated() {
+        return fileTruncations.sum();
     }
 
     @Override
@@ -356,6 +374,18 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     @Override
     public void maxPages(long maxPages, long pageSize) {
         this.maxPages.set(maxPages);
+    }
+
+    private class DefaultFileTruncateEvent implements FileTruncateEvent {
+        @Override
+        public void close() {
+            fileTruncations.increment();
+        }
+
+        @Override
+        public void truncatedBytes(long oldLastPage, long pagesToKeep, int filePageSize) {
+            bytesTruncated.add((oldLastPage + 1 - pagesToKeep) * filePageSize);
+        }
     }
 
     private class PageCacheFlushEvent implements FlushEvent {

@@ -490,11 +490,16 @@ public class SingleFilePageSwapper implements PageSwapper {
 
     @Override
     public void truncate() throws IOException {
-        setCurrentFileSize(0);
+        truncate(0);
+    }
+
+    @Override
+    public void truncate(long size) throws IOException {
+        setCurrentFileSize(size);
         try (Retry retry = new Retry()) {
             do {
                 try {
-                    channel.truncate(0);
+                    channel.truncate(size);
                 } catch (ClosedChannelException e) {
                     retry.caught(e);
                 }

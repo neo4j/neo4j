@@ -116,4 +116,7 @@ public class StubPagedFile implements PagedFile {
     public boolean isMultiVersioned() {
         return false;
     }
+
+    @Override
+    public void truncate(long pagesToKeep) {}
 }

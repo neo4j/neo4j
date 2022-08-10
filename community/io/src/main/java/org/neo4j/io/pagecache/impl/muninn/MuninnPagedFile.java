@@ -57,10 +57,11 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     private static final int translationTableChunkSize = 1 << translationTableChunkSizePower;
     private static final long translationTableChunkSizeMask = translationTableChunkSize - 1;
 
-    private static final int headerStateRefCountShift = 48;
-    private static final int headerStateRefCountMax = 0x7FFF;
-    private static final long headerStateRefCountMask = 0x7FFF_0000_0000_0000L;
-    private static final long headerStateLastPageIdMask = 0x8000_FFFF_FFFF_FFFFL;
+    private static final int HEADER_STATE_REF_COUNT_SHIFT = 48;
+    private static final int HEADER_STATE_REF_COUNT_MAX = 0x7FFF;
+    private static final long HEADER_STATE_REF_COUNT_MASK = 0x7FFF_0000_0000_0000L;
+    private static final long HEADER_STATE_LAST_PAGE_ID_MASK = 0x8000_FFFF_FFFF_FFFFL;
+    private static final long EMPTY_STATE_HEADER = 0x8000_0000_0000_0000L;
     private static final int PF_LOCK_MASK = PF_SHARED_WRITE_LOCK | PF_SHARED_READ_LOCK;
 
     final MuninnPageCache pageCache;
@@ -278,6 +279,23 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     }
 
     @Override
+    public synchronized void truncate(long pagesToKeep) throws IOException {
+        try (var truncateEvent = pageCacheTracer.beginFileTruncate()) {
+            long lastPageId = getLastPageId();
+            if (lastPageId < pagesToKeep) {
+                return;
+            }
+            // header state update
+            setLastPageIdTo(pagesToKeep - 1);
+            // update translation table
+            truncateCapacity(pagesToKeep);
+            // truncate file
+            swapper.truncate(pagesToKeep * filePageSize);
+            truncateEvent.truncatedBytes(lastPageId, pagesToKeep, filePageSize);
+        }
+    }
+
+    @Override
     public Path path() {
         return swapper.path();
     }
@@ -364,11 +382,19 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     }
 
     private void markAllDirtyPagesAsClean() {
-        long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
         int[][] tt = this.translationTable;
-        for (int[] chunk : tt) {
+        markDirtyPagesAsClean(tt, 0, 0, 0);
+    }
+
+    private void markDirtyPagesAsClean(
+            int[][] table, int initialChunkIndex, int initialChunkOffset, long initialFilePageId) {
+        // Start at index -1 because we increment at the *start* of the chunk-loop iteration.
+        long filePageId = initialFilePageId - 1;
+        int chunkOffset = initialChunkOffset;
+        for (int j = initialChunkIndex; j < table.length; j++) {
+            int[] chunk = table[j];
             chunkLoop:
-            for (int i = 0; i < chunk.length; i++) {
+            for (int i = chunkOffset; i < chunk.length; i++) {
                 filePageId++;
                 int chunkIndex = computeChunkIndex(filePageId);
 
@@ -399,6 +425,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                     continue chunkLoop;
                 }
             }
+            chunkOffset = 0;
         }
     }
 
@@ -659,7 +686,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
         if (refCountOf(state) == 0) {
             throw fileIsNotMappedException();
         }
-        return state & headerStateLastPageIdMask;
+        return state & HEADER_STATE_LAST_PAGE_ID_MASK;
     }
 
     private FileIsNotMappedException fileIsNotMappedException() {
@@ -676,7 +703,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     }
 
     private static long refCountOf(long state) {
-        return (state & headerStateRefCountMask) >>> headerStateRefCountShift;
+        return (state & HEADER_STATE_REF_COUNT_MASK) >>> HEADER_STATE_REF_COUNT_SHIFT;
     }
 
     private void initialiseLastPageId(long lastPageIdFromFile) {
@@ -695,9 +722,19 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
         long lastPageId;
         do {
             current = getHeaderState();
-            update = newLastPageId + (current & headerStateRefCountMask);
-            lastPageId = current & headerStateLastPageIdMask;
+            update = newLastPageId + (current & HEADER_STATE_REF_COUNT_MASK);
+            lastPageId = current & HEADER_STATE_LAST_PAGE_ID_MASK;
         } while (lastPageId < newLastPageId && !HEADER_STATE.weakCompareAndSet(this, current, update));
+    }
+
+    private void setLastPageIdTo(long newLastPageId) {
+        long current;
+        long update;
+        do {
+            current = getHeaderState();
+            long state = newLastPageId < 0 ? EMPTY_STATE_HEADER : newLastPageId;
+            update = state + (current & HEADER_STATE_REF_COUNT_MASK);
+        } while (!HEADER_STATE.weakCompareAndSet(this, current, update));
     }
 
     /**
@@ -709,13 +746,13 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
         do {
             current = getHeaderState();
             long count = refCountOf(current) + 1;
-            if (count > headerStateRefCountMax) {
+            if (count > HEADER_STATE_REF_COUNT_MAX) {
                 throw new IllegalStateException(
                         "Cannot map file because reference counter would overflow. " + "Maximum reference count is "
-                                + headerStateRefCountMax + ". " + "File is "
+                                + HEADER_STATE_REF_COUNT_MAX + ". " + "File is "
                                 + swapper.path().toAbsolutePath());
             }
-            update = (current & headerStateLastPageIdMask) + (count << headerStateRefCountShift);
+            update = (current & HEADER_STATE_LAST_PAGE_ID_MASK) + (count << HEADER_STATE_REF_COUNT_SHIFT);
         } while (!HEADER_STATE.weakCompareAndSet(this, current, update));
     }
 
@@ -734,7 +771,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                 throw new IllegalStateException(
                         "File has already been closed and unmapped. " + "It cannot be closed any further.");
             }
-            update = (current & headerStateLastPageIdMask) + (count << headerStateRefCountShift);
+            update = (current & HEADER_STATE_LAST_PAGE_ID_MASK) + (count << HEADER_STATE_REF_COUNT_SHIFT);
         } while (!HEADER_STATE.weakCompareAndSet(this, current, update));
         return count == 0;
     }
@@ -838,6 +875,20 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
         // using pages in the region, which might not be safe.
         translationTable = tt;
         return tt;
+    }
+
+    synchronized void truncateCapacity(long pagesToKeep) {
+        int chunkId = MuninnPagedFile.computeChunkId(pagesToKeep);
+
+        int[][] tt = translationTable;
+        if (tt.length > chunkId) {
+            markDirtyPagesAsClean(tt, chunkId, MuninnPagedFile.computeChunkIndex(pagesToKeep), pagesToKeep);
+            int newLength = computeNewRootTableLength(chunkId);
+            int[][] ntt = new int[newLength][];
+            System.arraycopy(tt, 0, ntt, 0, ntt.length);
+            tt = ntt;
+        }
+        translationTable = tt;
     }
 
     private static int[] newChunk() {

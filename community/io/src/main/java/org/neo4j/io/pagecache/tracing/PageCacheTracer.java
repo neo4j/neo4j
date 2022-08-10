@@ -61,6 +61,11 @@ public interface PageCacheTracer extends PageCacheCounters {
         }
 
         @Override
+        public FileTruncateEvent beginFileTruncate() {
+            return FileTruncateEvent.NULL;
+        }
+
+        @Override
         public FileFlushEvent beginFileFlush(PageSwapper swapper) {
             return FileFlushEvent.NULL;
         }
@@ -136,12 +141,22 @@ public interface PageCacheTracer extends PageCacheCounters {
         }
 
         @Override
+        public long bytesTruncated() {
+            return 0;
+        }
+
+        @Override
         public long filesMapped() {
             return 0;
         }
 
         @Override
         public long filesUnmapped() {
+            return 0;
+        }
+
+        @Override
+        public long filesTruncated() {
             return 0;
         }
 
@@ -311,6 +326,11 @@ public interface PageCacheTracer extends PageCacheCounters {
      * @return an EvictionRunEvent to represent the event of this eviction run.
      */
     EvictionRunEvent beginEviction();
+
+    /**
+     * Page file truncation
+     */
+    FileTruncateEvent beginFileTruncate();
 
     /**
      * A PagedFile wants to flush all its bound pages.

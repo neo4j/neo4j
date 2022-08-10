@@ -278,6 +278,11 @@ public class DatabasePageCache implements PageCache {
         }
 
         @Override
+        public void truncate(long pagesToKeep) throws IOException {
+            delegate.truncate(pagesToKeep);
+        }
+
+        @Override
         public boolean equals(Object o) {
             if (this == o) {
                 return true;

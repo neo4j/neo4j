@@ -27,6 +27,7 @@ import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.io.pagecache.tracing.FileTruncateEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
@@ -70,6 +71,11 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     @Override
     public EvictionRunEvent beginEviction() {
         return getEvictionRunEvent();
+    }
+
+    @Override
+    public FileTruncateEvent beginFileTruncate() {
+        return FileTruncateEvent.NULL;
     }
 
     private EvictionRunEvent getEvictionRunEvent() {
@@ -165,12 +171,22 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     }
 
     @Override
+    public long bytesTruncated() {
+        return 0;
+    }
+
+    @Override
     public long filesMapped() {
         return 0;
     }
 
     @Override
     public long filesUnmapped() {
+        return 0;
+    }
+
+    @Override
+    public long filesTruncated() {
         return 0;
     }
 

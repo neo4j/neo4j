@@ -86,6 +86,11 @@ public class DelegatingPageSwapper implements PageSwapper {
     }
 
     @Override
+    public void truncate(long size) throws IOException {
+        delegate.truncate(size);
+    }
+
+    @Override
     public boolean canAllocate() {
         return delegate.canAllocate();
     }

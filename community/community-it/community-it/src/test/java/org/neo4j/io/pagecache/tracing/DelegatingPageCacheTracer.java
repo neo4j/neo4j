@@ -71,6 +71,11 @@ public class DelegatingPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
+    public FileTruncateEvent beginFileTruncate() {
+        return delegate.beginFileTruncate();
+    }
+
+    @Override
     public long unpins() {
         return delegate.unpins();
     }
@@ -96,6 +101,11 @@ public class DelegatingPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
+    public long bytesTruncated() {
+        return delegate.bytesTruncated();
+    }
+
+    @Override
     public long pins() {
         return delegate.pins();
     }
@@ -103,6 +113,11 @@ public class DelegatingPageCacheTracer implements PageCacheTracer {
     @Override
     public long filesUnmapped() {
         return delegate.filesUnmapped();
+    }
+
+    @Override
+    public long filesTruncated() {
+        return delegate.filesTruncated();
     }
 
     @Override

@@ -148,6 +148,15 @@ public interface PageSwapper extends Closeable {
     void truncate() throws IOException;
 
     /**
+     * Truncate the file represented by this PageSwapper, so the requested size of the file.
+     * <p>
+     * Truncation may occur concurrently with writes, in which case both operations will appear to be atomic, such that
+     * either the write happens before the truncation and is lost, or the file is truncated and the write then extends
+     * the file with any zero padding and the written data.
+     */
+    void truncate(long size) throws IOException;
+
+    /**
      * @return {@code true} if the given page swapper implementation supports pre-allocating files.
      */
     boolean canAllocate();

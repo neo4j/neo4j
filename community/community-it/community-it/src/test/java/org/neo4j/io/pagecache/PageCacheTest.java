@@ -4060,6 +4060,270 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         });
     }
 
+    @Test
+    void truncatePageFileTruncatesRealFile() {
+        assertTimeoutPreemptively(ofMillis(SEMI_LONG_TIMEOUT_MILLIS), () -> {
+            configureStandardPageCache();
+            Path file = file("a");
+            try (PagedFile pf = map(file, filePageSize)) {
+                try (PageCursor cursor = pf.io(20, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                    assertTrue(cursor.next());
+                }
+                pf.flushAndForce(FileFlushEvent.NULL);
+                assertEquals(21L * filePageSize, fs.getFileSize(file));
+
+                pf.truncate(10);
+                assertEquals(10L * filePageSize, fs.getFileSize(file));
+            }
+        });
+    }
+
+    @Test
+    void truncatePageFileTraceEvents() {
+        assertTimeoutPreemptively(ofMillis(SEMI_LONG_TIMEOUT_MILLIS), () -> {
+            var cacheTracer = new DefaultPageCacheTracer();
+            getPageCache(fs, maxPages, cacheTracer);
+            Path file = file("a");
+            try (PagedFile pf = map(file, filePageSize)) {
+                try (PageCursor cursor = pf.io(25, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                    assertTrue(cursor.next());
+                }
+                pf.flushAndForce(FileFlushEvent.NULL);
+
+                pf.truncate(22);
+                pf.truncate(21);
+                pf.truncate(20);
+                pf.truncate(19);
+                pf.truncate(17);
+                pf.truncate(15);
+
+                assertEquals(6, cacheTracer.filesTruncated());
+                assertEquals(11L * filePageSize, cacheTracer.bytesTruncated());
+            }
+        });
+    }
+
+    @Test
+    void truncateSetCorrectLastPageId() {
+        assertTimeoutPreemptively(ofMillis(SEMI_LONG_TIMEOUT_MILLIS), () -> {
+            configureStandardPageCache();
+            Path file = file("a");
+            try (PagedFile pf = map(file, filePageSize)) {
+                try (PageCursor cursor = pf.io(2, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                    assertTrue(cursor.next());
+                }
+                pf.flushAndForce(FileFlushEvent.NULL);
+                assertEquals(2, pf.getLastPageId());
+
+                pf.truncate(1);
+                assertEquals(0, pf.getLastPageId());
+            }
+        });
+    }
+
+    @Test
+    void truncateEmptyFile() {
+        assertTimeoutPreemptively(ofMillis(SEMI_LONG_TIMEOUT_MILLIS), () -> {
+            configureStandardPageCache();
+            Path file = file("a");
+            try (PagedFile pf = map(file, filePageSize)) {
+                assertThat(pf.getLastPageId()).isNegative();
+
+                pf.truncate(0);
+                assertThat(pf.getLastPageId()).isNegative();
+            }
+        });
+    }
+
+    @Test
+    void truncateNonEmptyFileToEmpty() {
+        assertTimeoutPreemptively(ofMillis(SEMI_LONG_TIMEOUT_MILLIS), () -> {
+            configureStandardPageCache();
+            Path file = file("a");
+            try (PagedFile pf = map(file, filePageSize)) {
+                try (PageCursor cursor = pf.io(2, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                    assertTrue(cursor.next());
+                }
+                pf.flushAndForce(FileFlushEvent.NULL);
+                assertEquals(2, pf.getLastPageId());
+
+                pf.truncate(0);
+                assertThat(pf.getLastPageId()).isNegative();
+
+                try (PageCursor cursor = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                    assertTrue(cursor.next());
+                }
+                assertThat(pf.getLastPageId()).isZero();
+            }
+        });
+    }
+
+    @Test
+    void truncateWithOngoingEviction() {
+        assertTimeoutPreemptively(ofMillis(SEMI_LONG_TIMEOUT_MILLIS), () -> {
+            var cacheTracer = new DefaultPageCacheTracer();
+            long totalFilePages = 1024;
+            int pagesToKeep = 15;
+            getPageCache(fs, 100, cacheTracer);
+            Path file = file("a");
+            try (PagedFile pf = map(file, filePageSize)) {
+                for (int iteration = 0; iteration < 1024; iteration++) {
+                    try (PageCursor cursor = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                        for (int i = 0; i < totalFilePages; i++) {
+                            assertTrue(cursor.next());
+                            cursor.putLong(i);
+                        }
+                    }
+
+                    pf.truncate(pagesToKeep);
+                }
+
+                assertEquals(pagesToKeep - 1, pf.getLastPageId());
+                assertEquals((long) pagesToKeep * filePageSize, fs.getFileSize(file));
+            }
+        });
+    }
+
+    @Test
+    void truncateAndGrowFile() {
+        assertTimeoutPreemptively(ofMillis(SEMI_LONG_TIMEOUT_MILLIS), () -> {
+            long totalFilePages = 600;
+            // number of pages to keep matching flush vector size to make calculation easier
+            long pagesToKeep = 128;
+            var cacheTracer = new DefaultPageCacheTracer();
+            getPageCache(fs, 1000, cacheTracer);
+            Path file = file("a");
+            try (PagedFile pf = map(file, filePageSize)) {
+                for (int iteration = 0; iteration < 1024; iteration++) {
+                    try (PageCursor cursor = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                        for (int i = 0; i < totalFilePages; i++) {
+                            assertTrue(cursor.next());
+                            cursor.putLong(i);
+                        }
+                    }
+
+                    long beforeTruncation = cacheTracer.bytesTruncated();
+                    long beforeWriter = cacheTracer.bytesWritten();
+
+                    pf.truncate(pagesToKeep);
+                    try (FileFlushEvent fileFlushEvent = cacheTracer.beginFileFlush()) {
+                        pf.flushAndForce(fileFlushEvent);
+                    }
+
+                    long expectedTruncatedBytes = beforeTruncation + (totalFilePages - pagesToKeep) * filePageSize;
+                    long expectedWrittenBytes = beforeWriter + pagesToKeep * filePageSize;
+                    assertThat(cacheTracer.bytesTruncated()).isEqualTo(expectedTruncatedBytes);
+                    assertThat(cacheTracer.bytesWritten()).isEqualTo(expectedWrittenBytes);
+                }
+            }
+        });
+    }
+
+    @Test
+    void truncateReflectedInLastPageId() {
+        assertTimeoutPreemptively(ofMillis(SEMI_LONG_TIMEOUT_MILLIS), () -> {
+            configureStandardPageCache();
+            Path file = file("a");
+            try (PagedFile pf = map(file, filePageSize)) {
+                try (PageCursor cursor = pf.io(10, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                    assertTrue(cursor.next());
+                }
+                assertEquals(10, pf.getLastPageId());
+
+                pf.truncate(4);
+                assertEquals(3, pf.getLastPageId());
+            }
+        });
+    }
+
+    @Test
+    void growRealPageFileAfterTruncation() {
+        assertTimeoutPreemptively(ofMillis(SEMI_LONG_TIMEOUT_MILLIS), () -> {
+            configureStandardPageCache();
+            Path file = file("a");
+            try (PagedFile pf = map(file, filePageSize)) {
+                for (int i = 0; i < 21; i++) {
+                    try (PageCursor cursor = pf.io(i, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                        assertTrue(cursor.next());
+                        cursor.putLong(i);
+                    }
+                }
+                pf.flushAndForce(FileFlushEvent.NULL);
+                assertEquals(21L * filePageSize, fs.getFileSize(file));
+
+                pf.truncate(7);
+                assertEquals(7L * filePageSize, fs.getFileSize(file));
+
+                for (int i = 7; i < 25; i++) {
+                    try (PageCursor cursor = pf.io(i, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                        assertTrue(cursor.next());
+                        cursor.putLong(i);
+                    }
+                }
+                pf.flushAndForce(FileFlushEvent.NULL);
+                assertEquals(25L * filePageSize, fs.getFileSize(file));
+            }
+        });
+    }
+
+    @Test
+    void touchAllNonTruncatedPagesAfterTruncate() {
+        assertTimeoutPreemptively(ofMillis(SEMI_LONG_TIMEOUT_MILLIS), () -> {
+            configureStandardPageCache();
+            Path file = file("a");
+            try (PagedFile pf = map(file, filePageSize)) {
+                for (int i = 0; i < 20; i++) {
+                    try (PageCursor cursor = pf.io(i, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                        assertTrue(cursor.next());
+                        cursor.putLong(i);
+                    }
+                }
+                pf.flushAndForce(FileFlushEvent.NULL);
+
+                pf.truncate(5);
+                for (int i = 0; i < 4; i++) {
+                    try (PageCursor cursor = pf.io(i, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                        assertTrue(cursor.next());
+                        assertEquals(i, cursor.getLong());
+                    }
+                }
+            }
+        });
+    }
+
+    @Test
+    void growPageFileAfterTruncation() {
+        assertTimeoutPreemptively(ofMillis(SEMI_LONG_TIMEOUT_MILLIS), () -> {
+            configureStandardPageCache();
+            Path file = file("a");
+            try (PagedFile pf = map(file, filePageSize)) {
+                for (int i = 0; i < 20; i++) {
+                    try (PageCursor cursor = pf.io(i, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                        assertTrue(cursor.next());
+                        cursor.putLong(i);
+                    }
+                }
+                pf.flushAndForce(FileFlushEvent.NULL);
+
+                pf.truncate(7);
+
+                for (int i = 7; i < 24; i++) {
+                    try (PageCursor cursor = pf.io(i, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                        assertTrue(cursor.next());
+                        cursor.putLong(i);
+                    }
+                }
+
+                for (int i = 0; i < 24; i++) {
+                    try (PageCursor cursor = pf.io(i, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                        assertTrue(cursor.next());
+                        assertEquals(i, cursor.getLong());
+                    }
+                }
+            }
+        });
+    }
+
     @SuppressWarnings("unused")
     @Test
     void mappingAlreadyMappedFileWithTruncateOptionMustThrow() throws Exception {

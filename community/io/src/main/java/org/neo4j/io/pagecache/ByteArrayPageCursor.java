@@ -408,5 +408,8 @@ public class ByteArrayPageCursor extends PageCursor {
         public boolean isMultiVersioned() {
             return false;
         }
+
+        @Override
+        public void truncate(long pagesToKeep) {}
     }
 }

@@ -81,6 +81,9 @@ public class DummyPageSwapper implements PageSwapper {
     public void truncate() {}
 
     @Override
+    public void truncate(long size) {}
+
+    @Override
     public boolean canAllocate() {
         return false;
     }
