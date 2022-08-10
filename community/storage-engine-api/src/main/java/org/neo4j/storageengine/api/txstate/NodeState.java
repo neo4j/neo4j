@@ -23,7 +23,8 @@ import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.iterator.LongIterator;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.storageengine.api.RelationshipDirection;
+import org.neo4j.storageengine.api.Degrees;
+import org.neo4j.storageengine.api.RelationshipSelection;
 
 /**
  * Represents the transactional changes to a node:
@@ -38,7 +39,7 @@ public interface NodeState extends EntityState
 {
     LongDiffSets labelDiffSets();
 
-    int augmentDegree( RelationshipDirection direction, int degree, int typeId );
+    void fillDegrees( RelationshipSelection selection, Degrees.Mutator degree );
 
     long getId();
 

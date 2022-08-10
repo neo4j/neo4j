@@ -70,7 +70,8 @@ case class ExpandIntoPipe(source: Pipe,
   protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     val query = state.query
 
-    val expandInto = new CachingExpandInto(query.transactionalContext.dataRead, kernelDirection, state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
+    val expandInto = new CachingExpandInto(query.transactionalContext.kernelQueryContext, kernelDirection, state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
+
     state.query.resources.trace(expandInto)
 
     input.flatMap {

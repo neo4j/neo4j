@@ -299,22 +299,8 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
         }
         if ( nodeTxState != null )
         {
-            // Then add the remaining types that's only present in the tx-state
-            IntIterator txTypes = nodeTxState.getAddedAndRemovedRelationshipTypes().intIterator();
-            while ( txTypes.hasNext() )
-            {
-                int type = txTypes.next();
-                if ( selection.test( type ) )
-                {
-                    int outgoing = selection.test( RelationshipDirection.OUTGOING ) ? nodeTxState.augmentDegree( RelationshipDirection.OUTGOING, 0, type ) : 0;
-                    int incoming = selection.test( RelationshipDirection.INCOMING ) ? nodeTxState.augmentDegree( RelationshipDirection.INCOMING, 0, type ) : 0;
-                    int loop = selection.test( RelationshipDirection.LOOP ) ? nodeTxState.augmentDegree( RelationshipDirection.LOOP, 0, type ) : 0;
-                    if ( !degrees.add( type, outgoing, incoming, loop ) )
-                    {
-                        return;
-                    }
-                }
-            }
+                // Then add the remaining types that's only present in the tx-state
+                nodeTxState.fillDegrees(selection, degrees);
         }
     }
 
