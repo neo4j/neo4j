@@ -105,6 +105,9 @@ public class SystemDbUpgrader {
         edition.registerSystemGraphComponents(globalModule.getSystemGraphComponents(), globalModule);
         edition.registerSystemGraphInitializer(globalModule);
 
+        edition.createDefaultDatabaseResolver(globalModule);
+        globalDependencies.satisfyDependency(edition.getDefaultDatabaseResolver());
+
         edition.createSecurityModule(globalModule);
         SecurityProvider securityProvider = edition.getSecurityProvider();
         globalDependencies.satisfyDependencies(securityProvider.authManager());

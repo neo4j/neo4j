@@ -212,6 +212,7 @@ public interface TopologyGraphDbmsModel {
     String TOPOLOGY_GRAPH_SETTINGS_DEFAULT_NUMBER_OF_PRIMARIES_PROPERTY = "default_number_of_primaries";
     String TOPOLOGY_GRAPH_SETTINGS_DEFAULT_NUMBER_OF_SECONDARIES_PROPERTY = "default_number_of_secondaries";
     String TOPOLOGY_GRAPH_SETTINGS_DEFAULT_DATABASE_PROPERTY = "default_database";
+    String TOPOLOGY_GRAPH_SETTINGS_DEFAULT_DATABASE_CREATED_PROPERTY = "default_database_created";
 
     Set<NamedDatabaseId> getAllDatabaseIds();
 

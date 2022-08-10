@@ -219,7 +219,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent {
                 ZonedDateTime.ofInstant(clock.instant(), clock.getZone()));
     }
 
-    private static Node createDatabaseNode(
+    public static Node createDatabaseNode(
             Transaction tx, String databaseName, boolean hosted, boolean defaultDb, UUID uuid, ZonedDateTime now) {
         var databaseNode = tx.createNode(DATABASE_LABEL);
         databaseNode.setProperty(DATABASE_NAME_PROPERTY, databaseName);
