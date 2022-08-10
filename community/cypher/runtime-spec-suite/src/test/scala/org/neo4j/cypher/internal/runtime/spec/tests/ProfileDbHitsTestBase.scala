@@ -678,7 +678,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // 2 (check start and end for `isDense`) + costOfExpand per row.
     queryProfile.operatorProfile(
       1
-    ).dbHits() shouldBe (sizeHint * (2L + (costOfExpandGetRelCursor + costOfExpandOneRel)))
+    ).dbHits() should (be(sizeHint * (2L + (costOfExpandGetRelCursor + costOfExpandOneRel))) or
+      be(sizeHint * (2L + (costOfExpandGetRelCursor + costOfExpandOneRel)) - 1L))
     // No assertion on the expand because db hits can vary, given that the nodes have 2 relationships.
   }
 
