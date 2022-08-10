@@ -446,7 +446,10 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     // expand into. If no node is in the input twice the rel cache does not help and then you get
     // 2 (check start and end for `isDense`) + costOfExpand per row.
-    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint * (2L + (costOfExpandGetRelCursor + costOfExpandOneRel)))
+    queryProfile.operatorProfile(
+      1
+    ).dbHits() should (be(sizeHint * (2L + (costOfExpandGetRelCursor + costOfExpandOneRel))) or
+      be(sizeHint * (2L + (costOfExpandGetRelCursor + costOfExpandOneRel)) - 1L))
     // No assertion on the expand because db hits can vary, given that the nodes have 2 relationships.
   }
 
