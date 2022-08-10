@@ -57,9 +57,7 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
-import org.scalatest.FixtureContext
 import org.scalatest.Inside
-import org.scalatest.Succeeded
 
 import java.lang.Boolean.FALSE
 

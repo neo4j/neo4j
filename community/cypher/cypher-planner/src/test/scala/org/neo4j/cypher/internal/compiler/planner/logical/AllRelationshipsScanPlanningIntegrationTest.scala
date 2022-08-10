@@ -23,16 +23,10 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
-import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
-import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
-import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
-import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
-import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.schema.IndexType
 
 class AllRelationshipsScanPlanningIntegrationTest extends CypherFunSuite
     with LogicalPlanningIntegrationTestSupport
