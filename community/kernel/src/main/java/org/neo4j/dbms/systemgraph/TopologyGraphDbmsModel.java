@@ -258,4 +258,14 @@ public interface TopologyGraphDbmsModel {
      * @return the corresponding {@link DatabaseReference}
      */
     Optional<DatabaseReference> getDatabaseRefByAlias(String databaseName);
+
+
+    /**
+     * Fetches the {@link DriverSettings} corresponding to the provided name
+     * if the name exists and is associated with a {@link DatabaseReference.External}
+     *
+     * @param databaseName - the remote database alias to resolve driver settings for
+     * @return the corresponding {@link DriverSettings}
+     */
+    Optional<DriverSettings> getDriverSettings( String databaseName );
 }
