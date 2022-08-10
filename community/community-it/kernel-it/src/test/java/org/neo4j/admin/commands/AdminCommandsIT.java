@@ -73,6 +73,7 @@ class AdminCommandsIT {
     private PrintStream err;
     private ExecutionContext context;
     private Path home;
+    private Path dumpFolder;
 
     @BeforeEach
     void setup() throws Exception {
@@ -80,6 +81,7 @@ class AdminCommandsIT {
         err = mock(PrintStream.class);
         confDir = testDirectory.directory("test.conf");
         home = testDirectory.homePath("home");
+        dumpFolder = testDirectory.directory("dumpFolder");
         context = new ExecutionContext(home, confDir, out, err, testDirectory.getFileSystem());
         Path configFile = confDir.resolve("neo4j.conf");
         Files.createFile(configFile, PosixFilePermissions.asFileAttribute(Set.of(OWNER_READ, OWNER_WRITE)));
@@ -96,7 +98,12 @@ class AdminCommandsIT {
         assertSuccess(new DiagnosticsReportCommand(context), "--expand-commands");
         assertSuccess(new LoadCommand(context, new Loader()), "--expand-commands", "--from", "test");
         assertSuccess(new MemoryRecommendationsCommand(context), "--expand-commands");
-        assertSuccess(new DumpCommand(context, new Dumper(context.err())), "--expand-commands", "--to", "test");
+        assertSuccess(
+                new DumpCommand(context, new Dumper(context.err())),
+                "--expand-commands",
+                "test",
+                "--to-path",
+                dumpFolder.toString());
         assertSuccess(new UnbindCommand(context), "--expand-commands");
     }
 
@@ -112,7 +119,8 @@ class AdminCommandsIT {
         assertExpansionError(
                 new ImportCommand(context),
                 "--nodes=" + testDirectory.createFile("foo.csv").toAbsolutePath());
-        assertExpansionError(new DumpCommand(context, new Dumper(context.err())), "--to", "test");
+        assertExpansionError(
+                new DumpCommand(context, new Dumper(context.err())), "test", "--to-path", dumpFolder.toString());
         assertExpansionError(new UnbindCommand(context));
     }
 

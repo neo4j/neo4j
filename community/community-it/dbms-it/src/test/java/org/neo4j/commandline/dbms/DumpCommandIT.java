@@ -95,6 +95,7 @@ class DumpCommandIT {
 
     private Path homeDir;
     private Path configDir;
+    private Path dumpDir;
     private Path archive;
     private Dumper dumper;
     private Path databaseDirectory;
@@ -103,7 +104,8 @@ class DumpCommandIT {
     void setUp() {
         homeDir = testDirectory.homePath();
         configDir = testDirectory.directory("config-dir");
-        archive = testDirectory.file("some-archive.dump");
+        dumpDir = testDirectory.directory("dump-dir");
+        archive = dumpDir.resolve("foo.dump");
         dumper = mock(Dumper.class);
         databaseDirectory = neo4jLayout.databaseLayout("foo").databaseDirectory();
         putStoreInDirectory(buildConfig(), databaseDirectory);
@@ -349,7 +351,7 @@ class DumpCommandIT {
         var out = mock(PrintStream.class);
         var ctx = new ExecutionContext(homeDir, configDir, out, mock(PrintStream.class), testDirectory.getFileSystem());
         var command = new DumpCommand(ctx, dumper);
-        CommandLine.populateCommand(command, "--database=" + "foo", "--to=-");
+        CommandLine.populateCommand(command, "foo", "--to-stdout");
         command.execute();
 
         verify(dumper)
@@ -367,24 +369,23 @@ class DumpCommandIT {
         var ctx = new ExecutionContext(
                 homeDir, configDir, mock(PrintStream.class), mock(PrintStream.class), testDirectory.getFileSystem());
         var command = new DumpCommand(ctx, dumper);
-        CommandLine.populateCommand(command, "--database=" + "foo*", "--to=-");
+        CommandLine.populateCommand(command, "foo*", "--to-stdout");
         CommandFailedException commandFailed = assertThrows(CommandFailedException.class, command::execute);
         assertThat(commandFailed.getMessage())
-                .isEqualTo("Globbing in database name can not be used in combination with stdout or a file as "
-                        + "destination. Specify a directory as destination or a single target database");
+                .isEqualTo("Globbing in database name can not be used in combination with standard output. "
+                        + "Specify a directory as destination or a single target database");
     }
 
     @Test
-    void shouldNotAllowDatabaseNameGlobbingWithSpecifiedFile() throws IOException {
+    void shouldNotAllowSpecifiedFile() throws IOException {
         Files.createFile(archive);
-        CommandFailedException commandFailed = assertThrows(CommandFailedException.class, () -> execute("foo*"));
-        assertThat(commandFailed.getMessage())
-                .isEqualTo("Globbing in database name can not be used in combination with stdout or a file as "
-                        + "destination. Specify a directory as destination or a single target database");
+        CommandFailedException commandFailed =
+                assertThrows(CommandFailedException.class, () -> execute("foo*", archive));
+        assertThat(commandFailed.getMessage()).isEqualTo(archive + " is not an existing directory");
     }
 
     private void execute(String database) {
-        execute(database, archive);
+        execute(database, dumpDir);
     }
 
     private void execute(String database, Path to) {
@@ -392,7 +393,7 @@ class DumpCommandIT {
                 homeDir, configDir, mock(PrintStream.class), mock(PrintStream.class), testDirectory.getFileSystem());
         final var command = new DumpCommand(ctx, dumper);
 
-        CommandLine.populateCommand(command, "--database=" + database, "--to=" + to.toAbsolutePath());
+        CommandLine.populateCommand(command, database, "--to-path=" + to.toAbsolutePath());
 
         command.execute();
     }

@@ -21,7 +21,6 @@ package org.neo4j.commandline.dbms;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 import static picocli.CommandLine.Command;
@@ -62,31 +61,33 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
+import picocli.CommandLine.ArgGroup;
+import picocli.CommandLine.Parameters;
 
 @Command(
         name = "dump",
         header = "Dump a database into a single-file archive.",
-        description =
-                "Dump a database into a single-file archive. The archive can be used by the load command. "
-                        + "<destination-path> can be a file or directory (in which case a file called <database>.dump will "
-                        + "be created), or '-' to use standard output. It is not possible to dump a database that is mounted in a running Neo4j server.")
+        description = "Dump a database into a single-file archive. The archive can be used by the load command. "
+                + "<destination-path> should be a directory (in which case a file called <database>.dump will "
+                + "be created), or --to-stdout can be supplied to use standard output. "
+                + "It is not possible to dump a database that is mounted in a running Neo4j server.")
 public class DumpCommand extends AbstractCommand {
-    public static final String STANDARD_OUTPUT = "-";
-
-    @Option(
-            names = "--database",
-            paramLabel = "<database>",
-            defaultValue = DEFAULT_DATABASE_NAME,
+    @Parameters(
+            arity = "1",
             description = "Name of the database to dump. Can contain * and ? for globbing.",
             converter = Converters.DatabaseNamePatternConverter.class)
     private DatabaseNamePattern database;
 
-    @Option(
-            names = "--to",
-            paramLabel = "<path>",
-            required = true,
-            description = "Destination (file or folder or '-' for stdout) of database dump.")
-    private String to;
+    @ArgGroup(multiplicity = "1")
+    private TargetOption target = new TargetOption();
+
+    private static class TargetOption {
+        @Option(names = "--to-path", paramLabel = "<path>", description = "Destination folder of database dump.")
+        private String toDir;
+
+        @Option(names = "--to-stdout", description = "Use standard output as destination for database dump.")
+        private boolean toStdout;
+    }
 
     private final Dumper dumper;
 
@@ -97,12 +98,14 @@ public class DumpCommand extends AbstractCommand {
 
     @Override
     public void execute() {
+        if (target.toDir != null && !Files.isDirectory(Path.of(target.toDir))) {
+            throw new CommandFailedException(target.toDir + " is not an existing directory");
+        }
 
-        boolean toStdOut = to.equals(STANDARD_OUTPUT);
-        if (database.containsPattern() && (toStdOut || !Files.isDirectory(Path.of(to)))) {
-            throw new CommandFailedException(
-                    "Globbing in database name can not be used in combination with stdout or a file as destination. "
-                            + "Specify a directory as destination or a single target database");
+        boolean toStdOut = target.toStdout;
+        if (toStdOut && database.containsPattern()) {
+            throw new CommandFailedException("Globbing in database name can not be used in combination with standard "
+                    + "output. Specify a directory as destination or a single target database");
         }
 
         Config config = CommandHelpers.buildConfig(ctx, allowCommandExpansion);
@@ -203,11 +206,11 @@ public class DumpCommand extends AbstractCommand {
         return Files.isDirectory(to) ? to.resolve(database + ".dump") : to;
     }
 
-    private OutputStream openDumpStream(String databaseName, String destination) throws IOException {
-        if (destination.equals(STANDARD_OUTPUT)) {
+    private OutputStream openDumpStream(String databaseName, TargetOption destination) throws IOException {
+        if (destination.toStdout) {
             return ctx.out();
         }
-        var archive = buildArchivePath(databaseName, Path.of(destination).toAbsolutePath());
+        var archive = buildArchivePath(databaseName, Path.of(destination.toDir).toAbsolutePath());
         return dumper.openForDump(archive);
     }
 
@@ -218,7 +221,7 @@ public class DumpCommand extends AbstractCommand {
             var lockFile = databaseLayout.databaseLockFile().getFileName().toString();
             var quarantineMarkerFile =
                     databaseLayout.quarantineMarkerFile().getFileName().toString();
-            var out = openDumpStream(databaseName, to);
+            var out = openDumpStream(databaseName, target);
             dumper.dump(
                     databasePath,
                     databaseLayout.getTransactionLogsDirectory(),

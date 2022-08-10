@@ -101,7 +101,7 @@ class UploadCommandTest {
         managementService.database(databaseLayout.getDatabaseName());
         managementService.shutdown();
 
-        String[] args = array("--database", DBNAME, "--to", dumpDir.toString());
+        String[] args = array(DBNAME, "--to-path", dumpDir.toString());
         new CommandLine(new DumpCommandProvider().createCommand(ctx)).execute(args);
     }
 
