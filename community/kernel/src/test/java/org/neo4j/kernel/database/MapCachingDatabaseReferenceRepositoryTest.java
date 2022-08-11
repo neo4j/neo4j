@@ -43,16 +43,16 @@ public class MapCachingDatabaseReferenceRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        when(delegate.getByName(aliasName)).thenReturn(Optional.of(aliasRef));
-        when(delegate.getByName(name)).thenReturn(Optional.of(ref));
+        when(delegate.getByAlias(aliasName)).thenReturn(Optional.of(aliasRef));
+        when(delegate.getByAlias(name)).thenReturn(Optional.of(ref));
         databaseRefRepo = new MapCachingDatabaseReferenceRepository(delegate);
     }
 
     @Test
     void shouldLookupByName() {
-        var lookup = databaseRefRepo.getByName(name);
-        var lookupAlias = databaseRefRepo.getByName(aliasName);
-        var lookupUnknown = databaseRefRepo.getByName(new NormalizedDatabaseName("unknown"));
+        var lookup = databaseRefRepo.getByAlias(name);
+        var lookupAlias = databaseRefRepo.getByAlias(aliasName);
+        var lookupUnknown = databaseRefRepo.getByAlias(new NormalizedDatabaseName("unknown"));
 
         assertThat(lookup).contains(ref);
         assertThat(lookupAlias).contains(aliasRef);
@@ -61,13 +61,13 @@ public class MapCachingDatabaseReferenceRepositoryTest {
 
     @Test
     void shouldCacheByByName() {
-        var lookup = databaseRefRepo.getByName(name);
-        var lookup2 = databaseRefRepo.getByName(name);
+        var lookup = databaseRefRepo.getByAlias(name);
+        var lookup2 = databaseRefRepo.getByAlias(name);
 
         assertThat(lookup).contains(ref);
         assertThat(lookup).isEqualTo(lookup2);
 
-        verify(delegate, atMostOnce()).getByName(name);
+        verify(delegate, atMostOnce()).getByAlias(name);
     }
 
     @Test

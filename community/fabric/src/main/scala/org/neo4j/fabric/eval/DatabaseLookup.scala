@@ -55,7 +55,7 @@ object DatabaseLookup {
   class Default(databaseRef: DatabaseReferenceRepository) extends DatabaseLookup {
 
     def databaseReferences: SortedSet[DatabaseReference] = {
-      val unsortedSet = databaseRef.getInternalDatabaseReferences.asScala
+      val unsortedSet = databaseRef.getAllDatabaseReferences.asScala
       SortedSet.empty[DatabaseReference] ++ unsortedSet
     }
 
@@ -65,7 +65,7 @@ object DatabaseLookup {
     }
 
     def databaseId(databaseName: NormalizedDatabaseName): Option[NamedDatabaseId] = {
-      databaseRef.getByName(databaseName).toScala.collect {
+      databaseRef.getByAlias(databaseName).toScala.collect {
         case ref: DatabaseReference.Internal => ref.databaseId
       }
     }

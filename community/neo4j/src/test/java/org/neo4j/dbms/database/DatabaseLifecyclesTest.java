@@ -27,9 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -121,13 +119,8 @@ class DatabaseLifecyclesTest {
         }
 
         @Override
-        public Map<NormalizedDatabaseName, NamedDatabaseId> getAllDatabaseAliases() {
-            return null;
-        }
-
-        @Override
-        public Set<NamedDatabaseId> getAllDatabaseIds() {
-            return null;
+        public Optional<NamedDatabaseId> getByName(String databaseName) {
+            return Optional.of(defaultId);
         }
     }
 }

@@ -65,7 +65,7 @@ public abstract class FabricDatabaseManager {
 
     public GraphDatabaseFacade getDatabaseFacade(String databaseNameRaw) throws UnavailableException {
         var databaseContext = databaseReferenceRepo
-                .getInternalByName(databaseNameRaw)
+                .getInternalByAlias(databaseNameRaw)
                 .map(DatabaseReference.Internal::databaseId)
                 .flatMap(databaseContextProvider::getDatabaseContext)
                 .orElseThrow(databaseNotFound(databaseNameRaw));
@@ -75,7 +75,7 @@ public abstract class FabricDatabaseManager {
     }
 
     public DatabaseReference getDatabaseReference(String databaseNameRaw) throws UnavailableException {
-        var ref = databaseReferenceRepo.getByName(databaseNameRaw).orElseThrow(databaseNotFound(databaseNameRaw));
+        var ref = databaseReferenceRepo.getByAlias(databaseNameRaw).orElseThrow(databaseNotFound(databaseNameRaw));
         var isInternal = ref instanceof DatabaseReference.Internal;
         if (isInternal) {
             assertInternalDatabaseAvailable((DatabaseReference.Internal) ref);

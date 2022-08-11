@@ -44,11 +44,11 @@ public class SystemGraphDatabaseReferenceRepository implements DatabaseReference
     }
 
     @Override
-    public Optional<DatabaseReference> getByName(NormalizedDatabaseName databaseName) {
-        if (Objects.equals(SYSTEM_DATABASE_NAME, databaseName.name())) {
+    public Optional<DatabaseReference> getByAlias(NormalizedDatabaseName databaseAlias) {
+        if (Objects.equals(SYSTEM_DATABASE_NAME, databaseAlias.name())) {
             return Optional.of(SYSTEM_DATABASE_REFERENCE);
         }
-        return execute(model -> model.getDatabaseRefByAlias(databaseName.name()));
+        return execute(model -> model.getDatabaseRefByAlias(databaseAlias.name()));
     }
 
     @Override

@@ -29,28 +29,28 @@ import org.neo4j.kernel.database.DatabaseReference.Internal;
  */
 public interface DatabaseReferenceRepository {
     /**
-     * Given a database name, return the corresponding {@link DatabaseReference} from the system database, if one exists.
+     * Given a database alias, return the corresponding {@link DatabaseReference} from the system database, if one exists.
      */
-    Optional<DatabaseReference> getByName(NormalizedDatabaseName databaseName);
+    Optional<DatabaseReference> getByAlias(NormalizedDatabaseName databaseAlias);
 
     /**
-     * Given a database name, return the corresponding {@link DatabaseReference.Internal} from the system database, if one exists.
+     * Given a database alias, return the corresponding {@link DatabaseReference.Internal} from the system database, if one exists.
      *
      * Note that this reference must point to a database hosted on this DBMS.
      */
-    default Optional<DatabaseReference.Internal> getInternalByName(NormalizedDatabaseName databaseName) {
-        return getByName(databaseName)
+    default Optional<DatabaseReference.Internal> getInternalByAlias(NormalizedDatabaseName databaseAlias) {
+        return getByAlias(databaseAlias)
                 .filter(DatabaseReference.Internal.class::isInstance)
                 .map(DatabaseReference.Internal.class::cast);
     }
 
     /**
-     * Given a database name, return the corresponding {@link DatabaseReference.External} from the system database, if one exists.
+     * Given a database alias, return the corresponding {@link DatabaseReference.External} from the system database, if one exists.
      *
      * Note that this reference must not point to a database hosted on this DBMS.
      */
-    default Optional<DatabaseReference.External> getExternalByName(NormalizedDatabaseName databaseName) {
-        return getByName(databaseName)
+    default Optional<DatabaseReference.External> getExternalByAlias(NormalizedDatabaseName databaseAlias) {
+        return getByAlias(databaseAlias)
                 .filter(DatabaseReference.External.class::isInstance)
                 .map(DatabaseReference.External.class::cast);
     }
@@ -58,8 +58,8 @@ public interface DatabaseReferenceRepository {
     /**
      * Given a string representation of a database name, return the corresponding {@link DatabaseReference} from the system database, if one exists.
      */
-    default Optional<DatabaseReference> getByName(String databaseName) {
-        return getByName(new NormalizedDatabaseName(databaseName));
+    default Optional<DatabaseReference> getByAlias(String databaseName) {
+        return getByAlias(new NormalizedDatabaseName(databaseName));
     }
 
     /**
@@ -67,8 +67,8 @@ public interface DatabaseReferenceRepository {
      *
      * Note that this reference must point to a database hosted on this DBMS.
      */
-    default Optional<DatabaseReference.Internal> getInternalByName(String databaseName) {
-        return getInternalByName(new NormalizedDatabaseName(databaseName));
+    default Optional<DatabaseReference.Internal> getInternalByAlias(String databaseName) {
+        return getInternalByAlias(new NormalizedDatabaseName(databaseName));
     }
 
     /**
@@ -76,8 +76,8 @@ public interface DatabaseReferenceRepository {
      *
      * Note that this reference must not point to a database hosted on this DBMS.
      */
-    default Optional<DatabaseReference.External> getExternalByName(String databaseName) {
-        return getExternalByName(new NormalizedDatabaseName(databaseName));
+    default Optional<DatabaseReference.External> getExternalByAlias(String databaseName) {
+        return getExternalByAlias(new NormalizedDatabaseName(databaseName));
     }
 
     /**

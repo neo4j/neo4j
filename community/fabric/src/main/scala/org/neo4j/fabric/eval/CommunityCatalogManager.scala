@@ -112,7 +112,7 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: Globa
     case i: DatabaseReference.Internal =>
       Some(InternalAlias(idx, i.databaseId.databaseId.uuid, new NormalizedGraphName(i.alias.name), i.alias))
     case e: DatabaseReference.External =>
-      Some(ExternalAlias(idx, e.id, new NormalizedGraphName(e.alias.name), e.alias, e.remoteName, e.remoteUri))
+      Some(ExternalAlias(idx, e.id, new NormalizedGraphName(e.alias.name), e.alias, e.targetAlias, e.externalUri))
     case other => None // ignore unexpected reference types
   }
   private def indicesFrom(firstId: Long) = LazyList.iterate(firstId)(_ + 1)

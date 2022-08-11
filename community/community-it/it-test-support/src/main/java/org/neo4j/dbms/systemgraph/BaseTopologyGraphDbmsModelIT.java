@@ -43,7 +43,6 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STORE_F
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STORE_RANDOM_ID_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UPDATE_ID_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY;
-import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DELETED_DATABASE_DUMP_DATA_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DELETED_DATABASE_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DRIVER_SETTINGS_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseStatus.OFFLINE;
@@ -65,8 +64,6 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGET_NAME_PROP
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.URL_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.VERSION_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.WAS_HOSTED_ON_RELATIONSHIP;
-import static org.neo4j.dbms.systemgraph.InstanceModeConstraint.PRIMARY;
-import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -299,11 +296,6 @@ public abstract class BaseTopologyGraphDbmsModelIT {
             return this;
         }
 
-        public DatabaseNodeBuilder withDump() {
-            node.setProperty(DELETED_DATABASE_DUMP_DATA_PROPERTY, true);
-            return this;
-        }
-
         public DatabaseNodeBuilder withInitialMembers(Set<ServerId> initialMembers) {
             node.setProperty(
                     DATABASE_INITIAL_SERVERS_PROPERTY,
@@ -362,7 +354,7 @@ public abstract class BaseTopologyGraphDbmsModelIT {
             return this;
         }
 
-        InstanceNodeBuilder withInstance(ServerId serverId, String name) {
+        public InstanceNodeBuilder withInstance(ServerId serverId, String name) {
             node.setProperty(INSTANCE_UUID_PROPERTY, serverId.uuid().toString());
             node.setProperty(INSTANCE_MODE_CONSTRAINT_PROPERTY, PRIMARY.name());
             node.setProperty(INSTANCE_STATUS_PROPERTY, ENABLED.name());

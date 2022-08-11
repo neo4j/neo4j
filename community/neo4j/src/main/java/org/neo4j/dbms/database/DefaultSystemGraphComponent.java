@@ -29,14 +29,9 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STARTED
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STATUS_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DELETED_DATABASE_LABEL;
-import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HOSTED_ON_INSTALLED_AT_PROPERTY;
-import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HOSTED_ON_MODE_PROPERTY;
-import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HOSTED_ON_RELATIONSHIP;
-import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.INSTANCE_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAME_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.PRIMARY_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS_RELATIONSHIP;
-import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 import static org.neo4j.kernel.database.DatabaseId.SYSTEM_DATABASE_ID;
 
 import java.time.Clock;

@@ -176,7 +176,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
         }
 
         return databaseReferenceRepo
-                .getByName(databaseName)
+                .getByAlias(databaseName)
                 .orElseThrow(() -> (databaseName == defaultDatabaseName)
                         ? BaseRoutingTableProcedureValidator.databaseNotAvailableException(databaseName)
                         : BaseRoutingTableProcedureValidator.databaseNotFoundException(databaseName));

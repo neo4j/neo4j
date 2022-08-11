@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.database.DatabaseId;
@@ -92,7 +91,7 @@ class DatabaseRepositoryTest {
         // then
         // id repository is independent, usually lives in system-db while database repository is an in memory map of
         // installed databases.
-        assertThat(databaseRepository.databaseIdRepository().getAllDatabaseIds())
+        assertThat(databaseRepository.databaseIdRepository().getById(dbId.databaseId()))
                 .isEmpty();
     }
 
@@ -120,13 +119,8 @@ class DatabaseRepositoryTest {
         }
 
         @Override
-        public Map<NormalizedDatabaseName, NamedDatabaseId> getAllDatabaseAliases() {
-            return databaseIds;
-        }
-
-        @Override
-        public Set<NamedDatabaseId> getAllDatabaseIds() {
-            return Set.copyOf(databaseIds.values());
+        public Optional<NamedDatabaseId> getByName(String databaseName) {
+            return getByName(new NormalizedDatabaseName(databaseName));
         }
     }
 }

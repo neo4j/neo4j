@@ -37,7 +37,7 @@ public abstract class BaseRoutingTableProcedureValidator implements RoutingTable
     @SuppressWarnings("ReturnValueIgnored")
     public void assertDatabaseExists(DatabaseReference databaseReference) throws ProcedureException {
         databaseReferenceRepository
-                .getByName(databaseReference.alias())
+                .getByAlias(databaseReference.alias())
                 .orElseThrow(() -> BaseRoutingTableProcedureValidator.databaseNotFoundException(
                         databaseReference.alias().name()));
     }

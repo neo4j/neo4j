@@ -42,15 +42,15 @@ public class MapCachingDatabaseReferenceRepository implements DatabaseReferenceR
     }
 
     @Override
-    public Optional<DatabaseReference> getByName(NormalizedDatabaseName databaseName) {
-        return Optional.ofNullable(databaseRefsByName.computeIfAbsent(databaseName, this::lookupReferenceOnDelegate));
+    public Optional<DatabaseReference> getByAlias(NormalizedDatabaseName databaseAlias) {
+        return Optional.ofNullable(databaseRefsByName.computeIfAbsent(databaseAlias, this::lookupReferenceOnDelegate));
     }
 
     /**
      * May return null, as {@link ConcurrentHashMap#computeIfAbsent} uses null as a signal not to add an entry to for the given key.
      */
     private DatabaseReference lookupReferenceOnDelegate(NormalizedDatabaseName databaseName) {
-        return delegate.getByName(databaseName).orElse(null);
+        return delegate.getByAlias(databaseName).orElse(null);
     }
 
     @Override
