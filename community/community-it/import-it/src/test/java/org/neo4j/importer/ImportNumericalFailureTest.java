@@ -108,8 +108,12 @@ class ImportNumericalFailureTest {
 
     private static void runImport(Path homeDir, String... arguments) {
         final var ctx = new ExecutionContext(homeDir, homeDir.resolve("conf"));
-        final var cmd = new ImportCommand(ctx);
+        final var cmd = new ImportCommand.Full(ctx);
         CommandLine.populateCommand(cmd, arguments);
-        cmd.execute();
+        try {
+            cmd.execute();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

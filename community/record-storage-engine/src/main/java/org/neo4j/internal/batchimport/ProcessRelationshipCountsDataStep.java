@@ -74,7 +74,7 @@ public class ProcessRelationshipCountsDataStep extends RecordProcessorStep<Relat
      * @param highLabelId high label id for this store.
      * @param highRelationshipTypeId high relationship type id for this store.
      * @return number of processors suitable for this step. In most cases this will be 0, which is the typical value used
-     * when just allowing the importer to grab up to {@link Configuration#maxNumberOfProcessors()}. The returned value
+     * when just allowing the importer to grab up to {@link Configuration#maxNumberOfWorkerThreads()}. The returned value
      * will at least be 1.
      */
     private static int numberOfProcessors(
@@ -82,9 +82,9 @@ public class ProcessRelationshipCountsDataStep extends RecordProcessorStep<Relat
         GatheringMemoryStatsVisitor memVisitor = new GatheringMemoryStatsVisitor();
         cache.acceptMemoryStatsVisitor(memVisitor);
 
-        long availableMem = config.maxMemoryUsage() - memVisitor.getTotalUsage();
+        long availableMem = config.maxOffHeapMemory() - memVisitor.getTotalUsage();
         long threadMem = RelationshipCountsProcessor.calculateMemoryUsage(highLabelId, highRelationshipTypeId);
         long possibleThreads = availableMem / threadMem;
-        return possibleThreads >= config.maxNumberOfProcessors() ? 0 : toIntExact(max(1, possibleThreads));
+        return possibleThreads >= config.maxNumberOfWorkerThreads() ? 0 : toIntExact(max(1, possibleThreads));
     }
 }

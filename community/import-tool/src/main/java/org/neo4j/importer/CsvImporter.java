@@ -119,7 +119,9 @@ class CsvImporter implements Importer {
     private final CursorContextFactory contextFactory;
     private final MemoryTracker memoryTracker;
     private final boolean force;
-    private final ImportMode mode;
+    private final IncrementalStage incrementalStage;
+
+    private boolean incremental;
 
     private CsvImporter(Builder b) {
         this.databaseLayout = requireNonNull(b.databaseLayout);
@@ -146,7 +148,8 @@ class CsvImporter implements Importer {
         this.stdOut = requireNonNull(b.stdOut);
         this.stdErr = requireNonNull(b.stdErr);
         this.force = b.force;
-        this.mode = b.mode;
+        this.incremental = b.incremental;
+        this.incrementalStage = b.incrementalStage;
     }
 
     @Override
@@ -197,7 +200,7 @@ class CsvImporter implements Importer {
             var logService = new SimpleLogService(
                     NullLogProvider.getInstance(),
                     new PrefixedLogProvider(logProvider, databaseLayout.getDatabaseName()));
-            if (mode != ImportMode.initial) {
+            if (incremental) {
                 try (Lifespan life = new Lifespan()) {
                     var indexProviders = life.add(new DefaultIndexProvidersAccess(
                             storageEngineFactory,
@@ -227,16 +230,16 @@ class CsvImporter implements Importer {
                             memoryTracker,
                             contextFactory,
                             indexProviders);
-                    switch (mode) {
-                        case incremental_prepare -> importer.prepare(input);
-                        case incremental_build -> importer.build(input);
-                        case incremental_merge -> importer.merge();
-                        case incremental -> {
+                    switch (incrementalStage) {
+                        case prepare -> importer.prepare(input);
+                        case build -> importer.build(input);
+                        case merge -> importer.merge();
+                        case all -> {
                             importer.prepare(input);
                             importer.build(input);
                             importer.merge();
                         }
-                        default -> throw new IllegalArgumentException("Unknown import mode " + mode);
+                        default -> throw new IllegalArgumentException("Unknown import mode " + incrementalStage);
                     }
                 }
             } else {
@@ -285,15 +288,12 @@ class CsvImporter implements Importer {
 
     private LogTailMetadata readLogTailMetaData(StorageEngineFactory storageEngineFactory, Log4jLogProvider logProvider)
             throws IOException {
-        return switch (mode) {
-            case incremental, incremental_prepare, incremental_merge -> {
-                yield LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fileSystem)
+        return incremental
+                ? LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fileSystem)
                         .withStorageEngineFactory(storageEngineFactory)
                         .build()
-                        .getTailMetadata();
-            }
-            default -> LogTailMetadata.EMPTY_LOG_TAIL;
-        };
+                        .getTailMetadata()
+                : LogTailMetadata.EMPTY_LOG_TAIL;
     }
 
     /**
@@ -314,7 +314,7 @@ class CsvImporter implements Importer {
             printErrorMessage("Relationship missing mandatory field", e, stackTrace, err);
         } else if (DirectoryNotEmptyException.class.equals(e.getClass())) {
             printErrorMessage(
-                    "Database already exist. Re-run with `--force` to remove the database prior to import",
+                    "Database already exist. Re-run with `--overwrite-destination` to remove the database prior to import",
                     e,
                     stackTrace,
                     err);
@@ -362,7 +362,7 @@ class CsvImporter implements Importer {
     private void printOverview() {
         stdOut.println("Neo4j version: " + Version.getNeo4jVersion());
         stdOut.println("Importing the contents of these files into " + databaseLayout.databaseDirectory() + ":");
-        stdOut.println("Import mode: " + mode);
+        stdOut.println("Import mode: " + incrementalStage);
         printInputFiles("Nodes", nodeFiles, stdOut);
         printInputFiles("Relationships", relationshipFiles, stdOut);
         stdOut.println();
@@ -370,9 +370,9 @@ class CsvImporter implements Importer {
         printIndented("Total machine memory: " + bytesToString(OsBeanUtil.getTotalPhysicalMemory()), stdOut);
         printIndented("Free machine memory: " + bytesToString(OsBeanUtil.getFreePhysicalMemory()), stdOut);
         printIndented("Max heap memory : " + bytesToString(Runtime.getRuntime().maxMemory()), stdOut);
-        printIndented("Processors: " + importConfig.maxNumberOfProcessors(), stdOut);
-        printIndented("Configured max memory: " + bytesToString(importConfig.maxMemoryUsage()), stdOut);
-        printIndented("High-IO: " + importConfig.highIO(), stdOut);
+        printIndented("Max worker threads: " + importConfig.maxNumberOfWorkerThreads(), stdOut);
+        printIndented("Configured max memory: " + bytesToString(importConfig.maxOffHeapMemory()), stdOut);
+        printIndented("High parallel IO: " + importConfig.highIO(), stdOut);
         stdOut.println();
     }
 
@@ -476,7 +476,8 @@ class CsvImporter implements Importer {
         private PrintStream stdOut = System.out;
         private PrintStream stdErr = System.err;
         private boolean force;
-        private ImportMode mode = ImportMode.initial;
+        private boolean incremental = false;
+        private IncrementalStage incrementalStage = null;
 
         Builder withDatabaseLayout(DatabaseLayout databaseLayout) {
             this.databaseLayout = RecordDatabaseLayout.convert(databaseLayout);
@@ -596,38 +597,39 @@ class CsvImporter implements Importer {
             return this;
         }
 
-        Builder withMode(ImportMode mode) {
-            this.mode = mode;
+        Builder withIncremental(boolean incremental) {
+            this.incremental = incremental;
+            return this;
+        }
+
+        Builder withIncrementalStage(IncrementalStage mode) {
+            this.incrementalStage = mode;
             return this;
         }
 
         CsvImporter build() {
             Preconditions.checkState(
-                    !(force && mode != ImportMode.initial), "--force doesn't work with --mode=%s", mode);
+                    !(force && incremental), "--force doesn't work with incremental import", incrementalStage);
             return new CsvImporter(this);
         }
     }
 
-    enum ImportMode {
-        /**
-         * Initial import into an empty or non-existent database.
-         */
-        initial,
+    enum IncrementalStage {
         /**
          * Prepares an incremental import. This requires target database to be offline.
          */
-        incremental_prepare,
+        prepare,
         /**
          * Builds the incremental import. The is disjoint from the target database state.
          */
-        incremental_build,
+        build,
         /**
          * Merges the incremental import into the target database. This requires target database to be offline.
          */
-        incremental_merge,
+        merge,
         /**
          * Performs a full incremental import including all steps involved.
          */
-        incremental;
+        all;
     }
 }

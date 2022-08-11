@@ -27,11 +27,11 @@ import picocli.CommandLine;
  * If this factory encounters a component that has a constructor with a single argument of {@link ExecutionContext} type,
  * it will construct it, otherwise it delegates to the default factory.
  */
-class ContextInjectingFactory implements picocli.CommandLine.IFactory {
+public class ContextInjectingFactory implements picocli.CommandLine.IFactory {
 
     private final ExecutionContext ctx;
 
-    ContextInjectingFactory(ExecutionContext ctx) {
+    public ContextInjectingFactory(ExecutionContext ctx) {
         this.ctx = ctx;
     }
 

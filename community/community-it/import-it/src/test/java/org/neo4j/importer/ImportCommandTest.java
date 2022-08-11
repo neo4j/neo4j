@@ -172,7 +172,7 @@ class ImportCommandTest {
                 "--additional-config", dbConfig.toAbsolutePath().toString(),
                 "--nodes",
                         nodeData(true, COMMAS, nodeIds, TRUE).toAbsolutePath().toString(),
-                "--high-io", "false",
+                "--high-parallel-io", "false",
                 "--relationships",
                         relationshipData(true, COMMAS, nodeIds, TRUE, true)
                                 .toAbsolutePath()
@@ -199,7 +199,7 @@ class ImportCommandTest {
                                 nodeData(true, config, nodeIds, TRUE)
                                         .toAbsolutePath()
                                         .toString(),
-                        "--high-io", "false",
+                        "--high-parallel-io", "false",
                         "--relationships",
                                 relationshipData(true, config, nodeIds, TRUE, true)
                                         .toAbsolutePath()
@@ -832,12 +832,11 @@ class ImportCommandTest {
         var e = assertThrows(
                 Exception.class,
                 () -> runImport(
-                        "--additional-config", dbConfig.toAbsolutePath().toString(),
+                        "--additional-config",
+                        dbConfig.toAbsolutePath().toString(),
                         "--nodes",
-                                nodeData(true, config, nodeIds, TRUE)
-                                        .toAbsolutePath()
-                                        .toString(),
-                        "--database", "__incorrect_db__"));
+                        nodeData(true, config, nodeIds, TRUE).toAbsolutePath().toString(),
+                        "__incorrect_db__"));
         assertThat(e).hasMessageContaining("Invalid database name '__incorrect_db__'.");
     }
 
@@ -849,10 +848,11 @@ class ImportCommandTest {
 
         var mixedCaseDatabaseName = "TestDataBase";
         runImport(
-                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--additional-config",
+                dbConfig.toAbsolutePath().toString(),
                 "--nodes",
-                        nodeData(true, config, nodeIds, TRUE).toAbsolutePath().toString(),
-                "--database", mixedCaseDatabaseName);
+                nodeData(true, config, nodeIds, TRUE).toAbsolutePath().toString(),
+                mixedCaseDatabaseName);
 
         var db = getDatabaseApi(mixedCaseDatabaseName.toLowerCase());
         assertEquals(mixedCaseDatabaseName.toLowerCase(), db.databaseName());
@@ -1758,7 +1758,7 @@ class ImportCommandTest {
                 nodeData(true, Configuration.COMMAS, nodeIds, TRUE)
                         .toAbsolutePath()
                         .toString(),
-                "--max-memory",
+                "--max-off-heap-memory",
                 "60%");
     }
 
@@ -1774,7 +1774,7 @@ class ImportCommandTest {
                         nodeData(true, Configuration.COMMAS, nodeIds, TRUE)
                                 .toAbsolutePath()
                                 .toString(),
-                        "--max-memory",
+                        "--max-off-heap-memory",
                         "110%"));
         assertThat(e).hasMessageContaining("percent");
     }
@@ -1790,7 +1790,7 @@ class ImportCommandTest {
                 nodeData(true, Configuration.COMMAS, nodeIds, TRUE)
                         .toAbsolutePath()
                         .toString(),
-                "--max-memory",
+                "--max-off-heap-memory",
                 "100M");
     }
 
@@ -2535,14 +2535,14 @@ class ImportCommandTest {
         return dbConfig;
     }
 
-    private void runImport(String... arguments) {
+    private void runImport(String... arguments) throws Exception {
         runImport(testDirectory.absolutePath(), arguments);
     }
 
-    private void runImport(Path homeDir, String... arguments) {
+    private void runImport(Path homeDir, String... arguments) throws Exception {
         final var ctx = new ExecutionContext(
                 homeDir, homeDir.resolve("conf"), System.out, System.err, testDirectory.getFileSystem());
-        final var cmd = new ImportCommand(ctx);
+        final var cmd = new ImportCommand.Full(ctx);
 
         var list = new ArrayList<>(Arrays.asList(arguments));
         if (!list.contains("--report-file")) // make sure we write in test directory if not specified

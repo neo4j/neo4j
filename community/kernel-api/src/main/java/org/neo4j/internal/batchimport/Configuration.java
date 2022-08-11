@@ -70,7 +70,7 @@ public interface Configuration {
      * how many processors are fully in use there's a calculation where one thread takes up 0 < fraction <= 1
      * of a processor.
      */
-    default int maxNumberOfProcessors() {
+    default int maxNumberOfWorkerThreads() {
         return allAvailableProcessors();
     }
 
@@ -79,7 +79,7 @@ public interface Configuration {
      * will roughly be this value + number of processors assigned to the step that has the most processors assigned.
      */
     default int maxQueueSize() {
-        return maxNumberOfProcessors();
+        return maxNumberOfWorkerThreads();
     }
 
     static int allAvailableProcessors() {
@@ -114,7 +114,7 @@ public interface Configuration {
      * {@value #DEFAULT_MAX_MEMORY_PERCENT}% of that figure.
      * @throws UnsupportedOperationException if available memory couldn't be determined.
      */
-    default long maxMemoryUsage() {
+    default long maxOffHeapMemory() {
         return calculateMaxMemoryFromPercent(DEFAULT_MAX_MEMORY_PERCENT);
     }
 
@@ -153,16 +153,6 @@ public interface Configuration {
      */
     default boolean highIO() {
         return true;
-    }
-
-    /**
-     * Whether or not to allocate memory for holding the cache on heap. The first alternative is to allocate
-     * off-heap, but if there's no more available memory, but there might be in the heap the importer will
-     * try to allocate chunks of the cache on heap instead. This config control whether or not to allow
-     * this allocation to happen on heap.
-     */
-    default boolean allowCacheAllocationOnHeap() {
-        return false;
     }
 
     /**
@@ -229,10 +219,10 @@ public interface Configuration {
         }
 
         @Override
-        public int maxNumberOfProcessors() {
+        public int maxNumberOfWorkerThreads() {
             Integer upgradeProcessors = config.get(upgrade_processors);
             if (upgradeProcessors == 0) {
-                return defaults.maxNumberOfProcessors();
+                return defaults.maxNumberOfWorkerThreads();
             }
             return upgradeProcessors;
         }
@@ -253,13 +243,8 @@ public interface Configuration {
         }
 
         @Override
-        public long maxMemoryUsage() {
-            return defaults.maxMemoryUsage();
-        }
-
-        @Override
-        public boolean allowCacheAllocationOnHeap() {
-            return defaults.allowCacheAllocationOnHeap();
+        public long maxOffHeapMemory() {
+            return defaults.maxOffHeapMemory();
         }
     }
 

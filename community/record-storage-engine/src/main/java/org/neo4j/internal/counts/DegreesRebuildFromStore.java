@@ -277,7 +277,7 @@ public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesS
                 Configuration config,
                 GroupDegreesCache cache,
                 CursorContextFactory cursorContextFactory) {
-            super(control, "PREPARE", config, config.maxNumberOfProcessors(), cursorContextFactory);
+            super(control, "PREPARE", config, config.maxNumberOfWorkerThreads(), cursorContextFactory);
             this.cache = cache;
         }
 
@@ -322,7 +322,7 @@ public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesS
                 Configuration config,
                 GroupDegreesCache cache,
                 CursorContextFactory cursorContextFactory) {
-            super(control, "CALCULATE", config, config.maxNumberOfProcessors(), cursorContextFactory);
+            super(control, "CALCULATE", config, config.maxNumberOfWorkerThreads(), cursorContextFactory);
             this.cache = cache;
         }
 

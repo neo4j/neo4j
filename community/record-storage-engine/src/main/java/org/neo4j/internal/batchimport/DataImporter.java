@@ -122,7 +122,7 @@ public class DataImporter {
             StatsProvider memoryStatsProvider)
             throws IOException {
         LongAdder roughEntityCountProgress = new LongAdder();
-        int numRunners = configuration.maxNumberOfProcessors();
+        int numRunners = configuration.maxNumberOfWorkerThreads();
         ExecutorService pool = Executors.newFixedThreadPool(numRunners, new NamedThreadFactory(title + "Importer"));
         IoMonitor writeMonitor = new IoMonitor(stores.getIoTracer());
         ControllableStep step =

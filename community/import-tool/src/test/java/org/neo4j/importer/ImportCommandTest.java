@@ -23,24 +23,30 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.PrintStream;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
+import org.neo4j.cli.ContextInjectingFactory;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import picocli.CommandLine;
+import picocli.CommandLine.Help;
 
 @TestDirectoryExtension
 @ExtendWith(SuppressOutputExtension.class)
@@ -53,199 +59,143 @@ class ImportCommandTest {
     private SuppressOutput suppressOutput;
 
     @Test
-    void printUsageHelp() {
-        final var baos = new ByteArrayOutputStream();
-        final var command = new ImportCommand(new ExecutionContext(Path.of("."), Path.of(".")));
-        try (var out = new PrintStream(baos)) {
-            CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
+    void usageHelp() {
+        final var command = new ImportCommand();
+        final var help = getUsageHelp(command);
+        // All non-hidden subcommands
+        var subcommands = help.subcommands().keySet();
+        var expectedSubcommands = Set.of("full");
+        assertThat(subcommands).isEqualTo(expectedSubcommands);
+    }
+
+    private static final String[] sharedOptions = {
+        "--expand-commands",
+        "--verbose",
+        "--additional-config",
+        "--report-file",
+        "--id-type",
+        "--input-encoding",
+        "--ignore-extra-columns",
+        "--multiline-fields",
+        "--ignore-empty-strings",
+        "--trim-strings",
+        "--legacy-style-quoting",
+        "--delimiter",
+        "--array-delimiter",
+        "--quote",
+        "--read-buffer-size",
+        "--max-off-heap-memory",
+        "--high-parallel-io",
+        "--threads",
+        "--bad-tolerance",
+        "--skip-bad-entries-logging",
+        "--skip-bad-relationships",
+        "--skip-duplicate-nodes",
+        "--normalize-types",
+        "--nodes",
+        "--relationships",
+        "--auto-skip-subsequent-headers"
+    };
+
+    private static final String[] sharedPositionals = {"<database>"};
+
+    @Test
+    void printUsageHelpForSubcommandFull() {
+        final var command = new ImportCommand.Full(getExecutionContext());
+        final var help = getUsageHelp(command);
+        final var options = getOptions(help);
+        var expectedOptions = new ArrayList<String>(List.of(sharedOptions));
+        expectedOptions.addAll(List.of("--overwrite-destination"));
+        final var positionals = getPositionals(help);
+        final var expectedPositionals = List.of(sharedPositionals);
+
+        assertThat(options.toArray()).containsOnly(expectedOptions.toArray());
+        assertThat(positionals.toArray()).containsOnly(expectedPositionals.toArray());
+    }
+
+    @Test
+    void printUsageHelpForSubcommandIncremental() {
+        final var command = new ImportCommand.Incremental(getExecutionContext());
+        final var help = getUsageHelp(command);
+        final var options = getOptions(help);
+        var expectedOptions = new ArrayList<String>(List.of(sharedOptions));
+        expectedOptions.addAll(List.of("--stage"));
+        final var positionals = getPositionals(help);
+        final var expectedPositionals = List.of(sharedPositionals);
+
+        assertThat(options.toArray()).containsOnly(expectedOptions.toArray());
+        assertThat(positionals.toArray()).containsOnly(expectedPositionals.toArray());
+    }
+
+    @Test
+    void shouldAllowDifferentCasingForIdType() {
+        var tempFileName = testDir.createFile("dummy").toString();
+        var requiredArgs = List.of("--nodes", tempFileName, "--relationships", tempFileName);
+        assertIdTypeAliases(requiredArgs, List.of("ACTUAL", "actual"), IdType.ACTUAL);
+        assertIdTypeAliases(requiredArgs, List.of("STRING", "string"), IdType.STRING);
+        assertIdTypeAliases(requiredArgs, List.of("INTEGER", "integer"), IdType.INTEGER);
+    }
+
+    private void assertIdTypeAliases(List<String> requiredArgs, List<String> aliases, IdType idType) {
+        for (var alias : aliases) {
+            var command = new ImportCommand.Full(getExecutionContext());
+            var args = Stream.concat(List.of("--id-type", alias).stream(), requiredArgs.stream());
+            new CommandLine(command).parseArgs(args.toArray(String[]::new));
+            assertThat(command.idType).isEqualTo(idType);
         }
-        String actualValue = baos.toString().trim();
-        String expectedValue =
-                """
-                USAGE
+    }
 
-                import [--expand-commands] [--verbose] [--auto-skip-subsequent-headers
-                       [=<true/false>]] [--cache-on-heap[=<true/false>]] [--force
-                       [=<true/false>]] [--high-io[=<true/false>]] [--ignore-empty-strings
-                       [=<true/false>]] [--ignore-extra-columns[=<true/false>]]
-                       [--legacy-style-quoting[=<true/false>]] [--multiline-fields
-                       [=<true/false>]] [--normalize-types[=<true/false>]]
-                       [--skip-bad-entries-logging[=<true/false>]] [--skip-bad-relationships
-                       [=<true/false>]] [--skip-duplicate-nodes[=<true/false>]] [--trim-strings
-                       [=<true/false>]] [--additional-config=<path>] [--array-delimiter=<char>]
-                       [--bad-tolerance=<num>] [--database=<database>] [--delimiter=<char>]
-                       [--id-type=<STRING|INTEGER|ACTUAL>] [--input-encoding=<character-set>]
-                       [--max-memory=<size>] [--processors=<num>] [--quote=<char>]
-                       [--read-buffer-size=<size>] [--report-file=<path>] --nodes=[<label>[:
-                       <label>]...=]<files>... [--nodes=[<label>[:<label>]...=]<files>...]...
-                       [--relationships=[<type>=]<files>...]...
+    @Test
+    void shouldAllowAliasesForIncrementalStage() {
+        var tempFileName = testDir.createFile("dummy").toString();
+        var requiredArgs = List.of("--nodes", tempFileName, "--relationships", tempFileName);
 
-                DESCRIPTION
+        assertIncrementalStageAliases(
+                requiredArgs, List.of("prepare", "PREPARE", "1"), CsvImporter.IncrementalStage.prepare);
+        assertIncrementalStageAliases(requiredArgs, List.of("build", "BUILD", "2"), CsvImporter.IncrementalStage.build);
+        assertIncrementalStageAliases(requiredArgs, List.of("merge", "MERGE", "3"), CsvImporter.IncrementalStage.merge);
+    }
 
-                Import a collection of CSV files.
+    private void assertIncrementalStageAliases(
+            List<String> requiredArgs, List<String> aliases, CsvImporter.IncrementalStage stage) {
+        for (var alias : aliases) {
+            var command = new ImportCommand.Incremental(getExecutionContext());
+            var args = Stream.concat(List.of("--stage", alias).stream(), requiredArgs.stream());
+            new CommandLine(command).parseArgs(args.toArray(String[]::new));
+            assertThat(command.stage).isEqualTo(stage);
+        }
+    }
 
-                OPTIONS
+    private ExecutionContext getExecutionContext() {
+        return new ExecutionContext(Path.of("."), Path.of("."));
+    }
 
-                      --additional-config=<path>
-                                             Configuration file with additional configuration.
-                      --array-delimiter=<char>
-                                             Delimiter character between array elements within
-                                               a value in CSV data. Also accepts 'TAB' and e.g.
-                                               'U+20AC' for specifying character using unicode.
-                                               Default: ;
-                      --auto-skip-subsequent-headers[=<true/false>]
-                                             Automatically skip accidental header lines in
-                                               subsequent files in file groups with more than
-                                               one file
-                                               Default: false
-                      --bad-tolerance=<num>  Number of bad entries before the import is
-                                               considered failed. This tolerance threshold is
-                                               about relationships referring to missing nodes.
-                                               Format errors in input data are still treated as
-                                               errors
-                                               Default: 1000
-                      --cache-on-heap[=<true/false>]
-                                             (advanced) Whether or not to allow allocating
-                                               memory for the cache on heap. If 'false' then
-                                               caches will still be allocated off-heap, but the
-                                               additional free memory inside the JVM will not
-                                               be allocated for the caches. Use this option to
-                                               be able to have better control over the heap
-                                               memory.
-                                               Default: false
-                      --database=<database>  Name of the database to import.
-                                               If the database used to import into doesn't
-                                               exist prior to importing,
-                                               then it must be created subsequently using
-                                               CREATE DATABASE.
-                                               Default: neo4j
-                      --delimiter=<char>     Delimiter character between values in CSV data.
-                                               Also accepts 'TAB' and e.g. 'U+20AC' for
-                                               specifying character using unicode.
-                                               Default: ,
-                      --expand-commands      Allow command expansion in config value evaluation.
-                      --force[=<true/false>] Force will delete any existing database files
-                                               prior to the import.
-                                               Default: false
-                      --high-io[=<true/false>]
-                                             Ignore environment-based heuristics, and assume
-                                               that the target storage subsystem can support
-                                               parallel IO with high throughput.
-                                               Default: null
-                      --id-type=<STRING|INTEGER|ACTUAL>
-                                             Each node must provide a unique id. This is used
-                                               to find the correct nodes when creating
-                                               relationships. Possible values are:
-                                               STRING: arbitrary strings for identifying nodes,
-                                               INTEGER: arbitrary integer values for
-                                               identifying nodes,
-                                               ACTUAL: (advanced) actual node ids.
-                                             For more information on id handling, please see
-                                               the Neo4j Manual: https://neo4j.
-                                               com/docs/operations-manual/current/tools/import/
-                                               Default: STRING
-                      --ignore-empty-strings[=<true/false>]
-                                             Whether or not empty string fields, i.e. "" from
-                                               input source are ignored, i.e. treated as null.
-                                               Default: false
-                      --ignore-extra-columns[=<true/false>]
-                                             If un-specified columns should be ignored during
-                                               the import.
-                                               Default: false
-                      --input-encoding=<character-set>
-                                             Character set that input data is encoded in.
-                                               Default: UTF-8
-                      --legacy-style-quoting[=<true/false>]
-                                             Whether or not backslash-escaped quote e.g. \\" is
-                                               interpreted as inner quote.
-                                               Default: false
-                      --max-memory=<size>    Maximum memory that neo4j-admin can use for
-                                               various data structures and caching to improve
-                                               performance. Values can be plain numbers, like
-                                               10000000 or e.g. 20G for 20 gigabyte, or even e.
-                                               g. 70%%.
-                                               Default: 90%%
-                      --multiline-fields[=<true/false>]
-                                             Whether or not fields from input source can span
-                                               multiple lines, i.e. contain newline characters.
-                                               Default: false
-                      --nodes=[<label>[:<label>]...=]<files>...
-                                             Node CSV header and data. Multiple files will be
-                                               logically seen as one big file from the
-                                               perspective of the importer. The first line must
-                                               contain the header. Multiple data sources like
-                                               these can be specified in one import, where each
-                                               data source has its own header.
-                      --normalize-types[=<true/false>]
-                                             Whether or not to normalize property types to
-                                               Cypher types, e.g. 'int' becomes 'long' and
-                                               'float' becomes 'double'
-                                               Default: true
-                      --processors=<num>     (advanced) Max number of processors used by the
-                                               importer. Defaults to the number of available
-                                               processors reported by the JVM. There is a
-                                               certain amount of minimum threads needed so for
-                                               that reason there is no lower bound for this
-                                               value. For optimal performance this value
-                                               shouldn't be greater than the number of
-                                               available processors.
-                                               Default: %d
-                      --quote=<char>         Character to treat as quotation character for
-                                               values in CSV data. Quotes can be escaped as per
-                                               RFC 4180 by doubling them, for example "" would
-                                               be interpreted as a literal ". You cannot escape
-                                               using \\.
-                                               Default: "
-                      --read-buffer-size=<size>
-                                             Size of each buffer for reading input data. The
-                                               size has to at least be large enough to hold the
-                                               biggest single value in the input data. The
-                                               value can be a plain number or a byte units
-                                               string, e.g. 128k, 1m.
-                                               Default: 4194304
-                      --relationships=[<type>=]<files>...
-                                             Relationship CSV header and data. Multiple files
-                                               will be logically seen as one big file from the
-                                               perspective of the importer. The first line must
-                                               contain the header. Multiple data sources like
-                                               these can be specified in one import, where each
-                                               data source has its own header.
-                      --report-file=<path>   File in which to store the report of the
-                                               csv-import.
-                                               Default: import.report
-                      --skip-bad-entries-logging[=<true/false>]
-                                             Whether or not to skip logging bad entries
-                                               detected during import.
-                                               Default: false
-                      --skip-bad-relationships[=<true/false>]
-                                             Whether or not to skip importing relationships
-                                               that refers to missing node ids, i.e. either
-                                               start or end node id/group referring to node
-                                               that wasn't specified by the node input data.
-                                               Skipped relationships will be logged, containing
-                                               at most number of entities specified by
-                                               bad-tolerance, unless otherwise specified by
-                                               skip-bad-entries-logging option.
-                                               Default: false
-                      --skip-duplicate-nodes[=<true/false>]
-                                             Whether or not to skip importing nodes that have
-                                               the same id/group. In the event of multiple
-                                               nodes within the same group having the same id,
-                                               the first encountered will be imported whereas
-                                               consecutive such nodes will be skipped. Skipped
-                                               nodes will be logged, containing at most number
-                                               of entities specified by bad-tolerance, unless
-                                               otherwise specified by skip-bad-entries-logging
-                                               option.
-                                               Default: false
-                      --trim-strings[=<true/false>]
-                                             Whether or not strings should be trimmed for
-                                               whitespaces.
-                                               Default: false
-                      --verbose              Enable verbose output."""
-                        .formatted(Runtime.getRuntime().availableProcessors());
+    private Help getUsageHelp(Object command) {
+        final var ctx = getExecutionContext();
+        return new CommandLine(command, new ContextInjectingFactory(ctx)).getHelp();
+    }
 
-        assertThat(actualValue).isEqualToIgnoringNewLines(expectedValue);
+    private Set<String> getOptions(Help help) {
+        var options = new HashSet<String>();
+        for (var option : help.commandSpec().options()) {
+            if (option.hidden()) {
+                continue;
+            }
+            // Pick the first name
+            options.add(option.names()[0]);
+        }
+        return options;
+    }
+
+    private Set<String> getPositionals(Help help) {
+        var positionals = new HashSet<String>();
+        for (var positional : help.commandSpec().positionalParameters()) {
+            if (positional.hidden()) {
+                continue;
+            }
+            positionals.add(positional.paramLabel());
+        }
+        return positionals;
     }
 
     @Test
@@ -255,7 +205,8 @@ class ImportCommandTest {
         final var additionalConfigFile = testDir.createFile("empty.conf");
         final var ctx = new ExecutionContext(
                 homeDir, testDir.directory("conf"), System.out, System.err, testDir.getFileSystem());
-        final var command = new ImportCommand(ctx);
+        // Does not matter which command Full/Incremental
+        final var command = new ImportCommand.Full(ctx);
         final var foo = testDir.createFile("foo.csv");
 
         CommandLine.populateCommand(
@@ -265,7 +216,7 @@ class ImportCommandTest {
                 "--nodes=" + foo.toAbsolutePath());
 
         // when
-        Config resultingConfig = command.loadNeo4jConfig();
+        Config resultingConfig = command.loadNeo4jConfig("");
 
         // then
         assertEquals(homeDir, resultingConfig.get(GraphDatabaseSettings.neo4j_home));
@@ -277,13 +228,14 @@ class ImportCommandTest {
         final var homeDir = testDir.directory("other", "place");
         final var ctx = new ExecutionContext(
                 homeDir, testDir.directory("conf"), System.out, System.err, testDir.getFileSystem());
-        final var command = new ImportCommand(ctx);
+        // Does not matter which command Full/Incremental
+        final var command = new ImportCommand.Full(ctx);
         final var foo = testDir.createFile("foo.csv");
 
         CommandLine.populateCommand(command, "--nodes=" + foo.toAbsolutePath());
 
         // when
-        Config resultingConfig = command.loadNeo4jConfig();
+        Config resultingConfig = command.loadNeo4jConfig("");
 
         // then
         assertEquals(homeDir, resultingConfig.get(GraphDatabaseSettings.neo4j_home));
@@ -335,7 +287,7 @@ class ImportCommandTest {
         void filesRegex() {
             final var foo1 = testDir.createFile("foo-1.csv");
             final var foo2 = testDir.createFile("foo-2.csv");
-            final var foo3 = testDir.createFile("foo-X.csv");
+            testDir.createFile("foo-X.csv");
             final var g = ImportCommand.parseNodeFilesGroup(
                     "BANANA=" + testDir.absolutePath() + File.separator + "foo-[0-9].csv");
             assertThat(g.key).containsOnly("BANANA");
@@ -380,7 +332,7 @@ class ImportCommandTest {
         void filesRegex() {
             final var foo1 = testDir.createFile("foo-1.csv");
             final var foo2 = testDir.createFile("foo-2.csv");
-            final var foo3 = testDir.createFile("foo-X.csv");
+            testDir.createFile("foo-X.csv");
             final var g = ImportCommand.parseRelationshipFilesGroup(
                     "BANANA=" + testDir.absolutePath() + File.separator + "foo-[0-9].csv");
             assertThat(g.key).isEqualTo("BANANA");

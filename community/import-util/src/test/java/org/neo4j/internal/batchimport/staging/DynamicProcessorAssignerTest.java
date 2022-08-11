@@ -165,7 +165,7 @@ class DynamicProcessorAssignerTest {
             }
 
             @Override
-            public int maxNumberOfProcessors() {
+            public int maxNumberOfWorkerThreads() {
                 return processors;
             }
         };

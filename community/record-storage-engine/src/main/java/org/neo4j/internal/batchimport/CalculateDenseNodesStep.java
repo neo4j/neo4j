@@ -47,7 +47,7 @@ public class CalculateDenseNodesStep extends ProcessorStep<RelationshipRecord[]>
             NodeRelationshipCache cache,
             CursorContextFactory contextFactory,
             StatsProvider... statsProviders) {
-        super(control, "CALCULATE", config, config.maxNumberOfProcessors(), contextFactory, statsProviders);
+        super(control, "CALCULATE", config, config.maxNumberOfWorkerThreads(), contextFactory, statsProviders);
         this.cache = cache;
         for (int i = 0; i < latches.length; i++) {
             latches[i] = new ReentrantLock();

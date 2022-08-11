@@ -41,7 +41,7 @@ import org.neo4j.internal.batchimport.stats.Keys;
  * <li>Constantly figures out if there are steps that are way faster than the second fastest step and
  * removes processors from those steps.</li>
  * <li>At all times keeps the total number of processors assigned to steps to a total of less than or equal to
- * {@link Configuration#maxNumberOfProcessors()}.</li>
+ * {@link Configuration#maxNumberOfWorkerThreads()}.</li>
  * </ul>
  */
 public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter {
@@ -52,7 +52,7 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter {
     public DynamicProcessorAssigner(Configuration config) {
         super(1, SECONDS);
         this.config = config;
-        this.availableProcessors = config.maxNumberOfProcessors();
+        this.availableProcessors = config.maxNumberOfWorkerThreads();
     }
 
     @Override

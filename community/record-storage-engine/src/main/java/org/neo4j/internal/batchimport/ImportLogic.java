@@ -165,7 +165,7 @@ public class ImportLogic implements Closeable {
         this.pageCacheTracer = pageCacheTracer;
         this.memoryTracker = memoryTracker;
         this.executionMonitor = ExecutionSupervisors.withDynamicProcessorAssignment(executionMonitor, config);
-        this.maxMemory = config.maxMemoryUsage();
+        this.maxMemory = config.maxOffHeapMemory();
     }
 
     public void initialize(Input input) throws IOException {
@@ -177,7 +177,7 @@ public class ImportLogic implements Closeable {
                 neoStore.getPageCache(),
                 contextFactory,
                 databaseDirectory,
-                config.allowCacheAllocationOnHeap(),
+                false,
                 numberArrayFactoryMonitor,
                 log,
                 databaseName);

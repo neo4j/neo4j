@@ -71,7 +71,7 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
                         // Limit reader (I/O) threads to 12, it's a high degree of concurrency and assigning more
                         // will likely not make things faster, rather the other way around and it's difficult for
                         // the processor assigner to proficiently understand that dynamic
-                        ? min(12, config.maxNumberOfProcessors())
+                        ? min(12, config.maxNumberOfWorkerThreads())
                         : 1,
                 contextFactory);
         this.store = store;

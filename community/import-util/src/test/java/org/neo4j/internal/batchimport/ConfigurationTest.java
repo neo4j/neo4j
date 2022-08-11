@@ -68,13 +68,13 @@ class ConfigurationTest {
         int percent = 70;
         Configuration config = new Configuration() {
             @Override
-            public long maxMemoryUsage() {
+            public long maxOffHeapMemory() {
                 return Configuration.calculateMaxMemoryFromPercent(percent);
             }
         };
 
         // when
-        long memory = config.maxMemoryUsage();
+        long memory = config.maxOffHeapMemory();
 
         // then
         long expected = (long) ((totalMachineMemory - Runtime.getRuntime().maxMemory()) * (percent / 100D));

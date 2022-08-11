@@ -83,8 +83,8 @@ class ProcessRelationshipCountsDataStepTest {
         StageControl control = new SimpleStageControl();
         NodeLabelsCache cache = nodeLabelsCache(labelCacheSize);
         Configuration config = mock(Configuration.class);
-        when(config.maxNumberOfProcessors()).thenReturn(maxProcessors);
-        when(config.maxMemoryUsage()).thenReturn(maxMemory);
+        when(config.maxNumberOfWorkerThreads()).thenReturn(maxProcessors);
+        when(config.maxOffHeapMemory()).thenReturn(maxMemory);
         return new ProcessRelationshipCountsDataStep(
                 control,
                 cache,

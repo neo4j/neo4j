@@ -74,7 +74,7 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T> {
         // more
         // "wasted" CPU cycles potentially cause scheduling problems which will affect processing times negatively
         // instead.
-        this.maxProcessors = max(1, (int) (config.maxNumberOfProcessors() * 0.7D));
+        this.maxProcessors = max(1, (int) (config.maxNumberOfWorkerThreads() * 0.7D));
         this.forkedProcessors = new Object[this.maxProcessors];
         stripingLock = new StampedLock();
 

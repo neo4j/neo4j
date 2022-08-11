@@ -110,7 +110,7 @@ class CsvInputEstimateCalculationIT {
         }
 
         @Override
-        public int maxNumberOfProcessors() {
+        public int maxNumberOfWorkerThreads() {
             return 1;
         }
 

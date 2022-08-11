@@ -137,14 +137,14 @@ public class ParallelBatchImporterTest {
         }
 
         @Override
-        public int maxNumberOfProcessors() {
+        public int maxNumberOfWorkerThreads() {
             // Let's really crank up the number of threads to try and flush out all and any parallelization issues.
             int cores = Runtime.getRuntime().availableProcessors();
             return random.intBetween(cores, cores + 100);
         }
 
         @Override
-        public long maxMemoryUsage() {
+        public long maxOffHeapMemory() {
             // This calculation is just to try and hit some sort of memory limit so that relationship import
             // is split up into multiple rounds. Also to see that relationship group defragmentation works
             // well when doing multiple rounds.
@@ -169,7 +169,7 @@ public class ParallelBatchImporterTest {
 
         // GIVEN
         ExecutionMonitor processorAssigner =
-                ProcessorAssignmentStrategies.eagerRandomSaturation(config.maxNumberOfProcessors());
+                ProcessorAssignmentStrategies.eagerRandomSaturation(config.maxNumberOfWorkerThreads());
         CapturingMonitor monitor = new CapturingMonitor(processorAssigner);
 
         boolean successful = false;

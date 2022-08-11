@@ -30,7 +30,7 @@ import org.neo4j.cli.ExecutionContext;
 public class ImportCommandProvider implements CommandProvider {
     @Override
     public ImportCommand createCommand(ExecutionContext ctx) {
-        return new ImportCommand(ctx);
+        return new ImportCommand();
     }
 
     @Override

@@ -109,7 +109,7 @@ class ProcessorStepTest {
         int maxProcessors = 5;
         Configuration configuration = new Configuration() {
             @Override
-            public int maxNumberOfProcessors() {
+            public int maxNumberOfWorkerThreads() {
                 return maxProcessors;
             }
         };
@@ -171,7 +171,7 @@ class ProcessorStepTest {
         CountDownLatch latch = new CountDownLatch(1);
         TrackingPanicMonitor panicMonitor = new TrackingPanicMonitor();
         Stage stage = new Stage("Test", "Part", configuration, ORDER_SEND_DOWNSTREAM, SPAWN_THREAD, panicMonitor);
-        stage.add(intProducer(configuration, stage, configuration.maxNumberOfProcessors() * 2));
+        stage.add(intProducer(configuration, stage, configuration.maxNumberOfWorkerThreads() * 2));
         ProcessorStep<Integer> failingProcessor = null;
         for (int i = 0; i < numProcessors; i++) {
             if (failingProcessorIndex == i) {
@@ -195,7 +195,7 @@ class ProcessorStepTest {
             // When
             StageExecution execution = stage.execute();
             while (failingProcessor.stats().stat(Keys.received_batches).asLong()
-                    < configuration.maxNumberOfProcessors() + 1) {
+                    < configuration.maxNumberOfWorkerThreads() + 1) {
                 Thread.sleep(10);
             }
             latch.countDown();

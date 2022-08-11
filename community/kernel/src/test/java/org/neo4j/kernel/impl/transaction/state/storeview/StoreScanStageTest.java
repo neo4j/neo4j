@@ -72,7 +72,7 @@ class StoreScanStageTest {
 
     private final Configuration config = new Configuration() {
         @Override
-        public int maxNumberOfProcessors() {
+        public int maxNumberOfWorkerThreads() {
             return WORKERS;
         }
 

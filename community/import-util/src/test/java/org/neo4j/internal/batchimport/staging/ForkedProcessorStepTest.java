@@ -271,7 +271,7 @@ class ForkedProcessorStepTest {
         int processors = Runtime.getRuntime().availableProcessors() * 10;
         Configuration config = new Configuration.Overridden(Configuration.DEFAULT) {
             @Override
-            public int maxNumberOfProcessors() {
+            public int maxNumberOfWorkerThreads() {
                 return processors;
             }
         };
@@ -342,7 +342,7 @@ class ForkedProcessorStepTest {
     private static Configuration config(int processors) {
         return new Configuration() {
             @Override
-            public int maxNumberOfProcessors() {
+            public int maxNumberOfWorkerThreads() {
                 return processors;
             }
         };
