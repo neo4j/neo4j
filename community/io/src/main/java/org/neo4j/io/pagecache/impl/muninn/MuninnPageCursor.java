@@ -1063,12 +1063,19 @@ public abstract class MuninnPageCursor extends PageCursor {
     }
 
     public void unmapSnapshot() {
+        var remappedState = resetSnapshot();
+        if (remappedState != null) {
+            remappedState.close();
+        }
+    }
+
+    public VersionState resetSnapshot() {
         var remappedState = versionState;
         if (remappedState != null) {
             restoreState(remappedState);
-            remappedState.close();
             versionState = null;
         }
+        return remappedState;
     }
 
     protected void restoreState(VersionState remappedState) {
@@ -1080,7 +1087,8 @@ public abstract class MuninnPageCursor extends PageCursor {
 
     public void remapSnapshot(MuninnPageCursor cursor, long committingTransactionId) {
         // unmap any previous state that we can have in the middle of should retry loops, we only need to close it
-        unmapSnapshot();
+        // we do not need to close state here since the only way we're replacing some state is inside retry loop
+        resetSnapshot();
         versionState =
                 new VersionState(pinnedPageRef, version, pointer, cursor.lockStamp(), getCurrentPageId(), cursor);
         pinnedPageRef = cursor.pinnedPageRef;
