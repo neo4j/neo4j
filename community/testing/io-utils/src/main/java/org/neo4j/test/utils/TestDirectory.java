@@ -73,6 +73,7 @@ public class TestDirectory {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("dd_HH-mm-ss-SSS").withZone(ZoneOffset.UTC);
+    public static final String REGISTER_FILE_NAME = ".register";
 
     private final FileSystemAbstraction fileSystem;
     private Path testClassBaseFolder;
@@ -183,25 +184,40 @@ public class TestDirectory {
     }
 
     public void complete(boolean success) throws IOException {
-        try {
-            if (isInitialised()) {
-                if (success && !keepDirectoryAfterSuccessfulTest) {
-                    fileSystem.deleteRecursively(directory);
-                } else if (!Files.exists(directory)) {
-                    // We want to keep the files, make sure they actually exist on disk, not only in memory (like in
-                    // EphemeralFileSystem)
-                    for (FileHandle fh :
-                            fileSystem.streamFilesRecursive(directory).toArray(FileHandle[]::new)) {
-                        Path path = fh.getPath();
-                        assert !Files.exists(path);
-                        Files.createDirectories(path.getParent());
-                        try (InputStream inputStream = fileSystem.openAsInputStream(path)) {
-                            Files.copy(inputStream, path);
-                        }
+        if (isInitialised()) {
+            if (success && !keepDirectoryAfterSuccessfulTest) {
+                fileSystem.deleteRecursively(directory);
+            } else if (!Files.exists(directory)) {
+                // We want to keep the files, make sure they actually exist on disk, not only in memory (like in
+                // EphemeralFileSystem)
+                for (FileHandle fh : fileSystem.streamFilesRecursive(directory).toArray(FileHandle[]::new)) {
+                    Path path = fh.getPath();
+                    assert !Files.exists(path);
+                    Files.createDirectories(path.getParent());
+                    try (InputStream inputStream = fileSystem.openAsInputStream(path)) {
+                        Files.copy(inputStream, path);
                     }
                 }
             }
-            directory = null;
+        }
+        directory = null;
+    }
+
+    public void close() throws IOException {
+        try {
+            if (testClassBaseFolder != null && Files.exists(testClassBaseFolder)) {
+                try {
+                    var files = fileSystem.listFiles(testClassBaseFolder);
+                    if (files != null
+                            && files.length == 1
+                            && files[0].getFileName().toString().equals(REGISTER_FILE_NAME)) {
+                        fileSystem.deleteRecursively(testClassBaseFolder);
+                        System.out.println("Deleted the base folder too");
+                    }
+                } catch (IOException e) {
+                    // Couldn't list files, move on
+                }
+            }
         } finally {
             fileSystem.close();
         }
@@ -293,7 +309,7 @@ public class TestDirectory {
 
     private void register(String test, String dir) {
         try (PrintStream printStream = new PrintStream(
-                fileSystem.openAsOutputStream(ensureBase().resolve(".register"), true),
+                fileSystem.openAsOutputStream(ensureBase().resolve(REGISTER_FILE_NAME), true),
                 false,
                 StandardCharsets.UTF_8)) {
             printStream.print(format("%s = %s%n", dir, test));

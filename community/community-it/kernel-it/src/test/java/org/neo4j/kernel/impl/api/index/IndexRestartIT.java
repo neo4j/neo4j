@@ -48,11 +48,15 @@ import org.neo4j.test.Barrier;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
+import org.neo4j.test.utils.TestDirectory;
 
 @EphemeralTestDirectoryExtension
 class IndexRestartIT {
     private static final String myKey = "number_of_bananas_owned";
     private static final Label myLabel = label("MyLabel");
+
+    @Inject
+    private TestDirectory directory;
 
     @Inject
     private FileSystemAbstraction fs;
@@ -64,7 +68,7 @@ class IndexRestartIT {
 
     @BeforeEach
     void before() {
-        factory = new TestDatabaseManagementServiceBuilder();
+        factory = new TestDatabaseManagementServiceBuilder(directory.homePath());
         factory.setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs));
         factory.addExtension(singleInstanceIndexProviderFactory("test", provider));
     }

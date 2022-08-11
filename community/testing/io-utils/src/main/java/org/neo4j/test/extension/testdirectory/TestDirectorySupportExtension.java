@@ -72,10 +72,11 @@ public class TestDirectorySupportExtension extends StatefulFieldExtension<TestDi
     }
 
     @Override
-    public void afterAll(ExtensionContext context) {
+    public void afterAll(ExtensionContext context) throws IOException {
         if (getLifecycle(context) == PER_CLASS) {
             cleanUp(context);
         }
+        getStoredValue(context).close();
     }
 
     private static TestInstance.Lifecycle getLifecycle(ExtensionContext context) {

@@ -98,6 +98,7 @@ abstract class IndexProviderCompatabilityTestBase {
             jobScheduler.shutdown();
         }
         testDirectory.complete(false);
+        testDirectory.close();
     }
 
     void additionalConfig(Config.Builder configBuilder) {
