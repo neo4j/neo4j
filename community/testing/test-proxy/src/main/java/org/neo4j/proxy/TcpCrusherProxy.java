@@ -90,6 +90,7 @@ public class TcpCrusherProxy implements Neo4jProxy {
         return new ProxyConfiguration(tcpCrusher.getConnectAddress(), tcpCrusher.getBindAddress());
     }
 
+    @Override
     public void close() {
         if (!started) {
             throw new IllegalStateException("Proxy is already stopped");
@@ -121,11 +122,6 @@ public class TcpCrusherProxy implements Neo4jProxy {
     public static final class Builder {
         private Optional<ProxyConfiguration> proxyConfiguration = Optional.empty();
         private Optional<NioReactor> reactor = Optional.empty();
-
-        public Builder withNioReactor(NioReactor reactor) {
-            this.reactor = Optional.of(reactor);
-            return this;
-        }
 
         public Builder withProxyConfig(ProxyConfiguration proxyConfiguration) {
             this.proxyConfiguration = Optional.of(proxyConfiguration);

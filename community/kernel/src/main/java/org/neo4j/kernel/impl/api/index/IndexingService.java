@@ -730,7 +730,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             InternalIndexState state = indexStateEntry.getKey();
             List<IndexLogRecord> logRecords = indexStateEntry.getValue();
             for (IndexLogRecord logRecord : logRecords) {
-                internalLog.info(indexStateInfo(method, state, logRecord.getDescriptor()));
+                internalLog.info(indexStateInfo(method, state, logRecord.descriptor()));
             }
         }
         internalLog.info(format(
@@ -780,21 +780,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         }
     }
 
-    private static final class IndexLogRecord {
-        private final IndexDescriptor descriptor;
-
-        IndexLogRecord(IndexDescriptor descriptor) {
-            this.descriptor = descriptor;
-        }
-
-        public long getIndexId() {
-            return descriptor.getId();
-        }
-
-        public IndexDescriptor getDescriptor() {
-            return descriptor;
-        }
-    }
+    private record IndexLogRecord(IndexDescriptor descriptor) {}
 
     @FunctionalInterface
     public interface IndexProxyProvider {

@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -72,7 +71,7 @@ public class SchemaProcedure {
             List<LabelNameId> labelNamesAndIds = new ArrayList<>();
 
             // Get all labels that are in use as seen by a super user
-            List<Label> labelsInUse = stream(LABELS.inUse(kernelTransaction)).collect(Collectors.toList());
+            List<Label> labelsInUse = stream(LABELS.inUse(kernelTransaction)).toList();
 
             for (Label label : labelsInUse) {
                 String labelName = label.name();
@@ -111,7 +110,7 @@ public class SchemaProcedure {
 
             // Get all relTypes that are in use as seen by a super user
             List<RelationshipType> relTypesInUse =
-                    stream(RELATIONSHIP_TYPES.inUse(kernelTransaction)).collect(Collectors.toList());
+                    stream(RELATIONSHIP_TYPES.inUse(kernelTransaction)).toList();
 
             for (RelationshipType relationshipType : relTypesInUse) {
                 String relationshipTypeGetName = relationshipType.name();

@@ -65,7 +65,7 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
      * </pre>
      *
      * @param labelId id of the label.
-     * @return a {@link CountsKey for the node label id. The returned key can be put into {@link Map maps} and similar.
+     * @return a {@link CountsKey} for the node label id.
      */
     public static CountsKey nodeKey(long labelId) {
         return new CountsKey(TYPE_NODE, labelId, 0);
@@ -83,7 +83,7 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
      * @param startLabelId id of the label of start node.
      * @param typeId id of the relationship type.
      * @param endLabelId id of the label of end node.
-     * @return a {@link CountsKey for the node start/end label and relationship type id. The returned key can be put into {@link Map maps} and similar.
+     * @return a {@link CountsKey} for the node start/end label and relationship type id.
      */
     public static CountsKey relationshipKey(long startLabelId, long typeId, long endLabelId) {
         return new CountsKey(

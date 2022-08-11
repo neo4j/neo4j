@@ -49,7 +49,7 @@ public abstract class AbstractStructRegistry<S> implements StructRegistry<S> {
     public <O extends S> Optional<? extends StructWriter<? super O>> getWriter(O payload) {
         var payloadType = payload.getClass();
 
-        var directMatch = (StructWriter<? super O>) this.tagToReaderMap.get(payloadType);
+        var directMatch = (StructWriter<? super O>) this.typeToWriterMap.get(payloadType);
         if (directMatch != null) {
             return Optional.of(directMatch);
         }

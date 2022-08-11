@@ -65,11 +65,6 @@ public class HeapTrackingArrayDeque<E> implements Deque<E>, AutoCloseable {
         return new HeapTrackingArrayDeque<>(actualNumElements, memoryTracker, trackedSize);
     }
 
-    private HeapTrackingArrayDeque(MemoryTracker memoryTracker) {
-        this.memoryTracker = memoryTracker;
-        elements = new Object[DEFAULT_SIZE];
-    }
-
     private HeapTrackingArrayDeque(int numElements, MemoryTracker memoryTracker, long trackedSize) {
         elements = new Object[numElements];
         this.memoryTracker = memoryTracker;
@@ -585,6 +580,7 @@ public class HeapTrackingArrayDeque<E> implements Deque<E>, AutoCloseable {
             // extension point
         }
 
+        @Override
         public final boolean hasNext() {
             boolean hasNext = remaining > 0;
             if (!hasNext) {
@@ -593,6 +589,7 @@ public class HeapTrackingArrayDeque<E> implements Deque<E>, AutoCloseable {
             return hasNext;
         }
 
+        @Override
         public E next() {
             if (!hasNext()) {
                 throw new NoSuchElementException();
@@ -610,6 +607,7 @@ public class HeapTrackingArrayDeque<E> implements Deque<E>, AutoCloseable {
             }
         }
 
+        @Override
         public final void remove() {
             if (lastRet < 0) {
                 throw new IllegalStateException();
@@ -618,6 +616,7 @@ public class HeapTrackingArrayDeque<E> implements Deque<E>, AutoCloseable {
             lastRet = -1;
         }
 
+        @Override
         public void forEachRemaining(Consumer<? super E> action) {
             Objects.requireNonNull(action);
             int r;
@@ -649,6 +648,7 @@ public class HeapTrackingArrayDeque<E> implements Deque<E>, AutoCloseable {
             cursor = dec(tail, elements.length);
         }
 
+        @Override
         public final E next() {
             if (remaining <= 0) {
                 throw new NoSuchElementException();
@@ -660,6 +660,7 @@ public class HeapTrackingArrayDeque<E> implements Deque<E>, AutoCloseable {
             return e;
         }
 
+        @Override
         void postDelete(boolean leftShifted) {
             if (!leftShifted) {
                 cursor = inc(cursor, elements.length);

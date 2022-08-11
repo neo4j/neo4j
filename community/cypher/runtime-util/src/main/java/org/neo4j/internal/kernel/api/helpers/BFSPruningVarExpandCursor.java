@@ -452,6 +452,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             state = includeStartNode ? EmitState.SHOULD_EMIT : EmitState.NO;
         }
 
+        @Override
         public final boolean next() {
             if (shouldIncludeStartNode()) {
                 return true;

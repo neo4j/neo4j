@@ -775,10 +775,12 @@ public class IndexedIdGenerator implements IdGenerator {
         }
     }
 
+    @Override
     public PrimitiveLongResourceIterator freeIdsIterator() throws IOException {
         return freeIdsIterator(0, getHighId());
     }
 
+    @Override
     public PrimitiveLongResourceIterator freeIdsIterator(long fromIdInclusive, long toIdExclusive) throws IOException {
         Preconditions.checkArgument(fromIdInclusive <= toIdExclusive, "From Id needs to be lesser than toId");
         long fromRange = fromIdInclusive / idsPerEntry;

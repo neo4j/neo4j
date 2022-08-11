@@ -58,14 +58,17 @@ public class DatabaseConfig extends Config implements Lifecycle {
         return globalConfig.get(setting);
     }
 
+    @Override
     public <T> T getDefault(Setting<T> setting) {
         return globalConfig.getDefault(setting);
     }
 
+    @Override
     public <T> T getStartupValue(Setting<T> setting) {
         return globalConfig.getStartupValue(setting);
     }
 
+    @Override
     public <T> ValueSource getValueSource(Setting<T> setting) {
         boolean overridden = overriddenSettings != null && overriddenSettings.containsKey(setting)
                 || databaseSpecificSettings != null && databaseSpecificSettings.containsKey(setting);

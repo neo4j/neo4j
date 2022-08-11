@@ -88,7 +88,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent {
             return Status.UNINITIALIZED;
         }
 
-        if (hasDatabaseNode && !hasSystemDatabaseNode(tx)) {
+        if (!hasSystemDatabaseNode(tx)) {
             return Status.UNSUPPORTED;
         }
 

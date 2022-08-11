@@ -130,6 +130,7 @@ public class LoggerPrintStreamAdaptor extends PrintStream {
         log(m);
     }
 
+    @Override
     public PrintStream printf(String s, Object... args) {
         log(s, args);
         return this;
@@ -138,36 +139,20 @@ public class LoggerPrintStreamAdaptor extends PrintStream {
     private void log(String s, Object... args) {
         s = s.strip();
         switch (level) {
-            case INFO:
-                log.info(s, args);
-                break;
-            case ERROR:
-                log.error(s, args);
-                break;
-            case WARN:
-                log.warn(s, args);
-                break;
-            case DEBUG:
-                log.debug(s, args);
-                break;
+            case INFO -> log.info(s, args);
+            case ERROR -> log.error(s, args);
+            case WARN -> log.warn(s, args);
+            case DEBUG -> log.debug(s, args);
         }
     }
 
     private void log(String s) {
         s = s.strip();
         switch (level) {
-            case INFO:
-                log.info(s);
-                break;
-            case ERROR:
-                log.error(s);
-                break;
-            case WARN:
-                log.warn(s);
-                break;
-            case DEBUG:
-                log.debug(s);
-                break;
+            case INFO -> log.info(s);
+            case ERROR -> log.error(s);
+            case WARN -> log.warn(s);
+            case DEBUG -> log.debug(s);
         }
     }
 }

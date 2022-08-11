@@ -21,7 +21,6 @@ package org.neo4j.internal.kernel.api.helpers;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.Queue;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -41,15 +40,15 @@ public class StubCursorFactory implements CursorFactory {
     private final Queue<NodeCursor> fullNodeCursors = new ArrayDeque<>();
     private final Queue<RelationshipScanCursor> relationshipScanCursors = new ArrayDeque<>();
     private final Queue<RelationshipScanCursor> fullRelationshipScanCursors = new ArrayDeque<>();
-    private final Queue<RelationshipTraversalCursor> relationshipTraversalCursors = new LinkedList<>();
-    private final Queue<RelationshipTraversalCursor> fullRelationshipTraversalCursors = new LinkedList<>();
+    private final Queue<RelationshipTraversalCursor> relationshipTraversalCursors = new ArrayDeque<>();
+    private final Queue<RelationshipTraversalCursor> fullRelationshipTraversalCursors = new ArrayDeque<>();
     private final Queue<PropertyCursor> propertyCursors = new ArrayDeque<>();
     private final Queue<PropertyCursor> fullPropertyCursors = new ArrayDeque<>();
     private final Queue<NodeValueIndexCursor> nodeValueIndexCursors = new ArrayDeque<>();
     private final Queue<NodeValueIndexCursor> fullNodeValueIndexCursors = new ArrayDeque<>();
     private final Queue<NodeLabelIndexCursor> nodeLabelIndexCursors = new ArrayDeque<>();
     private final Queue<NodeLabelIndexCursor> fullNodeLabelIndexCursors = new ArrayDeque<>();
-    private final Queue<RelationshipValueIndexCursor> relationshipValueIndexCursors = new LinkedList<>();
+    private final Queue<RelationshipValueIndexCursor> relationshipValueIndexCursors = new ArrayDeque<>();
     private final Queue<RelationshipTypeIndexCursor> relationshipTypeIndexCursors = new ArrayDeque<>();
     private final Queue<RelationshipTypeIndexCursor> fullRelationshipTypeIndexCursors = new ArrayDeque<>();
 
