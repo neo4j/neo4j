@@ -19,7 +19,6 @@
  */
 package org.neo4j.commandline.dbms;
 
-import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -28,11 +27,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
-import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
-import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -50,10 +45,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -74,7 +67,7 @@ class LoadCommandTest {
         homeDir = testDirectory.directory("home-dir");
         prepareFooDatabaseDirectory();
         configDir = testDirectory.directory("config-dir");
-        archive = testDirectory.directory("some-archive.dump");
+        archive = testDirectory.directory("some-archive-dir");
         loader = mock(Loader.class);
         doReturn(mock(StoreVersionLoader.Result.class)).when(loader).getStoreVersion(any(), any(), any(), any());
     }
@@ -102,38 +95,45 @@ class LoadCommandTest {
 
                 USAGE
 
-                load [--expand-commands] [--force] [--info] [--verbose] [--database=<database>]
-                     --from=<path>
+                load [--expand-commands] [--info] [--overwrite-destination] [--verbose]
+                     (--from-path=<path> | --from-stdin) <database>
 
                 DESCRIPTION
 
-                Load a database from an archive. <archive-path> must be an archive created with
-                the dump command. <database> is the name of the database to create. Existing
-                databases can be replaced by specifying --force. It is not possible to replace
-                a database that is mounted in a running Neo4j server. If --info is specified,
-                then the database is not loaded, but information (i.e. file count, byte count,
-                and format of load file) about the archive is printed instead.
+                Load a database from an archive. <archive-path> must be a directory containing
+                an archive(s) created with the dump command. Existing databases can be replaced
+                by specifying --overwrite-destination. It is not possible to replace a database
+                that is mounted in a running Neo4j server. If --info is specified, then the
+                database is not loaded, but information (i.e. file count, byte count, and
+                format of load file) about the archive is printed instead.
+
+                PARAMETERS
+
+                      <database>           Name of the database to load. Can contain * and ?
+                                             for globbing.
 
                 OPTIONS
 
-                      --database=<database>
-                                          Name of the database to load.
-                                            Default: neo4j
-                      --expand-commands   Allow command expansion in config value evaluation.
-                      --force             If an existing database should be replaced.
-                      --from=<path>       Path to archive created with the dump command or '-'
-                                            to read from standard input.
-                      --info              Print meta-data information about the archive file,
-                                            instead of loading the contained database.
-                      --verbose           Enable verbose output.""");
+                      --expand-commands    Allow command expansion in config value evaluation.
+                      --from-path=<path>   Path to directory containing archive(s) created with
+                                             the dump command.
+                      --from-stdin         Read dump from standard input.
+                      --info               Print meta-data information about the archive file,
+                                             instead of loading the contained database.
+                      --overwrite-destination
+                                           If an existing database should be replaced.
+                      --verbose            Enable verbose output.""");
     }
 
     @Test
     void shouldGiveAClearMessageIfTheArchiveDoesntExist() throws IOException, IncorrectFormat {
-        doThrow(new NoSuchFileException(archive.toString())).when(loader).load(any(), any(), any());
+        String dumpName = archive.resolve("foo.dump").toString();
+        doThrow(new NoSuchFileException(dumpName)).when(loader).load(any(), any(), any());
         CommandFailedException commandFailed =
                 assertThrows(CommandFailedException.class, () -> execute("foo", archive));
-        assertEquals("Archive does not exist: " + archive, commandFailed.getMessage());
+        assertEquals("Load failed for databases: 'foo'", commandFailed.getMessage());
+        assertEquals(
+                "Archive does not exist: " + dumpName, commandFailed.getCause().getMessage());
     }
 
     @Test
@@ -141,7 +141,8 @@ class LoadCommandTest {
         doThrow(FileAlreadyExistsException.class).when(loader).load(any(), any(), any());
         CommandFailedException commandFailed =
                 assertThrows(CommandFailedException.class, () -> execute("foo", archive));
-        assertEquals("Database already exists: foo", commandFailed.getMessage());
+        assertEquals("Load failed for databases: 'foo'", commandFailed.getMessage());
+        assertEquals("Database already exists: foo", commandFailed.getCause().getMessage());
     }
 
     @Test
@@ -149,7 +150,10 @@ class LoadCommandTest {
         doThrow(AccessDeniedException.class).when(loader).load(any(), any(), any());
         CommandFailedException commandFailed =
                 assertThrows(CommandFailedException.class, () -> execute("foo", archive));
-        assertEquals("You do not have permission to load the database.", commandFailed.getMessage());
+        assertEquals("Load failed for databases: 'foo'", commandFailed.getMessage());
+        assertEquals(
+                "You do not have permission to load the database 'foo'.",
+                commandFailed.getCause().getMessage());
     }
 
     @Test
@@ -158,7 +162,10 @@ class LoadCommandTest {
         doThrow(new FileSystemException("the-message")).when(loader).load(any(), any(), any());
         CommandFailedException commandFailed =
                 assertThrows(CommandFailedException.class, () -> execute("foo", archive));
-        assertEquals("Unable to load database: FileSystemException: the-message", commandFailed.getMessage());
+        assertEquals("Load failed for databases: 'foo'", commandFailed.getMessage());
+        assertEquals(
+                "Unable to load database: FileSystemException: the-message",
+                commandFailed.getCause().getMessage());
     }
 
     @Test
@@ -166,8 +173,9 @@ class LoadCommandTest {
         doThrow(IncorrectFormat.class).when(loader).load(any(), any(), any());
         CommandFailedException commandFailed =
                 assertThrows(CommandFailedException.class, () -> execute("foo", archive));
-        assertThat(commandFailed.getMessage()).contains(archive.toString());
-        assertThat(commandFailed.getMessage()).contains("valid Neo4j archive");
+        assertEquals("Load failed for databases: 'foo'", commandFailed.getMessage());
+        assertThat(commandFailed.getCause().getMessage()).contains(archive.toString());
+        assertThat(commandFailed.getCause().getMessage()).contains("valid Neo4j archive");
     }
 
     @Test
@@ -179,7 +187,11 @@ class LoadCommandTest {
             var command =
                     new LoadCommand(new ExecutionContext(dir, dir, out, out, testDirectory.getFileSystem()), loader);
             CommandLine.populateCommand(
-                    command, "--info", "--from", archive.toAbsolutePath().toString());
+                    command,
+                    "foo",
+                    "--info",
+                    "--from-path",
+                    archive.toAbsolutePath().toString());
             command.execute();
             out.flush();
         }
@@ -187,26 +199,9 @@ class LoadCommandTest {
         assertThat(output).contains("ZSTD", "42", "1337");
     }
 
-    private DatabaseLayout createDatabaseLayout(
-            Path dataPath, Path storePath, String databaseName, Path transactionLogsPath) {
-        Config config = Config.newBuilder()
-                .set(neo4j_home, homeDir.toAbsolutePath())
-                .set(data_directory, dataPath.toAbsolutePath())
-                .set(databases_root_path, storePath.toAbsolutePath())
-                .set(transaction_logs_root_path, transactionLogsPath.toAbsolutePath())
-                .build();
-        return Neo4jLayout.of(config).databaseLayout(databaseName);
-    }
-
     private void execute(String database, Path archive) {
         var command = buildCommand();
-        CommandLine.populateCommand(command, "--from=" + archive, "--database=" + database);
-        command.execute();
-    }
-
-    private void executeForce(String database) {
-        var command = buildCommand();
-        CommandLine.populateCommand(command, "--from=" + archive.toAbsolutePath(), "--database=" + database, "--force");
+        CommandLine.populateCommand(command, "--from-path=" + archive, database);
         command.execute();
     }
 
@@ -215,9 +210,5 @@ class LoadCommandTest {
         PrintStream err = mock(PrintStream.class);
         FileSystemAbstraction fileSystem = testDirectory.getFileSystem();
         return new LoadCommand(new ExecutionContext(homeDir, configDir, out, err, fileSystem), loader);
-    }
-
-    private static String formatProperty(Setting setting, Path path) {
-        return format("%s=%s", setting.name(), path.toString().replace('\\', '/'));
     }
 }

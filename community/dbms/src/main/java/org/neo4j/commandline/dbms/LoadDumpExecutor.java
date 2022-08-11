@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.dbms;
 
+import static java.lang.String.format;
 import static org.neo4j.commandline.Util.wrapIOException;
 import static org.neo4j.io.fs.FileUtils.deleteDirectory;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
@@ -77,15 +78,15 @@ public class LoadDumpExecutor {
         } catch (IOException e) {
             wrapIOException(e);
         } catch (CannotWriteException e) {
-            throw new CommandFailedException("You do not have permission to load the database.", e);
+            throw new CommandFailedException("You do not have permission to load the database'" + database + "'.", e);
         }
 
         StoreVersionLoader.Result result = loader.getStoreVersion(fs, config, databaseLayout, contextFactory);
         if (result.migrationNeeded) {
             errorOutput.printf(
-                    "The loaded database is not on a supported version (current:%s). "
+                    "The loaded database '%s' is not on a supported version (current:%s). "
                             + "Use the 'neo4j-admin database migrate' command%n",
-                    result.currentFormat.getStoreVersionUserString());
+                    database, result.currentFormat.getStoreVersionUserString());
         }
     }
 
@@ -103,7 +104,9 @@ public class LoadDumpExecutor {
         } catch (FileAlreadyExistsException e) {
             throw new CommandFailedException("Database already exists: " + databaseLayout.getDatabaseName(), e);
         } catch (AccessDeniedException e) {
-            throw new CommandFailedException("You do not have permission to load the database.", e);
+            throw new CommandFailedException(
+                    format("You do not have permission to load the database '%s'.", databaseLayout.getDatabaseName()),
+                    e);
         } catch (IOException e) {
             wrapIOException(e);
         } catch (IncorrectFormat incorrectFormat) {

@@ -79,7 +79,7 @@ public class LoadDumpExecutorTest {
         homeDir = testDirectory.directory("home-dir");
         prepareFooDatabaseDirectory();
         configDir = testDirectory.directory("config-dir");
-        archive = testDirectory.directory("some-archive.dump");
+        archive = testDirectory.directory("some-archive-dir");
         loader = mock(Loader.class);
         doReturn(mock(StoreVersionLoader.Result.class)).when(loader).getStoreVersion(any(), any(), any(), any());
     }

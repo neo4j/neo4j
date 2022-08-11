@@ -21,7 +21,6 @@ package org.neo4j.commandline.dbms;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.commandline.Util.wrapIOException;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
 
@@ -29,43 +28,58 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.StringJoiner;
+import org.eclipse.collections.impl.set.mutable.MutableSetFactoryImpl;
 import org.neo4j.cli.AbstractCommand;
+import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.function.ThrowingSupplier;
-import org.neo4j.kernel.database.NormalizedDatabaseName;
+import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import picocli.CommandLine.ArgGroup;
+import picocli.CommandLine.Parameters;
 
 @Command(
         name = "load",
         header = "Load a database from an archive created with the dump command.",
-        description = "Load a database from an archive. <archive-path> must be an archive created with the dump "
-                + "command. <database> is the name of the database to create. Existing databases can be replaced "
-                + "by specifying --force. It is not possible to replace a database that is mounted in a running "
-                + "Neo4j server. If --info is specified, then the database is not loaded, but information "
+        description = "Load a database from an archive. <archive-path> must be a directory containing an archive(s) "
+                + "created with the dump command. Existing databases can be replaced "
+                + "by specifying --overwrite-destination. It is not possible to replace a database that is mounted "
+                + "in a running Neo4j server. If --info is specified, then the database is not loaded, but information "
                 + "(i.e. file count, byte count, and format of load file) about the archive is printed instead.")
 public class LoadCommand extends AbstractCommand {
-    private static final String STANDARD_INPUT = "-";
 
-    @Option(
-            names = "--from",
-            required = true,
-            paramLabel = "<path>",
-            description = "Path to archive created with the dump command " + "or '-' to read from standard input.")
-    private String from;
+    @Parameters(
+            arity = "1",
+            description = "Name of the database to load. Can contain * and ? for globbing.",
+            converter = Converters.DatabaseNamePatternConverter.class)
+    private DatabaseNamePattern database;
 
-    @Option(
-            names = "--database",
-            description = "Name of the database to load.",
-            defaultValue = DEFAULT_DATABASE_NAME,
-            converter = Converters.DatabaseNameConverter.class)
-    protected NormalizedDatabaseName database;
+    @ArgGroup(multiplicity = "1")
+    private SourceOption source = new SourceOption();
 
-    @Option(names = "--force", arity = "0", description = "If an existing database should be replaced.")
+    private static class SourceOption {
+        @Option(
+                names = "--from-path",
+                paramLabel = "<path>",
+                description = "Path to directory containing archive(s) created with the dump command.")
+        private String path;
+
+        @Option(names = "--from-stdin", description = "Read dump from standard input.")
+        private boolean stdIn;
+    }
+
+    @Option(names = "--overwrite-destination", arity = "0", description = "If an existing database should be replaced.")
     private boolean force;
 
     @Option(
@@ -75,6 +89,7 @@ public class LoadCommand extends AbstractCommand {
     private boolean info;
 
     private final Loader loader;
+    private static final String DUMP_SUFFIX = ".dump";
 
     public LoadCommand(ExecutionContext ctx, Loader loader) {
         super(ctx);
@@ -83,59 +98,121 @@ public class LoadCommand extends AbstractCommand {
 
     @Override
     public void execute() {
+        if (source.path != null && !ctx.fs().isDirectory(Path.of(source.path))) {
+            throw new CommandFailedException(source.path + " is not an existing directory");
+        }
+
+        if (database.containsPattern() && source.stdIn) {
+            throw new CommandFailedException(
+                    "Globbing in database name can not be used in combination with standard input. "
+                            + "Specify a directory as source or a single target database");
+        }
+
+        Set<DumpInfo> dbNames = getDbNames(ctx.fs());
+
         if (info) {
-            inspectDump();
+            inspectDump(dbNames);
         } else {
             try {
-                loadDump();
+                loadDump(dbNames);
             } catch (IOException e) {
                 wrapIOException(e);
             }
         }
     }
 
-    private void inspectDump() {
-        try {
-            Loader.DumpMetaData metaData = loader.getMetaData(getArchiveInputStreamSupplier());
-            ctx.out().println("Format: " + metaData.format());
-            ctx.out().println("Files: " + metaData.fileCount());
-            ctx.out().println("Bytes: " + metaData.byteCount());
-        } catch (IOException e) {
-            wrapIOException(e);
+    private void inspectDump(Set<DumpInfo> dbNames) {
+        List<FailedLoad> failedLoads = new ArrayList<>();
+
+        for (DumpInfo dbName : dbNames) {
+            try {
+                Loader.DumpMetaData metaData = loader.getMetaData(getArchiveInputStreamSupplier(dbName.dumpPath));
+                ctx.out().println("Database: " + dbName.dbName);
+                ctx.out().println("Format: " + metaData.format());
+                ctx.out().println("Files: " + metaData.fileCount());
+                ctx.out().println("Bytes: " + metaData.byteCount());
+                ctx.out().println();
+            } catch (Exception e) {
+                ctx.err().printf("Failed to get metadata for dump '%s': %s", dbName.dumpPath, e.getMessage());
+                failedLoads.add(new FailedLoad(dbName.dbName, e));
+            }
         }
+
+        checkFailure(failedLoads, "Print metadata failed for databases: '");
     }
 
-    private ThrowingSupplier<InputStream, IOException> getArchiveInputStreamSupplier() throws IOException {
-        var path = getArchivePath();
+    private ThrowingSupplier<InputStream, IOException> getArchiveInputStreamSupplier(Path path) throws IOException {
         if (path != null) {
             return () -> Files.newInputStream(path);
         }
         return ctx::in;
     }
 
-    private Path getArchivePath() {
-        if (STANDARD_INPUT.equals(from)) {
-            return null;
-        }
-        return Path.of(from);
-    }
-
-    protected void loadDump() throws IOException {
-
+    protected void loadDump(Set<DumpInfo> dbNames) throws IOException {
         Config config = buildConfig();
-
         LoadDumpExecutor loadDumpExecutor = new LoadDumpExecutor(config, ctx.fs(), ctx.err(), loader);
 
-        var dumpInputFile = Optional.ofNullable(getArchivePath());
-        var dumpInputDescription = dumpInputFile.isEmpty()
-                ? "reading from stdin"
-                : dumpInputFile.get().toString();
-        var dumpInputStreamSupplier = getArchiveInputStreamSupplier();
+        List<FailedLoad> failedLoads = new ArrayList<>();
+        for (DumpInfo dbName : dbNames) {
+            try {
+                var dumpInputDescription = dbName.dumpPath == null ? "reading from stdin" : dbName.dumpPath.toString();
+                var dumpInputStreamSupplier = getArchiveInputStreamSupplier(dbName.dumpPath);
 
-        loadDumpExecutor.execute(
-                new LoadDumpExecutor.DumpInput(dumpInputStreamSupplier, dumpInputFile, dumpInputDescription),
-                database.name(),
-                force);
+                loadDumpExecutor.execute(
+                        new LoadDumpExecutor.DumpInput(
+                                dumpInputStreamSupplier, Optional.ofNullable(dbName.dumpPath), dumpInputDescription),
+                        dbName.dbName,
+                        force);
+            } catch (Exception e) {
+                ctx.err().printf("Failed to load database '%s': %s", dbName.dbName, e.getMessage());
+                failedLoads.add(new FailedLoad(dbName.dbName, e));
+            }
+        }
+        checkFailure(failedLoads, "Load failed for databases: '");
+    }
+
+    private void checkFailure(List<FailedLoad> failedLoads, String prefix) {
+        if (!failedLoads.isEmpty()) {
+            StringJoiner failedDbs = new StringJoiner("', '", prefix, "'");
+            Exception exceptions = null;
+            for (FailedLoad failedLoad : failedLoads) {
+                failedDbs.add(failedLoad.dbName);
+                exceptions = Exceptions.chain(exceptions, failedLoad.e);
+            }
+            ctx.err().println(failedDbs);
+            throw new CommandFailedException(failedDbs.toString(), exceptions);
+        }
+    }
+
+    record FailedLoad(String dbName, Exception e) {}
+
+    protected record DumpInfo(String dbName, Path dumpPath) {}
+
+    private Set<DumpInfo> getDbNames(FileSystemAbstraction fs) {
+        if (source.stdIn) {
+            return Set.of(new DumpInfo(database.getDatabaseName(), null));
+        }
+        Path dumpDir = Path.of(source.path);
+        if (!database.containsPattern()) {
+            return Set.of(new DumpInfo(
+                    database.getDatabaseName(), dumpDir.resolve(database.getDatabaseName() + DUMP_SUFFIX)));
+        } else {
+            Set<DumpInfo> dbNames = MutableSetFactoryImpl.INSTANCE.empty();
+            try {
+                for (Path path : fs.listFiles(dumpDir)) {
+                    String fileName = path.getFileName().toString();
+                    if (!fs.isDirectory(path) && fileName.endsWith(DUMP_SUFFIX)) {
+                        String dbName = fileName.substring(0, fileName.length() - 5);
+                        if (database.matches(dbName)) {
+                            dbNames.add(new DumpInfo(dbName, path));
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                throw new CommandFailedException("Failed to list dump files", e);
+            }
+            return dbNames;
+        }
     }
 
     protected Config buildConfig() {

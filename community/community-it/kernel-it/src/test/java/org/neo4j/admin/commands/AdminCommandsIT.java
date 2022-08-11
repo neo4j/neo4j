@@ -96,7 +96,11 @@ class AdminCommandsIT {
         assertSuccess(new StoreInfoCommand(context), "--expand-commands", "path");
         assertSuccess(new CheckConsistencyCommand(context), "--expand-commands", "--database", "neo4j");
         assertSuccess(new DiagnosticsReportCommand(context), "--expand-commands");
-        assertSuccess(new LoadCommand(context, new Loader()), "--expand-commands", "--from", "test");
+        assertSuccess(
+                new LoadCommand(context, new Loader()),
+                "--expand-commands",
+                "--from-path=" + testDirectory.directory("dump").toAbsolutePath(),
+                "test");
         assertSuccess(new MemoryRecommendationsCommand(context), "--expand-commands");
         assertSuccess(
                 new DumpCommand(context, new Dumper(context.err())),
@@ -114,7 +118,10 @@ class AdminCommandsIT {
         assertExpansionError(new StoreInfoCommand(context), "path");
         assertExpansionError(new CheckConsistencyCommand(context), "--database", "neo4j");
         assertExpansionError(new DiagnosticsReportCommand(context));
-        assertExpansionError(new LoadCommand(context, new Loader()), "--from", "test");
+        assertExpansionError(
+                new LoadCommand(context, new Loader()),
+                "--from-path=" + testDirectory.directory("dump").toAbsolutePath(),
+                "test");
         assertExpansionError(new MemoryRecommendationsCommand(context));
         assertExpansionError(
                 new ImportCommand(context),
