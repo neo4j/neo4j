@@ -31,14 +31,23 @@ import org.neo4j.kernel.database.NamedDatabaseId;
  * A wrapper class of the information returned by {@link DatabaseInfoService#lookupCachedInfo(Set)}
  */
 public class DatabaseInfo {
+    public static final String ROLE_PRIMARY = "primary";
+    public static final String ROLE_SECONDARY = "secondary";
+    public static final String ROLE_UNKNOWN = "unknown";
+
     final NamedDatabaseId namedDatabaseId;
     final ServerId serverId;
     final DatabaseAccess access;
     final SocketAddress boltAddress;
     final SocketAddress catchupAddress;
+
+    @Deprecated
+    final String oldRole;
+
     final String role;
+    final boolean writer;
     final String status;
-    final String error;
+    final String statusMessage;
 
     public DatabaseInfo(
             NamedDatabaseId namedDatabaseId,
@@ -46,24 +55,32 @@ public class DatabaseInfo {
             DatabaseAccess access,
             SocketAddress boltAddress,
             SocketAddress catchupAddress,
+            String oldRole,
             String role,
+            boolean writer,
             String status,
-            String error) {
+            String statusMessage) {
         this.namedDatabaseId = namedDatabaseId;
         this.serverId = serverId;
         this.access = access;
         this.boltAddress = boltAddress;
         this.catchupAddress = catchupAddress;
+        this.oldRole = oldRole;
         this.role = role;
+        this.writer = writer;
         this.status = status;
-        this.error = error;
+        this.statusMessage = statusMessage;
     }
 
     public ExtendedDatabaseInfo extendWith(DetailedDatabaseInfo detailedDatabaseInfo) {
-        return this.extendWith(detailedDatabaseInfo, detailedDatabaseInfo.lastCommittedTxId());
+        return this.extendWith(detailedDatabaseInfo, detailedDatabaseInfo.lastCommittedTxId(), 1, 0);
     }
 
-    public ExtendedDatabaseInfo extendWith(DetailedDatabaseInfo detailedDatabaseInfo, long maxCommittedTxId) {
+    public ExtendedDatabaseInfo extendWith(
+            DetailedDatabaseInfo detailedDatabaseInfo,
+            long maxCommittedTxId,
+            int primariesCount,
+            int secondariesCount) {
         var lastCommittedTxId = detailedDatabaseInfo.lastCommittedTxId();
         var storeId = detailedDatabaseInfo.storeId();
         return new ExtendedDatabaseInfo(
@@ -72,12 +89,16 @@ public class DatabaseInfo {
                 access,
                 boltAddress,
                 catchupAddress,
+                oldRole,
                 role,
+                writer,
                 status,
-                error,
+                statusMessage,
                 lastCommittedTxId,
                 lastCommittedTxId - maxCommittedTxId,
-                storeId);
+                storeId,
+                primariesCount,
+                secondariesCount);
     }
 
     public NamedDatabaseId namedDatabaseId() {
@@ -110,16 +131,25 @@ public class DatabaseInfo {
         return Optional.ofNullable(catchupAddress);
     }
 
+    @Deprecated
+    public String oldRole() {
+        return oldRole;
+    }
+
     public String role() {
         return role;
+    }
+
+    public boolean writer() {
+        return writer;
     }
 
     public String status() {
         return status;
     }
 
-    public String error() {
-        return error;
+    public String statusMessage() {
+        return statusMessage;
     }
 
     @Override
@@ -131,31 +161,45 @@ public class DatabaseInfo {
             return false;
         }
         DatabaseInfo that = (DatabaseInfo) o;
-        return Objects.equals(namedDatabaseId, that.namedDatabaseId)
+        return writer == that.writer
+                && Objects.equals(namedDatabaseId, that.namedDatabaseId)
                 && Objects.equals(serverId, that.serverId)
-                && Objects.equals(access, that.access)
+                && access == that.access
                 && Objects.equals(boltAddress, that.boltAddress)
                 && Objects.equals(catchupAddress, that.catchupAddress)
+                && Objects.equals(oldRole, that.oldRole)
                 && Objects.equals(role, that.role)
                 && Objects.equals(status, that.status)
-                && Objects.equals(error, that.error);
+                && Objects.equals(statusMessage, that.statusMessage);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(namedDatabaseId, serverId, access, boltAddress, catchupAddress, role, status, error);
+        return Objects.hash(
+                namedDatabaseId,
+                serverId,
+                access,
+                boltAddress,
+                catchupAddress,
+                oldRole,
+                role,
+                writer,
+                status,
+                statusMessage);
     }
 
     @Override
     public String toString() {
-        return "DatabaseInfoImpl{" + "namedDatabaseId="
+        return "DatabaseInfo{" + "namedDatabaseId="
                 + namedDatabaseId + ", serverId="
-                + serverId + ", accessFromConfig="
+                + serverId + ", access="
                 + access + ", boltAddress="
                 + boltAddress + ", catchupAddress="
-                + catchupAddress + ", role='"
-                + role + '\'' + ", status='"
-                + status + '\'' + ", error='"
-                + error + '\'' + '}';
+                + catchupAddress + ", oldRole='"
+                + oldRole + '\'' + ", role='"
+                + role + '\'' + ", writer="
+                + writer + ", status='"
+                + status + '\'' + ", statusMessage='"
+                + statusMessage + '\'' + '}';
     }
 }

@@ -39,6 +39,8 @@ public class ExtendedDatabaseInfo extends DatabaseInfo {
     private final long txCommitLag;
     private final boolean committedTxIdNotAvailable;
     private final StoreId storeId;
+    private final int primariesCount;
+    private final int secondariesCount;
 
     /**
      * If the lastCommittedTxId is set to COMMITTED_TX_ID_NOT_AVAILABLE both lastCommittedTxId() and txCommitLag() will return empty optionals
@@ -50,17 +52,33 @@ public class ExtendedDatabaseInfo extends DatabaseInfo {
             DatabaseAccess accessFromConfig,
             SocketAddress boltAddress,
             SocketAddress catchupAddress,
+            String oldRole,
             String role,
+            boolean writer,
             String status,
-            String error,
+            String statusMessage,
             long lastCommittedTxId,
             long txCommitLag,
-            StoreId storeId) {
-        super(namedDatabaseId, serverId, accessFromConfig, boltAddress, catchupAddress, role, status, error);
+            StoreId storeId,
+            int primariesCount,
+            int secondariesCount) {
+        super(
+                namedDatabaseId,
+                serverId,
+                accessFromConfig,
+                boltAddress,
+                catchupAddress,
+                oldRole,
+                role,
+                writer,
+                status,
+                statusMessage);
         this.committedTxIdNotAvailable = lastCommittedTxId == COMMITTED_TX_ID_NOT_AVAILABLE;
         this.lastCommittedTxId = committedTxIdNotAvailable ? 0 : lastCommittedTxId;
         this.txCommitLag = committedTxIdNotAvailable ? 0 : txCommitLag;
         this.storeId = storeId;
+        this.primariesCount = primariesCount;
+        this.secondariesCount = secondariesCount;
     }
 
     /**
@@ -98,6 +116,14 @@ public class ExtendedDatabaseInfo extends DatabaseInfo {
         return storeId.equals(StoreId.UNKNOWN) ? Optional.empty() : Optional.of(storeId.getStoreVersionUserString());
     }
 
+    public int primariesCount() {
+        return primariesCount;
+    }
+
+    public int secondariesCount() {
+        return secondariesCount;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -106,49 +132,48 @@ public class ExtendedDatabaseInfo extends DatabaseInfo {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
+        if (!super.equals(o)) {
+            return false;
+        }
         ExtendedDatabaseInfo that = (ExtendedDatabaseInfo) o;
-        return storeId.equals(that.storeId)
-                && lastCommittedTxId == that.lastCommittedTxId
+        return lastCommittedTxId == that.lastCommittedTxId
                 && txCommitLag == that.txCommitLag
-                && Objects.equals(namedDatabaseId, that.namedDatabaseId)
-                && Objects.equals(serverId, that.serverId)
-                && Objects.equals(access, that.access)
-                && Objects.equals(boltAddress, that.boltAddress)
-                && Objects.equals(catchupAddress, that.catchupAddress)
-                && Objects.equals(role, that.role)
-                && Objects.equals(status, that.status)
-                && Objects.equals(error, that.error);
+                && committedTxIdNotAvailable == that.committedTxIdNotAvailable
+                && primariesCount == that.primariesCount
+                && secondariesCount == that.secondariesCount
+                && Objects.equals(storeId, that.storeId);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(
-                namedDatabaseId,
-                serverId,
-                access,
-                boltAddress,
-                catchupAddress,
-                role,
-                status,
-                error,
+                super.hashCode(),
                 lastCommittedTxId,
                 txCommitLag,
-                storeId);
+                committedTxIdNotAvailable,
+                storeId,
+                primariesCount,
+                secondariesCount);
     }
 
     @Override
     public String toString() {
-        return "ExtendedDatabaseInfoImpl{" + "namedDatabaseId="
+        return "ExtendedDatabaseInfo{" + "lastCommittedTxId="
+                + lastCommittedTxId + ", txCommitLag="
+                + txCommitLag + ", committedTxIdNotAvailable="
+                + committedTxIdNotAvailable + ", storeId="
+                + storeId + ", primariesCount="
+                + primariesCount + ", secondariesCount="
+                + secondariesCount + ", namedDatabaseId="
                 + namedDatabaseId + ", serverId="
-                + serverId + ", accessFromConfig="
+                + serverId + ", access="
                 + access + ", boltAddress="
                 + boltAddress + ", catchupAddress="
-                + catchupAddress + ", role='"
-                + role + '\'' + ", status='"
-                + status + '\'' + ", error='"
-                + error + '\'' + ", lastCommittedTxId="
-                + lastCommittedTxId() + ", txCommitLag="
-                + txCommitLag() + ", storeId="
-                + storeId() + '}';
+                + catchupAddress + ", oldRole='"
+                + oldRole + '\'' + ", role='"
+                + role + '\'' + ", writer="
+                + writer + ", status='"
+                + status + '\'' + ", statusMessage='"
+                + statusMessage + '\'' + '}';
     }
 }

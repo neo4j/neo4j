@@ -35,7 +35,8 @@ import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 public class DefaultDatabaseInfoService implements DatabaseInfoService {
-    private static final String ROLE_LABEL = "standalone";
+    @Deprecated
+    private static final String OLD_ROLE_LABEL = "standalone";
 
     private final DatabaseIdRepository idRepository;
     private final ReadOnlyDatabases readOnlyDatabases;
@@ -86,11 +87,21 @@ public class DefaultDatabaseInfoService implements DatabaseInfoService {
     private DatabaseInfo createInfoForDatabase(NamedDatabaseId namedDatabaseId) {
         var status =
                 stateService.stateOfDatabase(namedDatabaseId).operatorState().description();
-        var error = stateService
+        var statusMessage = stateService
                 .causeOfFailure(namedDatabaseId)
                 .map(Throwable::getMessage)
                 .orElse("");
         var access = readOnlyDatabases.isReadOnly(namedDatabaseId) ? READ_ONLY : READ_WRITE;
-        return new DatabaseInfo(namedDatabaseId, serverId, access, address, null, ROLE_LABEL, status, error);
+        return new DatabaseInfo(
+                namedDatabaseId,
+                serverId,
+                access,
+                address,
+                null,
+                OLD_ROLE_LABEL,
+                DatabaseInfo.ROLE_PRIMARY,
+                true,
+                status,
+                statusMessage);
     }
 }

@@ -345,9 +345,9 @@ object BaseDatabaseInfoMapper extends DatabaseInfoMapper[DatabaseInfo] {
       Values.stringValue(extendedDatabaseInfo.namedDatabaseId().name()),
       Values.stringValue(extendedDatabaseInfo.access().getStringRepr),
       extendedDatabaseInfo.boltAddress().map[AnyValue](s => Values.stringValue(s.toString)).orElse(Values.NO_VALUE),
-      Values.stringValue(extendedDatabaseInfo.role()),
+      Values.stringValue(extendedDatabaseInfo.oldRole()),
       Values.stringValue(extendedDatabaseInfo.status()),
-      Values.stringValue(extendedDatabaseInfo.error()),
+      Values.stringValue(extendedDatabaseInfo.statusMessage()),
       getDatabaseId(databaseManagementService, extendedDatabaseInfo.namedDatabaseId().name()).map(
         Values.stringValue
       ).getOrElse(Values.NO_VALUE),
