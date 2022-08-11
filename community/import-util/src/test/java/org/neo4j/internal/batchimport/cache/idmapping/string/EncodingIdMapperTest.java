@@ -20,6 +20,7 @@
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
 import static java.lang.Math.toIntExact;
+import static java.lang.System.currentTimeMillis;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -45,6 +46,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.LongFunction;
@@ -592,11 +594,31 @@ public class EncodingIdMapperTest {
     void shouldCompleteQuicklyForMostlyGapValues() {
         // given
         int nThreads = 4;
-        IdMapper idMapper = mapper(new LongEncoder(), Radix.LONG, NO_MONITOR, nThreads);
-        int count = nThreads * 10_000;
+        var encoder = new LongEncoder();
+        var numberOfComparisons = new AtomicInteger();
+        ParallelSort.Comparator comparator = new ParallelSort.Comparator() {
+            @Override
+            public boolean lt(long left, long pivot) {
+                numberOfComparisons.incrementAndGet();
+                return ParallelSort.DEFAULT.lt(left, pivot);
+            }
+
+            @Override
+            public boolean ge(long right, long pivot) {
+                numberOfComparisons.incrementAndGet();
+                return ParallelSort.DEFAULT.ge(right, pivot);
+            }
+
+            @Override
+            public long dataValue(long dataValue) {
+                return ParallelSort.DEFAULT.dataValue(dataValue);
+            }
+        };
+        IdMapper idMapper = mapper(encoder, Radix.LONG, NO_MONITOR, comparator, autoDetect(encoder), nThreads);
+        int count = nThreads * 1_000;
         MutableLong nextNodeId = new MutableLong();
         for (long id = 0; id < count; id++) {
-            idMapper.put(id, nextNodeId.getAndAdd(random.nextInt(500, 1_000)), GLOBAL);
+            idMapper.put(id, nextNodeId.getAndAdd(random.nextInt(50, 100)), GLOBAL);
         }
 
         // when
@@ -608,7 +630,8 @@ public class EncodingIdMapperTest {
                 ProgressListener.NONE);
 
         // then before making the fix where the IdMapper would skip "null" values this test would have taken multiple
-        // weeks
+        // weeks. We can also assert this by checking how many comparisons have been made when sorting
+        assertThat(numberOfComparisons.get()).isLessThan(nextNodeId.intValue() / 4);
     }
 
     @Test
@@ -650,19 +673,10 @@ public class EncodingIdMapperTest {
                 RANDOM_TRACKER_FACTORY,
                 groups,
                 autoDetect(encoder),
-                1_000,
+                10_000,
                 processors,
                 ParallelSort.DEFAULT,
                 INSTANCE);
-    }
-
-    private IdMapper mapper(
-            Encoder encoder,
-            Factory<Radix> radix,
-            EncodingIdMapper.Monitor monitor,
-            ParallelSort.Comparator comparator,
-            int processors) {
-        return mapper(encoder, radix, monitor, comparator, autoDetect(encoder), processors);
     }
 
     private IdMapper mapper(
@@ -692,10 +706,9 @@ public class EncodingIdMapperTest {
                 : new StringCollisionValues(NumberArrayFactories.HEAP, numberOfCollisions, INSTANCE);
     }
 
-    private static final TrackerFactory RANDOM_TRACKER_FACTORY =
-            (arrayFactory, size) -> System.currentTimeMillis() % 2 == 0
-                    ? new IntTracker(arrayFactory.newIntArray(size, IntTracker.DEFAULT_VALUE, INSTANCE))
-                    : new BigIdTracker(arrayFactory.newByteArray(size, BigIdTracker.DEFAULT_VALUE, INSTANCE));
+    private static final TrackerFactory RANDOM_TRACKER_FACTORY = (arrayFactory, size) -> currentTimeMillis() % 2 == 0
+            ? new IntTracker(arrayFactory.newIntArray(size, IntTracker.DEFAULT_VALUE, INSTANCE))
+            : new BigIdTracker(arrayFactory.newByteArray(size, BigIdTracker.DEFAULT_VALUE, INSTANCE));
 
     private static class ValueGenerator implements PropertyValueLookup {
         private final Factory<Object> generator;
