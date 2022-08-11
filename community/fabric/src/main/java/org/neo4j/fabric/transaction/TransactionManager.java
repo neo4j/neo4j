@@ -33,6 +33,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.config.FabricConfig;
+import org.neo4j.fabric.eval.CatalogManager;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
 import org.neo4j.graphdb.DatabaseShutdownException;
@@ -55,19 +56,22 @@ public class TransactionManager extends LifecycleAdapter {
     private final Set<FabricTransactionImpl> openTransactions = ConcurrentHashMap.newKeySet();
     private final long awaitActiveTransactionDeadlineMillis;
     private final AvailabilityGuard availabilityGuard;
+    private final CatalogManager catalogManager;
 
     public TransactionManager(
             FabricRemoteExecutor remoteExecutor,
             FabricLocalExecutor localExecutor,
-            ErrorReporter errorReporter,
+            CatalogManager catalogManager,
             FabricConfig fabricConfig,
             FabricTransactionMonitor transactionMonitor,
             AbstractSecurityLog securityLog,
             Clock clock,
             Config config,
-            AvailabilityGuard availabilityGuard) {
+            AvailabilityGuard availabilityGuard,
+            ErrorReporter errorReporter) {
         this.remoteExecutor = remoteExecutor;
         this.localExecutor = localExecutor;
+        this.catalogManager = catalogManager;
         this.errorReporter = errorReporter;
         this.fabricConfig = fabricConfig;
         this.transactionMonitor = transactionMonitor;
@@ -97,7 +101,8 @@ public class TransactionManager extends LifecycleAdapter {
                 localExecutor,
                 errorReporter,
                 this,
-                fabricConfig);
+                fabricConfig,
+                catalogManager.currentCatalog());
 
         openTransactions.add(fabricTransaction);
         transactionMonitor.startMonitoringTransaction(fabricTransaction, transactionInfo);

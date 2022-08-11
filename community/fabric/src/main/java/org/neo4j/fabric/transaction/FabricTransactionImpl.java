@@ -37,6 +37,7 @@ import java.util.function.Supplier;
 import org.neo4j.cypher.internal.util.CancellationChecker;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.config.FabricConfig;
+import org.neo4j.fabric.eval.Catalog;
 import org.neo4j.fabric.executor.Exceptions;
 import org.neo4j.fabric.executor.FabricException;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
@@ -63,6 +64,7 @@ public class FabricTransactionImpl
     private final Lock exclusiveLock = transactionLock.writeLock();
     private final FabricTransactionInfo transactionInfo;
     private final TransactionBookmarkManager bookmarkManager;
+    private final Catalog catalogSnapshot;
     private final ErrorReporter errorReporter;
     private final TransactionManager transactionManager;
     private final FabricConfig fabricConfig;
@@ -83,12 +85,14 @@ public class FabricTransactionImpl
             FabricLocalExecutor localExecutor,
             ErrorReporter errorReporter,
             TransactionManager transactionManager,
-            FabricConfig fabricConfig) {
+            FabricConfig fabricConfig,
+            Catalog catalogSnapshot) {
         this.transactionInfo = transactionInfo;
         this.errorReporter = errorReporter;
         this.transactionManager = transactionManager;
         this.fabricConfig = fabricConfig;
         this.bookmarkManager = bookmarkManager;
+        this.catalogSnapshot = catalogSnapshot;
         this.id = ID_GENERATOR.incrementAndGet();
 
         try {
@@ -98,6 +102,11 @@ public class FabricTransactionImpl
             // the exception with stack trace will be logged by Bolt's ErrorReporter
             throw Exceptions.transform(Status.Transaction.TransactionStartFailed, e);
         }
+    }
+
+    @Override
+    public Catalog getCatalogSnapshot() {
+        return catalogSnapshot;
     }
 
     @Override

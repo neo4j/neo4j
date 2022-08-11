@@ -34,7 +34,6 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
@@ -67,7 +66,7 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
         this.queryExecutionEngine = resolveDependency(databaseAPI, QueryExecutionEngine.class);
         this.transactionIdTracker = transactionIdTracker;
         this.transactionalContextFactory = newTransactionalContextFactory(databaseAPI);
-        this.namedDatabaseId = resolveDependency(databaseAPI, Database.class).getNamedDatabaseId();
+        this.namedDatabaseId = databaseAPI.databaseId();
         this.perBookmarkTimeout = perBookmarkTimeout;
         this.memoryTracker = memoryTracker.getScopedMemoryTracker();
     }

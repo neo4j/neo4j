@@ -20,6 +20,7 @@
 package org.neo4j.fabric.executor;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -160,7 +161,15 @@ public class FabricLocalExecutor {
 
         private GraphDatabaseFacade getDatabaseFacade(Location.Local location) {
             try {
-                return dbms.getDatabaseFacade(location.getDatabaseName());
+                var facade = dbms.getDatabaseFacade(location.getDatabaseName());
+                if (!Objects.equals(facade.databaseId().databaseId().uuid(), location.getUuid())) {
+                    throw new FabricException(
+                            Status.Transaction.Outdated,
+                            "The locations associated with the graph name %s have "
+                                    + "changed whilst the transaction was running.",
+                            location.getDatabaseName());
+                }
+                return facade;
             } catch (UnavailableException e) {
                 throw new FabricException(Status.Database.DatabaseUnavailable, e);
             }

@@ -145,23 +145,25 @@ public abstract class FabricServicesBootstrap {
                 TransactionMonitorScheduler.class);
 
         var errorReporter = new ErrorReporter(logService);
+        var catalogManager = register(createCatalogManger(databaseReferenceRepo), CatalogManager.class);
         register(
                 new TransactionManager(
                         remoteExecutor,
                         localExecutor,
-                        errorReporter,
+                        catalogManager,
                         fabricConfig,
                         transactionMonitor,
                         securityLog,
                         systemNanoClock,
                         config,
-                        availabilityGuard),
+                        availabilityGuard,
+                        errorReporter),
                 TransactionManager.class);
 
         var cypherConfig = CypherConfiguration.fromConfig(config);
 
         Supplier<GlobalProcedures> proceduresSupplier = () -> resolve(GlobalProcedures.class);
-        var catalogManager = register(createCatalogManger(databaseReferenceRepo), CatalogManager.class);
+
         var signatureResolver = new SignatureResolver(proceduresSupplier);
         var statementLifecycles = new FabricStatementLifecycles(databaseManager, monitors, config, systemNanoClock);
         var monitoredExecutor = jobScheduler.monitoredJobExecutor(CYPHER_CACHE);
@@ -170,8 +172,7 @@ public abstract class FabricServicesBootstrap {
         var planner = register(
                 new FabricPlanner(fabricConfig, cypherConfig, monitors, cacheFactory, signatureResolver),
                 FabricPlanner.class);
-        var useEvaluation =
-                register(new UseEvaluation(catalogManager, proceduresSupplier, signatureResolver), UseEvaluation.class);
+        var useEvaluation = register(new UseEvaluation(proceduresSupplier, signatureResolver), UseEvaluation.class);
 
         register(new FabricReactorHooksService(errorReporter), FabricReactorHooksService.class);
 

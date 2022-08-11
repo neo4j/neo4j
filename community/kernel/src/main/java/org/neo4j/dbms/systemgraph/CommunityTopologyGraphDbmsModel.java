@@ -199,7 +199,7 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
         var builder = DriverSettings.builder();
         // TODO: Remove sslEnabled and use sslPolicy? Needs Cypher support
         getOptionalPropertyOnNode(DRIVER_SETTINGS, driverSettingsNode, SSL_ENFORCED, Boolean.class)
-                .map(builder::withSSlEnabled);
+                .map(builder::withSslEnforced);
         getOptionalPropertyOnNode(DRIVER_SETTINGS, driverSettingsNode, CONNECTION_TIMEOUT, DurationValue.class)
                 .map(builder::withConnectionTimeout);
         getOptionalPropertyOnNode(DRIVER_SETTINGS, driverSettingsNode, CONNECTION_MAX_LIFETIME, DurationValue.class)

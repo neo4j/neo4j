@@ -161,7 +161,7 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
 
     static Stream<Arguments> driverSettings() {
         var completeSettings = DriverSettings.builder()
-                .withSSlEnabled(true)
+                .withSslEnforced(true)
                 .withConnectionTimeout(duration(ofSeconds(10)))
                 .withConnectionPoolAcquisitionTimeout(duration(ofSeconds(1)))
                 .withConnectionMaxLifeTime(duration(ofSeconds(300)))
@@ -171,7 +171,7 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
                 .build();
 
         var missingSettings = DriverSettings.builder()
-                .withSSlEnabled(false)
+                .withSslEnforced(false)
                 .withLoggingLevel(Level.DEBUG)
                 .build();
 

@@ -28,7 +28,7 @@ import org.neo4j.values.storable.DurationValue;
 
 public final class DriverSettings {
     enum Keys {
-        SSL_ENABLED,
+        SSL_ENFORCED,
         CONNECTION_TIMEOUT,
         CONNECTION_MAX_LIFETIME,
         CONNECTION_POOL_ACQUISITION_TIMEOUT,
@@ -42,7 +42,7 @@ public final class DriverSettings {
         }
     }
 
-    private final Boolean sslEnabled;
+    private final Boolean sslEnforced;
     private final Duration connectionTimeout;
     private final Duration connectionMaxLifetime;
     private final Duration connectionPoolAcquisitionTimeout;
@@ -52,7 +52,7 @@ public final class DriverSettings {
     private final String sslPolicy;
 
     private DriverSettings(
-            Boolean sslEnabled,
+            Boolean sslEnforced,
             Duration connectionTimeout,
             Duration connectionMaxLifetime,
             Duration connectionPoolAcquisitionTimeout,
@@ -60,7 +60,7 @@ public final class DriverSettings {
             Integer connectionPoolMaxSize,
             Level loggingLevel,
             String sslPolicy) {
-        this.sslEnabled = sslEnabled;
+        this.sslEnforced = sslEnforced;
         this.connectionTimeout = connectionTimeout;
         this.connectionMaxLifetime = connectionMaxLifetime;
         this.connectionPoolAcquisitionTimeout = connectionPoolAcquisitionTimeout;
@@ -74,8 +74,8 @@ public final class DriverSettings {
         return new Builder();
     }
 
-    public Optional<Boolean> isSslEnabled() {
-        return Optional.ofNullable(sslEnabled);
+    public Optional<Boolean> isSslEnforced() {
+        return Optional.ofNullable(sslEnforced);
     }
 
     public Optional<Duration> connectionTimeout() {
@@ -115,7 +115,7 @@ public final class DriverSettings {
             return false;
         }
         DriverSettings that = (DriverSettings) o;
-        return Objects.equals(sslEnabled, that.sslEnabled)
+        return Objects.equals(sslEnforced, that.sslEnforced)
                 && Objects.equals(connectionTimeout, that.connectionTimeout)
                 && Objects.equals(connectionMaxLifetime, that.connectionMaxLifetime)
                 && Objects.equals(connectionPoolAcquisitionTimeout, that.connectionPoolAcquisitionTimeout)
@@ -128,7 +128,7 @@ public final class DriverSettings {
     @Override
     public int hashCode() {
         return Objects.hash(
-                sslEnabled,
+                sslEnforced,
                 connectionTimeout,
                 connectionMaxLifetime,
                 connectionPoolAcquisitionTimeout,
@@ -149,7 +149,7 @@ public final class DriverSettings {
 
         private Builder() {}
 
-        Builder withSSlEnabled(boolean sslEnabled) {
+        Builder withSslEnforced(boolean sslEnabled) {
             this.sslEnabled = sslEnabled;
             return this;
         }
