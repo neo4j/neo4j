@@ -54,8 +54,6 @@ class MigrateConfigCommandTest {
                     dbms.allow_upgrade=true
                     dbms.connector.bolt.enabled=true
                     dbms.connector.bolt.enabled=false
-                    #Another comment for a setting that changes name and value
-                    unsupported.dbms.logs.format=STANDARD_FORMAT
 
                     #A removed setting
                     dbms.record_format=high_limit
@@ -94,8 +92,6 @@ class MigrateConfigCommandTest {
                     # dbms.allow_upgrade=true REMOVED SETTING
                     # server.bolt.enabled=true DUPLICATE SETTING
                     server.bolt.enabled=false
-                    #Another comment for a setting that changes name and value
-                    dbms.logs.default_format=PLAIN
 
                     #A removed setting
                     # dbms.record_format=high_limit REMOVED SETTING
@@ -186,7 +182,6 @@ class MigrateConfigCommandTest {
                         "dbms.tx_log.rotation.retention_policy=3 days MIGRATED -> db.tx_log.rotation.retention_policy=3 days")
                 .contains("dbms.allow_upgrade=true REMOVED")
                 .contains("dbms.connector.bolt.enabled=false MIGRATED -> server.bolt.enabled=false")
-                .contains("unsupported.dbms.logs.format=STANDARD_FORMAT MIGRATED -> dbms.logs.default_format=PLAIN")
                 .contains("dbms.record_format=high_limit REMOVED")
                 .contains("db.tx_log.preallocate=true UNCHANGED")
                 .contains("dbms.tx_log.rotation.size=1G MIGRATED -> db.tx_log.rotation.size=1G")

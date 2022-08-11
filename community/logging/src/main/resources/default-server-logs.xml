@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c) "Neo4j"
+    Neo4j Sweden AB [http://neo4j.com]
+
+    This file is part of Neo4j.
+
+    Neo4j is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+-->
+<!-- This will be used if no user provided xml file could be found -->
+<Configuration status="ERROR" packages="org.neo4j.logging.log4j">
+    <Appenders>
+        <RollingRandomAccessFile name="DebugLog" fileName="${config:server.directories.logs}/debug.log"
+                     filePattern="${config:server.directories.logs}/debug.log.%02i">
+            <Neo4jDebugLogLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSSZ}{GMT+0} %-5p [%c{1.}] %m%n"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="20 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy fileIndex="min" max="7"/>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="HttpLog" fileName="${config:server.directories.logs}/http.log"
+                     filePattern="${config:server.directories.logs}/http.log.%02i">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSSZ}{GMT+0} %-5p %m%n"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="20 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy fileIndex="min" max="5"/>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="QueryLog" fileName="${config:server.directories.logs}/query.log"
+                                 filePattern="${config:server.directories.logs}/query.log.%02i">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSSZ}{GMT+0} %-5p %m%n"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="20 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy fileIndex="min" max="7"/>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="SecurityLog" fileName="${config:server.directories.logs}/security.log"
+                     filePattern="${config:server.directories.logs}/security.log.%02i">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSSZ}{GMT+0} %-5p %m%n"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="20 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy fileIndex="min" max="7"/>
+        </RollingRandomAccessFile>
+    </Appenders>
+
+    <Loggers>
+        <!-- The debug log is used as the root logger to catch everything -->
+        <Root level="INFO">
+            <AppenderRef ref="DebugLog"/> <!-- Keep this -->
+        </Root>
+
+        <!-- The query log, must be named "QueryLogger" -->
+        <Logger name="QueryLogger" level="INFO" additivity="false">
+            <AppenderRef ref="QueryLog"/>
+        </Logger>
+
+        <!-- The http request log, must be named "HttpLogger" -->
+        <Logger name="HttpLogger" level="INFO" additivity="false">
+            <AppenderRef ref="HttpLog"/>
+        </Logger>
+
+        <!-- The security log, must be named "SecurityLogger" -->
+        <Logger name="SecurityLogger" level="INFO" additivity="false">
+            <AppenderRef ref="SecurityLog"/>
+        </Logger>
+    </Loggers>
+</Configuration>

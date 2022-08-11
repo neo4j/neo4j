@@ -21,11 +21,14 @@ package org.neo4j.kernel.configuration;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.logging.log4j.LogConfig.DEBUG_LOG;
+import static org.neo4j.logging.log4j.LogUtils.newLoggerBuilder;
+import static org.neo4j.logging.log4j.LogUtils.newXmlConfigBuilder;
+import static org.neo4j.logging.log4j.LoggerTarget.ROOT_LOGGER;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.ZoneOffset;
 import java.util.TimeZone;
 import org.junit.jupiter.api.Test;
@@ -56,17 +59,22 @@ class SystemTimeZoneLoggingIT {
     private void checkStartLogLine(int hoursShift, String timeZoneSuffix) throws IOException {
         TimeZone.setDefault(TimeZone.getTimeZone(ZoneOffset.ofHours(hoursShift)));
         Path storeDir = testDirectory.homePath(String.valueOf(hoursShift));
+        Path debugLog = storeDir.resolve("logs").resolve(DEBUG_LOG);
+        Path logXmlConfig = storeDir.resolve("log.xml");
+        newXmlConfigBuilder(testDirectory.getFileSystem(), logXmlConfig)
+                .withLogger(newLoggerBuilder(ROOT_LOGGER, debugLog)
+                        .withTimezone(LogTimeZone.SYSTEM)
+                        .build())
+                .create();
+
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(storeDir)
                 .setConfig(GraphDatabaseSettings.db_timezone, LogTimeZone.SYSTEM)
+                .setConfig(GraphDatabaseSettings.server_logging_config_path, logXmlConfig)
                 .build();
         managementService.database(DEFAULT_DATABASE_NAME);
         managementService.shutdown();
-        Path debugLog = Paths.get("logs", "debug.log");
-        String debugLogLine = getLogLine(storeDir, debugLog);
-        assertTrue(debugLogLine.contains(timeZoneSuffix), debugLogLine);
-    }
 
-    private static String getLogLine(Path databasePath, Path logFilePath) throws IOException {
-        return Files.readAllLines(databasePath.resolve(logFilePath)).get(0);
+        String debugLogLine = Files.readAllLines(debugLog).get(0);
+        assertTrue(debugLogLine.contains(timeZoneSuffix), debugLogLine);
     }
 }

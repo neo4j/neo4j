@@ -124,7 +124,6 @@ import java.util.regex.Pattern;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.InternalLog;
 
 public final class SettingMigrators {
@@ -153,6 +152,31 @@ public final class SettingMigrators {
                 "dbms.security.procedures.roles",
                 "dbms.security.property_level.blacklist",
                 "dbms.security.property_level.enabled",
+                "dbms.logs.debug.format",
+                "dbms.logs.debug.level",
+                "dbms.logs.debug.path",
+                "dbms.logs.debug.rotation.keep_number",
+                "dbms.logs.debug.rotation.size",
+                "dbms.logs.default_format",
+                "dbms.logs.http.format",
+                "dbms.logs.http.path",
+                "dbms.logs.http.rotation.keep_number",
+                "dbms.logs.http.rotation.size",
+                "dbms.logs.query.format",
+                "dbms.logs.query.path",
+                "dbms.logs.query.rotation.keep_number",
+                "dbms.logs.query.rotation.size",
+                "dbms.logs.security.format",
+                "dbms.logs.security.level",
+                "dbms.logs.security.path",
+                "dbms.logs.security.rotation.delay",
+                "dbms.logs.security.rotation.keep_number",
+                "dbms.logs.security.rotation.size",
+                "dbms.logs.user.format",
+                "dbms.logs.user.path",
+                "dbms.logs.user.rotation.keep_number",
+                "dbms.logs.user.rotation.size",
+                "dbms.logs.user.stdout_enabled",
                 "fabric.driver.api",
                 "unsupported.cypher.parser",
                 "unsupported.dbms.block_remote_alias",
@@ -535,7 +559,6 @@ public final class SettingMigrators {
             migrateUnsupportedSettingsToInternal(values, defaultValues, log);
 
             migrateDirectoriesChanges(values, defaultValues, log);
-            migrateLogFormat(values, defaultValues, log);
             migrateConnectors(values, defaultValues, log);
             migrateDatabaseMemorySettings(values, defaultValues, log);
             migrateWhitelistSettings(values, defaultValues, log);
@@ -757,23 +780,6 @@ public final class SettingMigrators {
 
             migrateSettingNameChange(values, log, "dbms.directories.run", run_directory);
             migrateSettingNameChange(values, log, "dbms.directories.lib", lib_directory);
-        }
-
-        private static void migrateLogFormat(
-                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            String value = values.remove("unsupported.dbms.logs.format");
-            if (isNotBlank(value)) {
-                log.warn("Use of deprecated setting 'unsupported.dbms.logs.format'.");
-                if ("STANDARD_FORMAT".equals(value)) {
-                    values.put(GraphDatabaseSettings.default_log_format.name(), FormattedLogFormat.PLAIN.name());
-                } else if ("JSON_FORMAT".equals(value)) {
-                    values.put(GraphDatabaseSettings.default_log_format.name(), FormattedLogFormat.JSON.name());
-                } else {
-                    log.warn(
-                            "Unrecognized value for 'unsupported.dbms.logs.format'. Was %s but expected STANDARD_FORMAT or JSON_FORMAT.",
-                            value);
-                }
-            }
         }
 
         private static void migrateConnectors(

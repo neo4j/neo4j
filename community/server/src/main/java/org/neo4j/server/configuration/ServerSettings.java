@@ -20,23 +20,17 @@
 package org.neo4j.server.configuration;
 
 import static java.util.Collections.emptyList;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_log_format;
-import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.SettingConstraints.range;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
-import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
 import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.NORMALIZED_RELATIVE_URI;
-import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 import static org.neo4j.configuration.SettingValueParsers.listOf;
-import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 import static org.neo4j.configuration.SettingValueParsers.setOfEnums;
 
 import java.net.URI;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.EnumSet;
 import java.util.List;
@@ -49,8 +43,6 @@ import org.neo4j.configuration.SettingValueParser;
 import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.io.ByteUnit;
-import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.server.web.JettyThreadCalculator;
 
 @ServiceProvider
@@ -129,28 +121,6 @@ public class ServerSettings implements SettingsDeclaration {
     @Description("Enable HTTP request logging.")
     public static final Setting<Boolean> http_logging_enabled =
             newBuilder("dbms.logs.http.enabled", BOOL, false).build();
-
-    @Description("Path to HTTP request log.")
-    public static final Setting<Path> http_log_path = newBuilder("dbms.logs.http.path", PATH, Path.of("http.log"))
-            .setDependency(logs_directory)
-            .immutable()
-            .build();
-
-    @Description("Log format to use for http logs.")
-    public static final Setting<FormattedLogFormat> http_log_format = newBuilder(
-                    "dbms.logs.http.format", ofEnum(FormattedLogFormat.class), null)
-            .setDependency(default_log_format)
-            .build();
-
-    @Description("Number of HTTP logs to keep.")
-    public static final Setting<Integer> http_logging_rotation_keep_number =
-            newBuilder("dbms.logs.http.rotation.keep_number", INT, 5).build();
-
-    @Description("Size of each HTTP log that is kept.")
-    public static final Setting<Long> http_logging_rotation_size = newBuilder(
-                    "dbms.logs.http.rotation.size", BYTES, ByteUnit.mebiBytes(20))
-            .addConstraint(range(0L, Long.MAX_VALUE))
-            .build();
 
     @Description("Value of the HTTP Strict-Transport-Security (HSTS) response header. "
             + "This header tells browsers that a webpage should only be accessed using HTTPS instead of HTTP. It is attached to every HTTPS response. "

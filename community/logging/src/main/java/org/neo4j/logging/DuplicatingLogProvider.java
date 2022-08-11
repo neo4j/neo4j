@@ -19,6 +19,8 @@
  */
 package org.neo4j.logging;
 
+import org.neo4j.logging.log4j.LoggerTarget;
+
 /**
  * A {@link InternalLogProvider} implementation that duplicates all messages to other LogProvider instances
  */
@@ -39,5 +41,10 @@ public class DuplicatingLogProvider implements InternalLogProvider {
     @Override
     public InternalLog getLog(String name) {
         return new DuplicatingLog(logProvider1.getLog(name), logProvider2.getLog(name));
+    }
+
+    @Override
+    public InternalLog getLog(LoggerTarget target) {
+        return new DuplicatingLog(logProvider1.getLog(target), logProvider2.getLog(target));
     }
 }

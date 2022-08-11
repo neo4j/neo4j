@@ -29,12 +29,15 @@ import org.neo4j.logging.Neo4jMessageSupplier;
 
 abstract class Log4jLogTestBase {
     protected final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+
     protected Log4jLog log;
     private Neo4jLoggerContext context;
 
     @BeforeEach
     void setUp() {
-        context = LogConfig.createBuilder(outContent, Level.DEBUG).build();
+        context = LogConfig.createBuilderToOutputStream(outContent, Level.DEBUG)
+                .withCategory(true)
+                .build();
         log = new Log4jLog(context.getLogger("className"));
     }
 

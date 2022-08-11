@@ -24,8 +24,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
+import static org.neo4j.io.fs.FileSystemUtils.readLines;
 import static org.neo4j.server.AbstractNeoWebServer.NEO4J_IS_STARTING_MESSAGE;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -42,20 +44,25 @@ import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.log4j.LogConfig;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 
 class StartupLoggingIT extends ExclusiveWebContainerTestBase {
     @Test
-    void shouldLogHelpfulStartupMessages() {
+    void shouldLogHelpfulStartupMessages() throws IOException {
         CommunityBootstrapper bootstrapper = new CommunityBootstrapper();
         Map<String, String> propertyPairs = getPropertyPairs();
 
-        bootstrapper.start(testDirectory.homePath(), Path.of("nonexistent-file.conf"), propertyPairs, false);
+        bootstrapper.start(testDirectory.homePath(), Path.of("nonexistent-file.conf"), propertyPairs, false, false);
         var resolver = getDependencyResolver(bootstrapper.getDatabaseManagementService());
         URI uri = resolver.resolveDependency(AbstractNeoWebServer.class).getBaseUri();
         bootstrapper.stop();
 
-        List<String> captured = suppressOutput.getOutputVoice().lines();
+        List<String> captured = readLines(
+                testDirectory.getFileSystem(),
+                testDirectory.homePath().resolve(LogConfig.USER_LOG),
+                EmptyMemoryTracker.INSTANCE);
         assertThat(captured)
                 .satisfies(containsAtLeastTheseLines(
                         warn("Config file \\[nonexistent-file.conf\\] does not exist."),

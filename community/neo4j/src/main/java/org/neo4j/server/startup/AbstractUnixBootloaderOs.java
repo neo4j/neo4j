@@ -32,9 +32,7 @@ abstract class AbstractUnixBootloaderOs extends BootloaderOsAbstraction {
     long start() {
         return bootloader
                 .processManager()
-                .run(
-                        buildStandardStartArguments(),
-                        behaviour().redirectToUserLog().storePid());
+                .run(buildStandardStartArguments(), behaviour().storePid());
     }
 
     @Override

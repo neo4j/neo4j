@@ -404,4 +404,13 @@ public interface FileSystemAbstraction extends Closeable {
      * @return {@code true} if the underlying filesystem is persistent, {@code false} otherwise.
      */
     boolean isPersistent();
+
+    /**
+     * Creates an empty file in the default temporary-file directory, using the given prefix and suffix to generate its name.
+     * @param prefix the prefix string to be used in generating the file's name.
+     * @param suffix the suffix string to be used in generating the file's name
+     * @return the path to the newly created file that did not exist before this method was invoked.
+     * @throws IOException if an I/O error occurs or the temporary-file directory does not exist.
+     */
+    Path createTempFile(String prefix, String suffix) throws IOException;
 }

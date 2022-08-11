@@ -21,6 +21,8 @@ package org.neo4j.server.startup;
 
 import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
+import static org.neo4j.logging.log4j.LogConfig.DEBUG_LOG;
+import static org.neo4j.logging.log4j.LogConfig.USER_LOG;
 import static org.neo4j.test.proc.ProcessUtil.getModuleOptions;
 
 import java.io.FileOutputStream;
@@ -82,7 +84,6 @@ abstract class ServerProcessTestBase extends BootloaderCommandTestBase {
         // DBMS
         addConf(GraphDatabaseSettings.pagecache_memory, "8m");
         addConf(GraphDatabaseSettings.logical_log_rotation_threshold, "128k");
-        addConf(GraphDatabaseSettings.store_internal_log_level, "debug");
         // Connectors
         addConf(HttpConnector.enabled, "true");
         addConf(HttpConnector.listen_address, "localhost:0");
@@ -127,11 +128,11 @@ abstract class ServerProcessTestBase extends BootloaderCommandTestBase {
     }
 
     protected String getDebugLogLines() {
-        return readFile(config.get(GraphDatabaseSettings.store_internal_log_path));
+        return readFile(config.get(GraphDatabaseSettings.logs_directory).resolve(DEBUG_LOG));
     }
 
     protected String getUserLogLines() {
-        return readFile(config.get(GraphDatabaseSettings.store_user_log_path));
+        return readFile(config.get(GraphDatabaseSettings.logs_directory).resolve(USER_LOG));
     }
 
     private static String readFile(Path file) {

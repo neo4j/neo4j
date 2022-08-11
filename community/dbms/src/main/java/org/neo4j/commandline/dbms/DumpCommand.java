@@ -110,7 +110,7 @@ public class DumpCommand extends AbstractCommand {
 
         Config config = CommandHelpers.buildConfig(ctx, allowCommandExpansion);
         InternalLog log;
-        try (Log4jLogProvider logProvider = Util.configuredLogProvider(config, ctx.out())) {
+        try (Log4jLogProvider logProvider = Util.configuredLogProvider(ctx.out(), verbose)) {
             log = logProvider.getLog(getClass());
             Set<String> dbNames;
             List<FailedDump> failedDumps = new ArrayList<>();

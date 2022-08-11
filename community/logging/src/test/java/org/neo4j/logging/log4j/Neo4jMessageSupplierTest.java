@@ -50,8 +50,8 @@ class Neo4jMessageSupplierTest extends Log4jLogTestBase {
     void shouldOnlyEvaluateArgWhenNeeded(LogMethod logMethod, Level level) {
         for (Level configuredLevel : Level.values()) {
             ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-            try (Neo4jLoggerContext context =
-                    LogConfig.createBuilder(outContent, configuredLevel).build()) {
+            try (Neo4jLoggerContext context = LogConfig.createBuilderToOutputStream(outContent, configuredLevel)
+                    .build()) {
                 Log4jLog log = new Log4jLog(context.getLogger("className"));
 
                 Neo4jMessageSupplier supplier = mock(Neo4jMessageSupplier.class);

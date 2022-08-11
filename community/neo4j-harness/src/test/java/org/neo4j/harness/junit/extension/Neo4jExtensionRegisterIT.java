@@ -41,7 +41,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.Neo4j;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.LogTimeZone;
 import org.neo4j.test.server.HTTP;
 
 class Neo4jExtensionRegisterIT {
@@ -51,7 +50,6 @@ class Neo4jExtensionRegisterIT {
     static Neo4jExtension neo4jExtension = Neo4jExtension.builder()
             .withFolder(createTempDirectory())
             .withFixture("CREATE (u:User)")
-            .withConfig(GraphDatabaseSettings.db_timezone, LogTimeZone.SYSTEM)
             .withFixture(graphDatabaseService -> {
                 try (Transaction tx = graphDatabaseService.beginTx()) {
                     tx.createNode(Label.label("User"));
@@ -77,14 +75,6 @@ class Neo4jExtensionRegisterIT {
                 transaction.commit();
             }
         });
-    }
-
-    @Test
-    void shouldUseSystemTimeZoneForLogging(GraphDatabaseService databaseService) throws Exception {
-        String currentOffset = currentTimeZoneOffsetString();
-
-        assertThat(contentOf("neo4j.log", databaseService)).contains(currentOffset);
-        assertThat(contentOf("debug.log", databaseService)).contains(currentOffset);
     }
 
     @Test

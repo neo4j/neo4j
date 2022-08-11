@@ -188,6 +188,11 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction {
         return defaultFileSystem.isPersistent();
     }
 
+    @Override
+    public Path createTempFile(String prefix, String suffix) throws IOException {
+        return defaultFileSystem.createTempFile(prefix, suffix);
+    }
+
     private FileSystemAbstraction chooseFileSystem(Path file) {
         return file.equals(specialFile) ? specialFileSystem : defaultFileSystem;
     }

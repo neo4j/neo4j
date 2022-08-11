@@ -19,6 +19,8 @@
  */
 package org.neo4j.logging;
 
+import org.neo4j.logging.log4j.LoggerTarget;
+
 public class ExternalLogProviderWrapper implements InternalLogProvider {
     private final LogProvider delegate;
 
@@ -34,6 +36,11 @@ public class ExternalLogProviderWrapper implements InternalLogProvider {
     @Override
     public InternalLog getLog(String name) {
         return new ExternalLogWrapper(delegate.getLog(name));
+    }
+
+    @Override
+    public InternalLog getLog(LoggerTarget target) {
+        return new ExternalLogWrapper(delegate.getLog(target.getTarget()));
     }
 
     private static class ExternalLogWrapper implements InternalLog {

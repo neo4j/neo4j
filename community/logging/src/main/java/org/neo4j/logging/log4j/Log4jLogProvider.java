@@ -40,9 +40,10 @@ public class Log4jLogProvider implements InternalLogProvider, Closeable {
     }
 
     public Log4jLogProvider(OutputStream out, Level level) {
-        this(LogConfig.createBuilder(out, level).build());
+        this(LogConfig.createBuilderToOutputStream(out, level).build());
     }
 
+    @SuppressWarnings("unused") // Will be used by new procedure
     public void updateLogLevel(Level newLevel) {
         LogConfig.updateLogLevel(newLevel, ctx);
     }
@@ -55,6 +56,11 @@ public class Log4jLogProvider implements InternalLogProvider, Closeable {
     @Override
     public InternalLog getLog(String name) {
         return new Log4jLog(ctx.getLogger(name));
+    }
+
+    @Override
+    public InternalLog getLog(LoggerTarget target) {
+        return new Log4jLog(ctx.getLogger(target.getTarget()));
     }
 
     @Override

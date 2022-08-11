@@ -27,6 +27,11 @@ import static org.eclipse.jetty.http.HttpStatus.NOT_FOUND_404;
 import static org.eclipse.jetty.http.HttpStatus.OK_200;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
+import static org.neo4j.logging.log4j.LogConfig.HTTP_LOG;
+import static org.neo4j.logging.log4j.LogConfig.createLoggerFromXmlConfig;
+import static org.neo4j.logging.log4j.LogUtils.newLoggerBuilder;
+import static org.neo4j.logging.log4j.LogUtils.newXmlConfigBuilder;
+import static org.neo4j.logging.log4j.LoggerTarget.HTTP_LOGGER;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
@@ -43,6 +48,10 @@ import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.logging.InternalLogProvider;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.TestWebContainer;
@@ -121,8 +130,9 @@ class HTTPLoggingIT extends ExclusiveWebContainerTestBase {
         var directoryPrefix = methodName;
         var logDirectory = testDirectory.directory(directoryPrefix + "-logdir");
 
-        return serverOnRandomPorts()
-                .withDefaultDatabaseTuning()
+        InternalLogProvider logProvider = setupLoggingConfig(logDirectory, httpLoggingEnabledValue);
+
+        return serverOnRandomPorts(logProvider)
                 .persistent()
                 .withProperty(ServerSettings.http_logging_enabled.name(), httpLoggingEnabledValue)
                 .withProperty(
@@ -137,6 +147,20 @@ class HTTPLoggingIT extends ExclusiveWebContainerTestBase {
                 .build();
     }
 
+    private InternalLogProvider setupLoggingConfig(Path logDirectory, String httpLoggingEnabledValue) {
+        if (httpLoggingEnabledValue.equals(FALSE)) {
+            return NullLogProvider.getInstance();
+        }
+
+        var logConfig = testDirectory.file("logs.xml");
+        FileSystemAbstraction fs = testDirectory.getFileSystem();
+        newXmlConfigBuilder(fs, logConfig)
+                .withLogger(newLoggerBuilder(HTTP_LOGGER, logDirectory.resolve(HTTP_LOG))
+                        .build())
+                .create();
+        return new Log4jLogProvider(createLoggerFromXmlConfig(fs, logConfig));
+    }
+
     private static Callable<String> httpLogContent(TestWebContainer testWebContainer) {
         var httpLogFile = httpLogFile(testWebContainer);
         return () -> Files.readString(httpLogFile);
@@ -144,7 +168,7 @@ class HTTPLoggingIT extends ExclusiveWebContainerTestBase {
 
     private static Path httpLogFile(TestWebContainer testWebContainer) {
         var logDirectory = testWebContainer.getConfig().get(GraphDatabaseSettings.logs_directory);
-        return logDirectory.resolve("http.log");
+        return logDirectory.resolve(HTTP_LOG);
     }
 
     private static String randomString() {

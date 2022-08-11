@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c) "Neo4j"
+    Neo4j Sweden AB [http://neo4j.com]
+
+    This file is part of Neo4j.
+
+    Neo4j is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+-->
+<!--
+    This is a log4j 2 configuration file that provides maximum flexibility.
+
+    All configuration values can be queried with the lookup prefix "config:". You can for example, resolve
+    the path to your neo4j home directory with ${config:dbms.directories.neo4j_home}.
+
+    Please consult https://logging.apache.org/log4j/2.x/manual/configuration.html for instructions and
+    available configuration options.
+-->
+<Configuration status="ERROR" monitorInterval="30" packages="org.neo4j.logging.log4j">
+
+    <Appenders>
+        <RollingRandomAccessFile name="Neo4jLog" fileName="${config:server.directories.logs}/neo4j.log"
+                                 filePattern="${config:server.directories.logs}/neo4j.log.%02i">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSSZ}{GMT+0} %-5p %m%n"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="20 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy fileIndex="min" max="7"/>
+        </RollingRandomAccessFile>
+
+        <!-- Only used by "neo4j console", will be ignored otherwise -->
+        <Console name="ConsoleAppender" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSSZ}{GMT+0} %-5p %m%n"/>
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <!-- Log level for the neo4j log. One of DEBUG, INFO, WARN, ERROR or OFF -->
+        <Root level="INFO">
+            <AppenderRef ref="Neo4jLog"/>
+            <AppenderRef ref="ConsoleAppender"/>
+        </Root>
+    </Loggers>
+
+</Configuration>

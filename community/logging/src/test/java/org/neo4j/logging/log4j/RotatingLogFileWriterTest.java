@@ -57,8 +57,8 @@ class RotatingLogFileWriterTest {
     @Test
     void shouldRotateOnThreshold() {
         Path targetFile = dir.homePath().resolve("test.log");
-        Path targetFile1 = dir.homePath().resolve("test.log.1");
-        Path targetFile2 = dir.homePath().resolve("test.log.2");
+        Path targetFile1 = dir.homePath().resolve("test.log.01");
+        Path targetFile2 = dir.homePath().resolve("test.log.02");
 
         writer = new RotatingLogFileWriter(fs, targetFile, 10, 2, "", "myHeader%n");
 
@@ -78,9 +78,9 @@ class RotatingLogFileWriterTest {
     @Test
     void rotationShouldRespectMaxArchives() throws IOException {
         Path targetFile = dir.homePath().resolve("test.log");
-        Path targetFile1 = dir.homePath().resolve("test.log.1");
-        Path targetFile2 = dir.homePath().resolve("test.log.2");
-        Path targetFile3 = dir.homePath().resolve("test.log.3");
+        Path targetFile1 = dir.homePath().resolve("test.log.01");
+        Path targetFile2 = dir.homePath().resolve("test.log.02");
+        Path targetFile3 = dir.homePath().resolve("test.log.03");
 
         writer = new RotatingLogFileWriter(fs, targetFile, 10, 2, "", "");
 
@@ -103,7 +103,7 @@ class RotatingLogFileWriterTest {
     @Test
     void rotationShouldCompressToZipIfRequested() throws IOException {
         Path targetFile = dir.homePath().resolve("test.log");
-        Path targetFile1 = dir.homePath().resolve("test.log.1.zip");
+        Path targetFile1 = dir.homePath().resolve("test.log.01.zip");
 
         writer = new RotatingLogFileWriter(fs, targetFile, 10, 2, ".zip", "");
 
@@ -120,7 +120,7 @@ class RotatingLogFileWriterTest {
 
         try (FileSystem fileSystem =
                 FileSystems.newFileSystem(targetFile1, this.getClass().getClassLoader())) {
-            assertThat(Files.readAllLines(fileSystem.getPath("test.log.1"))).containsExactly("test string 1");
+            assertThat(Files.readAllLines(fileSystem.getPath("test.log.01"))).containsExactly("test string 1");
         }
     }
 
@@ -128,7 +128,7 @@ class RotatingLogFileWriterTest {
     @EnabledOnOs({LINUX})
     void rotationShouldCompressToGzipIfRequested() throws IOException {
         Path targetFile = dir.homePath().resolve("test.log");
-        Path targetFile1 = dir.homePath().resolve("test.log.1.gz");
+        Path targetFile1 = dir.homePath().resolve("test.log.01.gz");
 
         writer = new RotatingLogFileWriter(fs, targetFile, 10, 2, ".gz", "");
 
@@ -151,7 +151,7 @@ class RotatingLogFileWriterTest {
     @Test
     void rotationShouldUseFileSuffixWithoutCompressionIfRequested() throws IOException {
         Path targetFile = dir.homePath().resolve("test.log");
-        Path targetFile1 = dir.homePath().resolve("test.log.1.weird-%e.filesuffix");
+        Path targetFile1 = dir.homePath().resolve("test.log.01.weird-%e.filesuffix");
 
         writer = new RotatingLogFileWriter(fs, targetFile, 10, 2, ".weird-%e.filesuffix", "");
 
@@ -170,7 +170,7 @@ class RotatingLogFileWriterTest {
     @Test
     void headerShouldBeUsedInEachFile() throws IOException {
         Path targetFile = dir.homePath().resolve("test.log");
-        Path targetFile1 = dir.homePath().resolve("test.log.1");
+        Path targetFile1 = dir.homePath().resolve("test.log.01");
 
         writer = new RotatingLogFileWriter(fs, targetFile, 10, 2, "", "my header%n");
 

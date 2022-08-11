@@ -76,9 +76,8 @@ public final class ConfigurableStandalonePageCacheFactory {
             JobScheduler jobScheduler,
             MemoryPools memoryPools) {
         config.setIfNotSet(GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes(8));
-        Neo4jLoggerContext loggerContext = LogConfig.createBuilder(System.err, Level.INFO)
-                .withTimezone(config.get(GraphDatabaseSettings.db_timezone))
-                .build();
+        Neo4jLoggerContext loggerContext =
+                LogConfig.createBuilderToOutputStream(System.err, Level.INFO).build();
 
         try (Log4jLogProvider logProvider = new Log4jLogProvider(loggerContext)) {
             ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(

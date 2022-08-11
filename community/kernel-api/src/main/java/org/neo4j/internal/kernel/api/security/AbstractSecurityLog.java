@@ -22,14 +22,13 @@ package org.neo4j.internal.kernel.api.security;
 import static org.neo4j.internal.helpers.Strings.escape;
 
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
-import org.neo4j.logging.log4j.StructureAwareMessage;
+import org.neo4j.logging.log4j.Neo4jMapMessage;
 
-public abstract class AbstractSecurityLog extends LifecycleAdapter {
-    private InternalLog inner;
+public abstract class AbstractSecurityLog {
+    protected InternalLog inner;
 
-    public void setLog(InternalLog inner) {
+    protected AbstractSecurityLog(InternalLog inner) {
         this.inner = inner;
     }
 
@@ -115,19 +114,13 @@ public abstract class AbstractSecurityLog extends LifecycleAdapter {
         return inner.isDebugEnabled();
     }
 
-    static class SecurityLogLine extends StructureAwareMessage {
+    static class SecurityLogLine extends Neo4jMapMessage {
         private final String executingUser;
-        private final String sourceString;
         private final String message;
         private final String authenticatedUser;
-        private final String database;
 
         SecurityLogLine(String message) {
-            this.sourceString = null;
-            this.database = null;
-            this.executingUser = null;
-            this.authenticatedUser = null;
-            this.message = message;
+            this(null, null, null, message, null);
         }
 
         SecurityLogLine(
@@ -136,16 +129,30 @@ public abstract class AbstractSecurityLog extends LifecycleAdapter {
                 String executingUser,
                 String message,
                 String authenticatedUser) {
-            this.sourceString = connectionInfo.asConnectionDetails();
-            this.database = database;
+            super(7);
+            String sourceString = connectionInfo != null ? connectionInfo.asConnectionDetails() : "";
             this.executingUser = executingUser;
             // clean message of newlines
             this.message = message.replaceAll("\\R+", " ");
             this.authenticatedUser = authenticatedUser;
+
+            with("type", "security");
+            with("source", sourceString);
+            if (database != null) {
+                with("database", database);
+            }
+            if (executingUser != null && executingUser.length() > 0) {
+                with("username", executingUser);
+                with("executingUser", executingUser);
+            }
+            if (authenticatedUser != null && authenticatedUser.length() > 0) {
+                with("authenticatedUser", authenticatedUser);
+            }
+            with("message", this.message);
         }
 
         @Override
-        public void asString(StringBuilder sb) {
+        protected void formatAsString(StringBuilder sb) {
             if (executingUser != null && executingUser.length() > 0) {
                 if (executingUser.equals(authenticatedUser)) {
                     sb.append("[").append(escape(executingUser)).append("]: ");
@@ -154,23 +161,6 @@ public abstract class AbstractSecurityLog extends LifecycleAdapter {
                 }
             }
             sb.append(message);
-        }
-
-        @Override
-        public void asStructure(FieldConsumer fieldConsumer) {
-            fieldConsumer.add("type", "security");
-            fieldConsumer.add("source", sourceString);
-            if (database != null) {
-                fieldConsumer.add("database", database);
-            }
-            if (executingUser != null && executingUser.length() > 0) {
-                fieldConsumer.add("username", executingUser);
-                fieldConsumer.add("executingUser", executingUser);
-            }
-            if (authenticatedUser != null && authenticatedUser.length() > 0) {
-                fieldConsumer.add("authenticatedUser", authenticatedUser);
-            }
-            fieldConsumer.add("message", message);
         }
     }
 }

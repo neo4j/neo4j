@@ -41,7 +41,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
-import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
@@ -59,6 +58,7 @@ import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.writeToFile;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
+import static org.neo4j.logging.log4j.LogConfig.DEBUG_LOG;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -94,6 +94,7 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.common.Validator;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -1887,8 +1888,9 @@ class ImportCommandTest {
                 nodeData(true, COMMAS, nodeIds(), TRUE).toAbsolutePath().toString());
 
         // THEN go and read the debug.log where it's expected to be and see if there's an IMPORT DONE line in it
-        Path internalLogFile =
-                Config.defaults(neo4j_home, testDirectory.homePath()).get(store_internal_log_path);
+        Path internalLogFile = Config.defaults(neo4j_home, testDirectory.homePath())
+                .get(GraphDatabaseSettings.logs_directory)
+                .resolve(DEBUG_LOG);
         assertTrue(Files.exists(internalLogFile));
         List<String> lines = Files.readAllLines(internalLogFile);
         assertTrue(lines.stream().anyMatch(line -> line.contains("Import completed successfully")));

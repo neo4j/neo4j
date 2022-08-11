@@ -1042,6 +1042,17 @@ public class Config implements Configuration {
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> (Setting<Object>) entry.getValue().setting));
     }
 
+    /**
+     * Do a string lookup for a setting.
+     *
+     * @param setting String representation of the setting.
+     * @return the value accosted with the setting.
+     * @throws IllegalArgumentException when the setting could not be found.
+     */
+    public Object configStringLookup(String setting) {
+        return get(getSetting(setting));
+    }
+
     private static Map<String, Class<? extends GroupSetting>> getDefinedGroups(
             Collection<Class<? extends GroupSetting>> groupSettingClasses) {
         return groupSettingClasses.stream()

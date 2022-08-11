@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c) "Neo4j"
+    Neo4j Sweden AB [http://neo4j.com]
+
+    This file is part of Neo4j.
+
+    Neo4j is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+-->
+<!--Packages set to find our Neo4jLookup class-->
+<Configuration monitorInterval="5" packages="org.neo4j.logging.log4j">
+    <Appenders>
+        <RollingFile name="RollingFile" fileName="${config:server.directories.logs}/debug.log"
+                     filePattern="${config:server.directories.logs}/debug.log.%02i"
+                     immediateFlush="true">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSSZ}{GMT+0} %-5p [%c{1.}] %m%n"
+                           header="%d{yyyy-MM-dd HH:mm:ss.SSSZ}{GMT+0} $${neo4j:diagnostics} %n"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="100 kB"/>
+            </Policies>
+            <DefaultRolloverStrategy fileIndex="min" max="7"/>
+        </RollingFile>
+        <RollingFile name="RollingFile2" fileName="${config:server.directories.logs}/debug2.log"
+                     filePattern="${config:server.directories.logs}/debug2.log.%02i"
+                     immediateFlush="true">
+            <JsonTemplateLayout eventTemplateUri="classpath:org/neo4j/logging/StructuredLayoutWithMessage.json"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="20 M"/>
+            </Policies>
+            <DefaultRolloverStrategy fileIndex="min" max="7"/>
+        </RollingFile>
+    </Appenders>
+
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="RollingFile"/>
+            <AppenderRef ref="RollingFile2"/>
+        </Root>
+    </Loggers>
+
+</Configuration>

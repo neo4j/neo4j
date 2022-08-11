@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c) "Neo4j"
+    Neo4j Sweden AB [http://neo4j.com]
+
+    This file is part of Neo4j.
+
+    Neo4j is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+-->
+<Configuration monitorInterval="5" packages="org.neo4j.logging.log4j">
+
+    <Appenders>
+        <RollingFile name="RollingFile" fileName="${config:server.directories.logs}/debug.log"
+                     filePattern="${config:server.directories.logs}/debug.log.%02i"
+                     immediateFlush="true">
+            <PatternLayout pattern="%d{yyyy-MM-dd}{GMT+0} %-5p [%c{1.}] %m%n"
+                           header="$${neo4j:diagnostics}%n"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="10 kB"/>
+            </Policies>
+            <DefaultRolloverStrategy fileIndex="min" max="7"/>
+        </RollingFile>
+    </Appenders>
+
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="RollingFile"/>
+        </Root>
+    </Loggers>
+
+</Configuration>

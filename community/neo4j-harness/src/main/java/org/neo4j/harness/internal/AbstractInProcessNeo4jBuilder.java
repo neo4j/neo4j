@@ -20,13 +20,14 @@
 package org.neo4j.harness.internal;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
-import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
 import static org.neo4j.internal.helpers.collection.Iterables.addAll;
 import static org.neo4j.internal.helpers.collection.Iterables.append;
+import static org.neo4j.logging.log4j.LogConfig.DEBUG_LOG;
+import static org.neo4j.logging.log4j.LogConfig.USER_LOG;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -36,7 +37,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
@@ -100,11 +100,10 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder {
     @Override
     public InProcessNeo4j build() {
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        Path userLogFile = serverFolder.resolve("neo4j.log");
-        Path internalLogFile = serverFolder.resolve("debug.log");
+        Path userLogFile = serverFolder.resolve(USER_LOG);
+        Path internalLogFile = serverFolder.resolve(DEBUG_LOG);
 
         config.set(ServerSettings.third_party_packages, unmanagedExtentions.toList());
-        config.set(GraphDatabaseSettings.store_internal_log_path, internalLogFile.toAbsolutePath());
 
         var certificates = serverFolder.resolve("certificates");
         if (disabledServer) {
@@ -127,9 +126,8 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder {
             dbConfig = config.build();
         }
 
-        Neo4jLoggerContext loggerContext = LogConfig.createBuilder(fs, userLogFile, Level.INFO)
-                .withTimezone(dbConfig.get(db_timezone))
-                .build();
+        Neo4jLoggerContext loggerContext =
+                LogConfig.createTemporaryLoggerToSingleFile(fs, userLogFile, Level.INFO, true);
         var userLogProvider = new Log4jLogProvider(loggerContext);
         GraphDatabaseDependencies dependencies =
                 GraphDatabaseDependencies.newDependencies().userLogProvider(userLogProvider);

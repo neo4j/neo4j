@@ -132,7 +132,7 @@ public class CheckConsistencyCommand extends AbstractCommand {
                 PrintStream progressOutput = System.console() != null ? System.out : null;
 
                 ConsistencyCheckService.Result consistencyCheckResult;
-                try (Log4jLogProvider logProvider = Util.configuredLogProvider(config, System.out)) {
+                try (Log4jLogProvider logProvider = Util.configuredLogProvider(ctx.out(), verbose)) {
                     consistencyCheckResult = consistencyCheckService
                             .with(databaseLayout)
                             .with(config)

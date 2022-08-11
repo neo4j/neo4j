@@ -26,7 +26,6 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.join;
 import static org.neo4j.configuration.BootloaderSettings.windows_tools_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
-import static org.neo4j.configuration.GraphDatabaseSettings.store_user_log_path;
 import static org.neo4j.server.startup.Bootloader.EXIT_CODE_NOT_RUNNING;
 import static org.neo4j.server.startup.ProcessManager.behaviour;
 
@@ -96,10 +95,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
                 .with(arg("--DisplayName", "Neo4j Graph Database - " + serviceName()))
                 .with(arg("--Jvm", jvmDll.toString()))
                 .with(arg("--LogPath", logs.toString()))
-                .with(arg(
-                        "--StdOutput",
-                        logs.resolve(bootloader.config().get(store_user_log_path))
-                                .toString()))
+                .with(arg("--StdOutput", logs.resolve("service-out.log").toString()))
                 .with(arg("--StdError", logs.resolve("service-error.log").toString()))
                 .with(arg("--LogPrefix", "neo4j-service"))
                 .with(arg("--Classpath", getClassPath()))
@@ -124,7 +120,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
                 .peek(WindowsBootloaderOs::throwIfContainsSingleQuotes)
                 .map(opt -> opt.replace(";", "';'"))
                 .map(opt -> opt.replace("#", "'#'"))
-                .collect(Collectors.toList());
+                .toList();
         return arg(key, join(argsEscaped, ';'));
     }
 

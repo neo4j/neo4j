@@ -82,6 +82,10 @@ public class CommunityWebContainerBuilder {
         return new CommunityWebContainerBuilder(NullLogProvider.getInstance());
     }
 
+    public static CommunityWebContainerBuilder serverOnRandomPorts(InternalLogProvider logProvider) {
+        return builder(logProvider).onRandomPorts();
+    }
+
     public static CommunityWebContainerBuilder serverOnRandomPorts() {
         return builder().onRandomPorts();
     }
@@ -209,10 +213,6 @@ public class CommunityWebContainerBuilder {
 
     public CommunityWebContainerBuilder withRelativeDatabaseApiPath(String uri) {
         this.dbUri = getPath(uri);
-        return this;
-    }
-
-    public CommunityWebContainerBuilder withDefaultDatabaseTuning() {
         return this;
     }
 

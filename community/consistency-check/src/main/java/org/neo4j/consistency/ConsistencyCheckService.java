@@ -33,6 +33,10 @@ import static org.neo4j.kernel.impl.index.schema.SchemaIndexExtensionLoader.inst
 import static org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory;
 import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
+import static org.neo4j.logging.log4j.LogConfig.createLoggerFromXmlConfig;
+import static org.neo4j.logging.log4j.LogUtils.newLoggerBuilder;
+import static org.neo4j.logging.log4j.LogUtils.newTemporaryXmlConfigBuilder;
+import static org.neo4j.logging.log4j.LoggerTarget.ROOT_LOGGER;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -76,7 +80,6 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.logging.log4j.Log4jLogProvider;
-import org.neo4j.logging.log4j.LogConfig;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MachineMemory;
 import org.neo4j.memory.MemoryPools;
@@ -445,10 +448,17 @@ public class ConsistencyCheckService {
             // instantiate the inconsistencies report logging
             var outLog = logProvider.getLog(getClass());
             var reportFile = chooseReportPath(reportDir);
-            var reportLogProvider = new Log4jLogProvider(LogConfig.createBuilder(fileSystem, reportFile, Level.INFO)
-                    .createOnDemand()
-                    .withCategory(false)
-                    .build());
+            var reportLogProvider = new Log4jLogProvider(createLoggerFromXmlConfig(
+                    fileSystem,
+                    newTemporaryXmlConfigBuilder(fileSystem)
+                            .withLogger(newLoggerBuilder(ROOT_LOGGER, reportFile)
+                                    .withLevel(Level.INFO)
+                                    .createOnDemand()
+                                    .withCategory(false)
+                                    .build())
+                            .create(),
+                    false,
+                    config::configStringLookup));
             life.add(onShutdown(reportLogProvider::close));
             var reportLog = reportLogProvider.getLog(getClass());
             var log = new DuplicatingLog(outLog, reportLog);

@@ -103,6 +103,11 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction {
     }
 
     @Override
+    public Path createTempFile(String prefix, String suffix) throws IOException {
+        return delegate.createTempFile(prefix, suffix);
+    }
+
+    @Override
     public void renameFile(Path from, Path to, CopyOption... copyOptions) throws IOException {
         delegate.renameFile(from, to, copyOptions);
     }

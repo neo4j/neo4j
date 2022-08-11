@@ -44,7 +44,6 @@ import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.provider.Arguments;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -56,7 +55,6 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.Level;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.GraphDatabaseServiceCleaner;
@@ -108,7 +106,6 @@ class FulltextProceduresTestSupport {
         };
         monitors.addMonitorListener(trappingMonitor);
         builder.setMonitors(monitors);
-        builder.setConfig(GraphDatabaseSettings.store_internal_log_level, Level.DEBUG);
     }
 
     @BeforeEach

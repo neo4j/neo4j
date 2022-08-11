@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.forced_kernel_id;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
-import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_rotation_threshold;
+import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
@@ -233,8 +233,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
     void shouldOnlyAllowCommandExpansionWhenProvidedAsArgument() {
         // Given
         String setting = String.format(
-                "%s=$(%s 100 * 1000)",
-                log_queries_rotation_threshold.name(), IS_OS_WINDOWS ? "cmd.exe /c set /a" : "expr");
+                "%s=$(%s 100 * 1000)", dense_node_threshold.name(), IS_OS_WINDOWS ? "cmd.exe /c set /a" : "expr");
         String[] args = withConnectorsOnRandomPortsConfig(
                 "--home-dir", testDirectory.homePath().toString(), "-c", setting);
 
@@ -248,7 +247,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
         GraphDatabaseAPI db =
                 (GraphDatabaseAPI) bootstrapper.getDatabaseManagementService().database(DEFAULT_DATABASE_NAME);
         Config config = db.getDependencyResolver().resolveDependency(Config.class);
-        assertThat(config.get(log_queries_rotation_threshold)).isEqualTo(100000L);
+        assertThat(config.get(dense_node_threshold)).isEqualTo(100000L);
     }
 
     @Test

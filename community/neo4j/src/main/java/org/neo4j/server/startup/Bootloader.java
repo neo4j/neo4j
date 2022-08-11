@@ -84,6 +84,9 @@ abstract class Bootloader implements AutoCloseable {
     static final Path DEFAULT_CONFIG_LOCATION = Path.of(Config.DEFAULT_CONFIG_DIR_NAME);
     static final int DEFAULT_NEO4J_SHUTDOWN_TIMEOUT = 120;
 
+    // With console mode we can allow console appenders
+    private static final String ARG_ALLOW_CONSOLE_APPENDERS = "--allow-console-appenders";
+
     final Class<?> entrypoint;
     final Environment environment;
     final Collection<BootloaderExtension> extensions;
@@ -249,7 +252,6 @@ abstract class Bootloader implements AutoCloseable {
                 GraphDatabaseSettings.neo4j_home.name(),
                 GraphDatabaseSettings.logs_directory.name(),
                 GraphDatabaseSettings.plugin_dir.name(),
-                GraphDatabaseSettings.store_user_log_path.name(),
                 GraphDatabaseSettings.strict_config_validation.name(),
                 GraphDatabaseInternalSettings.config_command_evaluation_timeout.name(),
                 BootloaderSettings.run_directory.name(),
@@ -380,6 +382,8 @@ abstract class Bootloader implements AutoCloseable {
             Long pid = os.getPidIfRunning();
             boolean alreadyRunning = pid != null;
 
+            this.additionalArgs.add(ARG_ALLOW_CONSOLE_APPENDERS);
+
             if (dryRun) {
                 List<String> args = os.buildStandardStartArguments();
                 String cmd = args.stream().map(Dbms::quoteArgument).collect(Collectors.joining(" "));
@@ -444,9 +448,7 @@ abstract class Bootloader implements AutoCloseable {
                     .printf(
                             "Neo4j%s took more than %d seconds to stop.%n",
                             pidIfKnown(pid), stopwatch.elapsed(SECONDS));
-            environment
-                    .out()
-                    .printf("Please see %s for details.%n", config().get(GraphDatabaseSettings.store_user_log_path));
+            environment.out().printf("Please see logs/neo4j.log for details.%n");
             throw new CommandFailedException("Failed to stop", EXIT_CODE_RUNNING);
         }
 

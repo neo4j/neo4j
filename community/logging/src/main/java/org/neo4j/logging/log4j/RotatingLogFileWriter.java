@@ -99,7 +99,7 @@ public class RotatingLogFileWriter implements Closeable {
                         .setName(APPENDER_NAME + "." + logPath.getFileName().toString())
                         .setLayout(layout)
                         .withFileName(logPath.toString())
-                        .withFilePattern(logPath + ".%i" + fileSuffix)
+                        .withFilePattern(escapePattern(logPath.toString()) + ".%02i" + escapePattern(fileSuffix))
                         .withPolicy(SizeBasedTriggeringPolicy.createPolicy(String.valueOf(rotationThreshold)))
                         .withStrategy(DefaultRolloverStrategy.newBuilder()
                                 .withMax(String.valueOf(maxArchives))
@@ -127,11 +127,15 @@ public class RotatingLogFileWriter implements Closeable {
             rootLogger.addAppender(appender, null, null);
             rootLogger.setLevel(Level.DEBUG);
 
-            LoggerContext context = new LoggerContext("loggercontext");
+            LoggerContext context = new LoggerContext("LoggerContext");
             context.setConfiguration(configuration);
             return new Neo4jLoggerContext(context, additionalCloseable);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    private static String escapePattern(String pattern) {
+        return pattern.replace("%", "%%");
     }
 }

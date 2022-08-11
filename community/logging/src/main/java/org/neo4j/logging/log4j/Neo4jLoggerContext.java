@@ -22,9 +22,9 @@ package org.neo4j.logging.log4j;
 import java.io.Closeable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Logger;
-import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.message.StringFormatterMessageFactory;
 import org.apache.logging.log4j.spi.ExtendedLogger;
+import org.apache.logging.log4j.spi.LoggerContext;
 import org.neo4j.io.IOUtils;
 
 /**
@@ -44,7 +44,7 @@ public class Neo4jLoggerContext implements Closeable {
      * Should not be used outside of the logging module.
      */
     ExtendedLogger getLogger(Class<?> clazz) {
-        // StringFormatterMessageFactory will recognize printf syntax, default it anchor {} which we don't use
+        // StringFormatterMessageFactory will recognize printf syntax, default is anchor {} which we don't use
         return ctx.getLogger(clazz, StringFormatterMessageFactory.INSTANCE);
     }
 
@@ -53,7 +53,7 @@ public class Neo4jLoggerContext implements Closeable {
      * Should not be used outside of the logging module.
      */
     ExtendedLogger getLogger(String name) {
-        // StringFormatterMessageFactory will recognize printf syntax, default it anchor {} which we don't use
+        // StringFormatterMessageFactory will recognize printf syntax, default is anchor {} which we don't use
         return ctx.getLogger(name, StringFormatterMessageFactory.INSTANCE);
     }
 

@@ -33,12 +33,17 @@ public class BlockingBootstrapper implements Bootstrapper {
     }
 
     public final int start(Path homeDir, Map<String, String> configOverrides) {
-        return start(homeDir, null, configOverrides, false);
+        return start(homeDir, null, configOverrides, false, false);
     }
 
     @Override
-    public final int start(Path homeDir, Path configFile, Map<String, String> configOverrides, boolean expandCommands) {
-        int status = wrapped.start(homeDir, configFile, configOverrides, expandCommands);
+    public final int start(
+            Path homeDir,
+            Path configFile,
+            Map<String, String> configOverrides,
+            boolean expandCommands,
+            boolean allowConsoleAppenders) {
+        int status = wrapped.start(homeDir, configFile, configOverrides, expandCommands, allowConsoleAppenders);
         if (status != NeoBootstrapper.OK) {
             return status;
         }

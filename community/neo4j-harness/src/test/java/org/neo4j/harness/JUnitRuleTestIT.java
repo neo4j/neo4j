@@ -23,6 +23,8 @@ import static java.time.ZoneOffset.UTC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.logging.log4j.LogConfig.DEBUG_LOG;
+import static org.neo4j.logging.log4j.LogConfig.USER_LOG;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 import java.io.IOException;
@@ -168,8 +170,8 @@ public class JUnitRuleTestIT {
     public void shouldUseSystemTimeZoneForLogging() throws Exception {
         String currentOffset = currentTimeZoneOffsetString();
 
-        assertThat(contentOf("neo4j.log")).contains(currentOffset);
-        assertThat(contentOf("debug.log")).contains(currentOffset);
+        assertThat(contentOf(USER_LOG)).contains(currentOffset);
+        assertThat(contentOf(DEBUG_LOG)).contains(currentOffset);
         success = true;
     }
 

@@ -22,7 +22,6 @@ package org.neo4j.dbms.api;
 import java.nio.file.Path;
 import java.util.Map;
 import org.neo4j.annotations.api.PublicApi;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.event.TransactionEventListener;
@@ -53,8 +52,7 @@ public interface Neo4jDatabaseManagementServiceBuilder {
     Neo4jDatabaseManagementServiceBuilder addDatabaseListener(DatabaseEventListener databaseEventListener);
 
     /**
-     * Set a specific log provider for the service. This will not affect the {@code debug.log} that is configured
-     * through {@link GraphDatabaseSettings#store_internal_log_path}.
+     * Set a specific log provider for the service.
      *
      * @param userLogProvider a log provider that will handle logging of user events/messages.
      * @return the builder.

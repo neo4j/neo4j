@@ -22,6 +22,7 @@ package org.neo4j.io.fs;
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
+import static java.lang.System.getProperty;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.Arrays.asList;
 import static org.neo4j.io.fs.DefaultFileSystemAbstraction.UNABLE_TO_CREATE_DIRECTORY_FORMAT;
@@ -51,6 +52,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.graphdb.Resource;
@@ -62,10 +64,13 @@ import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
 
 public class EphemeralFileSystemAbstraction implements FileSystemAbstraction {
+    private static final AtomicLong UNIQUE_TEMP_FILE = new AtomicLong();
+
     private final Clock clock;
     private final AtomicInteger keepFiles = new AtomicInteger();
     private final Set<Path> directories = ConcurrentHashMap.newKeySet();
     private final Map<Path, EphemeralFileData> files;
+    private final String tempDirectory = getProperty("java.io.tmpdir");
     private volatile boolean closed;
 
     public EphemeralFileSystemAbstraction() {
@@ -485,5 +490,18 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction {
     @Override
     public boolean isPersistent() {
         return false;
+    }
+
+    @Override
+    public Path createTempFile(String prefix, String suffix) throws IOException {
+        Path tmp = canonicalFile(Path.of(tempDirectory));
+        mkdirs(tmp);
+        while (true) {
+            Path tmpFile = tmp.resolve(prefix + Long.toUnsignedString(UNIQUE_TEMP_FILE.getAndIncrement()) + suffix);
+            var prev = files.putIfAbsent(tmpFile, new EphemeralFileData(tmpFile, clock));
+            if (prev == null) {
+                return tmpFile;
+            }
+        }
     }
 }

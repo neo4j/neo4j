@@ -1,0 +1,28 @@
+{
+  "time": {
+    "$resolver": "timestamp",
+    "pattern": {
+      "format": "yyyy-MM-dd HH:mm:ss.SSSZ",
+      "timeZone": "UTC"
+    }
+  },
+  "level": {
+    "$resolver": "level",
+    "field": "name"
+  },
+  "includeFullMap": {
+    "$resolver": "map",
+    "flatten": true
+  },
+  "stacktrace": {
+    "$resolver": "exception",
+    "field": "stackTrace",
+    "stackTrace": {
+      "stringified": {
+        "truncation": {
+          "pointMatcherStrings": ["\r\n","\r","\n"]
+        }
+      }
+    }
+  }
+}

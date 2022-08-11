@@ -139,7 +139,6 @@ import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -422,32 +421,6 @@ class SettingMigratorsTest {
                 .forClass(Config.class)
                 .forLevel(WARN)
                 .containsMessages("Setting 'dbms.allow_upgrade' is removed. It no longer has any effect.");
-    }
-
-    @Test
-    void logFormatMigrator() throws IOException {
-        Path confFile = testDirectory.createFile("test.conf");
-        Files.write(confFile, List.of("unsupported.dbms.logs.format=JSON_FORMAT"));
-
-        Config config = Config.newBuilder().fromFile(confFile).build();
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        config.setLogger(logProvider.getLog(Config.class));
-        assertThat(logProvider)
-                .forClass(Config.class)
-                .forLevel(WARN)
-                .containsMessages("Use of deprecated setting 'unsupported.dbms.logs.format'");
-        assertThat(config.get(GraphDatabaseSettings.store_internal_log_format)).isEqualTo(FormattedLogFormat.JSON);
-        assertThat(config.get(GraphDatabaseSettings.store_user_log_format)).isEqualTo(FormattedLogFormat.JSON);
-        assertThat(config.get(GraphDatabaseSettings.log_query_format)).isEqualTo(FormattedLogFormat.JSON);
-
-        Files.write(confFile, List.of("unsupported.dbms.logs.format=FOO"));
-        config = Config.newBuilder().fromFile(confFile).build();
-        logProvider = new AssertableLogProvider();
-        config.setLogger(logProvider.getLog(Config.class));
-        assertThat(logProvider)
-                .forClass(Config.class)
-                .forLevel(WARN)
-                .containsMessages("Unrecognized value for 'unsupported.dbms.logs.format'. Was FOO");
     }
 
     @Test

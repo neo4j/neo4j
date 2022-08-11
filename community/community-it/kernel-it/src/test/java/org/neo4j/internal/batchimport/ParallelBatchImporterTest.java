@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.input.Input.knownEstimates;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
@@ -36,6 +35,7 @@ import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
+import static org.neo4j.logging.log4j.LogConfig.DEBUG_LOG;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
@@ -282,7 +282,7 @@ public class ParallelBatchImporterTest {
                         GraphDatabaseSettings.neo4j_home,
                         databaseLayout.getNeo4jLayout().homeDirectory())
                 .build();
-        var debugLogPath = config.get(store_internal_log_path);
+        var debugLogPath = config.get(GraphDatabaseSettings.logs_directory).resolve(DEBUG_LOG);
         try (var lines = Files.lines(debugLogPath)) {
             return lines.anyMatch(line -> line.contains("Missing counts store, rebuilding it")
                     && line.contains("[" + databaseLayout.getDatabaseName()));

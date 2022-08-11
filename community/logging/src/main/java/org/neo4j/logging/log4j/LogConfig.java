@@ -19,143 +19,209 @@
  */
 package org.neo4j.logging.log4j;
 
-import static org.neo4j.util.Preconditions.checkArgument;
+import static org.neo4j.logging.log4j.LogUtils.newLoggerBuilder;
+import static org.neo4j.logging.log4j.LogUtils.newTemporaryXmlConfigBuilder;
+import static org.neo4j.logging.log4j.LoggerTarget.ROOT_LOGGER;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.ConsoleAppender;
 import org.apache.logging.log4j.core.appender.OutputStreamAppender;
-import org.apache.logging.log4j.core.appender.RollingFileAppender;
-import org.apache.logging.log4j.core.appender.rolling.DefaultRolloverStrategy;
-import org.apache.logging.log4j.core.appender.rolling.SizeBasedTriggeringPolicy;
 import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.ConfigurationSource;
 import org.apache.logging.log4j.core.config.LoggerConfig;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.apache.logging.log4j.core.config.xml.XmlConfiguration;
+import org.apache.logging.log4j.core.layout.PatternLayout;
+import org.apache.logging.log4j.layout.template.json.JsonTemplateLayout;
+import org.apache.logging.log4j.status.StatusLogger;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.LogTimeZone;
 
 public final class LogConfig {
-    private static final String APPENDER_NAME = "neo4jLog";
+    public static final String DEBUG_LOG = "debug.log";
+    public static final String USER_LOG = "neo4j.log";
+    public static final String QUERY_LOG = "query.log";
+    public static final String SECURITY_LOG = "security.log";
+    public static final String HTTP_LOG = "http.log";
+
+    public static final String QUERY_LOG_JSON_TEMPLATE = "classpath:org/neo4j/logging/QueryLogJsonLayout.json";
+    public static final String STRUCTURED_LOG_JSON_TEMPLATE = "classpath:org/neo4j/logging/StructuredJsonLayout.json";
+    public static final String STRUCTURED_LOG_JSON_TEMPLATE_WITH_CATEGORY =
+            "classpath:org/neo4j/logging/StructuredLayoutWithCategory.json";
+    public static final String STRUCTURED_LOG_JSON_TEMPLATE_WITH_MESSAGE =
+            "classpath:org/neo4j/logging/StructuredLayoutWithMessage.json";
+
+    public static final String SERVER_LOGS_XML = "server-logs.xml";
+    public static final String USER_LOGS_XML = "user-logs.xml";
+    private static final Map<Path, String> KNOWN_DEFAULTS = Map.of(
+            Path.of(SERVER_LOGS_XML), "default-server-logs.xml", //
+            Path.of(USER_LOGS_XML), "default-user-logs.xml");
 
     private LogConfig() {}
 
-    public static void updateLogLevel(org.neo4j.logging.Level level, Neo4jLoggerContext context) {
-        LoggerContext log4jContext = context.getLoggerContext();
+    static void updateLogLevel(org.neo4j.logging.Level level, Neo4jLoggerContext context) {
+        LoggerContext log4jContext = (LoggerContext) context.getLoggerContext();
         Configuration config = log4jContext.getConfiguration();
-        Level newLevel = convertNeo4jLevelToLevel(level);
 
         LoggerConfig loggerConfig = config.getRootLogger();
-        loggerConfig.setLevel(newLevel);
+        loggerConfig.setLevel(convertNeo4jLevelToLevel(level));
 
-        // This causes all Loggers to refetch information from their LoggerConfig.
+        // This causes all Loggers to refresh information from their LoggerConfig.
         log4jContext.updateLoggers();
     }
 
-    public static void reconfigureLogging(Neo4jLoggerContext ctx, Builder builder) {
-        checkArgument(!ctx.haveExternalResources(), "Can not reconfigure logging that is using output stream");
-        LoggerContext log4jContext = ctx.getLoggerContext();
-        configureLogging(log4jContext, builder);
+    /**
+     * Create a logger context from a log4j xml configuration file.
+     *
+     * @param fs the file system.
+     * @param xmlConfigFile the log4j xml configuration path.
+     * @return a logger context configured with the provided xml file.
+     */
+    public static Neo4jLoggerContext createLoggerFromXmlConfig(FileSystemAbstraction fs, Path xmlConfigFile) {
+        return createLoggerFromXmlConfig(fs, xmlConfigFile, false, null);
     }
 
-    public static Builder createBuilder(FileSystemAbstraction fs, Path logPath, org.neo4j.logging.Level level) {
-        return new Builder(fs, logPath, level);
+    /**
+     * Create a logger context from a log4j xml configuration file.
+     *
+     * @param fs            the file system.
+     * @param xmlConfigFile the log4j xml configuration path.
+     * @param configLookup  a lookup function to get values for setting names.
+     * @return a logger context configured with the provided xml file.
+     */
+    public static Neo4jLoggerContext createLoggerFromXmlConfig(
+            FileSystemAbstraction fs,
+            Path xmlConfigFile,
+            boolean useDefaultOnMissingXml,
+            Function<String, Object> configLookup) {
+        return createLoggerFromXmlConfig(fs, xmlConfigFile, useDefaultOnMissingXml, false, configLookup, null, null);
     }
 
-    public static Builder createBuilder(OutputStream outputStream, org.neo4j.logging.Level level) {
+    /**
+     * Create a logger context from a log4j xml configuration file.
+     *
+     * @param fs                    the file system.
+     * @param xmlConfigFile         the log4j xml configuration path.
+     * @param allowConsoleAppenders if {@code true}, console appenders will not be removed
+     * @param configLookup          a lookup function to get values for setting names.
+     * @param headerLogger          a callback for header the header logger, only applicable to {@link Neo4jDebugLogLayout}.
+     * @param headerClassName       classname to use in the header logger, only applicable to {@link Neo4jDebugLogLayout}.
+     * @return a logger context configured with the provided xml file.
+     */
+    public static Neo4jLoggerContext createLoggerFromXmlConfig(
+            FileSystemAbstraction fs,
+            Path xmlConfigFile,
+            boolean useDefaultOnMissingXml,
+            boolean allowConsoleAppenders,
+            Function<String, Object> configLookup,
+            Consumer<InternalLog> headerLogger,
+            String headerClassName) {
+        return new Builder(fs, xmlConfigFile)
+                .withConfigLookup(configLookup)
+                .withHeaderLogger(headerLogger, headerClassName)
+                .withUseDefaultOnMissingXml(useDefaultOnMissingXml)
+                .withAllowConsoleAppenders(allowConsoleAppenders)
+                .build();
+    }
+
+    /**
+     * Create a logger context that will output to the provided path. Useful when writing tests.
+     *
+     * @param fs           the file system.
+     * @param logPath      the output log file.
+     * @param level        the desired log level.
+     * @param withCategory whether to include the classname or not.
+     * @return a new logger context configured with the provided values.
+     */
+    public static Neo4jLoggerContext createTemporaryLoggerToSingleFile(
+            FileSystemAbstraction fs, Path logPath, org.neo4j.logging.Level level, boolean withCategory) {
+        Path xmlConfig = newTemporaryXmlConfigBuilder(fs)
+                .withLogger(newLoggerBuilder(ROOT_LOGGER, logPath)
+                        .withLevel(convertNeo4jLevelToLevel(level).toString())
+                        .withCategory(withCategory)
+                        .build())
+                .create();
+        return new Builder(fs, xmlConfig).build();
+    }
+
+    /**
+     * Start construction of a {@link Neo4jLoggerContext} that will write to a {@link OutputStream}.
+     *
+     * @param outputStream where log messages will be serialized to.
+     * @param level the desired log level.
+     * @return
+     */
+    public static Builder createBuilderToOutputStream(OutputStream outputStream, org.neo4j.logging.Level level) {
         return new Builder(outputStream, level);
     }
 
-    private static void configureLogging(LoggerContext context, Builder builder) {
-        Configuration configuration = new Neo4jConfiguration();
+    /**
+     * Handle injection of variables during xml configuration parsing, e.g. {@code ${config:dbms.directories.neo4j_home}}.
+     */
+    private static class LookupInjectionXmlConfiguration extends XmlConfiguration {
+        private final LookupContext context;
+        private final boolean allowConsoleAppenders;
 
-        Neo4jLogLayout layout = getLayout(builder);
-
-        Appender appender = getAppender(builder, layout);
-        appender.start();
-        configuration.addAppender(appender);
-
-        // Must be done after the appender is started to get first file without header - which is the
-        // desired behavior since diagnostics (the usual header) is written when starting dbms.
-        if (builder.headerLogger != null) {
-            layout.setHeaderLogger(builder.headerLogger, builder.headerClassName);
+        LookupInjectionXmlConfiguration(
+                LoggerContext loggerContext,
+                ConfigurationSource configSource,
+                LookupContext context,
+                boolean allowConsoleAppenders) {
+            super(loggerContext, configSource);
+            this.context = context;
+            this.allowConsoleAppenders = allowConsoleAppenders;
         }
 
-        LoggerConfig rootLogger = configuration.getRootLogger();
-        rootLogger.addAppender(appender, null, null);
-        rootLogger.setLevel(builder.level);
+        @Override
+        protected void doConfigure() {
+            AbstractLookup.setLookupContext(context);
+            super.doConfigure();
+            AbstractLookup.removeLookupContext();
 
-        context.setConfiguration(configuration);
-    }
+            if (!allowConsoleAppenders) {
+                List<Appender> consoleAppenders = getAppenders().values().stream()
+                        .filter(a -> a instanceof ConsoleAppender)
+                        .toList();
+                for (Appender consoleAppender : consoleAppenders) {
+                    removeAppender(consoleAppender.getName());
+                }
+            }
 
-    private static Neo4jLogLayout getLayout(Builder builder) {
-        String datePattern = "yyyy-MM-dd HH:mm:ss.SSSZ";
-        if (builder.format == FormattedLogFormat.PLAIN) {
-            String date = "%d{" + datePattern + "}" + (builder.timezone == LogTimeZone.UTC ? "{GMT+0}" : "");
-            return Neo4jLogLayout.createLayout(
-                    builder.includeCategory ? date + " %-5p [%c{1.}] %m%n" : date + " %-5p %m%n");
-        }
-        return Neo4jJsonLogLayout.createLayout(
-                datePattern, builder.timezone == LogTimeZone.UTC ? "GMT+0" : null, builder.includeCategory);
-    }
-
-    private static Appender getAppender(Builder builder, Layout<String> layout) {
-        if (builder.logToSystemOut) {
-            return ConsoleAppender.newBuilder()
-                    .setName(APPENDER_NAME + ".system.out")
-                    .setLayout(layout)
-                    .setTarget(ConsoleAppender.Target.SYSTEM_OUT)
-                    .build();
-        } else if (builder.fileSystemAbstraction instanceof DefaultFileSystemAbstraction) {
-            // Uses RollingFile appender even if no rotation is requested (but with threshold that won't be reached) to
-            // be able to
-            // reconfigure between with and without rotation.
-            return createRollingFileAppender(builder, layout);
-        }
-        return ((OutputStreamAppender.Builder<?>) OutputStreamAppender.newBuilder()
-                        .setName(APPENDER_NAME + ".stream")
-                        .setLayout(layout))
-                .setTarget(builder.outputStream)
-                .build();
-    }
-
-    private static Appender createRollingFileAppender(Builder builder, Layout<String> layout) {
-        long rotationThreshold = builder.rotationThreshold;
-        int maxArchives = builder.maxArchives;
-
-        if (builder.rotationThreshold == 0 || builder.maxArchives == 0) {
-            // Should not rotate - set threshold that won't be reached.
-            rotationThreshold = Long.MAX_VALUE;
-            maxArchives = 1;
+            // Inject header logger to the debug log pattern
+            for (Appender appender : getAppenders().values()) {
+                Layout<?> layout = appender.getLayout();
+                if (layout instanceof Neo4jDebugLogLayout neo4jDebugLogLayout) {
+                    neo4jDebugLogLayout.setHeaderLogger(context.headerLogger(), context.headerClassName());
+                }
+            }
         }
 
-        SizeBasedTriggeringPolicy policy = SizeBasedTriggeringPolicy.createPolicy(String.valueOf(rotationThreshold));
-
-        DefaultRolloverStrategy rolloverStrategy = DefaultRolloverStrategy.newBuilder()
-                .withMax(String.valueOf(maxArchives))
-                .withFileIndex("min")
-                .build();
-
-        return RollingFileAppender.newBuilder()
-                .setName(APPENDER_NAME + "." + builder.logPath.getFileName().toString())
-                .setLayout(layout)
-                .withCreateOnDemand(builder.createOnDemand)
-                .withFileName(builder.logPath.toString())
-                .withFilePattern(builder.logPath + ".%i")
-                .withPolicy(policy)
-                .withStrategy(rolloverStrategy)
-                .build();
+        @Override
+        public Configuration reconfigure() {
+            try {
+                final ConfigurationSource source = getConfigurationSource().resetInputStream();
+                if (source == null) {
+                    return null;
+                }
+                return new LookupInjectionXmlConfiguration(getLoggerContext(), source, context, allowConsoleAppenders);
+            } catch (final IOException ex) {
+                StatusLogger.getLogger().error("Cannot locate file {}", getConfigurationSource(), ex);
+            }
+            return null;
+        }
     }
 
-    private static Level convertNeo4jLevelToLevel(org.neo4j.logging.Level level) {
+    static Level convertNeo4jLevelToLevel(org.neo4j.logging.Level level) {
         return switch (level) {
             case ERROR -> Level.ERROR;
             case WARN -> Level.WARN;
@@ -166,46 +232,34 @@ public final class LogConfig {
     }
 
     public static class Builder {
-        private final Path logPath;
+        private final FileSystemAbstraction fileSystemAbstraction;
+        private final Path externalConfigPath;
         private final Level level;
-        private OutputStream outputStream;
-        private long rotationThreshold;
-        private int maxArchives;
-        private FormattedLogFormat format = FormattedLogFormat.PLAIN;
-        private LogTimeZone timezone = LogTimeZone.UTC;
+        private final OutputStream outputStream;
         private boolean includeCategory = true;
         private Consumer<InternalLog> headerLogger;
         private String headerClassName;
-        private boolean logToSystemOut;
-        private boolean createOnDemand;
-        private FileSystemAbstraction fileSystemAbstraction;
+        private Function<String, Object> configLookup;
+        private String jsonLayout;
+        private boolean useDefaultOnMissingXml = false;
+        private boolean allowConsoleAppenders = false;
 
-        private Builder(FileSystemAbstraction fileSystemAbstraction, Path logPath, org.neo4j.logging.Level level) {
+        private Builder(FileSystemAbstraction fileSystemAbstraction, Path xmlConfigFile) {
             this.fileSystemAbstraction = fileSystemAbstraction;
-            this.logPath = logPath;
+            this.externalConfigPath = xmlConfigFile;
             this.outputStream = null;
-            this.level = convertNeo4jLevelToLevel(level);
+            this.level = null;
         }
 
         private Builder(OutputStream outputStream, org.neo4j.logging.Level level) {
-            this.logPath = null;
             this.outputStream = outputStream;
             this.level = convertNeo4jLevelToLevel(level);
+            this.fileSystemAbstraction = null;
+            this.externalConfigPath = null;
         }
 
-        public Builder withRotation(long rotationThreshold, int maxArchives) {
-            this.rotationThreshold = rotationThreshold;
-            this.maxArchives = maxArchives;
-            return this;
-        }
-
-        public Builder withTimezone(LogTimeZone timezone) {
-            this.timezone = timezone;
-            return this;
-        }
-
-        public Builder withFormat(FormattedLogFormat format) {
-            this.format = format;
+        public Builder withConfigLookup(Function<String, Object> configLookup) {
+            this.configLookup = configLookup;
             return this;
         }
 
@@ -220,45 +274,113 @@ public final class LogConfig {
             return this;
         }
 
-        public Builder logToSystemOut() {
-            this.logToSystemOut = true;
+        public Builder withJsonLayout(String jsonLayout) {
+            this.jsonLayout = jsonLayout;
             return this;
         }
 
-        public Builder createOnDemand() {
-            this.createOnDemand = true;
+        public Builder withUseDefaultOnMissingXml(boolean useDefaultOnMissingXml) {
+            this.useDefaultOnMissingXml = useDefaultOnMissingXml;
+            return this;
+        }
+
+        public Builder withAllowConsoleAppenders(boolean allowConsoleAppenders) {
+            this.allowConsoleAppenders = allowConsoleAppenders;
             return this;
         }
 
         public Neo4jLoggerContext build() {
-            try {
-                LoggerContext context = new LoggerContext("loggercontext");
-
-                // We only need to have a rotating file supplier for the real file system
-                if (fileSystemAbstraction instanceof DefaultFileSystemAbstraction) {
-                    if (outputStream != null) {
-                        throw new IllegalStateException(
-                                "When using filesystem abstraction you cannot provide a stream since we cant rotate that");
-                    }
-                    configureLogging(context, this);
-                    return new Neo4jLoggerContext(context, null);
+            LoggerContext context = new LoggerContext("LoggerContext");
+            if (outputStream != null) {
+                configureLoggingForStream(context, this);
+            } else {
+                try {
+                    ConfigurationSource configurationSource = getConfigurationSource();
+                    configureLoggingFromFile(
+                            context,
+                            headerLogger,
+                            headerClassName,
+                            configLookup,
+                            configurationSource,
+                            allowConsoleAppenders);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
-
-                // Everything else should be fine without rotation
-                if (outputStream == null) {
-                    // We are use a different file system than DefaultFileSystemAbstraction, we cannot use log4j file
-                    // appenders here
-                    fileSystemAbstraction.mkdirs(logPath.getParent());
-                    outputStream = fileSystemAbstraction.openAsOutputStream(logPath, true);
-                    configureLogging(context, this);
-                    return new Neo4jLoggerContext(context, outputStream);
-                } else {
-                    configureLogging(context, this);
-                    return new Neo4jLoggerContext(context, null);
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
             }
+
+            return new Neo4jLoggerContext(context, null);
         }
+
+        private ConfigurationSource getConfigurationSource() throws IOException {
+            ConfigurationSource configurationSource = null;
+            if (fileSystemAbstraction.fileExists(externalConfigPath)) {
+                if (fileSystemAbstraction.isPersistent()) {
+                    configurationSource = ConfigurationSource.fromUri(externalConfigPath.toUri());
+                } else {
+                    // non-persistent file system, we need to use a stream here
+
+                    // NOTE: For now, log4j will write to the real file system, since we have no way to inject
+                    // our own file system. This can be solved by porting our file system abstraction to the
+                    // Java file system. And use e.g. Path.of("tmpfs://logs/debug.log")
+
+                    configurationSource =
+                            new ConfigurationSource(fileSystemAbstraction.openAsInputStream(externalConfigPath));
+                }
+            } else {
+                if (useDefaultOnMissingXml) {
+                    // On missing a xml file, we will try to use a default one for known files
+                    String defaultResourcePath = KNOWN_DEFAULTS.get(externalConfigPath.getFileName());
+                    if (defaultResourcePath != null) {
+                        configurationSource = ConfigurationSource.fromResource(
+                                defaultResourcePath, getClass().getClassLoader());
+                    }
+                }
+            }
+            if (configurationSource == null) {
+                throw new IllegalStateException("Missing xml file for " + externalConfigPath);
+            }
+            return configurationSource;
+        }
+    }
+
+    static String getFormatPattern(boolean includeCategory, LogTimeZone timezone) {
+        String date = "%d{yyyy-MM-dd HH:mm:ss.SSSZ}" + (timezone == LogTimeZone.UTC ? "{GMT+0}" : "");
+        return includeCategory ? date + " %-5p [%c{1.}] %m%n" : date + " %-5p %m%n";
+    }
+
+    private static void configureLoggingForStream(LoggerContext context, Builder builder) {
+        Configuration configuration = new Neo4jConfiguration();
+
+        Appender appender = OutputStreamAppender.newBuilder()
+                .setName("neo4jLog.stream")
+                .setTarget(builder.outputStream)
+                .setLayout(
+                        builder.jsonLayout == null
+                                ? PatternLayout.newBuilder()
+                                        .withPattern(getFormatPattern(builder.includeCategory, LogTimeZone.UTC))
+                                        .build()
+                                : JsonTemplateLayout.newBuilder()
+                                        .setConfiguration(configuration)
+                                        .setEventTemplateUri(builder.jsonLayout)
+                                        .build())
+                .build();
+        appender.start();
+        configuration.addAppender(appender);
+        configuration.getRootLogger().addAppender(appender, null, null);
+        configuration.getRootLogger().setLevel(builder.level);
+        context.setConfiguration(configuration);
+    }
+
+    private static void configureLoggingFromFile(
+            LoggerContext context,
+            Consumer<InternalLog> headerLogger,
+            String headerClassName,
+            Function<String, Object> configLookup,
+            ConfigurationSource configSource,
+            boolean allowConsoleAppenders) {
+        LookupContext lookupContext = new LookupContext(headerLogger, headerClassName, configLookup);
+        LookupInjectionXmlConfiguration lookupInjectionXmlConfiguration =
+                new LookupInjectionXmlConfiguration(context, configSource, lookupContext, allowConsoleAppenders);
+        context.setConfiguration(lookupInjectionXmlConfiguration);
     }
 }

@@ -21,8 +21,8 @@ package org.neo4j.importer;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
-import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_format;
-import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_temporal_timezone;
+import static org.neo4j.configuration.GraphDatabaseSettings.server_logging_config_path;
 import static org.neo4j.internal.batchimport.input.Collectors.badCollector;
 import static org.neo4j.internal.batchimport.input.Collectors.collect;
 import static org.neo4j.internal.batchimport.input.Collectors.silentBadCollector;
@@ -36,6 +36,7 @@ import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
+import static org.neo4j.logging.log4j.LogConfig.createLoggerFromXmlConfig;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -51,9 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-import org.neo4j.commandline.Util;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.BatchImporter;
@@ -69,7 +68,6 @@ import org.neo4j.internal.batchimport.input.csv.CsvInput;
 import org.neo4j.internal.batchimport.input.csv.DataFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.os.OsBeanUtil;
@@ -87,6 +85,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.PrefixedLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.logging.log4j.Log4jLogProvider;
+import org.neo4j.logging.log4j.Neo4jLoggerContext;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -160,7 +159,7 @@ class CsvImporter implements Importer {
         try (OutputStream badOutput = fileSystem.openAsOutputStream(reportFile, false);
                 Collector badCollector = getBadCollector(skipBadEntriesLogging, badOutput)) {
             // Extract the default time zone from the database configuration
-            ZoneId dbTimeZone = databaseConfig.get(GraphDatabaseSettings.db_temporal_timezone);
+            ZoneId dbTimeZone = databaseConfig.get(db_temporal_timezone);
             Supplier<ZoneId> defaultTimeZone = () -> dbTimeZone;
 
             final var nodeData = nodeData();
@@ -186,12 +185,13 @@ class CsvImporter implements Importer {
 
         printOverview();
 
-        Path internalLogFile = databaseConfig.get(store_internal_log_path);
+        Neo4jLoggerContext loggerContext = createLoggerFromXmlConfig(
+                fileSystem,
+                databaseConfig.get(server_logging_config_path),
+                !databaseConfig.isExplicitlySet(server_logging_config_path),
+                databaseConfig::configStringLookup);
         try (JobScheduler jobScheduler = createInitialisedScheduler();
-                OutputStream outputStream =
-                        FileSystemUtils.createOrOpenAsOutputStream(fileSystem, internalLogFile, true);
-                Log4jLogProvider logProvider = Util.configuredLogProvider(
-                        databaseConfig, outputStream, databaseConfig.get(store_internal_log_format))) {
+                Log4jLogProvider logProvider = new Log4jLogProvider(loggerContext)) {
             // Let the storage engine factory be configurable in the tool later on...
             StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine(databaseConfig);
             var logService = new SimpleLogService(

@@ -26,6 +26,6 @@ public class CommunitySecurityLog extends AbstractSecurityLog {
     public static final CommunitySecurityLog NULL_LOG = new CommunitySecurityLog(NullLog.getInstance());
 
     public CommunitySecurityLog(InternalLog log) {
-        setLog(log);
+        super(log);
     }
 }

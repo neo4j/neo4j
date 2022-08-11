@@ -22,7 +22,6 @@ package org.neo4j.server.startup;
 import static org.neo4j.server.NeoBootstrapper.SIGINT;
 import static org.neo4j.server.NeoBootstrapper.SIGTERM;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.AccessDeniedException;
@@ -32,8 +31,6 @@ import java.util.Map;
 import java.util.Optional;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.configuration.BootloaderSettings;
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.io.fs.FileUtils;
 import sun.misc.Signal;
 
 class ProcessManager {
@@ -42,7 +39,6 @@ class ProcessManager {
     static class Behaviour {
         protected boolean inheritIO;
         protected boolean blocking;
-        protected boolean redirectToUserLog;
         protected boolean storePid;
         protected boolean throwOnStorePidFailure;
         protected boolean homeAndConfAsEnv;
@@ -62,11 +58,6 @@ class ProcessManager {
 
         Behaviour withShutdownHook() {
             this.shutdownHook = true;
-            return this;
-        }
-
-        Behaviour redirectToUserLog() {
-            this.redirectToUserLog = true;
             return this;
         }
 
@@ -110,22 +101,6 @@ class ProcessManager {
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         if (behaviour.inheritIO) {
             processBuilder.inheritIO();
-        }
-        if (behaviour.redirectToUserLog) {
-            File userLog = bootloader
-                    .config()
-                    .get(GraphDatabaseSettings.store_user_log_path)
-                    .toFile();
-            try {
-                // Convenience for creating necessary directories and the user log file if it doesn't exist
-                FileUtils.writeToFile(userLog.toPath(), "", true);
-            } catch (IOException e) {
-                throw new CommandFailedException(
-                        "Failure to create the user log file " + userLog + " due to " + e.getMessage(), 1);
-            }
-            ProcessBuilder.Redirect redirect = ProcessBuilder.Redirect.appendTo(userLog);
-            processBuilder.redirectOutput(redirect);
-            processBuilder.redirectError(redirect);
         }
 
         if (behaviour.homeAndConfAsEnv) {

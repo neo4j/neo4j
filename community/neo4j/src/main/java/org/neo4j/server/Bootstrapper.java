@@ -23,7 +23,12 @@ import java.nio.file.Path;
 import java.util.Map;
 
 public interface Bootstrapper {
-    int start(Path homeDir, Path configFile, Map<String, String> configOverrides, boolean expandCommands);
+    int start(
+            Path homeDir,
+            Path configFile,
+            Map<String, String> configOverrides,
+            boolean expandCommands,
+            boolean allowConsoleAppenders);
 
     int stop();
 }

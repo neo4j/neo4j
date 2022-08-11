@@ -64,7 +64,7 @@ class Log4jLogTest extends Log4jLogTestBase {
     @MethodSource("logMethods")
     void shouldNotLogAnythingOnNone(LogMethod logMethod, Level level) {
         try (Neo4jLoggerContext context =
-                LogConfig.createBuilder(outContent, Level.NONE).build()) {
+                LogConfig.createBuilderToOutputStream(outContent, Level.NONE).build()) {
             Log4jLog log = new Log4jLog(context.getLogger("className"));
             logMethod.log(log, "my message");
 

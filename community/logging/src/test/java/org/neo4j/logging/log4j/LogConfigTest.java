@@ -22,14 +22,19 @@ package org.neo4j.logging.log4j;
 import static java.lang.String.format;
 import static java.lang.System.lineSeparator;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.logging.log4j.LogConfig.STRUCTURED_LOG_JSON_TEMPLATE;
+import static org.neo4j.logging.log4j.LogConfig.STRUCTURED_LOG_JSON_TEMPLATE_WITH_CATEGORY;
+import static org.neo4j.logging.log4j.LogConfig.STRUCTURED_LOG_JSON_TEMPLATE_WITH_MESSAGE;
+import static org.neo4j.logging.log4j.LogConfig.createLoggerFromXmlConfig;
+import static org.neo4j.logging.log4j.LogUtils.newLoggerBuilder;
+import static org.neo4j.logging.log4j.LogUtils.newTemporaryXmlConfigBuilder;
+import static org.neo4j.logging.log4j.LoggerTarget.ROOT_LOGGER;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.ZoneOffset;
-import java.util.TimeZone;
+import java.util.Map;
 import org.apache.logging.log4j.spi.ExtendedLogger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -37,9 +42,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.logging.FormattedLogFormat;
+import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.logging.Level;
-import org.neo4j.logging.LogTimeZone;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
@@ -51,16 +56,15 @@ import org.neo4j.test.utils.TestDirectory;
 @ResourceLock(Resources.SYSTEM_OUT)
 class LogConfigTest {
     static final String DATE_PATTERN = "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}[+-]\\d{4}";
-    private static final String DATE_NO_TIMEZONE_PATTERN = "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}";
-
-    @Inject
-    SuppressOutput suppressOutput;
 
     @Inject
     private DefaultFileSystemAbstraction fs;
 
     @Inject
     private TestDirectory dir;
+
+    @Inject
+    private SuppressOutput suppressOutput;
 
     private Neo4jLoggerContext ctx;
 
@@ -73,7 +77,7 @@ class LogConfigTest {
     void shouldRespectLogLevel() {
         ByteArrayOutputStream outContent = new ByteArrayOutputStream();
 
-        ctx = LogConfig.createBuilder(outContent, Level.DEBUG).build();
+        ctx = LogConfig.createBuilderToOutputStream(outContent, Level.DEBUG).build();
 
         ExtendedLogger logger = ctx.getLogger("org.neo4j.classname");
         logger.debug("test");
@@ -104,82 +108,40 @@ class LogConfigTest {
     }
 
     @Test
-    void withRotationShouldRotateOnThreshold() {
-        Path targetFile = dir.homePath().resolve("debug.log");
-        Path targetFile1 = dir.homePath().resolve("debug.log.1");
-        Path targetFile2 = dir.homePath().resolve("debug.log.2");
-
-        ctx = LogConfig.createBuilder(fs, targetFile, Level.INFO)
-                .withRotation(10, 2)
-                .build();
-
-        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
-
-        ExtendedLogger logger = ctx.getLogger("test");
-
-        logger.warn("test");
-        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
-        assertThat(fs.fileExists(targetFile1)).isEqualTo(false);
-
-        logger.warn("test");
-        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
-        assertThat(fs.fileExists(targetFile1)).isEqualTo(true);
-        assertThat(fs.fileExists(targetFile2)).isEqualTo(false);
-    }
-
-    @Test
-    void withRotationShouldRespectMaxArchives() throws IOException {
-        Path targetFile = dir.homePath().resolve("debug.log");
-        Path targetFile1 = dir.homePath().resolve("debug.log.1");
-        Path targetFile2 = dir.homePath().resolve("debug.log.2");
-        Path targetFile3 = dir.homePath().resolve("debug.log.3");
-
-        ctx = LogConfig.createBuilder(fs, targetFile, Level.INFO)
-                .withRotation(10, 2)
-                .build();
-
-        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
-
-        ExtendedLogger logger = ctx.getLogger("test");
-
-        logger.warn("test1");
-        logger.warn("test2");
-        logger.warn("test3");
-        logger.warn("test4");
-        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
-        assertThat(fs.fileExists(targetFile1)).isEqualTo(true);
-        assertThat(fs.fileExists(targetFile2)).isEqualTo(true);
-        assertThat(fs.fileExists(targetFile3)).isEqualTo(false);
-
-        assertThat(Files.readString(targetFile)).contains("test4");
-        assertThat(Files.readString(targetFile1)).contains("test3");
-        assertThat(Files.readString(targetFile2)).contains("test2");
-    }
-
-    @Test
     void withHeaderLoggerShouldBeUsedAsHeader() throws IOException {
         Path targetFile = dir.homePath().resolve("debug.log");
-        Path targetFile1 = dir.homePath().resolve("debug.log.1");
+        Path targetFile1 = dir.homePath().resolve("debug.log.01");
 
-        ctx = LogConfig.createBuilder(fs, targetFile, Level.INFO)
-                .withRotation(30, 2)
-                .withHeaderLogger(
-                        log -> {
-                            log.warn("My Header");
-                            log.warn("In Two Lines");
-                        },
-                        "org.neo4j.HeaderClassName")
-                .build();
+        Path xmlConfig = newTemporaryXmlConfigBuilder(fs)
+                .withLogger(newLoggerBuilder(ROOT_LOGGER, targetFile)
+                        .withLevel(Level.INFO)
+                        .withRotation(30, 2)
+                        .withCategory(true)
+                        .forDebugLog(true)
+                        .build())
+                .create();
 
-        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
+        ctx = createLoggerFromXmlConfig(
+                fs,
+                xmlConfig,
+                false,
+                false,
+                null,
+                log -> {
+                    log.warn("My Header");
+                    log.warn("In Two Lines");
+                },
+                "org.neo4j.HeaderClassName");
+
+        assertThat(targetFile).exists();
 
         ExtendedLogger logger = ctx.getLogger("className");
 
         logger.warn("Long line that will get next message to be written to next file");
         logger.warn("test2");
 
-        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
-        assertThat(fs.fileExists(targetFile1)).isEqualTo(true);
+        assertThat(targetFile).exists();
+        assertThat(targetFile1).exists();
 
         // First file (the one rotated to targetFile1) should not have the header.
         assertThat(Files.readString(targetFile1))
@@ -199,27 +161,10 @@ class LogConfigTest {
     }
 
     @Test
-    void createOnDemandShouldCreateOnDemand() {
-        Path targetFile = dir.homePath().resolve("debug.log");
-
-        ctx = LogConfig.createBuilder(fs, targetFile, Level.INFO)
-                .withRotation(10, 2)
-                .createOnDemand()
-                .build();
-
-        assertThat(fs.fileExists(targetFile)).isEqualTo(false);
-
-        ExtendedLogger logger = ctx.getLogger("test");
-        logger.warn("test");
-
-        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
-    }
-
-    @Test
     void withOutputStreamShouldLogToTheStream() {
         ByteArrayOutputStream outContent = new ByteArrayOutputStream();
 
-        ctx = LogConfig.createBuilder(outContent, Level.INFO).build();
+        ctx = LogConfig.createBuilderToOutputStream(outContent, Level.INFO).build();
 
         ExtendedLogger logger = ctx.getLogger("test");
         logger.warn("test");
@@ -228,131 +173,48 @@ class LogConfigTest {
     }
 
     @Test
-    void logToSystemOutShouldOnlyLogToSystemOut() {
-        // The sent in filename should be ignored if logToSystemOut is used.
+    void standardFormatDefaults() throws IOException {
         Path targetFile = dir.homePath().resolve("debug.log");
 
-        ctx = LogConfig.createBuilder(fs, targetFile, Level.INFO)
-                .logToSystemOut()
-                .build();
-
-        ExtendedLogger logger = ctx.getLogger("test");
-        logger.warn("test");
-
-        assertThat(fs.fileExists(targetFile)).isEqualTo(false);
-        assertThat(suppressOutput.getOutputVoice().containsMessage("test")).isTrue();
-    }
-
-    @Test
-    void reconfigureShouldUseNewSettings() {
-        Path targetFile = dir.homePath().resolve("debug.log");
-        Path targetFile1 = dir.homePath().resolve("debug.log.1");
-        Path targetFile2 = dir.homePath().resolve("debug.log.2");
-        Path targetFile3 = dir.homePath().resolve("debug.log.3");
-
-        ctx = LogConfig.createBuilder(fs, targetFile, Level.INFO)
-                .withRotation(100, 2)
-                .build();
-
-        ExtendedLogger logger = ctx.getLogger("test");
-
-        logger.warn("test1");
-        logger.warn("test2");
-        logger.warn("test3");
-        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
-        assertThat(fs.fileExists(targetFile1)).isEqualTo(false);
-
-        LogConfig.reconfigureLogging(
-                ctx, LogConfig.createBuilder(fs, targetFile, Level.INFO).withRotation(10, 3));
-
-        // Should now rotate on each message with the new limit.
-        logger.warn("test4");
-        logger.warn("test5");
-        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
-        assertThat(fs.fileExists(targetFile1)).isEqualTo(true);
-        assertThat(fs.fileExists(targetFile2)).isEqualTo(true);
-        assertThat(fs.fileExists(targetFile3)).isEqualTo(false);
-    }
-
-    @Test
-    void withTimezoneUTC() {
-        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-
-        ctx = LogConfig.createBuilder(outContent, Level.INFO)
-                .withTimezone(LogTimeZone.UTC)
-                .build();
+        ctx = LogConfig.createTemporaryLoggerToSingleFile(fs, targetFile, Level.INFO, true);
 
         ExtendedLogger logger = ctx.getLogger("org.neo4j.classname");
         logger.warn("test");
 
-        assertThat(outContent.toString())
-                .matches(format(DATE_NO_TIMEZONE_PATTERN + "\\+0000 %-5s \\[o\\.n\\.classname] test%n", Level.WARN));
-    }
-
-    @Test
-    void withTimezoneSystem() {
-        TimeZone defaultTimeZone = TimeZone.getDefault();
-        try {
-            TimeZone.setDefault(TimeZone.getTimeZone(ZoneOffset.ofHours(4)));
-            ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-
-            ctx = LogConfig.createBuilder(outContent, Level.INFO)
-                    .withTimezone(LogTimeZone.SYSTEM)
-                    .build();
-
-            ExtendedLogger logger = ctx.getLogger("org.neo4j.classname");
-            logger.warn("test");
-
-            assertThat(outContent.toString())
-                    .matches(
-                            format(DATE_NO_TIMEZONE_PATTERN + "\\+0400 %-5s \\[o\\.n\\.classname] test%n", Level.WARN));
-        } finally {
-            TimeZone.setDefault(defaultTimeZone);
-        }
-    }
-
-    @Test
-    void standardFormatDefaults() {
-        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-
-        ctx = LogConfig.createBuilder(outContent, Level.INFO)
-                .withFormat(FormattedLogFormat.PLAIN)
-                .build();
-
-        ExtendedLogger logger = ctx.getLogger("org.neo4j.classname");
-        logger.warn("test");
-
-        assertThat(outContent.toString())
+        assertThat(Files.readString(targetFile))
                 .matches(DATE_PATTERN + format(" %-5s \\[o\\.n\\.classname] test%n", Level.WARN));
     }
 
     @Test
-    void standardFormatNoCategory() {
-        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+    void standardFormatNoCategory() throws IOException {
+        Path targetFile = dir.homePath().resolve("debug.log");
 
-        ctx = LogConfig.createBuilder(outContent, Level.INFO)
-                .withFormat(FormattedLogFormat.PLAIN)
-                .withCategory(false)
-                .build();
+        ctx = LogConfig.createTemporaryLoggerToSingleFile(fs, targetFile, Level.INFO, false);
 
         ExtendedLogger logger = ctx.getLogger("org.neo4j.classname");
         logger.warn("test");
 
-        assertThat(outContent.toString()).matches(DATE_PATTERN + format(" %-5s test%n", Level.WARN));
+        assertThat(Files.readString(targetFile)).matches(DATE_PATTERN + format(" %-5s test%n", Level.WARN));
     }
 
     @Test
-    void jsonFormatDefaults() {
-        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+    void jsonFormatDebugLog() throws IOException {
+        Path targetFile = dir.homePath().resolve("debug.log");
 
-        ctx = LogConfig.createBuilder(outContent, Level.INFO)
-                .withFormat(FormattedLogFormat.JSON)
-                .build();
+        Path xmlConfig = newTemporaryXmlConfigBuilder(fs)
+                .withLogger(newLoggerBuilder(ROOT_LOGGER, targetFile)
+                        .withLevel(Level.INFO)
+                        .withCategory(true)
+                        .withJsonFormatTemplate(STRUCTURED_LOG_JSON_TEMPLATE_WITH_MESSAGE)
+                        .build())
+                .create();
+
+        ctx = createLoggerFromXmlConfig(fs, xmlConfig);
 
         ExtendedLogger logger = ctx.getLogger("org.neo4j.classname");
         logger.warn("test");
 
-        assertThat(outContent.toString())
+        assertThat(Files.readString(targetFile))
                 .matches(format(
                         "\\{\"time\":\"" + DATE_PATTERN
                                 + "\",\"level\":\"%s\",\"category\":\"o\\.n\\.classname\",\"message\":\"test\"}%n",
@@ -360,110 +222,147 @@ class LogConfigTest {
     }
 
     @Test
-    void jsonFormatNoCategory() {
-        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+    void jsonFormatStacktrace() throws IOException {
+        Path targetFile = dir.homePath().resolve("debug.log");
 
-        ctx = LogConfig.createBuilder(outContent, Level.INFO)
-                .withFormat(FormattedLogFormat.JSON)
-                .withCategory(false)
-                .build();
+        Path xmlConfig = newTemporaryXmlConfigBuilder(fs)
+                .withLogger(newLoggerBuilder(ROOT_LOGGER, targetFile)
+                        .withLevel(Level.INFO)
+                        .withCategory(true)
+                        .withJsonFormatTemplate(STRUCTURED_LOG_JSON_TEMPLATE_WITH_MESSAGE)
+                        .build())
+                .create();
 
-        ExtendedLogger logger = ctx.getLogger("org.neo4j.classname");
-        logger.warn("test");
-
-        assertThat(outContent.toString())
-                .matches(format(
-                        "\\{\"time\":\"" + DATE_PATTERN + "\",\"level\":\"%s\",\"message\":\"test\"}%n", Level.WARN));
-    }
-
-    @Test
-    void jsonFormatStacktrace() {
-        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-
-        ctx = LogConfig.createBuilder(outContent, Level.INFO)
-                .withFormat(FormattedLogFormat.JSON)
-                .build();
+        ctx = createLoggerFromXmlConfig(fs, xmlConfig);
 
         ExtendedLogger logger = ctx.getLogger("org.neo4j.classname");
-        logger.warn("test", newThrowable("stack"));
+        logger.warn("test", new RuntimeException("stack"));
 
-        assertThat(outContent.toString())
+        assertThat(Files.readString(targetFile))
                 .matches(format(
                         "\\{\"time\":\"" + DATE_PATTERN
-                                + "\",\"level\":\"%s\",\"category\":\"o\\.n\\.classname\",\"message\":\"test\",\"stacktrace\":\" stack\"}%n",
+                                + "\",\"level\":\"%s\",\"category\":\"o\\.n\\.classname\",\"message\":\"test\",\"stacktrace\":\"stack\"}%n",
                         Level.WARN));
     }
 
     @Test
-    void jsonFormatStructuredMessage() {
-        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+    void jsonFormatStructuredMessage() throws IOException {
+        Path targetFile = dir.homePath().resolve("debug.log");
 
-        ctx = LogConfig.createBuilder(outContent, Level.INFO)
-                .withFormat(FormattedLogFormat.JSON)
-                .build();
+        Path xmlConfig = newTemporaryXmlConfigBuilder(fs)
+                .withLogger(newLoggerBuilder(ROOT_LOGGER, targetFile)
+                        .withLevel(Level.INFO)
+                        .withCategory(true)
+                        .withJsonFormatTemplate(STRUCTURED_LOG_JSON_TEMPLATE)
+                        .build())
+                .create();
+
+        ctx = createLoggerFromXmlConfig(fs, xmlConfig);
 
         ExtendedLogger logger = ctx.getLogger("org.neo4j.classname");
         logger.info(new MyStructure());
 
-        assertThat(outContent.toString())
+        assertThat(Files.readString(targetFile))
                 .matches("\\{\"time\":\"" + DATE_PATTERN
-                        + "\",\"level\":\"INFO\",\"category\":\"o\\.n\\.classname\",\"long\":7,"
+                        + "\",\"level\":\"INFO\",\"long\":7,"
                         + "\"string1\":\"my string\",\"string2\":\" special\\\\\" string\"}" + lineSeparator());
     }
 
     @Test
-    void jsonFormatStructuredMessageWithException() {
-        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+    void jsonFormatStructuredMessageWithException() throws IOException {
+        Path targetFile = dir.homePath().resolve("debug.log");
 
-        ctx = LogConfig.createBuilder(outContent, Level.INFO)
-                .withFormat(FormattedLogFormat.JSON)
-                .withCategory(false)
-                .build();
+        Path xmlConfig = newTemporaryXmlConfigBuilder(fs)
+                .withLogger(newLoggerBuilder(ROOT_LOGGER, targetFile)
+                        .withLevel(Level.INFO)
+                        .withCategory(true)
+                        .withJsonFormatTemplate(STRUCTURED_LOG_JSON_TEMPLATE_WITH_CATEGORY)
+                        .build())
+                .create();
+
+        ctx = createLoggerFromXmlConfig(fs, xmlConfig);
 
         ExtendedLogger logger = ctx.getLogger("org.neo4j.classname");
-        logger.info(new MyStructure(), newThrowable("test"));
+        logger.info(new MyStructure(), new RuntimeException("test"));
 
-        assertThat(outContent.toString())
-                .matches("\\{\"time\":\"" + DATE_PATTERN + "\",\"level\":\"INFO\",\"long\":7,"
-                        + "\"string1\":\"my string\",\"string2\":\" special\\\\\" string\",\"stacktrace\":\" test\"}"
+        assertThat(Files.readString(targetFile))
+                .matches("\\{\"time\":\"" + DATE_PATTERN
+                        + "\",\"level\":\"INFO\",\"category\":\"o\\.n\\.classname\",\"long\":7,"
+                        + "\"string1\":\"my string\",\"string2\":\" special\\\\\" string\",\"stacktrace\":\"test\"}"
                         + lineSeparator());
     }
 
     @Test
-    void standardFormatWithStructuredMessage() {
-        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+    void standardFormatWithStructuredMessage() throws IOException {
+        Path targetFile = dir.homePath().resolve("debug.log");
 
-        ctx = LogConfig.createBuilder(outContent, Level.INFO)
-                .withFormat(FormattedLogFormat.PLAIN)
-                .build();
+        ctx = LogConfig.createTemporaryLoggerToSingleFile(fs, targetFile, Level.INFO, true);
 
         ExtendedLogger logger = ctx.getLogger("org.neo4j.classname");
         logger.warn(new MyStructure());
 
-        assertThat(outContent.toString())
+        assertThat(Files.readString(targetFile))
                 .matches(DATE_PATTERN + format(" %-5s \\[o\\.n\\.classname] 1c%n", Level.WARN));
     }
 
-    private static class MyStructure extends StructureAwareMessage {
-        @Override
-        public void asString(StringBuilder stringBuilder) {
-            stringBuilder.append(1).append("c");
-        }
-
-        @Override
-        public void asStructure(FieldConsumer fieldConsumer) {
-            fieldConsumer.add("long", 7L);
-            fieldConsumer.add("string1", "my string");
-            fieldConsumer.add("string2", " special\" string");
-        }
+    @Test
+    void allowConsoleAppenders() throws IOException {
+        useConsoleLogger(true);
     }
 
-    static Throwable newThrowable(final String stackTrace) {
-        return new Throwable() {
-            @Override
-            public void printStackTrace(PrintWriter s) {
-                s.append(stackTrace);
-            }
-        };
+    @Test
+    void disallowConsoleAppenders() throws IOException {
+        useConsoleLogger(false);
+    }
+
+    private void useConsoleLogger(boolean allowConsole) throws IOException {
+        String xml =
+                """
+                <Configuration packages="org.neo4j.logging.log4j">
+                   <Appenders>
+                       <File name="Neo4jLog" fileName="${config:server.directories.logs}/neo4j.log">
+                           <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSSZ}{GMT+0} %-5p %m%n"/>
+                       </File>
+                       <Console name="ConsoleAppender" target="SYSTEM_OUT">
+                           <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSSZ}{GMT+0} %-5p %m%n"/>
+                       </Console>
+                   </Appenders>
+
+                   <Loggers>
+                       <Root level="INFO">
+                           <AppenderRef ref="Neo4jLog"/>
+                           <AppenderRef ref="ConsoleAppender"/>
+                       </Root>
+                   </Loggers>
+               </Configuration>
+               """;
+        Path xmlConfig = dir.homePath().resolve("user-logs.xml");
+        FileSystemUtils.writeString(fs, xmlConfig, xml, EmptyMemoryTracker.INSTANCE);
+
+        Map<String, Object> config =
+                Map.of("server.directories.logs", dir.homePath().toAbsolutePath());
+        ctx = createLoggerFromXmlConfig(fs, xmlConfig, false, allowConsole, config::get, null, null);
+
+        ExtendedLogger logger = ctx.getLogger("org.neo4j.classname");
+        logger.warn("test");
+
+        assertThat(Files.readString(dir.homePath().resolve("neo4j.log")))
+                .matches(DATE_PATTERN + format(" %-5s test%n", Level.WARN));
+        assertThat(suppressOutput.getOutputVoice().containsMessage(format(" %-5s test%n", Level.WARN)))
+                .isEqualTo(allowConsole);
+    }
+
+    private static class MyStructure extends Neo4jMapMessage {
+        MyStructure() {
+            super(3);
+            with("long", 7L);
+            with("string1", "my string");
+            with("string2", " special\" string");
+        }
+
+        @Override
+        protected void formatAsString(StringBuilder stringBuilder) {
+            stringBuilder.append(1).append("c");
+        }
     }
 }

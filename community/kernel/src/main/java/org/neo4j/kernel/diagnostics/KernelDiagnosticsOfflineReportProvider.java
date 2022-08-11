@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.diagnostics;
 
+import static org.neo4j.logging.log4j.LogConfig.DEBUG_LOG;
+import static org.neo4j.logging.log4j.LogConfig.USER_LOG;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -137,25 +140,26 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
      * @param sources destination of the sources.
      */
     private void getLogFiles(List<DiagnosticsReportSource> sources) {
+        // Best effort of collecting log files, we can't know the exact path since that is defined in log4j
+
         // debug.log
-        Path debugLogFile = config.get(GraphDatabaseSettings.store_internal_log_path);
+        Path logDirectory = config.get(GraphDatabaseSettings.logs_directory);
+        Path debugLogFile = logDirectory.resolve(DEBUG_LOG);
         if (fs.fileExists(debugLogFile)) {
             sources.addAll(DiagnosticsReportSources.newDiagnosticsRotatingFile("logs/", fs, debugLogFile));
         }
 
         // neo4j.log
-        Path neo4jLog = config.get(GraphDatabaseSettings.store_user_log_path);
+        Path neo4jLog = logDirectory.resolve(USER_LOG);
         if (fs.fileExists(neo4jLog)) {
             sources.addAll(DiagnosticsReportSources.newDiagnosticsRotatingFile("logs/", fs, neo4jLog));
         }
 
         // gc.log
-        Path logDirectory = config.get(GraphDatabaseSettings.logs_directory);
         Path gcLog = logDirectory.resolve("gc.log");
         if (fs.fileExists(gcLog)) {
             sources.addAll(DiagnosticsReportSources.newDiagnosticsRotatingFile("logs/", fs, gcLog));
         }
-        // there are other rotation schemas but nothing we can predict...
     }
 
     /**

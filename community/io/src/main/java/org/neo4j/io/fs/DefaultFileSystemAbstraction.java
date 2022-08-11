@@ -214,6 +214,11 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
     }
 
     @Override
+    public Path createTempFile(String prefix, String suffix) throws IOException {
+        return Files.createTempFile(prefix, suffix);
+    }
+
+    @Override
     public void close() throws IOException {
         // nothing
     }

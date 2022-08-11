@@ -22,6 +22,11 @@ package org.neo4j.server.http;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
+import static org.neo4j.logging.log4j.LogConfig.HTTP_LOG;
+import static org.neo4j.logging.log4j.LogConfig.STRUCTURED_LOG_JSON_TEMPLATE;
+import static org.neo4j.logging.log4j.LogUtils.newLoggerBuilder;
+import static org.neo4j.logging.log4j.LogUtils.newXmlConfigBuilder;
+import static org.neo4j.logging.log4j.LoggerTarget.HTTP_LOGGER;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -41,7 +46,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.server.AbstractNeoWebServer;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.configuration.ServerSettings;
@@ -58,23 +62,31 @@ class HttpStructuredLoggingIT extends ExclusiveWebContainerTestBase {
 
     @Test
     void shouldLogRequestsInStructuredFormat() throws Exception {
+        testDirectory.directory("logs");
+        Path log4jConfig = testDirectory.file("logs/testHttp.xml");
+        Path httpLogPath = testDirectory.file("logs/" + HTTP_LOG);
+        newXmlConfigBuilder(testDirectory.getFileSystem(), log4jConfig)
+                .withLogger(newLoggerBuilder(HTTP_LOGGER, httpLogPath)
+                        .withJsonFormatTemplate(STRUCTURED_LOG_JSON_TEMPLATE)
+                        .build())
+                .create();
+
         var bootstrapper = new CommunityBootstrapper();
         HttpResponse<String> response;
-        Path httpLogPath;
         try {
-            bootstrapper.start(
+            int start = bootstrapper.start(
                     testDirectory.homePath(),
                     Map.of(
                             HttpConnector.listen_address.name(),
                             "localhost:0",
                             HttpConnector.advertised_address.name(),
                             "localhost:0",
-                            ServerSettings.http_log_format.name(),
-                            FormattedLogFormat.JSON.name(),
                             ServerSettings.http_logging_enabled.name(),
                             TRUE,
                             HttpConnector.enabled.name(),
                             TRUE));
+            assertThat(start).isEqualTo(0);
+
             var dependencyResolver = getDependencyResolver(bootstrapper.getDatabaseManagementService());
             var baseUri = dependencyResolver
                     .resolveDependency(AbstractNeoWebServer.class)
@@ -90,7 +102,6 @@ class HttpStructuredLoggingIT extends ExclusiveWebContainerTestBase {
                     .build();
 
             // Just ask the discovery api for a response we don't actually care of
-            httpLogPath = config.get(ServerSettings.http_log_path);
             response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         } finally {
             bootstrapper.stop();

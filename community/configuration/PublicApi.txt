@@ -72,10 +72,10 @@ org.neo4j.configuration.GraphDatabaseSettings::database_dumps_root_path org.neo4
 org.neo4j.configuration.GraphDatabaseSettings::db_format org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.configuration.GraphDatabaseSettings::db_temporal_timezone org.neo4j.graphdb.config.Setting<java.time.ZoneId> public static final
 org.neo4j.configuration.GraphDatabaseSettings::db_timezone org.neo4j.graphdb.config.Setting<org.neo4j.logging.LogTimeZone> public static final
+org.neo4j.configuration.GraphDatabaseSettings::debug_log_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::default_advertised_address org.neo4j.graphdb.config.Setting<org.neo4j.configuration.helpers.SocketAddress> public static final
 org.neo4j.configuration.GraphDatabaseSettings::default_database org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.configuration.GraphDatabaseSettings::default_listen_address org.neo4j.graphdb.config.Setting<org.neo4j.configuration.helpers.SocketAddress> public static final
-org.neo4j.configuration.GraphDatabaseSettings::default_log_format org.neo4j.graphdb.config.Setting<org.neo4j.logging.FormattedLogFormat> public static final
 org.neo4j.configuration.GraphDatabaseSettings::dense_node_threshold org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::fail_on_missing_files org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::filewatcher_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
@@ -92,20 +92,16 @@ org.neo4j.configuration.GraphDatabaseSettings::log_queries org.neo4j.graphdb.con
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_allocation_logging_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_detailed_time_logging_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_early_raw_logging_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
-org.neo4j.configuration.GraphDatabaseSettings::log_queries_filename org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
-org.neo4j.configuration.GraphDatabaseSettings::log_queries_max_archives org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_obfuscate_literals org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_page_detail_logging_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_parameter_full_entities org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_parameter_logging_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_query_plan org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
-org.neo4j.configuration.GraphDatabaseSettings::log_queries_rotation_threshold org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_runtime_logging_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_threshold org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_transaction_id org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_transaction_threshold org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries_transactions_level org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel> public static final
-org.neo4j.configuration.GraphDatabaseSettings::log_query_format org.neo4j.graphdb.config.Setting<org.neo4j.logging.FormattedLogFormat> public static final
 org.neo4j.configuration.GraphDatabaseSettings::logical_log_rotation_threshold org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
 org.neo4j.configuration.GraphDatabaseSettings::logs_directory org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::max_concurrent_transactions org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
@@ -144,17 +140,8 @@ org.neo4j.configuration.GraphDatabaseSettings::routing_enabled org.neo4j.graphdb
 org.neo4j.configuration.GraphDatabaseSettings::routing_listen_address org.neo4j.graphdb.config.Setting<org.neo4j.configuration.helpers.SocketAddress> public static final
 org.neo4j.configuration.GraphDatabaseSettings::routing_ttl org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::script_root_path org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
+org.neo4j.configuration.GraphDatabaseSettings::server_logging_config_path org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::shutdown_transaction_end_timeout org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
-org.neo4j.configuration.GraphDatabaseSettings::store_internal_log_format org.neo4j.graphdb.config.Setting<org.neo4j.logging.FormattedLogFormat> public static final
-org.neo4j.configuration.GraphDatabaseSettings::store_internal_log_level org.neo4j.graphdb.config.Setting<org.neo4j.logging.Level> public static final
-org.neo4j.configuration.GraphDatabaseSettings::store_internal_log_max_archives org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
-org.neo4j.configuration.GraphDatabaseSettings::store_internal_log_path org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
-org.neo4j.configuration.GraphDatabaseSettings::store_internal_log_rotation_threshold org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
-org.neo4j.configuration.GraphDatabaseSettings::store_user_log_format org.neo4j.graphdb.config.Setting<org.neo4j.logging.FormattedLogFormat> public static final
-org.neo4j.configuration.GraphDatabaseSettings::store_user_log_max_archives org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
-org.neo4j.configuration.GraphDatabaseSettings::store_user_log_path org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
-org.neo4j.configuration.GraphDatabaseSettings::store_user_log_rotation_threshold org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
-org.neo4j.configuration.GraphDatabaseSettings::store_user_log_to_stdout org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::strict_config_validation org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::track_query_allocation org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::track_query_cpu_time org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
@@ -168,6 +155,7 @@ org.neo4j.configuration.GraphDatabaseSettings::tx_state_max_off_heap_memory org.
 org.neo4j.configuration.GraphDatabaseSettings::tx_state_memory_allocation org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation> public static final
 org.neo4j.configuration.GraphDatabaseSettings::tx_state_off_heap_block_cache_size org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::tx_state_off_heap_max_cacheable_block_size org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
+org.neo4j.configuration.GraphDatabaseSettings::user_logging_config_path org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::writable_databases org.neo4j.graphdb.config.Setting<java.util.Set<java.lang.String>> public static final
 org.neo4j.configuration.GroupSetting public abstract interface
 org.neo4j.configuration.GroupSetting::getPrefix() java.lang.String public abstract

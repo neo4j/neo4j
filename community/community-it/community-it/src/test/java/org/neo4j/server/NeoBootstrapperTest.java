@@ -19,13 +19,17 @@
  */
 package org.neo4j.server;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.Files.readAllLines;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.lang.management.MemoryUsage;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,26 +59,28 @@ class NeoBootstrapperTest {
 
     private NeoBootstrapper neoBootstrapper;
     private Path dir;
+    private Path userLog;
 
     @AfterEach
-    void tearDown() {
+    void tearDown() throws IOException {
         if (neoBootstrapper != null) {
             neoBootstrapper.stop();
             // Even if we didn't start a database management system because of a configuration error we should log a
             // stopped message to allow users to
             // distinguish between a neo4j process that completed shutdown and one that was terminated without
             // performing shutdown
-            assertThat(suppress.getOutputVoice().lines()).last().asString().endsWith("Stopped.");
+            assertThat(getUserLogFiles()).last().asString().endsWith("Stopped.");
         }
     }
 
     @BeforeEach
     void setUp() {
         dir = homeDir.directory("test-server-bootstrapper");
+        userLog = dir.resolve("logs").resolve("neo4j.log");
     }
 
     @Test
-    void shouldNotThrowNullPointerExceptionIfConfigurationValidationFails() {
+    void shouldNotThrowNullPointerExceptionIfConfigurationValidationFails() throws IOException {
         // given
         neoBootstrapper = new CommunityBootstrapper();
 
@@ -92,7 +98,7 @@ class NeoBootstrapperTest {
     }
 
     @Test
-    void shouldFailToStartIfRequestedPageCacheMemoryExceedsTotal() {
+    void shouldFailToStartIfRequestedPageCacheMemoryExceedsTotal() throws IOException {
         // given
         neoBootstrapper = new CommunityBootstrapper();
         Map<String, String> config = MapUtil.stringMap();
@@ -106,12 +112,13 @@ class NeoBootstrapperTest {
         neoBootstrapper.setMachineMemory(mockedMemory);
 
         assertThat(neoBootstrapper.start(dir, config)).isNotEqualTo(NeoBootstrapper.OK);
-        assertThat(suppress.getOutputVoice().lines()).anySatisfy(line -> assertThat(line)
+
+        assertThat(getUserLogFiles()).anySatisfy(line -> assertThat(line)
                 .containsSubsequence("Invalid memory configuration - exceeds physical memory."));
     }
 
     @Test
-    void shouldFailToStartIfRequestedHeapMemoryExceedsTotal() {
+    void shouldFailToStartIfRequestedHeapMemoryExceedsTotal() throws IOException {
         // given
         neoBootstrapper = new CommunityBootstrapper();
         Map<String, String> config = MapUtil.stringMap();
@@ -126,12 +133,12 @@ class NeoBootstrapperTest {
         neoBootstrapper.setMachineMemory(mockedMemory);
 
         assertThat(neoBootstrapper.start(dir, config)).isNotEqualTo(NeoBootstrapper.OK);
-        assertThat(suppress.getOutputVoice().lines()).anySatisfy(line -> assertThat(line)
+        assertThat(getUserLogFiles()).anySatisfy(line -> assertThat(line)
                 .containsSubsequence("Invalid memory configuration - exceeds physical memory."));
     }
 
     @Test
-    void shouldFailToStartIfRequestedHeapAndPageCacheMemoryExceedsTotal() {
+    void shouldFailToStartIfRequestedHeapAndPageCacheMemoryExceedsTotal() throws IOException {
         // given
         neoBootstrapper = new CommunityBootstrapper();
         Map<String, String> config = MapUtil.stringMap();
@@ -146,12 +153,12 @@ class NeoBootstrapperTest {
         neoBootstrapper.setMachineMemory(mockedMemory);
 
         assertThat(neoBootstrapper.start(dir, config)).isNotEqualTo(NeoBootstrapper.OK);
-        assertThat(suppress.getOutputVoice().lines()).anySatisfy(line -> assertThat(line)
+        assertThat(getUserLogFiles()).anySatisfy(line -> assertThat(line)
                 .containsSubsequence("Invalid memory configuration - exceeds physical memory."));
     }
 
     @Test
-    void shouldFailToStartIfCalculatedPageCacheSizeExceedsTotalMemory() {
+    void shouldFailToStartIfCalculatedPageCacheSizeExceedsTotalMemory() throws IOException {
         // given
         neoBootstrapper = new CommunityBootstrapper();
         Map<String, String> config = MapUtil.stringMap();
@@ -165,12 +172,12 @@ class NeoBootstrapperTest {
         neoBootstrapper.setMachineMemory(mockedMemory);
 
         assertThat(neoBootstrapper.start(dir, config)).isNotEqualTo(NeoBootstrapper.OK);
-        assertThat(suppress.getOutputVoice().lines()).anySatisfy(line -> assertThat(line)
+        assertThat(getUserLogFiles()).anySatisfy(line -> assertThat(line)
                 .containsSubsequence("Invalid memory configuration - exceeds physical memory."));
     }
 
     @Test
-    void ignoreMemoryChecksIfTotalMemoryIsNotAvailable() {
+    void ignoreMemoryChecksIfTotalMemoryIsNotAvailable() throws IOException {
         // given
         neoBootstrapper = new CommunityBootstrapper();
         Map<String, String> config = MapUtil.stringMap();
@@ -183,7 +190,11 @@ class NeoBootstrapperTest {
         neoBootstrapper.setMachineMemory(mockedMemory);
 
         assertThat(neoBootstrapper.start(dir, config)).isEqualTo(NeoBootstrapper.OK);
-        assertThat(suppress.getOutputVoice().containsMessage("Unable to determine total physical memory of machine."))
-                .isTrue();
+        assertThat(getUserLogFiles())
+                .anySatisfy(line -> assertThat(line).contains("Unable to determine total physical memory of machine."));
+    }
+
+    private List<String> getUserLogFiles() throws IOException {
+        return readAllLines(userLog, UTF_8);
     }
 }

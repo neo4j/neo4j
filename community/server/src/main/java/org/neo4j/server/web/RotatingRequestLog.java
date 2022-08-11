@@ -20,42 +20,23 @@
 package org.neo4j.server.web;
 
 import static org.apache.commons.lang3.StringUtils.defaultString;
+import static org.neo4j.logging.log4j.LoggerTarget.HTTP_LOGGER;
 
-import java.nio.file.Path;
 import java.util.function.Function;
 import javax.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.InternalLog;
-import org.neo4j.logging.Level;
-import org.neo4j.logging.LogTimeZone;
-import org.neo4j.logging.log4j.Log4jLogProvider;
-import org.neo4j.logging.log4j.LogConfig;
-import org.neo4j.logging.log4j.Neo4jLoggerContext;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.util.concurrent.AsyncEvents;
 
 public class RotatingRequestLog extends AbstractLifeCycle implements RequestLog, AsyncEvents.Monitor {
     private final InternalLog log;
-    private final Neo4jLoggerContext loggerContext;
 
-    public RotatingRequestLog(
-            FileSystemAbstraction fs,
-            LogTimeZone logTimeZone,
-            String logFile,
-            long rotationSize,
-            int rotationKeepNumber,
-            FormattedLogFormat logFormat) {
-        loggerContext = LogConfig.createBuilder(fs, Path.of(logFile), Level.INFO)
-                .withRotation(rotationSize, rotationKeepNumber)
-                .withTimezone(logTimeZone)
-                .withFormat(logFormat)
-                .build();
-
-        log = new Log4jLogProvider(loggerContext).getLog("REQUEST");
+    public RotatingRequestLog(InternalLogProvider logProvider) {
+        log = logProvider.getLog(HTTP_LOGGER);
     }
 
     @Override
@@ -92,11 +73,6 @@ public class RotatingRequestLog extends AbstractLifeCycle implements RequestLog,
         } catch (Throwable t) {
             return null;
         }
-    }
-
-    @Override
-    protected synchronized void doStop() {
-        loggerContext.close();
     }
 
     @Override

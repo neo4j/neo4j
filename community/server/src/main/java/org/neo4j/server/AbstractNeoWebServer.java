@@ -20,13 +20,8 @@
 package org.neo4j.server;
 
 import static java.lang.String.format;
-import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
-import static org.neo4j.server.configuration.ServerSettings.http_log_format;
-import static org.neo4j.server.configuration.ServerSettings.http_log_path;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
-import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_keep_number;
-import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_size;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -52,7 +47,6 @@ import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
@@ -328,13 +322,8 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
             return;
         }
 
-        requestLog = new RotatingRequestLog(
-                globalDependencies.resolveDependency(FileSystemAbstraction.class),
-                config.get(db_timezone),
-                config.get(http_log_path).toString(),
-                config.get(http_logging_rotation_size),
-                config.get(http_logging_rotation_keep_number),
-                config.get(http_log_format));
+        LogService logService = globalDependencies.resolveDependency(LogService.class);
+        requestLog = new RotatingRequestLog(logService.getInternalLogProvider());
         webServer.setRequestLog(requestLog);
     }
 

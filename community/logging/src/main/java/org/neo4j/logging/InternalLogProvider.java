@@ -19,21 +19,30 @@
  */
 package org.neo4j.logging;
 
+import org.neo4j.logging.log4j.LoggerTarget;
+
 /**
  * Used to obtain a {@link InternalLog} for a specified context
  */
 public interface InternalLogProvider extends LogProvider {
+
     /**
-     * @param loggingClass the context for the returned {@link InternalLog}
-     * @return a {@link InternalLog} that logs messages with the {@code loggingClass} as the context
+     * @param loggingClass the context for the returned {@link InternalLog}.
+     * @return a {@link InternalLog} that logs messages with the {@code loggingClass} as the context.
      */
     @Override
     InternalLog getLog(Class<?> loggingClass);
 
     /**
-     * @param name the context for the returned {@link InternalLog}
-     * @return a {@link InternalLog} that logs messages with the specified name as the context
+     * @param name the context for the returned {@link InternalLog}.
+     * @return a {@link InternalLog} that logs messages with the specified name as the context.
      */
     @Override
     InternalLog getLog(String name);
+
+    /**
+     * @param target The target appender for special cases. If you want a generic logger use {@link LoggerTarget#ROOT_LOGGER}.
+     * @return a {@link InternalLog} that logs messages to the specific target.
+     */
+    InternalLog getLog(LoggerTarget target);
 }

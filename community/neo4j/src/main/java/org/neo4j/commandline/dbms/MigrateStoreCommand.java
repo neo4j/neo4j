@@ -40,7 +40,6 @@ import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.collection.Dependencies;
-import org.neo4j.commandline.Util;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -142,9 +141,9 @@ public class MigrateStoreCommand extends AbstractCommand {
     @Override
     protected void execute() {
         Config config = buildConfig(ctx, allowCommandExpansion);
-        try (Log4jLogProvider logProvider = Util.configuredLogProvider(config, ctx.out());
+        try (Log4jLogProvider logProvider = new Log4jLogProvider(ctx.out(), verbose ? Level.DEBUG : Level.INFO);
                 Log4jLogProvider systemDbStartupLogProvider =
-                        createSystemDbStartupLogProvider(config, ctx, logProvider)) {
+                        new Log4jLogProvider(ctx.out(), verbose ? Level.DEBUG : Level.ERROR)) {
             migrateStore(config, logProvider);
             if (SYSTEM_DATABASE_NAME.equals(database.getDatabaseName())) {
                 upgradeSystemDb(config, logProvider, systemDbStartupLogProvider);
@@ -293,18 +292,6 @@ public class MigrateStoreCommand extends AbstractCommand {
         }
     }
 
-    private static Log4jLogProvider createSystemDbStartupLogProvider(
-            Config config, ExecutionContext ctx, Log4jLogProvider logProvider) {
-        if (config.get(GraphDatabaseSettings.store_internal_log_level) == Level.DEBUG) {
-            return logProvider;
-        }
-        var errorLevelConfig = Config.newBuilder()
-                .fromConfig(config)
-                .set(GraphDatabaseSettings.store_internal_log_level, Level.ERROR)
-                .build();
-        return Util.configuredLogProvider(errorLevelConfig, ctx.out());
-    }
-
     private static MigrationEditionModuleFactory loadEditionModuleFactory() {
         var editionModuleFactory = Services.loadByPriority(MigrationEditionModuleFactory.class);
         return editionModuleFactory.orElseThrow(() -> new IllegalStateException(
@@ -350,10 +337,6 @@ public class MigrateStoreCommand extends AbstractCommand {
                 .set(GraphDatabaseSettings.neo4j_home, ctx.homeDir())
                 .set(pagecache_memory, ByteUnit.parse(pagecacheMemory))
                 .set(GraphDatabaseSettings.read_only_database_default, true);
-
-        if (verbose) {
-            configBuilder.set(GraphDatabaseSettings.store_internal_log_level, Level.DEBUG);
-        }
 
         Config cfg = configBuilder.build();
         ConfigUtils.disableAllConnectors(cfg);

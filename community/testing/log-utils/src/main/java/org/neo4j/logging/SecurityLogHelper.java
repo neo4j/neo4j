@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.logging.FormattedLogFormat.PLAIN;
+import static org.neo4j.logging.log4j.LogConfig.QUERY_LOG_JSON_TEMPLATE;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -41,18 +42,16 @@ public class SecurityLogHelper {
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
     private final Log4jLogProvider logProvider;
 
-    public SecurityLogHelper() {
-        logProvider = new Log4jLogProvider(LogConfig.createBuilder(outContent, Level.INFO)
-                .withFormat(PLAIN)
-                .withCategory(false)
-                .build());
-    }
-
     public SecurityLogHelper(FormattedLogFormat format) {
-        logProvider = new Log4jLogProvider(LogConfig.createBuilder(outContent, Level.INFO)
-                .withFormat(format)
-                .withCategory(false)
-                .build());
+        if (format == PLAIN) {
+            logProvider = new Log4jLogProvider(LogConfig.createBuilderToOutputStream(outContent, Level.INFO)
+                    .withCategory(false)
+                    .build());
+        } else {
+            logProvider = new Log4jLogProvider(LogConfig.createBuilderToOutputStream(outContent, Level.INFO)
+                    .withJsonLayout(QUERY_LOG_JSON_TEMPLATE)
+                    .build());
+        }
     }
 
     public Log4jLogProvider getLogProvider() {

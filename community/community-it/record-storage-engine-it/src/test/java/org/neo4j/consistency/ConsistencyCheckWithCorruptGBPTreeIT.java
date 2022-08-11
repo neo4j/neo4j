@@ -74,12 +74,12 @@ import org.neo4j.index.internal.gbptree.LayoutBootstrapper;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.internal.counts.CountsLayout;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -98,13 +98,14 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestNeo4jDatabaseManagementServiceBuilder;
+import org.neo4j.test.utils.TestDirectory;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ConsistencyCheckWithCorruptGBPTreeIT {
     private static final Label label = Label.label("label");
     private static final String propKey1 = "key1";
 
-    private static final Path neo4jHome = Path.of("neo4j_home").toAbsolutePath();
+    private static Path neo4jHome;
     // Created in @BeforeAll, contain full dbms with schema index backed by range-1.0 and token indexes
     private EphemeralFileSystemAbstraction sourceSnapshot;
     // Database layout for database created in @BeforeAll
@@ -119,6 +120,9 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
     @BeforeAll
     void createIndex() throws Exception {
         final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+        TestDirectory testDirectory = TestDirectory.testDirectory(fs);
+        testDirectory.prepareDirectory(getClass(), "CorruptGBPTreeIT");
+        neo4jHome = testDirectory.homePath();
         fs.mkdirs(neo4jHome);
         dbmsAction(
                 neo4jHome,
@@ -812,7 +816,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
 
     private void assertResultContainsMessage(ConsistencyCheckService.Result result, String expectedMessage)
             throws IOException {
-        assertResultContainsMessage(fs, result, expectedMessage);
+        assertResultContainsMessage(new DefaultFileSystemAbstraction(), result, expectedMessage);
     }
 
     private static void assertResultContainsMessage(
@@ -851,32 +855,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
     private ConsistencyCheckService.Result runConsistencyCheck(
             InternalLogProvider logProvider, OutputStream progressOutput, ConsistencyFlags consistencyFlags)
             throws ConsistencyCheckIncompleteException {
-        return runConsistencyCheck(fs, neo4jHome, databaseLayout, logProvider, progressOutput, consistencyFlags);
-    }
-
-    private static ConsistencyCheckService.Result runConsistencyCheck(
-            FileSystemAbstraction fs,
-            Path neo4jHome,
-            DatabaseLayout databaseLayout,
-            InternalLogProvider logProvider,
-            OutputStream progressOutput,
-            ConsistencyFlags consistencyFlags)
-            throws ConsistencyCheckIncompleteException {
-        return runConsistencyCheck(
-                fs, neo4jHome, databaseLayout, logProvider, progressOutput, consistencyFlags, config -> {});
-    }
-
-    private static ConsistencyCheckService.Result runConsistencyCheck(
-            FileSystemAbstraction fs,
-            Path neo4jHome,
-            DatabaseLayout databaseLayout,
-            InternalLogProvider logProvider,
-            OutputStream progressOutput,
-            ConsistencyFlags consistencyFlags,
-            Consumer<Config> adaptConfig)
-            throws ConsistencyCheckIncompleteException {
         Config config = Config.newBuilder().set(neo4j_home, neo4jHome).build();
-        adaptConfig.accept(config);
         return new ConsistencyCheckService(databaseLayout)
                 .with(config)
                 .with(progressOutput)

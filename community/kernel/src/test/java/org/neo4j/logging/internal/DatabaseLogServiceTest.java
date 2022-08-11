@@ -23,7 +23,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,21 +34,30 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.log4j.Log4jLogProvider;
+import org.neo4j.logging.log4j.LogConfig;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.utils.TestDirectory;
 
+@TestDirectoryExtension
 class DatabaseLogServiceTest {
-    private InternalLogProvider logProvider;
+    @Inject
+    private TestDirectory testDirectory;
+
     private DatabaseLogService logService;
-    private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
     private final NamedDatabaseId namedDatabaseId = DatabaseIdFactory.from("foo", UUID.randomUUID());
+    private Path file;
 
     @BeforeEach
     void setUp() {
-        logProvider = new Log4jLogProvider(outContent, Level.DEBUG);
+        file = testDirectory.file("test.log");
+        InternalLogProvider logProvider = new Log4jLogProvider(
+                LogConfig.createTemporaryLoggerToSingleFile(testDirectory.getFileSystem(), file, Level.DEBUG, true));
         logService = new DatabaseLogService(namedDatabaseId, new SimpleLogService(logProvider));
     }
 
     @Test
-    void shouldReturnUserLogProvider() {
+    void shouldReturnUserLogProvider() throws IOException {
         var logProvider = logService.getUserLogProvider();
         var log = logProvider.getLog("log_name");
         log.info("message");
@@ -55,7 +66,7 @@ class DatabaseLogServiceTest {
     }
 
     @Test
-    void shouldReturnInternalLogProvider() {
+    void shouldReturnInternalLogProvider() throws IOException {
         var logProvider = logService.getInternalLogProvider();
         var log = logProvider.getLog(Object.class);
         log.info("message");
@@ -87,7 +98,7 @@ class DatabaseLogServiceTest {
         assertSame(logProvider1, logProvider2);
     }
 
-    private void assertLogged(String message) {
-        assertThat(outContent.toString()).contains(message);
+    private void assertLogged(String message) throws IOException {
+        assertThat(Files.readString(file)).contains(message);
     }
 }

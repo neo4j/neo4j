@@ -21,13 +21,10 @@ package org.neo4j.server;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.store_user_log_max_archives;
-import static org.neo4j.configuration.GraphDatabaseSettings.store_user_log_rotation_threshold;
-import static org.neo4j.configuration.GraphDatabaseSettings.store_user_log_to_stdout;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.logging.log4j.LogConfig.USER_LOG;
 import static org.neo4j.server.NeoBootstrapper.OK;
 
 import java.io.IOException;
@@ -36,7 +33,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -45,7 +41,9 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
+import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.logging.InternalLog;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
@@ -63,19 +61,40 @@ class ServerUserLogTest {
     private TestDirectory homeDir;
 
     @Test
-    void shouldLogToStdOutByDefault() {
+    void shouldLogToStdOutWhenConfigured() throws IOException {
         // given
         NeoBootstrapper neoBootstrapper = getServerBootstrapper();
         Path dir = homeDir.homePath();
         InternalLog logBeforeStart = neoBootstrapper.getLog();
+        Path xmlConfig = dir.resolve("neo4j.xml");
 
         // when
         try {
-            int returnCode = neoBootstrapper.start(dir, connectorsConfig());
+            String xml =
+                    """
+                    <Configuration packages="org.neo4j.logging.log4j">
+                        <Appenders>
+                            <Console name="console" target="SYSTEM_OUT" follow="true">
+                                <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSSZ}{GMT+0} %-5p %m%n"/>
+                            </Console>
+                        </Appenders>
+                        <Loggers>
+                            <Root level="info">
+                                <AppenderRef ref="console"/>
+                            </Root>
+                        </Loggers>
+                    </Configuration>
+                    """;
+            FileSystemUtils.writeString(homeDir.getFileSystem(), xmlConfig, xml, EmptyMemoryTracker.INSTANCE);
+            Map<String, String> configOverrides =
+                    stringMap(GraphDatabaseSettings.user_logging_config_path.name(), xmlConfig.toString());
+            configOverrides.putAll(connectorsConfig());
+
+            int returnCode = neoBootstrapper.start(dir, null, configOverrides, false, true);
 
             // then no exceptions are thrown and
             assertThat(getStdOut()).isNotEmpty();
-            assertFalse(Files.exists(getUserLogFileLocation(dir)));
+            assertThat(getUserLogFileLocation(dir)).doesNotExist();
 
             // then no exceptions are thrown and
             assertEquals(OK, returnCode);
@@ -88,11 +107,11 @@ class ServerUserLogTest {
             // stop the server so that resources are released and test teardown isn't flaky
             neoBootstrapper.stop();
         }
-        assertFalse(Files.exists(getUserLogFileLocation(dir)));
+        assertThat(getUserLogFileLocation(dir)).doesNotExist();
     }
 
     @Test
-    void shouldLogToFileWhenConfigured() throws Exception {
+    void shouldLogToFileByDefault() throws Exception {
         // given
         NeoBootstrapper neoBootstrapper = getServerBootstrapper();
         Path dir = homeDir.homePath();
@@ -100,9 +119,7 @@ class ServerUserLogTest {
 
         // when
         try {
-            Map<String, String> configOverrides = stringMap(store_user_log_to_stdout.name(), FALSE);
-            configOverrides.putAll(connectorsConfig());
-            int returnCode = neoBootstrapper.start(dir, configOverrides);
+            int returnCode = neoBootstrapper.start(dir, connectorsConfig());
             // then no exceptions are thrown and
             assertEquals(OK, returnCode);
             assertTrue(neoBootstrapper.isRunning());
@@ -113,53 +130,9 @@ class ServerUserLogTest {
             neoBootstrapper.stop();
         }
         assertThat(getStdOut()).isEmpty();
-        assertTrue(Files.exists(getUserLogFileLocation(dir)));
+        assertThat(getUserLogFileLocation(dir)).exists();
         assertThat(readUserLogFile(dir)).isNotEmpty();
         assertThat(readUserLogFile(dir)).anyMatch(s -> s.contains("Started."));
-    }
-
-    @Test
-    void logShouldRotateWhenConfigured() throws Exception {
-        // given
-        NeoBootstrapper neoBootstrapper = getServerBootstrapper();
-        Path dir = homeDir.homePath();
-        InternalLog logBeforeStart = neoBootstrapper.getLog();
-        int maxArchives = 4;
-
-        // when
-        try {
-            Map<String, String> configOverrides = stringMap(
-                    store_user_log_to_stdout.name(),
-                    FALSE,
-                    store_user_log_rotation_threshold.name(),
-                    "16",
-                    store_user_log_max_archives.name(),
-                    Integer.toString(maxArchives));
-            configOverrides.putAll(connectorsConfig());
-            int returnCode = neoBootstrapper.start(dir, configOverrides);
-
-            // then
-            assertEquals(OK, returnCode);
-            assertThat(neoBootstrapper.getLog()).isNotSameAs(logBeforeStart);
-            assertTrue(neoBootstrapper.isRunning());
-
-            // when we forcibly log some more stuff
-            do {
-                neoBootstrapper.getLog().info("testing 123. This string should contain more than 16 bytes\n");
-                Thread.sleep(2000);
-            } while (allUserLogFiles(dir).size() <= 4);
-        } finally {
-            // stop the server so that resources are released and test teardown isn't flaky
-            neoBootstrapper.stop();
-        }
-
-        // then no exceptions are thrown and
-        assertThat(getStdOut()).isEmpty();
-        assertTrue(Files.exists(getUserLogFileLocation(dir)));
-        assertThat(readUserLogFile(dir)).isNotEmpty();
-        List<String> userLogFiles = allUserLogFiles(dir);
-        assertThat(userLogFiles).contains("neo4j.log", "neo4j.log.1", "neo4j.log.2", "neo4j.log.3", "neo4j.log.4");
-        assertEquals(maxArchives + 1, userLogFiles.size());
     }
 
     private static Map<String, String> connectorsConfig() {
@@ -197,14 +170,6 @@ class ServerUserLogTest {
     }
 
     private static Path getUserLogFileLocation(Path homeDir) {
-        return homeDir.resolve("logs").resolve("neo4j.log");
-    }
-
-    private static List<String> allUserLogFiles(Path homeDir) throws IOException {
-        try (Stream<Path> stream = Files.list(homeDir.resolve("logs"))) {
-            return stream.map(x -> x.getFileName().toString())
-                    .filter(x -> x.contains("neo4j.log"))
-                    .collect(Collectors.toList());
-        }
+        return homeDir.resolve("logs").resolve(USER_LOG);
     }
 }

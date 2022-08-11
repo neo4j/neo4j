@@ -21,21 +21,17 @@ package org.neo4j.graphdb.factory.module;
 
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.data_collector_max_recent_query_count;
 import static org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation;
-import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.configuration.GraphDatabaseSettings.filewatcher_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_global_max_size;
-import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_format;
-import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_level;
-import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_max_archives;
-import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
-import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_memory_allocation;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
 import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
+import static org.neo4j.logging.log4j.LogConfig.createLoggerFromXmlConfig;
 
+import java.nio.file.Path;
 import java.util.function.Supplier;
 import org.neo4j.bolt.transaction.StatementProcessorTxManager;
 import org.neo4j.bolt.transaction.TransactionManager;
@@ -104,7 +100,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.logging.log4j.Log4jLogProvider;
-import org.neo4j.logging.log4j.LogConfig;
 import org.neo4j.logging.log4j.Neo4jLoggerContext;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryGroup;
@@ -331,34 +326,29 @@ public class GlobalModule {
     }
 
     protected LogService createLogService(InternalLogProvider userLogProvider) {
-        // Will get diagnostics as header in each newly created log file (diagnostics in the first file is printed
-        // during start up).
-        Neo4jLoggerContext loggerContext = LogConfig.createBuilder(
-                        fileSystem,
-                        globalConfig.get(store_internal_log_path),
-                        globalConfig.get(store_internal_log_level))
-                .withFormat(globalConfig.get(store_internal_log_format))
-                .withTimezone(globalConfig.get(db_timezone))
-                .withHeaderLogger(
-                        log -> dbmsDiagnosticsManager.dumpAll(log), DiagnosticsManager.class.getCanonicalName())
-                .withRotation(
-                        globalConfig.get(store_internal_log_rotation_threshold),
-                        globalConfig.get(store_internal_log_max_archives))
-                .build();
-        Log4jLogProvider internalLogProvider = new Log4jLogProvider(loggerContext);
         userLogProvider = userLogProvider == null ? NullLogProvider.getInstance() : userLogProvider;
+        InternalLogProvider internalLogProvider = NullLogProvider.getInstance();
+
+        if (globalConfig.get(GraphDatabaseSettings.debug_log_enabled)) {
+            Path xmlConfig = globalConfig.get(GraphDatabaseSettings.server_logging_config_path);
+            boolean allowDefaultXmlConfig =
+                    !globalConfig.isExplicitlySet(GraphDatabaseSettings.server_logging_config_path);
+            @SuppressWarnings("Convert2MethodRef")
+            Neo4jLoggerContext loggerContext = createLoggerFromXmlConfig(
+                    fileSystem,
+                    xmlConfig,
+                    allowDefaultXmlConfig,
+                    false,
+                    globalConfig::configStringLookup,
+                    log -> dbmsDiagnosticsManager.dumpAll(
+                            log), // dbmsDiagnosticsManager is null here, but will be assigned later
+                    DiagnosticsManager.class.getCanonicalName());
+
+            internalLogProvider = new Log4jLogProvider(loggerContext);
+        }
+
         SimpleLogService logService = new SimpleLogService(userLogProvider, internalLogProvider);
 
-        // Listen to changes to the dynamic log level settings.
-        globalConfig.addListener(
-                store_internal_log_level, (before, after) -> internalLogProvider.updateLogLevel(after));
-
-        // If the user log provider comes from us we make sure that it starts with the default log level and listens to
-        // updates.
-        if (userLogProvider instanceof Log4jLogProvider provider) {
-            provider.updateLogLevel(globalConfig.get(store_internal_log_level));
-            globalConfig.addListener(store_internal_log_level, (before, after) -> provider.updateLogLevel(after));
-        }
         return globalLife.add(logService);
     }
 

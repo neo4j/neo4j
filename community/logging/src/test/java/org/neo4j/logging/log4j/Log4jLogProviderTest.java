@@ -26,24 +26,38 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.logging.log4j.LogConfigTest.DATE_PATTERN;
 
-import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.lang.invoke.VarHandle;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.logging.log4j.core.appender.AbstractManager;
 import org.junit.jupiter.api.Test;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.Level;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.utils.TestDirectory;
 
+@TestDirectoryExtension
 class Log4jLogProviderTest {
     private static final int WAIT_TIMEOUT_MINUTES = 1;
     private static final int ITERATIONS = 10000;
 
-    @Test
-    void getLogShouldReturnLogWithCorrectCategory() {
-        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+    @Inject
+    private DefaultFileSystemAbstraction fs;
 
-        Log4jLogProvider logProvider = new Log4jLogProvider(outContent);
+    @Inject
+    private TestDirectory dir;
+
+    @Test
+    void getLogShouldReturnLogWithCorrectCategory() throws IOException {
+        Path file = dir.file("test.log");
+        Neo4jLoggerContext build = LogConfig.createTemporaryLoggerToSingleFile(fs, file, Level.INFO, true);
+
+        Log4jLogProvider logProvider = new Log4jLogProvider(build);
 
         InternalLog log = logProvider.getLog("stringAsCategory");
         log.info("testMessage");
@@ -51,7 +65,7 @@ class Log4jLogProviderTest {
         InternalLog log2 = logProvider.getLog(Log4jLog.class);
         log2.info("testMessage2");
 
-        assertThat(outContent.toString())
+        assertThat(Files.readString(file))
                 .matches(format(
                         DATE_PATTERN + " %-5s \\[stringAsCategory\\] testMessage%n" + DATE_PATTERN
                                 + " %-5s \\[o.n.l.l.Log4jLog\\] testMessage2%n",
@@ -61,9 +75,9 @@ class Log4jLogProviderTest {
 
     @Test
     void closeCreatedLogProviders() {
-        for (int i = 0; i < 10_000; i++) {
-            ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            try (Log4jLogProvider log4jLogProvider = new Log4jLogProvider(stream)) {
+        for (int i = 0; i < 1_000; i++) {
+            try (Log4jLogProvider log4jLogProvider = new Log4jLogProvider(
+                    LogConfig.createTemporaryLoggerToSingleFile(fs, dir.file("test.log" + i), Level.INFO, true))) {
                 log4jLogProvider.getLog("test").info("message");
             }
         }
@@ -75,7 +89,7 @@ class Log4jLogProviderTest {
     @Test
     void doNotCreateDefaultLogLayouts() {
         for (int i = 0; i < ITERATIONS; i++) {
-            assertNotNull(Neo4jLogLayout.createLayout("testLayout" + i));
+            assertNotNull(Neo4jDebugLogLayout.createLayout("testLayout" + i, new Neo4jConfiguration()));
         }
 
         await().atMost(ofMinutes(WAIT_TIMEOUT_MINUTES))

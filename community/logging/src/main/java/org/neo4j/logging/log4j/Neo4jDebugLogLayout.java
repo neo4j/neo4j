@@ -31,9 +31,11 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
+import org.apache.logging.log4j.core.config.plugins.PluginConfiguration;
 import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.apache.logging.log4j.core.impl.DefaultLogEventFactory;
 import org.apache.logging.log4j.core.layout.AbstractStringLayout;
@@ -42,13 +44,16 @@ import org.apache.logging.log4j.spi.AbstractLogger;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.logging.InternalLog;
 
-@Plugin(name = "Neo4jLogLayout", category = Node.CATEGORY, elementType = Layout.ELEMENT_TYPE, printObject = true)
-public class Neo4jLogLayout extends AbstractStringLayout {
-    protected final Serializer eventSerializer;
-    protected volatile Consumer<InternalLog> headerLogger;
-    protected volatile String headerClassName;
+/**
+ * Special layout for the debug log that will include a header with diagnostic information.
+ */
+@Plugin(name = "Neo4jDebugLogLayout", category = Node.CATEGORY, elementType = Layout.ELEMENT_TYPE, printObject = true)
+public class Neo4jDebugLogLayout extends AbstractStringLayout {
+    private final Serializer eventSerializer;
+    private volatile Consumer<InternalLog> headerLogger;
+    private volatile String headerClassName;
 
-    protected Neo4jLogLayout(String pattern, Neo4jConfiguration config) {
+    private Neo4jDebugLogLayout(String pattern, Configuration config) {
         super(config, StandardCharsets.UTF_8, null, null);
         this.eventSerializer = newSerializerBuilder()
                 .setConfiguration(config)
@@ -59,9 +64,11 @@ public class Neo4jLogLayout extends AbstractStringLayout {
                 .build();
     }
 
+    @SuppressWarnings("WeakerAccess")
     @PluginFactory
-    public static Neo4jLogLayout createLayout(@PluginAttribute("pattern") String pattern) {
-        return new Neo4jLogLayout(pattern, new Neo4jConfiguration());
+    public static Neo4jDebugLogLayout createLayout(
+            @PluginAttribute("pattern") String pattern, @PluginConfiguration final Configuration config) {
+        return new Neo4jDebugLogLayout(pattern, config);
     }
 
     @Override

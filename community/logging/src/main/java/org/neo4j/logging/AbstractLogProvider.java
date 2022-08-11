@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
+import org.neo4j.logging.log4j.LoggerTarget;
 
 /**
  * An abstract {@link InternalLogProvider} implementation, which ensures {@link InternalLog}s are cached and reused.
@@ -39,6 +40,12 @@ public abstract class AbstractLogProvider<T extends InternalLog> implements Inte
 
     @Override
     public T getLog(final String name) {
+        return getLog(name, () -> buildLog(name));
+    }
+
+    @Override
+    public T getLog(LoggerTarget target) {
+        String name = target.getTarget();
         return getLog(name, () -> buildLog(name));
     }
 

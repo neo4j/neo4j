@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.logging.log4j.LogConfig.DEBUG_LOG;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -85,7 +86,7 @@ class CsvImporterTest {
         csvImporter.doImport();
 
         assertTrue(Files.exists(reportLocation));
-        assertThat(Files.readString(logDir.resolve("debug.log"))).contains("[foodb] Import starting");
+        assertThat(Files.readString(logDir.resolve(DEBUG_LOG))).contains("[foodb] Import starting");
     }
 
     @Test

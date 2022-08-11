@@ -172,18 +172,17 @@ class DiagnosticsReportCommandIT {
     }
 
     @Test
-    void shouldHandleRotatedLogFiles() throws IOException {
+    void includeAllLogFiles() throws IOException {
         // Write config file and specify a custom name for the neo4j.log file.
         Path confFile = testDirectory.createFile("neo4j.conf");
-        Files.write(
-                confFile, singletonList(GraphDatabaseSettings.store_user_log_path.name() + "=custom.neo4j.log.name"));
+        Files.write(confFile, singletonList(GraphDatabaseSettings.logs_directory.name() + "=customLogDir/"));
 
         // Create some log files that should be found. debug.log has already been created during setup.
-        testDirectory.directory("logs");
-        testDirectory.createFile("logs/debug.log");
-        testDirectory.createFile("logs/debug.log.1.zip");
-        testDirectory.createFile("logs/custom.neo4j.log.name");
-        testDirectory.createFile("logs/custom.neo4j.log.name.1");
+        testDirectory.directory("customLogDir");
+        testDirectory.createFile("customLogDir/debug.log");
+        testDirectory.createFile("customLogDir/debug.log.01.zip");
+        testDirectory.createFile("customLogDir/neo4j.log");
+        testDirectory.createFile("customLogDir/neo4j.log.01");
 
         String[] args = {"logs", "--to-path=" + testDirectory.absolutePath() + "/reports"};
         Path homeDir = testDirectory.homePath();
@@ -199,9 +198,9 @@ class DiagnosticsReportCommandIT {
         try (FileSystem fileSystem = FileSystems.newFileSystem(files[0])) {
             Path logsDir = fileSystem.getPath("logs");
             assertTrue(Files.exists(logsDir.resolve("debug.log")));
-            assertTrue(Files.exists(logsDir.resolve("debug.log.1.zip")));
-            assertTrue(Files.exists(logsDir.resolve("custom.neo4j.log.name")));
-            assertTrue(Files.exists(logsDir.resolve("custom.neo4j.log.name.1")));
+            assertTrue(Files.exists(logsDir.resolve("debug.log.01.zip")));
+            assertTrue(Files.exists(logsDir.resolve("neo4j.log")));
+            assertTrue(Files.exists(logsDir.resolve("neo4j.log.01")));
         }
     }
 

@@ -20,6 +20,7 @@
 package org.neo4j.server;
 
 import static java.lang.String.format;
+import static org.neo4j.logging.log4j.LogConfig.createLoggerFromXmlConfig;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -45,7 +46,6 @@ import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.log4j.Log4jLogProvider;
-import org.neo4j.logging.log4j.LogConfig;
 import org.neo4j.logging.log4j.Neo4jLoggerContext;
 import org.neo4j.memory.MachineMemory;
 import org.neo4j.server.logging.JULBridge;
@@ -85,16 +85,35 @@ public abstract class NeoBootstrapper implements Bootstrapper {
             throw new ServerStartupException("Argument --home-dir is required and was not provided.");
         }
 
-        return boot.start(args.homeDir(), args.configFile(), args.configOverrides(), args.expandCommands());
+        return boot.start(
+                args.homeDir(),
+                args.configFile(),
+                args.configOverrides(),
+                args.expandCommands(),
+                args.allowConsoleAppenders());
     }
 
     @VisibleForTesting
     public final int start(Path homeDir, Map<String, String> configOverrides) {
-        return start(homeDir, null, configOverrides, false);
+        return start(homeDir, null, configOverrides, false, false);
     }
 
+    /**
+     *
+     * @param homeDir NEO4J_HOME path.
+     * @param configFile path to a possible configuration file, if the files does not exist a default config will be used.
+     * @param configOverrides optional config overrides, will be applied after the {@code configFile} is parsed.
+     * @param expandCommands if {@code true}, this will allow the config to execute commands in values and used the returned value instead.
+     * @param allowConsoleAppenders if {@code false}, console log appenders will be forcefully removed from the logging configuration.
+     * @return exit code.
+     */
     @Override
-    public final int start(Path homeDir, Path configFile, Map<String, String> configOverrides, boolean expandCommands) {
+    public final int start(
+            Path homeDir,
+            Path configFile,
+            Map<String, String> configOverrides,
+            boolean expandCommands,
+            boolean allowConsoleAppenders) {
         addShutdownHook();
         installSignalHandlers();
         Config config = Config.newBuilder()
@@ -106,7 +125,7 @@ public abstract class NeoBootstrapper implements Bootstrapper {
                 .build();
         pidFile = config.get(BootloaderSettings.pid_file);
         writePidSilently();
-        Log4jLogProvider userLogProvider = setupLogging(config);
+        Log4jLogProvider userLogProvider = setupLogging(config, allowConsoleAppenders);
         userLogFileStream = userLogProvider;
 
         dependencies = dependencies.userLogProvider(userLogProvider);
@@ -225,23 +244,19 @@ public abstract class NeoBootstrapper implements Bootstrapper {
 
     protected abstract DatabaseManagementService createNeo(Config config, GraphDatabaseDependencies dependencies);
 
-    private static Log4jLogProvider setupLogging(Config config) {
-        LogConfig.Builder builder = LogConfig.createBuilder(
-                        new DefaultFileSystemAbstraction(),
-                        config.get(GraphDatabaseSettings.store_user_log_path),
-                        config.get(GraphDatabaseSettings.store_internal_log_level))
-                .withTimezone(config.get(GraphDatabaseSettings.db_timezone))
-                .withFormat(config.get(GraphDatabaseSettings.store_user_log_format))
-                .withCategory(false)
-                .withRotation(
-                        config.get(GraphDatabaseSettings.store_user_log_rotation_threshold),
-                        config.get(GraphDatabaseSettings.store_user_log_max_archives));
+    private static Log4jLogProvider setupLogging(Config config, boolean allowConsoleAppenders) {
 
-        if (config.get(GraphDatabaseSettings.store_user_log_to_stdout)) {
-            builder.logToSystemOut();
-        }
+        Path xmlConfig = config.get(GraphDatabaseSettings.user_logging_config_path);
+        boolean allowDefaultXmlConfig = !config.isExplicitlySet(GraphDatabaseSettings.user_logging_config_path);
+        Neo4jLoggerContext ctx = createLoggerFromXmlConfig(
+                new DefaultFileSystemAbstraction(),
+                xmlConfig,
+                allowDefaultXmlConfig,
+                allowConsoleAppenders,
+                config::configStringLookup,
+                null,
+                null);
 
-        Neo4jLoggerContext ctx = builder.build();
         Log4jLogProvider userLogProvider = new Log4jLogProvider(ctx);
 
         JULBridge.resetJUL();

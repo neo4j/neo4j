@@ -28,7 +28,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 
-public class SchemaRuleUtil {
+public final class SchemaRuleUtil {
     private SchemaRuleUtil() {}
 
     public static ConstraintDescriptor uniquenessConstraintRule(

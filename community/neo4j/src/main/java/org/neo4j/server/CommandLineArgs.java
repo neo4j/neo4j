@@ -48,6 +48,7 @@ public class CommandLineArgs {
     public static final String HOME_DIR_ARG = "home-dir";
     public static final String VERSION_ARG = "version";
     public static final String EXPAND_COMMAND_ARG = "expand-commands";
+    public static final String ALLOW_CONSOLE_APPENDERS = "allow-console-appenders";
     private final Args args;
     private final Map<String, String> configOverrides;
 
@@ -101,5 +102,9 @@ public class CommandLineArgs {
 
     public boolean expandCommands() {
         return args.getBoolean(EXPAND_COMMAND_ARG, FALSE);
+    }
+
+    public boolean allowConsoleAppenders() {
+        return args.getBoolean(ALLOW_CONSOLE_APPENDERS, FALSE);
     }
 }

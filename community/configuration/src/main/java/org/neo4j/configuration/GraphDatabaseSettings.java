@@ -24,6 +24,7 @@ import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
+import static org.neo4j.configuration.Config.DEFAULT_CONFIG_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation.ON_HEAP;
 import static org.neo4j.configuration.SettingConstraints.ABSOLUTE_PATH;
 import static org.neo4j.configuration.SettingConstraints.HOSTNAME_ONLY;
@@ -67,7 +68,6 @@ import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
 
@@ -403,39 +403,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .immutable()
             .build();
 
-    @Description("Default log format. Will apply to all logs unless overridden.")
-    public static final Setting<FormattedLogFormat> default_log_format = newBuilder(
-                    "dbms.logs.default_format", ofEnum(FormattedLogFormat.class), FormattedLogFormat.PLAIN)
-            .immutable()
-            .build();
-
-    @Description("Log format to use for user log.")
-    public static final Setting<FormattedLogFormat> store_user_log_format = newBuilder(
-                    "dbms.logs.user.format", ofEnum(FormattedLogFormat.class), null)
-            .setDependency(default_log_format)
-            .build();
-
-    @Description("Threshold for rotation of the user log (_neo4j.log_). If set to 0, log rotation is "
-            + "disabled. Note that if dbms.logs.user.stdout_enabled is enabled this setting will be ignored.")
-    public static final Setting<Long> store_user_log_rotation_threshold = newBuilder(
-                    "dbms.logs.user.rotation.size", BYTES, 0L)
-            .addConstraint(range(0L, Long.MAX_VALUE))
-            .build();
-
-    @Description("Threshold for rotation of the debug log.")
-    public static final Setting<Long> store_internal_log_rotation_threshold = newBuilder(
-                    "dbms.logs.debug.rotation.size", BYTES, mebiBytes(20))
-            .addConstraint(range(0L, Long.MAX_VALUE))
-            .build();
-
-    @Description("Debug log level threshold.")
-    public static final Setting<Level> store_internal_log_level = newBuilder(
-                    "dbms.logs.debug.level", ofEnum(Level.class), Level.INFO)
-            .dynamic()
-            .build();
-
-    @Description(
-            "Database timezone. Among other things, this setting influences which timezone the logs and monitoring procedures use.")
+    @Description("Database timezone. Among other things, this setting influences the monitoring procedures.")
     public static final Setting<LogTimeZone> db_timezone = newBuilder(
                     "dbms.db.timezone", ofEnum(LogTimeZone.class), LogTimeZone.UTC)
             .build();
@@ -444,19 +412,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "an explicit timezone will use this configured default timezone.")
     public static final Setting<ZoneId> db_temporal_timezone =
             newBuilder("db.temporal.timezone", TIMEZONE, ZoneOffset.UTC).build();
-
-    @Description("Maximum number of history files for the user log (_neo4j.log_). "
-            + "Note that if dbms.logs.user.stdout_enabled is enabled this setting will be ignored.")
-    public static final Setting<Integer> store_user_log_max_archives = newBuilder(
-                    "dbms.logs.user.rotation.keep_number", INT, 7)
-            .addConstraint(min(1))
-            .build();
-
-    @Description("Maximum number of history files for the debug log.")
-    public static final Setting<Integer> store_internal_log_max_archives = newBuilder(
-                    "dbms.logs.debug.rotation.keep_number", INT, 7)
-            .addConstraint(min(1))
-            .build();
 
     public enum CheckpointPolicy {
         PERIODIC,
@@ -689,7 +644,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     @Description("Log executed queries. Valid values are `OFF`, `INFO`, or `VERBOSE`.\n\n" + "`OFF`::  no logging.\n"
             + "`INFO`:: log queries at the end of execution, that take longer than the configured threshold, `db.logs.query.threshold`.\n"
             + "`VERBOSE`:: log queries at the start and end of execution, regardless of `db.logs.query.threshold`.\n\n"
-            + "Log entries are written to the query log (dbms.logs.query.path).\n\n"
+            + "Log entries are written to the query log.\n\n"
             + "This feature is available in the Neo4j Enterprise Edition.")
     public static final Setting<LogQueryLevel> log_queries = newBuilder(
                     "db.logs.query.enabled", ofEnum(LogQueryLevel.class), LogQueryLevel.VERBOSE)
@@ -702,12 +657,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
         VERBOSE
     }
 
-    @Description("Log format to use for the query log.")
-    public static final Setting<FormattedLogFormat> log_query_format = newBuilder(
-                    "dbms.logs.query.format", ofEnum(FormattedLogFormat.class), null)
-            .setDependency(default_log_format)
-            .build();
-
     @Description("Log transaction ID for the executed queries.")
     public static final Setting<Boolean> log_queries_transaction_id = newBuilder(
                     "db.logs.query.transaction_id.enabled", BOOL, false)
@@ -718,18 +667,26 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "OFF:  no logging.\n"
             + "INFO: log start and end of transactions that take longer than the configured threshold, db.logs.query.transaction.threshold.\n"
             + "VERBOSE: log start and end of all transactions.\n"
-            + "Log entries are written to the query log (dbms.logs.query.path).\n"
+            + "Log entries are written to the query log.\n"
             + "This feature is available in the Neo4j Enterprise Edition.")
     public static final Setting<LogQueryLevel> log_queries_transactions_level = newBuilder(
                     "db.logs.query.transaction.enabled", ofEnum(LogQueryLevel.class), LogQueryLevel.OFF)
             .dynamic()
             .build();
 
-    @Description(
-            "Send user logs to the process stdout. "
-                    + "If this is disabled then logs will instead be sent to the file _neo4j.log_ located in the logs directory.")
-    public static final Setting<Boolean> store_user_log_to_stdout =
-            newBuilder("dbms.logs.user.stdout_enabled", BOOL, true).build();
+    @Description("Path to the logging configuration for debug, query, http and security logs.")
+    public static final Setting<Path> server_logging_config_path = newBuilder(
+                    "server.logs.config", PATH, Path.of(DEFAULT_CONFIG_DIR_NAME, "server-logs.xml"))
+            .setDependency(neo4j_home)
+            .immutable()
+            .build();
+
+    @Description("Path to the logging configuration of user logs.")
+    public static final Setting<Path> user_logging_config_path = newBuilder(
+                    "server.logs.user.config", PATH, Path.of(DEFAULT_CONFIG_DIR_NAME, "user-logs.xml"))
+            .setDependency(neo4j_home)
+            .immutable()
+            .build();
 
     @Description("Path of the logs directory.")
     public static final Setting<Path> logs_directory = newBuilder("server.directories.logs", PATH, Path.of("logs"))
@@ -737,33 +694,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .immutable()
             .build();
 
-    @Description("Path to the query log file.")
-    public static final Setting<Path> log_queries_filename = newBuilder(
-                    "dbms.logs.query.path", PATH, Path.of("query.log"))
-            .setDependency(logs_directory)
-            .immutable()
-            .build();
-
-    @Description(
-            "Path to the user log file. Note that if dbms.logs.user.stdout_enabled is enabled this setting will be ignored.")
-    public static final Setting<Path> store_user_log_path = newBuilder(
-                    "dbms.logs.user.path", PATH, Path.of("neo4j.log"))
-            .setDependency(logs_directory)
-            .immutable()
-            .build();
-
-    @Description("Log format to use for debug log.")
-    public static final Setting<FormattedLogFormat> store_internal_log_format = newBuilder(
-                    "dbms.logs.debug.format", ofEnum(FormattedLogFormat.class), null)
-            .setDependency(default_log_format)
-            .build();
-
-    @Description("Path to the debug log file.")
-    public static final Setting<Path> store_internal_log_path = newBuilder(
-                    "dbms.logs.debug.path", PATH, Path.of("debug.log"))
-            .setDependency(logs_directory)
-            .immutable()
-            .build();
+    @Description("Enable the debug log.")
+    public static final Setting<Boolean> debug_log_enabled =
+            newBuilder("server.logs.debug.enabled", BOOL, Boolean.TRUE).build();
 
     @Description("Path of the licenses directory.")
     public static final Setting<Path> licenses_directory = newBuilder(
@@ -841,21 +774,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
                     + "Defaults to 0 seconds (all transactions are logged).")
     public static final Setting<Duration> log_queries_transaction_threshold = newBuilder(
                     "db.logs.query.transaction.threshold", DURATION, Duration.ZERO)
-            .dynamic()
-            .build();
-
-    @Description("The file size in bytes at which the query log will auto-rotate. If set to zero then no rotation "
-            + "will occur. Accepts a binary suffix `k`, `m` or `g`.")
-    public static final Setting<Long> log_queries_rotation_threshold = newBuilder(
-                    "dbms.logs.query.rotation.size", BYTES, mebiBytes(20))
-            .addConstraint(range(0L, Long.MAX_VALUE))
-            .dynamic()
-            .build();
-
-    @Description("Maximum number of history files for the query log.")
-    public static final Setting<Integer> log_queries_max_archives = newBuilder(
-                    "dbms.logs.query.rotation.keep_number", INT, 7)
-            .addConstraint(min(1))
             .dynamic()
             .build();
 
@@ -1026,9 +944,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .build();
 
     @Description("Sets level for driver internal logging.")
-    @DocumentedDefaultValue("Value of dbms.logs.debug.level")
     public static final Setting<Level> routing_driver_logging_level = newBuilder(
-                    "dbms.routing.driver.logging.level", ofEnum(Level.class), null)
+                    "dbms.routing.driver.logging.level", ofEnum(Level.class), Level.INFO)
             .build();
 
     @Description("Maximum total number of connections to be managed by a connection pool.\n"

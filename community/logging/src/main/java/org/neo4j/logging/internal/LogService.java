@@ -27,7 +27,7 @@ import org.neo4j.logging.InternalLogProvider;
  */
 public interface LogService {
     /**
-     * @return a {@link InternalLogProvider} that providers loggers for user visible messages.
+     * @return a {@link InternalLogProvider} that providers loggers for user visible messages. Usually backed by user-logs.xml.
      */
     InternalLogProvider getUserLogProvider();
 
@@ -39,7 +39,7 @@ public interface LogService {
     InternalLog getUserLog(Class<?> loggingClass);
 
     /**
-     * @return a {@link InternalLogProvider} that providers loggers for internal messages.
+     * @return a {@link InternalLogProvider} that providers loggers for internal messages. Usually backed by server-logs.xml.
      */
     InternalLogProvider getInternalLogProvider();
 

@@ -20,9 +20,9 @@
 package org.neo4j.logging.log4j;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.logging.log4j.LogConfig.DEBUG_LOG;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Scanner;
 import org.apache.logging.log4j.spi.ExtendedLogger;
@@ -51,15 +51,15 @@ class LogConfigEphemeralTest {
 
     @Test
     void shouldLogToEphemeralFileSystemAbstraction() throws IOException {
-        Path targetFile = dir.homePath().resolve("debug.log");
+        Path targetFile = dir.homePath().resolve(DEBUG_LOG);
 
-        ctx = LogConfig.createBuilder(fs, targetFile, Level.DEBUG).build();
+        ctx = LogConfig.createTemporaryLoggerToSingleFile(fs, targetFile, Level.DEBUG, true);
         ExtendedLogger logger = ctx.getLogger("test");
         logger.warn("test");
 
-        assertThat(fs.fileExists(targetFile)).isEqualTo(true);
-        try (InputStream inputStream = fs.openAsInputStream(targetFile)) {
-            Scanner scanner = new Scanner(inputStream);
+        // Note, the actual log files will end up in the filesystem for now
+        assertThat(targetFile).exists();
+        try (Scanner scanner = new Scanner(targetFile)) {
             String line = scanner.nextLine();
             assertThat(line).contains("WARN  [test] test");
         }

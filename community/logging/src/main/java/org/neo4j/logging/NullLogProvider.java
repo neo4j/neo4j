@@ -19,6 +19,8 @@
  */
 package org.neo4j.logging;
 
+import org.neo4j.logging.log4j.LoggerTarget;
+
 /**
  * A {@link InternalLogProvider} implementation that discards all messages
  */
@@ -41,6 +43,11 @@ public final class NullLogProvider implements InternalLogProvider {
 
     @Override
     public InternalLog getLog(String name) {
+        return NullLog.getInstance();
+    }
+
+    @Override
+    public InternalLog getLog(LoggerTarget target) {
         return NullLog.getInstance();
     }
 }
