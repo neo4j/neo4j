@@ -106,16 +106,22 @@ class DatabaseLifecyclesTest {
     }
 
     private static class SimpleDatabaseIdRepository implements DatabaseIdRepository {
-        private final NamedDatabaseId defaultId = DatabaseIdFactory.from(DEFAULT_DATABASE_NAME, UUID.randomUUID());
+        private final Set<NamedDatabaseId> databaseIds = Set.of(
+                NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID,
+                DatabaseIdFactory.from(DEFAULT_DATABASE_NAME, UUID.randomUUID()));
 
         @Override
         public Optional<NamedDatabaseId> getByName(NormalizedDatabaseName databaseName) {
-            return Optional.of(defaultId);
+            return databaseIds.stream()
+                    .filter(id -> id.name().equals(databaseName.name()))
+                    .findFirst();
         }
 
         @Override
         public Optional<NamedDatabaseId> getById(DatabaseId databaseId) {
-            return Optional.of(defaultId);
+            return databaseIds.stream()
+                    .filter(id -> id.databaseId().equals(databaseId))
+                    .findFirst();
         }
 
         @Override

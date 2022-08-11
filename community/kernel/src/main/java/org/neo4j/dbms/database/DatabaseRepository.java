@@ -20,7 +20,6 @@
 package org.neo4j.dbms.database;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -28,7 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.database.NormalizedDatabaseName;
 
 public class DatabaseRepository<DB extends DatabaseContext> implements DatabaseContextProvider<DB> {
     private final DatabaseIdRepository databaseIdRepository;
@@ -53,19 +51,12 @@ public class DatabaseRepository<DB extends DatabaseContext> implements DatabaseC
 
     @Override
     public Optional<DB> getDatabaseContext(String databaseName) {
-        return databaseMap.entrySet().stream()
-                .filter(e ->
-                        new NormalizedDatabaseName(e.getKey().name()).equals(new NormalizedDatabaseName(databaseName)))
-                .map(Map.Entry::getValue)
-                .findFirst();
+        return databaseIdRepository.getByName(databaseName).flatMap(this::getDatabaseContext);
     }
 
     @Override
     public Optional<DB> getDatabaseContext(DatabaseId databaseId) {
-        return databaseMap.entrySet().stream()
-                .filter(e -> e.getKey().databaseId().equals(databaseId))
-                .map(Map.Entry::getValue)
-                .findFirst();
+        return databaseIdRepository.getById(databaseId).flatMap(this::getDatabaseContext);
     }
 
     @Override
