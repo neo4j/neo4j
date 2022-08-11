@@ -306,9 +306,8 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
         @Override
         public int read(byte[] b, int off, int len) throws IOException {
             buffer.clear();
-            int dataToRead = len - off;
-            if (dataToRead < buffer.capacity()) {
-                buffer.limit(dataToRead);
+            if (len < buffer.capacity()) {
+                buffer.limit(len);
             }
             int readData = fileChannel.read(buffer);
             if (readData == -1) {
