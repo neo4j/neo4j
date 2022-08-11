@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.phases
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings.ExtractLiteral
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleDatabases
 import org.neo4j.cypher.internal.compiler.AdministrationCommandPlanBuilder
@@ -59,8 +60,10 @@ import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
+import org.neo4j.cypher.internal.rewriting.rewriters.Forced
 import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
+import org.neo4j.cypher.internal.rewriting.rewriters.Never
 import org.neo4j.cypher.internal.rewriting.rewriters.NoNamedPathsInPatternComprehensions
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
@@ -100,11 +103,19 @@ object CompilationPhases {
       )
 
   case class ParsingConfig(
-    literalExtractionStrategy: LiteralExtractionStrategy = IfNoParameter,
+    extractLiterals: ExtractLiteral = ExtractLiteral.ALWAYS,
     parameterTypeMapping: Map[String, CypherType] = Map.empty,
     semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
     obfuscateLiterals: Boolean = false
-  )
+  ) {
+
+    def literalExtractionStrategy: LiteralExtractionStrategy = extractLiterals match {
+      case ExtractLiteral.ALWAYS          => Forced
+      case ExtractLiteral.NEVER           => Never
+      case ExtractLiteral.IF_NO_PARAMETER => IfNoParameter
+      case _ => throw new IllegalStateException(s"$extractLiterals is not a known strategy")
+    }
+  }
 
   private def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     Parse andThen

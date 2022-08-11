@@ -114,6 +114,7 @@ case class FabricFrontEnd(
     )
 
     private val parsingConfig = CompilationPhases.ParsingConfig(
+      extractLiterals = cypherConfig.extractLiterals,
       parameterTypeMapping = ParameterValueTypeHelper.asCypherTypeMap(params),
       semanticFeatures =
         CompilationPhases.enabledSemanticFeatures(cypherConfig.enableExtraSemanticFeatures) ++ semanticFeatures,

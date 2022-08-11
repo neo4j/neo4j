@@ -995,4 +995,16 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Description("A feature toggle behind which trigram index is developed")
     public static final Setting<Boolean> trigram_index =
             newBuilder("internal.dbms.trigram_index", BOOL, false).build();
+
+    public enum ExtractLiteral {
+        ALWAYS,
+        NEVER,
+        IF_NO_PARAMETER
+    }
+
+    @Internal
+    @Description("Set this to specify the literal extraction strategy")
+    public static final Setting<ExtractLiteral> extract_literals = newBuilder(
+                    "internal.cypher.extract_literals", ofEnum(ExtractLiteral.class), ExtractLiteral.ALWAYS)
+            .build();
 }

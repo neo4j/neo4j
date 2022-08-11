@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.configuration.GraphDatabaseInternalSettings.ExtractLiteral
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
@@ -83,7 +84,6 @@ import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.rewriting.rewriters.Never
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cardinality
@@ -162,9 +162,10 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
 
   def defaultParsingConfig(cypherCompilerConfig: CypherPlannerConfiguration): ParsingConfig =
     ParsingConfig(
-      literalExtractionStrategy = Never,
+      extractLiterals = ExtractLiteral.NEVER,
       parameterTypeMapping = Map.empty,
-      semanticFeatures = cypherCompilerConfig.enabledSemanticFeatures
+      semanticFeatures = cypherCompilerConfig.enabledSemanticFeatures,
+      obfuscateLiterals = cypherCompilerConfig.obfuscateLiterals
     )
 
   def pipeLine(

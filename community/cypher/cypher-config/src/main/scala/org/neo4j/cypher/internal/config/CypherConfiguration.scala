@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.config
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.configuration.GraphDatabaseInternalSettings.ExtractLiteral
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.config.CypherConfiguration.statsDivergenceFromConfig
 import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
@@ -106,6 +107,8 @@ class CypherConfiguration private (val config: Config) {
 
   val varExpandRelationshipIdSetThreshold =
     config.get(GraphDatabaseInternalSettings.var_expand_relationship_id_set_threshold)
+
+  val extractLiterals: ExtractLiteral = config.get(GraphDatabaseInternalSettings.extract_literals)
 
   // dynamic configurations
   private var _obfuscateLiterals: Boolean = config.get(GraphDatabaseSettings.log_queries_obfuscate_literals)

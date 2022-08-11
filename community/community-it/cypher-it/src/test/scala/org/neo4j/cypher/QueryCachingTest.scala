@@ -705,6 +705,29 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
     ))
   }
 
+  test("query containing parameters and literals should not redo physical planning") {
+    val cacheListener = new LoggingTracer()
+
+    graph.withTx(tx => tx.execute("RETURN 42 + $p AS n", java.util.Map.of("p", 2)).next().get("n") should equal(44))
+    graph.withTx(tx => tx.execute("RETURN 43 + $p AS n", java.util.Map.of("p", 4)).next().get("n") should equal(47))
+
+    cacheListener.expectTrace(List(
+      s"String: cacheFlushDetected",
+      s"AST:    cacheFlushDetected",
+      // 1st run
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      executionPlanCacheKeyMiss,
+      "String: cacheMiss: CacheKey(RETURN 42 + $p AS n,Map(p -> Integer),false)",
+      "String: cacheCompile: CacheKey(RETURN 42 + $p AS n,Map(p -> Integer),false)",
+      // 2nd run
+      s"AST:    cacheHit", // no logical planning
+      executionPlanCacheKeyHit,
+      "String: cacheMiss: CacheKey(RETURN 43 + $p AS n,Map(p -> Integer),false)",
+      "String: cacheCompile: CacheKey(RETURN 43 + $p AS n,Map(p -> Integer),false)"
+    ))
+  }
+
   test("calling db.clearQueryCaches() should clear everything") {
     // ensure label exists
     graph.withTx(tx => tx.createNode(Label.label("Person")))

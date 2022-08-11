@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.configuration.GraphDatabaseInternalSettings.ExtractLiteral
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper
 import org.neo4j.cypher.internal.compiler.phases.BaseContextImpl
@@ -88,6 +89,7 @@ case class CypherPlanner[Context <: PlannerContext](
     val startState = InitialState(queryText, offset, plannerName, new AnonymousVariableNameGenerator)
     val context = BaseContextImpl(tracer, notificationLogger, rawQueryText, offset, monitors, cancellationChecker)
     CompilationPhases.parsing(ParsingConfig(
+      extractLiterals = config.extractLiterals,
       semanticFeatures = config.enabledSemanticFeatures,
       parameterTypeMapping = ParameterValueTypeHelper.asCypherTypeMap(params),
       obfuscateLiterals = config.obfuscateLiterals
@@ -144,4 +146,5 @@ class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val p
   def planningRangeIndexesEnabled: Boolean = config.planningRangeIndexesEnabled
   def planningPointIndexesEnabled: Boolean = config.planningPointIndexesEnabled
   def predicatesAsUnionMaxSize: Int = config.predicatesAsUnionMaxSize
+  def extractLiterals: ExtractLiteral = config.extractLiterals
 }
