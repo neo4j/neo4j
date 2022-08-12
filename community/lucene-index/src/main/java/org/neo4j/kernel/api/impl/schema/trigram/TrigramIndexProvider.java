@@ -50,7 +50,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
 public class TrigramIndexProvider extends AbstractLuceneIndexProvider {
-    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("text-trigram", "1.0");
+    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("text", "2.0");
     public static final IndexCapability CAPABILITY = TextIndexCapability.trigram();
 
     private final FileSystemAbstraction fileSystem;
