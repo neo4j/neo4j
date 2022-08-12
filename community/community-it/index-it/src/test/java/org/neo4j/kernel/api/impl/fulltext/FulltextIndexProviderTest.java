@@ -48,12 +48,12 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.MutableSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -105,6 +105,7 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.newapi.ExtendedNodeValueIndexCursorAdapter;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -143,7 +144,6 @@ class FulltextIndexProviderTest {
     private int labelIdHej;
     private int labelIdHa;
     private int labelIdHe;
-    private int relTypeIdHej;
     private int propIdHej;
     private int propIdHa;
     private int propIdHe;
@@ -176,7 +176,6 @@ class FulltextIndexProviderTest {
             labelIdHej = tokenRead.nodeLabel(hej.name());
             labelIdHa = tokenRead.nodeLabel(ha.name());
             labelIdHe = tokenRead.nodeLabel(he.name());
-            relTypeIdHej = tokenRead.relationshipType(hejType.name());
             propIdHej = tokenRead.propertyKey("hej");
             propIdHa = tokenRead.propertyKey("ha");
             propIdHe = tokenRead.propertyKey("he");
@@ -252,8 +251,7 @@ class FulltextIndexProviderTest {
         indexReference = createIndex(
                 new int[] {labelIdHej, labelIdHa, labelIdHe}, new int[] {propIdHej, propIdHa, propIdHe, propIdHo});
         await(indexReference);
-        long thirdNodeId;
-        thirdNodeId = createTheThirdNode();
+        String thirdNodeId = createTheThirdNode();
         verifyNodeData(thirdNodeId);
         controller.restartDbms();
         verifyNodeData(thirdNodeId);
@@ -274,12 +272,13 @@ class FulltextIndexProviderTest {
             transaction.success();
         }
         await(indexReference);
-        long secondRelId;
+        String secondRelId;
         try (Transaction transaction = db.beginTx()) {
             Relationship ho = transaction
-                    .getNodeById(node1.getId())
-                    .createRelationshipTo(transaction.getNodeById(node2.getId()), RelationshipType.withName("ho"));
-            secondRelId = ho.getId();
+                    .getNodeByElementId(node1.getElementId())
+                    .createRelationshipTo(
+                            transaction.getNodeByElementId(node2.getElementId()), RelationshipType.withName("ho"));
+            secondRelId = ho.getElementId();
             ho.setProperty("hej", "villa");
             ho.setProperty("ho", "value3");
             transaction.commit();
@@ -353,35 +352,35 @@ class FulltextIndexProviderTest {
         RelationshipType relType2 = RelationshipType.withName("SecondRelType");
         RelationshipType relType3 = RelationshipType.withName("ThirdRelType");
 
-        LongHashSet nodes1 = new LongHashSet();
-        LongHashSet nodes2 = new LongHashSet();
-        LongHashSet nodes3 = new LongHashSet();
-        LongHashSet rels1 = new LongHashSet();
-        LongHashSet rels2 = new LongHashSet();
-        LongHashSet rels3 = new LongHashSet();
+        MutableSet<String> nodes1 = Sets.mutable.empty();
+        MutableSet<String> nodes2 = Sets.mutable.empty();
+        MutableSet<String> nodes3 = Sets.mutable.empty();
+        MutableSet<String> rels1 = Sets.mutable.empty();
+        MutableSet<String> rels2 = Sets.mutable.empty();
+        MutableSet<String> rels3 = Sets.mutable.empty();
 
         try (Transaction tx = db.beginTx()) {
             for (int i = 0; i < 100; i++) {
                 Node node1 = tx.createNode(label1);
                 node1.setProperty(prop1, val1);
-                nodes1.add(node1.getId());
+                nodes1.add(node1.getElementId());
                 Relationship rel1 = node1.createRelationshipTo(node1, relType1);
                 rel1.setProperty(prop1, val1);
-                rels1.add(rel1.getId());
+                rels1.add(rel1.getElementId());
 
                 Node node2 = tx.createNode(label2);
                 node2.setProperty(prop2, val2);
-                nodes2.add(node2.getId());
+                nodes2.add(node2.getElementId());
                 Relationship rel2 = node1.createRelationshipTo(node2, relType2);
                 rel2.setProperty(prop2, val2);
-                rels2.add(rel2.getId());
+                rels2.add(rel2.getElementId());
 
                 Node node3 = tx.createNode(label3);
                 node3.setProperty(prop3, val3);
-                nodes3.add(node3.getId());
+                nodes3.add(node3.getElementId());
                 Relationship rel3 = node1.createRelationshipTo(node3, relType3);
                 rel3.setProperty(prop3, val3);
-                rels3.add(rel3.getId());
+                rels3.add(rel3.getElementId());
             }
             tx.commit();
         }
@@ -429,13 +428,15 @@ class FulltextIndexProviderTest {
 
     @Test
     void queryingWithIndexProgressorMustProvideScore() throws Exception {
-        long nodeId = createTheThirdNode();
+        String nodeId = createTheThirdNode();
         IndexDescriptor index;
         index = createIndex(
                 new int[] {labelIdHej, labelIdHa, labelIdHe}, new int[] {propIdHej, propIdHa, propIdHe, propIdHo});
         await(index);
         List<String> acceptedEntities = new ArrayList<>();
-        try (KernelTransactionImplementation ktx = getKernelTransaction()) {
+        try (Transaction tx = db.beginTx()) {
+            var idMapper = ((TransactionImpl) tx).elementIdMapper();
+            KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction(tx);
             NodeValueIndexCursor cursor = new ExtendedNodeValueIndexCursorAdapter() {
                 private long nodeReference;
                 private IndexProgressor progressor;
@@ -477,7 +478,7 @@ class FulltextIndexProviderTest {
                     ktx.queryContext(), indexSession, cursor, unconstrained(), fulltextSearch("hej:\"villa\""));
             int counter = 0;
             while (cursor.next()) {
-                assertThat(cursor.nodeReference()).isEqualTo(nodeId);
+                assertThat(idMapper.nodeElementId(cursor.nodeReference())).isEqualTo(nodeId);
                 counter++;
             }
             assertThat(counter).isEqualTo(1);
@@ -849,11 +850,11 @@ class FulltextIndexProviderTest {
         }
     }
 
-    private long createTheThirdNode() {
-        long nodeId;
+    private String createTheThirdNode() {
+        String nodeId;
         try (Transaction transaction = db.beginTx()) {
             Node hej = transaction.createNode(label("hej"));
-            nodeId = hej.getId();
+            nodeId = hej.getElementId();
             hej.setProperty("hej", "villa");
             hej.setProperty("ho", "value3");
             transaction.commit();
@@ -861,8 +862,9 @@ class FulltextIndexProviderTest {
         return nodeId;
     }
 
-    private void verifyNodeData(long thirdNodeId) throws Exception {
+    private void verifyNodeData(String thirdNodeId) throws Exception {
         try (Transaction tx = db.beginTx()) {
+            var idMapper = ((TransactionImpl) tx).elementIdMapper();
             KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction(tx);
             IndexReadSession index =
                     ktx.dataRead().indexReadSession(ktx.schemaRead().indexGetForName("fulltext"));
@@ -877,26 +879,27 @@ class FulltextIndexProviderTest {
                 ktx.dataRead()
                         .nodeIndexSeek(ktx.queryContext(), index, cursor, unconstrained(), fulltextSearch("villa"));
                 assertTrue(cursor.next());
-                assertEquals(thirdNodeId, cursor.nodeReference());
+                assertEquals(thirdNodeId, idMapper.nodeElementId(cursor.nodeReference()));
                 assertFalse(cursor.next());
 
                 ktx.dataRead()
                         .nodeIndexSeek(ktx.queryContext(), index, cursor, unconstrained(), fulltextSearch("value3"));
-                MutableLongSet ids = LongSets.mutable.empty();
-                ids.add(0L);
-                ids.add(thirdNodeId);
+                var foundIds = new HashSet<String>();
                 assertTrue(cursor.next());
-                assertTrue(ids.remove(cursor.nodeReference()));
+                foundIds.add(idMapper.nodeElementId(cursor.nodeReference()));
                 assertTrue(cursor.next());
-                assertTrue(ids.remove(cursor.nodeReference()));
+                foundIds.add(idMapper.nodeElementId(cursor.nodeReference()));
                 assertFalse(cursor.next());
+                assertThat(foundIds.remove(idMapper.nodeElementId(0L))).isTrue();
+                assertThat(foundIds.remove(thirdNodeId)).isTrue();
             }
             tx.commit();
         }
     }
 
-    private void verifyRelationshipData(long secondRelId) throws Exception {
+    private void verifyRelationshipData(String secondRelId) throws Exception {
         try (Transaction tx = db.beginTx()) {
+            var idMapper = ((TransactionImpl) tx).elementIdMapper();
             KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction(tx);
             IndexDescriptor index = ktx.schemaRead().indexGetForName("fulltext");
             IndexReadSession indexReadSession = ktx.dataRead().indexReadSession(index);
@@ -917,7 +920,7 @@ class FulltextIndexProviderTest {
                         .relationshipIndexSeek(
                                 ktx.queryContext(), indexReadSession, cursor, unconstrained(), fulltextSearch("villa"));
                 assertTrue(cursor.next());
-                assertEquals(secondRelId, cursor.relationshipReference());
+                assertEquals(secondRelId, idMapper.relationshipElementId(cursor.relationshipReference()));
                 assertFalse(cursor.next());
 
                 ktx.dataRead()
@@ -930,7 +933,7 @@ class FulltextIndexProviderTest {
                 assertTrue(cursor.next());
                 assertEquals(0L, cursor.relationshipReference());
                 assertTrue(cursor.next());
-                assertEquals(secondRelId, cursor.relationshipReference());
+                assertEquals(secondRelId, idMapper.relationshipElementId(cursor.relationshipReference()));
                 assertFalse(cursor.next());
             }
             tx.commit();

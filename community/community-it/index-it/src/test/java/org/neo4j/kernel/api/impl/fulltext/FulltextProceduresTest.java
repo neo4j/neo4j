@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.fulltext;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -49,6 +48,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
@@ -60,8 +60,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -229,11 +228,11 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
 
     @Test
     void creatingIndexWithSpecificAnalyzerMustUseThatAnalyzerForPopulationUpdatingAndQuerying() {
-        LongHashSet noResults = new LongHashSet();
-        LongHashSet swedishNodes = new LongHashSet();
-        LongHashSet englishNodes = new LongHashSet();
-        LongHashSet swedishRels = new LongHashSet();
-        LongHashSet englishRels = new LongHashSet();
+        Set<String> noResults = Sets.mutable.empty();
+        Set<String> swedishNodes = Sets.mutable.empty();
+        Set<String> englishNodes = Sets.mutable.empty();
+        Set<String> swedishRels = Sets.mutable.empty();
+        Set<String> englishRels = Sets.mutable.empty();
 
         String labelledSwedishNodes = "labelledSwedishNodes";
         String typedSwedishRelationships = "typedSwedishRelationships";
@@ -242,16 +241,16 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
             // Nodes and relationships picked up by index population.
             Node nodeA = tx.createNode(LABEL);
             nodeA.setProperty(PROP, "En apa och en tomte bodde i ett hus.");
-            swedishNodes.add(nodeA.getId());
+            swedishNodes.add(nodeA.getElementId());
             Node nodeB = tx.createNode(LABEL);
             nodeB.setProperty(PROP, "Hello and hello again, in the end.");
-            englishNodes.add(nodeB.getId());
+            englishNodes.add(nodeB.getElementId());
             Relationship relA = nodeA.createRelationshipTo(nodeB, REL);
             relA.setProperty(PROP, "En apa och en tomte bodde i ett hus.");
-            swedishRels.add(relA.getId());
+            swedishRels.add(relA.getElementId());
             Relationship relB = nodeB.createRelationshipTo(nodeA, REL);
             relB.setProperty(PROP, "Hello and hello again, in the end.");
-            englishRels.add(relB.getId());
+            englishRels.add(relB.getElementId());
             tx.commit();
         }
         try (Transaction tx = db.beginTx()) {
@@ -270,16 +269,16 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
             // Nodes and relationships picked up by index updates.
             Node nodeC = tx.createNode(LABEL);
             nodeC.setProperty(PROP, "En apa och en tomte bodde i ett hus.");
-            swedishNodes.add(nodeC.getId());
+            swedishNodes.add(nodeC.getElementId());
             Node nodeD = tx.createNode(LABEL);
             nodeD.setProperty(PROP, "Hello and hello again, in the end.");
-            englishNodes.add(nodeD.getId());
+            englishNodes.add(nodeD.getElementId());
             Relationship relC = nodeC.createRelationshipTo(nodeD, REL);
             relC.setProperty(PROP, "En apa och en tomte bodde i ett hus.");
-            swedishRels.add(relC.getId());
+            swedishRels.add(relC.getElementId());
             Relationship relD = nodeD.createRelationshipTo(nodeC, REL);
             relD.setProperty(PROP, "Hello and hello again, in the end.");
-            englishRels.add(relD.getId());
+            englishRels.add(relD.getElementId());
             tx.commit();
         }
         assertQueryFindsIds(db, true, labelledSwedishNodes, "and", englishNodes); // english word
@@ -310,8 +309,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
             tx.commit();
         }
         awaitIndexesOnline();
-        long horseId;
-        long horseRelId;
+        String horseId;
+        String horseRelId;
         try (Transaction tx = db.beginTx()) {
             Node zebra = tx.createNode();
             zebra.setProperty("prop1", "zebra");
@@ -323,8 +322,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
             Relationship loop = horse.createRelationshipTo(horse, RelationshipType.withName("loop"));
             loop.setProperty("prop2", "zebra");
 
-            horseId = horse.getId();
-            horseRelId = horseRel.getId();
+            horseId = horse.getElementId();
+            horseRelId = horseRel.getElementId();
             tx.commit();
         }
         assertQueryFindsIdsInOrder(db, true, DEFAULT_NODE_IDX_NAME, "horse", horseId);
@@ -368,10 +367,11 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         awaitIndexesOnline();
 
         // then
-        assertQueryFindsIdsInOrder(db, true, DEFAULT_NODE_IDX_NAME, "integration", node1.getId(), node2.getId());
-        assertQueryFindsIdsInOrder(db, true, DEFAULT_NODE_IDX_NAME, "test", node1.getId(), node2.getId());
-        assertQueryFindsIds(db, true, DEFAULT_NODE_IDX_NAME, "related", newSetWith(node2.getId()));
-        assertQueryFindsIds(db, false, DEFAULT_REL_IDX_NAME, "relate", newSetWith(relationship.getId()));
+        assertQueryFindsIdsInOrder(
+                db, true, DEFAULT_NODE_IDX_NAME, "integration", node1.getElementId(), node2.getElementId());
+        assertQueryFindsIdsInOrder(db, true, DEFAULT_NODE_IDX_NAME, "test", node1.getElementId(), node2.getElementId());
+        assertQueryFindsIds(db, true, DEFAULT_NODE_IDX_NAME, "related", Sets.mutable.of(node2.getElementId()));
+        assertQueryFindsIds(db, false, DEFAULT_REL_IDX_NAME, "relate", Sets.mutable.of(relationship.getElementId()));
     }
 
     @Test
@@ -392,8 +392,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
             tx.commit();
         }
 
-        LongHashSet nodeIds = new LongHashSet();
-        LongHashSet relIds = new LongHashSet();
+        Set<String> nodeIds = Sets.mutable.empty();
+        Set<String> relIds = Sets.mutable.empty();
 
         generateNodesAndRelationshipsWithProperty(200, nodeIds, relIds, "bla bla");
 
@@ -434,8 +434,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         }
         awaitIndexesOnline();
 
-        LongHashSet nodeIds = new LongHashSet();
-        LongHashSet relIds = new LongHashSet();
+        Set<String> nodeIds = Sets.mutable.empty();
+        Set<String> relIds = Sets.mutable.empty();
 
         generateNodesAndRelationshipsWithProperty(200, nodeIds, relIds, "bla bla");
 
@@ -449,8 +449,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
 
     @Test
     void eventuallyConsistentIndexMustPopulateWithExistingDataWhenCreated() {
-        LongHashSet nodeIds = new LongHashSet();
-        LongHashSet relIds = new LongHashSet();
+        Set<String> nodeIds = Sets.mutable.empty();
+        Set<String> relIds = Sets.mutable.empty();
 
         generateNodesAndRelationshipsWithProperty(200, nodeIds, relIds, "bla bla");
 
@@ -476,15 +476,15 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
     }
 
     private void generateNodesAndRelationshipsWithProperty(
-            int count, MutableLongSet nodeIds, MutableLongSet relIds, String propertyValue) {
+            int count, Set<String> nodeIds, Set<String> relIds, String propertyValue) {
         try (Transaction tx = db.beginTx()) {
             for (int i = 0; i < count; i++) {
                 Node node = tx.createNode(LABEL);
                 node.setProperty(PROP, propertyValue);
                 Relationship rel = node.createRelationshipTo(node, REL);
                 rel.setProperty(PROP, propertyValue);
-                nodeIds.add(node.getId());
-                relIds.add(rel.getId());
+                nodeIds.add(node.getElementId());
+                relIds.add(rel.getElementId());
             }
             tx.commit();
         }
@@ -497,8 +497,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         String newValue = "green";
 
         // First we create the nodes and relationships with the property value "red".
-        LongHashSet nodeIds = new LongHashSet();
-        LongHashSet relIds = new LongHashSet();
+        Set<String> nodeIds = Sets.mutable.empty();
+        Set<String> relIds = Sets.mutable.empty();
 
         generateNodesAndRelationshipsWithProperty(200, nodeIds, relIds, oldValue);
 
@@ -527,8 +527,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         Runnable makeAllEntitiesGreen = () -> {
             try (Transaction tx = db.beginTx()) {
                 // Prepare our transaction state first.
-                nodeIds.forEach(nodeId -> tx.getNodeById(nodeId).setProperty(PROP, newValue));
-                relIds.forEach(relId -> tx.getRelationshipById(relId).setProperty(PROP, newValue));
+                nodeIds.forEach(nodeId -> tx.getNodeByElementId(nodeId).setProperty(PROP, newValue));
+                relIds.forEach(relId -> tx.getRelationshipByElementId(relId).setProperty(PROP, newValue));
                 // Okay, NOW we're ready to race!
                 readyLatch.countDown();
                 startLatch.await();
@@ -737,14 +737,14 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
             createSimpleRelationshipIndex(tx);
             tx.commit();
         }
-        long nodeId;
-        long relId;
+        String nodeId;
+        String relId;
         try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode(LABEL);
-            nodeId = node.getId();
+            nodeId = node.getElementId();
             node.setProperty(PROP, "bla bla");
             Relationship rel = node.createRelationshipTo(node, REL);
-            relId = rel.getId();
+            relId = rel.getElementId();
             rel.setProperty(PROP, "bla bla");
             tx.commit();
         }
@@ -755,9 +755,9 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         awaitIndexesOnline();
 
         try (Transaction tx = db.beginTx()) {
-            Node node = tx.getNodeById(nodeId);
+            Node node = tx.getNodeByElementId(nodeId);
             node.setProperty(PROP, 42);
-            Relationship rel = tx.getRelationshipById(relId);
+            Relationship rel = tx.getRelationshipByElementId(relId);
             rel.setProperty(PROP, 42);
             tx.commit();
         }
@@ -783,14 +783,14 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
             createSimpleRelationshipIndex(tx);
             tx.commit();
         }
-        long nodeId;
-        long relId;
+        String nodeId;
+        String relId;
         try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode(LABEL);
             node.setProperty(PROP, 42);
-            nodeId = node.getId();
+            nodeId = node.getElementId();
             Relationship rel = node.createRelationshipTo(node, REL);
-            relId = rel.getId();
+            relId = rel.getElementId();
             rel.setProperty(PROP, 42);
             tx.commit();
         }
@@ -798,9 +798,9 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         awaitIndexesOnline();
 
         try (Transaction tx = db.beginTx()) {
-            Node node = tx.getNodeById(nodeId);
+            Node node = tx.getNodeByElementId(nodeId);
             node.setProperty(PROP, "bla bla");
-            Relationship rel = tx.getRelationshipById(relId);
+            Relationship rel = tx.getRelationshipByElementId(relId);
             rel.setProperty(PROP, "bla bla");
             tx.commit();
         }
@@ -826,15 +826,15 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
                     .close();
             tx.commit();
         }
-        long nodeId;
-        long relId;
+        String nodeId;
+        String relId;
         try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode(LABEL);
-            nodeId = node.getId();
+            nodeId = node.getElementId();
             node.setProperty("prop1", "foo");
             node.setProperty("prop2", "bar");
             Relationship rel = node.createRelationshipTo(node, REL);
-            relId = rel.getId();
+            relId = rel.getElementId();
             rel.setProperty("prop1", "foo");
             rel.setProperty("prop2", "bar");
             tx.commit();
@@ -848,9 +848,9 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         assertQueryFindsIdsInOrder(db, false, DEFAULT_REL_IDX_NAME, "bar", relId);
 
         try (Transaction tx = db.beginTx()) {
-            Node node = tx.getNodeById(nodeId);
+            Node node = tx.getNodeByElementId(nodeId);
             node.setProperty("prop2", 42);
-            Relationship rel = tx.getRelationshipById(relId);
+            Relationship rel = tx.getRelationshipByElementId(relId);
             rel.setProperty("prop2", 42);
             tx.commit();
         }
@@ -878,15 +878,15 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
                     .close();
             tx.commit();
         }
-        long nodeId;
-        long relId;
+        String nodeId;
+        String relId;
         try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode(LABEL);
-            nodeId = node.getId();
+            nodeId = node.getElementId();
             node.setProperty("prop1", "foo");
             node.setProperty("prop2", 42);
             Relationship rel = node.createRelationshipTo(node, REL);
-            relId = rel.getId();
+            relId = rel.getElementId();
             rel.setProperty("prop1", "foo");
             rel.setProperty("prop2", 42);
             tx.commit();
@@ -898,9 +898,9 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         assertQueryFindsIdsInOrder(db, false, DEFAULT_REL_IDX_NAME, "foo", relId);
 
         try (Transaction tx = db.beginTx()) {
-            Node node = tx.getNodeById(nodeId);
+            Node node = tx.getNodeByElementId(nodeId);
             node.setProperty("prop2", "bar");
-            Relationship rel = tx.getRelationshipById(relId);
+            Relationship rel = tx.getRelationshipByElementId(relId);
             rel.setProperty("prop2", "bar");
             tx.commit();
         }
@@ -923,10 +923,10 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
                     .close();
             tx.commit();
         }
-        long nodeId;
+        String nodeId;
         try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode(LABEL, secondLabel);
-            nodeId = node.getId();
+            nodeId = node.getElementId();
             node.setProperty(PROP, "foo");
             tx.commit();
         }
@@ -936,7 +936,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         assertQueryFindsIdsInOrder(db, true, DEFAULT_NODE_IDX_NAME, "foo", nodeId);
 
         try (Transaction tx = db.beginTx()) {
-            Node node = tx.getNodeById(nodeId);
+            Node node = tx.getNodeByElementId(nodeId);
             node.removeLabel(secondLabel);
             tx.commit();
         }
@@ -949,7 +949,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
     void mustBeAbleToIndexHugeTextPropertiesInIndexUpdates() throws Exception {
         String meditationes;
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                getClass().getResourceAsStream(DESCARTES_MEDITATIONES), StandardCharsets.UTF_8))) {
+                Objects.requireNonNull(getClass().getResourceAsStream(DESCARTES_MEDITATIONES)),
+                StandardCharsets.UTF_8))) {
             meditationes = reader.lines().collect(Collectors.joining("\n"));
         }
 
@@ -963,10 +964,10 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
                     .close();
             tx.commit();
         }
-        long nodeId;
+        String nodeId;
         try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode(label);
-            nodeId = node.getId();
+            nodeId = node.getElementId();
             node.setProperty("title", "Meditationes de prima philosophia");
             node.setProperty("author", "René Descartes");
             node.setProperty("contents", meditationes);
@@ -982,15 +983,16 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
     void mustBeAbleToIndexHugeTextPropertiesInIndexPopulation() throws Exception {
         String meditationes;
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                getClass().getResourceAsStream(DESCARTES_MEDITATIONES), StandardCharsets.UTF_8))) {
+                Objects.requireNonNull(getClass().getResourceAsStream(DESCARTES_MEDITATIONES)),
+                StandardCharsets.UTF_8))) {
             meditationes = reader.lines().collect(Collectors.joining("\n"));
         }
 
         Label label = Label.label("Book");
-        long nodeId;
+        String nodeId;
         try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode(label);
-            nodeId = node.getId();
+            nodeId = node.getElementId();
             node.setProperty("title", "Meditationes de prima philosophia");
             node.setProperty("author", "René Descartes");
             node.setProperty("contents", meditationes);
@@ -1024,7 +1026,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
             tx.commit();
         }
 
-        long book2id;
+        String book2id;
         try (Transaction tx = db.beginTx()) {
             tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
             Node book1 = tx.createNode(book);
@@ -1033,7 +1035,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
             Node book2 = tx.createNode(book);
             book2.setProperty("author", "E. M. Curley");
             book2.setProperty("title", "Descartes Against the Skeptics");
-            book2id = book2.getId();
+            book2id = book2.getElementId();
             tx.commit();
         }
 
@@ -1051,12 +1053,12 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
                     .close();
             tx.commit();
         }
-        long nodeId;
+        String nodeId;
         awaitIndexesOnline();
         try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode(LABEL);
             node.setProperty("e", "value");
-            nodeId = node.getId();
+            nodeId = node.getElementId();
             tx.commit();
         }
 
@@ -1104,8 +1106,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
     void queryResultsMustNotIncludeEntitiesDeletedInOtherConcurrentlyCommittedTransactions(EntityUtil entityUtil)
             throws Exception {
         createIndexAndWait(entityUtil);
-        long entityIdA;
-        long entityIdB;
+        String entityIdA;
+        String entityIdB;
         try (Transaction tx = db.beginTx()) {
             entityIdA = entityUtil.createEntityWithProperty(tx, "value");
             entityIdB = entityUtil.createEntityWithProperty(tx, "value");
@@ -1132,7 +1134,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
     @ParameterizedTest
     void queryResultsMustIncludeEntitiesWithPropertiesAddedToBeIndexed(EntityUtil entityUtil) {
         createIndexAndWait(entityUtil);
-        long entityId;
+        String entityId;
         try (Transaction tx = db.beginTx()) {
             entityId = entityUtil.createEntity(tx);
             tx.commit();
@@ -1151,16 +1153,16 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
             createSimpleNodesIndex(tx);
             tx.commit();
         }
-        long nodeId;
+        String nodeId;
         awaitIndexesOnline();
         try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode();
             node.setProperty(PROP, "value");
-            nodeId = node.getId();
+            nodeId = node.getElementId();
             tx.commit();
         }
         try (Transaction tx = db.beginTx()) {
-            Node node = tx.getNodeById(nodeId);
+            Node node = tx.getNodeByElementId(nodeId);
             node.addLabel(LABEL);
             tx.commit();
         }
@@ -1171,7 +1173,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
     @ParameterizedTest
     void queryResultsMustIncludeUpdatedValueOfChangedProperties(EntityUtil entityUtil) {
         createIndexAndWait(entityUtil);
-        long entityId;
+        String entityId;
         try (Transaction tx = db.beginTx()) {
             entityId = entityUtil.createEntityWithProperty(tx, "primo");
             tx.commit();
@@ -1189,7 +1191,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
     @ParameterizedTest
     void queryResultsMustNotIncludeEntitiesWithRemovedIndexedProperties(EntityUtil entityUtil) {
         createIndexAndWait(entityUtil);
-        long entityId;
+        String entityId;
         try (Transaction tx = db.beginTx()) {
             entityId = entityUtil.createEntityWithProperty(tx, "value");
             tx.commit();
@@ -1210,18 +1212,18 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
             createSimpleNodesIndex(tx);
             tx.commit();
         }
-        long nodeId;
+        String nodeId;
         try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode(LABEL);
             node.setProperty(PROP, "value");
-            nodeId = node.getId();
+            nodeId = node.getElementId();
             tx.commit();
         }
 
         assertQueryFindsIdsInOrder(db, true, DEFAULT_NODE_IDX_NAME, "value", nodeId);
 
         try (Transaction tx = db.beginTx()) {
-            tx.getNodeById(nodeId).removeLabel(LABEL);
+            tx.getNodeByElementId(nodeId).removeLabel(LABEL);
             tx.commit();
         }
         assertQueryFindsIdsInOrder(db, true, DEFAULT_NODE_IDX_NAME, "value");
@@ -1233,16 +1235,16 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
             createSimpleNodesIndex(tx);
             tx.commit();
         }
-        long nodeId;
+        String nodeId;
         awaitIndexesOnline();
         try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode(LABEL);
             node.setProperty(PROP, "primo");
-            nodeId = node.getId();
+            nodeId = node.getElementId();
             tx.commit();
         }
         try (Transaction tx = db.beginTx()) {
-            Node node = tx.getNodeById(nodeId);
+            Node node = tx.getNodeByElementId(nodeId);
             node.removeLabel(LABEL);
             assertQueryFindsIdsInOrder(tx, true, DEFAULT_NODE_IDX_NAME, "primo");
 
@@ -1257,9 +1259,9 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
     @ParameterizedTest
     void queryResultsMustBeOrderedByScore(EntityUtil entityUtil) {
         createIndexAndWait(entityUtil);
-        long firstId;
-        long secondId;
-        long thirdId;
+        String firstId;
+        String secondId;
+        String thirdId;
         try (Transaction tx = db.beginTx()) {
             firstId = entityUtil.createEntityWithProperty(tx, "dude sweet dude sweet");
             tx.commit();
@@ -1433,7 +1435,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
     @ParameterizedTest
     void mustSupportWildcardEndsLikeStartsWith(EntityUtil entityUtil) {
         createIndexAndWait(entityUtil);
-        LongHashSet ids = new LongHashSet();
+        Set<String> ids = Sets.mutable.empty();
         try (Transaction tx = db.beginTx()) {
             ids.add(entityUtil.createEntityWithProperty(tx, "abcdef"));
             ids.add(entityUtil.createEntityWithProperty(tx, "abcxyz"));
@@ -1447,7 +1449,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
     @ParameterizedTest
     void mustSupportWildcardBeginningsLikeEndsWith(EntityUtil entityUtil) {
         createIndexAndWait(entityUtil);
-        LongHashSet ids = new LongHashSet();
+        Set<String> ids = Sets.mutable.empty();
         try (Transaction tx = db.beginTx()) {
             ids.add(entityUtil.createEntityWithProperty(tx, "defabc"));
             ids.add(entityUtil.createEntityWithProperty(tx, "xyzabc"));
@@ -1461,7 +1463,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
     @ParameterizedTest
     void mustSupportWildcardBeginningsAndEndsLikeContains(EntityUtil entityUtil) {
         createIndexAndWait(entityUtil);
-        LongHashSet ids = new LongHashSet();
+        Set<String> ids = Sets.mutable.empty();
         try (Transaction tx = db.beginTx()) {
             ids.add(entityUtil.createEntityWithProperty(tx, "defabcdef"));
             ids.add(entityUtil.createEntityWithProperty(tx, "xyzabcxyz"));
@@ -1599,13 +1601,13 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
             tx.commit();
         }
         awaitIndexesOnline();
-        long nodeId;
-        long relId;
+        String nodeId;
+        String relId;
         try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode();
-            nodeId = node.getId();
+            nodeId = node.getElementId();
             Relationship rel = node.createRelationshipTo(node, REL);
-            relId = rel.getId();
+            relId = rel.getElementId();
             rel.setProperty(PROP, "blabla");
             tx.commit();
         }
@@ -1616,7 +1618,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
 
         try (Transaction tx = db.beginTx()) {
             assertQueryFindsIdsInOrder(tx, false, DEFAULT_REL_IDX_NAME, "blabla", relId);
-            tx.execute("match (n) where id(n) = " + nodeId + " detach delete n").close();
+            tx.execute("match (n) where elementId(n) = '" + nodeId + "' detach delete n")
+                    .close();
             tx.commit();
         }
 
@@ -1650,11 +1653,11 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         }
         awaitIndexesOnline();
 
-        long relId;
+        String relId;
         try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode();
             Relationship rel = node.createRelationshipTo(node, REL);
-            relId = rel.getId();
+            relId = rel.getElementId();
             rel.setProperty(PROP, "blabla");
             tx.commit();
         }
@@ -1665,7 +1668,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
 
         try (Transaction tx = db.beginTx()) {
             assertQueryFindsIdsInOrder(tx, false, DEFAULT_REL_IDX_NAME, "blabla", relId);
-            Relationship rel = tx.getRelationshipById(relId);
+            Relationship rel = tx.getRelationshipByElementId(relId);
             rel.removeProperty(PROP);
             tx.commit();
         }
@@ -1685,18 +1688,18 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
             tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
             tx.commit();
         }
-        long relId;
+        String relId;
         try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode();
             Relationship rel = node.createRelationshipTo(node, REL);
-            relId = rel.getId();
+            relId = rel.getElementId();
             rel.setProperty(PROP, "blabla");
             tx.commit();
         }
 
         try (Transaction tx = db.beginTx()) {
             assertQueryFindsIdsInOrder(db, false, "rels", "blabla", relId);
-            Relationship rel = tx.getRelationshipById(relId);
+            Relationship rel = tx.getRelationshipByElementId(relId);
             rel.removeProperty(PROP);
             tx.commit();
         }
@@ -1716,11 +1719,11 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
             tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
             tx.commit();
         }
-        long relId;
+        String relId;
         try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode();
             Relationship rel = node.createRelationshipTo(node, REL);
-            relId = rel.getId();
+            relId = rel.getElementId();
             rel.setProperty(PROP, "blabla");
             tx.commit();
         }
@@ -1729,7 +1732,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
 
         try (Transaction tx = db.beginTx()) {
             assertQueryFindsIdsInOrder(db, false, "rels", "blabla", relId);
-            Relationship rel = tx.getRelationshipById(relId);
+            Relationship rel = tx.getRelationshipByElementId(relId);
             rel.removeProperty(PROP);
             tx.commit();
         }
@@ -1748,11 +1751,11 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
     @Test
     void standardFoldingAnalyzerMustWorkGitHub12662() {
         String indexName = "my_index";
-        long nodeId;
+        String nodeId;
         try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode(LABEL);
             node.setProperty(PROP, "1SOMECODE1");
-            nodeId = node.getId();
+            nodeId = node.getElementId();
             tx.commit();
         }
 
@@ -1774,7 +1777,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
             try (var iterator =
                     tx.execute(format(QUERY_NODES, indexName, "*SOMECODE*")).columnAs("node")) {
                 assertTrue(iterator.hasNext());
-                assertThat(((Node) iterator.next()).getId()).isEqualTo(nodeId);
+                assertThat(((Node) iterator.next()).getElementId()).isEqualTo(nodeId);
                 assertFalse(iterator.hasNext());
             }
             tx.commit();
@@ -1795,7 +1798,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
 
         // When
         // Nodes with non Ascii characters
-        Map<Character, Long> nonAsciiCharsToNodeId = new HashMap<>();
+        Map<Character, String> nonAsciiCharsToNodeId = new HashMap<>();
         String propPrefix = "123";
         String propSuffix = "345";
         try (Transaction tx = db.beginTx()) {
@@ -1809,7 +1812,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
                 String propValue = propPrefix + character + propSuffix;
                 node.setProperty(PROP, propValue);
 
-                long id = node.getId();
+                String id = node.getElementId();
                 nonAsciiCharsToNodeId.put(character, id);
             }
             tx.commit();
@@ -1819,7 +1822,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         // Should find with exact match and wildcard
         try (Transaction tx = db.beginTx()) {
             for (char nonAsciiChar : nonAsciiLetterArray) {
-                Long expectedNodeId = nonAsciiCharsToNodeId.get(nonAsciiChar);
+                String expectedNodeId = nonAsciiCharsToNodeId.get(nonAsciiChar);
                 assertAtLeastSingleHitOnSearch(
                         indexName, expectedNodeId, tx, searchString.searchString(nonAsciiChar, propPrefix, propSuffix));
             }
@@ -1862,12 +1865,12 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
     }
 
     private static void assertAtLeastSingleHitOnSearch(
-            String indexName, long expectedNodeId, Transaction tx, String searchString) {
-        Set<Long> nodeIds = new TreeSet<>();
+            String indexName, String expectedNodeId, Transaction tx, String searchString) {
+        Set<String> nodeIds = new TreeSet<>();
         try (var iterator =
                 tx.execute(format(QUERY_NODES, indexName, searchString)).columnAs("node")) {
             while (iterator.hasNext()) {
-                nodeIds.add(((Node) iterator.next()).getId());
+                nodeIds.add(((Node) iterator.next()).getElementId());
             }
         }
         assertThat(nodeIds)

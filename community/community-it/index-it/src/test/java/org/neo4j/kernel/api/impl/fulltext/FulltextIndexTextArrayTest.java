@@ -36,7 +36,7 @@ class FulltextIndexTextArrayTest extends FulltextProceduresTestSupport {
     void shouldFindIndexedTextArray(EntityUtil entityUtil) {
         createIndexAndWait(entityUtil);
 
-        long id;
+        String id;
         try (Transaction tx = db.beginTx()) {
             id = entityUtil.createEntityWithProperty(tx, array("foo", "bar"));
             tx.commit();
@@ -51,7 +51,7 @@ class FulltextIndexTextArrayTest extends FulltextProceduresTestSupport {
     void shouldFindIndexedTextArraySingleElement(EntityUtil entityUtil) {
         createIndexAndWait(entityUtil);
 
-        long id;
+        String id;
         try (Transaction tx = db.beginTx()) {
             id = entityUtil.createEntityWithProperty(tx, array("foo"));
             tx.commit();
@@ -65,7 +65,7 @@ class FulltextIndexTextArrayTest extends FulltextProceduresTestSupport {
     void shouldFindIndexedTextArrayWithEmptyElement(EntityUtil entityUtil) {
         createIndexAndWait(entityUtil);
 
-        long id;
+        String id;
         try (Transaction tx = db.beginTx()) {
             id = entityUtil.createEntityWithProperty(tx, array("foo", "bar", ""));
             tx.commit();
@@ -79,9 +79,8 @@ class FulltextIndexTextArrayTest extends FulltextProceduresTestSupport {
     void testEmptyArray(EntityUtil entityUtil) {
         createIndexAndWait(entityUtil);
 
-        long id;
         try (Transaction tx = db.beginTx()) {
-            id = entityUtil.createEntityWithProperty(tx, new String[0]);
+            entityUtil.createEntityWithProperty(tx, new String[0]);
             tx.commit();
         }
 
@@ -93,7 +92,7 @@ class FulltextIndexTextArrayTest extends FulltextProceduresTestSupport {
     void shouldFindIndexedTextArrayReferencingProperty(EntityUtil entityUtil) {
         createIndexAndWait(entityUtil);
 
-        long id;
+        String id;
         try (Transaction tx = db.beginTx()) {
             id = entityUtil.createEntityWithProperty(tx, array("foo", "bar"));
             tx.commit();
@@ -107,7 +106,7 @@ class FulltextIndexTextArrayTest extends FulltextProceduresTestSupport {
     void shouldFindIndexedCharArray(EntityUtil entityUtil) {
         createIndexAndWait(entityUtil);
 
-        long id;
+        String id;
         try (Transaction tx = db.beginTx()) {
             id = entityUtil.createEntityWithProperty(tx, array('a', 'b', 'c'));
             tx.commit();
@@ -121,7 +120,7 @@ class FulltextIndexTextArrayTest extends FulltextProceduresTestSupport {
     void shouldFindInCompositeIndex(EntityUtil entityUtil) {
         createCompositeIndexAndWait(entityUtil);
 
-        long id;
+        String id;
         try (Transaction tx = db.beginTx()) {
             id = entityUtil.createEntityWithProperties(tx, "fred", array("foo", "bar"));
             tx.commit();
@@ -130,10 +129,10 @@ class FulltextIndexTextArrayTest extends FulltextProceduresTestSupport {
         assertEntityFound(entityUtil, id, "prop2:bar");
     }
 
-    private void assertEntityFound(EntityUtil entityUtil, long id, String query) {
+    private void assertEntityFound(EntityUtil entityUtil, String id, String query) {
         try (Transaction tx = db.beginTx();
                 ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, query, "{}")) {
-            assertThat(iterator.next().getId()).isEqualTo(id);
+            assertThat(iterator.next().getElementId()).isEqualTo(id);
             assertFalse(iterator.hasNext());
             tx.commit();
         }

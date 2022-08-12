@@ -45,7 +45,7 @@ class FulltextPartitionedIndexSkipAndLimitTest extends FulltextProceduresTestSup
     @Inject
     private RandomSupport random;
 
-    private long topEntity;
+    private String topEntity;
 
     private int totalEntities;
 
@@ -124,8 +124,9 @@ class FulltextPartitionedIndexSkipAndLimitTest extends FulltextProceduresTestSup
         // all zebras collected
         assertThat(list).hasSize(1 + extraZebras);
         // top zebra is first
-        assertThat(list.get(0).getId()).isEqualTo(topEntity);
+        assertThat(list.get(0).getElementId()).isEqualTo(topEntity);
         // all zebras are unique
-        assertThat(list.stream().map(Entity::getId).collect(Collectors.toSet())).hasSize(list.size());
+        assertThat(list.stream().map(Entity::getElementId).collect(Collectors.toSet()))
+                .hasSize(list.size());
     }
 }

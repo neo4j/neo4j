@@ -29,9 +29,9 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 
 class FulltextIndexSkipAndLimitTest extends FulltextProceduresTestSupport {
-    private long topEntity;
-    private long middleEntity;
-    private long bottomEntity;
+    private String topEntity;
+    private String middleEntity;
+    private String bottomEntity;
 
     private void setUp(EntityUtil entityUtil) {
         createIndexAndWait(entityUtil);
@@ -52,8 +52,8 @@ class FulltextIndexSkipAndLimitTest extends FulltextProceduresTestSupport {
 
         try (Transaction tx = db.beginTx();
                 ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{skip:1}")) {
-            assertThat(iterator.next().getId()).isEqualTo(middleEntity);
-            assertThat(iterator.next().getId()).isEqualTo(bottomEntity);
+            assertThat(iterator.next().getElementId()).isEqualTo(middleEntity);
+            assertThat(iterator.next().getElementId()).isEqualTo(bottomEntity);
             assertFalse(iterator.hasNext());
             tx.commit();
         }
@@ -66,7 +66,7 @@ class FulltextIndexSkipAndLimitTest extends FulltextProceduresTestSupport {
 
         try (Transaction tx = db.beginTx();
                 ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{limit:1}")) {
-            assertThat(iterator.next().getId()).isEqualTo(topEntity);
+            assertThat(iterator.next().getElementId()).isEqualTo(topEntity);
             assertFalse(iterator.hasNext());
             tx.commit();
         }
@@ -80,7 +80,7 @@ class FulltextIndexSkipAndLimitTest extends FulltextProceduresTestSupport {
         try (Transaction tx = db.beginTx();
                 ResourceIterator<Entity> iterator =
                         entityUtil.queryIndexWithOptions(tx, "zebra", "{skip:1, limit:1}")) {
-            assertThat(iterator.next().getId()).isEqualTo(middleEntity);
+            assertThat(iterator.next().getElementId()).isEqualTo(middleEntity);
             assertFalse(iterator.hasNext());
             tx.commit();
         }
@@ -94,12 +94,12 @@ class FulltextIndexSkipAndLimitTest extends FulltextProceduresTestSupport {
         try (Transaction tx = db.beginTx()) {
             entityUtil.deleteEntity(tx, topEntity);
             try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{skip:1}")) {
-                assertThat(iterator.next().getId())
+                assertThat(iterator.next().getElementId())
                         .isEqualTo(bottomEntity); // Without topEntity, middleEntity is now the one we skip.
                 assertFalse(iterator.hasNext());
             }
             try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{limit:1}")) {
-                assertThat(iterator.next().getId())
+                assertThat(iterator.next().getElementId())
                         .isEqualTo(middleEntity); // Without topEntity, middleEntity is now the best match.
                 assertFalse(iterator.hasNext());
             }
@@ -113,11 +113,11 @@ class FulltextIndexSkipAndLimitTest extends FulltextProceduresTestSupport {
         setUp(entityUtil);
 
         try (Transaction tx = db.beginTx()) {
-            long entityId = entityUtil.createEntityWithProperty(tx, "zebra zebra donkey");
+            String entityId = entityUtil.createEntityWithProperty(tx, "zebra zebra donkey");
             try (ResourceIterator<Entity> iterator =
                     entityUtil.queryIndexWithOptions(tx, "zebra", "{skip:1, limit:2}")) {
-                assertThat(iterator.next().getId()).isEqualTo(middleEntity);
-                assertThat(iterator.next().getId()).isEqualTo(entityId);
+                assertThat(iterator.next().getElementId()).isEqualTo(middleEntity);
+                assertThat(iterator.next().getElementId()).isEqualTo(entityId);
                 assertFalse(iterator.hasNext());
             }
             tx.commit();

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import static java.lang.String.format;
-import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.AWAIT_REFRESH;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.FULLTEXT_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asNodeLabelStr;
@@ -28,7 +27,8 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asP
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asRelationshipTypeStr;
 import static org.neo4j.scheduler.JobMonitoringParams.NOT_MONITORED;
 
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import java.util.Set;
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.FulltextSettings;
 import org.neo4j.graphdb.Node;
@@ -71,8 +71,8 @@ class EventuallyConsistentFulltextProceduresTest extends FulltextProceduresTestS
                 .resolveDependency(JobScheduler.class)
                 .schedule(Group.INDEX_UPDATING, NOT_MONITORED, indexUpdateBlocker::await);
 
-        LongHashSet nodeIds = new LongHashSet();
-        long relId;
+        Set<String> nodeIds = Sets.mutable.empty();
+        String relId;
         try {
             try (Transaction tx = db.beginTx()) {
                 Node node1 = tx.createNode(LABEL);
@@ -81,9 +81,9 @@ class EventuallyConsistentFulltextProceduresTest extends FulltextProceduresTestS
                 node2.setProperty("otherprop", "bla bla");
                 Relationship relationship = node1.createRelationshipTo(node2, REL);
                 relationship.setProperty(PROP, "bla bla");
-                nodeIds.add(node1.getId());
-                nodeIds.add(node2.getId());
-                relId = relationship.getId();
+                nodeIds.add(node1.getElementId());
+                nodeIds.add(node2.getElementId());
+                relId = relationship.getElementId();
                 tx.commit();
             }
 
@@ -104,6 +104,6 @@ class EventuallyConsistentFulltextProceduresTest extends FulltextProceduresTestS
 
         // Now we should see our data.
         assertQueryFindsIds(db, true, DEFAULT_NODE_IDX_NAME, "bla", nodeIds);
-        assertQueryFindsIds(db, false, DEFAULT_REL_IDX_NAME, "bla", newSetWith(relId));
+        assertQueryFindsIds(db, false, DEFAULT_REL_IDX_NAME, "bla", Sets.mutable.of(relId));
     }
 }

@@ -21,7 +21,8 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import java.util.Set;
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -47,9 +48,9 @@ class FulltextIndexTransactionStateTest extends FulltextProceduresTestSupport {
     void queryResultFromTransactionStateMustSortTogetherWithResultFromBaseIndex(EntityUtil entityUtil) {
         createIndexAndWait(entityUtil);
 
-        long firstId;
-        long secondId;
-        long thirdId;
+        String firstId;
+        String secondId;
+        String thirdId;
 
         try (Transaction tx = db.beginTx()) {
             firstId = entityUtil.createEntityWithProperty(tx, "God of War");
@@ -69,7 +70,7 @@ class FulltextIndexTransactionStateTest extends FulltextProceduresTestSupport {
         createIndexAndWait(entityUtil);
 
         try (Transaction tx = db.beginTx()) {
-            long id = entityUtil.createEntityWithProperty(tx, "value");
+            String id = entityUtil.createEntityWithProperty(tx, "value");
             entityUtil.assertQueryFindsIdsInOrder(tx, "value", id);
             tx.commit();
         }
@@ -80,8 +81,8 @@ class FulltextIndexTransactionStateTest extends FulltextProceduresTestSupport {
     void queryResultsMustNotIncludeEntitiesDeletedInTheSameTransaction(EntityUtil entityUtil) {
         createIndexAndWait(entityUtil);
 
-        long entityIdA;
-        long entityIdB;
+        String entityIdA;
+        String entityIdB;
         try (Transaction tx = db.beginTx()) {
             entityIdA = entityUtil.createEntityWithProperty(tx, "value");
             entityIdB = entityUtil.createEntityWithProperty(tx, "value");
@@ -129,7 +130,7 @@ class FulltextIndexTransactionStateTest extends FulltextProceduresTestSupport {
     void queryResultsMustIncludeOldPropertyValuesWhenModificationsAreUndone(EntityUtil entityUtil) {
         createIndexAndWait(entityUtil);
 
-        long entityId;
+        String entityId;
         try (Transaction tx = db.beginTx()) {
             entityId = entityUtil.createEntityWithProperty(tx, "primo");
             tx.commit();
@@ -154,7 +155,7 @@ class FulltextIndexTransactionStateTest extends FulltextProceduresTestSupport {
     void queryResultsMustIncludeOldPropertyValuesWhenRemovalsAreUndone(EntityUtil entityUtil) {
         createIndexAndWait(entityUtil);
 
-        long entityId;
+        String entityId;
         try (Transaction tx = db.beginTx()) {
             entityId = entityUtil.createEntityWithProperty(tx, "primo");
             tx.commit();
@@ -175,7 +176,7 @@ class FulltextIndexTransactionStateTest extends FulltextProceduresTestSupport {
     @ParameterizedTest
     void transactionStateMustNotPreventIndexUpdatesFromBeingApplied(EntityUtil entityUtil) throws Exception {
         createIndexAndWait(entityUtil);
-        LongHashSet entityIds = new LongHashSet();
+        Set<String> entityIds = Sets.mutable.empty();
 
         try (Transaction tx = db.beginTx()) {
             entityIds.add(entityUtil.createEntityWithProperty(tx, "value"));
@@ -204,7 +205,7 @@ class FulltextIndexTransactionStateTest extends FulltextProceduresTestSupport {
 
         try (Transaction tx = db.beginTx()) {
             // create an indexed entity ...
-            long id = entityUtil.createEntityWithProperty(tx, "value");
+            String id = entityUtil.createEntityWithProperty(tx, "value");
             // ... and not indexed one
             entityUtil.createEntity(tx);
             entityUtil.assertQueryFindsIdsInOrder(tx, "*", id);

@@ -33,14 +33,14 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.LongFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-import org.eclipse.collections.api.iterator.MutableLongIterator;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.MutableSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.provider.Arguments;
@@ -134,7 +134,7 @@ class FulltextProceduresTestSupport {
     }
 
     static void assertQueryFindsIdsInOrder(
-            GraphDatabaseService db, boolean queryNodes, String index, String query, long... ids) {
+            GraphDatabaseService db, boolean queryNodes, String index, String query, String... ids) {
         try (Transaction tx = db.beginTx()) {
             assertQueryFindsIdsInOrder(tx, queryNodes, index, query, ids);
             tx.commit();
@@ -142,23 +142,22 @@ class FulltextProceduresTestSupport {
     }
 
     static void assertQueryFindsIdsInOrder(
-            Transaction tx, boolean queryNodes, String index, String query, long... ids) {
+            Transaction tx, boolean queryNodes, String index, String query, String... ids) {
         String queryCall = queryNodes ? QUERY_NODES : QUERY_RELS;
         Result result = tx.execute(format(queryCall, index, query));
         int num = 0;
         Double score = Double.MAX_VALUE;
         while (result.hasNext()) {
             Map<String, Object> entry = result.next();
-            Long nextId = ((Entity) entry.get(queryNodes ? NODE : RELATIONSHIP)).getId();
+            String nextId = ((Entity) entry.get(queryNodes ? NODE : RELATIONSHIP)).getElementId();
             Double nextScore = (Double) entry.get(SCORE);
             assertThat(nextScore).isLessThanOrEqualTo(score);
             score = nextScore;
             if (num < ids.length) {
-                assertEquals(
-                        ids[num], nextId.longValue(), format("Result returned id %d, expected %d", nextId, ids[num]));
+                assertEquals(ids[num], nextId, format("Result returned id %s, expected %s", nextId, ids[num]));
             } else {
                 fail(format(
-                        "Result returned id %d, which is beyond the number of ids (%d) that were expected.",
+                        "Result returned id %s, which is beyond the number of ids (%d) that were expected.",
                         nextId, ids.length));
             }
             num++;
@@ -167,18 +166,19 @@ class FulltextProceduresTestSupport {
     }
 
     static void assertQueryFindsIds(
-            GraphDatabaseService db, boolean queryNodes, String index, String query, LongHashSet ids) {
-        ids = new LongHashSet(ids); // Create a defensive copy, because we're going to modify this instance.
+            GraphDatabaseService db, boolean queryNodes, String index, String query, Set<String> ids) {
+        ids = Sets.mutable.withAll(ids); // Create a defensive copy, because we're going to modify this
+        // instance.
         String queryCall = queryNodes ? QUERY_NODES : QUERY_RELS;
-        long[] expectedIds = ids.toArray();
-        MutableLongSet actualIds = new LongHashSet();
+        String[] expectedIds = ids.toArray(String[]::new);
+        MutableSet<String> actualIds = Sets.mutable.empty();
         try (Transaction tx = db.beginTx()) {
-            LongFunction<Entity> getEntity = queryNodes ? tx::getNodeById : tx::getRelationshipById;
+            Function<String, Entity> getEntity = queryNodes ? tx::getNodeByElementId : tx::getRelationshipByElementId;
             Result result = tx.execute(format(queryCall, index, query));
             Double score = Double.MAX_VALUE;
             while (result.hasNext()) {
                 Map<String, Object> entry = result.next();
-                long nextId = ((Entity) entry.get(queryNodes ? NODE : RELATIONSHIP)).getId();
+                String nextId = ((Entity) entry.get(queryNodes ? NODE : RELATIONSHIP)).getElementId();
                 Double nextScore = (Double) entry.get(SCORE);
                 assertThat(nextScore).isLessThanOrEqualTo(score);
                 score = nextScore;
@@ -197,17 +197,17 @@ class FulltextProceduresTestSupport {
     }
 
     static void failQuery(
-            LongFunction<Entity> getEntity,
+            Function<String, Entity> getEntity,
             String index,
             String query,
-            MutableLongSet ids,
-            long[] expectedIds,
-            MutableLongSet actualIds,
+            Set<String> ids,
+            String[] expectedIds,
+            MutableSet<String> actualIds,
             String msg) {
         StringBuilder message = new StringBuilder(msg).append('\n');
-        MutableLongIterator itr = ids.longIterator();
+        var itr = ids.iterator();
         while (itr.hasNext()) {
-            long id = itr.next();
+            var id = itr.next();
             Entity entity = getEntity.apply(id);
             message.append('\t')
                     .append(entity)
@@ -223,9 +223,9 @@ class FulltextProceduresTestSupport {
                 .append(Arrays.toString(expectedIds))
                 .append('\n');
         message.append("actual ids: ").append(actualIds);
-        itr = actualIds.longIterator();
+        itr = actualIds.iterator();
         while (itr.hasNext()) {
-            long id = itr.next();
+            var id = itr.next();
             Entity entity = getEntity.apply(id);
             message.append("\n\t").append(entity).append(entity.getAllProperties());
         }
@@ -296,24 +296,24 @@ class FulltextProceduresTestSupport {
 
         void createCompositeIndex(Transaction tx);
 
-        long createEntityWithProperty(Transaction tx, Object propertyValue);
+        String createEntityWithProperty(Transaction tx, Object propertyValue);
 
-        long createEntityWithProperties(Transaction tx, Object propertyValue, Object property2Value);
+        String createEntityWithProperties(Transaction tx, Object propertyValue, Object property2Value);
 
-        long createEntity(Transaction tx);
+        String createEntity(Transaction tx);
 
-        void assertQueryFindsIdsInOrder(Transaction tx, String query, long... ids);
+        void assertQueryFindsIdsInOrder(Transaction tx, String query, String... ids);
 
-        void assertQueryFindsIds(GraphDatabaseAPI db, String query, LongHashSet ids);
+        void assertQueryFindsIds(GraphDatabaseAPI db, String query, Set<String> ids);
 
-        default void assertQueryFindsIdsInOrder(GraphDatabaseAPI db, String query, long... ids) {
+        default void assertQueryFindsIdsInOrder(GraphDatabaseAPI db, String query, String... ids) {
             try (var tx = db.beginTx()) {
                 assertQueryFindsIdsInOrder(tx, query, ids);
                 tx.commit();
             }
         }
 
-        void deleteEntity(Transaction tx, long entityId);
+        void deleteEntity(Transaction tx, String entityId);
 
         void dropIndex(Transaction tx);
 
@@ -321,7 +321,7 @@ class FulltextProceduresTestSupport {
 
         ResourceIterator<Entity> queryIndexWithOptions(Transaction tx, String query, String options);
 
-        Entity getEntity(Transaction tx, long id);
+        Entity getEntity(Transaction tx, String id);
     }
 
     static class NodeUtil implements EntityUtil {
@@ -341,38 +341,38 @@ class FulltextProceduresTestSupport {
         }
 
         @Override
-        public long createEntityWithProperty(Transaction tx, Object propertyValue) {
+        public String createEntityWithProperty(Transaction tx, Object propertyValue) {
             Node node = tx.createNode(LABEL);
             node.setProperty(PROP, propertyValue);
-            return node.getId();
+            return node.getElementId();
         }
 
         @Override
-        public long createEntityWithProperties(Transaction tx, Object propertyValue, Object property2Value) {
+        public String createEntityWithProperties(Transaction tx, Object propertyValue, Object property2Value) {
             Node node = tx.createNode(LABEL);
             node.setProperty(PROP, propertyValue);
             node.setProperty(PROP2, property2Value);
-            return node.getId();
+            return node.getElementId();
         }
 
         @Override
-        public long createEntity(Transaction tx) {
-            return tx.createNode(LABEL).getId();
+        public String createEntity(Transaction tx) {
+            return tx.createNode(LABEL).getElementId();
         }
 
         @Override
-        public void assertQueryFindsIdsInOrder(Transaction tx, String query, long... ids) {
+        public void assertQueryFindsIdsInOrder(Transaction tx, String query, String... ids) {
             FulltextProceduresTestSupport.assertQueryFindsIdsInOrder(tx, true, DEFAULT_NODE_IDX_NAME, query, ids);
         }
 
         @Override
-        public void assertQueryFindsIds(GraphDatabaseAPI db, String query, LongHashSet ids) {
+        public void assertQueryFindsIds(GraphDatabaseAPI db, String query, Set<String> ids) {
             FulltextProceduresTestSupport.assertQueryFindsIds(db, true, DEFAULT_NODE_IDX_NAME, query, ids);
         }
 
         @Override
-        public void deleteEntity(Transaction tx, long entityId) {
-            tx.getNodeById(entityId).delete();
+        public void deleteEntity(Transaction tx, String entityId) {
+            tx.getNodeByElementId(entityId).delete();
         }
 
         @Override
@@ -394,8 +394,8 @@ class FulltextProceduresTestSupport {
         }
 
         @Override
-        public Entity getEntity(Transaction tx, long id) {
-            return tx.getNodeById(id);
+        public Entity getEntity(Transaction tx, String id) {
+            return tx.getNodeByElementId(id);
         }
 
         @Override
@@ -425,41 +425,41 @@ class FulltextProceduresTestSupport {
         }
 
         @Override
-        public long createEntityWithProperty(Transaction tx, Object propertyValue) {
+        public String createEntityWithProperty(Transaction tx, Object propertyValue) {
             Node node = tx.createNode();
             Relationship rel = node.createRelationshipTo(node, REL);
             rel.setProperty(PROP, propertyValue);
-            return rel.getId();
+            return rel.getElementId();
         }
 
         @Override
-        public long createEntityWithProperties(Transaction tx, Object propertyValue, Object property2Value) {
+        public String createEntityWithProperties(Transaction tx, Object propertyValue, Object property2Value) {
             Node node = tx.createNode();
             Relationship rel = node.createRelationshipTo(node, REL);
             rel.setProperty(PROP, propertyValue);
             rel.setProperty(PROP2, property2Value);
-            return rel.getId();
+            return rel.getElementId();
         }
 
         @Override
-        public long createEntity(Transaction tx) {
+        public String createEntity(Transaction tx) {
             Node node = tx.createNode();
-            return node.createRelationshipTo(node, REL).getId();
+            return node.createRelationshipTo(node, REL).getElementId();
         }
 
         @Override
-        public void assertQueryFindsIdsInOrder(Transaction tx, String query, long... ids) {
+        public void assertQueryFindsIdsInOrder(Transaction tx, String query, String... ids) {
             FulltextProceduresTestSupport.assertQueryFindsIdsInOrder(tx, false, DEFAULT_REL_IDX_NAME, query, ids);
         }
 
         @Override
-        public void assertQueryFindsIds(GraphDatabaseAPI db, String query, LongHashSet ids) {
+        public void assertQueryFindsIds(GraphDatabaseAPI db, String query, Set<String> ids) {
             FulltextProceduresTestSupport.assertQueryFindsIds(db, false, DEFAULT_REL_IDX_NAME, query, ids);
         }
 
         @Override
-        public void deleteEntity(Transaction tx, long entityId) {
-            tx.getRelationshipById(entityId).delete();
+        public void deleteEntity(Transaction tx, String entityId) {
+            tx.getRelationshipByElementId(entityId).delete();
         }
 
         @Override
@@ -481,8 +481,8 @@ class FulltextProceduresTestSupport {
         }
 
         @Override
-        public Entity getEntity(Transaction tx, long id) {
-            return tx.getRelationshipById(id);
+        public Entity getEntity(Transaction tx, String id) {
+            return tx.getRelationshipByElementId(id);
         }
 
         @Override
