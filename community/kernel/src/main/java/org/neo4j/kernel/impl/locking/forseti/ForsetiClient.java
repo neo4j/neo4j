@@ -198,6 +198,8 @@ public class ForsetiClient implements Locks.Client {
                     continue;
                 }
 
+                memoryTracker.allocateHeap(CONCURRENT_NODE_SIZE);
+
                 // We don't hold the lock, so we need to grab it via the global lock map
                 int tries = 0;
                 SharedLock mySharedLock = null;
@@ -248,9 +250,8 @@ public class ForsetiClient implements Locks.Client {
                 }
 
                 // Make a local note about the fact that we now hold this lock
-                heldShareLocks.put(resourceId, 1);
                 activeLockCount.incrementAndGet();
-                memoryTracker.allocateHeap(CONCURRENT_NODE_SIZE);
+                heldShareLocks.put(resourceId, 1);
             }
         } finally {
             if (waitEvent != null) {
@@ -299,6 +300,7 @@ public class ForsetiClient implements Locks.Client {
                     continue;
                 }
 
+                memoryTracker.allocateHeap(CONCURRENT_NODE_SIZE);
                 // Grab the global lock
                 ForsetiLockManager.Lock existingLock;
                 int tries = 0;
@@ -325,11 +327,13 @@ public class ForsetiClient implements Locks.Client {
                     waitFor(existingLock, resourceType, resourceId, tries++);
                 }
 
-                heldLocks.put(resourceId, 1);
-                if (!upgraded) {
+                if (upgraded) {
+                    // return this memory in case of upgrade as shared lock already tracks it
+                    memoryTracker.releaseHeap(CONCURRENT_NODE_SIZE);
+                } else {
                     activeLockCount.incrementAndGet();
-                    memoryTracker.allocateHeap(CONCURRENT_NODE_SIZE);
                 }
+                heldLocks.put(resourceId, 1);
             }
         } finally {
             if (waitEvent != null) {
@@ -357,12 +361,14 @@ public class ForsetiClient implements Locks.Client {
                 return true;
             }
 
+            memoryTracker.allocateHeap(CONCURRENT_NODE_SIZE);
             // Grab the global lock
             ForsetiLockManager.Lock lock;
             if ((lock = lockMap.putIfAbsent(resourceId, myExclusiveLock)) != null) {
                 if (lock instanceof SharedLock sharedLock
                         && getSharedLockCount(resourceType).containsKey(resourceId)) {
                     if (sharedLock.tryAcquireUpdateLock()) {
+                        memoryTracker.releaseHeap(CONCURRENT_NODE_SIZE);
                         if (sharedLock.numberOfHolders() == 1) {
                             heldLocks.put(resourceId, 1);
                             return true;
@@ -372,12 +378,12 @@ public class ForsetiClient implements Locks.Client {
                         }
                     }
                 }
+                memoryTracker.releaseHeap(CONCURRENT_NODE_SIZE);
                 return false;
             }
 
-            heldLocks.put(resourceId, 1);
             activeLockCount.incrementAndGet();
-            memoryTracker.allocateHeap(CONCURRENT_NODE_SIZE);
+            heldLocks.put(resourceId, 1);
             return true;
         } finally {
             stateHolder.decrementActiveClients();
@@ -408,6 +414,7 @@ public class ForsetiClient implements Locks.Client {
                 return true;
             }
 
+            memoryTracker.allocateHeap(CONCURRENT_NODE_SIZE);
             long waitStartNano = clock.nanos();
             while (true) {
                 assertValid(waitStartNano, resourceType, resourceId);
@@ -435,9 +442,8 @@ public class ForsetiClient implements Locks.Client {
                     throw new UnsupportedOperationException("Unknown lock type: " + existingLock);
                 }
             }
-            heldShareLocks.put(resourceId, 1);
             activeLockCount.incrementAndGet();
-            memoryTracker.allocateHeap(CONCURRENT_NODE_SIZE);
+            heldShareLocks.put(resourceId, 1);
             return true;
         } finally {
             stateHolder.decrementActiveClients();
@@ -705,12 +711,13 @@ public class ForsetiClient implements Locks.Client {
         int tries = 0;
         boolean holdsSharedLock = getSharedLockCount(resourceType).containsKey(resourceId);
         if (!holdsSharedLock) {
+            memoryTracker.allocateHeap(CONCURRENT_NODE_SIZE);
             // We don't hold the shared lock, we need to grab it to upgrade it to an exclusive one
             if (!sharedLock.acquire(this)) {
+                memoryTracker.releaseHeap(CONCURRENT_NODE_SIZE);
                 return false;
             }
             activeLockCount.incrementAndGet();
-            memoryTracker.allocateHeap(CONCURRENT_NODE_SIZE);
 
             try {
                 if (tryUpgradeToExclusiveWithShareLockHeld(

@@ -20,17 +20,25 @@
 package org.neo4j.kernel.impl.locking.forseti;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.lock.ResourceTypes.NODE;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -39,12 +47,23 @@ import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryGroup;
+import org.neo4j.memory.MemoryLimitExceededException;
+import org.neo4j.memory.MemoryPool;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.time.Clocks;
 
+@ExtendWith(RandomExtension.class)
 class ForsetiMemoryTrackingTest {
+
+    @Inject
+    private RandomSupport random;
+
     private static final AtomicLong TRANSACTION_ID = new AtomicLong();
     private static final int ONE_LOCK_SIZE_ESTIMATE = 56;
     private GlobalMemoryGroupTracker memoryPool;
@@ -371,6 +390,183 @@ class ForsetiMemoryTrackingTest {
                 this.isExclusive = isExclusive;
                 this.nodeId = nodeId;
             }
+        }
+    }
+
+    @Test
+    void shouldReleaseMemoryInCaseOfDeadlock() {
+        assertThatThrownBy(() -> {
+                    try (var client1 = getClient();
+                            var client2 = getClient()) {
+                        client1.acquireExclusive(LockTracer.NONE, NODE, 10);
+                        client1.prepareForCommit();
+
+                        client2.acquireExclusive(LockTracer.NONE, NODE, 10);
+                    }
+                })
+                .isInstanceOf(DeadlockDetectedException.class);
+    }
+
+    @RepeatedTest(20)
+    void shouldReleaseLocksAndMemoryWhenMemoryLimited() throws Throwable {
+        // find max used heap first
+        long maxUsedHeap;
+        try (var tracker = new HighWaterMarkTracker(memoryPool, Long.MAX_VALUE, 1024, "forsetiClientLimitTest")) {
+            lockSomeNodes(tracker, forsetiLockManager);
+            maxUsedHeap = tracker.maxUsedHeap;
+        }
+        assertThat(maxUsedHeap).isGreaterThan(0L);
+
+        // limit heap
+        try (var tracker =
+                new LocalMemoryTracker(memoryPool, random.nextLong(maxUsedHeap), 1024, "forsetiClientLimitTest")) {
+            lockSomeNodes(tracker, forsetiLockManager);
+        }
+    }
+
+    private void lockSomeNodes(MemoryTracker tracker, Locks lockManager) {
+        var nodesPerBatch = 30;
+        var message = new AtomicReference<>("No MemoryLimitExceededException observed");
+        try (var client = lockManager.newClient()) {
+            client.initialize(LeaseService.NoLeaseClient.INSTANCE, 1, tracker, Config.defaults());
+
+            long nodeId = 0;
+            long extraSharedStart = nodeId;
+            // take some shared locks first so exclusive one will trigger upgrade and downgrade
+            var doubleBatch = nodesPerBatch * 2;
+            for (long i = extraSharedStart; i < extraSharedStart + doubleBatch; i += 3) {
+                client.acquireShared(LockTracer.NONE, NODE, i);
+            }
+
+            for (int i = 0; i < nodesPerBatch; i++) {
+                client.acquireExclusive(LockTracer.NONE, NODE, nodeId++);
+            }
+            for (int i = 0; i < nodesPerBatch; i++) {
+                client.tryExclusiveLock(NODE, nodeId++);
+            }
+
+            for (long i = extraSharedStart; i < extraSharedStart + doubleBatch; i += 3) {
+                client.releaseShared(NODE, i);
+            }
+
+            long extraExclusive = nodeId;
+            // take some exlusive locks first so shared one does not trigger more allocations
+            for (long i = extraExclusive; i < extraExclusive + doubleBatch; i += 3) {
+                client.acquireExclusive(LockTracer.NONE, NODE, i);
+            }
+            for (int i = 0; i < nodesPerBatch; i++) {
+                client.acquireShared(LockTracer.NONE, NODE, nodeId++);
+            }
+            for (int i = 0; i < nodesPerBatch; i++) {
+                client.trySharedLock(NODE, nodeId++);
+            }
+            for (long i = extraExclusive; i < extraExclusive + doubleBatch; i += 3) {
+                client.releaseExclusive(NODE, i);
+            }
+
+        } catch (MemoryLimitExceededException mlee) {
+            message.set("Observed exception: " + Exceptions.stringify(mlee));
+        }
+
+        verifyNoLocks(lockManager, message);
+
+        assertThat(tracker.estimatedHeapMemory()).as(message.get()).isZero();
+    }
+
+    private void verifyNoLocks(Locks lockManager, AtomicReference<String> message) {
+        lockManager.accept(
+                (lockType,
+                        resourceType,
+                        transactionId,
+                        resourceId,
+                        description,
+                        estimatedWaitTime,
+                        lockIdentityHashCode) -> {
+                    fail(
+                            "Leaked global lock after client is closed for resource id %d transaction id %d. %s",
+                            resourceId, transactionId, message);
+                });
+    }
+
+    @RepeatedTest(20)
+    void shouldBeAbleToTrackMemoryCorrectlyWhenTakingExclusiveLockOnSharedLockedObject()
+            throws ExecutionException, InterruptedException {
+        long maxUsedHeap;
+        try (var tracker = new HighWaterMarkTracker(memoryPool, Long.MAX_VALUE, 1024, "forsetiClientLimitTest")) {
+            raceSharedAndExclusiveLock(tracker, forsetiLockManager);
+            maxUsedHeap = tracker.maxUsedHeap;
+        }
+        assertThat(maxUsedHeap).isGreaterThan(0L);
+
+        // limit heap
+        try (var tracker =
+                new LocalMemoryTracker(memoryPool, random.nextLong(maxUsedHeap), 1024, "forsetiClientLimitTest")) {
+            raceSharedAndExclusiveLock(tracker, forsetiLockManager);
+        }
+    }
+
+    private void raceSharedAndExclusiveLock(LocalMemoryTracker memoryTracker1, Locks lockManager)
+            throws InterruptedException, ExecutionException {
+        try (var memoryTracker2 = new LocalMemoryTracker(); ) {
+            var message = new AtomicReference<>("No MemoryLimitExceededException observed");
+
+            try (var executor1 = new OtherThreadExecutor("test1");
+                    var executor2 = new OtherThreadExecutor("test2")) {
+                var acquireSharedLockLatch = new CountDownLatch(1);
+                var releaseSharedLockLatch = new CountDownLatch(1);
+                // executor2 takes shared lock
+                var future2 = executor2.executeDontWait(() -> {
+                    try (var otherClient = lockManager.newClient()) {
+                        otherClient.initialize(
+                                LeaseService.NoLeaseClient.INSTANCE, 2, memoryTracker2, Config.defaults());
+                        otherClient.acquireShared(LockTracer.NONE, NODE, 1);
+                        acquireSharedLockLatch.countDown();
+                        releaseSharedLockLatch.await();
+                    }
+                    return null;
+                });
+
+                acquireSharedLockLatch.await();
+                // executor1 tries to grab exlusive lock, but as there is shared one, it needs to take shared too and
+                // then upgrade
+                var future1 = executor1.executeDontWait(() -> {
+                    try (var client = lockManager.newClient()) {
+                        client.initialize(LeaseService.NoLeaseClient.INSTANCE, 1, memoryTracker1, Config.defaults());
+                        client.acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, 1);
+                    } catch (MemoryLimitExceededException mlee) {
+                        message.set("Observed exception: " + Exceptions.stringify(mlee));
+                    }
+                    return null;
+                });
+
+                // let retry loop loop
+                Thread.sleep(100);
+                // release shared lock
+                releaseSharedLockLatch.countDown();
+                future2.get();
+                future1.get();
+            }
+
+            verifyNoLocks(lockManager, message);
+
+            assertThat(memoryTracker1.estimatedHeapMemory()).as(message.get()).isZero();
+            assertThat(memoryTracker2.estimatedHeapMemory()).isZero();
+        }
+    }
+
+    private static class HighWaterMarkTracker extends LocalMemoryTracker {
+        private long maxUsedHeap = 0;
+
+        public HighWaterMarkTracker(
+                MemoryPool memoryPool, long localBytesLimit, long grabSize, String limitSettingName) {
+            super(memoryPool, localBytesLimit, grabSize, limitSettingName);
+        }
+
+        @Override
+        public void allocateHeap(long bytes) {
+            super.allocateHeap(bytes);
+            var heapMemroy = estimatedHeapMemory();
+            this.maxUsedHeap = Math.max(maxUsedHeap, heapMemroy);
         }
     }
 
