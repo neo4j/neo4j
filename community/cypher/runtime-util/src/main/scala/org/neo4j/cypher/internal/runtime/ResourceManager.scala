@@ -223,22 +223,11 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memory
     }
   }
 
-  /**
-   * DO NOT USE OUTSIDE TESTING
-   */
-  @VisibleForTesting
-  def unsafeFillForTesting(newSizeAndCapacity: Int): Unit = {
-    closeables = new Array[AutoCloseablePlus](newSizeAndCapacity)
-    trackedSize = shallowSizeOfObjectArray(capacity)
-    memoryTracker.allocateHeap(trackedSize)
-    highMark = newSizeAndCapacity
-  }
-
   private def ensureCapacity(): Unit = {
     if (closeables.length <= highMark) {
       val temp = closeables
       val oldHeapUsage = trackedSize
-      val newSize = computeNewSize
+      val newSize = computeNewSize(closeables.length)
       trackedSize = shallowSizeOfObjectArray(newSize)
       memoryTracker.allocateHeap(trackedSize)
       closeables = new Array[AutoCloseablePlus](newSize)
@@ -247,8 +236,8 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memory
     }
   }
 
-  private def computeNewSize: Int = {
-    val oldSize = closeables.length
+  @VisibleForTesting
+  def computeNewSize(oldSize: Int): Int = {
     val minSize = oldSize + 1
     if (minSize < 0) {
       // We cannot grow anymore, this is really an OOM but we let
@@ -257,7 +246,7 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memory
     }
 
     // try to double the size
-    val newSize = oldSize + (oldSize >> 1)
+    val newSize = oldSize * 2;
     // we got an overflow grow by the minimum amount
     if (newSize < 0) minSize
     else newSize
