@@ -21,6 +21,7 @@ package org.neo4j.dbms.database;
 
 import java.util.List;
 import java.util.Set;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.database.DatabaseId;
 
 public interface DatabaseInfoService {
@@ -31,15 +32,19 @@ public interface DatabaseInfoService {
      * Information returned should be accessible and be able to return a quick result.
      *
      * @param databaseIds databases the request is about
+     * @param transaction the read transaction from where the `SHOW DATABASE` command was called, the implementer can
+     *                    use it to make queries on the system database
      * @return a list containing one item per database per server
      */
-    List<DatabaseInfo> lookupCachedInfo(Set<DatabaseId> databaseIds);
+    List<DatabaseInfo> lookupCachedInfo(Set<DatabaseId> databaseIds, Transaction transaction);
 
     /**
-     * Similar to {@link #lookupCachedInfo(Set)}  but with additional information that might require network calls.
+     * Similar to {@link #lookupCachedInfo(Set, Transaction)}  but with additional information that might require network calls.
      *
      * @param databaseIds databases the request is about
+     * @param transaction the read transaction from where the `SHOW DATABASE` command was called, the implementer can
+     *                    use it to make queries on the system database
      * @return a list containing one item per database per server
      */
-    List<ExtendedDatabaseInfo> requestDetailedInfo(Set<DatabaseId> databaseIds);
+    List<ExtendedDatabaseInfo> requestDetailedInfo(Set<DatabaseId> databaseIds, Transaction transaction);
 }

@@ -30,7 +30,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.storageengine.api.StoreId;
 
 /**
- * An extension of {@link DatabaseInfo} with the additional fields for the information returned by {@link DatabaseInfoService#requestDetailedInfo(Set)}.
+ * An extension of {@link DatabaseInfo} with the additional fields for the information returned by {@link DatabaseInfoService#requestDetailedInfo(Set, org.neo4j.graphdb.Transaction)}.
  */
 public class ExtendedDatabaseInfo extends DatabaseInfo {
     public static final long COMMITTED_TX_ID_NOT_AVAILABLE = -1;
@@ -84,7 +84,7 @@ public class ExtendedDatabaseInfo extends DatabaseInfo {
     /**
      * Returns the last committed transaction id for this database on this server. If the last
      * committed transaction id is not available empty is return.
-     *
+     * <p>
      * OptionalLong.empty() is used instead of -1 to indicate "not available" to be consistent with
      * {@link #txCommitLag()} where -1 is a valid return value.
      *
@@ -98,7 +98,7 @@ public class ExtendedDatabaseInfo extends DatabaseInfo {
      * Returns the difference between the maximum known committed transaction of this database and the
      * committed transaction id of this server. A lag of 0 indicate that this server is up to date while
      * a negative value indicate how many transactions behind this server is.
-     *
+     * <p>
      * If last committed transaction id is not available the commit lag in not applicable and
      * empty is returned.
      *

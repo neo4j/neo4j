@@ -31,6 +31,7 @@ import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.identity.ServerId;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -62,12 +63,12 @@ public class DefaultDatabaseInfoService implements DatabaseInfoService {
     }
 
     @Override
-    public List<DatabaseInfo> lookupCachedInfo(Set<DatabaseId> databaseIds) {
+    public List<DatabaseInfo> lookupCachedInfo(Set<DatabaseId> databaseIds, Transaction ignored) {
         return createDatabaseInfoStream(databaseIds).collect(Collectors.toList());
     }
 
     @Override
-    public List<ExtendedDatabaseInfo> requestDetailedInfo(Set<DatabaseId> databaseIds) {
+    public List<ExtendedDatabaseInfo> requestDetailedInfo(Set<DatabaseId> databaseIds, Transaction ignored) {
         return createDatabaseInfoStream(databaseIds)
                 .map(databaseInfo -> {
                     var db = databaseInfo.namedDatabaseId.databaseId();

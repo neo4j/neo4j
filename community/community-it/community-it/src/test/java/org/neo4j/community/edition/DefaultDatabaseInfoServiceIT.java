@@ -80,7 +80,8 @@ public class DefaultDatabaseInfoServiceIT {
         allDatabases.add(nonExistingDatabase);
 
         // when
-        var results = databaseInfoService.lookupCachedInfo(allDatabases);
+        // DefaultDatabaseInfoService does not use the transaction
+        var results = databaseInfoService.lookupCachedInfo(allDatabases, null);
         var returnedDatabases = results.stream()
                 .map(databaseInfo -> databaseInfo.namedDatabaseId().databaseId())
                 .collect(Collectors.toSet());

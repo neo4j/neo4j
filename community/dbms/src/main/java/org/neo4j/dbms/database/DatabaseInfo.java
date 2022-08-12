@@ -28,7 +28,7 @@ import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseAccess;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 /**
- * A wrapper class of the information returned by {@link DatabaseInfoService#lookupCachedInfo(Set)}
+ * A wrapper class of the information returned by {@link DatabaseInfoService#lookupCachedInfo(Set, org.neo4j.graphdb.Transaction)}
  */
 public class DatabaseInfo {
     public static final String ROLE_PRIMARY = "primary";

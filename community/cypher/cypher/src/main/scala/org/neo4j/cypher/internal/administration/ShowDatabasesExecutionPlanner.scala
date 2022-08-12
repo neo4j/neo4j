@@ -388,9 +388,9 @@ case class ShowDatabasesExecutionPlanner(
 
     val dbMetadata =
       if (verbose && maybeYield.isDefined && requiresDetailedLookup(maybeYield.get)) {
-        requestDetailedInfo(accessibleDatabases).asJava
+        requestDetailedInfo(accessibleDatabases, transaction).asJava
       } else {
-        lookupCachedInfo(accessibleDatabases).asJava
+        lookupCachedInfo(accessibleDatabases, transaction).asJava
       }
 
     VirtualValues.map(
@@ -414,14 +414,14 @@ case class ShowDatabasesExecutionPlanner(
     }
   }
 
-  private def lookupCachedInfo(typeMap: Map[DatabaseId, DatabaseType]): List[AnyValue] = {
-    val dbInfos = infoService.lookupCachedInfo(typeMap.keys.toSet.asJava).asScala
+  private def lookupCachedInfo(typeMap: Map[DatabaseId, DatabaseType], transaction: Transaction): List[AnyValue] = {
+    val dbInfos = infoService.lookupCachedInfo(typeMap.keys.toSet.asJava, transaction).asScala
     dbInfos.map(info => BaseDatabaseInfoMapper.toMapValue(dbms, info, typeMap)).toList
   }
 
-  private def requestDetailedInfo(typeMap: Map[DatabaseId, DatabaseType])(implicit
+  private def requestDetailedInfo(typeMap: Map[DatabaseId, DatabaseType], transaction: Transaction)(implicit
   mapper: DatabaseInfoMapper[ExtendedDatabaseInfo]): List[AnyValue] = {
-    val dbInfos = infoService.requestDetailedInfo(typeMap.keys.toSet.asJava).asScala
+    val dbInfos = infoService.requestDetailedInfo(typeMap.keys.toSet.asJava, transaction).asScala
     dbInfos.map(info => mapper.toMapValue(dbms, info, typeMap)).toList
   }
 }
