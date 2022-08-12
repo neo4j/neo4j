@@ -189,7 +189,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .dynamic()
             .build();
 
-    @Description("Use server side routing by default for neo4j:// protocol connections")
+    @Description("Routing strategy for neo4j:// protocol connections.\n"
+            + "Default is `CLIENT`, using client-side routing, with server-side routing as a fallback (if enabled).\n"
+            + "When set to `SERVER`, client-side routing is short-circuited, and requests will rely on server-side routing "
+            + "(which must be enabled for proper operation, i.e. `dbms.routing.enabled=true`).\n"
+            + "Can be overridden by `dbms.routing.client_side.enforce_for_domains`.")
     public static final Setting<RoutingMode> routing_default_router = newBuilder(
                     "dbms.routing.default_router", ofEnum(RoutingMode.class), RoutingMode.CLIENT)
             .build();
@@ -933,7 +937,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .addConstraint(min(16))
             .build();
 
-    @Description("Enable intra-cluster routing using an additional bolt connector")
+    @Description("Enable server-side routing in clusters using an additional bolt connector.\n"
+            + "When configured, this allows requests to be forwarded from one cluster member to another, if the requests can't be "
+            + "satisfied by the first member (e.g. write requests received by a non-leader).")
     public static final Setting<Boolean> routing_enabled =
             newBuilder("dbms.routing.enabled", BOOL, false).build();
 
