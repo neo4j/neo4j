@@ -19,7 +19,13 @@
  */
 package org.neo4j.kernel.impl.locking.forseti;
 
-import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
+import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.locks.LockSupport.parkNanos;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.Interrupted;
+import static org.neo4j.lock.LockType.EXCLUSIVE;
+import static org.neo4j.lock.LockType.SHARED;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -29,7 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
-
+import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.collection.trackable.HeapTrackingLongIntHashMap;
 import org.neo4j.configuration.Config;
@@ -52,14 +58,6 @@ import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.VisibleForTesting;
-
-import static java.lang.String.format;
-import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.locks.LockSupport.parkNanos;
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.Interrupted;
-import static org.neo4j.lock.LockType.EXCLUSIVE;
-import static org.neo4j.lock.LockType.SHARED;
 
 // Please note. Except separate test cases for particular classes related to community locking
 // see also LockingCompatibilityTestSuite test suite
@@ -199,6 +197,8 @@ public class ForsetiClient implements Locks.Client
                     continue;
                 }
 
+                memoryTracker.allocateHeap(CONCURRENT_NODE_SIZE);
+
                 // We don't hold the lock, so we need to grab it via the global lock map
                 int tries = 0;
                 SharedLock mySharedLock = null;
@@ -261,9 +261,8 @@ public class ForsetiClient implements Locks.Client
                 }
 
                 // Make a local note about the fact that we now hold this lock
-                heldShareLocks.put( resourceId, 1 );
                 activeLockCount.incrementAndGet();
-                memoryTracker.allocateHeap( CONCURRENT_NODE_SIZE );
+                heldShareLocks.put(resourceId, 1);
             }
         }
         finally
@@ -323,6 +322,7 @@ public class ForsetiClient implements Locks.Client
                     continue;
                 }
 
+                memoryTracker.allocateHeap(CONCURRENT_NODE_SIZE);
                 // Grab the global lock
                 ForsetiLockManager.Lock existingLock;
                 int tries = 0;
@@ -355,12 +355,16 @@ public class ForsetiClient implements Locks.Client
                     waitFor( existingLock, resourceType, resourceId, tries++ );
                 }
 
-                heldLocks.put( resourceId, 1 );
-                if ( !upgraded )
+                if ( upgraded )
+                {
+                    // return this memory in case of upgrade as shared lock already tracks it
+                    memoryTracker.releaseHeap( CONCURRENT_NODE_SIZE );
+                }
+                else
                 {
                     activeLockCount.incrementAndGet();
-                    memoryTracker.allocateHeap( CONCURRENT_NODE_SIZE );
                 }
+                heldLocks.put( resourceId, 1 );
             }
         }
         finally
@@ -394,6 +398,7 @@ public class ForsetiClient implements Locks.Client
                 return true;
             }
 
+            memoryTracker.allocateHeap(CONCURRENT_NODE_SIZE);
             // Grab the global lock
             ForsetiLockManager.Lock lock;
             if ( (lock = lockMap.putIfAbsent( resourceId, myExclusiveLock )) != null )
@@ -403,6 +408,7 @@ public class ForsetiClient implements Locks.Client
                     SharedLock sharedLock = (SharedLock) lock;
                     if ( sharedLock.tryAcquireUpdateLock() )
                     {
+                        memoryTracker.releaseHeap(CONCURRENT_NODE_SIZE);
                         if ( sharedLock.numberOfHolders() == 1 )
                         {
                             heldLocks.put( resourceId, 1 );
@@ -415,12 +421,12 @@ public class ForsetiClient implements Locks.Client
                         }
                     }
                 }
+                memoryTracker.releaseHeap(CONCURRENT_NODE_SIZE);
                 return false;
             }
 
-            heldLocks.put( resourceId, 1 );
             activeLockCount.incrementAndGet();
-            memoryTracker.allocateHeap( CONCURRENT_NODE_SIZE );
+            heldLocks.put(resourceId, 1);
             return true;
         }
         finally
@@ -457,6 +463,7 @@ public class ForsetiClient implements Locks.Client
                 return true;
             }
 
+            memoryTracker.allocateHeap(CONCURRENT_NODE_SIZE);
             long waitStartNano = clock.nanos();
             while ( true )
             {
@@ -496,9 +503,8 @@ public class ForsetiClient implements Locks.Client
                     throw new UnsupportedOperationException( "Unknown lock type: " + existingLock );
                 }
             }
-            heldShareLocks.put( resourceId, 1 );
             activeLockCount.incrementAndGet();
-            memoryTracker.allocateHeap( CONCURRENT_NODE_SIZE );
+            heldShareLocks.put(resourceId, 1);
             return true;
         }
         finally
@@ -828,12 +834,13 @@ public class ForsetiClient implements Locks.Client
         if ( !holdsSharedLock )
         {
             // We don't hold the shared lock, we need to grab it to upgrade it to an exclusive one
+            memoryTracker.allocateHeap(CONCURRENT_NODE_SIZE);
             if ( !sharedLock.acquire( this ) )
             {
+                memoryTracker.releaseHeap(CONCURRENT_NODE_SIZE);
                 return false;
             }
             activeLockCount.incrementAndGet();
-            memoryTracker.allocateHeap( CONCURRENT_NODE_SIZE );
 
             try
             {
