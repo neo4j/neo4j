@@ -117,7 +117,7 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
     PatternExpression(
       pattern = relPattern(from, to, relationships, fromPropertyPredicate)
     )(
-      outerScope = (from.toSet ++ to.toSet).map(varFor(_)),
+      outerScope = (from.toSet ++ to.toSet).map(varFor(_))
     )
   }
 }
@@ -161,7 +161,7 @@ class GetDegreeRewriterSizeOfPatternComprehensionTest extends GetDegreeRewriterC
         projection = literalInt(1)
       )(
         position = pos,
-        outerScope = (from.toSet ++ to.toSet).map(varFor(_)),
+        outerScope = (from.toSet ++ to.toSet).map(varFor(_))
       )
     )(pos)
   }
