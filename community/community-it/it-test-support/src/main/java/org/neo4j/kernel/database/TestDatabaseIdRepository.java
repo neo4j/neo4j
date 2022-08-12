@@ -91,4 +91,8 @@ public class TestDatabaseIdRepository implements DatabaseIdRepository {
         var uuidIsFiltered = id.map(i -> filterSet.contains(i.name())).orElse(false);
         return uuidIsFiltered ? Optional.empty() : id;
     }
+
+    public Set<NamedDatabaseId> getAllDatabaseIds() {
+        return Set.copyOf(cache.values());
+    }
 }
