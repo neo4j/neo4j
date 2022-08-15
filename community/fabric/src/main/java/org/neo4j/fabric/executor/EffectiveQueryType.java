@@ -46,7 +46,11 @@ public class EffectiveQueryType {
         throw new IllegalArgumentException("Unexpected query type: " + queryType);
     }
 
-    public static AccessMode effectiveAccessMode(AccessMode requested, QueryType queryType) {
+    public static AccessMode effectiveAccessMode(
+            AccessMode requested, FabricPlan.ExecutionType executionType, QueryType queryType) {
+        if (executionType == FabricPlan.EXPLAIN()) {
+            return AccessMode.READ;
+        }
         if (queryType == QueryType.READ()) {
             return AccessMode.READ;
         }

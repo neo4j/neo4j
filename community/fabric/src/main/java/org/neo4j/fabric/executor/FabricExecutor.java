@@ -558,11 +558,8 @@ public class FabricExecutor {
         }
 
         private TransactionMode getTransactionMode(QueryType queryType, String graph) {
-            if (plan.executionType() == FabricPlan.EXPLAIN()) {
-                return TransactionMode.DEFINITELY_READ;
-            }
-
-            var queryMode = EffectiveQueryType.effectiveAccessMode(accessMode, queryType);
+            var executionType = plan.executionType();
+            var queryMode = EffectiveQueryType.effectiveAccessMode(accessMode, executionType, queryType);
 
             if (accessMode == AccessMode.WRITE) {
                 if (queryMode == AccessMode.WRITE) {
