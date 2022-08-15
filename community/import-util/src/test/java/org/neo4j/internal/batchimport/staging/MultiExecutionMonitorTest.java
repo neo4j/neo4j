@@ -26,8 +26,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
-import org.neo4j.time.Clocks;
-import org.neo4j.time.FakeClock;
 
 class MultiExecutionMonitorTest {
     @Test
@@ -35,16 +33,13 @@ class MultiExecutionMonitorTest {
         // GIVEN
         TestableMonitor first = new TestableMonitor(100, MILLISECONDS, "first");
         TestableMonitor other = new TestableMonitor(250, MILLISECONDS, "other");
-        FakeClock clock = Clocks.fakeClock();
-        MultiExecutionMonitor multiMonitor = new MultiExecutionMonitor(clock, first, other);
+        MultiExecutionMonitor multiMonitor = new MultiExecutionMonitor(first, other);
 
         // WHEN/THEN
-        clock.forward(110, MILLISECONDS);
+        assertThat(multiMonitor.checkIntervalMillis()).isEqualTo(100L);
         expectCallsToCheck(multiMonitor, first, 1, other, 0);
-        clock.forward(100, MILLISECONDS);
         expectCallsToCheck(multiMonitor, first, 2, other, 0);
-        clock.forward(45, MILLISECONDS);
-        expectCallsToCheck(multiMonitor, first, 2, other, 1);
+        expectCallsToCheck(multiMonitor, first, 3, other, 1);
     }
 
     private static void expectCallsToCheck(ExecutionMonitor multiMonitor, Object... alternatingMonitorAndCount) {

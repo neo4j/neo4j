@@ -51,7 +51,7 @@ public interface ExecutionMonitor {
     void done(boolean successful, long totalTimeMillis, String additionalInformation);
 
     /**
-     * @return rough time interval this monitor needs checking.
+     * @return rough time interval (in millis) this monitor needs checking.
      */
     long checkIntervalMillis();
 

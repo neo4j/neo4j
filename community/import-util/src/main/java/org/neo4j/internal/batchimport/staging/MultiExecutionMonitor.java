@@ -19,28 +19,25 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import java.time.Clock;
+import java.util.Arrays;
+import java.util.stream.LongStream;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.time.Clocks;
 
 /**
  * {@link ExecutionMonitor} that wraps several other monitors. Each wrapped monitor can still specify
  * individual poll frequencies and this {@link MultiExecutionMonitor} will make that happen.
  */
 public class MultiExecutionMonitor implements ExecutionMonitor {
-    private final Clock clock;
     private final ExecutionMonitor[] monitors;
-    private final long[] endTimes;
+    private final long[] nextIntervals;
+    private final long checkInterval;
 
     public MultiExecutionMonitor(ExecutionMonitor... monitors) {
-        this(Clocks.systemClock(), monitors);
-    }
-
-    public MultiExecutionMonitor(Clock clock, ExecutionMonitor... monitors) {
-        this.clock = clock;
         this.monitors = monitors;
-        this.endTimes = new long[monitors.length];
-        fillEndTimes();
+        this.nextIntervals = Arrays.stream(monitors)
+                .mapToLong(ExecutionMonitor::checkIntervalMillis)
+                .toArray();
+        this.checkInterval = LongStream.of(nextIntervals).min().orElse(0);
     }
 
     @Override
@@ -73,30 +70,16 @@ public class MultiExecutionMonitor implements ExecutionMonitor {
 
     @Override
     public long checkIntervalMillis() {
-        // Find the lowest of all end times
-        long low = endTimes[0];
-        for (int i = 1; i < monitors.length; i++) {
-            long thisLow = endTimes[i];
-            if (thisLow < low) {
-                low = thisLow;
-            }
-        }
-        return low;
-    }
-
-    private void fillEndTimes() {
-        for (int i = 0; i < monitors.length; i++) {
-            endTimes[i] = monitors[i].checkIntervalMillis();
-        }
+        return checkInterval;
     }
 
     @Override
     public void check(StageExecution execution) {
-        long currentTimeMillis = clock.millis();
-        for (int i = 0; i < monitors.length; i++) {
-            if (currentTimeMillis >= endTimes[i]) {
+        for (int i = 0; i < nextIntervals.length; i++) {
+            nextIntervals[i] -= checkInterval;
+            if (nextIntervals[i] <= 0) {
                 monitors[i].check(execution);
-                endTimes[i] = currentTimeMillis + monitors[i].checkIntervalMillis();
+                nextIntervals[i] += monitors[i].checkIntervalMillis();
             }
         }
     }
