@@ -22,7 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.lang.System.nanoTime;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.LockSupport;
@@ -41,8 +41,8 @@ import org.neo4j.internal.unsafe.UnsafeUtil;
  */
 class LongSpinLatch {
     private static final long BITS_OFFSET = UnsafeUtil.getFieldOffset(LongSpinLatch.class, "bits");
-    private static final long MAX_SPIN_NANOS = MILLISECONDS.toNanos(10);
-    private static final long PARK_NANOS = MILLISECONDS.toNanos(1);
+    private static final long MAX_SPIN_NANOS = MICROSECONDS.toNanos(500);
+    private static final long PARK_NANOS = MICROSECONDS.toNanos(100);
     private static final long TEST_FAILED = -1;
     private static final long DEAD = -2;
     static final int WRITE_LATCH_DEAD = -1;
