@@ -19,13 +19,12 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
+import static java.lang.Math.toIntExact;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
-
-import static java.lang.Math.toIntExact;
 
 public class HeapByteArray extends HeapNumberArray<ByteArray> implements ByteArray
 {
@@ -40,7 +39,7 @@ public class HeapByteArray extends HeapNumberArray<ByteArray> implements ByteArr
         super( defaultValue.length, base );
         this.length = length;
         this.defaultValue = defaultValue;
-        this.array = new byte[itemSize * length];
+        this.array = new byte[Math.toIntExact( itemSize * (long)length )];
         this.buffer = ByteBuffer.wrap( array );
         this.defaultValueIsUniform = isUniform( defaultValue );
         memoryTracker.allocateHeap( HeapEstimator.sizeOf( array ) );

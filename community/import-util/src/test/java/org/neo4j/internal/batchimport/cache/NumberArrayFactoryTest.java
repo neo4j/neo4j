@@ -19,14 +19,8 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import org.junit.jupiter.api.Test;
-
-import org.neo4j.internal.unsafe.NativeMemoryAllocationRefusedError;
-import org.neo4j.memory.LocalMemoryTracker;
-import org.neo4j.memory.MemoryPools;
-import org.neo4j.memory.MemoryTracker;
-
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -43,6 +37,12 @@ import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.HEAP;
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.OFF_HEAP;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.unsafe.NativeMemoryAllocationRefusedError;
+import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.memory.MemoryPools;
+import org.neo4j.memory.MemoryTracker;
 
 class NumberArrayFactoryTest
 {
@@ -244,6 +244,13 @@ class NumberArrayFactoryTest
         assertThat( into[0] ).isEqualTo( (byte) 0 );
         assertThat( factory.newIntArray( 10, 1, base, INSTANCE ).get( base + 1 ) ).isEqualTo( 1 );
         assertThat( factory.newLongArray( 10, 1, base, INSTANCE ).get( base + 1 ) ).isEqualTo( 1L );
+    }
+
+    @Test
+    void heapArrayShouldThrowOnTooLargeArraySize()
+    {
+        assertThatThrownBy( () -> HEAP.newByteArray( Integer.MAX_VALUE / 2, new byte[10], 0, INSTANCE ) ).isInstanceOf( ArithmeticException.class )
+                                                                                                         .hasMessage( "integer overflow" );
     }
 
     private static class FailureMonitor implements NumberArrayFactory.Monitor
