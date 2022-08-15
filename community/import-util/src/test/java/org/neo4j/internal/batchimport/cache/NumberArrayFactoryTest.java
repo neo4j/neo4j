@@ -20,6 +20,7 @@
 package org.neo4j.internal.batchimport.cache;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -243,6 +244,13 @@ class NumberArrayFactoryTest {
         assertThat(into[0]).isEqualTo((byte) 0);
         assertThat(factory.newIntArray(10, 1, base, INSTANCE).get(base + 1)).isEqualTo(1);
         assertThat(factory.newLongArray(10, 1, base, INSTANCE).get(base + 1)).isEqualTo(1L);
+    }
+
+    @Test
+    void heapArrayShouldThrowOnTooLargeArraySize() {
+        assertThatThrownBy(() -> HEAP.newByteArray(Integer.MAX_VALUE / 2, new byte[10], 0, INSTANCE))
+                .isInstanceOf(ArithmeticException.class)
+                .hasMessage("integer overflow");
     }
 
     private static class FailureMonitor implements NumberArrayFactory.Monitor {

@@ -38,7 +38,7 @@ public class HeapByteArray extends HeapNumberArray<ByteArray> implements ByteArr
         super(defaultValue.length, base);
         this.length = length;
         this.defaultValue = defaultValue;
-        this.array = new byte[itemSize * length];
+        this.array = new byte[Math.toIntExact(itemSize * (long) length)];
         this.buffer = ByteBuffer.wrap(array).order(ByteOrder.LITTLE_ENDIAN);
         this.defaultValueIsUniform = isUniform(defaultValue);
         memoryTracker.allocateHeap(HeapEstimator.sizeOf(array));
