@@ -232,6 +232,24 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction {
     }
 
     @Override
+    public Path createTempFile(Path dir, String prefix, String suffix) throws IOException {
+        adversary.injectFailure(IOException.class, SecurityException.class);
+        return delegate.createTempFile(dir, prefix, suffix);
+    }
+
+    @Override
+    public Path createTempDirectory(String prefix) throws IOException {
+        adversary.injectFailure(IOException.class, SecurityException.class);
+        return delegate.createTempDirectory(prefix);
+    }
+
+    @Override
+    public Path createTempDirectory(Path dir, String prefix) throws IOException {
+        adversary.injectFailure(IOException.class, SecurityException.class);
+        return delegate.createTempDirectory(dir, prefix);
+    }
+
+    @Override
     public void close() throws IOException {
         adversary.injectFailure(IOException.class, SecurityException.class);
         delegate.close();

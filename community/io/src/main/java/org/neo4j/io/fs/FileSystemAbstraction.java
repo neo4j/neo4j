@@ -422,6 +422,33 @@ public interface FileSystemAbstraction extends Closeable {
      * @param suffix the suffix string to be used in generating the file's name
      * @return the path to the newly created file that did not exist before this method was invoked.
      * @throws IOException if an I/O error occurs or the temporary-file directory does not exist.
+     * @see #createTempFile(Path, String, String)
      */
     Path createTempFile(String prefix, String suffix) throws IOException;
+
+    /**
+     * Creates an empty file in the specified directory, using the given prefix and suffix to generate its name.
+     * @param prefix the prefix string to be used in generating the file's name.
+     * @param suffix the suffix string to be used in generating the file's name
+     * @return the path to the newly created file that did not exist before this method was invoked.
+     * @throws IOException if an I/O error occurs or the specified directory does not exist.
+     */
+    Path createTempFile(Path dir, String prefix, String suffix) throws IOException;
+
+    /**
+     * Creates a new directory in the default temporary-file directory, using the given prefix to generate its name.
+     * @param prefix the prefix string to be used in generating the directory's name.
+     * @return the path to the newly created directory that did not exist before this method was invoked.
+     * @throws IOException if an I/O error occurs or the temporary-file directory does not exist.
+     * @see #createTempDirectory(Path, String)
+     */
+    Path createTempDirectory(String prefix) throws IOException;
+
+    /**
+     * Creates a new directory in the specified directory, using the given prefix to generate its name.
+     * @param prefix the prefix string to be used in generating the directory's name.
+     * @return the path to the newly created directory that did not exist before this method was invoked.
+     * @throws IOException if an I/O error occurs or the specified directory does not exist.
+     */
+    Path createTempDirectory(Path dir, String prefix) throws IOException;
 }

@@ -488,14 +488,35 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction {
 
     @Override
     public Path createTempFile(String prefix, String suffix) throws IOException {
-        Path tmp = canonicalFile(Path.of(tempDirectory));
-        mkdirs(tmp);
+        return createTempFile(Path.of(tempDirectory), prefix, suffix);
+    }
+
+    @Override
+    public Path createTempFile(Path dir, String prefix, String suffix) throws IOException {
+        Path parent = canonicalFile(dir);
+        mkdirs(parent);
         while (true) {
-            Path tmpFile = tmp.resolve(prefix + Long.toUnsignedString(UNIQUE_TEMP_FILE.getAndIncrement()) + suffix);
-            var prev = files.putIfAbsent(tmpFile, new EphemeralFileData(tmpFile, clock));
+            Path tmp = parent.resolve(prefix + Long.toUnsignedString(UNIQUE_TEMP_FILE.getAndIncrement()) + suffix);
+            var prev = files.putIfAbsent(tmp, new EphemeralFileData(tmp, clock));
             if (prev == null) {
-                return tmpFile;
+                return tmp;
             }
         }
+    }
+
+    @Override
+    public Path createTempDirectory(String prefix) throws IOException {
+        return createTempDirectory(Path.of(tempDirectory), prefix);
+    }
+
+    @Override
+    public Path createTempDirectory(Path dir, String prefix) throws IOException {
+        Path parent = canonicalFile(dir);
+        mkdirs(parent);
+        Path tmp;
+        do {
+            tmp = parent.resolve(prefix + Long.toUnsignedString(UNIQUE_TEMP_FILE.getAndIncrement()));
+        } while (!directories.add(tmp));
+        return tmp;
     }
 }
