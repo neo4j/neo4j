@@ -492,11 +492,13 @@ public class ForsetiClient implements Locks.Client
                     }
                     else if ( ((SharedLock) existingLock).isUpdateLock() )
                     {
+                        memoryTracker.releaseHeap( CONCURRENT_NODE_SIZE );
                         return false;
                     }
                 }
                 else if ( existingLock instanceof ExclusiveLock )
                 {
+                    memoryTracker.releaseHeap( CONCURRENT_NODE_SIZE );
                     return false;
                 }
                 else
