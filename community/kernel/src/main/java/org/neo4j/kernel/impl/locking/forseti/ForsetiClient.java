@@ -368,12 +368,12 @@ public class ForsetiClient implements Locks.Client {
                 if (lock instanceof SharedLock sharedLock
                         && getSharedLockCount(resourceType).containsKey(resourceId)) {
                     if (sharedLock.tryAcquireUpdateLock()) {
-                        memoryTracker.releaseHeap(CONCURRENT_NODE_SIZE);
                         if (sharedLock.numberOfHolders() == 1) {
                             heldLocks.put(resourceId, 1);
                             return true;
                         } else {
                             sharedLock.releaseUpdateLock();
+                            memoryTracker.releaseHeap(CONCURRENT_NODE_SIZE);
                             return false;
                         }
                     }
@@ -434,9 +434,11 @@ public class ForsetiClient implements Locks.Client {
                         // Success!
                         break;
                     } else if (((SharedLock) existingLock).isUpdateLock()) {
+                        memoryTracker.releaseHeap(CONCURRENT_NODE_SIZE);
                         return false;
                     }
                 } else if (existingLock instanceof ExclusiveLock) {
+                    memoryTracker.releaseHeap(CONCURRENT_NODE_SIZE);
                     return false;
                 } else {
                     throw new UnsupportedOperationException("Unknown lock type: " + existingLock);

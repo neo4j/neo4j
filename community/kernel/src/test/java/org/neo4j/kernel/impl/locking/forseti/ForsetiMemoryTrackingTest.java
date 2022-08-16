@@ -394,6 +394,45 @@ class ForsetiMemoryTrackingTest {
     }
 
     @Test
+    void unsuccessfulTryExclusiveShouldNotLeakMemory() {
+        try (var client1 = getClient();
+                var tracker = new LocalMemoryTracker(memoryPool);
+                var client2 = forsetiLockManager.newClient()) {
+
+            client1.acquireExclusive(LockTracer.NONE, NODE, 10);
+
+            client2.initialize(
+                    LeaseService.NoLeaseClient.INSTANCE, TRANSACTION_ID.getAndIncrement(), tracker, Config.defaults());
+
+            client2.acquireExclusive(LockTracer.NONE, NODE, 999); // trigger inner map creation
+
+            var heapBefore = tracker.estimatedHeapMemory();
+            assertThat(client2.tryExclusiveLock(NODE, 10)).isFalse();
+            assertThat(tracker.estimatedHeapMemory()).isEqualTo(heapBefore);
+        }
+    }
+
+    @Test
+    void unsuccessfulTrySharedShouldNotLeakMemory() {
+        try (var client1 = getClient();
+                var tracker = new LocalMemoryTracker(memoryPool);
+                var client2 = forsetiLockManager.newClient()) {
+
+            client1.acquireExclusive(LockTracer.NONE, NODE, 10);
+
+            client2.initialize(
+                    LeaseService.NoLeaseClient.INSTANCE, TRANSACTION_ID.getAndIncrement(), tracker, Config.defaults());
+
+            client2.acquireShared(LockTracer.NONE, NODE, 99); // trigger inner map creation
+
+            var heapBefore = tracker.estimatedHeapMemory();
+
+            assertThat(client2.trySharedLock(NODE, 10)).isFalse();
+            assertThat(tracker.estimatedHeapMemory()).isEqualTo(heapBefore);
+        }
+    }
+
+    @Test
     void shouldReleaseMemoryInCaseOfDeadlock() {
         assertThatThrownBy(() -> {
                     try (var client1 = getClient();
