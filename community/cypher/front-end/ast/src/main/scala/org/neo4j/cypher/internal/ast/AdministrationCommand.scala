@@ -654,31 +654,60 @@ final case class ShowDatabase(
 
 object ShowDatabase {
 
+  val NAME_COL = "name"
+  val ALIASES_COL = "aliases"
+  val ACCESS_COL = "access"
+  val DATABASE_ID_COL = "databaseID"
+  val SERVER_ID_COL = "serverID"
+  val ADDRESS_COL = "address"
+  val ROLE_COL = "role"
+  val WRITER_COL = "writer"
+  val CURRENT_STATUS_COL = "currentStatus"
+  val REQUESTED_STATUS_COL = "requestedStatus"
+  val STATUS_MSG_COL = "statusMessage"
+  val DEFAULT_COL = "default"
+  val HOME_COL = "home"
+  val CURRENT_PRIMARIES_COUNT_COL = "currentPrimariesCount"
+  val CURRENT_SECONDARIES_COUNT_COL = "currentSecondariesCount"
+  val REQUESTED_PRIMARIES_COUNT_COL = "requestedPrimariesCount"
+  val REQUESTED_SECONDARIES_COUNT_COL = "requestedSecondariesCount"
+  val CREATION_TIME_COL = "creationTime"
+  val LAST_START_TIME_COL = "lastStartTime"
+  val LAST_STOP_TIME_COL = "lastStopTime"
+  val STORE_COL = "store"
+  val LAST_COMMITTED_TX_COL = "lastCommittedTxn"
+  val REPLICATION_LAG_COL = "replicationLag"
+
   def apply(scope: DatabaseScope, yieldOrWhere: YieldOrWhere)(position: InputPosition): ShowDatabase = {
     val showColumns = List(
       // (column, brief)
-      (ShowColumn("name")(position), true),
-      (ShowColumn("aliases", CTList(CTString))(position), true),
-      (ShowColumn("access")(position), true),
-      (ShowColumn("databaseID")(position), false),
-      (ShowColumn("serverID")(position), false),
-      (ShowColumn("address")(position), true),
-      (ShowColumn("role")(position), true),
-      (ShowColumn("requestedStatus")(position), true),
-      (ShowColumn("currentStatus")(position), true),
-      (ShowColumn("error")(position), true)
+      (ShowColumn(NAME_COL)(position), true),
+      (ShowColumn(ALIASES_COL, CTList(CTString))(position), true),
+      (ShowColumn(ACCESS_COL)(position), true),
+      (ShowColumn(DATABASE_ID_COL)(position), false),
+      (ShowColumn(SERVER_ID_COL)(position), false),
+      (ShowColumn(ADDRESS_COL)(position), true),
+      (ShowColumn(ROLE_COL)(position), true),
+      (ShowColumn(WRITER_COL, CTBoolean)(position), true),
+      (ShowColumn(REQUESTED_STATUS_COL)(position), true),
+      (ShowColumn(CURRENT_STATUS_COL)(position), true),
+      (ShowColumn(STATUS_MSG_COL)(position), true)
     ) ++ (scope match {
       case _: DefaultDatabaseScope => List.empty
       case _: HomeDatabaseScope    => List.empty
       case _ =>
-        List((ShowColumn("default", CTBoolean)(position), true), (ShowColumn("home", CTBoolean)(position), true))
+        List((ShowColumn(DEFAULT_COL, CTBoolean)(position), true), (ShowColumn(HOME_COL, CTBoolean)(position), true))
     }) ++ List(
-      (ShowColumn("creationTime", CTDateTime)(position), false),
-      (ShowColumn("lastStartTime", CTDateTime)(position), false),
-      (ShowColumn("lastStopTime", CTDateTime)(position), false),
-      (ShowColumn("store")(position), false),
-      (ShowColumn("lastCommittedTxn", CTInteger)(position), false),
-      (ShowColumn("replicationLag", CTInteger)(position), false)
+      (ShowColumn(CURRENT_PRIMARIES_COUNT_COL, CTInteger)(position), false),
+      (ShowColumn(CURRENT_SECONDARIES_COUNT_COL, CTInteger)(position), false),
+      (ShowColumn(REQUESTED_PRIMARIES_COUNT_COL, CTInteger)(position), false),
+      (ShowColumn(REQUESTED_SECONDARIES_COUNT_COL, CTInteger)(position), false),
+      (ShowColumn(CREATION_TIME_COL, CTDateTime)(position), false),
+      (ShowColumn(LAST_START_TIME_COL, CTDateTime)(position), false),
+      (ShowColumn(LAST_STOP_TIME_COL, CTDateTime)(position), false),
+      (ShowColumn(STORE_COL)(position), false),
+      (ShowColumn(LAST_COMMITTED_TX_COL, CTInteger)(position), false),
+      (ShowColumn(REPLICATION_LAG_COL, CTInteger)(position), false)
     )
     val briefShowColumns = showColumns.filter(_._2).map(_._1)
     val allShowColumns = showColumns.map(_._1)

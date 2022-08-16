@@ -44,8 +44,6 @@ import java.nio.file.Path
 import java.time.Clock
 import java.time.ZonedDateTime
 
-import scala.collection.Map
-
 class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends CommunityAdministrationCommandAcceptanceTestBase
     with OptionValues {
   private val onlineStatus = DatabaseStatus.Online.stringValue()
@@ -255,8 +253,36 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     result.toList should be(List(Map(
       "name" -> DEFAULT_DATABASE_NAME,
       "address" -> localHostString,
-      "role" -> "standalone"
+      "role" -> "primary"
     )))
+  }
+
+  test("should show database with yield *") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val result = execute("SHOW DATABASE $db YIELD *", dbDefaultMap).toList.head
+
+    // THEN
+    result should have size 23
+    result should contain.allOf(
+      "name" -> DEFAULT_DATABASE_NAME,
+      "access" -> "read-write",
+      "aliases" -> Seq(),
+      "address" -> localHostString,
+      "role" -> "primary",
+      "writer" -> true,
+      "requestedStatus" -> "online",
+      "currentStatus" -> "online",
+      "currentPrimariesCount" -> 1,
+      "currentSecondariesCount" -> 0,
+      "requestedPrimariesCount" -> null,
+      "requestedSecondariesCount" -> null,
+      "store" -> "record-aligned-1-1",
+      "lastCommittedTxn" -> null,
+      "replicationLag" -> 0
+    )
   }
 
   test("should show database with yield and where") {
@@ -271,7 +297,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     result.toList should be(List(Map(
       "name" -> DEFAULT_DATABASE_NAME,
       "address" -> localHostString,
-      "role" -> "standalone"
+      "role" -> "primary"
     )))
   }
 
@@ -286,7 +312,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     result.toList should be(List(Map(
       "name" -> DEFAULT_DATABASE_NAME,
       "address" -> localHostString,
-      "role" -> "standalone"
+      "role" -> "primary"
     )))
   }
 
@@ -415,6 +441,10 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
       ZonedDateTime
     ].toEpochSecond) should be < 300L
     result("lastStopTime") shouldBe null
+    result("currentPrimariesCount") shouldBe 1
+    result("currentSecondariesCount") shouldBe 0
+    result("requestedPrimariesCount") shouldBe null
+    result("requestedSecondariesCount") shouldBe null
   }
 
   test("should show database with yield verbose columns should produce verbose but not polled columns") {
@@ -679,10 +709,11 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
       "aliases" -> Seq.empty,
       "access" -> accessString,
       "address" -> localHostString,
-      "role" -> "standalone",
+      "role" -> "primary",
+      "writer" -> true,
       "requestedStatus" -> onlineStatus,
       "currentStatus" -> onlineStatus,
-      "error" -> "",
+      "statusMessage" -> "",
       "default" -> default,
       "home" -> home
     )
@@ -693,10 +724,11 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
       "aliases" -> Seq.empty,
       "access" -> accessString,
       "address" -> localHostString,
-      "role" -> "standalone",
+      "role" -> "primary",
+      "writer" -> true,
       "requestedStatus" -> onlineStatus,
       "currentStatus" -> onlineStatus,
-      "error" -> ""
+      "statusMessage" -> ""
     )
 
   // Disable normal database creation because we need different settings on each test

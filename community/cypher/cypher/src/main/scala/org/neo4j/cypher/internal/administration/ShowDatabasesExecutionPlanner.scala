@@ -32,6 +32,29 @@ import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.ShowDatabase.ACCESS_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.ADDRESS_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.ALIASES_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.CREATION_TIME_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.CURRENT_PRIMARIES_COUNT_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.CURRENT_SECONDARIES_COUNT_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.CURRENT_STATUS_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.DATABASE_ID_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.DEFAULT_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.HOME_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.LAST_COMMITTED_TX_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.LAST_START_TIME_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.LAST_STOP_TIME_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.NAME_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.REPLICATION_LAG_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.REQUESTED_PRIMARIES_COUNT_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.REQUESTED_SECONDARIES_COUNT_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.REQUESTED_STATUS_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.ROLE_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.SERVER_ID_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.STATUS_MSG_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.STORE_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.WRITER_COL
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.procs.SystemCommandExecutionPlan
@@ -45,6 +68,8 @@ import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_LABEL
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_PRIMARIES_PROPERTY
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_SECONDARIES_PROPERTY
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_STARTED_AT_PROPERTY
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_STATUS_PROPERTY
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_STOPPED_AT_PROPERTY
@@ -119,65 +144,75 @@ case class ShowDatabasesExecutionPlanner(
 
     val verboseColumns =
       if (verbose) {
-        s""", props.databaseID as databaseID,
-           |props.serverID as serverID,
-           |props.lastCommittedTxn as lastCommittedTxn,
-           |props.replicationLag as replicationLag,
-           |d.$DATABASE_CREATED_AT_PROPERTY as creationTime,
-           |d.$DATABASE_STARTED_AT_PROPERTY as lastStartTime,
-           |d.$DATABASE_STOPPED_AT_PROPERTY as lastStopTime,
-           |props.store as store
+        s""", props.$DATABASE_ID_COL as $DATABASE_ID_COL,
+           |props.$SERVER_ID_COL as $SERVER_ID_COL,
+           |props.$CURRENT_PRIMARIES_COUNT_COL as $CURRENT_PRIMARIES_COUNT_COL,
+           |props.$CURRENT_SECONDARIES_COUNT_COL as $CURRENT_SECONDARIES_COUNT_COL,
+           |d.$DATABASE_PRIMARIES_PROPERTY as $REQUESTED_PRIMARIES_COUNT_COL,
+           |d.$DATABASE_SECONDARIES_PROPERTY as $REQUESTED_SECONDARIES_COUNT_COL,
+           |props.$LAST_COMMITTED_TX_COL as $LAST_COMMITTED_TX_COL,
+           |props.$REPLICATION_LAG_COL as $REPLICATION_LAG_COL,
+           |d.$DATABASE_CREATED_AT_PROPERTY as $CREATION_TIME_COL,
+           |d.$DATABASE_STARTED_AT_PROPERTY as $LAST_START_TIME_COL,
+           |d.$DATABASE_STOPPED_AT_PROPERTY as $LAST_STOP_TIME_COL,
+           |props.$STORE_COL as $STORE_COL
            |""".stripMargin
-      } else ""
+      } else {
+        ""
+      }
     val verboseNames =
-      if (verbose)
-        ", databaseID, serverID, creationTime, lastStartTime, lastStopTime, store, lastCommittedTxn, replicationLag"
-      else ""
+      if (verbose) {
+        s", $DATABASE_ID_COL, $SERVER_ID_COL, $REQUESTED_PRIMARIES_COUNT_COL, $REQUESTED_SECONDARIES_COUNT_COL, $CURRENT_PRIMARIES_COUNT_COL, " +
+          s"$CURRENT_SECONDARIES_COUNT_COL, $CREATION_TIME_COL, $LAST_START_TIME_COL, $LAST_STOP_TIME_COL, $STORE_COL, $LAST_COMMITTED_TX_COL, $REPLICATION_LAG_COL"
+      } else {
+        ""
+      }
     val returnClause = AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("name"))
 
     val query = Predef.augmentString(
       s"""// First resolve which database is the home database
-           |OPTIONAL MATCH (default:$DATABASE_LABEL {$DATABASE_DEFAULT_PROPERTY: true})
-           |OPTIONAL MATCH (user:User {$DATABASE_NAME_PROPERTY: $$`$usernameKey`})
-           |WITH coalesce(user.homeDatabase, default.$DATABASE_NAME_PROPERTY) as homeDbName
-           |
-           |UNWIND $$`$accessibleDbsKey` AS props
-           |CALL {
-           |    WITH props
-           |    MATCH (d:$DATABASE)<-[:$TARGETS]-(:$DATABASE_NAME {$NAME_PROPERTY: props.name}) RETURN d
-           |  UNION
-           |    WITH props
-           |    MATCH (d:$DATABASE {$NAME_PROPERTY: props.name}) RETURN d
-           |}
-           |WITH d, props, homeDbName
-           |OPTIONAL MATCH (d)<-[:$TARGETS]-(a:$DATABASE_NAME)
-           |WITH d, props, homeDbName, a.name as aliasName ORDER BY aliasName
-           |WITH d.name as name,
-           |collect(aliasName) + [d.name] as aliases,
-           |props.access as access,
-           |props.address as address,
-           |props.role as role,
-           |d.$DATABASE_STATUS_PROPERTY as requestedStatus,
-           |props.status as currentStatus,
-           |props.error as error,
-           |d.$DATABASE_DEFAULT_PROPERTY as default,
-           |homeDbName,
-           |coalesce( homeDbName in collect(aliasName) + [d.name], false ) as home
-           |$verboseColumns
-           |$extraFilter
-           |
-           |WITH name,
-           |[alias in aliases where name <> alias] as aliases,
-           |access,
-           |address,
-           |role,
-           |requestedStatus,
-           |currentStatus,
-           |error,
-           |default,
-           |home
-           |$verboseNames
-           |$returnClause"""
+         |OPTIONAL MATCH (default:$DATABASE_LABEL {$DATABASE_DEFAULT_PROPERTY: true})
+         |OPTIONAL MATCH (user:User {$DATABASE_NAME_PROPERTY: $$`$usernameKey`})
+         |WITH coalesce(user.homeDatabase, default.$DATABASE_NAME_PROPERTY) as homeDbName
+         |
+         |UNWIND $$`$accessibleDbsKey` AS props
+         |CALL {
+         |    WITH props
+         |    MATCH (d:$DATABASE)<-[:$TARGETS]-(:$DATABASE_NAME {$NAME_PROPERTY: props.name}) RETURN d
+         |  UNION
+         |    WITH props
+         |    MATCH (d:$DATABASE {$NAME_PROPERTY: props.name}) RETURN d
+         |}
+         |WITH d, props, homeDbName
+         |OPTIONAL MATCH (d)<-[:$TARGETS]-(a:$DATABASE_NAME)
+         |WITH d, props, homeDbName, a.name as aliasName ORDER BY aliasName
+         |WITH d.name as name,
+         |collect(aliasName) + [d.name] as aliases,
+         |props.$ACCESS_COL as $ACCESS_COL,
+         |props.$ADDRESS_COL as $ADDRESS_COL,
+         |props.$ROLE_COL as $ROLE_COL,
+         |props.$WRITER_COL as $WRITER_COL,
+         |d.$DATABASE_STATUS_PROPERTY as requestedStatus,
+         |props.$CURRENT_STATUS_COL as $CURRENT_STATUS_COL,
+         |props.$STATUS_MSG_COL as $STATUS_MSG_COL,
+         |d.$DATABASE_DEFAULT_PROPERTY as default,
+         |homeDbName,
+         |coalesce( homeDbName in collect(aliasName) + [d.name], false ) as home
+         |$verboseColumns
+         |$extraFilter
+         |WITH name AS $NAME_COL,
+         |[alias in aliases where name <> alias] AS $ALIASES_COL,
+         |$ACCESS_COL,
+         |$ADDRESS_COL,
+         |$ROLE_COL,
+         |$WRITER_COL,
+         |requestedStatus AS $REQUESTED_STATUS_COL,
+         |$CURRENT_STATUS_COL,
+         |$STATUS_MSG_COL,
+         |default AS $DEFAULT_COL,
+         |home AS $HOME_COL
+         |$verboseNames
+         |$returnClause"""
     ).stripMargin
     SystemCommandExecutionPlan(
       scope.showCommandName,
@@ -269,8 +304,8 @@ case class ShowDatabasesExecutionPlanner(
     val defaultDatabaseName = defaultDatabaseResolver.defaultDatabase(securityContext.subject().executingUser())
 
     val accessibleDatabases =
-      transaction.findNodes(Label.label("Database")).asScala.foldLeft[Seq[String]](Seq.empty) { (acc, dbNode) =>
-        val dbName = dbNode.getProperty("name").toString
+      transaction.findNodes(DATABASE_LABEL).asScala.foldLeft[Seq[String]](Seq.empty) { (acc, dbNode) =>
+        val dbName = dbNode.getProperty(DATABASE_NAME_PROPERTY).toString
         val isDefault = dbName.equals(defaultDatabaseName)
         if (dbName.equals(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)) {
           acc :+ dbName
@@ -312,11 +347,20 @@ case class ShowDatabasesExecutionPlanner(
     )
   }
 
-  private def requiresDetailedLookup(yields: Yield): Boolean =
+  private val detailedLookupCols = Set(
+    STORE_COL,
+    LAST_COMMITTED_TX_COL,
+    REPLICATION_LAG_COL,
+    CURRENT_PRIMARIES_COUNT_COL,
+    CURRENT_SECONDARIES_COUNT_COL
+  )
+
+  private def requiresDetailedLookup(yields: Yield): Boolean = {
     yields.returnItems.includeExisting || yields.returnItems.items.map(_.expression).exists {
-      case Variable(name) => Set("store", "lastCommittedTxn", "replicationLag").contains(name)
+      case Variable(name) => detailedLookupCols.contains(name)
       case _              => false
     }
+  }
 
   private def lookupCachedInfo(databaseNames: Seq[String]): List[AnyValue] = {
     val dbInfos = infoService.lookupCachedInfo(databaseNames.toSet.asJava).asScala
@@ -340,12 +384,23 @@ object BaseDatabaseInfoMapper extends DatabaseInfoMapper[DatabaseInfo] {
     databaseManagementService: DatabaseManagementService,
     extendedDatabaseInfo: DatabaseInfo
   ): MapValue = VirtualValues.map(
-    Array("name", "access", "address", "role", "status", "error", "databaseID", "serverID"),
+    Array(
+      NAME_COL,
+      ACCESS_COL,
+      ADDRESS_COL,
+      ROLE_COL,
+      WRITER_COL,
+      CURRENT_STATUS_COL,
+      STATUS_MSG_COL,
+      DATABASE_ID_COL,
+      SERVER_ID_COL
+    ),
     Array(
       Values.stringValue(extendedDatabaseInfo.namedDatabaseId().name()),
       Values.stringValue(extendedDatabaseInfo.access().getStringRepr),
       extendedDatabaseInfo.boltAddress().map[AnyValue](s => Values.stringValue(s.toString)).orElse(Values.NO_VALUE),
-      Values.stringValue(extendedDatabaseInfo.oldRole()),
+      Values.stringValue(extendedDatabaseInfo.role()),
+      Values.booleanValue(extendedDatabaseInfo.writer()),
       Values.stringValue(extendedDatabaseInfo.status()),
       Values.stringValue(extendedDatabaseInfo.statusMessage()),
       getDatabaseId(databaseManagementService, extendedDatabaseInfo.namedDatabaseId().name()).map(
@@ -377,8 +432,16 @@ object CommunityExtendedDatabaseInfoMapper extends DatabaseInfoMapper[ExtendedDa
   ): MapValue =
     BaseDatabaseInfoMapper.toMapValue(databaseManagementService, extendedDatabaseInfo).updatedWith(
       VirtualValues.map(
-        Array("store", "lastCommittedTxn", "replicationLag"),
         Array(
+          CURRENT_PRIMARIES_COUNT_COL,
+          CURRENT_SECONDARIES_COUNT_COL,
+          STORE_COL,
+          LAST_COMMITTED_TX_COL,
+          REPLICATION_LAG_COL
+        ),
+        Array(
+          Values.longValue(extendedDatabaseInfo.primariesCount()),
+          Values.longValue(extendedDatabaseInfo.secondariesCount()),
           extendedDatabaseInfo.storeId().toScala.map(Values.stringValue).getOrElse(Values.NO_VALUE),
           Values.NO_VALUE,
           Values.longValue(0)
