@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
@@ -155,6 +156,39 @@ public class IndexIdMapper implements IdMapper {
     }
 
     /**
+     * Schedules "scanCompleted" calls to any index populations that are part of this ID mapper,
+     * such that they can be scheduled with "scanCompleted" calls to other index populations.
+     */
+    public void completeBuild(Collector collector, Consumer<Runnable> scheduler) {
+        for (var entry : populators.entrySet()) {
+            scheduler.accept(() -> {
+                var conflictHandler = conflictHandler(collector, entry);
+                try {
+                    var populator = entry.getValue();
+                    populator.populator.scanCompleted(
+                            PhaseTracker.nullInstance, workScheduler, conflictHandler, CursorContext.NULL_CONTEXT);
+                    populator.populator.close(true, CursorContext.NULL_CONTEXT);
+                } catch (IndexEntryConflictException e) {
+                    // This should not happen since we use DELETE action
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+    }
+
+    private IndexEntryConflictHandler conflictHandler(Collector collector, Map.Entry<String, Populator> entry) {
+        return new IndexEntryConflictHandler() {
+            @Override
+            public synchronized IndexEntryConflictAction indexEntryConflict(
+                    long firstEntityId, long otherEntityId, Value[] values) {
+                duplicateNodeIds.add(otherEntityId);
+                collector.collectDuplicateNode(values[0].asObjectCopy(), otherEntityId, entry.getKey());
+                return IndexEntryConflictAction.DELETE;
+            }
+        };
+    }
+
+    /**
      * Validates all added entries from {@link #put(Object, long, Group)} and collects duplicates into
      * the {@code collector}, also returning the IDs of violating nodes.
      * Must be run before {@link #prepare(PropertyValueLookup, Collector, ProgressListener)}.
@@ -164,21 +198,10 @@ public class IndexIdMapper implements IdMapper {
      */
     public LongSet validate(Collector collector) {
         for (var entry : populators.entrySet()) {
-            var conflictHandler = new IndexEntryConflictHandler() {
-                @Override
-                public synchronized IndexEntryConflictAction indexEntryConflict(
-                        long firstEntityId, long otherEntityId, Value[] values) {
-                    duplicateNodeIds.add(otherEntityId);
-                    collector.collectDuplicateNode(values[0].asObjectCopy(), otherEntityId, entry.getKey());
-                    return IndexEntryConflictAction.DELETE;
-                }
-            };
+            var conflictHandler = conflictHandler(collector, entry);
 
             try {
                 var populator = entry.getValue();
-                populator.populator.scanCompleted(
-                        PhaseTracker.nullInstance, workScheduler, conflictHandler, CursorContext.NULL_CONTEXT);
-                populator.populator.close(true, CursorContext.NULL_CONTEXT);
                 var indexProvider = tempIndexes.lookup(populator.descriptor.getIndexProvider());
                 try (var newNodesIndex = indexProvider.getOnlineAccessor(
                         populator.descriptor,
@@ -194,8 +217,6 @@ public class IndexIdMapper implements IdMapper {
                             configuration.maxNumberOfWorkerThreads(),
                             workScheduler.jobScheduler());
                 }
-            } catch (IndexEntryConflictException e) {
-                throw new RuntimeException(e);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

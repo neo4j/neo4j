@@ -64,7 +64,6 @@ import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexProvidersAccess;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -109,7 +108,6 @@ class IndexIdMapperIT {
     private final ImmutableSet<OpenOption> openOptions = Sets.immutable.of(PageCacheOpenOptions.BIG_ENDIAN);
     private JobScheduler jobScheduler;
     private IndexIdMapper idMapper;
-    private IndexProvidersAccess indexProvidersAccess;
     private TokenHolders tokenHolders;
     private IndexProviderMap indexProviders;
     private IndexProviderMap tempIndexProviders;
@@ -118,7 +116,7 @@ class IndexIdMapperIT {
     @BeforeEach
     void init() {
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
-        indexProvidersAccess = life.add(new DefaultIndexProvidersAccess(
+        var indexProvidersAccess = life.add(new DefaultIndexProvidersAccess(
                 defaultStorageEngine(),
                 fs,
                 Config.defaults(),
@@ -244,6 +242,7 @@ class IndexIdMapperIT {
     }
 
     private void prepare(Collector collector) {
+        idMapper.completeBuild(collector, Runnable::run);
         idMapper.validate(collector);
         idMapper.prepare(ID_LOOKUP, collector, ProgressListener.NONE);
     }
