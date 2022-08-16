@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.ir.NodeBinding
+import org.neo4j.cypher.internal.ir.EntityBinding
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -50,10 +50,12 @@ class QueryGraphConnectedComponentsTest
 
   private def qpp(from: String, to: String) =
     QuantifiedPathPattern(
-      NodeBinding(from, s"${from}_inner"),
-      NodeBinding(to, s"${to}_inner"),
+      EntityBinding(from, s"${from}_inner"),
+      EntityBinding(to, s"${to}_inner"),
       QueryGraph(patternRelationships = Set(rel(s"${from}_inner", s"${to}_inner"))),
-      Repetition(0, Unlimited)
+      Repetition(0, Unlimited),
+      nodeGroupVariables = Seq(EntityBinding(s"${from}_inner", "anon_1"), EntityBinding(s"${to}_inner", "anon_3")),
+      relationshipGroupVariables = Seq(EntityBinding("r", "anon_2"))
     )
 
   test("empty query graph returns no connected querygraphs") {

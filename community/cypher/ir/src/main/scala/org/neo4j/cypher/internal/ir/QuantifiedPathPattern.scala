@@ -21,15 +21,17 @@ package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.util.Repetition
 
-case class NodeBinding(outer: String, inner: String) {
+case class EntityBinding(outer: String, inner: String) {
   override def toString: String = s"(outer=$outer, inner=$inner)"
 }
 
 final case class QuantifiedPathPattern(
-  leftBinding: NodeBinding,
-  rightBinding: NodeBinding,
+  leftBinding: EntityBinding,
+  rightBinding: EntityBinding,
   pattern: QueryGraph,
-  repetition: Repetition
+  repetition: Repetition,
+  nodeGroupVariables: Seq[EntityBinding],
+  relationshipGroupVariables: Seq[EntityBinding]
 ) extends NodeConnection {
 
   override val left: String = leftBinding.outer

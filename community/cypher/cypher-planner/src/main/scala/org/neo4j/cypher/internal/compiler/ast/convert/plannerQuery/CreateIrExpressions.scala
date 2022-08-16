@@ -95,7 +95,7 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
       case patternList: Pattern =>
         patternList.destructed(anonymousVariableNameGenerator)
       case patternElement: PatternElement =>
-        patternElement.destructed
+        patternElement.destructed(anonymousVariableNameGenerator)
       case _ =>
         throw new IllegalArgumentException(s"Cannot get planner query, unexpected pattern: $pattern")
     }

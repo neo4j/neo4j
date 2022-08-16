@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.equalsPredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSinglePatternSide
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSingleProjectEndpoints
 import org.neo4j.cypher.internal.expressions.Expression
@@ -116,7 +117,7 @@ object expandSolverStep {
   ): LogicalPlan = {
     patternRel match {
       case rel: PatternRelationship   => produceLogicalPlan(qg, rel, sourcePlan, nodeId, availableSymbols, context)
-      case qpp: QuantifiedPathPattern => ??? // TODO: implement
+      case qpp: QuantifiedPathPattern => produceLogicalPlan(qpp, sourcePlan, nodeId, availableSymbols, context)
     }
   }
 
@@ -165,5 +166,37 @@ object expandSolverStep {
           context = context
         )
     }
+  }
+
+  private def produceLogicalPlan(
+    quantifiedPathPattern: QuantifiedPathPattern,
+    sourcePlan: LogicalPlan,
+    startNode: String,
+    availableSymbols: Set[String],
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+    val leftIsStart = startNode == quantifiedPathPattern.left
+    val startBinding = if (leftIsStart) quantifiedPathPattern.leftBinding else quantifiedPathPattern.rightBinding
+    val endBinding = if (leftIsStart) quantifiedPathPattern.rightBinding else quantifiedPathPattern.leftBinding
+
+    val overlapping = availableSymbols.contains(quantifiedPathPattern.otherSide(startNode))
+    val (modifiedEndBinding, maybeHiddenFilter) =
+      if (overlapping) {
+        val newName = context.anonymousVariableNameGenerator.nextName
+        val hiddenFilter = equalsPredicate(newName, endBinding.outer)
+
+        (endBinding.copy(outer = newName), Some(hiddenFilter))
+      } else {
+        (endBinding, None)
+      }
+
+    context.logicalPlanProducer.planTrail(
+      source = sourcePlan,
+      pattern = quantifiedPathPattern,
+      startBinding = startBinding,
+      endBinding = modifiedEndBinding,
+      maybeHiddenFilter = maybeHiddenFilter,
+      context = context
+    )
   }
 }

@@ -80,6 +80,7 @@ import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.DeleteExpression
 import org.neo4j.cypher.internal.ir.DistinctQueryProjection
 import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.ir.EntityBinding
 import org.neo4j.cypher.internal.ir.ForeachPattern
 import org.neo4j.cypher.internal.ir.LoadCSVProjection
 import org.neo4j.cypher.internal.ir.MergeNodePattern
@@ -87,6 +88,7 @@ import org.neo4j.cypher.internal.ir.MergeRelationshipPattern
 import org.neo4j.cypher.internal.ir.PassthroughAllHorizon
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -148,6 +150,7 @@ import org.neo4j.cypher.internal.logical.plans.ExpansionMode
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
+import org.neo4j.cypher.internal.logical.plans.GroupEntity
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
@@ -215,6 +218,7 @@ import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.TerminateTransactions
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
+import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
@@ -914,6 +918,55 @@ case class LogicalPlanProducer(
       )
 
     case _ => throw new InternalException("Expected a varlength path to be here")
+  }
+
+  def planTrail(
+    source: LogicalPlan,
+    pattern: QuantifiedPathPattern,
+    startBinding: EntityBinding,
+    endBinding: EntityBinding,
+    maybeHiddenFilter: Option[Expression],
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+
+    val patternWithStartNodeArgument = pattern.pattern.withArgumentIds(pattern.pattern.argumentIds + startBinding.inner)
+
+    val solved = solveds.get(source.id).asSinglePlannerQuery.amendQueryGraph(_
+      .addQuantifiedPathPattern(pattern))
+
+    val providedOrder = providedOrders.get(source.id).fromLeft
+    val trailPlan = annotate(
+      Trail(
+        left = source,
+        right = context.strategy.plan(patternWithStartNodeArgument, InterestingOrderConfig.empty, context).result,
+        repetition = pattern.repetition,
+        start = startBinding.outer,
+        end = Some(endBinding.outer),
+        innerStart = startBinding.inner,
+        innerEnd = endBinding.inner,
+        groupNodes = pattern.nodeGroupVariables.map { case EntityBinding(outer, inner) =>
+          GroupEntity(inner, outer)
+        }.toSet,
+        groupRelationships = pattern.relationshipGroupVariables.map { case EntityBinding(outer, inner) =>
+          GroupEntity(inner, outer)
+        }.toSet,
+        allRelationships = pattern.pattern.patternRelationships.map(_.name),
+        allRelationshipGroups = Set.empty
+      )(idGen),
+      solved,
+      providedOrder,
+      context
+    )
+
+    maybeHiddenFilter match {
+      case Some(hiddenFilter) => annotate(
+          Selection(Seq(hiddenFilter), trailPlan)(idGen),
+          solved,
+          providedOrder,
+          context
+        )
+      case None => trailPlan
+    }
   }
 
   def planNodeByIdSeek(

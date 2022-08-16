@@ -20,12 +20,11 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.equalsPredicate
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.util.InputPosition
 
 /**
  * Helper functions for relationship leaf planners.
@@ -126,13 +125,5 @@ object RelationshipLeafPlanner {
     val (newLeft, newRight) = newNodes
 
     pred(oldLeft, newLeft) ++ pred(oldRight, newRight)
-  }
-
-  private def equalsPredicate(left: String, right: String): Equals = {
-    val pos = InputPosition.NONE
-    Equals(
-      Variable(left)(pos),
-      Variable(right)(pos)
-    )(pos)
   }
 }
