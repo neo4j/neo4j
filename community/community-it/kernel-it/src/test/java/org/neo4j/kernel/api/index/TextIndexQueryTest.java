@@ -132,6 +132,15 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport> {
             smith.createRelationshipTo(mike, FRIEND).setProperty(SINCE, "2 years, 2 months");
             smith.createRelationshipTo(james, FRIEND).setProperty(SINCE, "2 years");
 
+            var o = tx.createNode(PERSON);
+            o.setProperty(NAME, "o");
+
+            var bo = tx.createNode(PERSON);
+            bo.setProperty(NAME, "Bo");
+
+            var bob = tx.createNode(PERSON);
+            bob.setProperty(NAME, "Bob");
+
             var noah = tx.createNode(PERSON);
             noah.setProperty(NAME, "Noah");
             noah.createRelationshipTo(mike, FRIEND).setProperty(SINCE, "4 years");
@@ -175,35 +184,50 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport> {
 
     @Test
     void shouldFindNodes() throws Exception {
-        assertThat(indexedNodes(allEntries())).isEqualTo(8);
+        assertThat(indexedNodes(allEntries())).isEqualTo(11);
         assertThat(indexedNodes(exact(token.propertyKey(NAME), "Mike Smith"))).isEqualTo(1);
         assertThat(indexedNodes(exact(token.propertyKey(NAME), "Unknown"))).isEqualTo(0);
         assertThat(indexedNodes(exact(token.propertyKey(NAME), "42"))).isEqualTo(0);
         assertThat(indexedNodes(exact(token.propertyKey(NAME), "77"))).isEqualTo(1);
+        assertThat(indexedNodes(exact(token.propertyKey(NAME), "o"))).isEqualTo(1);
+        assertThat(indexedNodes(exact(token.propertyKey(NAME), "Bo"))).isEqualTo(1);
+        assertThat(indexedNodes(exact(token.propertyKey(NAME), "Bob"))).isEqualTo(1);
         assertThat(indexedNodes(stringPrefix(token.propertyKey(NAME), stringValue("Smith"))))
                 .isEqualTo(1);
+        assertThat(indexedNodes(stringPrefix(token.propertyKey(NAME), stringValue("o"))))
+                .isEqualTo(1);
+        assertThat(indexedNodes(stringPrefix(token.propertyKey(NAME), stringValue("Bo"))))
+                .isEqualTo(2);
         assertThat(indexedNodes(stringPrefix(token.propertyKey(NAME), stringValue(""))))
-                .isEqualTo(8);
+                .isEqualTo(11);
         assertThat(indexedNodes(stringContains(token.propertyKey(NAME), stringValue("Smith"))))
                 .isEqualTo(3);
+        assertThat(indexedNodes(stringContains(token.propertyKey(NAME), stringValue("ob"))))
+                .isEqualTo(1);
+        assertThat(indexedNodes(stringContains(token.propertyKey(NAME), stringValue("Bo"))))
+                .isEqualTo(2);
         assertThat(indexedNodes(stringContains(token.propertyKey(NAME), stringValue(""))))
-                .isEqualTo(8);
+                .isEqualTo(11);
         assertThat(indexedNodes(stringSuffix(token.propertyKey(NAME), stringValue("Smith"))))
                 .isEqualTo(2);
+        assertThat(indexedNodes(stringSuffix(token.propertyKey(NAME), stringValue("b"))))
+                .isEqualTo(1);
+        assertThat(indexedNodes(stringSuffix(token.propertyKey(NAME), stringValue("o"))))
+                .isEqualTo(2);
         assertThat(indexedNodes(stringSuffix(token.propertyKey(NAME), stringValue(""))))
-                .isEqualTo(8);
+                .isEqualTo(11);
         assertThat(indexedNodes(range(token.propertyKey(NAME), "Mike Smith", true, "Noah", true)))
                 .isEqualTo(2);
         assertThat(indexedNodes(range(token.propertyKey(NAME), "", true, "James", true)))
-                .isEqualTo(4);
+                .isEqualTo(6);
     }
 
     @Test
     void shouldFindForRangesWithEmptyString() throws Exception {
         assertThat(indexedNodes(range(token.propertyKey(NAME), "", true, "Noah", true)))
-                .isEqualTo(7);
+                .isEqualTo(9);
         assertThat(indexedNodes(range(token.propertyKey(NAME), "", false, "Noah", false)))
-                .isEqualTo(4);
+                .isEqualTo(6);
         assertThat(indexedNodes(range(token.propertyKey(NAME), "Noah", true, "", true)))
                 .isEqualTo(0);
         assertThat(indexedNodes(range(token.propertyKey(NAME), "Noah", false, "", false)))
@@ -315,7 +339,7 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport> {
         return schemaRead.indexGetForName(indexName);
     }
 
-    private SchemaDescriptor asSchemaDescriptor(TokenRead tokenRead, Label label, String prop) {
+    protected SchemaDescriptor asSchemaDescriptor(TokenRead tokenRead, Label label, String prop) {
         var labelId = tokenRead.nodeLabel(label.name());
         var propId = tokenRead.propertyKey(prop);
         return SchemaDescriptors.forLabel(labelId, propId);
