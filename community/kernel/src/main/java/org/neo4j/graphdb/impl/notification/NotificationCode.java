@@ -298,6 +298,12 @@ public enum NotificationCode
             "There is no alias for one or more complex returned items in a RETURN clause in a CALL subquery. " +
             "All returned items except variables, e.g. 'RETURN n', and map projections, e.g. 'RETURN n { .prop, .prop2 }' " +
             "should be aliased explicitly using 'AS'. The support for such unaliased returned items will be removed in a future version."
+    ),
+    DEPRECATED_CASE_EXPRESSION(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "Using null as an expression to be compared against in a CASE expression is deprecated and from 5.0 will no longer match on anything. " +
+                    "Try using a generic CASE with `IS NULL` instead. For example 'CASE WHEN n.prop IS NULL THEN true ELSE false END'."
     );
 
     private final Status status;

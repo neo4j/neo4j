@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestProcedures
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_BTREE_INDEX_SYNTAX
+import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_CASE_EXPRESSION
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_CREATE_INDEX_SYNTAX
@@ -469,6 +470,10 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotificationInSupportedVersions(deprecated, DEPRECATED_BTREE_INDEX_SYNTAX)
 
     assertNoNotificationInSupportedVersions(notDeprecated, DEPRECATED_BTREE_INDEX_SYNTAX)
+  }
+
+  test("deprecated case when null syntax") {
+    assertNotificationInSupportedVersions("MATCH (n) RETURN CASE n WHEN null THEN 1 ELSE 2 END", DEPRECATED_CASE_EXPRESSION)
   }
 
   // FUNCTIONALITY DEPRECATED IN 3.5, REMOVED IN 4.0

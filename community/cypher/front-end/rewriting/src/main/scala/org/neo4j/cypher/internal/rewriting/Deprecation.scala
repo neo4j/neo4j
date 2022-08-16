@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.UsingBtreeIndexType
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ExtractExpression
@@ -40,6 +41,7 @@ import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Parameter
@@ -79,6 +81,7 @@ import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedSelfReferenceToVariableInCreatePattern
 import org.neo4j.cypher.internal.util.DeprecatedShowExistenceConstraintSyntax
 import org.neo4j.cypher.internal.util.DeprecatedShowSchemaSyntax
+import org.neo4j.cypher.internal.util.DeprecatedUseOfNullInCaseExpression
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -350,6 +353,15 @@ object Deprecations {
         Deprecation(
           Some(Ref(f) -> renameFunctionTo(Namespace(List("point"))(f.position), "distance")(f)),
           Some(DeprecatedFunctionNotification(f.position, "distance", "point.distance"))
+        )
+
+
+      // CASE x WHEN NULL THEN
+      case c @ CaseExpression(_, alternatives, _)
+      if alternatives.exists(a => a._1 == Null()(a._1.position)) =>
+        Deprecation(
+          None,
+          Some(DeprecatedUseOfNullInCaseExpression(c.position))
         )
     }
 

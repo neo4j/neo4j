@@ -80,3 +80,5 @@ case class SubqueryVariableShadowing(position: InputPosition, varName: String) e
 case class MissingAliasNotification(pos: InputPosition) extends InternalNotification
 
 case class DeprecatedAmbiguousGroupingNotification(pos: InputPosition, hint: Option[String]) extends InternalNotification
+
+case class DeprecatedUseOfNullInCaseExpression(pos: InputPosition) extends InternalNotification
