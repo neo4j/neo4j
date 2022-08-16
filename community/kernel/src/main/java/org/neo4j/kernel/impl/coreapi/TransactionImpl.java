@@ -696,7 +696,6 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             }
 
             coreApiResourceTracker.closeAllCloseableResources();
-
             operation.perform( transaction );
 
             if ( closeCallbacks != null )
