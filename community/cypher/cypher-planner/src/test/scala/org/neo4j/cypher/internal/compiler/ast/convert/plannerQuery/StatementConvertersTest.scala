@@ -1601,8 +1601,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         PatternRelationship("r3", ("x", "y"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
       ),
       selections = Selections.from(Set(
-        not(equals(varFor("r1"), varFor("r2"))), // should fix AddUniquenessPredicates to not have these
-        not(equals(varFor("r2"), varFor("r3"))), // should fix AddUniquenessPredicates to not have these
         not(equals(varFor("r1"), varFor("r3")))
       )),
       quantifiedPathPatterns = Set(
@@ -1653,9 +1651,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("MATCH ((n)-[r1]->(m))+ ((x)-[r2]->(y)){,3} RETURN 1")
     query.queryGraph shouldBe QueryGraph(
       patternNodes = Set("anon_0", "anon_1", "anon_2"),
-      selections = Selections.from(
-        not(equals(varFor("r1"), varFor("r2"))) // should fix AddUniquenessPredicates to not have this
-      ),
+      selections = Selections.empty,
       quantifiedPathPatterns = Set(
         QuantifiedPathPattern(
           leftBinding = NodeBinding("anon_0", "n"),
@@ -1685,11 +1681,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("MATCH ((a)-[r1]->(b)-[r2]->(c)){5} ((x)-[r3]->(y))+ RETURN 1")
     query.queryGraph shouldBe QueryGraph(
       patternNodes = Set("anon_0", "anon_1", "anon_2"),
-      selections = Selections.from(Set(
-        not(equals(varFor("r1"), varFor("r2"))), // should fix AddUniquenessPredicates to not have this
-        not(equals(varFor("r1"), varFor("r3"))), // should fix AddUniquenessPredicates to not have this
-        not(equals(varFor("r2"), varFor("r3"))) // should fix AddUniquenessPredicates to not have this
-      )),
+      selections = Selections.empty,
       quantifiedPathPatterns = Set(
         QuantifiedPathPattern(
           leftBinding = NodeBinding("anon_0", "a"),

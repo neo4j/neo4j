@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
@@ -111,6 +112,9 @@ case class AddUniquenessPredicates(anonymousVariableNameGenerator: AnonymousVari
   def collectUniqueRels(pattern: ASTNode): Seq[UniqueRel] =
     pattern.folder.treeFold(Seq.empty[UniqueRel]) {
       case _: ScopeExpression =>
+        acc => SkipChildren(acc)
+
+      case _: QuantifiedPath =>
         acc => SkipChildren(acc)
 
       case _: ShortestPaths =>
