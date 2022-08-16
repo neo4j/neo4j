@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.PointBoundingBox
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PointDistanceSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PrefixRangeSeekable
 import org.neo4j.cypher.internal.expressions.AssertIsNode
+import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
@@ -78,6 +79,8 @@ import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.StringType
 
 case class ExpressionSelectivityCalculator(
   stats: GraphStatistics,
@@ -140,43 +143,24 @@ case class ExpressionSelectivityCalculator(
         seekable.propertyKey
       )
 
-    // WHERE x.prop STARTS WITH 'prefix'
-    case AsStringRangeSeekable(seekable @ PrefixRangeSeekable(PrefixRange(StringLiteral(prefix)), _, _, _)) =>
-      calculateSelectivityForSubstringSargable(
-        seekable.name,
-        labelInfo,
-        relTypeInfo,
-        seekable.propertyKeyName,
-        Some(prefix),
-        prefix = true
-      )
-
     // WHERE x.prop STARTS WITH expression
-    case AsStringRangeSeekable(seekable @ PrefixRangeSeekable(_: PrefixRange[_], _, _, _)) =>
+    case AsStringRangeSeekable(seekable @ PrefixRangeSeekable(PrefixRange(prefix), _, _, _)) =>
       calculateSelectivityForSubstringSargable(
         seekable.name,
         labelInfo,
         relTypeInfo,
         seekable.propertyKeyName,
-        None,
+        prefix,
         prefix = true
       )
-
-    // WHERE x.prop CONTAINS 'substring'
-    case Contains(Property(Variable(name), propertyKey), StringLiteral(substring)) =>
-      calculateSelectivityForSubstringSargable(name, labelInfo, relTypeInfo, propertyKey, Some(substring))
 
     // WHERE x.prop CONTAINS expression
-    case Contains(Property(Variable(name), propertyKey), _) =>
-      calculateSelectivityForSubstringSargable(name, labelInfo, relTypeInfo, propertyKey, None)
-
-    // WHERE x.prop ENDS WITH 'substring'
-    case EndsWith(Property(Variable(name), propertyKey), StringLiteral(substring)) =>
-      calculateSelectivityForSubstringSargable(name, labelInfo, relTypeInfo, propertyKey, Some(substring))
+    case Contains(Property(Variable(name), propertyKey), substring) =>
+      calculateSelectivityForSubstringSargable(name, labelInfo, relTypeInfo, propertyKey, substring)
 
     // WHERE x.prop ENDS WITH expression
-    case EndsWith(Property(Variable(name), propertyKey), _) =>
-      calculateSelectivityForSubstringSargable(name, labelInfo, relTypeInfo, propertyKey, None)
+    case EndsWith(Property(Variable(name), propertyKey), substring) =>
+      calculateSelectivityForSubstringSargable(name, labelInfo, relTypeInfo, propertyKey, substring)
 
     // WHERE distance(p.prop, otherPoint) <, <= number that could benefit from an index
     case AsDistanceSeekable(seekable) =>
@@ -497,10 +481,10 @@ case class ExpressionSelectivityCalculator(
     labelInfo: LabelInfo,
     relTypeInfo: RelTypeInfo,
     propertyKey: PropertyKeyName,
-    maybeString: Option[String],
+    stringExpression: Expression,
     prefix: Boolean = false
   )(implicit semanticTable: SemanticTable): Selectivity = {
-    val stringLength = getStringLength(maybeString)
+    val stringLength = getStringLength(stringExpression)
 
     def default =
       if (stringLength == 0) {
@@ -551,10 +535,10 @@ object ExpressionSelectivityCalculator {
    * given that the property IS NOT NULL.
    */
   def indexSelectivityForSubstringSargable(
-    maybeString: Option[String],
+    stringExpression: Expression,
     indexType: IndexType = IndexType.Range
   ): Selectivity = {
-    indexSelectivityForSubstringSargable(getStringLength(maybeString), indexType)
+    indexSelectivityForSubstringSargable(getStringLength(stringExpression), indexType)
   }
 
   /**
@@ -564,6 +548,14 @@ object ExpressionSelectivityCalculator {
     maybeString match {
       case Some(n) => n.length
       case None    => DEFAULT_STRING_LENGTH
+    }
+  }
+
+  def getStringLength(stringExpression: Expression): Int = {
+    stringExpression match {
+      case StringLiteral(value)                                        => value.length
+      case AutoExtractedParameter(_, _: StringType, _, Some(sizeHint)) => sizeHint
+      case _                                                           => DEFAULT_STRING_LENGTH
     }
   }
 

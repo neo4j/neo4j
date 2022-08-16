@@ -16,17 +16,18 @@
  */
 package org.neo4j.cypher.internal.util
 
-object ListSizeBucket {
+object SizeBucket {
 
   /**
-   * Compute the next closest power of 10. This number is used when planning queries where a list has been auto-parameterized, by keeping this "bucket" as a
-   * size hint in the auto-parameter. By keeping a rough estimate of the list size, we can make a more informed decision at plan time when solving predicates
-   * like `IN [...]`.
-   * @param size The size of the list that is being auto-parametrized.
+   * Compute the next closest power of 10. This number is used when planning queries where the literal being auto-parameterized has a size, 
+   * e.g. a list or a string, by keeping this "bucket" as a size hint in the auto-parameter. By keeping a rough estimate of the size, we can make a more 
+   * informed decision at plan time when solving predicates like `IN [...]` or `a.prop STARTS WITH 'foo'`.
+   *
+   * @param size The size of the literal that is being auto-parametrized.
    * @return Next closest power of 10 for size.
    *         Examples: computeBucket(1) = 1, computeBucket(7) = 10, computeBucket(17) = 100, computeBucket(42) = 100
    */
-  def computeBucket(listSize: Int): Int = {
-    Math.pow(10, Math.ceil(Math.log10(listSize))).toInt
+  def computeBucket(size: Int): Int = {
+    Math.pow(10, Math.ceil(Math.log10(size))).toInt
   }
 }

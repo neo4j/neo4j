@@ -53,12 +53,12 @@ import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_AL
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_WITH_LABEL_CARDINALITY
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
-import org.neo4j.cypher.internal.util.ListSizeBucket
 import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.cypher.internal.util.SizeBucket
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
@@ -1246,7 +1246,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   }
 
   test("equality with one label, auto-extracted parameter of size 42") {
-    val bucketSize = ListSizeBucket.computeBucket(42)
+    val bucketSize = SizeBucket.computeBucket(42)
     val literalWriters = (1 to bucketSize).map(literalInt(_))
     val param =
       AutoExtractedParameter("PARAM", CTList(CTAny), ListOfLiteralWriter(literalWriters), Some(bucketSize))(pos)

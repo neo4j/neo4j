@@ -348,29 +348,17 @@ object CompositeExpressionSelectivityCalculator {
           size => combiner.orTogetherSelectivities(Seq.fill(size)(assumedUniqueSelectivityPerPredicate)).get
         )
 
-      // WHERE x.prop STARTS WITH 'prefix'
-      case AsStringRangeSeekable(PrefixRangeSeekable(PrefixRange(StringLiteral(prefix)), _, _, _)) =>
-        ExpressionSelectivityCalculator.indexSelectivityForSubstringSargable(Some(prefix))
-
       // WHERE x.prop STARTS WITH expression
-      case AsStringRangeSeekable(PrefixRangeSeekable(_: PrefixRange[_], _, _, _)) =>
-        ExpressionSelectivityCalculator.indexSelectivityForSubstringSargable(None)
-
-      // WHERE x.prop CONTAINS 'substring'
-      case Contains(Property(Variable(_), _), StringLiteral(substring)) =>
-        ExpressionSelectivityCalculator.indexSelectivityForSubstringSargable(Some(substring))
+      case AsStringRangeSeekable(PrefixRangeSeekable(PrefixRange(prefix), _, _, _)) =>
+        ExpressionSelectivityCalculator.indexSelectivityForSubstringSargable(prefix)
 
       // WHERE x.prop CONTAINS expression
-      case Contains(Property(Variable(_), _), _) =>
-        ExpressionSelectivityCalculator.indexSelectivityForSubstringSargable(None)
-
-      // WHERE x.prop ENDS WITH 'substring'
-      case EndsWith(Property(Variable(_), _), StringLiteral(substring)) =>
-        ExpressionSelectivityCalculator.indexSelectivityForSubstringSargable(Some(substring))
+      case Contains(Property(Variable(_), _), substring) =>
+        ExpressionSelectivityCalculator.indexSelectivityForSubstringSargable(substring)
 
       // WHERE x.prop ENDS WITH expression
-      case EndsWith(Property(Variable(_), _), _) =>
-        ExpressionSelectivityCalculator.indexSelectivityForSubstringSargable(None)
+      case EndsWith(Property(Variable(_), _), substring) =>
+        ExpressionSelectivityCalculator.indexSelectivityForSubstringSargable(substring)
 
       // WHERE distance(p.prop, otherPoint) <, <= number that could benefit from an index
       case AsDistanceSeekable(_) =>

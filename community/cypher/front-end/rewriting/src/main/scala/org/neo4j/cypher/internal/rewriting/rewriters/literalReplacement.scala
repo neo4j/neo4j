@@ -43,8 +43,8 @@ import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.IdentityMap
-import org.neo4j.cypher.internal.util.ListSizeBucket
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.SizeBucket
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTFloat
@@ -89,7 +89,8 @@ object literalReplacement {
       acc =>
         if (acc.contains(l)) SkipChildren(acc)
         else {
-          val parameter = AutoExtractedParameter(s"  AUTOSTRING${acc.size}", CTString, l)(l.position)
+          val bucket = SizeBucket.computeBucket(l.value.length)
+          val parameter = AutoExtractedParameter(s"  AUTOSTRING${acc.size}", CTString, l, Some(bucket))(l.position)
           SkipChildren(acc + (l -> LiteralReplacement(parameter, l.value)))
         }
     case l: IntegerLiteral =>
@@ -112,7 +113,7 @@ object literalReplacement {
         else {
           val literals = l.expressions.map(_.asInstanceOf[Literal])
           val innerType = if (literals.nonEmpty && literals.forall(_.isInstanceOf[StringLiteral])) CTString else CTAny
-          val bucket = ListSizeBucket.computeBucket(l.expressions.size)
+          val bucket = SizeBucket.computeBucket(l.expressions.size)
           val parameter = AutoExtractedParameter(
             s"  AUTOLIST${acc.size}",
             CTList(innerType),
