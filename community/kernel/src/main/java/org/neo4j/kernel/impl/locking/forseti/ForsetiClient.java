@@ -409,7 +409,6 @@ public class ForsetiClient implements Locks.Client
                     SharedLock sharedLock = (SharedLock) lock;
                     if ( sharedLock.tryAcquireUpdateLock() )
                     {
-                        memoryTracker.releaseHeap(CONCURRENT_NODE_SIZE);
                         if ( sharedLock.numberOfHolders() == 1 )
                         {
                             heldLocks.put( resourceId, 1 );
@@ -418,6 +417,7 @@ public class ForsetiClient implements Locks.Client
                         else
                         {
                             sharedLock.releaseUpdateLock();
+                            memoryTracker.releaseHeap(CONCURRENT_NODE_SIZE);
                             return false;
                         }
                     }
