@@ -143,13 +143,12 @@ import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 
 import java.net.URL
-import java.util.NoSuchElementException
 
-import scala.collection.Iterator
 import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.ListHasAsScala
+import scala.util.control.NonFatal
 
 sealed class TransactionBoundQueryContext(
   transactionalContext: TransactionalContextWrapper,
@@ -1470,7 +1469,21 @@ private[internal] class TransactionBoundReadQueryContext(
 
   override def contextWithNewTransaction(): TransactionBoundQueryContext = {
     val newTransactionalContext = transactionalContext.contextWithNewTransaction
-    val newResourceManager = new ResourceManager(resources.monitor, newTransactionalContext.memoryTracker)
+    // creating the resource manager may fail since it will allocate memory in the memory tracker
+    val newResourceManager =
+      try {
+        new ResourceManager(resources.monitor, newTransactionalContext.memoryTracker)
+      } catch {
+        case NonFatal(e) =>
+          try {
+            newTransactionalContext.rollback()
+          } catch {
+            case NonFatal(rollbackException) =>
+              e.addSuppressed(rollbackException)
+          }
+          newTransactionalContext.close()
+          throw e
+      }
 
     val statement = newTransactionalContext.kernelTransactionalContext.statement()
     statement.registerCloseableResource(newResourceManager)

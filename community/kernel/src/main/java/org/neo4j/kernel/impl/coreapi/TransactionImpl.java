@@ -706,11 +706,15 @@ public class TransactionImpl extends EntityValidationTransactionImpl {
 
             coreApiResourceTracker.closeAllCloseableResources();
 
-            operation.perform(transaction);
-
-            if (closeCallbacks != null) {
-                closeCallbacks.forEach(TransactionClosedCallback::transactionClosed);
+            //the operation might fail, but we must still call the closeCallbacks
+            try {
+                operation.perform(transaction);
+            } finally{
+                if (closeCallbacks != null) {
+                    closeCallbacks.forEach(TransactionClosedCallback::transactionClosed);
+                }
             }
+
         } catch (Exception e) {
             throw exceptionMapper.mapException(e);
         } finally {
