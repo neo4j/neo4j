@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
@@ -128,6 +129,8 @@ class SemanticTable(
   def isNodeCollection(expr: String): Boolean = getTypeFor(expr) == CTList(CTNode).invariant
 
   def isNode(expr: Expression): Boolean = types(expr).specified == CTNode.invariant
+
+  def isInteger(expression: Expression): Boolean = (types(expression).specified & CTInteger.covariant).nonEmpty
 
   /**
    * Same as isNode, but will simply return false if no semantic information is available instead of failing.

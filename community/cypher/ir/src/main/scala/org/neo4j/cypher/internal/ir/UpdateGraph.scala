@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.HasALabel
 import org.neo4j.cypher.internal.expressions.LabelName
-import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -410,8 +409,10 @@ trait UpdateGraph {
    */
   def setPropertyOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Boolean = {
     val hasDynamicProperties = qgWithInfo.folder.treeExists {
-      case ContainerIndex(_, _: Literal) => false
-      case _: ContainerIndex             => true
+      case ContainerIndex(_, index) =>
+        // if we access by index, foo[0] or foo[&autoIntX] we must be accessing a list and hence we
+        // are not accessing a property
+        !semanticTable.isInteger(index)
     }
 
     val readPropKeys = getReadPropKeys(qgWithInfo)
