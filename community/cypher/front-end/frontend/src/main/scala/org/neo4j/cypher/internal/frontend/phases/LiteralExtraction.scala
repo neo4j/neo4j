@@ -38,7 +38,7 @@ case class LiteralExtraction(literalExtraction: LiteralExtractionStrategy)
     val (extractParameters, extractedParameters) = statement match {
       case _: AdministrationCommand => sensitiveLiteralReplacement(statement)
       case _: SchemaCommand         => Rewriter.noop -> Map.empty[String, Any]
-      case _                        => literalReplacement(statement, literalExtraction)
+      case _                        => literalReplacement(statement, literalExtraction, in.semantics())
     }
     val rewrittenStatement = statement.endoRewrite(extractParameters)
     in.withStatement(rewrittenStatement).withParams(extractedParameters)

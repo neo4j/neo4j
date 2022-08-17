@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTNumber
 import org.neo4j.cypher.internal.util.symbols.CTPath
+import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
@@ -437,4 +438,161 @@ class TypeSpecTest extends CypherFunSuite {
       CTList(CTList(CTString))
     ))
   }
+
+  test("combines empty TypeSpec to any") {
+    // Given
+    val specs = Seq.empty[TypeSpec]
+
+    // when
+    val spec = TypeSpec.combineMultipleTypeSpecs(specs)
+
+    // Then
+    spec should equal(CTAny)
+  }
+
+  test("combines int to int") {
+    // Given
+    val specs = Seq(CTInteger.invariant)
+
+    // when
+    val spec = TypeSpec.combineMultipleTypeSpecs(specs)
+
+    // Then
+    spec should equal(CTInteger)
+  }
+
+  test("combines int and int to int") {
+    // Given
+    val specs = Seq(CTInteger.invariant, CTInteger.invariant)
+
+    // when
+    val spec = TypeSpec.combineMultipleTypeSpecs(specs)
+
+    // Then
+    spec should equal(CTInteger)
+  }
+
+  test("combines float and int to number") {
+    // Given
+    val specs = Seq(CTFloat.invariant, CTInteger.invariant)
+
+    // when
+    val spec = TypeSpec.combineMultipleTypeSpecs(specs)
+
+    // Then
+    spec should equal(CTNumber)
+  }
+
+  test("combines float and point to any") {
+    // Given
+    val specs = Seq(CTFloat.invariant, CTPoint.invariant)
+
+    // when
+    val spec = TypeSpec.combineMultipleTypeSpecs(specs)
+
+    // Then
+    spec should equal(CTAny)
+  }
+
+  test("combines covariant types") {
+    // Given
+    val specs = Seq(CTFloat.invariant, CTNumber.covariant)
+
+    // when
+    val spec = TypeSpec.combineMultipleTypeSpecs(specs)
+
+    // Then
+    spec should equal(CTNumber)
+  }
+
+  test("combines union types") {
+    // Given
+    val specs = Seq(CTFloat.invariant union CTInteger.invariant, CTNumber.covariant)
+
+    // when
+    val spec = TypeSpec.combineMultipleTypeSpecs(specs)
+
+    // Then
+    spec should equal(CTNumber)
+  }
+
+  test("combines same union types") {
+    // Given
+    val specs = Seq(CTFloat.invariant union CTInteger.invariant, CTFloat.invariant union CTInteger.invariant)
+
+    // when
+    val spec = TypeSpec.combineMultipleTypeSpecs(specs)
+
+    // Then
+    spec should equal(CTNumber)
+  }
+
+  test("combines unrelated union types") {
+    // Given
+    val specs = Seq(CTFloat.invariant union CTInteger.invariant, CTString.invariant union CTInteger.invariant)
+
+    // when
+    val spec = TypeSpec.combineMultipleTypeSpecs(specs)
+
+    // Then
+    spec should equal(CTAny)
+  }
+
+  // Testing TypeSpec.cypherTypeForTypeSpec
+
+  test("converts any to CTAny") {
+    // Given
+    val spec = CTAny.invariant
+
+    // when
+    val typ = TypeSpec.cypherTypeForTypeSpec(spec)
+
+    // Then
+    typ should equal(CTAny)
+  }
+
+  test("converts T to CTAny") {
+    // Given
+    val spec = CTAny.covariant
+
+    // when
+    val typ = TypeSpec.cypherTypeForTypeSpec(spec)
+
+    // Then
+    typ should equal(CTAny)
+  }
+
+  test("converts contravariant type to CTAny") {
+    // Given
+    val spec = CTFloat.contravariant
+
+    // when
+    val typ = TypeSpec.cypherTypeForTypeSpec(spec)
+
+    // Then
+    typ should equal(CTAny)
+  }
+
+  test("converts union type to CTAny") {
+    // Given
+    val spec = CTFloat.invariant union CTString.invariant
+
+    // when
+    val typ = TypeSpec.cypherTypeForTypeSpec(spec)
+
+    // Then
+    typ should equal(CTAny)
+  }
+
+  test("converts intersection type to CTAny") {
+    // Given
+    val spec = CTFloat.invariant intersect CTString.invariant
+
+    // when
+    val typ = TypeSpec.cypherTypeForTypeSpec(spec)
+
+    // Then
+    typ should equal(CTAny)
+  }
+
 }

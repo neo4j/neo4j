@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.rewriting.rewriters.Forced
@@ -189,7 +190,7 @@ class LiteralReplacementTest extends CypherFunSuite {
     val original = JavaCCParser.parse(originalQuery, exceptionFactory)
     val expected = JavaCCParser.parse(expectedQuery, exceptionFactory)
 
-    val (rewriter, replacedLiterals) = literalReplacement(original, extractLiterals)
+    val (rewriter, replacedLiterals) = literalReplacement(original, extractLiterals, SemanticState.clean)
 
     val result = original.endoRewrite(rewriter).endoRewrite(removeAutoExtracted())
     assert(result === expected)

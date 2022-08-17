@@ -20,6 +20,27 @@ import scala.annotation.tailrec
 import scala.language.postfixOps
 
 object TypeSpec {
+
+  /**
+   * Find a common super-type for cases where we have multiple TypeSpecs, by combing all TypeSpecs as well as their contained type ranges.
+   * For example two range predicates over the same property, with different value types.
+   */
+  def combineMultipleTypeSpecs(specs: Seq[TypeSpec]): CypherType = {
+    val singleSpec = specs.reduceLeftOption {
+      (spec1, spec2) => spec1 leastUpperBounds spec2
+    }.getOrElse(CTAny.invariant)
+    cypherTypeForTypeSpec(singleSpec)
+  }
+
+  /**
+   * A single TypeSpec can include multiple ranges. Find the common super-type by combining all ranges.
+   */
+  def cypherTypeForTypeSpec(spec: TypeSpec): CypherType = {
+    spec.ranges.map(_.lower).reduceLeftOption {
+      (typ1, typ2) => typ1.leastUpperBound(typ2)
+    }.getOrElse(CTAny)
+  }
+
   def exact(types: CypherType*): TypeSpec = exact(types)
 
   def exact[T <: CypherType](iterableOnce: IterableOnce[T]): TypeSpec =
