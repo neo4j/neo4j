@@ -22,6 +22,9 @@ object SizeBucket {
    * Compute the next closest power of 10. This number is used when planning queries where the literal being auto-parameterized has a size, 
    * e.g. a list or a string, by keeping this "bucket" as a size hint in the auto-parameter. By keeping a rough estimate of the size, we can make a more 
    * informed decision at plan time when solving predicates like `IN [...]` or `a.prop STARTS WITH 'foo'`.
+   * 
+   * Note estimation is exact for size 0 and 1 which is an important property of the computation since we leverage that fact
+   * in other parts of the code base.
    *
    * @param size The size of the literal that is being auto-parametrized.
    * @return Next closest power of 10 for size.

@@ -21,8 +21,10 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class SizeBucketTest extends CypherFunSuite {
 
   test("test computeBucket") {
+    // NOTE: it is an important property that 0 and 1 are exact
     SizeBucket.computeBucket(0) shouldEqual 0
     SizeBucket.computeBucket(1) shouldEqual 1
+    SizeBucket.computeBucket(2) shouldEqual 10
     SizeBucket.computeBucket(7) shouldEqual 10
     SizeBucket.computeBucket(10) shouldEqual 10
     SizeBucket.computeBucket(17) shouldEqual 100

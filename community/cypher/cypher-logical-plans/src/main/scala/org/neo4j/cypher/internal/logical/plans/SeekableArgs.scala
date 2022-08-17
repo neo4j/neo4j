@@ -20,13 +20,16 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
+import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.util.One
 import org.neo4j.cypher.internal.util.ZeroOneOrMany
+import org.neo4j.cypher.internal.util.symbols.ListType
 
 sealed trait SeekableArgs {
   def expr: Expression
@@ -65,6 +68,10 @@ case class ManySeekableArgs(expr: Expression) extends SeekableArgs {
         case One(value) => SingleQueryExpression(value)
         case _          => ManyQueryExpression(coll)
       }
+
+    // NOTE: we know that for sizeHint=1 the estimation is exact
+    case p @ AutoExtractedParameter(_, ListType(_), _, Some(1)) =>
+      SingleQueryExpression(ContainerIndex(p, SignedDecimalIntegerLiteral("0")(p.position))(p.position))
 
     case _ =>
       ManyQueryExpression(expr)
