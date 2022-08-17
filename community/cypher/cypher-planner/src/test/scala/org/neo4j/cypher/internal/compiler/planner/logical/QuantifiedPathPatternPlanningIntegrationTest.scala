@@ -253,12 +253,12 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
 
     plan should equal(
       planner.subPlanBuilder()
-        .filter("anon_3 = m")
+        .filter("anon_5 = m")
         .trail(
           1,
           Unlimited,
           "n",
-          Some("anon_3"),
+          Some("anon_5"),
           "anon_0",
           "anon_2",
           Set(("anon_0", "n_inner"), ("anon_2", "m_inner")),

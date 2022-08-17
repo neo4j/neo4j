@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.QPPInnerPlans
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -48,10 +49,14 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
   private val table = IDPTable.empty[LogicalPlan]
   private val qg = mock[QueryGraph]
 
+  private val noQPPInnerPlans = new QPPInnerPlans {
+    override def getPlan(trailOption: expandSolverStep.TrailOption): LogicalPlan = ???
+  }
+
   test("does not expand based on empty table") {
     implicit val registry: DefaultIdRegistry[NodeConnection] = IdRegistry[NodeConnection]
     new given().withLogicalPlanningContext { (_, ctx) =>
-      expandSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx) should be(empty)
+      expandSolverStep(qg, noQPPInnerPlans)(registry, register(pattern1, pattern2), table, ctx) should be(empty)
     }
   }
 
@@ -66,7 +71,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
       )
       table.put(register(pattern1), sorted = false, plan1)
 
-      expandSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx).toSet should equal(Set(
+      expandSolverStep(qg, noQPPInnerPlans)(registry, register(pattern1, pattern2), table, ctx).toSet should equal(Set(
         Expand(plan1, "b", SemanticDirection.OUTGOING, Seq.empty, "c", "r2", ExpandAll)
       ))
     }
@@ -92,7 +97,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
           SimplePatternLength
         ) // a - [r2] -> b
 
-      expandSolverStep(qg)(registry, register(pattern1, patternX), table, ctx).toSet should equal(Set(
+      expandSolverStep(qg, noQPPInnerPlans)(registry, register(pattern1, patternX), table, ctx).toSet should equal(Set(
         Expand(plan1, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r2", ExpandInto),
         Expand(plan1, "b", SemanticDirection.INCOMING, Seq.empty, "a", "r2", ExpandInto)
       ))
@@ -111,7 +116,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       val patternX = PatternRelationship("r2", ("x", "y"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-      expandSolverStep(qg)(registry, register(pattern1, patternX), table, ctx).toSet should be(empty)
+      expandSolverStep(qg, noQPPInnerPlans)(registry, register(pattern1, patternX), table, ctx).toSet should be(empty)
     }
 
   }
@@ -129,7 +134,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       val pattern3 = PatternRelationship("r3", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-      expandSolverStep(qg)(
+      expandSolverStep(qg, noQPPInnerPlans)(
         registry,
         register(pattern1, pattern2, pattern3),
         table,
@@ -156,7 +161,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       table.put(compactedPattern1, sorted = false, plan1)
 
-      expandSolverStep(qg)(
+      expandSolverStep(qg, noQPPInnerPlans)(
         registry,
         Goal(compactedPattern1.bitSet ++ compactedPattern2.bitSet),
         table,

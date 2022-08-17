@@ -21,8 +21,10 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.equalsPredicate
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.QPPInnerPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSinglePatternSide
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSingleProjectEndpoints
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -33,11 +35,13 @@ import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
+import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 
 import scala.collection.immutable.ListSet
 
-case class expandSolverStep(qg: QueryGraph)
+case class expandSolverStep(qg: QueryGraph, qppInnerPlans: QPPInnerPlans)
     extends IDPSolverStep[NodeConnection, LogicalPlan, LogicalPlanningContext] {
 
   override def apply(
@@ -60,8 +64,22 @@ case class expandSolverStep(qg: QueryGraph)
             )
           case _ =>
             Iterator(
-              planSinglePatternSide(qg, pattern, plan, pattern.left, context),
-              planSinglePatternSide(qg, pattern, plan, pattern.right, context)
+              planSinglePatternSide(
+                qg,
+                pattern,
+                plan,
+                pattern.left,
+                qppInnerPlans,
+                context
+              ),
+              planSinglePatternSide(
+                qg,
+                pattern,
+                plan,
+                pattern.right,
+                qppInnerPlans,
+                context
+              )
             ).flatten
         }
       }
@@ -72,6 +90,98 @@ case class expandSolverStep(qg: QueryGraph)
 
 object expandSolverStep {
 
+  case class TrailOption(qpp: QuantifiedPathPattern, fromLeft: Boolean)
+
+  /**
+   * Inner plans for [[QuantifiedPathPattern]]s.
+   */
+  trait QPPInnerPlans {
+
+    /**
+     * Get the precomputed RHS plan for a [[QuantifiedPathPattern]].
+     * @param trailOption the [[QuantifiedPathPattern]] and also whether we are "expanding" from left or from right.
+     * @return the RHS plan.
+     */
+    def getPlan(trailOption: TrailOption): LogicalPlan
+  }
+
+  /**
+   * This class precomputes inner plans for all [[QuantifiedPathPattern]]s in the given query graph,
+   * in order to not recreate the same plan in multiple iterations.
+   */
+  class PrecomputedQPPInnerPlans(qg: QueryGraph, context: LogicalPlanningContext) extends QPPInnerPlans {
+
+    private val plans: Map[TrailOption, LogicalPlan] = (for {
+      qpp <- qg.quantifiedPathPatterns
+      fromLeft <- Set(true, false)
+    } yield {
+      val qppWithArguments = updateQPPArguments(qpp, fromLeft)
+      val plan = planQPPInner(qppWithArguments, context)
+      TrailOption(qpp, fromLeft) -> plan
+    }).toMap
+
+    override def getPlan(trailOption: TrailOption): LogicalPlan = plans(trailOption)
+  }
+
+  /**
+   * Add an argument to the query graph inside the given [[QuantifiedPathPattern]].
+   * The argument is either the left or the right node.
+   */
+  private def updateQPPArguments(qpp: QuantifiedPathPattern, fromLeft: Boolean): QuantifiedPathPattern = {
+    val bindingNodeArg = if (fromLeft) qpp.leftBinding.inner else qpp.rightBinding.inner
+    qpp.copy(pattern = qpp.pattern.withArgumentIds(qpp.pattern.argumentIds + bindingNodeArg))
+  }
+
+  /**
+   * Plan the inner pattern of a [[QuantifiedPathPattern]].
+   */
+  private def planQPPInner(qpp: QuantifiedPathPattern, context: LogicalPlanningContext): LogicalPlan =
+    context.strategy.plan(qpp.pattern, InterestingOrderConfig.empty, context).result
+
+  /**
+   * We currently don't have a trail into operator. Instead we need to create a new variable for the end node of the quantified path pattern, to not override
+   * the existing variable for the end node.
+   *
+   * In `produceLogicalPlan` we add a predicate to make sure the quantified path pattern ends on the correct node.
+   */
+  private def updateQppForTrailInto(
+    qpp: QuantifiedPathPattern,
+    fromLeft: Boolean,
+    context: LogicalPlanningContext
+  ): QuantifiedPathPattern = {
+    val newName = context.anonymousVariableNameGenerator.nextName
+    val qppWithNewEndBindingOuterName =
+      if (fromLeft) {
+        qpp.copy(rightBinding = qpp.rightBinding.copy(outer = newName))
+      } else {
+        qpp.copy(leftBinding = qpp.leftBinding.copy(outer = newName))
+      }
+    qppWithNewEndBindingOuterName
+  }
+
+  /**
+   * Update a [[QuantifiedPathPattern]] so that it can be used to plan a [[Trail]] operator.
+   */
+  private def updateQpp(
+    qpp: QuantifiedPathPattern,
+    availableSymbols: Set[String],
+    fromLeft: Boolean,
+    context: LogicalPlanningContext
+  ): QuantifiedPathPattern = {
+    val qppWithUpdatedArguments = updateQPPArguments(qpp, fromLeft)
+
+    val endNode = if (fromLeft) qpp.right else qpp.left
+    val overlapping = availableSymbols.contains(endNode)
+    if (overlapping) {
+      updateQppForTrailInto(qppWithUpdatedArguments, fromLeft, context)
+    } else {
+      qppWithUpdatedArguments
+    }
+  }
+
+  /**
+   * Plan [[ProjectEndpoints]] on top of the given plan for the given [[PatternRelationship]].
+   */
   def planSingleProjectEndpoints(
     patternRel: PatternRelationship,
     plan: LogicalPlan,
@@ -91,17 +201,27 @@ object expandSolverStep {
     )
   }
 
+  /**
+   * On top of the given source plan, plan  the given [[NodeConnection]], if `nodeId` has been solved already.
+   *
+   * @param qg the [[QueryGraph]] that is currently being planned.
+   * @param nodeConnection the [[NodeConnection]] to plan
+   * @param sourcePlan the plan to plan on top of
+   * @param nodeId the node to start the expansion from.
+   * @param qppInnerPlans the precomputed inner plans of [[QuantifiedPathPattern]]s
+   */
   def planSinglePatternSide(
     qg: QueryGraph,
-    patternRel: NodeConnection,
+    nodeConnection: NodeConnection,
     sourcePlan: LogicalPlan,
     nodeId: String,
+    qppInnerPlans: QPPInnerPlans,
     context: LogicalPlanningContext
   ): Option[LogicalPlan] = {
     val availableSymbols = sourcePlan.availableSymbols
 
     if (availableSymbols(nodeId)) {
-      Some(produceLogicalPlan(qg, patternRel, sourcePlan, nodeId, availableSymbols, context))
+      Some(produceLogicalPlan(qg, nodeConnection, sourcePlan, nodeId, availableSymbols, context, qppInnerPlans))
     } else {
       None
     }
@@ -113,15 +233,26 @@ object expandSolverStep {
     sourcePlan: LogicalPlan,
     nodeId: String,
     availableSymbols: Set[String],
-    context: LogicalPlanningContext
+    context: LogicalPlanningContext,
+    qppInnerPlans: QPPInnerPlans
   ): LogicalPlan = {
     patternRel match {
-      case rel: PatternRelationship   => produceLogicalPlan(qg, rel, sourcePlan, nodeId, availableSymbols, context)
-      case qpp: QuantifiedPathPattern => produceLogicalPlan(qpp, sourcePlan, nodeId, availableSymbols, context)
+      case rel: PatternRelationship =>
+        produceLogicalPlan(qg, rel, sourcePlan, nodeId, availableSymbols, context)
+      case qpp: QuantifiedPathPattern =>
+        produceLogicalPlan(qpp, sourcePlan, nodeId, availableSymbols, context, qppInnerPlans)
     }
   }
 
-  private def produceLogicalPlan(
+  /**
+   * On top of the given source plan, plan  the given [[PatternRelationship]].
+   *
+   * @param qg             the [[QueryGraph]] that is currently being planned.
+   * @param patternRel the [[PatternRelationship]] to plan
+   * @param sourcePlan     the plan to plan on top of
+   * @param nodeId         the node to start the expansion from.
+   */
+  def produceLogicalPlan(
     qg: QueryGraph,
     patternRel: PatternRelationship,
     sourcePlan: LogicalPlan,
@@ -173,30 +304,38 @@ object expandSolverStep {
     sourcePlan: LogicalPlan,
     startNode: String,
     availableSymbols: Set[String],
-    context: LogicalPlanningContext
+    context: LogicalPlanningContext,
+    qppInnerPlans: QPPInnerPlans
   ): LogicalPlan = {
-    val leftIsStart = startNode == quantifiedPathPattern.left
-    val startBinding = if (leftIsStart) quantifiedPathPattern.leftBinding else quantifiedPathPattern.rightBinding
-    val endBinding = if (leftIsStart) quantifiedPathPattern.rightBinding else quantifiedPathPattern.leftBinding
+    val fromLeft = startNode == quantifiedPathPattern.left
+    val trailOption = TrailOption(quantifiedPathPattern, fromLeft)
 
-    val overlapping = availableSymbols.contains(quantifiedPathPattern.otherSide(startNode))
-    val (modifiedEndBinding, maybeHiddenFilter) =
-      if (overlapping) {
-        val newName = context.anonymousVariableNameGenerator.nextName
-        val hiddenFilter = equalsPredicate(newName, endBinding.outer)
+    // Get the precomputed inner plan
+    val innerPlan = qppInnerPlans.getPlan(trailOption)
 
-        (endBinding.copy(outer = newName), Some(hiddenFilter))
+    // Update the QPP for Trail planning
+    val updatedQpp = updateQpp(quantifiedPathPattern, availableSymbols, fromLeft, context)
+
+    val startBinding = if (fromLeft) updatedQpp.leftBinding else updatedQpp.rightBinding
+    val endBinding = if (fromLeft) updatedQpp.rightBinding else updatedQpp.leftBinding
+    val originalEndBinding = if (fromLeft) quantifiedPathPattern.rightBinding else quantifiedPathPattern.leftBinding
+
+    // If we both the start and the end are already bound, we need to plan an extra filter to verify that we expanded to the right end nodes.
+    val maybeHiddenFilter =
+      if (originalEndBinding.outer != endBinding.outer) {
+        Some(equalsPredicate(endBinding.outer, originalEndBinding.outer))
       } else {
-        (endBinding, None)
+        None
       }
 
     context.logicalPlanProducer.planTrail(
       source = sourcePlan,
       pattern = quantifiedPathPattern,
       startBinding = startBinding,
-      endBinding = modifiedEndBinding,
+      endBinding = endBinding,
       maybeHiddenFilter = maybeHiddenFilter,
-      context = context
+      context = context,
+      innerPlan
     )
   }
 }

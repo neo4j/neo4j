@@ -926,11 +926,9 @@ case class LogicalPlanProducer(
     startBinding: EntityBinding,
     endBinding: EntityBinding,
     maybeHiddenFilter: Option[Expression],
-    context: LogicalPlanningContext
+    context: LogicalPlanningContext,
+    innerPlan: LogicalPlan
   ): LogicalPlan = {
-
-    val patternWithStartNodeArgument = pattern.pattern.withArgumentIds(pattern.pattern.argumentIds + startBinding.inner)
-
     val solved = solveds.get(source.id).asSinglePlannerQuery.amendQueryGraph(_
       .addQuantifiedPathPattern(pattern))
 
@@ -938,7 +936,7 @@ case class LogicalPlanProducer(
     val trailPlan = annotate(
       Trail(
         left = source,
-        right = context.strategy.plan(patternWithStartNodeArgument, InterestingOrderConfig.empty, context).result,
+        right = innerPlan,
         repetition = pattern.repetition,
         start = startBinding.outer,
         end = Some(endBinding.outer),
