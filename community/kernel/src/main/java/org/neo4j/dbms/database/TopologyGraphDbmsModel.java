@@ -207,12 +207,13 @@ public interface TopologyGraphDbmsModel {
     String HOSTED_ON_MODE_PROPERTY = "mode";
     String WAS_HOSTED_ON_REMOVED_AT_PROPERTY = "removed_at";
 
-    Label TOPOLOGY_GRAPH_SETTINGS_LABEL = Label.label("TopologyGraphSettings");
-    String TOPOLOGY_GRAPH_SETTINGS_ALLOCATOR_PROPERTY = "allocator";
-    String TOPOLOGY_GRAPH_SETTINGS_DEFAULT_NUMBER_OF_PRIMARIES_PROPERTY = "default_number_of_primaries";
-    String TOPOLOGY_GRAPH_SETTINGS_DEFAULT_NUMBER_OF_SECONDARIES_PROPERTY = "default_number_of_secondaries";
-    String TOPOLOGY_GRAPH_SETTINGS_DEFAULT_DATABASE_PROPERTY = "default_database";
-    String TOPOLOGY_GRAPH_SETTINGS_DEFAULT_DATABASE_CREATED_PROPERTY = "default_database_created";
+    Label TOPOLOGY_GRAPH_CONFIG_LABEL = Label.label("TopologyGraphSettings");
+    String TOPOLOGY_GRAPH_CONFIG_ALLOCATOR_PROPERTY = "allocator";
+    String TOPOLOGY_GRAPH_CONFIG_DEFAULT_NUMBER_OF_PRIMARIES_PROPERTY = "default_number_of_primaries";
+    String TOPOLOGY_GRAPH_CONFIG_DEFAULT_NUMBER_OF_SECONDARIES_PROPERTY = "default_number_of_secondaries";
+    String TOPOLOGY_GRAPH_CONFIG_DEFAULT_DATABASE_PROPERTY = "default_database";
+    String TOPOLOGY_GRAPH_CONFIG_DEFAULT_DATABASE_CREATED_FLAG = "default_database_created";
+    String TOPOLOGY_GRAPH_CONFIG_INITIAL_INSTANCES_ENABLED_FLAG = "initial_instances_enabled";
 
     Set<NamedDatabaseId> getAllDatabaseIds();
 

@@ -167,7 +167,9 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
         }
         return databaseIdRepository
                 .getByName(databaseName)
-                .orElseThrow(() -> BaseRoutingTableProcedureValidator.databaseNotFoundException(databaseName));
+                .orElseThrow(() -> (databaseName == defaultDatabaseName)
+                        ? BaseRoutingTableProcedureValidator.databaseNotAvailableException(databaseName)
+                        : BaseRoutingTableProcedureValidator.databaseNotFoundException(databaseName));
     }
 
     private static void assertRoutingResultNotEmpty(RoutingResult result, NamedDatabaseId namedDatabaseId)
