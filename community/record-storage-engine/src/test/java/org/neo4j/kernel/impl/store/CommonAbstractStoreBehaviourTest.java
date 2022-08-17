@@ -89,12 +89,13 @@ class CommonAbstractStoreBehaviourTest {
     private final Config config = Config.defaults();
 
     @AfterEach
-    void tearDown() {
+    void tearDown() throws IOException {
         if (readCursor != null) {
             readCursor.close();
         }
         if (store != null) {
             store.close();
+            fs.deleteFile(store.getStorageFile());
             store = null;
         }
         nextPageOffset.clear();
