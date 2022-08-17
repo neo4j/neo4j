@@ -85,6 +85,33 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     )
   }
 
+  test("Should not allow Distinct in functions that aren't aggregate") {
+    val nonAggregateFunctions = Seq(
+      ("localdatetime", "'param1'"),
+      ("duration", "'param1'"),
+      ("left", "'param1', 4"),
+      ("right", "'param1', 4"),
+      ("reverse", "'param1'"),
+      ("trim", "'param1'"),
+      ("ceil", "0.1"),
+      ("floor", "0.1"),
+      ("sign", "0.1"),
+      ("round", "0.1"),
+      ("abs", "0.1"),
+      ("asin", "0.1"),
+      ("isEmpty", "'param1'"),
+      ("toBoolean", "'param1'")
+    )
+    nonAggregateFunctions.foreach {
+      case (func, params) =>
+        val query = s"RETURN $func(DISTINCT $params)"
+        expectErrorsFrom(
+          query,
+          Set(SemanticError(s"Invalid use of DISTINCT with function '$func'", InputPosition(7, 1, 8)))
+        )
+    }
+  }
+
   test("Should not allow parameter maps in MATCH") {
     val query = "MATCH (n $foo) RETURN 1"
     expectErrorsFrom(
