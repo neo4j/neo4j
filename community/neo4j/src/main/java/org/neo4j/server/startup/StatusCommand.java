@@ -27,7 +27,7 @@ import picocli.CommandLine;
 public class StatusCommand extends AbstractCommand {
 
     public StatusCommand(ExecutionContext ctx) {
-        super(ctx, false);
+        super(ctx);
     }
 
     @Override

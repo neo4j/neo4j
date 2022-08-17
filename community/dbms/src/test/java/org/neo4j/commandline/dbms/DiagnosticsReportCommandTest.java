@@ -44,7 +44,7 @@ class DiagnosticsReportCommandTest {
                 USAGE
 
                 report [--expand-commands] [--ignore-disk-space-check] [--list] [--verbose]
-                       [--to-path=<path>] [<classifier>...]
+                       [--additional-config=<path>] [--to-path=<path>] [<classifier>...]
 
                 DESCRIPTION
 
@@ -59,6 +59,8 @@ class DiagnosticsReportCommandTest {
 
                 OPTIONS
 
+                      --additional-config=<path>
+                                          Configuration file with additional configuration.
                       --expand-commands   Allow command expansion in config value evaluation.
                       --ignore-disk-space-check
                                           Ignore disk full warning

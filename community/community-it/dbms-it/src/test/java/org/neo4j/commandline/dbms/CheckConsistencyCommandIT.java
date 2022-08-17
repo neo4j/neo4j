@@ -108,8 +108,7 @@ class CheckConsistencyCommandIT {
                         OPTIONS
 
                               --additional-config=<path>
-                                                    Configuration file to supply additional
-                                                      configuration in.
+                                                    Configuration file with additional configuration.
                               --backup=<path>       Path to backup to check consistency of. Cannot be
                                                       used together with --database.
                               --check-graph=<true/false>

@@ -37,7 +37,7 @@ public class RestartCommand extends AbstractCommand {
     private Integer timeout;
 
     public RestartCommand(ExecutionContext ctx) {
-        super(ctx, false);
+        super(ctx);
     }
 
     @Override

@@ -205,17 +205,6 @@ class DiagnosticsReportCommandIT {
     }
 
     @Test
-    void exitIfConfigFileIsMissing() throws IOException {
-        Files.delete(configFile);
-        String[] args = {"--list"};
-        DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
-        CommandLine.populateCommand(diagnosticsReportCommand, args);
-        CommandFailedException commandFailed =
-                assertThrows(CommandFailedException.class, diagnosticsReportCommand::execute);
-        assertThat(commandFailed.getMessage()).contains("Unable to find config file, tried: ");
-    }
-
-    @Test
     void allHasToBeOnlyClassifier() {
         String[] args = {"all", "logs", "tx"};
         DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);

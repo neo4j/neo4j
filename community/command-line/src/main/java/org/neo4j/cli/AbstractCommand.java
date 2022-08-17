@@ -45,22 +45,12 @@ public abstract class AbstractCommand implements Callable<Integer> {
     protected boolean allowCommandExpansion;
 
     protected final ExecutionContext ctx;
-    // Admin commands are generally forked, because it is the only way how their JVM can configured.
-    // Some admin commands are used to just launch the DBMS instead of executing an administration task.
-    // As an optimisation, such commands should not fork, because we might end up with
-    // three running JVMs if they do - boostrap JVM, forked command JVM and DBMS JVM.
-    private final boolean fork;
 
     @Spec
     protected CommandSpec spec;
 
-    protected AbstractCommand(ExecutionContext ctx, boolean fork) {
-        this.ctx = requireNonNull(ctx);
-        this.fork = fork;
-    }
-
     protected AbstractCommand(ExecutionContext ctx) {
-        this(ctx, true);
+        this.ctx = requireNonNull(ctx);
     }
 
     protected abstract void execute() throws Exception;
@@ -82,10 +72,6 @@ public abstract class AbstractCommand implements Callable<Integer> {
             return e.getExitCode();
         }
         return 0;
-    }
-
-    public boolean shouldFork() {
-        return fork;
     }
 
     private void printVerboseHeader() {

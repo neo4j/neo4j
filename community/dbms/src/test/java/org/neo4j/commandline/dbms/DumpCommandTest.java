@@ -45,7 +45,8 @@ class DumpCommandTest {
 
                 USAGE
 
-                dump [--expand-commands] [--verbose] (--to-path=<path> | --to-stdout) <database>
+                dump [--expand-commands] [--verbose] [--additional-config=<path>]
+                     (--to-path=<path> | --to-stdout) <database>
 
                 DESCRIPTION
 
@@ -62,6 +63,8 @@ class DumpCommandTest {
 
                 OPTIONS
 
+                      --additional-config=<path>
+                                          Configuration file with additional configuration.
                       --expand-commands   Allow command expansion in config value evaluation.
                       --to-path=<path>    Destination folder of database dump.
                       --to-stdout         Use standard output as destination for database dump.

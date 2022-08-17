@@ -39,7 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.cli.AbstractCommand;
+import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.AdminTool;
 import org.neo4j.cli.CommandProvider;
 import org.neo4j.cli.CommandType;
@@ -300,7 +300,7 @@ class Neo4jAdminCommandTest {
     }
 
     @CommandLine.Command(name = "test-command", description = "Command for testing purposes only")
-    static class TestCommand extends AbstractCommand {
+    static class TestCommand extends AbstractAdminCommand {
         static final String MSG = "Test command executed";
 
         @CommandLine.Parameters(hidden = true)

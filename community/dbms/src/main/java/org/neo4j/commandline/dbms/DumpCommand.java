@@ -36,15 +36,17 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import org.eclipse.collections.impl.set.mutable.MutableSetFactoryImpl;
-import org.neo4j.cli.AbstractCommand;
+import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.commandline.Util;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.dbms.archive.DumpFormatSelector;
 import org.neo4j.dbms.archive.Dumper;
@@ -71,7 +73,7 @@ import picocli.CommandLine.Parameters;
                 + "<destination-path> should be a directory (in which case a file called <database>.dump will "
                 + "be created), or --to-stdout can be supplied to use standard output. "
                 + "It is not possible to dump a database that is mounted in a running Neo4j server.")
-public class DumpCommand extends AbstractCommand {
+public class DumpCommand extends AbstractAdminCommand {
     @Parameters(
             arity = "1",
             description = "Name of the database to dump. Can contain * and ? for globbing.",
@@ -97,6 +99,11 @@ public class DumpCommand extends AbstractCommand {
     }
 
     @Override
+    protected Optional<String> commandConfigName() {
+        return Optional.of("database-dump");
+    }
+
+    @Override
     public void execute() {
         if (target.toDir != null && !Files.isDirectory(Path.of(target.toDir))) {
             throw new CommandFailedException(target.toDir + " is not an existing directory");
@@ -108,7 +115,7 @@ public class DumpCommand extends AbstractCommand {
                     + "output. Specify a directory as destination or a single target database");
         }
 
-        Config config = CommandHelpers.buildConfig(ctx, allowCommandExpansion);
+        Config config = createConfig();
         InternalLog log;
         try (Log4jLogProvider logProvider = Util.configuredLogProvider(ctx.out(), verbose)) {
             log = logProvider.getLog(getClass());
@@ -176,6 +183,12 @@ public class DumpCommand extends AbstractCommand {
                 throw new CommandFailedException(failedDbs.toString(), exceptions);
             }
         }
+    }
+
+    private Config createConfig() {
+        return createPrefilledConfigBuilder()
+                .set(GraphDatabaseSettings.read_only_database_default, true)
+                .build();
     }
 
     record FailedDump(String dbName, Exception e) {}

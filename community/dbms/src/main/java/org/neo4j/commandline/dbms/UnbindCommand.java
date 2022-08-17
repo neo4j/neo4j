@@ -22,12 +22,10 @@ package org.neo4j.commandline.dbms;
 import static picocli.CommandLine.Command;
 
 import java.io.IOException;
-import org.neo4j.cli.AbstractCommand;
+import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ConfigUtils;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.locker.FileLockException;
 
@@ -35,7 +33,7 @@ import org.neo4j.io.locker.FileLockException;
         name = "unbind",
         header = "Removes server identifier.",
         description = "Removes server identifier. Next start instance will create a new identity for itself.")
-public class UnbindCommand extends AbstractCommand {
+public class UnbindCommand extends AbstractAdminCommand {
     public UnbindCommand(ExecutionContext ctx) {
         super(ctx);
     }
@@ -60,12 +58,6 @@ public class UnbindCommand extends AbstractCommand {
     }
 
     private Config buildConfig() {
-        var cfg = Config.newBuilder()
-                .fromFileNoThrow(ctx.confDir().resolve(Config.DEFAULT_CONFIG_FILE_NAME))
-                .commandExpansion(allowCommandExpansion)
-                .set(GraphDatabaseSettings.neo4j_home, ctx.homeDir())
-                .build();
-        ConfigUtils.disableAllConnectors(cfg);
-        return cfg;
+        return createPrefilledConfigBuilder().build();
     }
 }

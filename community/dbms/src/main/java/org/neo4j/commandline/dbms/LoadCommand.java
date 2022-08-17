@@ -34,13 +34,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import org.eclipse.collections.impl.set.mutable.MutableSetFactoryImpl;
-import org.neo4j.cli.AbstractCommand;
+import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ConfigUtils;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.function.ThrowingSupplier;
@@ -57,7 +55,7 @@ import picocli.CommandLine.Parameters;
                 + "by specifying --overwrite-destination. It is not possible to replace a database that is mounted "
                 + "in a running Neo4j server. If --info is specified, then the database is not loaded, but information "
                 + "(i.e. file count, byte count, and format of load file) about the archive is printed instead.")
-public class LoadCommand extends AbstractCommand {
+public class LoadCommand extends AbstractAdminCommand {
 
     @Parameters(
             arity = "1",
@@ -94,6 +92,11 @@ public class LoadCommand extends AbstractCommand {
     public LoadCommand(ExecutionContext ctx, Loader loader) {
         super(ctx);
         this.loader = requireNonNull(loader);
+    }
+
+    @Override
+    protected Optional<String> commandConfigName() {
+        return Optional.of("database-load");
     }
 
     @Override
@@ -216,12 +219,6 @@ public class LoadCommand extends AbstractCommand {
     }
 
     protected Config buildConfig() {
-        Config cfg = Config.newBuilder()
-                .fromFileNoThrow(ctx.confDir().resolve(Config.DEFAULT_CONFIG_FILE_NAME))
-                .commandExpansion(allowCommandExpansion)
-                .set(GraphDatabaseSettings.neo4j_home, ctx.homeDir())
-                .build();
-        ConfigUtils.disableAllConnectors(cfg);
-        return cfg;
+        return createPrefilledConfigBuilder().build();
     }
 }

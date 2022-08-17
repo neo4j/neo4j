@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.Optional;
-import org.neo4j.cli.AbstractCommand;
+import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters.DatabaseNameConverter;
 import org.neo4j.cli.ExecutionContext;
@@ -38,8 +38,6 @@ import org.neo4j.commandline.Util;
 import org.neo4j.commandline.dbms.CannotWriteException;
 import org.neo4j.commandline.dbms.LockChecker;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ConfigUtils;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -65,7 +63,7 @@ import picocli.CommandLine.Option;
                 + "All checks except 'check-graph' can be quite expensive so it may be useful to turn them off"
                 + " for very large databases. Increasing the heap size can also be a good idea."
                 + " See 'neo4j-admin help' for details.")
-public class CheckConsistencyCommand extends AbstractCommand {
+public class CheckConsistencyCommand extends AbstractAdminCommand {
     @ArgGroup(multiplicity = "1")
     private TargetOption target = new TargetOption();
 
@@ -82,12 +80,6 @@ public class CheckConsistencyCommand extends AbstractCommand {
                 description = "Path to backup to check consistency of. Cannot be used together with --database.")
         private Path backup;
     }
-
-    @Option(
-            names = "--additional-config",
-            paramLabel = "<path>",
-            description = "Configuration file to supply additional configuration in.")
-    private Path additionalConfig;
 
     @Mixin
     private ConsistencyCheckOptions options;
@@ -115,7 +107,7 @@ public class CheckConsistencyCommand extends AbstractCommand {
             }
         }
 
-        Config config = loadNeo4jConfig(ctx.homeDir(), ctx.confDir(), additionalConfig);
+        Config config = loadNeo4jConfig();
         var memoryTracker = EmptyMemoryTracker.INSTANCE;
 
         try (FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction()) {
@@ -195,14 +187,7 @@ public class CheckConsistencyCommand extends AbstractCommand {
         }
     }
 
-    private Config loadNeo4jConfig(Path homeDir, Path configDir, Path additionalConfig) {
-        Config cfg = Config.newBuilder()
-                .fromFileNoThrow(configDir.resolve(Config.DEFAULT_CONFIG_FILE_NAME))
-                .fromFileNoThrow(additionalConfig)
-                .commandExpansion(allowCommandExpansion)
-                .set(GraphDatabaseSettings.neo4j_home, homeDir)
-                .build();
-        ConfigUtils.disableAllConnectors(cfg);
-        return cfg;
+    private Config loadNeo4jConfig() {
+        return createPrefilledConfigBuilder().build();
     }
 }

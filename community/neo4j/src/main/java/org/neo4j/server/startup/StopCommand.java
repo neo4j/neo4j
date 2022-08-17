@@ -38,7 +38,7 @@ public class StopCommand extends AbstractCommand {
     private Integer timeout;
 
     public StopCommand(ExecutionContext ctx) {
-        super(ctx, false);
+        super(ctx);
     }
 
     @Override

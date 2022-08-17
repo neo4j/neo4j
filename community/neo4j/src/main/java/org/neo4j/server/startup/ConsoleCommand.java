@@ -31,7 +31,7 @@ public class ConsoleCommand extends AbstractCommand {
     boolean dryRun; // Note that this is a hidden "unsupported" argument, not intended for usage outside official
 
     public ConsoleCommand(ExecutionContext ctx) {
-        super(ctx, false);
+        super(ctx);
     }
 
     @Override

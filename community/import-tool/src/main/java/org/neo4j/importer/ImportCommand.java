@@ -47,12 +47,11 @@ import java.util.Set;
 import java.util.function.Function;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.tuple.Pair;
-import org.neo4j.cli.AbstractCommand;
+import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.Converters.ByteUnitConverter;
 import org.neo4j.cli.Converters.DatabaseNameConverter;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.IndexConfig;
@@ -69,7 +68,7 @@ import picocli.CommandLine.Option;
 
 @Command(name = "import", description = "Import a collection of CSV files.")
 @SuppressWarnings("FieldMayBeFinal")
-public class ImportCommand extends AbstractCommand {
+public class ImportCommand extends AbstractAdminCommand {
     /**
      * Delimiter used between files in an input group.
      */
@@ -87,12 +86,6 @@ public class ImportCommand extends AbstractCommand {
                     + "  If the database used to import into doesn't exist prior to importing,%n"
                     + "  then it must be created subsequently using CREATE DATABASE.")
     private NormalizedDatabaseName database;
-
-    @Option(
-            names = "--additional-config",
-            paramLabel = "<path>",
-            description = "Configuration file to supply additional configuration in.")
-    private Path additionalConfig;
 
     @Option(
             names = "--report-file",
@@ -393,17 +386,11 @@ public class ImportCommand extends AbstractCommand {
 
     @VisibleForTesting
     Config loadNeo4jConfig() {
-        Config.Builder builder = Config.newBuilder()
-                .set(GraphDatabaseSettings.neo4j_home, ctx.homeDir().toAbsolutePath())
-                .fromFileNoThrow(ctx.confDir().resolve(Config.DEFAULT_CONFIG_FILE_NAME))
-                .fromFileNoThrow(additionalConfig)
-                .commandExpansion(allowCommandExpansion);
+        Config.Builder builder = createPrefilledConfigBuilder();
         if (StringUtils.isNotEmpty(format)) {
             builder.set(GraphDatabaseSettings.db_format, format);
         }
-        Config cfg = builder.build();
-        ConfigUtils.disableAllConnectors(cfg);
-        return cfg;
+        return builder.build();
     }
 
     private org.neo4j.csv.reader.Configuration csvConfiguration() {

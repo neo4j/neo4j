@@ -135,10 +135,11 @@ public class Config implements Configuration {
                     || Objects.equals(setting, LEGACY_4_X_DBMS_JVM_ADDITIONAL);
         }
 
-        private <T> void overrideSettingValue(String setting, T value, Map<String, T> settingValues) {
+        private <T> void overrideSettingValue(String setting, T value, Map<String, T> settingValues, boolean force) {
             if (!settingValueStrings.containsKey(setting) && !settingValueObjects.containsKey(setting)) {
                 settingValues.put(setting, value);
-            } else if (allowedToOverrideValues(setting, value, settingValues)) {
+            } else if (force // force has to be checked first as the other method has side effects
+                    || allowedToOverrideValues(setting, value, settingValues)) {
                 log.warn(
                         "The '%s' setting is overridden. Setting value changed from '%s' to '%s'.",
                         setting,
@@ -151,12 +152,17 @@ public class Config implements Configuration {
         }
 
         private Builder setRaw(String setting, String value) {
-            overrideSettingValue(setting, value, settingValueStrings);
+            setRaw(setting, value, false);
+            return this;
+        }
+
+        private Builder setRaw(String setting, String value, boolean forceOverride) {
+            overrideSettingValue(setting, value, settingValueStrings, forceOverride);
             return this;
         }
 
         private Builder set(String setting, Object value) {
-            overrideSettingValue(setting, value, settingValueObjects);
+            overrideSettingValue(setting, value, settingValueObjects, false);
             return this;
         }
 
@@ -266,10 +272,21 @@ public class Config implements Configuration {
                                 if (filter.test(setting)) {
                                     // We do the duplicate detection here (instead of in setRaw), as we still allow
                                     // override using multiple files or in embedded
-                                    if (!duplicateDetection.add(setting) && !allowedMultipleDeclarations(setting)) {
-                                        strictWarningMessage = setting + " declared multiple times.";
+                                    boolean forceDuplicateOverride = false;
+                                    if (!duplicateDetection.add(setting)) {
+                                        if (!allowedMultipleDeclarations(setting)) {
+                                            strictWarningMessage = setting + " declared multiple times.";
+                                        }
+                                    } else {
+                                        if (allowedMultipleDeclarations(setting)) {
+                                            // This is the first occurrence of a possible multi-declaration setting in
+                                            // a file. If this setting has been already added from lower-priority files,
+                                            // this setting should override those instead of chaining with them.
+                                            forceDuplicateOverride = true;
+                                        }
                                     }
-                                    setRaw(setting, value.toString());
+
+                                    setRaw(setting, value.toString(), forceDuplicateOverride);
                                 }
                                 return null;
                             }

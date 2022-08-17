@@ -37,7 +37,7 @@ public class WindowsServiceCommand {
     public static class Install extends AbstractCommand {
 
         public Install(ExecutionContext ctx) {
-            super(ctx, false);
+            super(ctx);
         }
 
         @Override
@@ -53,7 +53,7 @@ public class WindowsServiceCommand {
     public static class Uninstall extends AbstractCommand {
 
         public Uninstall(ExecutionContext ctx) {
-            super(ctx, false);
+            super(ctx);
         }
 
         @Override
@@ -69,7 +69,7 @@ public class WindowsServiceCommand {
     public static class Update extends AbstractCommand {
 
         public Update(ExecutionContext ctx) {
-            super(ctx, false);
+            super(ctx);
         }
 
         @Override

@@ -60,8 +60,7 @@ class MigrateStoreCommandTest {
                          OPTIONS
 
                                --additional-config=<path>
-                                                    Configuration file to supply additional
-                                                      configuration in.
+                                                    Configuration file with additional configuration.
                                --expand-commands    Allow command expansion in config value evaluation.
                                --pagecache=<size>   The size of the page cache to use for the migration
                                                       process. The general rule is that values up to the

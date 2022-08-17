@@ -27,7 +27,7 @@ import picocli.CommandLine.Command;
 public class StartCommand extends AbstractCommand {
 
     public StartCommand(ExecutionContext ctx) {
-        super(ctx, false);
+        super(ctx);
     }
 
     @Override

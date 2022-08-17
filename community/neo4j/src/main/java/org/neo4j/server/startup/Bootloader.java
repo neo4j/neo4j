@@ -36,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -169,29 +170,37 @@ abstract class Bootloader implements AutoCloseable {
         config(true);
     }
 
+    void rebuildConfig(List<Path> additionalConfigs) {
+        this.config = buildConfig(true, additionalConfigs);
+        this.fullConfig = true;
+    }
+
     Configuration config() {
         return config(false);
     }
 
     private Configuration config(boolean full) {
         if (config == null || !fullConfig && full) {
-            this.config = buildConfig(full);
+            this.config = buildConfig(full, List.of());
             this.fullConfig = full;
         }
         return config;
     }
 
-    private Configuration buildConfig(boolean full) {
-        Path confFile = confDir().resolve(Config.DEFAULT_CONFIG_FILE_NAME);
+    private Configuration buildConfig(boolean full, List<Path> additionalConfigs) {
+        Path mainConfFile = confDir().resolve(Config.DEFAULT_CONFIG_FILE_NAME);
         try {
             Predicate<String> filter = full ? alwaysTrue() : settingsUsedByBootloader()::contains;
 
-            Configuration config = getConfigBuilder(full)
+            var builder = getConfigBuilder(full)
                     .commandExpansion(expandCommands)
                     .setDefaults(overriddenDefaultsValues())
                     .set(GraphDatabaseSettings.neo4j_home, home())
-                    .fromFile(confFile, false, filter)
-                    .build();
+                    .fromFile(mainConfFile, false, filter);
+
+            Collections.reverse(additionalConfigs);
+            additionalConfigs.forEach(additionalConfig -> builder.fromFile(additionalConfig, false, filter));
+            Configuration config = builder.build();
 
             return new Configuration() {
                 @Override
@@ -206,7 +215,11 @@ abstract class Bootloader implements AutoCloseable {
                 }
             };
         } catch (RuntimeException e) {
-            throw new CommandFailedException("Failed to read config " + confFile + ": " + e.getMessage(), e);
+            if (additionalConfigs.isEmpty()) {
+                throw new CommandFailedException("Failed to read config " + mainConfFile + ": " + e.getMessage(), e);
+            } else {
+                throw new CommandFailedException("Failed to read config: " + e.getMessage(), e);
+            }
         }
     }
 
@@ -545,8 +558,11 @@ abstract class Bootloader implements AutoCloseable {
             return Map.of();
         }
 
-        int admin() {
+        int admin(List<Path> additionalConfigs) {
             try {
+                if (!additionalConfigs.isEmpty()) {
+                    rebuildConfig(additionalConfigs);
+                }
                 validateConfig();
                 os().admin();
                 return EXIT_CODE_OK;

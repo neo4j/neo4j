@@ -87,8 +87,7 @@ class ImportCommandTest {
                 OPTIONS
 
                       --additional-config=<path>
-                                             Configuration file to supply additional
-                                               configuration in.
+                                             Configuration file with additional configuration.
                       --array-delimiter=<char>
                                              Delimiter character between array elements within
                                                a value in CSV data. Also accepts 'TAB' and e.g.

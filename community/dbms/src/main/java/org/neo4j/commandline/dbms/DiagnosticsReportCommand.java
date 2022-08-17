@@ -39,11 +39,10 @@ import java.util.Set;
 import java.util.TreeSet;
 import org.jutils.jprocesses.JProcesses;
 import org.jutils.jprocesses.model.ProcessInfo;
-import org.neo4j.cli.AbstractCommand;
+import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.diagnostics.jmx.JMXDumper;
 import org.neo4j.dbms.diagnostics.jmx.JmxDump;
@@ -61,7 +60,7 @@ import org.neo4j.kernel.diagnostics.NonInteractiveProgress;
                 "Will collect information about the system and package everything in an archive. If you specify 'all', "
                         + "everything will be included. You can also fine tune the selection by passing classifiers to the tool, "
                         + "e.g 'logs tx threads'.")
-public class DiagnosticsReportCommand extends AbstractCommand {
+public class DiagnosticsReportCommand extends AbstractAdminCommand {
     static final String[] DEFAULT_CLASSIFIERS = {
         "logs", "config", "plugins", "tree", "metrics", "threads", "sysprop", "ps", "version"
     };
@@ -94,7 +93,7 @@ public class DiagnosticsReportCommand extends AbstractCommand {
 
     @Override
     public void execute() {
-        Config config = getConfig(configFile());
+        Config config = getConfig();
 
         jmxDumper = new JMXDumper(config, ctx.fs(), ctx.out(), ctx.err(), verbose);
         DiagnosticsReporter reporter = createAndRegisterSources(config);
@@ -200,17 +199,8 @@ public class DiagnosticsReportCommand extends AbstractCommand {
         });
     }
 
-    private Config getConfig(Path configFile) {
-        if (!ctx.fs().fileExists(configFile)) {
-            throw new CommandFailedException("Unable to find config file, tried: " + configFile.toAbsolutePath());
-        }
-        Config cfg = Config.newBuilder()
-                .fromFileNoThrow(configFile)
-                .set(GraphDatabaseSettings.neo4j_home, ctx.homeDir())
-                .commandExpansion(allowCommandExpansion)
-                .build();
-        ConfigUtils.disableAllConnectors(cfg);
-        return cfg;
+    private Config getConfig() {
+        return createPrefilledConfigBuilder().build();
     }
 
     static String describeClassifier(String classifier) {

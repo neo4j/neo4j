@@ -23,10 +23,11 @@ import static org.neo4j.server.startup.Bootloader.ARG_EXPAND_COMMANDS;
 
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
-import org.neo4j.cli.AbstractCommand;
+import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.AdminTool;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
@@ -82,21 +83,21 @@ public class Neo4jAdminCommand implements Callable<Integer>, VerboseCommand {
                     environment.err(),
                     new DefaultFileSystemAbstraction(),
                     this::createDbmsBootloader);
-            CommandLine actualAdminCommand = getActualAdminCommand(ctx);
+            CommandLine actualCommand = getActualAdminCommand(ctx);
 
             if (unmatchedParameters.isEmpty()) { // No arguments (except expand commands/verbose), print usage
-                actualAdminCommand.usage(adminBootloader.environment.err());
+                actualCommand.usage(adminBootloader.environment.err());
                 return CommandLine.ExitCode.USAGE;
             }
 
-            boolean shouldFork;
+            ExecutionInfo executionInfo;
             try {
-                CommandLine.ParseResult result = actualAdminCommand.parseArgs(args); // Check if we can parse it
+                CommandLine.ParseResult result = actualCommand.parseArgs(args); // Check if we can parse it
                 Integer code = CommandLine.executeHelpRequest(result); // If help is requested
                 if (code != null) {
                     return code;
                 }
-                shouldFork = shouldFork(result);
+                executionInfo = getExecutionInfo(result);
             } catch (CommandLine.ParameterException e) {
                 return e.getCommandLine()
                         .getParameterExceptionHandler()
@@ -104,11 +105,10 @@ public class Neo4jAdminCommand implements Callable<Integer>, VerboseCommand {
             }
 
             // Arguments looks fine! Let's try to execute it for real
-            if (shouldFork) {
-                return adminBootloader.admin();
+            if (executionInfo.forkingAdminCommand) {
+                return adminBootloader.admin(executionInfo.additionalConfigs);
             } else {
-
-                return actualAdminCommand.execute(args);
+                return actualCommand.execute(args);
             }
         }
     }
@@ -124,14 +124,13 @@ public class Neo4jAdminCommand implements Callable<Integer>, VerboseCommand {
         return allParameters.toArray(new String[0]);
     }
 
-    // Admin commands are generally forked, because it is the only way how their JVM can configured.
-    // Some admin commands are used to just launch the DBMS instead of executing an administration task.
-    // As an optimisation, such commands should not fork, because we might end up with
-    // three running JVMs if they do - boostrap JVM, forked command JVM and DBMS JVM.
-    private boolean shouldFork(CommandLine.ParseResult parseResult) {
+    private ExecutionInfo getExecutionInfo(CommandLine.ParseResult parseResult) {
         return parseResult.asCommandLineList().stream()
                 .map(CommandLine::getCommand)
-                .anyMatch(command -> command instanceof AbstractCommand && ((AbstractCommand) command).shouldFork());
+                .filter(command -> command instanceof AbstractAdminCommand)
+                .map(adminCommand -> new ExecutionInfo(true, ((AbstractAdminCommand) adminCommand).getCommandConfigs()))
+                .findFirst()
+                .orElseGet(() -> new ExecutionInfo(false, List.of()));
     }
 
     protected CommandLine getActualAdminCommand(ExecutionContext executionContext) {
@@ -211,4 +210,6 @@ public class Neo4jAdminCommand implements Callable<Integer>, VerboseCommand {
             return 0;
         }
     }
+
+    private record ExecutionInfo(boolean forkingAdminCommand, List<Path> additionalConfigs) {}
 }

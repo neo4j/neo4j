@@ -96,7 +96,7 @@ class LoadCommandTest {
                 USAGE
 
                 load [--expand-commands] [--info] [--overwrite-destination] [--verbose]
-                     (--from-path=<path> | --from-stdin) <database>
+                     [--additional-config=<path>] (--from-path=<path> | --from-stdin) <database>
 
                 DESCRIPTION
 
@@ -114,6 +114,8 @@ class LoadCommandTest {
 
                 OPTIONS
 
+                      --additional-config=<path>
+                                           Configuration file with additional configuration.
                       --expand-commands    Allow command expansion in config value evaluation.
                       --from-path=<path>   Path to directory containing archive(s) created with
                                              the dump command.

@@ -35,11 +35,12 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.neo4j.cli.AbstractCommand;
+import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -63,7 +64,7 @@ import picocli.CommandLine.Parameters;
         name = "info",
         header = "Print information about a Neo4j database store.",
         description = "Print information about a Neo4j database store, such as what version of Neo4j created it.")
-public class StoreInfoCommand extends AbstractCommand {
+public class StoreInfoCommand extends AbstractAdminCommand {
     private static final String PLAIN_FORMAT = "text";
     private static final String JSON_FORMAT = "json";
 
@@ -114,7 +115,7 @@ public class StoreInfoCommand extends AbstractCommand {
 
     @Override
     public void execute() {
-        var config = CommandHelpers.buildConfig(ctx, allowCommandExpansion);
+        var config = createConfig();
         var neo4jLayout = Neo4jLayout.of(config);
         try (var fs = ctx.fs();
                 var jobScheduler = createInitialisedScheduler();
@@ -149,6 +150,12 @@ public class StoreInfoCommand extends AbstractCommand {
         } catch (Exception e) {
             throw new CommandFailedException(format("Failed to execute command: '%s'.", e.getMessage()), e);
         }
+    }
+
+    private Config createConfig() {
+        return createPrefilledConfigBuilder()
+                .set(GraphDatabaseSettings.read_only_database_default, true)
+                .build();
     }
 
     private void validatePath(FileSystemAbstraction fs, Path storePath, Neo4jLayout neo4jLayout) {

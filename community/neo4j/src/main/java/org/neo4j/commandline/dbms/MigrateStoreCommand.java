@@ -32,17 +32,16 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import org.eclipse.collections.impl.set.mutable.MutableSetFactoryImpl;
-import org.neo4j.cli.AbstractCommand;
+import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ConfigUtils;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
@@ -97,7 +96,7 @@ import picocli.CommandLine.Parameters;
         description = "Migrates a database from one format to another or between versions of the same format. "
                 + "It always migrates the database to the latest combination of major and minor "
                 + "version of the target format.")
-public class MigrateStoreCommand extends AbstractCommand {
+public class MigrateStoreCommand extends AbstractAdminCommand {
     @Parameters(
             arity = "1",
             paramLabel = "<database>",
@@ -123,12 +122,6 @@ public class MigrateStoreCommand extends AbstractCommand {
     private String pagecacheMemory;
 
     @Option(
-            names = "--additional-config",
-            paramLabel = "<path>",
-            description = "Configuration file to supply additional configuration in.")
-    private Path additionalConfig;
-
-    @Option(
             names = "--force-btree-indexes-to-range",
             hidden = true,
             description = "Special option for turning all btree indexes/constraints into range")
@@ -139,8 +132,13 @@ public class MigrateStoreCommand extends AbstractCommand {
     }
 
     @Override
+    protected Optional<String> commandConfigName() {
+        return Optional.of("database-migrate");
+    }
+
+    @Override
     protected void execute() {
-        Config config = buildConfig(ctx, allowCommandExpansion);
+        Config config = buildConfig();
         try (Log4jLogProvider logProvider = new Log4jLogProvider(ctx.out(), verbose ? Level.DEBUG : Level.INFO);
                 Log4jLogProvider systemDbStartupLogProvider =
                         new Log4jLogProvider(ctx.out(), verbose ? Level.DEBUG : Level.ERROR)) {
@@ -329,19 +327,10 @@ public class MigrateStoreCommand extends AbstractCommand {
                         "Current store format has not been recognised by any of the available storage engines"));
     }
 
-    private Config buildConfig(ExecutionContext ctx, boolean allowCommandExpansion) {
-        var configBuilder = Config.newBuilder()
-                .fromFileNoThrow(ctx.confDir().resolve(Config.DEFAULT_CONFIG_FILE_NAME))
-                .fromFileNoThrow(additionalConfig)
-                .commandExpansion(allowCommandExpansion)
-                .set(GraphDatabaseSettings.neo4j_home, ctx.homeDir())
+    private Config buildConfig() {
+        return createPrefilledConfigBuilder()
                 .set(pagecache_memory, ByteUnit.parse(pagecacheMemory))
-                .set(GraphDatabaseSettings.read_only_database_default, true);
-
-        Config cfg = configBuilder.build();
-        ConfigUtils.disableAllConnectors(cfg);
-
-        return cfg;
+                .build();
     }
 
     private static StaticIndexProviderMap getIndexProviderMap(

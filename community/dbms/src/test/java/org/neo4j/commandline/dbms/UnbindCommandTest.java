@@ -81,7 +81,7 @@ class UnbindCommandTest {
 
                 USAGE
 
-                unbind [--expand-commands] [--verbose]
+                unbind [--expand-commands] [--verbose] [--additional-config=<path>]
 
                 DESCRIPTION
 
@@ -89,7 +89,8 @@ class UnbindCommandTest {
                 itself.
 
                 OPTIONS
-
+                      --additional-config=<path>
+                                          Configuration file with additional configuration.
                       --expand-commands   Allow command expansion in config value evaluation.
                       --verbose           Enable verbose output.""");
     }

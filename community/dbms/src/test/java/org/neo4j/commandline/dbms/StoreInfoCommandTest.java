@@ -105,8 +105,8 @@ class StoreInfoCommandTest {
 
                 USAGE
 
-                info [--expand-commands] [--verbose] [--format=<structuredFormat>]
-                     [--from-path=<path>] [<database>]
+                info [--expand-commands] [--verbose] [--additional-config=<path>]
+                     [--format=<structuredFormat>] [--from-path=<path>] [<database>]
 
                 DESCRIPTION
 
@@ -121,6 +121,8 @@ class StoreInfoCommandTest {
 
                 OPTIONS
 
+                      --additional-config=<path>
+                                           Configuration file with additional configuration.
                       --expand-commands    Allow command expansion in config value evaluation.
                       --format=<structuredFormat>
                                            The format of the returned information. Either

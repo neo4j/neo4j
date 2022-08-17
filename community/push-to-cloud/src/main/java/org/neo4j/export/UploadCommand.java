@@ -25,7 +25,7 @@ import java.nio.file.Path;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.CRC32;
-import org.neo4j.cli.AbstractCommand;
+import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
@@ -42,7 +42,7 @@ import picocli.CommandLine.Parameters;
         description = "Push a local database to a Neo4j Aura instance. "
                 + "The target location is a Neo4j Aura Bolt URI. If Neo4j Cloud username and password are not provided "
                 + "either as a command option or as an environment variable, they will be requested interactively ")
-public class UploadCommand extends AbstractCommand {
+public class UploadCommand extends AbstractAdminCommand {
     private final Copier copier;
     private final PushToCloudConsole cons;
 
