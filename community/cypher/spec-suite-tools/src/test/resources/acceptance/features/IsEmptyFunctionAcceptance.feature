@@ -177,12 +177,7 @@ Feature: IsEmptyFunctionAcceptance
     Given an empty graph
     When executing query:
       """
-      CALL {
-        RETURN 1 AS x
-        UNION
-        RETURN [1, 2, 3] AS x
-      }
-      WITH collect(x) AS xs
+      WITH [1, [1,2,3]] AS xs
       WITH xs[1] AS v
       RETURN isEmpty(v) AS result
       """

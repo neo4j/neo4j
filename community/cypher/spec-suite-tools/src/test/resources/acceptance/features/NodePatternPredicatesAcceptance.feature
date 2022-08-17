@@ -173,11 +173,13 @@ Feature: NodePatternPredicates
       """
     When executing query:
       """
-      RETURN [(a:A WHERE a.prop < 3)-[r]->(b:B WHERE b.prop > 100) | [a.prop, b.prop]] AS result
+      UNWIND [(a:A WHERE a.prop < 3)-[r]->(b:B WHERE b.prop > 100) | [a.prop, b.prop]] AS result
+      RETURN result
       """
     Then the result should be, in any order:
-      | result               |
-      | [[1, 200], [2, 300]] |
+      | result   |
+      | [1, 200] |
+      | [2, 300] |
     And no side effects
 
   Scenario: Should allow references other elements of the pattern in a pattern comprehension
