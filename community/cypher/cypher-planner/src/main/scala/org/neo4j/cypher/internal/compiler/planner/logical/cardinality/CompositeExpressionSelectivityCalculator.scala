@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAUL
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_RANGE_SEEK_FACTOR
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CompositeExpressionSelectivityCalculator.SelectivitiesForPredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CompositeExpressionSelectivityCalculator.selectivityForCompositeIndexPredicates
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CompositeExpressionSelectivityCalculator.unwrapPartialPredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsBoundingBoxSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsDistanceSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertyScannable
@@ -123,7 +122,15 @@ case class CompositeExpressionSelectivityCalculator(
 
     // The selections we get for cardinality estimation might contain partial predicates.
     // These are not recognized by the Leaf planners, so let's unwrap them.
-    val unwrappedSelections = selections.endoRewrite(unwrapPartialPredicates)
+    // This will also deduplicate if multiple partial predicates have the same coveredPredicate, since we are working with a Set.
+    val unwrappedSelections = selections.copy(predicates =
+      selections.predicates.map(pred =>
+        pred.copy(expr = pred.expr match {
+          case partial: PartialPredicate[_] => partial.coveredPredicate
+          case x                            => x
+        })
+      )
+    )
 
     // Used when we can conclude that no composite index influences the result
     def fallback: Selectivity = {
@@ -307,10 +314,6 @@ case class CompositeExpressionSelectivityCalculator(
 }
 
 object CompositeExpressionSelectivityCalculator {
-
-  val unwrapPartialPredicates: Rewriter = topDown(Rewriter.lift {
-    case partial: PartialPredicate[_] => partial.coveredPredicate
-  })
 
   private[cardinality] def selectivityForCompositeIndexPredicates(
     selectivitiesForPredicates: SelectivitiesForPredicates,
