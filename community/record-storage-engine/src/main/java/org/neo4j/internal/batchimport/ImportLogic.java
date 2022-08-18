@@ -97,7 +97,7 @@ public class ImportLogic implements Closeable {
     private final Path databaseDirectory;
     private final String databaseName;
     protected final BatchingNeoStores neoStore;
-    private final Configuration config;
+    protected final Configuration config;
     private final Config dbConfig;
     private final InternalLog log;
     protected final CursorContextFactory contextFactory;
