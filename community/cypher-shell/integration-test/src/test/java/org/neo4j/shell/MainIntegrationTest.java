@@ -69,6 +69,7 @@ import org.neo4j.shell.test.AssertableMain;
 import org.neo4j.shell.util.Version;
 import org.neo4j.shell.util.Versions;
 
+// NOTE! Consider adding tests to BinaryNonInteractiveIntegrationTest instead of here.
 @Timeout(value = 5, unit = MINUTES)
 class MainIntegrationTest {
     private static final String USER = "neo4j";

@@ -158,6 +158,49 @@
 
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <!-- The purpose of this execution is to provide a user-friendly error message when started with an unsupported jvm -->
+                    <execution>
+                        <id>compile-java7</id>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <source>1.7</source>
+                            <target>1.7</target>
+                            <compileSourceRoots>
+                                <compileSourceRoot>${project.basedir}/src/main/java7</compileSourceRoot>
+                            </compileSourceRoots>
+                        </configuration>
+                    </execution>
+                    <!-- This is the normal execution -->
+                    <execution>
+                        <id>compile</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <release>${maven.compiler.target}</release>
+                            <multiReleaseOutput>true</multiReleaseOutput>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Multi-Release>true</Multi-Release>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>appassembler-maven-plugin</artifactId>
                 <version>${appassembler-maven-plugin.version}</version>
@@ -165,14 +208,9 @@
                     <assembleDirectory>${project.build.directory}/assembly</assembleDirectory>
                     <repositoryLayout>flat</repositoryLayout>
                     <repositoryName>lib</repositoryName>
-                    <extraJvmArguments>
-                        --add-opens java.base/java.net=ALL-UNNAMED
-                        --add-opens java.base/java.lang=ALL-UNNAMED
-                        --add-opens=java.base/java.nio=ALL-UNNAMED
-                    </extraJvmArguments>
                     <programs>
                         <program>
-                            <mainClass>${name-of-main-class}</mainClass>
+                            <mainClass>org.neo4j.shell.startup.CypherShellBoot</mainClass>
                             <id>cypher-shell</id>
                         </program>
                     </programs>
