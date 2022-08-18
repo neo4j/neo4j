@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext.failWith
 import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
@@ -23,6 +24,7 @@ import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Parsing
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
@@ -94,6 +96,34 @@ class SemanticAnalysisTest extends CypherFunSuite {
     pipeline.transform(startState, context)
 
     context.errors.map(_.msg) should equal(List("Variable `n` already declared"))
+  }
+
+  test("Should not allow Distinct in functions that aren't aggregate") {
+    val nonAggregateFunctions = Seq(
+      ("localdatetime", "'param1'"),
+      ("duration", "'param1'"),
+      ("left", "'param1', 4"),
+      ("right", "'param1', 4"),
+      ("reverse", "'param1'"),
+      ("trim", "'param1'"),
+      ("ceil", "0.1"),
+      ("floor", "0.1"),
+      ("sign", "0.1"),
+      ("round", "0.1"),
+      ("abs", "0.1"),
+      ("asin", "0.1"),
+      ("isEmpty", "'param1'"),
+      ("toBoolean", "'param1'")
+    )
+    nonAggregateFunctions.foreach {
+      case (func, params) =>
+        val query = s"RETURN $func(DISTINCT $params) as foo"
+
+        val context = new ErrorCollectingContext()
+        pipeline.transform(initStartState(query, Map.empty), context)
+
+        context.errors shouldBe Seq(SemanticError(s"Invalid use of DISTINCT with function '$func'", InputPosition(7, 1, 8)))
+    }
   }
 
   test("Should allow parameter as valid predicate in FilteringExpression") {
