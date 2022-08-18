@@ -153,7 +153,6 @@ public class BuiltInDbmsProcedures {
                         "browser.post_connect_cmd",
                         "client.allow_telemetry",
                         "server.metrics.prefix",
-                        "server.metrics.namespaces.enabled",
                         "dbms.default_database")
                 .collect(Collectors.toCollection(HashSet::new));
 
