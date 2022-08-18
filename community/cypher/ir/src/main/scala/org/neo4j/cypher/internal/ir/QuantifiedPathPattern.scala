@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.util.Repetition
 
-case class EntityBinding(outer: String, inner: String) {
-  override def toString: String = s"(outer=$outer, inner=$inner)"
+case class EntityBinding(inner: String, outer: String) {
+  override def toString: String = s"(inner=$inner, outer=$outer)"
 }
 
 final case class QuantifiedPathPattern(

@@ -50,12 +50,12 @@ class QueryGraphConnectedComponentsTest
 
   private def qpp(from: String, to: String) =
     QuantifiedPathPattern(
-      EntityBinding(from, s"${from}_inner"),
-      EntityBinding(to, s"${to}_inner"),
+      EntityBinding(s"${from}_inner", from),
+      EntityBinding(s"${to}_inner", to),
       QueryGraph(patternRelationships = Set(rel(s"${from}_inner", s"${to}_inner"))),
       Repetition(0, Unlimited),
-      nodeGroupVariables = Seq(EntityBinding(s"${from}_inner", "anon_1"), EntityBinding(s"${to}_inner", "anon_3")),
-      relationshipGroupVariables = Seq(EntityBinding("r", "anon_2"))
+      nodeGroupVariables = Seq(EntityBinding("anon_1", s"${from}_inner"), EntityBinding("anon_3", s"${to}_inner")),
+      relationshipGroupVariables = Seq(EntityBinding("anon_2", "r"))
     )
 
   test("empty query graph returns no connected querygraphs") {

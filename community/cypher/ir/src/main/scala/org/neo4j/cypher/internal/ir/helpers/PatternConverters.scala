@@ -37,7 +37,6 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.StarQuantifier
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.EntityBinding
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
@@ -47,7 +46,6 @@ import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.RangeConvertor
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PathConcatenationDestructor.FoldState
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.UpperBound
@@ -240,15 +238,15 @@ object PatternConverters {
       )
 
       val nodeGroupVariables = nodeAndRelationshipVariableMapping.nodeVariables
-        .map { case (originalName, newName) => EntityBinding(originalName.name, newName.name) }
+        .map { case (originalName, newName) => EntityBinding(newName.name, originalName.name) }
         .toSeq
       val relationshipGroupVariables = nodeAndRelationshipVariableMapping.relVariables
-        .map { case (originalName, newName) => EntityBinding(originalName.name, newName.name) }
+        .map { case (originalName, newName) => EntityBinding(newName.name, originalName.name) }
         .toSeq
 
       QuantifiedPathPattern(
-        leftBinding = EntityBinding(outerLeft, innerLeft),
-        rightBinding = EntityBinding(outerRight, innerRight),
+        leftBinding = EntityBinding(innerLeft, outerLeft),
+        rightBinding = EntityBinding(innerRight, outerRight),
         pattern = qg,
         repetition = quantifiedPath.quantifier.toRepetition,
         nodeGroupVariables = nodeGroupVariables,
