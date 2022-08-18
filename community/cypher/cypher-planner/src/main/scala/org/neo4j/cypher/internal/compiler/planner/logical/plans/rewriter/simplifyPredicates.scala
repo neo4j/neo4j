@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.util.ExactSize
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
@@ -39,7 +40,7 @@ case object simplifyPredicates extends Rewriter {
     case in @ In(exp, ListLiteral(values @ Seq(idValueExpr))) if values.size == 1 =>
       Equals(exp, idValueExpr)(in.position)
 
-    case in @ In(exp, p @ AutoExtractedParameter(_, _: ListType, _, Some(1))) =>
+    case in @ In(exp, p @ AutoExtractedParameter(_, _: ListType, _, ExactSize(1))) =>
       Equals(exp, ContainerIndex(p, SignedDecimalIntegerLiteral("0")(p.position))(p.position))(in.position)
 
     // This form is used to make composite index seeks and scans

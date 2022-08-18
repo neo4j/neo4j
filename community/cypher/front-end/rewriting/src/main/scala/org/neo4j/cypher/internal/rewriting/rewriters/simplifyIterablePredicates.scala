@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.ExactSize
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
@@ -87,8 +88,7 @@ object EqualEquivalent {
   def unapply(expression: Expression): Option[(Expression, Expression)] = expression match {
     case Equals(lhs, rhs)                      => Some((lhs, rhs))
     case In(lhs, ListLiteral(Seq(singleItem))) => Some((lhs, singleItem))
-    // NOTE: we know that for sizeHint=1 the estimation is exact
-    case In(lhs, p @ AutoExtractedParameter(_, _: ListType, _, Some(1))) =>
+    case In(lhs, p @ AutoExtractedParameter(_, _: ListType, _, ExactSize(1))) =>
       Some((lhs, ContainerIndex(p, SignedDecimalIntegerLiteral("0")(p.position))(p.position)))
     case _ => None
   }

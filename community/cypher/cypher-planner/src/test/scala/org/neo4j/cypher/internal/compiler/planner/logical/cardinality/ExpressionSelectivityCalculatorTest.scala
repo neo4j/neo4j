@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_ALL_CARDINALITY
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_WITH_LABEL_CARDINALITY
+import org.neo4j.cypher.internal.util.ApproximateSize
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NameId
@@ -1231,7 +1232,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
       "PARAM",
       CTList(CTAny),
       ListOfLiteralWriter(Seq(literalString("a"), literalString("b"))),
-      Some(2)
+      ApproximateSize(2)
     )(pos)
     val equals = nPredicate(in(nProp, param))
 
@@ -1247,9 +1248,10 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
 
   test("equality with one label, auto-extracted parameter of size 42") {
     val bucketSize = SizeBucket.computeBucket(42)
-    val literalWriters = (1 to bucketSize).map(literalInt(_))
+    val sizeHint = bucketSize.toOption.get
+    val literalWriters = (1 to sizeHint).map(literalInt(_))
     val param =
-      AutoExtractedParameter("PARAM", CTList(CTAny), ListOfLiteralWriter(literalWriters), Some(bucketSize))(pos)
+      AutoExtractedParameter("PARAM", CTList(CTAny), ListOfLiteralWriter(literalWriters), bucketSize)(pos)
     val equals = nPredicate(in(nProp, param))
 
     val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
@@ -1258,7 +1260,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
 
     val existsSel = Selectivity(200.0 / 1000.0)
     val equal1Sel = Selectivity(1.0 / 180.0)
-    val inSel = IndependenceCombiner.orTogetherSelectivities(Seq.fill(bucketSize)(equal1Sel)).get
+    val inSel = IndependenceCombiner.orTogetherSelectivities(Seq.fill(sizeHint)(equal1Sel)).get
     eqResult should equal(existsSel * inSel)
   }
 

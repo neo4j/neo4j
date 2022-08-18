@@ -79,7 +79,7 @@ import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
-import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.WithSizeHint
 import org.neo4j.cypher.internal.util.symbols.StringType
 
 case class ExpressionSelectivityCalculator(
@@ -543,9 +543,9 @@ object ExpressionSelectivityCalculator {
 
   def getStringLength(stringExpression: Expression): Int = {
     stringExpression match {
-      case StringLiteral(value)                                        => value.length
-      case AutoExtractedParameter(_, _: StringType, _, Some(sizeHint)) => sizeHint
-      case _                                                           => DEFAULT_STRING_LENGTH
+      case StringLiteral(value)                                                => value.length
+      case AutoExtractedParameter(_, _: StringType, _, WithSizeHint(sizeHint)) => sizeHint
+      case _                                                                   => DEFAULT_STRING_LENGTH
     }
   }
 

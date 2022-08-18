@@ -30,7 +30,34 @@ object SizeBucket {
    * @return Next closest power of 10 for size.
    *         Examples: computeBucket(1) = 1, computeBucket(7) = 10, computeBucket(17) = 100, computeBucket(42) = 100
    */
-  def computeBucket(size: Int): Int = {
-    Math.pow(10, Math.ceil(Math.log10(size))).toInt
+  def computeBucket(size: Int): BucketSize = size match {
+    case 0 => ExactSize(0)
+    case 1 => ExactSize(1)
+    case _ => ApproximateSize(Math.pow(10, Math.ceil(Math.log10(size))).toInt)
+  }
+}
+
+sealed trait BucketSize {
+  def toOption: Option[Int]
+}
+
+case object UnknownSize extends BucketSize {
+  override def toOption: Option[Int] = None
+}
+
+case class ExactSize(size: Int) extends BucketSize {
+  override def toOption: Option[Int] = Some(size)
+}
+
+case class ApproximateSize(size: Int) extends BucketSize {
+  override def toOption: Option[Int] = Some(size)
+}
+
+object WithSizeHint {
+
+  def unapply(bucketSize: BucketSize): Option[Int] = bucketSize match {
+    case UnknownSize           => None
+    case ExactSize(size)       => Some(size)
+    case ApproximateSize(size) => Some(size)
   }
 }

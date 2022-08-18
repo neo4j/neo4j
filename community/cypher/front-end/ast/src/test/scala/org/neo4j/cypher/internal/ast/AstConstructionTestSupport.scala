@@ -130,6 +130,8 @@ import org.neo4j.cypher.internal.expressions.functions.Sum
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.SizeBucket
+import org.neo4j.cypher.internal.util.UnknownSize
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 
@@ -446,7 +448,12 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     sizeHint: Option[Int] = None,
     position: InputPosition = pos
   ): Parameter =
-    AutoExtractedParameter(key, typ, emptyWriter, sizeHint)(position)
+    AutoExtractedParameter(
+      key,
+      typ,
+      emptyWriter,
+      sizeHint.map(i => SizeBucket.computeBucket(i)).getOrElse(UnknownSize)
+    )(position)
 
   def or(lhs: Expression, rhs: Expression): Or = Or(lhs, rhs)(pos)
 

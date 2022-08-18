@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.util.ExactSize
 import org.neo4j.cypher.internal.util.One
 import org.neo4j.cypher.internal.util.ZeroOneOrMany
 import org.neo4j.cypher.internal.util.symbols.ListType
@@ -53,7 +54,7 @@ case class ManySeekableArgs(expr: Expression) extends SeekableArgs {
 
   val sizeHint: Option[Int] = expr match {
     case coll: ListLiteral             => Some(coll.expressions.size)
-    case param: AutoExtractedParameter => param.sizeHint
+    case param: AutoExtractedParameter => param.sizeHint.toOption
     case _                             => None
   }
 
@@ -69,8 +70,7 @@ case class ManySeekableArgs(expr: Expression) extends SeekableArgs {
         case _          => ManyQueryExpression(coll)
       }
 
-    // NOTE: we know that for sizeHint=1 the estimation is exact
-    case p @ AutoExtractedParameter(_, ListType(_), _, Some(1)) =>
+    case p @ AutoExtractedParameter(_, ListType(_), _, ExactSize(1)) =>
       SingleQueryExpression(ContainerIndex(p, SignedDecimalIntegerLiteral("0")(p.position))(p.position))
 
     case _ =>

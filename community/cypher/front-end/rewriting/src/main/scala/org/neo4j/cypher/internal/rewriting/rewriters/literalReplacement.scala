@@ -90,7 +90,7 @@ object literalReplacement {
         if (acc.contains(l)) SkipChildren(acc)
         else {
           val bucket = SizeBucket.computeBucket(l.value.length)
-          val parameter = AutoExtractedParameter(s"  AUTOSTRING${acc.size}", CTString, l, Some(bucket))(l.position)
+          val parameter = AutoExtractedParameter(s"  AUTOSTRING${acc.size}", CTString, l, bucket)(l.position)
           SkipChildren(acc + (l -> LiteralReplacement(parameter, l.value)))
         }
     case l: IntegerLiteral =>
@@ -117,7 +117,7 @@ object literalReplacement {
             s"  AUTOLIST${acc.size}",
             TypeSpec.cypherTypeForTypeSpec(state.expressionType(l).actual),
             ListOfLiteralWriter(literals),
-            Some(bucket)
+            bucket
           )(l.position)
           SkipChildren(acc + (l -> LiteralReplacement(parameter, literals.map(_.value))))
         }
