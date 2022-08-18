@@ -19,15 +19,15 @@
  */
 package org.neo4j.internal.batchimport;
 
-import static java.lang.System.nanoTime;
-
-import java.util.function.Supplier;
+import java.util.ArrayList;
+import java.util.List;
+import org.neo4j.collection.PrimitiveLongCollections.RangedLongIterator;
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache.NodeChangeVisitor;
 import org.neo4j.internal.batchimport.cache.NodeType;
-import org.neo4j.internal.batchimport.staging.ProducerStep;
-import org.neo4j.internal.batchimport.staging.RecordDataAssembler;
+import org.neo4j.internal.batchimport.staging.BatchSender;
+import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -39,11 +39,10 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
  * Using the {@link NodeRelationshipCache} efficiently looks for changed nodes and reads those
  * {@link NodeRecord} and sends downwards.
  */
-public class ReadGroupRecordsByCacheStep extends ProducerStep {
+public class ReadGroupRecordsByCacheStep extends ProcessorStep<RangedLongIterator> {
     private static final String READ_RELATIONSHIP_GROUPS_STEP_TAG = "readRelationshipGroupsStep";
     private final RecordStore<RelationshipGroupRecord> store;
     private final NodeRelationshipCache cache;
-    private final CursorContextFactory contextFactory;
 
     public ReadGroupRecordsByCacheStep(
             StageControl control,
@@ -51,34 +50,25 @@ public class ReadGroupRecordsByCacheStep extends ProducerStep {
             RecordStore<RelationshipGroupRecord> store,
             NodeRelationshipCache cache,
             CursorContextFactory contextFactory) {
-        super(control, config);
+        super(control, ">", config, 0, contextFactory);
         this.store = store;
         this.cache = cache;
-        this.contextFactory = contextFactory;
     }
 
     @Override
-    protected void process() {
-        try (var cursorContext = contextFactory.create(READ_RELATIONSHIP_GROUPS_STEP_TAG);
-                NodeVisitor visitor = new NodeVisitor(cursorContext)) {
-            cache.visitChangedNodes(visitor, NodeType.NODE_TYPE_DENSE);
+    protected void process(RangedLongIterator batch, BatchSender sender, CursorContext cursorContext) throws Throwable {
+        try (var visitor = new NodeVisitor(sender, cursorContext)) {
+            cache.visitChangedNodes(visitor, NodeType.NODE_TYPE_DENSE, batch.startInclusive(), batch.endExclusive());
         }
     }
 
-    private class NodeVisitor
-            implements NodeChangeVisitor,
-                    AutoCloseable,
-                    NodeRelationshipCache.GroupVisitor,
-                    Supplier<RelationshipGroupRecord[]> {
-        private final RecordDataAssembler<RelationshipGroupRecord> assembler = new RecordDataAssembler<>(
-                store::newRecord,
-                false /*In this scenario we know exactly which node IDs we're visiting, so we can be a bit more strict*/);
+    private class NodeVisitor implements NodeChangeVisitor, AutoCloseable, NodeRelationshipCache.GroupVisitor {
+        private final BatchSender sender;
         private final CursorContext cursorContext;
-        private RelationshipGroupRecord[] batch = get();
-        private int cursor;
-        private long time = nanoTime();
+        private List<RelationshipGroupRecord> batch = new ArrayList<>();
 
-        NodeVisitor(CursorContext cursorContext) {
+        NodeVisitor(BatchSender sender, CursorContext cursorContext) {
+            this.sender = sender;
             this.cursorContext = cursorContext;
         }
 
@@ -90,40 +80,26 @@ public class ReadGroupRecordsByCacheStep extends ProducerStep {
         @Override
         public long visit(long nodeId, int typeId, long out, long in, long loop) {
             long id = store.nextId(cursorContext);
-            RelationshipGroupRecord record = batch[cursor++];
+            RelationshipGroupRecord record = store.newRecord();
             record.setId(id);
             record.initialize(true, typeId, out, in, loop, nodeId, loop);
-            if (cursor == batchSize) {
+            batch.add(record);
+            if (batch.size() >= config.batchSize()) {
                 send();
-                batch = control.reuse(this);
-                cursor = 0;
             }
             return id;
         }
 
         private void send() {
-            totalProcessingTime.add(nanoTime() - time);
-            sendDownstream(batch);
-            time = nanoTime();
-            assertHealthy();
+            sender.send(batch.toArray(new RelationshipGroupRecord[0]));
+            batch = new ArrayList<>();
         }
 
         @Override
         public void close() {
-            if (cursor > 0) {
-                batch = assembler.cutOffAt(batch, cursor);
+            if (!batch.isEmpty()) {
                 send();
             }
         }
-
-        @Override
-        public RelationshipGroupRecord[] get() {
-            return assembler.newBatchObject(batchSize);
-        }
-    }
-
-    @Override
-    protected long position() {
-        return store.getHighId() * store.getRecordSize();
     }
 }

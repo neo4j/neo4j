@@ -114,7 +114,7 @@ public final class PrimitiveLongCollections {
     }
 
     // Range
-    public static LongIterator range(long start, long end) {
+    public static RangedLongIterator range(long start, long end) {
         return new PrimitiveLongRangeIterator(start, end);
     }
 
@@ -373,11 +373,14 @@ public final class PrimitiveLongCollections {
         }
     }
 
-    public static class PrimitiveLongRangeIterator extends AbstractPrimitiveLongBaseIterator {
+    public static class PrimitiveLongRangeIterator extends AbstractPrimitiveLongBaseIterator
+            implements RangedLongIterator {
+        private final long start;
         private long current;
         private final long end;
 
         PrimitiveLongRangeIterator(long start, long end) {
+            this.start = start;
             this.current = start;
             this.end = end;
         }
@@ -390,6 +393,16 @@ public final class PrimitiveLongCollections {
                 current++;
             }
         }
+
+        @Override
+        public long startInclusive() {
+            return start;
+        }
+
+        @Override
+        public long endExclusive() {
+            return end + 1;
+        }
     }
 
     public static MutableLongSet mergeToSet(LongIterable a, LongIterable b) {
@@ -397,5 +410,11 @@ public final class PrimitiveLongCollections {
         set.addAll(a);
         set.addAll(b);
         return set;
+    }
+
+    public interface RangedLongIterator extends LongIterator {
+        long startInclusive();
+
+        long endExclusive();
     }
 }

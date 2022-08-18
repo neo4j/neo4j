@@ -23,8 +23,8 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
 
 import java.util.function.Function;
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
+import org.neo4j.internal.batchimport.staging.BatchFeedStep;
 import org.neo4j.internal.batchimport.staging.Stage;
-import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.store.StorePrepareIdSequence;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -47,7 +47,8 @@ public class RelationshipGroupStage extends Stage {
             NodeRelationshipCache cache,
             CursorContextFactory contextFactory,
             Function<CursorContext, StoreCursors> storeCursorsCreator) {
-        super(NAME, topic, config, Step.RECYCLE_BATCHES);
+        super(NAME, topic, config, 0);
+        add(new BatchFeedStep(control(), config, RecordIdIterator.forwards(0, cache.highNodeId(), config), 10));
         add(new ReadGroupRecordsByCacheStep(control(), config, store, cache, contextFactory));
         add(new UpdateRecordsStep<>(
                 control(),

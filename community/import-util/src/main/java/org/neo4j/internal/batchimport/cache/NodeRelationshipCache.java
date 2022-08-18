@@ -702,6 +702,10 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
         }
     }
 
+    public long highNodeId() {
+        return highNodeId;
+    }
+
     @Override
     public void acceptMemoryStatsVisitor(MemoryStatsVisitor visitor) {
         nullSafeMemoryStatsVisitor(array, visitor);
@@ -723,6 +727,10 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
         void change(long nodeId, ByteArray array);
     }
 
+    public void visitChangedNodes(NodeChangeVisitor visitor, int nodeTypes) {
+        visitChangedNodes(visitor, nodeTypes, 0, highNodeId);
+    }
+
     /**
      * Efficiently visits changed nodes, e.g. nodes that have had any relationship chain updated by
      * {@link #getAndPutRelationship(long, int, Direction, long, boolean)}.
@@ -730,12 +738,12 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
      * @param visitor {@link NodeChangeVisitor} which will be notified about all changes.
      * @param nodeTypes which types to visit (dense/sparse).
      */
-    public void visitChangedNodes(NodeChangeVisitor visitor, int nodeTypes) {
+    public void visitChangedNodes(NodeChangeVisitor visitor, int nodeTypes, long from, long to) {
         long denseMask = changeMask(true);
         long sparseMask = changeMask(false);
         byte denseChunkMask = chunkChangeMask(true);
         byte sparseChunkMask = chunkChangeMask(false);
-        for (long nodeId = 0; nodeId < highNodeId; ) {
+        for (long nodeId = from; nodeId < to; ) {
             boolean chunkHasChanged = (NodeType.isDense(nodeTypes) && chunkHasChange(nodeId, denseChunkMask))
                     || (NodeType.isSparse(nodeTypes) && chunkHasChange(nodeId, sparseChunkMask));
             if (!chunkHasChanged) {

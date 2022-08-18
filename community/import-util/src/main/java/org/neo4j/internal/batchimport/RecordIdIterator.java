@@ -24,6 +24,7 @@ import static java.lang.Long.min;
 import static org.neo4j.collection.PrimitiveLongCollections.range;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.neo4j.collection.PrimitiveLongCollections.RangedLongIterator;
 import org.neo4j.common.ProgressReporter;
 
 /**
@@ -36,7 +37,7 @@ public interface RecordIdIterator {
     /**
      * @return next batch of ids as {@link LongIterator}, or {@code null} if there are no more ids to return.
      */
-    LongIterator nextBatch();
+    RangedLongIterator nextBatch();
 
     static RecordIdIterator backwards(long lowIncluded, long highExcluded, Configuration config) {
         return new Backwards(lowIncluded, highExcluded, config);
@@ -60,13 +61,13 @@ public interface RecordIdIterator {
         }
 
         @Override
-        public LongIterator nextBatch() {
+        public RangedLongIterator nextBatch() {
             if (startId >= highExcluded) {
                 return null;
             }
 
             long endId = min(highExcluded, findRoofId(startId));
-            final LongIterator result = range(startId, endId - 1 /*excluded*/);
+            var result = range(startId, endId - 1 /*excluded*/);
             startId = endId;
             return result;
         }
@@ -96,13 +97,13 @@ public interface RecordIdIterator {
         }
 
         @Override
-        public LongIterator nextBatch() {
+        public RangedLongIterator nextBatch() {
             if (endId <= lowIncluded) {
                 return null;
             }
 
             long startId = findFloorId(endId);
-            final LongIterator result = range(startId, endId - 1 /*excluded*/);
+            var result = range(startId, endId - 1 /*excluded*/);
             endId = max(lowIncluded, startId);
             return result;
         }
@@ -120,11 +121,21 @@ public interface RecordIdIterator {
 
     static RecordIdIterator withProgress(RecordIdIterator iterator, ProgressReporter reporter) {
         return () -> {
-            LongIterator actual = iterator.nextBatch();
+            var actual = iterator.nextBatch();
             if (actual == null) {
                 return null;
             }
-            return new LongIterator() {
+            return new RangedLongIterator() {
+                @Override
+                public long startInclusive() {
+                    return actual.startInclusive();
+                }
+
+                @Override
+                public long endExclusive() {
+                    return actual.endExclusive();
+                }
+
                 @Override
                 public long next() {
                     reporter.progress(1);
