@@ -50,6 +50,7 @@ public class CypherShellTerminalBuilder {
     private boolean dumb;
     private ParameterService parameters;
     private Supplier<SimplePrompt> simplePromptSupplier = SimplePrompt::defaultPrompt;
+    private boolean enableCypherCompletion = false;
 
     /** if enabled is true, this is an interactive terminal that supports user input */
     public CypherShellTerminalBuilder interactive(boolean isInteractive) {
@@ -85,6 +86,11 @@ public class CypherShellTerminalBuilder {
     @VisibleForTesting
     public CypherShellTerminalBuilder simplePromptSupplier(Supplier<SimplePrompt> simplePromptSupplier) {
         this.simplePromptSupplier = simplePromptSupplier;
+        return this;
+    }
+
+    public CypherShellTerminalBuilder enableCypherCompletion(boolean enable) {
+        this.enableCypherCompletion = enable;
         return this;
     }
 
@@ -130,7 +136,8 @@ public class CypherShellTerminalBuilder {
         var reader = LineReaderBuilder.builder()
                 .terminal(jLineTerminal.build())
                 .parser(new StatementJlineParser(new ShellStatementParser(), cypherLangService))
-                .completer(new JlineCompleter(new CommandFactoryHelper(), cypherLangService, parameters))
+                .completer(new JlineCompleter(
+                        new CommandFactoryHelper(), cypherLangService, parameters, enableCypherCompletion))
                 .history(new DefaultHistory()) // The default history is in-memory until we set history file variable
                 .expander(new JlineTerminal.EmptyExpander())
                 .option(LineReader.Option.DISABLE_EVENT_EXPANSION, true) // Disable '!' history expansion

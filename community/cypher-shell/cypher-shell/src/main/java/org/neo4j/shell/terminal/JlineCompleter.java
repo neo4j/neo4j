@@ -39,21 +39,33 @@ import org.neo4j.shell.terminal.StatementJlineParser.CypherCompletion;
 public class JlineCompleter implements Completer {
     private final CommandCompleter commandCompleter;
     private final CypherCompleter cypherCompleter;
+    private final boolean enableCypherCompletion;
 
-    public JlineCompleter(CommandFactoryHelper commands, CypherLanguageService parser, ParameterService parameters) {
+    public JlineCompleter(
+            CommandFactoryHelper commands,
+            CypherLanguageService parser,
+            ParameterService parameters,
+            boolean enableCypherCompletion) {
         this.commandCompleter = CommandCompleter.from(commands);
         this.cypherCompleter = new CypherCompleter(parser, parameters);
+        this.enableCypherCompletion = enableCypherCompletion;
     }
 
     @Override
     public void complete(LineReader reader, ParsedLine line, List<Candidate> candidates) {
+        // Note, the JavaCC parser doesn't provide good enough completion for
+        // us to release it yet. For this reason, cypher completion is
+        // disabled by default for now until we decide exactly where we want to
+        // go with this.
         try {
             if (line instanceof BlankCompletion) {
                 candidates.addAll(commandCompleter.complete());
-                cypherCompleter.completeBlank().forEach(candidates::add);
+                if (enableCypherCompletion) {
+                    cypherCompleter.completeBlank().forEach(candidates::add);
+                }
             } else if (line instanceof CommandCompletion) {
                 candidates.addAll(commandCompleter.complete());
-            } else if (line instanceof CypherCompletion cypher) {
+            } else if (enableCypherCompletion && line instanceof CypherCompletion cypher) {
                 cypherCompleter.complete(cypher).forEach(candidates::add);
             }
         } catch (Exception e) {

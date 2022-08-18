@@ -66,8 +66,8 @@ class JlineCompleterTest {
     void setup() {
         var transactionHandler = mock(TransactionHandler.class);
         parameters = ParameterService.create(transactionHandler);
-        completer =
-                new JlineCompleter(new CommandHelper.CommandFactoryHelper(), CypherLanguageService.get(), parameters);
+        completer = new JlineCompleter(
+                new CommandHelper.CommandFactoryHelper(), CypherLanguageService.get(), parameters, true);
         parser = new StatementJlineParser(new ShellStatementParser(), new JavaCcCypherLanguageService());
         parser.setEnableStatementParsing(true);
     }
