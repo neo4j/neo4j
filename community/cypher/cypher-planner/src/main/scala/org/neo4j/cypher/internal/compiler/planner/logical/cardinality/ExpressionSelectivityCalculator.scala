@@ -541,16 +541,6 @@ object ExpressionSelectivityCalculator {
     indexSelectivityForSubstringSargable(getStringLength(stringExpression), indexType)
   }
 
-  /**
-   * The length of an optional string, or the default length.
-   */
-  def getStringLength(maybeString: Option[String]): Int = {
-    maybeString match {
-      case Some(n) => n.length
-      case None    => DEFAULT_STRING_LENGTH
-    }
-  }
-
   def getStringLength(stringExpression: Expression): Int = {
     stringExpression match {
       case StringLiteral(value)                                        => value.length

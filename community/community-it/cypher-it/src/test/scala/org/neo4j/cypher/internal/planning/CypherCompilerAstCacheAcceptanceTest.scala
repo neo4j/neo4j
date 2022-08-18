@@ -252,6 +252,13 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
+  test("should cache auto-parameterized strings") {
+    runQuery("return 'straw' as result")
+    runQuery("return 'warts' as result")
+
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+  }
+
   test("should keep different cache entries for lists where inner type is not string and where inner type is string") {
     runQuery("MATCH (n:Label) WHERE n.prop IN ['1', '2', '3'] RETURN *")
     runQuery("MATCH (n:Label) WHERE n.prop IN ['1', 2, 3] RETURN *")
@@ -303,6 +310,24 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery(s"return $listBucketSize100 as result")
     runQuery(s"return $listBucketSize10 as result")
     runQuery(s"return $listBucketSize1 as result")
+
+    counter.counts should equal(CacheCounts(hits = 4, misses = 4, flushes = 1, compilations = 4))
+  }
+
+  test("should recompile for auto-parameterized strings with different bucket size") {
+    val stringBucketSize1 = "-"
+    val stringBucketSize10 = "-".repeat(10)
+    val stringBucketSize100 = "-".repeat(100)
+    val stringBucketSize1000 = "-".repeat(1000)
+
+    runQuery(s"return '$stringBucketSize1' as result")
+    runQuery(s"return '$stringBucketSize10' as result")
+    runQuery(s"return '$stringBucketSize100' as result")
+    runQuery(s"return '$stringBucketSize1000' as result")
+    runQuery(s"return '$stringBucketSize1000' as result")
+    runQuery(s"return '$stringBucketSize100' as result")
+    runQuery(s"return '$stringBucketSize10' as result")
+    runQuery(s"return '$stringBucketSize1' as result")
 
     counter.counts should equal(CacheCounts(hits = 4, misses = 4, flushes = 1, compilations = 4))
   }

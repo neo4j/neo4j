@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.AssertIsNode
+import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.CaseExpression
@@ -62,6 +63,8 @@ import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.ListSlice
+import org.neo4j.cypher.internal.expressions.LiteralExtractor
+import org.neo4j.cypher.internal.expressions.LiteralWriter
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.Modulo
@@ -225,7 +228,10 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     Property(map, propName(key))(pos)
 
   def propEquality(variable: String, propKey: String, intValue: Int): Equals =
-    Equals(prop(variable, propKey), literalInt(intValue))(pos)
+    propEquality(variable, propKey, literalInt(intValue))
+
+  def propEquality(variable: String, propKey: String, intExpression: Expression): Equals =
+    Equals(prop(variable, propKey), intExpression)(pos)
 
   def propLessThan(variable: String, propKey: String, intValue: Int): LessThan =
     LessThan(prop(variable, propKey), literalInt(intValue))(pos)
@@ -434,6 +440,14 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def parameter(key: String, typ: CypherType, position: InputPosition = pos): Parameter = Parameter(key, typ)(position)
 
+  def autoParameter(
+    key: String,
+    typ: CypherType,
+    sizeHint: Option[Int] = None,
+    position: InputPosition = pos
+  ): Parameter =
+    AutoExtractedParameter(key, typ, emptyWriter, sizeHint)(position)
+
   def or(lhs: Expression, rhs: Expression): Or = Or(lhs, rhs)(pos)
 
   def xor(lhs: Expression, rhs: Expression): Xor = Xor(lhs, rhs)(pos)
@@ -488,6 +502,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   }
 
   def ands(expressions: Expression*): Ands = Ands(expressions)(pos)
+
+  def containerIndex(container: Expression, index: Int): ContainerIndex = containerIndex(container, literalInt(index))
 
   def containerIndex(container: Expression, index: Expression): ContainerIndex = ContainerIndex(container, index)(pos)
 
@@ -780,5 +796,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
       val pathStep = nextStep(nodes.reverse.toList, rels.reverse.toList, NilPathStep()(pos))
       PathExpression(pathStep)(pos)
     }
+  }
+
+  private val emptyWriter = new LiteralWriter {
+    override def writeTo(extractor: LiteralExtractor): Unit = ???
   }
 }

@@ -25,6 +25,9 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SimplifyPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -67,5 +70,30 @@ class SimplifyPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupp
     val expectedSelection = Selection(Seq(predicateGT, predicateLT), argument)
 
     selection.endoRewrite(simplifyPredicates) should equal(expectedSelection)
+  }
+
+  test("should rewrite WHERE x.prop in $autoList to WHERE x.prop = $autoList[0] is size is 1") {
+    val argument: LogicalPlan = Argument(Set("a"))
+
+    val autoParamList0 = autoParameter("autoList", CTList(CTInteger), Some(0))
+    val autoParamList1 = autoParameter("autoList", CTList(CTInteger), Some(1))
+    val autoParamList10 = autoParameter("autoList", CTList(CTInteger), Some(10))
+    val autoParamListUnknown = autoParameter("autoList", CTList(CTInteger), sizeHint = None)
+    val autoParamString = autoParameter("autoList", CTString, Some(1))
+
+    // should rewrite
+    Selection(Seq(in(prop("x", "prop"), autoParamList1)), argument).endoRewrite(simplifyPredicates) should equal(
+      Selection(Seq(propEquality("x", "prop", containerIndex(autoParamList1, 0))), argument)
+    )
+
+    // should not rewrite
+    shouldNotRewrite(Selection(Seq(in(prop("x", "prop"), autoParamList0)), argument))
+    shouldNotRewrite(Selection(Seq(in(prop("x", "prop"), autoParamList10)), argument))
+    shouldNotRewrite(Selection(Seq(in(prop("x", "prop"), autoParamListUnknown)), argument))
+    shouldNotRewrite(Selection(Seq(in(prop("x", "prop"), autoParamString)), argument))
+  }
+
+  private def shouldNotRewrite(plan: LogicalPlan): Unit = {
+    plan.endoRewrite(simplifyPredicates) should equal(plan)
   }
 }

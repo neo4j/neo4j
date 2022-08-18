@@ -20,7 +20,11 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.rewriting.AstRewritingTestSupport
 import org.neo4j.cypher.internal.rewriting.RewriteTest
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.scalatest.Assertion
 import org.scalatest.Matchers
 
 class simplifyIterablePredicatesTest extends CypherFunSuite with Matchers with RewriteTest
@@ -124,7 +128,26 @@ class simplifyIterablePredicatesTest extends CypherFunSuite with Matchers with R
     rewrite(expr) shouldBe expr
   }
 
+  // the actual auto-parameterization is tested else where
+  test("should rewrite any(x in list WHERE x IN $autoList) to $autoList IN list when possible") {
+    def expr(innerList: Expression) = anyInList(
+      varFor("x"),
+      varFor("list"),
+      in(varFor("x"), innerList)
+    )
+
+    rewrite(expr(autoParameter("autoList", CTList(CTInteger), Some(1)))) shouldBe
+      in(containerIndex(autoParameter("autoList", CTList(CTInteger), Some(1)), 0), varFor("list"))
+    shouldNotRewrite(expr(autoParameter("autoList", CTList(CTInteger), Some(11))))
+    shouldNotRewrite(expr(autoParameter("autoList", CTList(CTInteger), Some(0))))
+    shouldNotRewrite(expr(autoParameter("autoList", CTString, Some(1))))
+  }
+
   override def rewriterUnderTest: Rewriter = simplifyIterablePredicates.instance
 
   private def rewrite(e: Expression): Expression = e.endoRewrite(rewriterUnderTest)
+
+  private def shouldNotRewrite(e: Expression): Assertion = {
+    rewrite(e) shouldBe e
+  }
 }
