@@ -25,8 +25,10 @@ import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -96,5 +98,16 @@ class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
     ).updated(varFor("a", position000), ExpressionTypeInfo(CTRelationship.invariant, None)))
 
     intercept[IllegalStateException](table.getTypeFor("a"))
+  }
+
+  test("isInteger should only be true if we are certain it is an integer") {
+    val table = SemanticTable(ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
+      .updated(varFor("a", position000), ExpressionTypeInfo(CTInteger.invariant, None))
+      .updated(varFor("b", position000), ExpressionTypeInfo(TypeSpec.all, None))
+      .updated(varFor("c", position000), ExpressionTypeInfo(CTInteger.invariant | CTString.invariant, None)))
+
+    table.isInteger(varFor("a", position000)) should be(true)
+    table.isInteger(varFor("b", position000)) should be(false)
+    table.isInteger(varFor("c", position000)) should be(false)
   }
 }

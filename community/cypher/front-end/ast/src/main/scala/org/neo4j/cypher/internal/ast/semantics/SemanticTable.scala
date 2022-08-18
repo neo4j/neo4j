@@ -130,7 +130,7 @@ class SemanticTable(
 
   def isNode(expr: Expression): Boolean = types(expr).specified == CTNode.invariant
 
-  def isInteger(expression: Expression): Boolean = (types(expression).specified & CTInteger.covariant).nonEmpty
+  def isInteger(expression: Expression): Boolean = types(expression).specified == CTInteger.invariant
 
   /**
    * Same as isNode, but will simply return false if no semantic information is available instead of failing.
