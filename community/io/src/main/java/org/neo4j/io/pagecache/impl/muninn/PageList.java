@@ -473,7 +473,7 @@ class PageList implements PageReferenceTranslator {
         }
     }
 
-    private static void clearBinding(long pageRef) {
+    static void clearBinding(long pageRef) {
         UnsafeUtil.putLong(offPageBinding(pageRef), UNBOUND_PAGE_BINDING);
     }
 }
