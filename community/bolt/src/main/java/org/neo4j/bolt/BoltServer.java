@@ -77,6 +77,7 @@ import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
@@ -96,6 +97,7 @@ public class BoltServer extends LifecycleAdapter {
     public static final PooledByteBufAllocator NETTY_BUF_ALLOCATOR =
             new PooledByteBufAllocator(PlatformDependent.directBufferPreferred());
 
+    private DbmsInfo dbmsInfo;
     private final BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI;
     private final JobScheduler jobScheduler;
     private final ConnectorPortRegister connectorPortRegister;
@@ -122,6 +124,7 @@ public class BoltServer extends LifecycleAdapter {
     private BoltMemoryPool boltMemoryPool;
 
     public BoltServer(
+            DbmsInfo dbmsInfo,
             BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
             JobScheduler jobScheduler,
             ConnectorPortRegister connectorPortRegister,
@@ -139,6 +142,7 @@ public class BoltServer extends LifecycleAdapter {
             DefaultDatabaseResolver defaultDatabaseResolver,
             CentralBufferMangerHolder centralBufferMangerHolder,
             TransactionManager transactionManager) {
+        this.dbmsInfo = dbmsInfo;
         this.boltGraphDatabaseManagementServiceSPI = boltGraphDatabaseManagementServiceSPI;
         this.jobScheduler = jobScheduler;
         this.connectorPortRegister = connectorPortRegister;
@@ -239,7 +243,7 @@ public class BoltServer extends LifecycleAdapter {
                     createAuthentication(loopbackAuthManager),
                     bufferAllocator);
 
-            if (config.get(GraphDatabaseSettings.routing_enabled)) {
+            if (config.get(GraphDatabaseSettings.routing_enabled) && dbmsInfo == DbmsInfo.ENTERPRISE) {
                 nettyServer = new NettyServer(
                         jobScheduler.threadFactory(Group.BOLT_NETWORK_IO),
                         createExternalProtocolInitializer(

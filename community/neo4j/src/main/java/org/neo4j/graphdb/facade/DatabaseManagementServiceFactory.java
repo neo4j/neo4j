@@ -388,6 +388,7 @@ public class DatabaseManagementServiceFactory {
             BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
             DatabaseIdRepository databaseIdRepository) {
         return new BoltServer(
+                globalModule.getDbmsInfo(),
                 boltGraphDatabaseManagementServiceSPI,
                 globalModule.getJobScheduler(),
                 globalModule.getConnectorPortRegister(),

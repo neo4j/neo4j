@@ -941,7 +941,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "When configured, this allows requests to be forwarded from one cluster member to another, if the requests can't be "
             + "satisfied by the first member (e.g. write requests received by a non-leader).")
     public static final Setting<Boolean> routing_enabled =
-            newBuilder("dbms.routing.enabled", BOOL, false).build();
+            newBuilder("dbms.routing.enabled", BOOL, true).build();
 
     @Description("The address the routing connector should bind to")
     public static final Setting<SocketAddress> routing_listen_address = newBuilder(
