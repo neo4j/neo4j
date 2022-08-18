@@ -24,11 +24,14 @@ import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTDate
 import org.neo4j.cypher.internal.util.symbols.CTDateTime
 import org.neo4j.cypher.internal.util.symbols.CTDuration
+import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTGeometry
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTLocalDateTime
 import org.neo4j.cypher.internal.util.symbols.CTLocalTime
 import org.neo4j.cypher.internal.util.symbols.CTMap
+import org.neo4j.cypher.internal.util.symbols.CTNumber
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CTTime
@@ -45,6 +48,8 @@ import org.neo4j.values.storable.LocalTimeValue
 import org.neo4j.values.storable.PointValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.TimeValue
+import org.neo4j.values.storable.ValueGroup
+import org.neo4j.values.storable.ValueRepresentation
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
 
@@ -73,14 +78,46 @@ object ParameterValueTypeHelper {
       case _: DateValue          => CTDate
       case _: DurationValue      => CTDuration
       case _: MapValue           => CTMap
-      case l: ListValue =>
-        var isStringList = true
-        l.forEach(isStringList &= _.isInstanceOf[TextValue])
-        val innerType = if (l.length() > 0 && isStringList) CTString else CTAny
-        CTList(innerType)
-      // all else
-      case _ => CTAny
+      case l: ListValue          => CTList(deriveInnerType(l))
+      case _                     => CTAny
     }
+  }
+
+  def deriveInnerType(l: ListValue): CypherType = l.itemValueRepresentation() match {
+    case ValueRepresentation.UNKNOWN               => CTAny
+    case ValueRepresentation.ANYTHING              => CTAny
+    case ValueRepresentation.GEOMETRY_ARRAY        => CTList(CTGeometry)
+    case ValueRepresentation.ZONED_DATE_TIME_ARRAY => CTList(CTDateTime)
+    case ValueRepresentation.LOCAL_DATE_TIME_ARRAY => CTList(CTLocalDateTime)
+    case ValueRepresentation.DATE_ARRAY            => CTList(CTDate)
+    case ValueRepresentation.ZONED_TIME_ARRAY      => CTList(CTTime)
+    case ValueRepresentation.LOCAL_TIME_ARRAY      => CTList(CTLocalTime)
+    case ValueRepresentation.DURATION_ARRAY        => CTList(CTDuration)
+    case ValueRepresentation.TEXT_ARRAY            => CTList(CTString)
+    case ValueRepresentation.BOOLEAN_ARRAY         => CTList(CTBoolean)
+    case ValueRepresentation.INT64_ARRAY           => CTList(CTInteger)
+    case ValueRepresentation.INT32_ARRAY           => CTList(CTInteger)
+    case ValueRepresentation.INT16_ARRAY           => CTList(CTInteger)
+    case ValueRepresentation.INT8_ARRAY            => CTList(CTInteger)
+    case ValueRepresentation.FLOAT64_ARRAY         => CTList(CTFloat)
+    case ValueRepresentation.FLOAT32_ARRAY         => CTList(CTFloat)
+    case ValueRepresentation.GEOMETRY              => CTGeometry
+    case ValueRepresentation.ZONED_DATE_TIME       => CTDateTime
+    case ValueRepresentation.LOCAL_DATE_TIME       => CTLocalDateTime
+    case ValueRepresentation.DATE                  => CTDate
+    case ValueRepresentation.ZONED_TIME            => CTTime
+    case ValueRepresentation.LOCAL_TIME            => CTLocalTime
+    case ValueRepresentation.DURATION              => CTDuration
+    case ValueRepresentation.UTF16_TEXT            => CTString
+    case ValueRepresentation.UTF8_TEXT             => CTString
+    case ValueRepresentation.BOOLEAN               => CTBoolean
+    case ValueRepresentation.INT64                 => CTInteger
+    case ValueRepresentation.INT32                 => CTInteger
+    case ValueRepresentation.INT16                 => CTInteger
+    case ValueRepresentation.INT8                  => CTInteger
+    case ValueRepresentation.FLOAT64               => CTFloat
+    case ValueRepresentation.FLOAT32               => CTFloat
+    case ValueRepresentation.NO_VALUE              => CTAny
   }
 
 }
