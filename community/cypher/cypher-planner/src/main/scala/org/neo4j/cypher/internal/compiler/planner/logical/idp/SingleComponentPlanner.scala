@@ -178,6 +178,20 @@ trait SingleComponentPlannerTrait {
 
 object SingleComponentPlanner {
 
+  private sealed trait SinglePatternSolutions {
+    def getSolutions: Iterable[LogicalPlan]
+  }
+  private case class NonExpandSolutions(solutions: Option[LogicalPlan]) extends SinglePatternSolutions {
+    override def getSolutions: Iterable[LogicalPlan] = solutions
+  }
+  private case class ExpandSolutions(leftExpand: Option[LogicalPlan], rightExpand: Option[LogicalPlan]) extends SinglePatternSolutions {
+    override def getSolutions: Iterable[LogicalPlan] = Set(leftExpand, rightExpand).flatten
+  }
+
+  /**
+   * Plan a single [[NodeConnection]].
+   * Return plan candidates on top of all leaf plans where it is possible.
+   */
   def planSinglePattern(
     qg: QueryGraph,
     patternToSolve: NodeConnection,
@@ -186,52 +200,68 @@ object SingleComponentPlanner {
     context: LogicalPlanningContext
   ): Iterable[LogicalPlan] = {
     val solveds = context.planningAttributes.solveds
-    leaves.flatMap { leaf =>
+
+    val perLeafSolutions: Map[LogicalPlan, SinglePatternSolutions] = leaves.map { leaf =>
       val solvedQg = solveds.get(leaf.id).asSinglePlannerQuery.lastQueryGraph
-      patternToSolve match {
+      val solutions = patternToSolve match {
         case pattern if solvedQg.nodeConnections.contains(pattern) =>
           // if the leaf already solves the pattern, simply return that
-          Set(leaf)
+          NonExpandSolutions(Some(leaf))
         case _ if solvedQg.nodeConnections.nonEmpty =>
           // Avoid planning an Expand on a plan that already solves another relationship.
           // That is not supposed to happen when we initialize the table, but rather during IDP.
-          Set.empty
+          NonExpandSolutions(None)
         case pattern: PatternRelationship if solvedQg.allCoveredIds.contains(pattern.name) =>
-          Set(planSingleProjectEndpoints(pattern, leaf, context))
+          NonExpandSolutions(Some(planSingleProjectEndpoints(pattern, leaf, context)))
         case pattern =>
           val (start, end) = pattern.nodes
           val leftExpand = planSinglePatternSide(qg, pattern, leaf, start, qppInnerPlans, context)
           val rightExpand = planSinglePatternSide(qg, pattern, leaf, end, qppInnerPlans, context)
-
-          val startJoinNodes = Set(start)
-          val endJoinNodes = Set(end)
-          val maybeStartPlan = leaves
-            .find(leaf =>
-              solveds(leaf.id).asSinglePlannerQuery.queryGraph.patternNodes == startJoinNodes
-                && !leaf.isInstanceOf[Argument]
-            )
-          val maybeEndPlan = leaves
-            .find(leaf =>
-              solveds(leaf.id).asSinglePlannerQuery.queryGraph.patternNodes == endJoinNodes
-                && !leaf.isInstanceOf[Argument]
-            )
-            // We are not allowed to plan CP or joins with identical LHS and RHS
-            .filter(!maybeStartPlan.contains(_))
-          val cartesianProduct =
-            planSinglePatternCartesian(qg, pattern, start, maybeStartPlan, maybeEndPlan, qppInnerPlans, context)
-          val joins = planSinglePatternJoins(
-            qg,
-            leftExpand,
-            rightExpand,
-            startJoinNodes,
-            endJoinNodes,
-            maybeStartPlan,
-            maybeEndPlan,
-            context
-          )
-          leftExpand ++ rightExpand ++ cartesianProduct ++ joins
+          ExpandSolutions(leftExpand, rightExpand)
       }
+      leaf -> solutions
+    }.toMap
+
+    val cartesianProductsAndJoins = {
+      val (start, end) = patternToSolve.nodes
+      val startJoinNodes = Set(start)
+      val endJoinNodes = Set(end)
+      val maybeStartPlan = leaves
+        .find(leaf =>
+          solveds(leaf.id).asSinglePlannerQuery.queryGraph.patternNodes == startJoinNodes
+            && !leaf.isInstanceOf[Argument]
+        )
+      val maybeEndPlan = leaves
+        .find(leaf =>
+          solveds(leaf.id).asSinglePlannerQuery.queryGraph.patternNodes == endJoinNodes
+            && !leaf.isInstanceOf[Argument]
+        )
+        // We are not allowed to plan CP or joins with identical LHS and RHS
+        .filter(!maybeStartPlan.contains(_))
+
+      val maybeCartesianProduct =
+        planSinglePatternCartesian(qg, patternToSolve, start, maybeStartPlan, maybeEndPlan, qppInnerPlans, context)
+      val maybeLeftExpand = maybeStartPlan.map(perLeafSolutions).collect {
+        case ExpandSolutions(leftExpand, _) => leftExpand
+      }.flatten
+      val maybeRightExpand = maybeEndPlan.map(perLeafSolutions).collect {
+        case ExpandSolutions(_, rightExpand) => rightExpand
+      }.flatten
+
+      val joins = planSinglePatternJoins(
+        qg,
+        maybeLeftExpand,
+        maybeRightExpand,
+        startJoinNodes,
+        endJoinNodes,
+        maybeStartPlan,
+        maybeEndPlan,
+        context
+      )
+      maybeCartesianProduct ++ joins
     }
+
+    perLeafSolutions.values.flatMap(_.getSolutions) ++ cartesianProductsAndJoins
   }
 
   def planSinglePatternCartesian(
@@ -255,9 +285,9 @@ object SingleComponentPlanner {
     case _ => None
   }
 
-  /*
-  If there are hints and the query graph is small, joins have to be constructed as an alternative here, otherwise the hints might not be able to be fulfilled.
-  Creating joins if the query graph is larger will lead to too many joins.
+  /**
+   * If there are hints and the query graph is small, joins have to be constructed as an alternative here, otherwise the hints might not be able to be fulfilled.
+   * Creating joins if the query graph is larger will lead to too many joins.
    */
   def planSinglePatternJoins(
     qg: QueryGraph,
