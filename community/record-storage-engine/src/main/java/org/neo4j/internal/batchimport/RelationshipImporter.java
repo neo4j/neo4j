@@ -164,7 +164,15 @@ public class RelationshipImporter extends EntityImporter {
                 && relationshipRecord.getSecondNode() != IdMapper.ID_NOT_FOUND
                 && relationshipRecord.getType() != -1) {
             relationshipRecord.setId(relationshipIds.nextId(cursorContext));
-            if (schemaMonitor.endOfEntity(relationshipRecord.getId())) {
+            if (schemaMonitor.endOfEntity(
+                    relationshipRecord.getId(),
+                    (entityId, tokens, properties, constraintDescription) -> badCollector.collectBadRelationship(
+                            startId,
+                            group(startIdGroup).name(),
+                            type,
+                            endId,
+                            group(endIdGroup).name(),
+                            relationshipRecord.getFirstNode() == IdMapper.ID_NOT_FOUND ? startId : endId))) {
                 if (doubleRecordUnits) {
                     // simply reserve one id for this relationship to grow during linking stage
                     relationshipIds.nextId(cursorContext);
@@ -182,13 +190,6 @@ public class RelationshipImporter extends EntityImporter {
                 relationshipCount++;
                 typeCounts.increment(relationshipRecord.getType());
             } else {
-                badCollector.collectBadRelationship(
-                        startId,
-                        group(startIdGroup).name(),
-                        type,
-                        endId,
-                        group(endIdGroup).name(),
-                        null);
                 freeUnusedId(relationshipStore, relationshipRecord.getId(), cursorContext);
             }
         } else {

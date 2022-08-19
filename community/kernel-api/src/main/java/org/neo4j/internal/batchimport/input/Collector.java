@@ -33,7 +33,8 @@ public interface Collector extends AutoCloseable {
 
     void collectDuplicateNode(Object id, long actualId, String group);
 
-    void collectNodeViolatingConstraint(long id, Map<String, Object> properties, String constraintDescription);
+    void collectNodeViolatingConstraint(
+            Object id, long actualId, Map<String, Object> properties, String constraintDescription);
 
     void collectExtraColumns(String source, long row, String value);
 
@@ -73,7 +74,7 @@ public interface Collector extends AutoCloseable {
 
         @Override
         public void collectNodeViolatingConstraint(
-                long id, Map<String, Object> properties, String constraintDescription) {}
+                Object id, long actualId, Map<String, Object> properties, String constraintDescription) {}
 
         @Override
         public boolean isCollectingBadRelationships() {
@@ -115,9 +116,9 @@ public interface Collector extends AutoCloseable {
 
         @Override
         public void collectNodeViolatingConstraint(
-                long id, Map<String, Object> properties, String constraintDescription) {
+                Object id, long actualId, Map<String, Object> properties, String constraintDescription) {
             throw new IllegalStateException(
-                    format("Bad node violating constraint %s %s id:%d", properties, constraintDescription, id));
+                    format("Bad node violating constraint %s %s id:%s", properties, constraintDescription, id));
         }
 
         @Override

@@ -173,7 +173,10 @@ public class NodeImporter extends EntityImporter {
         }
 
         // Write data to stores
-        if (schemaMonitor.endOfEntity(nodeRecord.getId())) {
+        if (schemaMonitor.endOfEntity(
+                nodeRecord.getId(),
+                (entityId, tokens, properties, constraintDescription) -> badCollector.collectNodeViolatingConstraint(
+                        inputId, entityId, namedProperties(properties), constraintDescription))) {
             nodeRecord.setNextProp(createAndWritePropertyChain(cursorContext));
             nodeRecord.setInUse(true);
             nodeStore.updateRecord(nodeRecord, IGNORE, nodeUpdateCursor, cursorContext, storeCursors);
@@ -182,9 +185,6 @@ public class NodeImporter extends EntityImporter {
             }
             nodeCount++;
         } else {
-            // TODO perhaps not report as duplicate, right?
-            badCollector.collectDuplicateNode(
-                    inputId, nodeRecord.getId(), group(group).name());
             freeUnusedId(nodeStore, nodeRecord.getId(), cursorContext);
         }
         nodeRecord.clear();

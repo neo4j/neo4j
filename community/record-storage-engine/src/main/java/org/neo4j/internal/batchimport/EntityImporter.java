@@ -22,6 +22,9 @@ package org.neo4j.internal.batchimport;
 import static org.neo4j.storageengine.util.IdUpdateListener.IGNORE;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.DataImporter.Monitor;
 import org.neo4j.internal.batchimport.input.Group;
@@ -44,6 +47,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.api.TokenHolder;
+import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -157,6 +161,18 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter {
                 dynamicArrayRecordAllocator,
                 cursorContext,
                 memoryTracker);
+    }
+
+    protected Map<String, Object> namedProperties(IntObjectMap<Value> properties) {
+        Map<String, Object> result = new HashMap<>();
+        properties.forEachKeyValue((keyId, value) -> {
+            try {
+                result.put(propertyKeyTokenRepository.getTokenById(keyId).name(), value.asObjectCopy());
+            } catch (TokenNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        return result;
     }
 
     long createAndWritePropertyChain(CursorContext cursorContext) {

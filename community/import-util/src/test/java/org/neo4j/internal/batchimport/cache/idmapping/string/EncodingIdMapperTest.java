@@ -853,7 +853,7 @@ public class EncodingIdMapperTest {
 
         @Override
         public void collectNodeViolatingConstraint(
-                long id, Map<String, Object> properties, String constraintDescription) {
+                Object id, long actualId, Map<String, Object> properties, String constraintDescription) {
             throw new UnsupportedOperationException();
         }
 

@@ -19,6 +19,10 @@
  */
 package org.neo4j.internal.batchimport;
 
+import org.eclipse.collections.api.list.primitive.IntList;
+import org.eclipse.collections.api.map.primitive.IntObjectMap;
+import org.neo4j.values.storable.Value;
+
 public interface SchemaMonitor {
     SchemaMonitor NO_MONITOR = new SchemaMonitor() {
         @Override
@@ -31,7 +35,7 @@ public interface SchemaMonitor {
         public void entityTokens(int[] entityTokenIds) {}
 
         @Override
-        public boolean endOfEntity(long entityId) {
+        public boolean endOfEntity(long entityId, ViolationVisitor violationVisitor) {
             return true;
         }
     };
@@ -42,5 +46,9 @@ public interface SchemaMonitor {
 
     void entityTokens(int[] entityTokenIds);
 
-    boolean endOfEntity(long entityId);
+    boolean endOfEntity(long entityId, ViolationVisitor violationVisitor);
+
+    interface ViolationVisitor {
+        void accept(long entityId, IntList tokens, IntObjectMap<Value> properties, String constraintDescription);
+    }
 }

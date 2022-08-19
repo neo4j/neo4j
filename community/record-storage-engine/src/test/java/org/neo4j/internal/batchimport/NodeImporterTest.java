@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport;
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -200,7 +201,7 @@ class NodeImporterTest {
         verify(schemaMonitor).property(keyIds("key2")[0], "value2");
         verify(schemaMonitor).property(keyIds("key3")[0], "value3");
         verify(schemaMonitor).entityTokens(labelIds("label1", "label2"));
-        verify(schemaMonitor).endOfEntity(anyLong());
+        verify(schemaMonitor).endOfEntity(anyLong(), any());
     }
 
     private int[] labelIds(String... labels) throws KernelException {

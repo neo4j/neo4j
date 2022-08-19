@@ -129,8 +129,9 @@ public final class BadCollector implements Collector {
     }
 
     @Override
-    public void collectNodeViolatingConstraint(long id, Map<String, Object> properties, String constraintDescription) {
-        collect(new NodeViolatingConstraintReporter(id, properties, constraintDescription));
+    public void collectNodeViolatingConstraint(
+            Object id, long actualId, Map<String, Object> properties, String constraintDescription) {
+        collect(new NodeViolatingConstraintReporter(id, actualId, properties, constraintDescription));
     }
 
     @Override
@@ -297,13 +298,16 @@ public final class BadCollector implements Collector {
     }
 
     private static class NodeViolatingConstraintReporter extends ProblemReporter {
-        private final long id;
+        private final Object id;
+        private final long actualId;
         private final Map<String, Object> properties;
         private final String constraintDescription;
 
-        NodeViolatingConstraintReporter(long id, Map<String, Object> properties, String constraintDescription) {
+        NodeViolatingConstraintReporter(
+                Object id, long actualId, Map<String, Object> properties, String constraintDescription) {
             super(VIOLATING_NODES);
             this.id = id;
+            this.actualId = actualId;
             this.properties = properties;
             this.constraintDescription = constraintDescription;
         }
@@ -311,8 +315,8 @@ public final class BadCollector implements Collector {
         @Override
         String message() {
             return format(
-                    "Node %d would have violated constraint:%s with properties:%s",
-                    id, constraintDescription, properties);
+                    "Node %s (internal id %d) would have violated constraint:%s with properties:%s",
+                    id, actualId, constraintDescription, properties);
         }
 
         @Override
