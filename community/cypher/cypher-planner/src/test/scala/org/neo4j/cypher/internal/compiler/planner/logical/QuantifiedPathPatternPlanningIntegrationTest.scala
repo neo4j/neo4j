@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -276,7 +277,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     )
   }
 
-  ignore("Should not plan assertNode with quantified path pattern") {
+  test("Should not plan assertNode with quantified path pattern in OPTIONAL MATCH") {
     val array = (1 to 10).mkString("[", ",", "]")
 
     val query =
@@ -288,8 +289,9 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
          |RETURN a0 ORDER BY a0
          |""".stripMargin
 
+    // Plan for the OPTIONAL MATCH should not contain a .filter(assertIsNode("n1")),
+    // since n1 is not a single node pattern, but a concatenated path.
     val plan = planner.plan(query).stripProduceResults
-
-    // plan under outer hash join should not contain a .filter(assertIsNode("n1"))
+    plan.folder.treeFindByClass[AssertIsNode] should be(None)
   }
 }
