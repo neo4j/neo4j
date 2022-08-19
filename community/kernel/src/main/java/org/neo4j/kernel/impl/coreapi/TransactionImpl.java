@@ -36,7 +36,6 @@ import static org.neo4j.kernel.impl.newapi.CursorPredicates.relationshipMatchPro
 import static org.neo4j.util.Preconditions.checkArgument;
 import static org.neo4j.values.storable.Values.utf8Value;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -157,7 +156,6 @@ public class TransactionImpl extends EntityValidationTransactionImpl {
 
     private KernelTransaction transaction;
     private boolean closed;
-    private List<TransactionClosedCallback> closeCallbacks;
 
     public TransactionImpl(
             TokenHolders tokenHolders,
@@ -215,23 +213,13 @@ public class TransactionImpl extends EntityValidationTransactionImpl {
     }
 
     public void commit(KernelTransaction.KernelTransactionMonitor kernelTransactionMonitor) {
-        safeTerminalOperation(transaction -> {
-            // this try-with-resource automatically calls transaction.close() after being done.
-            try (transaction) {
-                transaction.commit(kernelTransactionMonitor);
-            }
-        });
+        safeTerminalOperation(transaction -> transaction.commit(kernelTransactionMonitor));
     }
 
     @Override
     public void rollback() {
         if (isOpen()) {
-            safeTerminalOperation(transaction -> {
-                // this try-with-resource automatically calls transaction.close() after being done.
-                try (transaction) {
-                    transaction.rollback();
-                }
-            });
+            safeTerminalOperation(KernelTransaction::rollback);
         }
     }
 
@@ -686,31 +674,22 @@ public class TransactionImpl extends EntityValidationTransactionImpl {
     @Override
     public void close() {
         if (isOpen()) {
-            safeTerminalOperation(KernelTransaction::close);
+            safeTerminalOperation(tx -> {});
         }
     }
 
-    @Override
-    public void addCloseCallback(TransactionClosedCallback callback) {
-        if (closeCallbacks == null) {
-            closeCallbacks = new ArrayList<>(4);
-        }
-        closeCallbacks.add(callback);
-    }
-
+    /**
+     * This method performs operation *and* closes transaction
+     */
     private void safeTerminalOperation(TransactionalOperation operation) {
-        try {
-            if (closed) {
-                throw new NotInTransactionException("The transaction has been closed.");
-            }
-
+        if (closed) {
+            assert transaction == null : "Closed but still have reference to kernel transaction";
+            throw exceptionMapper.mapException(new NotInTransactionException("The transaction has been closed."));
+        }
+        var tx = transaction;
+        try (tx) {
             coreApiResourceTracker.closeAllCloseableResources();
-
-            operation.perform(transaction);
-
-            if (closeCallbacks != null) {
-                closeCallbacks.forEach(TransactionClosedCallback::transactionClosed);
-            }
+            operation.perform(tx);
         } catch (Exception e) {
             throw exceptionMapper.mapException(e);
         } finally {

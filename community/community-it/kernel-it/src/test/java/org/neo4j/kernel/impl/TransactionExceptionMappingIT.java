@@ -52,7 +52,7 @@ class TransactionExceptionMappingIT {
         var rootCause = new TransactionFailureException("Test failure");
         var e = assertThrows(Exception.class, () -> {
             try (var tx = database.beginTransaction(KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED)) {
-                tx.addCloseCallback(() -> {
+                tx.registerCloseableResource(() -> {
                     throw rootCause;
                 });
                 tx.commit();

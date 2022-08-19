@@ -37,7 +37,6 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.function.Consumer;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -52,8 +51,10 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.impl.coreapi.DefaultTransactionExceptionMapper;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
@@ -150,30 +151,34 @@ class TransactionImplTest {
     }
 
     @Test
-    void fireCallbackOnClose() {
-        KernelTransaction kernelTransaction = mock(KernelTransaction.class);
-        MutableLong calls = new MutableLong();
+    void testFailingClosableResource() throws TransactionFailureException {
+        var kernelTransaction = mock(KernelTransaction.class);
+        var tx = createTransaction(kernelTransaction);
+        doThrow(new ResourceCloseFailureException("not so fast", null))
+                .when(resourceTracker)
+                .closeAllCloseableResources();
+        assertThatThrownBy(tx::close).isInstanceOf(org.neo4j.graphdb.TransactionFailureException.class);
+        verify(kernelTransaction, times(1)).close();
+    }
 
-        // commit
-        try (TransactionImpl tx = createTransaction(kernelTransaction)) {
-            tx.addCloseCallback(calls::increment);
-            tx.commit();
-        }
+    @Test
+    void testFailingClosableResourceAndTxClose() throws TransactionFailureException {
+        var kernelTransaction = mock(KernelTransaction.class);
+        var tx = createTransaction(kernelTransaction);
+        doThrow(new ResourceCloseFailureException("not so fast", null))
+                .when(resourceTracker)
+                .closeAllCloseableResources();
+        var exceptionFromClose = new TransactionFailureException("This transaction can't be closed", null);
+        doThrow(exceptionFromClose).when(kernelTransaction).close();
 
-        // and rollback
-        try (TransactionImpl tx = createTransaction(kernelTransaction)) {
-            tx.addCloseCallback(calls::increment);
-            tx.rollback();
-        }
+        assertThatThrownBy(tx::close)
+                .isInstanceOf(org.neo4j.graphdb.TransactionFailureException.class)
+                .hasCauseInstanceOf(ResourceCloseFailureException.class)
+                .getCause()
+                .hasSuppressedException(exceptionFromClose);
 
-        // and nothing
-        try (TransactionImpl tx = createTransaction(kernelTransaction)) {
-            tx.addCloseCallback(calls::increment);
-        }
-
-        // should all invoke the callback
-        assertEquals(3, calls.longValue());
-        verify(resourceTracker, times(3)).closeAllCloseableResources();
+        tx.close(); // second close should be no-op
+        verify(kernelTransaction, times(1)).close();
     }
 
     @Test
@@ -319,7 +324,7 @@ class TransactionImplTest {
                 kernelTransaction,
                 resourceTracker,
                 null,
-                null,
+                DefaultTransactionExceptionMapper.INSTANCE,
                 mock(ElementIdMapper.class));
     }
 }

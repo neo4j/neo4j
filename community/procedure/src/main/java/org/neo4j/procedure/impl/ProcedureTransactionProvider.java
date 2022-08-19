@@ -372,11 +372,6 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context, T
         }
 
         @Override
-        public void addCloseCallback(TransactionClosedCallback callback) {
-            transaction.addCloseCallback(callback);
-        }
-
-        @Override
         public ElementIdMapper elementIdMapper() {
             return transaction.elementIdMapper();
         }
