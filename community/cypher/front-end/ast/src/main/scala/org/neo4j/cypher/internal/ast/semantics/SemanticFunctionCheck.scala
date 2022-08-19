@@ -78,7 +78,7 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
 
       case f:Function =>
         when(invocation.distinct) {
-          error(s"Invalid use of DISTINCT with function '${f.name}'", invocation.position)
+          error(s"Invalid use of DISTINCT with function '${invocation.functionName.name}'", invocation.position)
         } chain SemanticExpressionCheck.check(ctx, invocation.arguments, invocation +: parents) chain semanticCheck(ctx, invocation)
     }
 
