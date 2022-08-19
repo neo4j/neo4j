@@ -1855,7 +1855,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
         groupNodes = Set(("a_inner", "a"), ("b_inner", "b")),
         groupRelationships = Set(("r_inner", "r")),
         allRelationships = Set("r_inner"),
-        allRelationshipGroups = Set()
+        allRelationshipGroups = Set("r_group")
       )
       .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
       .|.argument("me", "a_inner")
