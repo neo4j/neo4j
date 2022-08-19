@@ -135,8 +135,10 @@ object expandSolverStep {
   /**
    * Plan the inner pattern of a [[QuantifiedPathPattern]].
    */
-  private def planQPPInner(qpp: QuantifiedPathPattern, context: LogicalPlanningContext): LogicalPlan =
+  private def planQPPInner(qpp: QuantifiedPathPattern, context: LogicalPlanningContext): LogicalPlan = {
+    // We use InterestingOrderConfig.empty because the order from a RHS of Trail is not propagated anyway
     context.strategy.plan(qpp.pattern, InterestingOrderConfig.empty, context).result
+  }
 
   /**
    * We currently don't have a trail into operator. Instead we need to create a new variable for the end node of the quantified path pattern, to not override
