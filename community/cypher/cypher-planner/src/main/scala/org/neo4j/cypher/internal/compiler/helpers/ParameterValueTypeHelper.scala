@@ -78,46 +78,11 @@ object ParameterValueTypeHelper {
       case _: DateValue          => CTDate
       case _: DurationValue      => CTDuration
       case _: MapValue           => CTMap
-      case l: ListValue          => CTList(deriveInnerType(l))
-      case _                     => CTAny
+      case l: ListValue          =>
+        // NOTE: we need to preserve inner type for Strings since that allows us to use the text index, for other types
+        //       we would end up with the same plan anyway so there is no need to keep the inner type.
+        if (l.itemValueRepresentation().valueGroup() == ValueGroup.TEXT) CTList(CTString) else CTList(CTAny)
+      case _ => CTAny
     }
   }
-
-  def deriveInnerType(l: ListValue): CypherType = l.itemValueRepresentation() match {
-    case ValueRepresentation.UNKNOWN               => CTAny
-    case ValueRepresentation.ANYTHING              => CTAny
-    case ValueRepresentation.GEOMETRY_ARRAY        => CTList(CTGeometry)
-    case ValueRepresentation.ZONED_DATE_TIME_ARRAY => CTList(CTDateTime)
-    case ValueRepresentation.LOCAL_DATE_TIME_ARRAY => CTList(CTLocalDateTime)
-    case ValueRepresentation.DATE_ARRAY            => CTList(CTDate)
-    case ValueRepresentation.ZONED_TIME_ARRAY      => CTList(CTTime)
-    case ValueRepresentation.LOCAL_TIME_ARRAY      => CTList(CTLocalTime)
-    case ValueRepresentation.DURATION_ARRAY        => CTList(CTDuration)
-    case ValueRepresentation.TEXT_ARRAY            => CTList(CTString)
-    case ValueRepresentation.BOOLEAN_ARRAY         => CTList(CTBoolean)
-    case ValueRepresentation.INT64_ARRAY           => CTList(CTInteger)
-    case ValueRepresentation.INT32_ARRAY           => CTList(CTInteger)
-    case ValueRepresentation.INT16_ARRAY           => CTList(CTInteger)
-    case ValueRepresentation.INT8_ARRAY            => CTList(CTInteger)
-    case ValueRepresentation.FLOAT64_ARRAY         => CTList(CTFloat)
-    case ValueRepresentation.FLOAT32_ARRAY         => CTList(CTFloat)
-    case ValueRepresentation.GEOMETRY              => CTGeometry
-    case ValueRepresentation.ZONED_DATE_TIME       => CTDateTime
-    case ValueRepresentation.LOCAL_DATE_TIME       => CTLocalDateTime
-    case ValueRepresentation.DATE                  => CTDate
-    case ValueRepresentation.ZONED_TIME            => CTTime
-    case ValueRepresentation.LOCAL_TIME            => CTLocalTime
-    case ValueRepresentation.DURATION              => CTDuration
-    case ValueRepresentation.UTF16_TEXT            => CTString
-    case ValueRepresentation.UTF8_TEXT             => CTString
-    case ValueRepresentation.BOOLEAN               => CTBoolean
-    case ValueRepresentation.INT64                 => CTInteger
-    case ValueRepresentation.INT32                 => CTInteger
-    case ValueRepresentation.INT16                 => CTInteger
-    case ValueRepresentation.INT8                  => CTInteger
-    case ValueRepresentation.FLOAT64               => CTFloat
-    case ValueRepresentation.FLOAT32               => CTFloat
-    case ValueRepresentation.NO_VALUE              => CTAny
-  }
-
 }

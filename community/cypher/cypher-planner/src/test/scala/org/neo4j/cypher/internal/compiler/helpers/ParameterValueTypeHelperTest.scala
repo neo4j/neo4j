@@ -26,8 +26,6 @@ import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTDate
 import org.neo4j.cypher.internal.util.symbols.CTDateTime
 import org.neo4j.cypher.internal.util.symbols.CTDuration
-import org.neo4j.cypher.internal.util.symbols.CTFloat
-import org.neo4j.cypher.internal.util.symbols.CTGeometry
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTLocalDateTime
@@ -141,23 +139,23 @@ class ParameterValueTypeHelperTest extends CypherFunSuite {
 
     deriveCypherType(VirtualValues.EMPTY_MAP) should be(CTMap)
     deriveCypherType(VirtualValues.EMPTY_LIST) should be(CTList(CTAny))
-    deriveCypherType(VirtualValues.list(Values.booleanValue(true))) should be(CTList(CTBoolean))
-    deriveCypherType(VirtualValues.list(Values.ZERO_INT)) should be(CTList(CTInteger))
-    deriveCypherType(VirtualValues.list(Values.doubleValue(1))) should be(CTList(CTFloat))
-    deriveCypherType(VirtualValues.list(Values.floatValue(1))) should be(CTList(CTFloat))
-    deriveCypherType(VirtualValues.list(Values.shortValue(1))) should be(CTList(CTInteger))
-    deriveCypherType(VirtualValues.list(Values.byteValue(1))) should be(CTList(CTInteger))
+    deriveCypherType(VirtualValues.list(Values.booleanValue(true))) should be(CTList(CTAny))
+    deriveCypherType(VirtualValues.list(Values.ZERO_INT)) should be(CTList(CTAny))
+    deriveCypherType(VirtualValues.list(Values.doubleValue(1))) should be(CTList(CTAny))
+    deriveCypherType(VirtualValues.list(Values.floatValue(1))) should be(CTList(CTAny))
+    deriveCypherType(VirtualValues.list(Values.shortValue(1))) should be(CTList(CTAny))
+    deriveCypherType(VirtualValues.list(Values.byteValue(1))) should be(CTList(CTAny))
     deriveCypherType(VirtualValues.list(Values.charValue('a'))) should be(CTList(CTString))
     deriveCypherType(VirtualValues.list(Values.stringValue("a"))) should be(CTList(CTString))
     deriveCypherType(VirtualValues.list(Values.pointValue(CoordinateReferenceSystem.WGS_84, 13.2, 56.7))) should be(
-      CTList(CTGeometry)
+      CTList(CTAny)
     )
-    deriveCypherType(VirtualValues.list(DateTimeValue.MAX_VALUE)) should be(CTList(CTDateTime))
-    deriveCypherType(VirtualValues.list(LocalDateTimeValue.MAX_VALUE)) should be(CTList(CTLocalDateTime))
-    deriveCypherType(VirtualValues.list(TimeValue.MAX_VALUE)) should be(CTList(CTTime))
-    deriveCypherType(VirtualValues.list(LocalTimeValue.MAX_VALUE)) should be(CTList(CTLocalTime))
-    deriveCypherType(VirtualValues.list(DateValue.MAX_VALUE)) should be(CTList(CTDate))
-    deriveCypherType(VirtualValues.list(DurationValue.MAX_VALUE)) should be(CTList(CTDuration))
+    deriveCypherType(VirtualValues.list(DateTimeValue.MAX_VALUE)) should be(CTList(CTAny))
+    deriveCypherType(VirtualValues.list(LocalDateTimeValue.MAX_VALUE)) should be(CTList(CTAny))
+    deriveCypherType(VirtualValues.list(TimeValue.MAX_VALUE)) should be(CTList(CTAny))
+    deriveCypherType(VirtualValues.list(LocalTimeValue.MAX_VALUE)) should be(CTList(CTAny))
+    deriveCypherType(VirtualValues.list(DateValue.MAX_VALUE)) should be(CTList(CTAny))
+    deriveCypherType(VirtualValues.list(DurationValue.MAX_VALUE)) should be(CTList(CTAny))
     deriveCypherType(VirtualValues.list(VirtualValues.EMPTY_MAP)) should be(CTList(CTAny))
     deriveCypherType(VirtualValues.list(VirtualValues.EMPTY_LIST)) should be(CTList(CTAny))
   }
