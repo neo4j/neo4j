@@ -71,4 +71,9 @@ public class Neo4jPrincipal
     {
         return Objects.hash( username, id );
     }
+    @Override
+    public String toString()
+    {
+        return username;
+    }
 }
