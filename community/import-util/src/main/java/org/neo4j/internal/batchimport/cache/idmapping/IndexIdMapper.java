@@ -240,7 +240,8 @@ public class IndexIdMapper implements IdMapper {
                             IndexEntryConflictHandler.THROW,
                             id -> !duplicateNodeIds.contains(id),
                             configuration.maxNumberOfWorkerThreads(),
-                            workScheduler.jobScheduler());
+                            workScheduler.jobScheduler(),
+                            progress);
                 }
             } catch (IndexEntryConflictException e) {
                 throw new RuntimeException(e);

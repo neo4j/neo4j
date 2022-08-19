@@ -46,6 +46,7 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeInconsistencyException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -113,7 +114,8 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
             IndexEntryConflictHandler conflictHandler,
             LongPredicate entityFilter,
             int threads,
-            JobScheduler jobScheduler)
+            JobScheduler jobScheduler,
+            ProgressListener progress)
             throws IndexEntryConflictException {
         var o = (NativeIndexAccessor<KEY>) other;
         var readers = o.newAllEntriesValueReader(threads, NULL_CONTEXT);
@@ -139,8 +141,9 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
                                 }
                             };
                             try (var updater = new NativeIndexUpdater<>(
-                                            layout.newKey(), indexUpdateIgnoreStrategy(), merger)
-                                    .initialize(tree.writer(updaterFlags, NULL_CONTEXT))) {
+                                                    layout.newKey(), indexUpdateIgnoreStrategy(), merger)
+                                            .initialize(tree.writer(updaterFlags, NULL_CONTEXT));
+                                    var localProgress = progress.threadLocalReporter()) {
                                 while (reader.hasNext()) {
                                     var entityId = reader.next();
                                     if (entityFilter == null || entityFilter.test(entityId)) {
@@ -149,6 +152,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
                                         }
                                         updater.process(add(entityId, descriptor, reader.values()));
                                     }
+                                    localProgress.add(1);
                                 }
                             }
                             return null;

@@ -32,6 +32,7 @@ import org.eclipse.collections.api.block.function.primitive.LongToLongFunction;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -212,7 +213,8 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
             IndexEntryConflictHandler conflictHandler,
             LongPredicate entityFilter,
             int threads,
-            JobScheduler jobScheduler)
+            JobScheduler jobScheduler,
+            ProgressListener progress)
             throws IndexEntryConflictException;
 
     /**
@@ -299,7 +301,8 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
                 IndexEntryConflictHandler conflictHandler,
                 LongPredicate entityFilter,
                 int threads,
-                JobScheduler jobScheduler)
+                JobScheduler jobScheduler,
+                ProgressListener progress)
                 throws IndexEntryConflictException {}
 
         @Override
@@ -398,10 +401,18 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
                 IndexEntryConflictHandler conflictHandler,
                 LongPredicate entityFilter,
                 int threads,
-                JobScheduler jobScheduler)
+                JobScheduler jobScheduler,
+                ProgressListener progress)
                 throws IndexEntryConflictException {
             delegate.insertFrom(
-                    other, entityIdConverter, valueUniqueness, conflictHandler, entityFilter, threads, jobScheduler);
+                    other,
+                    entityIdConverter,
+                    valueUniqueness,
+                    conflictHandler,
+                    entityFilter,
+                    threads,
+                    jobScheduler,
+                    progress);
         }
 
         @Override

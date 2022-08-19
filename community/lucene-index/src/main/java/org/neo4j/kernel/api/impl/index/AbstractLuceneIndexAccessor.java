@@ -33,6 +33,7 @@ import org.eclipse.collections.api.block.function.primitive.LongToLongFunction;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -85,7 +86,8 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
             IndexEntryConflictHandler conflictHandler,
             LongPredicate entityFilter,
             int threads,
-            JobScheduler jobScheduler)
+            JobScheduler jobScheduler,
+            ProgressListener progress)
             throws IndexEntryConflictException {
         if (entityIdConverter != null) {
             throw new UnsupportedOperationException("Unable to modify document IDs");
@@ -112,6 +114,7 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
                             values[i] = Values.stringValue("");
                         }
                         updater.process(IndexEntryUpdate.remove(candidate, descriptor, values));
+                        progress.add(1);
                     }
                 }
             }

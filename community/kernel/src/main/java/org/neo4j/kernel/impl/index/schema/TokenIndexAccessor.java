@@ -37,6 +37,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -89,7 +90,8 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor {
             IndexEntryConflictHandler conflictHandler,
             LongPredicate entityFilter,
             int threads,
-            JobScheduler jobScheduler)
+            JobScheduler jobScheduler,
+            ProgressListener progress)
             throws IndexEntryConflictException {
         throw new UnsupportedOperationException();
     }
