@@ -19,12 +19,15 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import org.neo4j.annotations.api.PublicApi;
+
 /**
  * Decides "where to go next" in a traversal. It keeps state itself, f.ex. its
  * own current position. Examples of implementations are "depth first" and
  * "breadth first". This is an interface to implement if you'd like to implement
  * f.ex. a "best first" selector based on your own criteria.
  */
+@PublicApi
 public interface BranchSelector {
     /**
      * Decides the next position ("where to go from here") from the current

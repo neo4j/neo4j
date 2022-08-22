@@ -21,6 +21,7 @@ package org.neo4j.graphdb;
 
 import java.io.PrintStream;
 import java.util.function.BiFunction;
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.impl.StandardExpander;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.Paths;
@@ -30,6 +31,7 @@ import org.neo4j.graphdb.traversal.Paths;
  * <p>
  * Use {@link PathExpanderBuilder} to build specialized {@link PathExpander}s.
  */
+@PublicApi
 public abstract class PathExpanders {
     /**
      * A very permissive {@link PathExpander} that follows any type in any direction.

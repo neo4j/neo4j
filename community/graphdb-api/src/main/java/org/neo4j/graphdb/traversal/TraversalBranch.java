@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 
@@ -27,6 +28,7 @@ import org.neo4j.graphdb.PathExpander;
  * traversal context, for example parent and an iterator of relationships to go
  * next. It's a base to write a {@link BranchSelector} on top of.
  */
+@PublicApi
 public interface TraversalBranch extends Path {
     /**
      * The parent expansion source which created this {@link TraversalBranch}.

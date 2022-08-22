@@ -19,12 +19,14 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.PathExpander;
 
 /**
  * Creator of {@link BranchSelector} instances with a starting point to base
  * the first decision on.
  */
+@PublicApi
 public interface BranchOrderingPolicy {
     /**
      * Instantiates a {@link BranchSelector} with {@code startBranch} as the

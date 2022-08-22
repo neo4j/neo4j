@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 
@@ -37,6 +38,7 @@ import org.neo4j.graphdb.Path;
  *
  * @see TraversalDescription
  */
+@PublicApi
 public interface BidirectionalTraversalDescription {
     /**
      * Sets the start side {@link TraversalDescription} of this bidirectional

@@ -19,9 +19,12 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import org.neo4j.annotations.api.PublicApi;
+
 /**
  * A catalog of convenient uniqueness factories.
  */
+@PublicApi
 public enum Uniqueness implements UniquenessFactory {
     /**
      * A node cannot be traversed more than once. This is what the legacy
