@@ -121,18 +121,14 @@ public interface Transaction extends AutoCloseable
      * Factory method for bidirectional traversal descriptions.
      *
      * @return a new {@link BidirectionalTraversalDescription}
-     * @deprecated Not part of public API, can be removed at any moment
      */
-    @Deprecated
     BidirectionalTraversalDescription bidirectionalTraversalDescription();
 
     /**
      * Factory method for unidirectional traversal descriptions.
      *
-     * @deprecated Not part of public API, can be removed at any moment
      * @return a new {@link TraversalDescription}
      */
-    @Deprecated
     TraversalDescription traversalDescription();
 
     /**

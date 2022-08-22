@@ -19,10 +19,13 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import org.neo4j.annotations.api.PublicApi;
+
 /**
  * Provides a context for {@link TraversalBranch}es which they need to
  * move further and report their progress.
  */
+@PublicApi
 public interface TraversalContext extends TraversalMetadata
 {
     /**
