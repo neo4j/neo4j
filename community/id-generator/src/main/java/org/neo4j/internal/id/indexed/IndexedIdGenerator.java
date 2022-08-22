@@ -412,23 +412,24 @@ public class IndexedIdGenerator implements IdGenerator {
     @Override
     public long nextId(CursorContext cursorContext) {
         do {
+            // If strictly prioritizing the freelist then the method below will block on the current scan,
+            // if there's any ongoing, otherwise it will not block.
             checkRefillCache(cursorContext);
-
             long id = cache.takeOrDefault(NO_ID);
             if (id != NO_ID) {
                 monitor.allocatedFromReused(id, 1);
                 return id;
             }
-        } while (scanner.hasMoreFreeIds(false));
+            // If strictly prioritizing the freelist then stay in this loop until either there's an available
+            // free ID or there are no more to be found. The loop will not be busy-wait given the blocking
+            // nature of the scan in this scenario.
+        } while (strictlyPrioritizeFreelist && scanner.hasMoreFreeIds(true));
 
-        // There was no ID in the cache. This could be that either there are no free IDs in here (the typical case), or
-        // a benign
-        // race where the cache ran out of IDs and it's very soon filled with more IDs from an ongoing scan. We have
-        // made the decision
-        // to prioritise performance and so we don't just sit here waiting for an ongoing scan to find IDs (fast as it
-        // may be, although it can be I/O bound)
-        // so we allocate from highId instead. This make highId slide a little even if there actually are free ids
-        // available,
+        // There was no ID in the cache. This could be that either there are no free IDs in here (the typical case),
+        // or a benign race where the cache ran out of IDs and it's very soon filled with more IDs from an ongoing
+        // scan. We have made the decision to prioritise performance and so we don't just sit here waiting for an
+        // ongoing scan to find IDs (fast as it may be, although it can be I/O bound) so we allocate from highId
+        // instead. This make highId slide a little even if there actually are free ids available,
         // but this should be a fairly rare event.
         long id;
         do {
@@ -444,7 +445,7 @@ public class IndexedIdGenerator implements IdGenerator {
         if (numberOfIds <= biggestSlotSize) {
             // TODO to fill cache in a do-while would be preferrable here too, but slightly harder since the scanner
             //  may say that there are more free IDs, but there may not actually be more free IDs of the given
-            // numberOfIds
+            //  numberOfIds
             checkRefillCache(cursorContext);
             long id = cache.takeOrDefault(NO_ID, numberOfIds, scanner::queueWastedCachedId);
             if (id != NO_ID) {
@@ -599,7 +600,7 @@ public class IndexedIdGenerator implements IdGenerator {
     private void checkRefillCache(CursorContext cursorContext) {
         if (cache.size() <= cacheOptimisticRefillThreshold) {
             // We're just helping other allocation requests and avoiding unwanted sliding of highId here
-            scanner.tryLoadFreeIdsIntoCache(false, cursorContext);
+            scanner.tryLoadFreeIdsIntoCache(strictlyPrioritizeFreelist, cursorContext);
         }
     }
 

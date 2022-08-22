@@ -106,22 +106,23 @@ class FreeIdScanner implements Closeable {
         this.monitor = monitor;
     }
 
-    boolean tryLoadFreeIdsIntoCache(boolean maintenance, CursorContext cursorContext) {
-        return tryLoadFreeIdsIntoCache(maintenance, false, cursorContext);
+    boolean tryLoadFreeIdsIntoCache(boolean blocking, CursorContext cursorContext) {
+        return tryLoadFreeIdsIntoCache(blocking, false, cursorContext);
     }
 
     /**
      * Do a batch of scanning, either start a new scan from the beginning if none is active, or continue where a previous scan
      * paused. In this call free ids can be discovered and placed into the ID cache. IDs are marked as reserved before placed into cache.
+     * @return {@code true} if a scan was made and at least some IDs were found, otherwise {@code false}.
      */
-    boolean tryLoadFreeIdsIntoCache(boolean maintenance, boolean forceScan, CursorContext cursorContext) {
-        if (!forceScan && !hasMoreFreeIds(maintenance)) {
+    boolean tryLoadFreeIdsIntoCache(boolean blocking, boolean forceScan, CursorContext cursorContext) {
+        if (!forceScan && !hasMoreFreeIds(blocking)) {
             // If no scan is in progress and if we have no reason to expect finding any free id from a scan then don't
             // do it.
             return false;
         }
 
-        if (scanLock(maintenance)) {
+        if (scanLock(blocking)) {
             try {
                 markQueuedSkippedHighIdsAsFree(cursorContext);
                 markWastedIdsAsUnreserved(cursorContext);
@@ -205,18 +206,18 @@ class FreeIdScanner implements Closeable {
         consumeQueuedIds(queuedWastedCachedIds, IndexedIdGenerator.InternalMarker::markUnreserved, cursorContext);
     }
 
-    boolean hasMoreFreeIds(boolean maintenance) {
+    boolean hasMoreFreeIds(boolean blocking) {
         // For the case when this is a tx allocating IDs we don't want to force a scan for every little added ID,
         // so add a little lee-way so that there has to be a at least a bunch of these "skipped" IDs to make it worth
         // wile.
-        int numBufferedIdsThreshold = maintenance ? 1 : 1_000;
+        int numBufferedIdsThreshold = blocking ? 1 : 1_000;
         return ongoingScanRangeIndex != null
                 || atLeastOneIdOnFreelist.get()
                 || numBufferedIds.get() >= numBufferedIdsThreshold;
     }
 
-    private boolean scanLock(boolean awaitOngoing) {
-        if (awaitOngoing) {
+    private boolean scanLock(boolean blocking) {
+        if (blocking) {
             lock.lock();
             return true;
         }

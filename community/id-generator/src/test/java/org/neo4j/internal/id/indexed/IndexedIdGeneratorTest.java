@@ -1439,6 +1439,34 @@ class IndexedIdGeneratorTest {
         assertThat(idAfterUnallocated).isEqualTo(id2);
     }
 
+    @Test
+    void shouldAllocateFromHighIdOnContentionAndNonStrict() throws Exception {
+        // given
+        var barrier = new Barrier.Control();
+        var monitor = new IndexedIdGenerator.Monitor.Adapter() {
+            @Override
+            public void markedAsReserved(long markedId, int numberOfIds) {
+                barrier.reached();
+            }
+        };
+        open(Config.defaults(strictly_prioritize_id_freelist, false), monitor, writable(), SINGLE_IDS);
+        idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
+        var id = idGenerator.nextId(NULL_CONTEXT);
+        markUsed(id);
+        markDeleted(id);
+        markFree(id);
+
+        // when
+        try (var t2 = new OtherThreadExecutor("T2")) {
+            var nextIdFuture = t2.executeDontWait(() -> idGenerator.nextId(NULL_CONTEXT));
+            barrier.awaitUninterruptibly();
+            var id2 = idGenerator.nextId(NULL_CONTEXT);
+            assertThat(id2).isGreaterThan(id);
+            barrier.release();
+            assertThat(nextIdFuture.get()).isEqualTo(id);
+        }
+    }
+
     private void assertOperationThrowInReadOnlyMode(Function<IndexedIdGenerator, Executable> operation)
             throws IOException {
         Path file = directory.file("existing");
