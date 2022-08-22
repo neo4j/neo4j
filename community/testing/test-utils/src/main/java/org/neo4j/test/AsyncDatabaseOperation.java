@@ -32,7 +32,7 @@ public class AsyncDatabaseOperation {
 
     public static GraphDatabaseService findDatabaseEventually(
             DatabaseManagementService managementService, String databaseName) {
-        return findDatabaseEventually(managementService, databaseName, Duration.ofSeconds(10));
+        return findDatabaseEventually(managementService, databaseName, Duration.ofSeconds(30));
     }
 
     public static GraphDatabaseService findDatabaseEventually(
