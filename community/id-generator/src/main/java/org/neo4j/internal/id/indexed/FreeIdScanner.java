@@ -56,7 +56,7 @@ class FreeIdScanner implements Closeable
     static final int MAX_SLOT_SIZE = 128;
 
     private final int idsPerEntry;
-    private final GBPTree<IdRangeKey, IdRange> tree;
+    private final GBPTree<IdRangeKey,IdRange> tree;
     private final IdRangeLayout layout;
     private final IdCache cache;
     private final AtomicBoolean atLeastOneIdOnFreelist;
@@ -98,24 +98,27 @@ class FreeIdScanner implements Closeable
         this.monitor = monitor;
     }
 
-    boolean tryLoadFreeIdsIntoCache( boolean maintenance, CursorContext cursorContext )
+    boolean tryLoadFreeIdsIntoCache( boolean blocking, CursorContext cursorContext )
     {
-        return tryLoadFreeIdsIntoCache( maintenance, false, cursorContext );
+        return tryLoadFreeIdsIntoCache( blocking, false, cursorContext );
     }
 
     /**
      * Do a batch of scanning, either start a new scan from the beginning if none is active, or continue where a previous scan
      * paused. In this call free ids can be discovered and placed into the ID cache. IDs are marked as reserved before placed into cache.
+     *
+     * @return {@code true} if a scan was made and at least some IDs were found, otherwise {@code false}.
      */
-    boolean tryLoadFreeIdsIntoCache( boolean maintenance, boolean forceScan, CursorContext cursorContext )
+    boolean tryLoadFreeIdsIntoCache( boolean blocking, boolean forceScan, CursorContext cursorContext )
     {
-        if ( !forceScan && !hasMoreFreeIds( maintenance ) )
+        if ( !forceScan && !hasMoreFreeIds( blocking ) )
         {
-            // If no scan is in progress and if we have no reason to expect finding any free id from a scan then don't do it.
+            // If no scan is in progress and if we have no reason to expect finding any free id from a scan then don't
+            // do it.
             return false;
         }
 
-        if ( scanLock( maintenance ) )
+        if ( scanLock( blocking ) )
         {
             try
             {
@@ -203,7 +206,7 @@ class FreeIdScanner implements Closeable
 
     private void markWastedIdsAsUnreserved( CursorContext cursorContext )
     {
-        consumeQueuedIds( queuedWastedCachedIds, IndexedIdGenerator.InternalMarker::markUnreserved, cursorContext );
+        consumeQueuedIds( queuedWastedCachedIds, InternalMarker::markUnreserved, cursorContext );
     }
 
     boolean hasMoreFreeIds( boolean maintenance )
@@ -214,9 +217,9 @@ class FreeIdScanner implements Closeable
         return ongoingScanRangeIndex != null || atLeastOneIdOnFreelist.get() || numBufferedIds.get() >= numBufferedIdsThreshold;
     }
 
-    private boolean scanLock( boolean awaitOngoing )
+    private boolean scanLock( boolean blocking )
     {
-        if ( awaitOngoing )
+        if ( blocking )
         {
             lock.lock();
             return true;

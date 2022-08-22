@@ -400,6 +400,8 @@ public class IndexedIdGenerator implements IdGenerator
     {
         do
         {
+            // If strictly prioritizing the freelist then the method below will block on the current scan,
+            // if there's any ongoing, otherwise it will not block.
             checkRefillCache( cursorContext );
 
             long id = cache.takeOrDefault( NO_ID );
@@ -408,8 +410,11 @@ public class IndexedIdGenerator implements IdGenerator
                 monitor.allocatedFromReused( id, 1 );
                 return id;
             }
+            // If strictly prioritizing the freelist then stay in this loop until either there's an available
+            // free ID or there are no more to be found. The loop will not be busy-wait given the blocking
+            // nature of the scan in this scenario.
         }
-        while ( scanner.hasMoreFreeIds( false ) );
+        while ( strictlyPrioritizeFreelist && scanner.hasMoreFreeIds( false ) );
 
         // There was no ID in the cache. This could be that either there are no free IDs in here (the typical case), or a benign
         // race where the cache ran out of IDs and it's very soon filled with more IDs from an ongoing scan. We have made the decision
@@ -590,7 +595,7 @@ public class IndexedIdGenerator implements IdGenerator
         if ( cache.size() <= cacheOptimisticRefillThreshold )
         {
             // We're just helping other allocation requests and avoiding unwanted sliding of highId here
-            scanner.tryLoadFreeIdsIntoCache( false, cursorContext );
+            scanner.tryLoadFreeIdsIntoCache( strictlyPrioritizeFreelist, cursorContext );
         }
     }
 
@@ -726,7 +731,7 @@ public class IndexedIdGenerator implements IdGenerator
                     System.out.println( "Number of IDs deleted, but not yet available for reuse: " + numDeletedNotFreed );
                     System.out.printf(
                             "NOTE: A deleted ID not yet available for reuse is buffered until all transactions that were open%n" +
-                            "at the time of its deletion have been closed, or the database is restarted" );
+                                    "at the time of its deletion have been closed, or the database is restarted" );
                 }
                 else
                 {

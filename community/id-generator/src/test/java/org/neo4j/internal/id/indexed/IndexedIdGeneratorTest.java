@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.id.indexed;
 
+import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.iterator.MutableLongIterator;
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
@@ -64,6 +65,7 @@ import org.neo4j.internal.id.IdCapacityExceededException;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.internal.id.IdValidator;
+import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.internal.id.TestIdType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -1185,7 +1187,42 @@ class IndexedIdGeneratorTest
         }
     }
 
-    private void assertOperationThrowInReadOnlyMode( Function<IndexedIdGenerator,Executable> operation ) throws IOException
+    @Test
+    void shouldAllocateFromHighIdOnContentionAndNonStrict() throws Exception
+    {
+        // given
+        stop();
+        var barrier = new Barrier.Control();
+        var monitor = new IndexedIdGenerator.Monitor.Adapter()
+        {
+            @Override
+            public void markedAsReserved( long markedId, int numberOfIds )
+            {
+                barrier.reached();
+            }
+        };
+        idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), SchemaIdType.LABEL_TOKEN, false, () -> 0, MAX_ID, writable(),
+                Config.defaults( strictly_prioritize_id_freelist, false ), "db", NULL, monitor, Sets.immutable.empty(), SINGLE_IDS );
+        idGenerator.start( NO_FREE_IDS, NULL );
+        var id = idGenerator.nextId( NULL );
+        markUsed( id );
+        markDeleted( id );
+        markFree( id );
+
+        // when
+        try ( var t2 = new OtherThreadExecutor( "T2" ) )
+        {
+            var nextIdFuture = t2.executeDontWait( () -> idGenerator.nextId( NULL ) );
+            barrier.awaitUninterruptibly();
+            var id2 = idGenerator.nextId( NULL );
+            assertThat( id2 ).isGreaterThan( id );
+            barrier.release();
+            assertThat( nextIdFuture.get() ).isEqualTo( id );
+        }
+    }
+
+    private void assertOperationThrowInReadOnlyMode( Function<IndexedIdGenerator,Executable> operation )
+            throws IOException
     {
         Path file = directory.file( "existing" );
         var indexedIdGenerator =
