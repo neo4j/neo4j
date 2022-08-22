@@ -654,7 +654,7 @@ private[internal] class TransactionBoundReadQueryContext(
     transactionalContext.cursors.allocateRelationshipTraversalCursor(transactionalContext.cursorContext)
 
   override def scanCursor(): RelationshipScanCursor =
-    transactionalContext.cursors.allocateRelationshipScanCursor(transactionalContext.kernelTransaction.cursorContext)
+    transactionalContext.cursors.allocateRelationshipScanCursor(transactionalContext.cursorContext)
 
   override def relationshipById(
     relationshipId: Long,
