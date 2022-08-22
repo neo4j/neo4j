@@ -190,7 +190,7 @@ class RollbackIdLeakIT {
             var db = dbManager.start();
             var race = new Race();
             var numTransactions = new AtomicInteger();
-            var allocatedIds = LongSets.mutable.empty();
+            var allocatedIds = LongSets.mutable.empty().asSynchronized();
             var threads = 4;
             var txSize = 5;
             var rounds = 1_000;
