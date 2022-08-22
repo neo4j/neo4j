@@ -157,6 +157,29 @@ org.neo4j.graphdb.Path::toString() java.lang.String public abstract
 org.neo4j.graphdb.PathExpander<STATE extends java.lang.Object> public abstract interface
 org.neo4j.graphdb.PathExpander<STATE>::expand(org.neo4j.graphdb.Path, org.neo4j.graphdb.traversal.BranchState<STATE>) java.lang.Iterable<org.neo4j.graphdb.Relationship> public abstract
 org.neo4j.graphdb.PathExpander<STATE>::reverse() org.neo4j.graphdb.PathExpander<STATE> public abstract
+org.neo4j.graphdb.PathExpanderBuilder public class extends java.lang.Object
+org.neo4j.graphdb.PathExpanderBuilder::<STATE extends java.lang.Object>build() org.neo4j.graphdb.PathExpander<STATE> public
+org.neo4j.graphdb.PathExpanderBuilder::add(org.neo4j.graphdb.RelationshipType) org.neo4j.graphdb.PathExpanderBuilder public
+org.neo4j.graphdb.PathExpanderBuilder::add(org.neo4j.graphdb.RelationshipType, org.neo4j.graphdb.Direction) org.neo4j.graphdb.PathExpanderBuilder public
+org.neo4j.graphdb.PathExpanderBuilder::addNodeFilter(java.util.function.Predicate<? super org.neo4j.graphdb.Node>) org.neo4j.graphdb.PathExpanderBuilder public
+org.neo4j.graphdb.PathExpanderBuilder::addRelationshipFilter(java.util.function.Predicate<? super org.neo4j.graphdb.Relationship>) org.neo4j.graphdb.PathExpanderBuilder public
+org.neo4j.graphdb.PathExpanderBuilder::allTypes(org.neo4j.graphdb.Direction) org.neo4j.graphdb.PathExpanderBuilder public static
+org.neo4j.graphdb.PathExpanderBuilder::allTypesAndDirections() org.neo4j.graphdb.PathExpanderBuilder public static
+org.neo4j.graphdb.PathExpanderBuilder::empty() org.neo4j.graphdb.PathExpanderBuilder public static
+org.neo4j.graphdb.PathExpanderBuilder::emptyOrderedByType() org.neo4j.graphdb.PathExpanderBuilder public static
+org.neo4j.graphdb.PathExpanderBuilder::remove(org.neo4j.graphdb.RelationshipType) org.neo4j.graphdb.PathExpanderBuilder public
+org.neo4j.graphdb.PathExpanders public abstract class extends java.lang.Object
+org.neo4j.graphdb.PathExpanders::<STATE extends java.lang.Object>allTypesAndDirections() org.neo4j.graphdb.PathExpander<STATE> public static
+org.neo4j.graphdb.PathExpanders::<STATE extends java.lang.Object>forConstantDirectionWithTypes(org.neo4j.graphdb.RelationshipType...) org.neo4j.graphdb.PathExpander<STATE> public static
+org.neo4j.graphdb.PathExpanders::<STATE extends java.lang.Object>forDirection(org.neo4j.graphdb.Direction) org.neo4j.graphdb.PathExpander<STATE> public static
+org.neo4j.graphdb.PathExpanders::<STATE extends java.lang.Object>forType(org.neo4j.graphdb.RelationshipType) org.neo4j.graphdb.PathExpander<STATE> public static
+org.neo4j.graphdb.PathExpanders::<STATE extends java.lang.Object>forTypeAndDirection(org.neo4j.graphdb.RelationshipType, org.neo4j.graphdb.Direction) org.neo4j.graphdb.PathExpander<STATE> public static
+org.neo4j.graphdb.PathExpanders::<STATE extends java.lang.Object>forTypesAndDirections(org.neo4j.graphdb.RelationshipType, org.neo4j.graphdb.Direction, org.neo4j.graphdb.RelationshipType, org.neo4j.graphdb.Direction, java.lang.Object...) org.neo4j.graphdb.PathExpander<STATE> public static
+org.neo4j.graphdb.PathExpanders::<STATE extends java.lang.Object>printingWrapper(org.neo4j.graphdb.PathExpander<STATE>) org.neo4j.graphdb.PathExpander<STATE> public static
+org.neo4j.graphdb.PathExpanders::<STATE extends java.lang.Object>printingWrapper(org.neo4j.graphdb.PathExpander<STATE>, java.util.function.BiFunction<org.neo4j.graphdb.Path,org.neo4j.graphdb.traversal.BranchState,java.lang.Boolean>) org.neo4j.graphdb.PathExpander<STATE> public static
+org.neo4j.graphdb.PathExpanders::<STATE extends java.lang.Object>printingWrapper(org.neo4j.graphdb.PathExpander<STATE>, java.util.function.BiFunction<org.neo4j.graphdb.Path,org.neo4j.graphdb.traversal.BranchState,java.lang.Boolean>, org.neo4j.graphdb.traversal.Paths.PathDescriptor) org.neo4j.graphdb.PathExpander<STATE> public static
+org.neo4j.graphdb.PathExpanders::<STATE extends java.lang.Object>printingWrapper(org.neo4j.graphdb.PathExpander<STATE>, java.util.function.BiFunction<org.neo4j.graphdb.Path,org.neo4j.graphdb.traversal.BranchState,java.lang.Boolean>, org.neo4j.graphdb.traversal.Paths.PathDescriptor, java.io.PrintStream) org.neo4j.graphdb.PathExpander<STATE> public static
+org.neo4j.graphdb.PathExpanders::<STATE extends java.lang.Object>printingWrapper(org.neo4j.graphdb.PathExpander<STATE>, org.neo4j.graphdb.traversal.Paths.PathDescriptor) org.neo4j.graphdb.PathExpander<STATE> public static
 org.neo4j.graphdb.QueryExecutionException public class extends java.lang.RuntimeException
 org.neo4j.graphdb.QueryExecutionException::QueryExecutionException(java.lang.String, java.lang.Throwable, java.lang.String) void public
 org.neo4j.graphdb.QueryExecutionException::getStatusCode() java.lang.String public
@@ -467,3 +490,164 @@ org.neo4j.graphdb.spatial.Geometry::getGeometryType() java.lang.String public ab
 org.neo4j.graphdb.spatial.Point public abstract interface implements org.neo4j.graphdb.spatial.Geometry
 org.neo4j.graphdb.spatial.Point::getCoordinate() org.neo4j.graphdb.spatial.Coordinate public default
 org.neo4j.graphdb.spatial.Point::getGeometryType() java.lang.String public default
+org.neo4j.graphdb.traversal.BidirectionalTraversalDescription public abstract interface
+org.neo4j.graphdb.traversal.BidirectionalTraversalDescription::collisionEvaluator(org.neo4j.graphdb.traversal.Evaluator) org.neo4j.graphdb.traversal.BidirectionalTraversalDescription public abstract
+org.neo4j.graphdb.traversal.BidirectionalTraversalDescription::collisionEvaluator(org.neo4j.graphdb.traversal.PathEvaluator) org.neo4j.graphdb.traversal.BidirectionalTraversalDescription public abstract
+org.neo4j.graphdb.traversal.BidirectionalTraversalDescription::collisionPolicy(org.neo4j.graphdb.traversal.BranchCollisionPolicy) org.neo4j.graphdb.traversal.BidirectionalTraversalDescription public abstract
+org.neo4j.graphdb.traversal.BidirectionalTraversalDescription::endSide(org.neo4j.graphdb.traversal.TraversalDescription) org.neo4j.graphdb.traversal.BidirectionalTraversalDescription public abstract
+org.neo4j.graphdb.traversal.BidirectionalTraversalDescription::mirroredSides(org.neo4j.graphdb.traversal.TraversalDescription) org.neo4j.graphdb.traversal.BidirectionalTraversalDescription public abstract
+org.neo4j.graphdb.traversal.BidirectionalTraversalDescription::sideSelector(org.neo4j.graphdb.traversal.SideSelectorPolicy, int) org.neo4j.graphdb.traversal.BidirectionalTraversalDescription public abstract
+org.neo4j.graphdb.traversal.BidirectionalTraversalDescription::startSide(org.neo4j.graphdb.traversal.TraversalDescription) org.neo4j.graphdb.traversal.BidirectionalTraversalDescription public abstract
+org.neo4j.graphdb.traversal.BidirectionalTraversalDescription::traverse(java.lang.Iterable<org.neo4j.graphdb.Node>, java.lang.Iterable<org.neo4j.graphdb.Node>) org.neo4j.graphdb.traversal.Traverser public abstract
+org.neo4j.graphdb.traversal.BidirectionalTraversalDescription::traverse(org.neo4j.graphdb.Node, org.neo4j.graphdb.Node) org.neo4j.graphdb.traversal.Traverser public abstract
+org.neo4j.graphdb.traversal.BranchCollisionDetector public abstract interface
+org.neo4j.graphdb.traversal.BranchCollisionDetector::evaluate(org.neo4j.graphdb.traversal.TraversalBranch, org.neo4j.graphdb.Direction) java.lang.Iterable<org.neo4j.graphdb.Path> public abstract
+org.neo4j.graphdb.traversal.BranchCollisionPolicies public enum extends java.lang.Enum<org.neo4j.graphdb.traversal.BranchCollisionPolicies> implements org.neo4j.graphdb.traversal.BranchCollisionPolicy
+org.neo4j.graphdb.traversal.BranchCollisionPolicies::SHORTEST_PATH org.neo4j.graphdb.traversal.BranchCollisionPolicies public static final
+org.neo4j.graphdb.traversal.BranchCollisionPolicies::STANDARD org.neo4j.graphdb.traversal.BranchCollisionPolicies public static final
+org.neo4j.graphdb.traversal.BranchCollisionPolicies::valueOf(java.lang.String) org.neo4j.graphdb.traversal.BranchCollisionPolicies public static
+org.neo4j.graphdb.traversal.BranchCollisionPolicies::values() org.neo4j.graphdb.traversal.BranchCollisionPolicies[] public static
+org.neo4j.graphdb.traversal.BranchCollisionPolicy public abstract interface
+org.neo4j.graphdb.traversal.BranchCollisionPolicy::create(org.neo4j.graphdb.traversal.Evaluator, java.util.function.Predicate<org.neo4j.graphdb.Path>) org.neo4j.graphdb.traversal.BranchCollisionDetector public abstract
+org.neo4j.graphdb.traversal.BranchOrderingPolicies public enum extends java.lang.Enum<org.neo4j.graphdb.traversal.BranchOrderingPolicies> implements org.neo4j.graphdb.traversal.BranchOrderingPolicy
+org.neo4j.graphdb.traversal.BranchOrderingPolicies::POSTORDER_BREADTH_FIRST org.neo4j.graphdb.traversal.BranchOrderingPolicies public static final
+org.neo4j.graphdb.traversal.BranchOrderingPolicies::POSTORDER_DEPTH_FIRST org.neo4j.graphdb.traversal.BranchOrderingPolicies public static final
+org.neo4j.graphdb.traversal.BranchOrderingPolicies::PREORDER_BREADTH_FIRST org.neo4j.graphdb.traversal.BranchOrderingPolicies public static final
+org.neo4j.graphdb.traversal.BranchOrderingPolicies::PREORDER_DEPTH_FIRST org.neo4j.graphdb.traversal.BranchOrderingPolicies public static final
+org.neo4j.graphdb.traversal.BranchOrderingPolicies::valueOf(java.lang.String) org.neo4j.graphdb.traversal.BranchOrderingPolicies public static
+org.neo4j.graphdb.traversal.BranchOrderingPolicies::values() org.neo4j.graphdb.traversal.BranchOrderingPolicies[] public static
+org.neo4j.graphdb.traversal.BranchOrderingPolicy public abstract interface
+org.neo4j.graphdb.traversal.BranchOrderingPolicy::create(org.neo4j.graphdb.traversal.TraversalBranch, org.neo4j.graphdb.PathExpander) org.neo4j.graphdb.traversal.BranchSelector public abstract
+org.neo4j.graphdb.traversal.BranchSelector public abstract interface
+org.neo4j.graphdb.traversal.BranchSelector::next(org.neo4j.graphdb.traversal.TraversalContext) org.neo4j.graphdb.traversal.TraversalBranch public abstract
+org.neo4j.graphdb.traversal.Evaluation public final enum extends java.lang.Enum<org.neo4j.graphdb.traversal.Evaluation>
+org.neo4j.graphdb.traversal.Evaluation::EXCLUDE_AND_CONTINUE org.neo4j.graphdb.traversal.Evaluation public static final
+org.neo4j.graphdb.traversal.Evaluation::EXCLUDE_AND_PRUNE org.neo4j.graphdb.traversal.Evaluation public static final
+org.neo4j.graphdb.traversal.Evaluation::INCLUDE_AND_CONTINUE org.neo4j.graphdb.traversal.Evaluation public static final
+org.neo4j.graphdb.traversal.Evaluation::INCLUDE_AND_PRUNE org.neo4j.graphdb.traversal.Evaluation public static final
+org.neo4j.graphdb.traversal.Evaluation::continues() boolean public
+org.neo4j.graphdb.traversal.Evaluation::includes() boolean public
+org.neo4j.graphdb.traversal.Evaluation::of(boolean, boolean) org.neo4j.graphdb.traversal.Evaluation public static
+org.neo4j.graphdb.traversal.Evaluation::ofContinues(boolean) org.neo4j.graphdb.traversal.Evaluation public static
+org.neo4j.graphdb.traversal.Evaluation::ofIncludes(boolean) org.neo4j.graphdb.traversal.Evaluation public static
+org.neo4j.graphdb.traversal.Evaluation::valueOf(java.lang.String) org.neo4j.graphdb.traversal.Evaluation public static
+org.neo4j.graphdb.traversal.Evaluation::values() org.neo4j.graphdb.traversal.Evaluation[] public static
+org.neo4j.graphdb.traversal.Evaluator public abstract interface
+org.neo4j.graphdb.traversal.Evaluator.AsPathEvaluator<STATE extends java.lang.Object> public static class extends java.lang.Object implements org.neo4j.graphdb.traversal.PathEvaluator<STATE>
+org.neo4j.graphdb.traversal.Evaluator.AsPathEvaluator<STATE>::AsPathEvaluator(org.neo4j.graphdb.traversal.Evaluator) void public
+org.neo4j.graphdb.traversal.Evaluator.AsPathEvaluator<STATE>::evaluate(org.neo4j.graphdb.Path) org.neo4j.graphdb.traversal.Evaluation public
+org.neo4j.graphdb.traversal.Evaluator.AsPathEvaluator<STATE>::evaluate(org.neo4j.graphdb.Path, org.neo4j.graphdb.traversal.BranchState<STATE>) org.neo4j.graphdb.traversal.Evaluation public
+org.neo4j.graphdb.traversal.Evaluator::evaluate(org.neo4j.graphdb.Path) org.neo4j.graphdb.traversal.Evaluation public abstract
+org.neo4j.graphdb.traversal.Evaluators public abstract class extends java.lang.Object
+org.neo4j.graphdb.traversal.Evaluators::<STATE extends java.lang.Object>all() org.neo4j.graphdb.traversal.PathEvaluator<STATE> public static
+org.neo4j.graphdb.traversal.Evaluators::<STATE extends java.lang.Object>atDepth(int) org.neo4j.graphdb.traversal.PathEvaluator<STATE> public static
+org.neo4j.graphdb.traversal.Evaluators::<STATE extends java.lang.Object>endNodeIs(org.neo4j.graphdb.traversal.Evaluation, org.neo4j.graphdb.traversal.Evaluation, org.neo4j.graphdb.Node...) org.neo4j.graphdb.traversal.PathEvaluator<STATE> public static
+org.neo4j.graphdb.traversal.Evaluators::<STATE extends java.lang.Object>endNodeIsAtDepth(int, org.neo4j.graphdb.Node...) org.neo4j.graphdb.traversal.PathEvaluator<STATE> public static
+org.neo4j.graphdb.traversal.Evaluators::<STATE extends java.lang.Object>fromDepth(int) org.neo4j.graphdb.traversal.PathEvaluator<STATE> public static
+org.neo4j.graphdb.traversal.Evaluators::<STATE extends java.lang.Object>includeIfAcceptedByAny(org.neo4j.graphdb.traversal.Evaluator...) org.neo4j.graphdb.traversal.PathEvaluator<STATE> public static
+org.neo4j.graphdb.traversal.Evaluators::<STATE extends java.lang.Object>includeIfAcceptedByAny(org.neo4j.graphdb.traversal.PathEvaluator...) org.neo4j.graphdb.traversal.PathEvaluator<STATE> public static
+org.neo4j.graphdb.traversal.Evaluators::<STATE extends java.lang.Object>includeIfContainsAll(org.neo4j.graphdb.Node...) org.neo4j.graphdb.traversal.PathEvaluator<STATE> public static
+org.neo4j.graphdb.traversal.Evaluators::<STATE extends java.lang.Object>includeWhereEndNodeIs(org.neo4j.graphdb.Node...) org.neo4j.graphdb.traversal.PathEvaluator<STATE> public static
+org.neo4j.graphdb.traversal.Evaluators::<STATE extends java.lang.Object>includeWhereLastRelationshipTypeIs(org.neo4j.graphdb.RelationshipType, org.neo4j.graphdb.RelationshipType...) org.neo4j.graphdb.traversal.PathEvaluator<STATE> public static
+org.neo4j.graphdb.traversal.Evaluators::<STATE extends java.lang.Object>includingDepths(int, int) org.neo4j.graphdb.traversal.PathEvaluator<STATE> public static
+org.neo4j.graphdb.traversal.Evaluators::<STATE extends java.lang.Object>lastRelationshipTypeIs(org.neo4j.graphdb.traversal.Evaluation, org.neo4j.graphdb.traversal.Evaluation, org.neo4j.graphdb.RelationshipType, org.neo4j.graphdb.RelationshipType...) org.neo4j.graphdb.traversal.PathEvaluator<STATE> public static
+org.neo4j.graphdb.traversal.Evaluators::<STATE extends java.lang.Object>pruneWhereEndNodeIs(org.neo4j.graphdb.Node...) org.neo4j.graphdb.traversal.PathEvaluator<STATE> public static
+org.neo4j.graphdb.traversal.Evaluators::<STATE extends java.lang.Object>pruneWhereLastRelationshipTypeIs(org.neo4j.graphdb.RelationshipType, org.neo4j.graphdb.RelationshipType...) org.neo4j.graphdb.traversal.PathEvaluator<STATE> public static
+org.neo4j.graphdb.traversal.Evaluators::<STATE extends java.lang.Object>toDepth(int) org.neo4j.graphdb.traversal.PathEvaluator<STATE> public static
+org.neo4j.graphdb.traversal.Evaluators::Evaluators() void public
+org.neo4j.graphdb.traversal.Evaluators::excludeStartPosition() org.neo4j.graphdb.traversal.PathEvaluator public static
+org.neo4j.graphdb.traversal.InitialBranchState.State<STATE extends java.lang.Object> public static class extends java.lang.Object implements org.neo4j.graphdb.traversal.InitialBranchState<STATE>
+org.neo4j.graphdb.traversal.InitialBranchState.State<STATE>::State(#STATE, #STATE) void public
+org.neo4j.graphdb.traversal.InitialBranchState.State<STATE>::initialState(org.neo4j.graphdb.Path) #STATE public
+org.neo4j.graphdb.traversal.InitialBranchState.State<STATE>::reverse() org.neo4j.graphdb.traversal.InitialBranchState<STATE> public
+org.neo4j.graphdb.traversal.InitialBranchState<STATE extends java.lang.Object> public abstract interface
+org.neo4j.graphdb.traversal.InitialBranchState<STATE>::DOUBLE_ZERO org.neo4j.graphdb.traversal.InitialBranchState<java.lang.Double> public static final
+org.neo4j.graphdb.traversal.InitialBranchState<STATE>::NO_STATE org.neo4j.graphdb.traversal.InitialBranchState<java.lang.Object> public static final
+org.neo4j.graphdb.traversal.InitialBranchState<STATE>::initialState(org.neo4j.graphdb.Path) #STATE public abstract
+org.neo4j.graphdb.traversal.InitialBranchState<STATE>::reverse() org.neo4j.graphdb.traversal.InitialBranchState<STATE> public default
+org.neo4j.graphdb.traversal.PathEvaluator.Adapter<STATE extends java.lang.Object> public abstract static class extends java.lang.Object implements org.neo4j.graphdb.traversal.PathEvaluator<STATE>
+org.neo4j.graphdb.traversal.PathEvaluator.Adapter<STATE>::Adapter() void public
+org.neo4j.graphdb.traversal.PathEvaluator.Adapter<STATE>::evaluate(org.neo4j.graphdb.Path) org.neo4j.graphdb.traversal.Evaluation public
+org.neo4j.graphdb.traversal.PathEvaluator<STATE extends java.lang.Object> public abstract interface implements org.neo4j.graphdb.traversal.Evaluator
+org.neo4j.graphdb.traversal.PathEvaluator<STATE>::evaluate(org.neo4j.graphdb.Path, org.neo4j.graphdb.traversal.BranchState<STATE>) org.neo4j.graphdb.traversal.Evaluation public abstract
+org.neo4j.graphdb.traversal.Paths public class extends java.lang.Object
+org.neo4j.graphdb.traversal.Paths.DefaultPathDescriptor<T extends org.neo4j.graphdb.Path> public static class extends java.lang.Object implements org.neo4j.graphdb.traversal.Paths.PathDescriptor<T>
+org.neo4j.graphdb.traversal.Paths.DefaultPathDescriptor<T>::DefaultPathDescriptor() void public
+org.neo4j.graphdb.traversal.Paths.DefaultPathDescriptor<T>::nodeRepresentation(org.neo4j.graphdb.Path, org.neo4j.graphdb.Node) java.lang.String public
+org.neo4j.graphdb.traversal.Paths.DefaultPathDescriptor<T>::relationshipRepresentation(org.neo4j.graphdb.Path, org.neo4j.graphdb.Node, org.neo4j.graphdb.Relationship) java.lang.String public
+org.neo4j.graphdb.traversal.Paths.PathDescriptor<T extends org.neo4j.graphdb.Path> public abstract static interface
+org.neo4j.graphdb.traversal.Paths.PathDescriptor<T>::nodeRepresentation(#T, org.neo4j.graphdb.Node) java.lang.String public abstract
+org.neo4j.graphdb.traversal.Paths.PathDescriptor<T>::relationshipRepresentation(#T, org.neo4j.graphdb.Node, org.neo4j.graphdb.Relationship) java.lang.String public abstract
+org.neo4j.graphdb.traversal.Paths::<T extends org.neo4j.graphdb.Path>descriptorForIdAndProperties(boolean, boolean, java.lang.String...) org.neo4j.graphdb.traversal.Paths.PathDescriptor<T> public static
+org.neo4j.graphdb.traversal.Paths::<T extends org.neo4j.graphdb.Path>pathToString(#T, org.neo4j.graphdb.traversal.Paths.PathDescriptor<T>) java.lang.String public static
+org.neo4j.graphdb.traversal.Paths::defaultPathToString(org.neo4j.graphdb.Path) java.lang.String public static
+org.neo4j.graphdb.traversal.Paths::defaultPathToStringWithNotInTransactionFallback(org.neo4j.graphdb.Path) java.lang.String public static
+org.neo4j.graphdb.traversal.Paths::simplePathToString(org.neo4j.graphdb.Path) java.lang.String public static
+org.neo4j.graphdb.traversal.Paths::simplePathToString(org.neo4j.graphdb.Path, java.lang.String) java.lang.String public static
+org.neo4j.graphdb.traversal.Paths::singleNodePath(org.neo4j.graphdb.Node) org.neo4j.graphdb.Path public static
+org.neo4j.graphdb.traversal.SideSelector public abstract interface implements org.neo4j.graphdb.traversal.BranchSelector
+org.neo4j.graphdb.traversal.SideSelector::currentSide() org.neo4j.graphdb.Direction public abstract
+org.neo4j.graphdb.traversal.SideSelectorPolicies public enum extends java.lang.Enum<org.neo4j.graphdb.traversal.SideSelectorPolicies> implements org.neo4j.graphdb.traversal.SideSelectorPolicy
+org.neo4j.graphdb.traversal.SideSelectorPolicies::ALTERNATING org.neo4j.graphdb.traversal.SideSelectorPolicies public static final
+org.neo4j.graphdb.traversal.SideSelectorPolicies::LEVEL org.neo4j.graphdb.traversal.SideSelectorPolicies public static final
+org.neo4j.graphdb.traversal.SideSelectorPolicies::LEVEL_STOP_DESCENT_ON_RESULT org.neo4j.graphdb.traversal.SideSelectorPolicies public static final
+org.neo4j.graphdb.traversal.SideSelectorPolicies::valueOf(java.lang.String) org.neo4j.graphdb.traversal.SideSelectorPolicies public static
+org.neo4j.graphdb.traversal.SideSelectorPolicies::values() org.neo4j.graphdb.traversal.SideSelectorPolicies[] public static
+org.neo4j.graphdb.traversal.SideSelectorPolicy public abstract interface
+org.neo4j.graphdb.traversal.SideSelectorPolicy::create(org.neo4j.graphdb.traversal.BranchSelector, org.neo4j.graphdb.traversal.BranchSelector, int) org.neo4j.graphdb.traversal.SideSelector public abstract
+org.neo4j.graphdb.traversal.TraversalBranch public abstract interface implements org.neo4j.graphdb.Path
+org.neo4j.graphdb.traversal.TraversalBranch::continues() boolean public abstract
+org.neo4j.graphdb.traversal.TraversalBranch::evaluation(org.neo4j.graphdb.traversal.Evaluation) void public abstract
+org.neo4j.graphdb.traversal.TraversalBranch::expanded() int public abstract
+org.neo4j.graphdb.traversal.TraversalBranch::includes() boolean public abstract
+org.neo4j.graphdb.traversal.TraversalBranch::initialize(org.neo4j.graphdb.PathExpander, org.neo4j.graphdb.traversal.TraversalContext) void public abstract
+org.neo4j.graphdb.traversal.TraversalBranch::next(org.neo4j.graphdb.PathExpander, org.neo4j.graphdb.traversal.TraversalContext) org.neo4j.graphdb.traversal.TraversalBranch public abstract
+org.neo4j.graphdb.traversal.TraversalBranch::parent() org.neo4j.graphdb.traversal.TraversalBranch public abstract
+org.neo4j.graphdb.traversal.TraversalBranch::prune() void public abstract
+org.neo4j.graphdb.traversal.TraversalBranch::state() java.lang.Object public abstract
+org.neo4j.graphdb.traversal.TraversalContext public abstract interface implements org.neo4j.graphdb.traversal.TraversalMetadata
+org.neo4j.graphdb.traversal.TraversalContext::<STATE extends java.lang.Object>evaluate(org.neo4j.graphdb.traversal.TraversalBranch, org.neo4j.graphdb.traversal.BranchState<STATE>) org.neo4j.graphdb.traversal.Evaluation public abstract
+org.neo4j.graphdb.traversal.TraversalContext::isUnique(org.neo4j.graphdb.traversal.TraversalBranch) boolean public abstract
+org.neo4j.graphdb.traversal.TraversalContext::isUniqueFirst(org.neo4j.graphdb.traversal.TraversalBranch) boolean public abstract
+org.neo4j.graphdb.traversal.TraversalContext::relationshipTraversed() void public abstract
+org.neo4j.graphdb.traversal.TraversalContext::unnecessaryRelationshipTraversed() void public abstract
+org.neo4j.graphdb.traversal.TraversalDescription public abstract interface
+org.neo4j.graphdb.traversal.TraversalDescription::<STATE extends java.lang.Object>expand(org.neo4j.graphdb.PathExpander<STATE>, org.neo4j.graphdb.traversal.InitialBranchState<STATE>) org.neo4j.graphdb.traversal.TraversalDescription public abstract
+org.neo4j.graphdb.traversal.TraversalDescription::breadthFirst() org.neo4j.graphdb.traversal.TraversalDescription public abstract
+org.neo4j.graphdb.traversal.TraversalDescription::depthFirst() org.neo4j.graphdb.traversal.TraversalDescription public abstract
+org.neo4j.graphdb.traversal.TraversalDescription::evaluator(org.neo4j.graphdb.traversal.Evaluator) org.neo4j.graphdb.traversal.TraversalDescription public abstract
+org.neo4j.graphdb.traversal.TraversalDescription::evaluator(org.neo4j.graphdb.traversal.PathEvaluator) org.neo4j.graphdb.traversal.TraversalDescription public abstract
+org.neo4j.graphdb.traversal.TraversalDescription::expand(org.neo4j.graphdb.PathExpander<?>) org.neo4j.graphdb.traversal.TraversalDescription public abstract
+org.neo4j.graphdb.traversal.TraversalDescription::order(org.neo4j.graphdb.traversal.BranchOrderingPolicy) org.neo4j.graphdb.traversal.TraversalDescription public abstract
+org.neo4j.graphdb.traversal.TraversalDescription::relationships(org.neo4j.graphdb.RelationshipType) org.neo4j.graphdb.traversal.TraversalDescription public abstract
+org.neo4j.graphdb.traversal.TraversalDescription::relationships(org.neo4j.graphdb.RelationshipType, org.neo4j.graphdb.Direction) org.neo4j.graphdb.traversal.TraversalDescription public abstract
+org.neo4j.graphdb.traversal.TraversalDescription::reverse() org.neo4j.graphdb.traversal.TraversalDescription public abstract
+org.neo4j.graphdb.traversal.TraversalDescription::sort(java.util.Comparator<? super org.neo4j.graphdb.Path>) org.neo4j.graphdb.traversal.TraversalDescription public abstract
+org.neo4j.graphdb.traversal.TraversalDescription::traverse(java.lang.Iterable<org.neo4j.graphdb.Node>) org.neo4j.graphdb.traversal.Traverser public abstract
+org.neo4j.graphdb.traversal.TraversalDescription::traverse(org.neo4j.graphdb.Node) org.neo4j.graphdb.traversal.Traverser public abstract
+org.neo4j.graphdb.traversal.TraversalDescription::traverse(org.neo4j.graphdb.Node...) org.neo4j.graphdb.traversal.Traverser public abstract
+org.neo4j.graphdb.traversal.TraversalDescription::uniqueness(org.neo4j.graphdb.traversal.UniquenessFactory) org.neo4j.graphdb.traversal.TraversalDescription public abstract
+org.neo4j.graphdb.traversal.TraversalDescription::uniqueness(org.neo4j.graphdb.traversal.UniquenessFactory, java.lang.Object) org.neo4j.graphdb.traversal.TraversalDescription public abstract
+org.neo4j.graphdb.traversal.Traverser public abstract interface implements java.lang.Iterable<org.neo4j.graphdb.Path>
+org.neo4j.graphdb.traversal.Traverser::iterator() java.util.Iterator<org.neo4j.graphdb.Path> public abstract
+org.neo4j.graphdb.traversal.Traverser::metadata() org.neo4j.graphdb.traversal.TraversalMetadata public abstract
+org.neo4j.graphdb.traversal.Traverser::nodes() java.lang.Iterable<org.neo4j.graphdb.Node> public abstract
+org.neo4j.graphdb.traversal.Traverser::relationships() java.lang.Iterable<org.neo4j.graphdb.Relationship> public abstract
+org.neo4j.graphdb.traversal.Uniqueness public enum extends java.lang.Enum<org.neo4j.graphdb.traversal.Uniqueness> implements org.neo4j.graphdb.traversal.UniquenessFactory
+org.neo4j.graphdb.traversal.Uniqueness::NODE_GLOBAL org.neo4j.graphdb.traversal.Uniqueness public static final
+org.neo4j.graphdb.traversal.Uniqueness::NODE_LEVEL org.neo4j.graphdb.traversal.Uniqueness public static final
+org.neo4j.graphdb.traversal.Uniqueness::NODE_PATH org.neo4j.graphdb.traversal.Uniqueness public static final
+org.neo4j.graphdb.traversal.Uniqueness::NODE_RECENT org.neo4j.graphdb.traversal.Uniqueness public static final
+org.neo4j.graphdb.traversal.Uniqueness::NONE org.neo4j.graphdb.traversal.Uniqueness public static final
+org.neo4j.graphdb.traversal.Uniqueness::RELATIONSHIP_GLOBAL org.neo4j.graphdb.traversal.Uniqueness public static final
+org.neo4j.graphdb.traversal.Uniqueness::RELATIONSHIP_LEVEL org.neo4j.graphdb.traversal.Uniqueness public static final
+org.neo4j.graphdb.traversal.Uniqueness::RELATIONSHIP_PATH org.neo4j.graphdb.traversal.Uniqueness public static final
+org.neo4j.graphdb.traversal.Uniqueness::RELATIONSHIP_RECENT org.neo4j.graphdb.traversal.Uniqueness public static final
+org.neo4j.graphdb.traversal.Uniqueness::valueOf(java.lang.String) org.neo4j.graphdb.traversal.Uniqueness public static
+org.neo4j.graphdb.traversal.Uniqueness::values() org.neo4j.graphdb.traversal.Uniqueness[] public static
+org.neo4j.graphdb.traversal.UniquenessFactory public abstract interface
+org.neo4j.graphdb.traversal.UniquenessFactory::create(java.lang.Object) org.neo4j.graphdb.traversal.UniquenessFilter public abstract
+org.neo4j.graphdb.traversal.UniquenessFactory::eagerStartBranches() boolean public abstract
+org.neo4j.graphdb.traversal.UniquenessFilter public abstract interface
+org.neo4j.graphdb.traversal.UniquenessFilter::check(org.neo4j.graphdb.traversal.TraversalBranch) boolean public abstract
+org.neo4j.graphdb.traversal.UniquenessFilter::checkFirst(org.neo4j.graphdb.traversal.TraversalBranch) boolean public abstract

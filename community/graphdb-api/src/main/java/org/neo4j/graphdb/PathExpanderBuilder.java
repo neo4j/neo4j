@@ -21,6 +21,7 @@ package org.neo4j.graphdb;
 
 import java.util.function.Predicate;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.impl.OrderedByTypeExpander;
 import org.neo4j.graphdb.impl.StandardExpander;
 
@@ -31,6 +32,7 @@ import static org.neo4j.graphdb.Direction.BOTH;
  * <p>
  * See {@link PathExpanders} for a catalog of common expanders.
  */
+@PublicApi
 public class PathExpanderBuilder
 {
     /**
