@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Path;
 
@@ -27,6 +28,7 @@ import org.neo4j.graphdb.Path;
  * they will probably meet somewhere in the middle and the full paths are formed.
  * This is where that detection and path generation takes place.
  */
+@PublicApi
 public interface BranchCollisionDetector
 {
     /**

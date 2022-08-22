@@ -22,6 +22,7 @@ package org.neo4j.graphdb.traversal;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -36,6 +37,7 @@ import static org.neo4j.graphdb.traversal.Evaluation.INCLUDE_AND_CONTINUE;
  * @see Evaluator
  * @see TraversalDescription
  */
+@PublicApi
 public abstract class Evaluators
 {
     @SuppressWarnings( "rawtypes" )

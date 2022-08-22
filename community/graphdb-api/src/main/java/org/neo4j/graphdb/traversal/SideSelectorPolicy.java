@@ -19,9 +19,12 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import org.neo4j.annotations.api.PublicApi;
+
 /**
  * A factory for {@link SideSelector}s. Used during bidirectional traversals.
  */
+@PublicApi
 public interface SideSelectorPolicy
 {
     /**
