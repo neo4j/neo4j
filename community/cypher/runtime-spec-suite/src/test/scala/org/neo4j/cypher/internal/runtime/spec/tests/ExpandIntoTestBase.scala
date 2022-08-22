@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.tests.ExpandAllTestBase.smallTestGraph
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
 
 abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
@@ -621,5 +622,345 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
         row <- List(Array(r.getEndNode, r.getStartNode))
       } yield row
     runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("two connected dense nodes where one node appears twice I") {
+    // given
+    val (a, b) = given {
+      val a = tx.createNode(Label.label("A"))
+      makeDense(a)
+
+      val ba = tx.createNode(Label.label("B"), Label.label("A"))
+      // make it dense
+      makeDense(ba)
+      val b = tx.createNode(Label.label("B"))
+      makeDense(b)
+      ba.createRelationshipTo(b, RelationshipType.withName("T"))
+      (ba, b)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .expandInto("(a)-[r:T]->(b)")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B", "a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a", "b").withSingleRow(a, b)
+  }
+
+  test("two connected dense nodes where one node appears twice II") {
+    // given
+    val (a, b) = given {
+      val a = tx.createNode(Label.label("A"), Label.label("B"))
+      makeDense(a)
+      a.createRelationshipTo(tx.createNode(Label.label("FOO")), RelationshipType.withName("T"))
+      val b = tx.createNode(Label.label("B"))
+      makeDense(b)
+      a.createRelationshipTo(b, RelationshipType.withName("T"))
+      (a, b)
+
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .expandInto("(a)-[r:T]->(b)")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B", "a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a", "b").withSingleRow(a, b)
+  }
+
+  test("two connected dense nodes where one node appears twice III") {
+    // given
+    val (a, b) = given {
+      val b = tx.createNode(Label.label("B"))
+      val ab = tx.createNode(Label.label("A"), Label.label("B"))
+      val a = tx.createNode(Label.label("A"))
+
+      makeDense(a)
+      makeDense(ab)
+      makeDense(b)
+      tx.createNode(Label.label("FOO")).createRelationshipTo(b, RelationshipType.withName("T"))
+
+      a.createRelationshipTo(ab, RelationshipType.withName("T"))
+      (a, ab)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .expandInto("(a)-[r:T]->(b)")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B", "a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a", "b").withSingleRow(a, b)
+  }
+
+  test("one dense and one sparse node where one node appears twice I") {
+    // given
+    val (a, b) = given {
+      val a = tx.createNode(Label.label("A"))
+      makeDense(a)
+      val ba = tx.createNode(Label.label("B"), Label.label("A"))
+      makeDense(ba)
+      val b = tx.createNode(Label.label("B"))
+      ba.createRelationshipTo(b, RelationshipType.withName("T"))
+      (ba, b)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .expandInto("(a)-[r:T]->(b)")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B", "a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a", "b").withSingleRow(a, b)
+  }
+
+  test("one dense node and one sparse node where one node appears twice II") {
+    // given
+    val (a, b) = given {
+      val a = tx.createNode(Label.label("A"), Label.label("B"))
+      makeDense(a)
+      a.createRelationshipTo(tx.createNode(Label.label("FOO")), RelationshipType.withName("T"))
+      val b = tx.createNode(Label.label("B"))
+      a.createRelationshipTo(b, RelationshipType.withName("T"))
+      (a, b)
+
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .expandInto("(a)-[r:T]->(b)")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B", "a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a", "b").withSingleRow(a, b)
+  }
+
+  test("one dense node and one sparse node where one node appears twice III") {
+    // given
+    val (a, b) = given {
+      val b = tx.createNode(Label.label("B"))
+      val ab = tx.createNode(Label.label("A"), Label.label("B"))
+      val a = tx.createNode(Label.label("A"))
+
+      makeDense(a)
+      makeDense(ab)
+      tx.createNode(Label.label("FOO")).createRelationshipTo(b, RelationshipType.withName("T"))
+
+      a.createRelationshipTo(ab, RelationshipType.withName("T"))
+      (a, ab)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .expandInto("(a)-[r:T]->(b)")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B", "a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a", "b").withSingleRow(a, b)
+  }
+
+  test("one sparse and one dense node where one node appears twice I") {
+    // given
+    val (a, b) = given {
+      val a = tx.createNode(Label.label("A"))
+      val ba = tx.createNode(Label.label("B"), Label.label("A"))
+      val b = tx.createNode(Label.label("B"))
+      makeDense(b)
+      ba.createRelationshipTo(b, RelationshipType.withName("T"))
+      (ba, b)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .expandInto("(a)-[r:T]->(b)")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B", "a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a", "b").withSingleRow(a, b)
+  }
+
+  test("one sparse node and one dense node where one node appears twice II") {
+    // given
+    val (a, b) = given {
+      val a = tx.createNode(Label.label("A"), Label.label("B"))
+      a.createRelationshipTo(tx.createNode(Label.label("FOO")), RelationshipType.withName("T"))
+      val b = tx.createNode(Label.label("B"))
+      makeDense(b)
+      a.createRelationshipTo(b, RelationshipType.withName("T"))
+      (a, b)
+
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .expandInto("(a)-[r:T]->(b)")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B", "a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a", "b").withSingleRow(a, b)
+  }
+
+  test("one sparse node and dense node where one node appears twice III") {
+    // given
+    val (a, b) = given {
+      val b = tx.createNode(Label.label("B"))
+      val ab = tx.createNode(Label.label("A"), Label.label("B"))
+      val a = tx.createNode(Label.label("A"))
+
+      makeDense(b)
+      tx.createNode(Label.label("FOO")).createRelationshipTo(b, RelationshipType.withName("T"))
+
+      a.createRelationshipTo(ab, RelationshipType.withName("T"))
+      (a, ab)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .expandInto("(a)-[r:T]->(b)")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B", "a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a", "b").withSingleRow(a, b)
+  }
+
+  test("two connected sparse nodes where one node appears twice I") {
+    // given
+    val (a, b) = given {
+      val a = tx.createNode(Label.label("A"))
+      val ba = tx.createNode(Label.label("B"), Label.label("A"))
+      val b = tx.createNode(Label.label("B"))
+      ba.createRelationshipTo(b, RelationshipType.withName("T"))
+      (ba, b)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .expandInto("(a)-[r:T]->(b)")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B", "a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a", "b").withSingleRow(a, b)
+  }
+
+  test("wo connected sparse nodes where one node appears twice II") {
+    // given
+    val (a, b) = given {
+      val a = tx.createNode(Label.label("A"), Label.label("B"))
+      a.createRelationshipTo(tx.createNode(Label.label("FOO")), RelationshipType.withName("T"))
+      val b = tx.createNode(Label.label("B"))
+      a.createRelationshipTo(b, RelationshipType.withName("T"))
+      (a, b)
+
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .expandInto("(a)-[r:T]->(b)")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B", "a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a", "b").withSingleRow(a, b)
+  }
+
+  test("two connected sparse nodes where one node appears twice III") {
+    // given
+    val (a, b) = given {
+      val b = tx.createNode(Label.label("B"))
+      val ab = tx.createNode(Label.label("A"), Label.label("B"))
+      val a = tx.createNode(Label.label("A"))
+
+      tx.createNode(Label.label("FOO")).createRelationshipTo(b, RelationshipType.withName("T"))
+
+      a.createRelationshipTo(ab, RelationshipType.withName("T"))
+      (a, ab)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .expandInto("(a)-[r:T]->(b)")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B", "a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a", "b").withSingleRow(a, b)
+  }
+
+  def makeDense(node: Node): Unit = {
+    (1 to 51).foreach(_ =>
+      node.createRelationshipTo(tx.createNode(Label.label("IGNORE")), RelationshipType.withName("IGNORE"))
+    )
   }
 }
