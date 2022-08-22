@@ -65,6 +65,21 @@ class CliArgHelperTest extends LocaleDependentTestBase {
         return parsed;
     }
 
+    private String parseAndFail(String... args) {
+        final var originalErr = System.err;
+        try {
+            ByteArrayOutputStream bout = new ByteArrayOutputStream();
+            System.setErr(new PrintStream(bout));
+
+            final var parsed = parser.parse(args);
+            assertNull(parsed);
+
+            return bout.toString();
+        } finally {
+            System.setErr(originalErr);
+        }
+    }
+
     @BeforeEach
     void setup() {
         env = new HashMap<>();
@@ -194,12 +209,50 @@ class CliArgHelperTest extends LocaleDependentTestBase {
     }
 
     @Test
+    void parseFullAddress2() {
+        CliArgs cliArgs = parse("--uri", "bolt+routing://alice:foo@bar:69");
+        assertEquals("alice", cliArgs.getUsername());
+        assertEquals("foo", cliArgs.getPassword());
+        assertEquals("bolt+routing", cliArgs.getUri().getScheme());
+        assertEquals("bar", cliArgs.getUri().getHost());
+        assertEquals(69, cliArgs.getUri().getPort());
+    }
+
+    @Test
+    void parseFullAddress3() {
+        String failure =
+                parseAndFail("--uri", "bolt+routing://alice:foo@bar:69", "--address", "bolt+routing://bob:foo@bar:69");
+        assertThat(failure, containsString("usage: cypher-shell"));
+        assertThat(failure, containsString("cypher-shell: error: Specify one of -a/--address/--uri"));
+    }
+
+    @Test
     void parseFullAddressWithFallback() {
         env.put("NEO4J_ADDRESS", "bolt+routing://alice:foo@bar:69");
         assertEquals(URI.create("bolt+routing://alice:foo@bar:69"), parse().getUri());
         assertEquals(
                 URI.create("bolt://bob:log@mjau:123"),
                 parse("--address", "bolt://bob:log@mjau:123").getUri());
+    }
+
+    @Test
+    void parseFullAddressWithFallback2() {
+        env.put("NEO4J_URI", "bolt+routing://alice:foo@bar:69");
+        assertEquals(URI.create("bolt+routing://alice:foo@bar:69"), parse().getUri());
+        assertEquals(
+                URI.create("bolt://bob:log@mjau:123"),
+                parse("--address", "bolt://bob:log@mjau:123").getUri());
+    }
+
+    @Test
+    void parseFullAddressWithFallback3() {
+        env.put("NEO4J_URI", "bolt+routing://alice:foo@bar:69");
+        env.put("NEO4J_ADDRESS", "bolt+routing://bob:foo@bar:69");
+        var exception = assertThrows(IllegalArgumentException.class, this::parse);
+
+        assertThat(
+                exception.getMessage(),
+                containsString("Specify one or none of environment variables NEO4J_ADDRESS and NEO4J_URI"));
     }
 
     @Test
@@ -239,29 +292,19 @@ class CliArgHelperTest extends LocaleDependentTestBase {
 
     @Test
     void nonsenseArgsGiveError() {
-        ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        System.setErr(new PrintStream(bout));
+        String failure = parseAndFail("-notreally");
 
-        CliArgs cliargs = parser.parse("-notreally");
-
-        assertNull(cliargs);
-
-        assertTrue(bout.toString().contains("cypher-shell [-h]"));
-        assertTrue(bout.toString().contains("cypher-shell: error: unrecognized arguments: '-notreally'"));
+        assertTrue(failure.contains("cypher-shell [-h]"));
+        assertTrue(failure.contains("cypher-shell: error: unrecognized arguments: '-notreally'"));
     }
 
     @Test
     void nonsenseUrlGivesError() {
-        ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        System.setErr(new PrintStream(bout));
+        String failure = parseAndFail("--address", "host port");
 
-        CliArgs cliargs = parser.parse("--address", "host port");
-
-        assertNull(cliargs, "should have failed");
-
-        assertTrue(bout.toString().contains("cypher-shell [-h]"), "expected usage: " + bout);
-        assertTrue(bout.toString().contains("cypher-shell: error: Failed to parse address"), "expected error: " + bout);
-        assertTrue(bout.toString().contains("\nAddress should be of the form:"), "expected error detail: " + bout);
+        assertTrue(failure.contains("cypher-shell [-h]"));
+        assertTrue(failure.contains("cypher-shell: error: Failed to parse address"));
+        assertTrue(failure.contains("\nAddress should be of the form:"));
     }
 
     @Test

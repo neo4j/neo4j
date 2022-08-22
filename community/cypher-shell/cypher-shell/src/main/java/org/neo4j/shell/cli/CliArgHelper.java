@@ -33,6 +33,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -63,6 +64,7 @@ public class CliArgHelper {
     public static final String PASSWORD_ENV_VAR = "NEO4J_PASSWORD";
     public static final String DATABASE_ENV_VAR = "NEO4J_DATABASE";
     public static final String ADDRESS_ENV_VAR = "NEO4J_ADDRESS";
+    public static final String URI_ENV_VAR = "NEO4J_URI";
     private static final String DEFAULT_ADDRESS = format("%s://%s:%d", DEFAULT_SCHEME, DEFAULT_HOST, DEFAULT_PORT);
 
     private final Environment environment;
@@ -105,9 +107,21 @@ public class CliArgHelper {
         return getCliArgs(cliArgs, parser, ns);
     }
 
+    private Optional<String> addressFromEnvironment() {
+        final var address = ofNullable(environment.getVariable(ADDRESS_ENV_VAR));
+        final var uri = ofNullable(environment.getVariable(URI_ENV_VAR));
+
+        if (address.isPresent() && uri.isPresent()) {
+            throw new IllegalArgumentException(
+                    "Specify one or none of environment variables " + ADDRESS_ENV_VAR + " and " + URI_ENV_VAR);
+        }
+
+        return address.or(() -> uri);
+    }
+
     private CliArgs getCliArgs(CliArgs cliArgs, ArgumentParser parser, Namespace ns) throws ArgumentParserException {
         final var address = ofNullable(ns.getString("address"))
-                .or(() -> ofNullable(environment.getVariable(ADDRESS_ENV_VAR)))
+                .or(this::addressFromEnvironment)
                 .orElse(DEFAULT_ADDRESS);
         final URI uri = parseURI(parser, address);
 
@@ -234,9 +248,11 @@ public class CliArgHelper {
 
         ArgumentGroup connGroup = parser.addArgumentGroup("connection arguments");
         connGroup
-                .addArgument("-a", "--address")
+                .addArgument("-a", "--address", "--uri")
+                .action(new OnceArgumentAction())
                 .help("address and port to connect to, defaults to " + DEFAULT_ADDRESS
-                        + ". Can also be specified using environment variable " + ADDRESS_ENV_VAR);
+                        + ". Can also be specified using environment variable " + ADDRESS_ENV_VAR + " or "
+                        + URI_ENV_VAR);
         connGroup
                 .addArgument("-u", "--username")
                 .help("username to connect as. Can also be specified using environment variable " + USERNAME_ENV_VAR);
