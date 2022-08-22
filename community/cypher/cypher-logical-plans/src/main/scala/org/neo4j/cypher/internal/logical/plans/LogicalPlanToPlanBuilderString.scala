@@ -498,7 +498,9 @@ object LogicalPlanToPlanBuilderString {
         ) =>
         def groupEntitiesString(groupEntities: Set[GroupEntity]): String =
           groupEntities.map(g => s"(${wrapInQuotations(g.innerName)}, ${wrapInQuotations(g.outerName)})").mkString(", ")
-        s"""${repetition.min}, ${repetition.max}, "$start", ${end.map(wrapInQuotations)}, "$innerStart", "$innerEnd", """ +
+        s"""${repetition.min}, ${repetition.max}, "$start", ${end.map(
+          wrapInQuotations
+        )}, "$innerStart", "$innerEnd", """ +
           s"Set(${groupEntitiesString(groupNodes)}), Set(${groupEntitiesString(groupRelationships)}), " +
           s"Set(${wrapInQuotationsAndMkString(allRelationships)}), " +
           s"Set(${wrapInQuotationsAndMkString(allRelationshipGroups)})"

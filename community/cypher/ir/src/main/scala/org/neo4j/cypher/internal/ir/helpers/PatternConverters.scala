@@ -57,12 +57,18 @@ case class RenameNodeAndRelationshipVariables(
   relVariables: Map[LogicalVariable, LogicalVariable]
 ) {
 
-  def withNode(n: NodePattern, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): RenameNodeAndRelationshipVariables = n.variable
+  def withNode(
+    n: NodePattern,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): RenameNodeAndRelationshipVariables = n.variable
     .filterNot(nodeVariables.contains)
     .map(v => this.copy(nodeVariables = nodeVariables + (v -> v.renameId(anonymousVariableNameGenerator.nextName))))
     .getOrElse(this)
 
-  def withRelationship(n: RelationshipPattern, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): RenameNodeAndRelationshipVariables =
+  def withRelationship(
+    n: RelationshipPattern,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): RenameNodeAndRelationshipVariables =
     n.variable
       .filterNot(relVariables.contains)
       .map(v => this.copy(relVariables = relVariables + (v -> v.renameId(anonymousVariableNameGenerator.nextName))))

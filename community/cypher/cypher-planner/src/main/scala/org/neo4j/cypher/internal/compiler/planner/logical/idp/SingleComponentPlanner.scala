@@ -178,13 +178,16 @@ trait SingleComponentPlannerTrait {
 
 object SingleComponentPlanner {
 
-  private sealed trait SinglePatternSolutions {
+  sealed private trait SinglePatternSolutions {
     def getSolutions: Iterable[LogicalPlan]
   }
+
   private case class NonExpandSolutions(solutions: Option[LogicalPlan]) extends SinglePatternSolutions {
     override def getSolutions: Iterable[LogicalPlan] = solutions
   }
-  private case class ExpandSolutions(leftExpand: Option[LogicalPlan], rightExpand: Option[LogicalPlan]) extends SinglePatternSolutions {
+
+  private case class ExpandSolutions(leftExpand: Option[LogicalPlan], rightExpand: Option[LogicalPlan])
+      extends SinglePatternSolutions {
     override def getSolutions: Iterable[LogicalPlan] = Set(leftExpand, rightExpand).flatten
   }
 
