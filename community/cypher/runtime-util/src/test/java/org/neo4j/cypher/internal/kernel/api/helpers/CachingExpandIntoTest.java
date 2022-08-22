@@ -48,6 +48,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.graphdb.Direction.BOTH;
+import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 
 class CachingExpandIntoTest
@@ -81,10 +83,10 @@ class CachingExpandIntoTest
     }
 
     @Test
-    void shouldComputeDegreeOnceIfStartAndEndNodeAreTheSame()
+    void shouldComputeDegreeOnceIfStartAndEndNodeAreTheSameAndDirectionBoth()
     {
         // Given
-        CachingExpandInto expandInto = new CachingExpandInto( mock( QueryContext.class, RETURNS_DEEP_STUBS ), OUTGOING, memoryTracker );
+        CachingExpandInto expandInto = new CachingExpandInto( mock( QueryContext.class, RETURNS_DEEP_STUBS ), BOTH, memoryTracker );
         NodeCursor cursor = mockCursor();
 
         // When
@@ -97,7 +99,57 @@ class CachingExpandIntoTest
     }
 
     @Test
-    void shouldComputeDegreeOfStartAndEndNodeOnlyOnce()
+    void shouldComputeDegreeOnceIfStartAndEndNodeAreTheSameAndDirectionOutgoing()
+    {
+        // Given
+        CachingExpandInto expandInto = new CachingExpandInto( mock( QueryContext.class, RETURNS_DEEP_STUBS ), OUTGOING, memoryTracker );
+        NodeCursor cursor = mockCursor();
+
+        // When
+        findConnections( expandInto, cursor, 42, 42 );
+
+        // Then
+        verify( cursor, times( 2 ) ).degree( any( RelationshipSelection.class ) );
+
+        assertReleasesHeap( expandInto );
+    }
+
+    @Test
+    void shouldComputeDegreeOnceIfStartAndEndNodeAreTheSameAndDirectionIncoming()
+    {
+        // Given
+        CachingExpandInto expandInto = new CachingExpandInto( mock( QueryContext.class, RETURNS_DEEP_STUBS ), INCOMING, memoryTracker );
+        NodeCursor cursor = mockCursor();
+
+        // When
+        findConnections( expandInto, cursor, 42, 42 );
+
+        // Then
+        verify( cursor, times( 2 ) ).degree( any( RelationshipSelection.class ) );
+
+        assertReleasesHeap( expandInto );
+    }
+
+    @Test
+    void shouldComputeDegreeOfStartAndEndNodeOnlyOnceIfDirectionBoth()
+    {
+        // Given
+        CachingExpandInto expandInto = new CachingExpandInto( mock( QueryContext.class, RETURNS_DEEP_STUBS ), BOTH, memoryTracker );
+        NodeCursor cursor = mockCursor();
+
+        // When, calling multiple times with different types
+        findConnections( expandInto, cursor, 42, 43, 3 );
+        findConnections( expandInto, cursor, 43, 42, 4 );
+        findConnections( expandInto, cursor, 42, 43, 5 );
+
+        // Then, only call once for 42 and once for 43
+        verify( cursor, times( 2 ) ).degree( any( RelationshipSelection.class ) );
+
+        assertReleasesHeap( expandInto );
+    }
+
+    @Test
+    void shouldComputeDegreeOfStartAndEndNodeTwiceIfDirectionOutgoing()
     {
         // Given
         CachingExpandInto expandInto = new CachingExpandInto( mock( QueryContext.class, RETURNS_DEEP_STUBS ), OUTGOING, memoryTracker );
@@ -109,7 +161,25 @@ class CachingExpandIntoTest
         findConnections( expandInto, cursor, 42, 43, 5 );
 
         // Then, only call once for 42 and once for 43
-        verify( cursor, times( 2 ) ).degree( any( RelationshipSelection.class ) );
+        verify( cursor, times( 4 ) ).degree( any( RelationshipSelection.class ) );
+
+        assertReleasesHeap( expandInto );
+    }
+
+    @Test
+    void shouldComputeDegreeOfStartAndEndNodeTwiceIfDirectionIncoming()
+    {
+        // Given
+        CachingExpandInto expandInto = new CachingExpandInto( mock( QueryContext.class, RETURNS_DEEP_STUBS ), INCOMING, memoryTracker );
+        NodeCursor cursor = mockCursor();
+
+        // When, calling multiple times with different types
+        findConnections( expandInto, cursor, 42, 43, 3 );
+        findConnections( expandInto, cursor, 43, 42, 4 );
+        findConnections( expandInto, cursor, 42, 43, 5 );
+
+        // Then, only call once for 42 and once for 43
+        verify( cursor, times( 4 ) ).degree( any( RelationshipSelection.class ) );
 
         assertReleasesHeap( expandInto );
     }

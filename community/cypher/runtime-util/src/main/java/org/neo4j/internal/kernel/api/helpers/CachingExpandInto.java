@@ -50,6 +50,7 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.util.SingleDegree;
 
 import static org.neo4j.graphdb.Direction.BOTH;
+import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.relationshipsCursor;
 import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
@@ -157,9 +158,9 @@ public class CachingExpandInto extends DefaultCloseListenable
             return new FromCachedSelectionCursor( connections, read, firstNode, secondNode );
         }
         Direction reverseDirection = direction.reverse();
-        //Check secondNode, will position nodeCursor at secondNode
-        int secondDegree = degreeCache.getIfAbsentPut( secondNode,
-                () -> calculateTotalDegreeIfCheap( read, secondNode, nodeCursor, reverseDirection, types ));
+        // Check secondNode, will position nodeCursor at secondNode
+        int secondDegree = degreeCache.getIfAbsentPut(
+                secondNode, reverseDirection, () -> calculateTotalDegreeIfCheap( read, secondNode, nodeCursor, reverseDirection, types ) );
 
         if ( secondDegree == 0 )
         {
@@ -174,12 +175,12 @@ public class CachingExpandInto extends DefaultCloseListenable
         }
         boolean firstNodeHasCheapDegrees = nodeCursor.supportsFastDegreeLookup();
 
-        //Both can determine degree cheaply, start with the one with the lesser degree
+        // Both can determine degree cheaply, start with the one with the lesser degree
         if ( firstNodeHasCheapDegrees && secondNodeHasCheapDegrees )
         {
-            //Note that we have already position the cursor at firstNode
-            int firstDegree = degreeCache.getIfAbsentPut( firstNode, () -> calculateTotalDegree( nodeCursor, direction, types ));
-
+            // Note that we have already positioned the cursor at firstNode
+            int firstDegree =
+                    degreeCache.getIfAbsentPut( firstNode, direction, () -> calculateTotalDegree( nodeCursor, direction, types ) );
             long toNode;
             Direction relDirection;
             if ( firstDegree < secondDegree )
@@ -617,6 +618,7 @@ public class CachingExpandInto extends DefaultCloseListenable
 
     static class NodeDegreeCache
     {
+        private static final long FLIP_HIGH_BIT_MASK = 1L << 63;
         static final long DEGREE_CACHE_SHALLOW_SIZE = shallowSizeOfInstance( NodeDegreeCache.class );
 
         private final int capacity;
@@ -630,18 +632,20 @@ public class CachingExpandInto extends DefaultCloseListenable
         NodeDegreeCache( int capacity, MemoryTracker memoryTracker )
         {
             this.capacity = capacity;
-            memoryTracker.allocateHeap( DEGREE_CACHE_SHALLOW_SIZE );
-            this.degreeCache = HeapTrackingCollections.newLongIntMap( memoryTracker );
+            memoryTracker.allocateHeap(DEGREE_CACHE_SHALLOW_SIZE);
+            this.degreeCache = HeapTrackingCollections.newLongIntMap(memoryTracker);
         }
 
-        public int getIfAbsentPut( long node, IntFunction0 update )
+        public int getIfAbsentPut( long node, Direction direction, IntFunction0 update )
         {
-            //cache is full, but must check if node has already been cached
+            //if incoming we flip the highest bit in the node id
+            long nodeWithDirection = direction == INCOMING ? FLIP_HIGH_BIT_MASK | node : node;
+
             if ( degreeCache.size() >= capacity )
             {
-                if ( degreeCache.containsKey( node ) )
+                if ( degreeCache.containsKey( nodeWithDirection ) )
                 {
-                    return degreeCache.get( node );
+                    return degreeCache.get( nodeWithDirection );
                 }
                 else
                 {
@@ -650,14 +654,14 @@ public class CachingExpandInto extends DefaultCloseListenable
             }
             else
             {
-                if ( degreeCache.containsKey( node ) )
+                if ( degreeCache.containsKey( nodeWithDirection ) )
                 {
-                    return degreeCache.get( node );
+                    return degreeCache.get( nodeWithDirection );
                 }
                 else
                 {
                     int value = update.getAsInt();
-                    degreeCache.put( node, value );
+                    degreeCache.put( nodeWithDirection, value );
                     return value;
                 }
             }
