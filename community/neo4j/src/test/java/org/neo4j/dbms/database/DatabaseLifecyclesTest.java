@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -106,9 +107,9 @@ class DatabaseLifecyclesTest {
     }
 
     private static class SimpleDatabaseIdRepository implements DatabaseIdRepository {
-        private final Set<NamedDatabaseId> databaseIds = Set.of(
-                NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID,
-                DatabaseIdFactory.from(DEFAULT_DATABASE_NAME, UUID.randomUUID()));
+        private final NamedDatabaseId defaultId = DatabaseIdFactory.from(DEFAULT_DATABASE_NAME, UUID.randomUUID());
+
+        private final Set<NamedDatabaseId> databaseIds = Set.of(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID, defaultId);
 
         @Override
         public Optional<NamedDatabaseId> getByName(NormalizedDatabaseName databaseName) {

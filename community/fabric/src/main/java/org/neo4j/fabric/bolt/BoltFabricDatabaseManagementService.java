@@ -34,7 +34,6 @@ import org.neo4j.fabric.executor.FabricExecutor;
 import org.neo4j.fabric.transaction.TransactionManager;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.availability.UnavailableException;
-import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.memory.MemoryTracker;
 
 public class BoltFabricDatabaseManagementService implements BoltGraphDatabaseManagementServiceSPI {
