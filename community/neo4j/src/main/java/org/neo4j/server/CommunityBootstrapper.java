@@ -21,6 +21,7 @@ package org.neo4j.server;
 
 import static org.neo4j.kernel.impl.factory.DbmsInfo.COMMUNITY;
 
+import java.nio.file.Path;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
@@ -34,4 +35,7 @@ public class CommunityBootstrapper extends NeoBootstrapper {
                 new DatabaseManagementServiceFactory(COMMUNITY, CommunityEditionModule::new);
         return facadeFactory.build(config, dependencies);
     }
+
+    @Override
+    protected void checkLicenseAgreement(Path homeDir) {}
 }

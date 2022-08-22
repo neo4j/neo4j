@@ -374,7 +374,7 @@ public class BuiltInDbmsProcedures {
     public static class StringResult {
         public final String value;
 
-        StringResult(String value) {
+        public StringResult(String value) {
             this.value = value;
         }
     }
