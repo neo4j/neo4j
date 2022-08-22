@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Entity;
@@ -34,6 +35,7 @@ import org.neo4j.graphdb.Relationship;
 /**
  * Utilities for {@link org.neo4j.graphdb.Path} objects.
  */
+@PublicApi
 public class Paths
 {
 

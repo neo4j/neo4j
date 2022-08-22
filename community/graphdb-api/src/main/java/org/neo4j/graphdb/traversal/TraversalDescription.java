@@ -21,6 +21,7 @@ package org.neo4j.graphdb.traversal;
 
 import java.util.Comparator;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -50,6 +51,7 @@ import org.neo4j.graphdb.RelationshipType;
  * {@link Traverser} that is returned is then used to step through the graph,
  * and return the positions that matches the rules.
  */
+@PublicApi
 public interface TraversalDescription
 {
     /**

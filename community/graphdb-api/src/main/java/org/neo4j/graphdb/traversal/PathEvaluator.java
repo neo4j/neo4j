@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.Path;
 
 /**
@@ -33,6 +34,7 @@ import org.neo4j.graphdb.Path;
  * @see Evaluators
  * @see TraversalDescription#evaluator(PathEvaluator)
  */
+@PublicApi
 public interface PathEvaluator<STATE> extends Evaluator
 {
     /**

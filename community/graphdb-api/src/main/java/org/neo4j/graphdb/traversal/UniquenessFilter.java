@@ -19,10 +19,13 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import org.neo4j.annotations.api.PublicApi;
+
 /**
  * Interface for filters preventing the traversal from visiting already seen parts of the graph. Implementations can
  * allow for different heuristics to use to determine what may be re-visited.
  */
+@PublicApi
 public interface UniquenessFilter
 {
     /**
