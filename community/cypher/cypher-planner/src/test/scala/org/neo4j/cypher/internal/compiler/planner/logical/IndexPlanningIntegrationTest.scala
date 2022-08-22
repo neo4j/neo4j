@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestS
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IsQuerySupportedDefaults.text_2_0
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
@@ -1267,6 +1268,48 @@ class IndexPlanningIntegrationTest
     }
   }
 
+  test(
+    "should plan node text index usage only for supported predicates with a text index that does not support range predicates"
+  ) {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 500)
+      .addNodeIndex(
+        "A",
+        Seq("prop"),
+        existsSelectivity = 0.5,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.TEXT,
+        maybeIsQuerySupported = Some(text_2_0)
+      )
+      .build()
+
+    for (op <- List("STARTS WITH", "ENDS WITH", "CONTAINS")) {
+      val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("a.prop AS `a.prop`")
+        .nodeIndexOperator(s"a:A(prop $op 'hello')", indexType = IndexType.TEXT)
+        .build()
+    }
+
+    for (op <- List("<", "<=", ">", ">=")) {
+      val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("cacheN[a.prop] AS `a.prop`")
+        .filter(s"cacheNFromStore[a.prop] $op 'hello'")
+        .nodeByLabelScan("a", "A")
+        .build()
+    }
+
+    for (op <- List("=")) {
+      val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("cacheN[a.prop] AS `a.prop`")
+        .nodeIndexOperator(s"a:A(prop $op 'hello')", getValue = Map("prop" -> GetValue), indexType = IndexType.TEXT)
+        .build()
+    }
+  }
+
   test("should prefer node text index usage over range only for ENDS WITH and CONTAINS") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
@@ -1349,6 +1392,52 @@ class IndexPlanningIntegrationTest
       plan shouldEqual cfg.subPlanBuilder()
         .projection("r.prop AS `r.prop`")
         .relationshipIndexOperator(s"(a)-[r:REL(prop $op 'hello')]->(b)", indexType = IndexType.TEXT)
+        .build()
+    }
+
+    for (op <- List("=")) {
+      val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("cacheR[r.prop] AS `r.prop`")
+        .relationshipIndexOperator(
+          s"(a)-[r:REL(prop $op 'hello')]->(b)",
+          getValue = Map("prop" -> GetValue),
+          indexType = IndexType.TEXT
+        )
+        .build()
+    }
+  }
+
+  test(
+    "should plan relationship text index usage only for supported predicates with a text index that does not support range predicates"
+  ) {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]->()", 200)
+      .addRelationshipIndex(
+        "REL",
+        Seq("prop"),
+        existsSelectivity = 0.5,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.TEXT,
+        maybeIsQuerySupported = Some(text_2_0)
+      )
+      .build()
+
+    for (op <- List("STARTS WITH", "ENDS WITH", "CONTAINS")) {
+      val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("r.prop AS `r.prop`")
+        .relationshipIndexOperator(s"(a)-[r:REL(prop $op 'hello')]->(b)", indexType = IndexType.TEXT)
+        .build()
+    }
+
+    for (op <- List("<", "<=", ">", ">=")) {
+      val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("cacheR[r.prop] AS `r.prop`")
+        .filter(s"cacheRFromStore[r.prop] $op 'hello'")
+        .relationshipTypeScan("(a)-[r:REL]->(b)")
         .build()
     }
 

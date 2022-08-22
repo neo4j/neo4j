@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IsQuerySupportedDefaults
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -303,12 +304,20 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
               semanticTable.resolvedRelTypeNames(relType)
             )
         }
+
+        val isQuerySupported = indexDef.indexType match {
+          case IndexType.Range => IsQuerySupportedDefaults.range
+          case IndexType.Text  => IsQuerySupportedDefaults.text_1_0
+          case IndexType.Point => IsQuerySupportedDefaults.point
+        }
+
         IndexDescriptor(
           indexDef.indexType,
           entityType,
           indexDef.propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_)),
           valueCapability = canGetValue,
           orderCapability = indexAttributes.withOrdering,
+          isQuerySupported = isQuerySupported,
           isUnique = indexAttributes.isUnique
         )
       }

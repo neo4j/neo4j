@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.exceptions.HintException
 import org.neo4j.exceptions.IndexHintException
 import org.neo4j.exceptions.IndexHintException.IndexHintIndexType
@@ -288,10 +289,10 @@ object VerifyBestPlan {
         predicates,
         semanticTable
       ).collect {
-        case pred @ IndexCompatiblePredicate(`variable`, LogicalProperty(_, `propertyName`), _, _, _, _, _, _, _) =>
+        case pred @ IndexCompatiblePredicate(`variable`, LogicalProperty(_, `propertyName`), _, _, _, _, _, _, _, _) =>
           pred
       }
-      if (matchingPredicates.exists(_.compatibleIndexTypes.contains(IndexType.Text))) {
+      if (matchingPredicates.exists(_.cypherType == CTString)) {
         Right(true)
       } else {
         Left(matchingPredicates)

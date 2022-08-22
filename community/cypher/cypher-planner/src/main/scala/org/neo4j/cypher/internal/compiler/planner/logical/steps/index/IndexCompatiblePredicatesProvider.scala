@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsStringRangeSee
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsValueRangeSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PropertySeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PropertySeekable.findCompatibleIndexTypes
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.Seekable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.IndexCompatiblePredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.MultipleExactPredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.NonSeekablePredicate
@@ -47,8 +48,13 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
+import org.neo4j.cypher.internal.planner.spi.IndexQueryType
 import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 trait IndexCompatiblePredicatesProvider {
 
@@ -83,8 +89,15 @@ trait IndexCompatiblePredicatesProvider {
     )
 
     val partialCompatiblePredicates = explicitCompatiblePredicates.collect {
-      case predicate if !predicate.compatibleIndexTypes.contains(IndexType.Range) =>
-        predicate.convertToScannable.copy(compatibleIndexTypes = Set(IndexType.Range))
+      case predicate
+        // TODO this is not nice. We need to only create a partialCompatiblePredicate if the
+        //  original predicate cannot be solved by a RANGE index, but now we are hardcoding that here.
+        if Set[IndexQueryType](
+          IndexQueryType.STRING_SUFFIX,
+          IndexQueryType.STRING_CONTAINS,
+          IndexQueryType.BOUNDING_BOX
+        ).contains(predicate.indexQueryType) =>
+        predicate.convertToScannable
     }
 
     explicitCompatiblePredicates ++ implicitCompatiblePredicates ++ partialCompatiblePredicates
@@ -132,7 +145,8 @@ object IndexCompatiblePredicatesProvider {
           predicateExactness = exactness,
           solvedPredicate = Some(predicate),
           dependencies = seekable.dependencies,
-          compatibleIndexTypes = seekable.findCompatibleIndexTypes(semanticTable)
+          indexQueryType = IndexQueryType.EXACT,
+          cypherType = seekable.propertyValueType(semanticTable)
         )
 
       // ... = n.prop
@@ -141,8 +155,7 @@ object IndexCompatiblePredicatesProvider {
       case predicate @ Equals(lhs, prop @ Property(variable: LogicalVariable, _))
         if valid(variable, lhs.dependencies) =>
         val expr = SingleQueryExpression(lhs)
-        val compatibleIndexTypes: Set[IndexType] =
-          PropertySeekable(prop, variable, SingleSeekableArg(lhs)).findCompatibleIndexTypes(semanticTable)
+        val seekable = PropertySeekable(prop, variable, SingleSeekableArg(lhs))
         IndexCompatiblePredicate(
           variable,
           prop,
@@ -151,7 +164,8 @@ object IndexCompatiblePredicatesProvider {
           predicateExactness = SingleExactPredicate,
           solvedPredicate = Some(predicate),
           dependencies = lhs.dependencies,
-          compatibleIndexTypes = compatibleIndexTypes
+          indexQueryType = IndexQueryType.EXACT,
+          cypherType = seekable.propertyValueType(semanticTable)
         )
 
       // n.prop STARTS WITH "prefix%..."
@@ -165,15 +179,14 @@ object IndexCompatiblePredicatesProvider {
           predicateExactness = NotExactPredicate,
           solvedPredicate = Some(predicate),
           dependencies = seekable.dependencies,
-          compatibleIndexTypes = Set(IndexType.Range, IndexType.Text)
+          indexQueryType = IndexQueryType.STRING_PREFIX,
+          cypherType = seekable.propertyValueType(semanticTable)
         )
 
       // n.prop < |<=| >| >= value
       case predicate @ AsValueRangeSeekable(seekable) if valid(seekable.ident, seekable.dependencies) =>
         val queryExpression = seekable.asQueryExpression
         val rangeCapableIndexTypes = Set[IndexType](IndexType.Text, IndexType.Range)
-        val compatibleIndexTypes =
-          findCompatibleIndexTypes(seekable.propertyValueType(semanticTable)) intersect rangeCapableIndexTypes
         IndexCompatiblePredicate(
           seekable.ident,
           seekable.property,
@@ -182,7 +195,8 @@ object IndexCompatiblePredicatesProvider {
           predicateExactness = NotExactPredicate,
           solvedPredicate = Some(predicate),
           dependencies = seekable.dependencies,
-          compatibleIndexTypes = compatibleIndexTypes
+          indexQueryType = IndexQueryType.RANGE,
+          cypherType = seekable.propertyValueType(semanticTable)
         )
 
       case predicate @ AsBoundingBoxSeekable(seekable) if valid(seekable.ident, seekable.dependencies) =>
@@ -195,7 +209,8 @@ object IndexCompatiblePredicatesProvider {
           predicateExactness = NotExactPredicate,
           solvedPredicate = Some(predicate),
           dependencies = seekable.dependencies,
-          compatibleIndexTypes = Set(IndexType.Point)
+          indexQueryType = IndexQueryType.BOUNDING_BOX,
+          cypherType = seekable.propertyValueType(semanticTable)
         )
 
       // An index seek for this will almost satisfy the predicate, but with the possibility of some false positives.
@@ -211,7 +226,9 @@ object IndexCompatiblePredicatesProvider {
           predicateExactness = NotExactPredicate,
           solvedPredicate = Some(PartialDistanceSeekWrapper(predicate)),
           dependencies = seekable.dependencies,
-          compatibleIndexTypes = Set(IndexType.Point)
+          // Distance on an index level uses IndexQueryType.BOUNDING_BOX
+          indexQueryType = IndexQueryType.BOUNDING_BOX,
+          cypherType = seekable.propertyValueType(semanticTable)
         )
 
       // MATCH (n:User) WHERE n.prop IS NOT NULL RETURN n
@@ -224,7 +241,8 @@ object IndexCompatiblePredicatesProvider {
           predicateExactness = NotExactPredicate,
           solvedPredicate = Some(predicate),
           dependencies = Set.empty,
-          compatibleIndexTypes = Set(IndexType.Range)
+          indexQueryType = IndexQueryType.EXISTS,
+          cypherType = CTAny
         ).convertToScannable
 
       // n.prop ENDS WITH 'substring'
@@ -237,7 +255,8 @@ object IndexCompatiblePredicatesProvider {
           predicateExactness = NonSeekablePredicate,
           solvedPredicate = Some(predicate),
           dependencies = expr.dependencies,
-          compatibleIndexTypes = Set(IndexType.Text)
+          indexQueryType = IndexQueryType.STRING_SUFFIX,
+          cypherType = CTString
         )
 
       // n.prop CONTAINS 'substring'
@@ -250,7 +269,8 @@ object IndexCompatiblePredicatesProvider {
           predicateExactness = NonSeekablePredicate,
           solvedPredicate = Some(predicate),
           dependencies = expr.dependencies,
-          compatibleIndexTypes = Set(IndexType.Text)
+          indexQueryType = IndexQueryType.STRING_CONTAINS,
+          cypherType = CTString
         )
     }
   }

@@ -57,7 +57,10 @@ import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
+import org.neo4j.cypher.internal.planner.spi.IndexQueryType
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 /**
  * Common functionality of NodeIndexLeafPlanner and RelationshipIndexLeafPlanner.
@@ -100,7 +103,8 @@ object EntityIndexLeafPlanner {
       solvedPredicate = None,
       dependencies = Set.empty,
       isImplicit = true,
-      compatibleIndexTypes = Set(IndexType.Range)
+      indexQueryType = IndexQueryType.EXISTS,
+      cypherType = CTAny
     )
   }
 
@@ -117,7 +121,7 @@ object EntityIndexLeafPlanner {
 
     // Group predicates by which property they include
     val predicatesByProperty = predicates
-      .filter(_.compatibleIndexTypes.contains(indexDescriptor.indexType))
+      .filter(predicate => indexDescriptor.isQuerySupported(predicate.indexQueryType, predicate.cypherType))
       .groupBy(icp => semanticTable.id(icp.propertyKeyName))
       // Sort out predicates that are not found in semantic table
       .collect { case (Some(x), v) => (x, v) }
@@ -179,7 +183,8 @@ object EntityIndexLeafPlanner {
    * @param solvedPredicate      If a plan is created, this is what to register as solved predicate
    * @param dependencies         Predicate dependencies
    * @param isImplicit           if `true` than the predicate is not explicitly stated in the query
-   * @param compatibleIndexTypes Index types which can solve this predicate
+   * @param indexQueryType       the type of predicate
+   * @param cypherType           the type of the property
    */
   case class IndexCompatiblePredicate(
     variable: LogicalVariable,
@@ -190,7 +195,8 @@ object EntityIndexLeafPlanner {
     solvedPredicate: Option[Expression],
     dependencies: Set[LogicalVariable],
     isImplicit: Boolean = false,
-    compatibleIndexTypes: Set[IndexType]
+    indexQueryType: IndexQueryType,
+    cypherType: CypherType
   ) {
     def name: String = variable.name
 
@@ -208,7 +214,9 @@ object EntityIndexLeafPlanner {
       case _ => copy(
           queryExpression = ExistenceQueryExpression(),
           predicateExactness = NotExactPredicate,
-          solvedPredicate = solvedPredicate.map(convertToScannablePredicate)
+          solvedPredicate = solvedPredicate.map(convertToScannablePredicate),
+          indexQueryType = IndexQueryType.EXISTS,
+          cypherType = CTAny
         )
     }
 

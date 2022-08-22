@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.graphdb
 
 import scala.language.implicitConversions
@@ -40,6 +41,21 @@ sealed trait IndexOrderCapability
 object IndexOrderCapability {
   case object NONE extends IndexOrderCapability
   case object BOTH extends IndexOrderCapability
+}
+
+sealed trait IndexQueryType
+
+object IndexQueryType {
+//  case object TOKEN_LOOKUP extends IndexQueryType
+//  case object ALL_ENTRIES extends IndexQueryType
+  case object EXISTS extends IndexQueryType
+  case object EXACT extends IndexQueryType
+  case object RANGE extends IndexQueryType
+  case object BOUNDING_BOX extends IndexQueryType
+  case object STRING_PREFIX extends IndexQueryType
+  case object STRING_SUFFIX extends IndexQueryType
+  case object STRING_CONTAINS extends IndexQueryType
+//  case object FULLTEXT_SEARCH extends IndexQueryType
 }
 
 object IndexDescriptor {
@@ -101,9 +117,12 @@ case class IndexDescriptor(
   behaviours: Set[IndexBehaviour] = Set.empty[IndexBehaviour],
   orderCapability: IndexOrderCapability = IndexOrderCapability.NONE,
   valueCapability: GetValueFromIndexBehavior = DoNotGetValue,
+  isQuerySupported: (IndexQueryType, CypherType) => Boolean = (_, _) => false,
   isUnique: Boolean = false
 ) {
   val isComposite: Boolean = properties.length > 1
+
+  // TODO equals and hashCode will not like isQuerySupported
 
   def property: PropertyKeyId =
     if (isComposite) throw new IllegalArgumentException("Cannot get single property of multi-property index")

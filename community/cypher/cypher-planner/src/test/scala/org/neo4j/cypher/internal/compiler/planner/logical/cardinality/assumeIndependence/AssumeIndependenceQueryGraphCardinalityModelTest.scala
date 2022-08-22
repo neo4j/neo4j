@@ -144,6 +144,10 @@ abstract class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFu
     expectCardinality(T * TpropExists * TpropUnique)
   }
 
+  test("MATCH (t:T) WHERE t.prop = 42") {
+    expectCardinality(T * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
+  }
+
   test("MATCH (a) WHERE false") {
     expectCardinality(0)
   }

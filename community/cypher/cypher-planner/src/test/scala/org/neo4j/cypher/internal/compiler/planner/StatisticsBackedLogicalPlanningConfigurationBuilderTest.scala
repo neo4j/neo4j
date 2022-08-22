@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.graphcounts.GraphCountsJson
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IsQuerySupportedDefaults
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getProvidesOrder
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getWithValues
 import org.neo4j.internal.schema.IndexType
@@ -35,6 +36,12 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends FunSuite
    * These index types are currently handled differently from all the other property indexes.
    */
   val unsupportedIndexTypes: Set[IndexType] = Set(IndexType.LOOKUP, IndexType.FULLTEXT)
+
+  def isQuerySupported(indexType: IndexType) = indexType match {
+    case IndexType.TEXT  => IsQuerySupportedDefaults.text_1_0
+    case IndexType.RANGE => IsQuerySupportedDefaults.range
+    case IndexType.POINT => IsQuerySupportedDefaults.point
+  }
 
   test("processGraphCount for node indexes") {
     IndexType.values()
@@ -74,7 +81,8 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends FunSuite
             uniqueValueSelectivity = 1,
             propExistsSelectivity = 1.0 / personCount,
             withValues = getWithValues(indexType),
-            withOrdering = getProvidesOrder(indexType)
+            withOrdering = getProvidesOrder(indexType),
+            isQuerySupported = isQuerySupported(indexType)
           )
         }
       }
@@ -121,7 +129,8 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends FunSuite
             uniqueValueSelectivity = 1,
             propExistsSelectivity = 1.0 / friendCount,
             withValues = getWithValues(indexType),
-            withOrdering = getProvidesOrder(indexType)
+            withOrdering = getProvidesOrder(indexType),
+            isQuerySupported = isQuerySupported(indexType)
           )
         }
       }

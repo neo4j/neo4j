@@ -62,6 +62,7 @@ import org.neo4j.cypher.internal.logical.plans.SeekRange
 import org.neo4j.cypher.internal.logical.plans.SeekableArgs
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
+import org.neo4j.cypher.internal.planner.spi.IndexQueryType
 import org.neo4j.cypher.internal.util.Last
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -304,9 +305,6 @@ case class PropertySeekable(expr: LogicalProperty, ident: LogicalVariable, args:
         }
     }
   }
-
-  def findCompatibleIndexTypes(semanticTable: SemanticTable): Set[IndexType] =
-    PropertySeekable.findCompatibleIndexTypes(propertyValueType(semanticTable))
 }
 
 object PropertySeekable {

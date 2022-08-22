@@ -79,6 +79,8 @@ import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.WithSizeHint
 import org.neo4j.cypher.internal.util.symbols.StringType
 
@@ -136,7 +138,7 @@ case class ExpressionSelectivityCalculator(
     case AsPropertySeekable(seekable) =>
       calculateSelectivityForPropertyEquality(
         seekable.name,
-        seekable.findCompatibleIndexTypes(semanticTable),
+        seekable.propertyValueType(semanticTable),
         seekable.args.sizeHint,
         labelInfo,
         relTypeInfo,
@@ -307,13 +309,19 @@ case class ExpressionSelectivityCalculator(
 
   private def calculateSelectivityForPropertyEquality(
     variable: String,
-    compatibleIndexTypes: Set[IndexType],
+    cypherType: CypherType,
     sizeHint: Option[Int],
     labelInfo: LabelInfo,
     relTypeInfo: RelTypeInfo,
     propertyKey: PropertyKeyName
   )(implicit semanticTable: SemanticTable): Selectivity = {
-    val indexTypesToConsider = indexTypesForPropertyEquality filter compatibleIndexTypes
+    val indexTypesToConsider =
+      if (cypherType == CTString) {
+        indexTypesForPropertyEquality
+      } else {
+        // We cannot use a text index for cardinality estimation unless we know that the property type is a String
+        indexTypesForPropertyEquality.filterNot(_ == IndexType.Text)
+      }
     indexSelectivityWithSizeHint(
       sizeHint,
       { size =>

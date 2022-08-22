@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition.EntityType
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Indexes
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IsQuerySupportedDefaults
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Options
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.RelDef
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getProvidesOrder
@@ -60,6 +61,7 @@ import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
+import org.neo4j.cypher.internal.planner.spi.IndexQueryType
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
@@ -70,6 +72,9 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.cypher.internal.util.symbols.CTPoint
+import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.graphdb
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.schema.ConstraintType
@@ -167,7 +172,9 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
     propExistsSelectivity: Double,
     isUnique: Boolean = false,
     withValues: Boolean = false,
-    withOrdering: IndexOrderCapability = IndexOrderCapability.NONE
+    withOrdering: IndexOrderCapability = IndexOrderCapability.NONE,
+    // TODO do we need a different default value?
+    isQuerySupported: (IndexQueryType, CypherType) => Boolean = (_, _) => false
   )
 
   object IndexDefinition {
@@ -217,6 +224,47 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
     case TEXT     => false
     case RANGE    => true
     case POINT    => true
+  }
+
+  object IsQuerySupportedDefaults {
+
+    val text_1_0: (IndexQueryType, CypherType) => Boolean = (queryType, cypherType) => {
+      cypherType == CTString &&
+      Set[IndexQueryType](
+        IndexQueryType.EXACT,
+        IndexQueryType.RANGE,
+        IndexQueryType.STRING_PREFIX,
+        IndexQueryType.STRING_SUFFIX,
+        IndexQueryType.STRING_CONTAINS
+      ).contains(queryType)
+    }
+
+    val text_2_0: (IndexQueryType, CypherType) => Boolean = (queryType, cypherType) => {
+      cypherType == CTString &&
+      Set[IndexQueryType](
+        IndexQueryType.EXACT,
+        IndexQueryType.STRING_PREFIX,
+        IndexQueryType.STRING_SUFFIX,
+        IndexQueryType.STRING_CONTAINS
+      ).contains(queryType)
+    }
+
+    val point: (IndexQueryType, CypherType) => Boolean = (queryType, cypherType) => {
+      cypherType == CTPoint &&
+      Set[IndexQueryType](
+        IndexQueryType.EXACT,
+        IndexQueryType.BOUNDING_BOX
+      ).contains(queryType)
+    }
+
+    val range: (IndexQueryType, CypherType) => Boolean = (queryType, _) => {
+      Set[IndexQueryType](
+        IndexQueryType.EXISTS,
+        IndexQueryType.EXACT,
+        IndexQueryType.RANGE,
+        IndexQueryType.STRING_PREFIX
+      ).contains(queryType)
+    }
   }
 }
 
@@ -310,7 +358,8 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
     isUnique: Boolean = false,
     withValues: Boolean = false,
     providesOrder: IndexOrderCapability = IndexOrderCapability.NONE,
-    indexType: graphdb.schema.IndexType = graphdb.schema.IndexType.RANGE
+    indexType: graphdb.schema.IndexType = graphdb.schema.IndexType.RANGE,
+    maybeIsQuerySupported: Option[(IndexQueryType, CypherType) => Boolean] = None
   ): StatisticsBackedLogicalPlanningConfigurationBuilder = {
 
     val indexDef = IndexDefinition(
@@ -321,7 +370,8 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
       uniqueValueSelectivity = uniqueSelectivity,
       isUnique = isUnique,
       withValues = withValues,
-      withOrdering = providesOrder
+      withOrdering = providesOrder,
+      isQuerySupported = defaultIsQuerySupported(indexType, maybeIsQuerySupported)
     )
 
     addLabel(label).addIndexDefAndProperties(indexDef, properties)
@@ -335,7 +385,8 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
     isUnique: Boolean = false,
     withValues: Boolean = false,
     providesOrder: IndexOrderCapability = IndexOrderCapability.NONE,
-    indexType: graphdb.schema.IndexType = graphdb.schema.IndexType.RANGE
+    indexType: graphdb.schema.IndexType = graphdb.schema.IndexType.RANGE,
+    maybeIsQuerySupported: Option[(IndexQueryType, CypherType) => Boolean] = None
   ): StatisticsBackedLogicalPlanningConfigurationBuilder = {
 
     val indexDef = IndexDefinition(
@@ -346,10 +397,29 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
       uniqueValueSelectivity = uniqueSelectivity,
       isUnique = isUnique,
       withValues = withValues,
-      withOrdering = providesOrder
+      withOrdering = providesOrder,
+      isQuerySupported = defaultIsQuerySupported(indexType, maybeIsQuerySupported)
     )
 
     addRelType(relType).addIndexDefAndProperties(indexDef, properties)
+  }
+
+  private def defaultIsQuerySupported(
+    indexType: graphdb.schema.IndexType,
+    maybeIsQuerySupported: Option[(IndexQueryType, CypherType) => Boolean]
+  ): (IndexQueryType, CypherType) => Boolean = {
+    maybeIsQuerySupported match {
+      case Some(value) => value
+      case None => indexType match {
+          case graphdb.schema.IndexType.TEXT  => IsQuerySupportedDefaults.text_1_0 // TODO change to text_2_0
+          case graphdb.schema.IndexType.RANGE => IsQuerySupportedDefaults.range
+          case graphdb.schema.IndexType.POINT => IsQuerySupportedDefaults.point
+          case graphdb.schema.IndexType.LOOKUP =>
+            throw new IllegalArgumentException("Please provide a maybeIsQuerySupported for LOOKUP index")
+          case graphdb.schema.IndexType.FULLTEXT =>
+            throw new IllegalArgumentException("Please provide a maybeIsQuerySupported for FULLTEXT index")
+        }
+    }
   }
 
   def addNodeLookupIndex(): StatisticsBackedLogicalPlanningConfigurationBuilder = {
@@ -676,7 +746,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
         indexType: graphdb.schema.IndexType
       ): Iterator[IndexDescriptor] = {
         indexes.propertyIndexes.collect {
-          case indexDef @ IndexDefinition(`entityType`, `indexType`, _, _, _, _, _, _) =>
+          case indexDef @ IndexDefinition(`entityType`, `indexType`, _, _, _, _, _, _, _) =>
             newIndexDescriptor(indexDef)
         }.flatten
       }.iterator
@@ -805,7 +875,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
         indexType: graphdb.schema.IndexType
       ): Option[IndexDescriptor] = {
         indexes.propertyIndexes.collect {
-          case indexDef @ IndexDefinition(`entityType`, `indexType`, `propertyKeys`, _, _, _, _, _) =>
+          case indexDef @ IndexDefinition(`entityType`, `indexType`, `propertyKeys`, _, _, _, _, _, _) =>
             newIndexDescriptor(indexDef)
         }.flatten.headOption
       }
@@ -841,6 +911,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
             props,
             valueCapability = canGetValue,
             orderCapability = indexDef.withOrdering,
+            isQuerySupported = indexDef.isQuerySupported,
             isUnique = indexDef.isUnique
           )
         }
