@@ -94,18 +94,19 @@ class DatabaseUpgradeTransactionIT {
 
     @BeforeEach
     void setUp() throws IOException {
+        assumeThat(V5_0).isLessThan(LATEST);
         restartDbms();
     }
 
     @AfterEach
     void tearDown() {
-        dbms.shutdown();
+        if (dbms != null) {
+            dbms.shutdown();
+        }
     }
 
     @Test
     void shouldUpgradeDatabaseToLatestVersionOnFirstWriteTransaction() throws Exception {
-        assumeThat(V5_0).isLessThan(LATEST);
-
         // Given
         setKernelVersion(V5_0);
         setDbmsRuntime(DbmsRuntimeVersion.V5_0);
@@ -135,8 +136,6 @@ class DatabaseUpgradeTransactionIT {
 
     @Test
     void shouldUpgradeDatabaseToMaxKernelVersionForDbmsRuntimeVersionOnFirstWriteTransaction() throws Exception {
-        assumeThat(V5_0).isLessThan(LATEST);
-
         setKernelVersion(V5_0);
         setDbmsRuntime(DbmsRuntimeVersion.V5_0);
         restartDbms();
@@ -165,8 +164,6 @@ class DatabaseUpgradeTransactionIT {
 
     @Test
     void shouldUpgradeDatabaseToLatestVersionOnFirstWriteTransactionStressTest() throws Throwable {
-        assumeThat(V5_0).isLessThan(LATEST);
-
         setKernelVersion(V5_0);
         setDbmsRuntime(DbmsRuntimeVersion.V5_0);
         restartDbms();
@@ -201,8 +198,6 @@ class DatabaseUpgradeTransactionIT {
 
     @Test
     void shouldUpgradeDatabaseToLatestVersionOnDenseNodeTransactionStressTest() throws Throwable {
-        assumeThat(V5_0).isLessThan(LATEST);
-
         setKernelVersion(V5_0);
         setDbmsRuntime(DbmsRuntimeVersion.V5_0);
         restartDbms();
@@ -270,8 +265,6 @@ class DatabaseUpgradeTransactionIT {
 
     @Test
     void shouldNotUpgradePastDbmsRuntime() throws IOException {
-        assumeThat(V5_0).isLessThan(LATEST);
-
         // Given
         setKernelVersion(V5_0);
         restartDbms();
@@ -287,8 +280,6 @@ class DatabaseUpgradeTransactionIT {
 
     @Test
     void shouldHandleDeadlocksOnUpgradeTransaction() throws Exception {
-        assumeThat(V5_0).isLessThan(LATEST);
-
         // This test tries to simulate a rare but possible deadlock scenario where one ongoing transaction (in commit
         // phase) is waiting for a lock held by the
         // transaction doing the upgrade. Since the first transaction has a shared upgrade lock, and the upgrade
