@@ -33,6 +33,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -91,6 +92,7 @@ public class NoOpensIT {
         var logProvider = new AssertableLogProvider(true);
         try {
             dbms = new TestDatabaseManagementServiceBuilder(testDir.homePath())
+                    .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(testDir.getFileSystem()))
                     .setConfig(setting, settingValue)
                     .setInternalLogProvider(logProvider)
                     .build();
