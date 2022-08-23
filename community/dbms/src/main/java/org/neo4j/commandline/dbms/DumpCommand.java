@@ -72,6 +72,8 @@ import picocli.CommandLine.Parameters;
         description = "Dump a database into a single-file archive. The archive can be used by the load command. "
                 + "<destination-path> should be a directory (in which case a file called <database>.dump will "
                 + "be created), or --to-stdout can be supplied to use standard output. "
+                + "If neither --to-path or --to-stdout is supplied `server.directories.dumps.root` setting will "
+                + "be used as destination. "
                 + "It is not possible to dump a database that is mounted in a running Neo4j server.")
 public class DumpCommand extends AbstractAdminCommand {
     @Parameters(
@@ -80,7 +82,7 @@ public class DumpCommand extends AbstractAdminCommand {
             converter = Converters.DatabaseNamePatternConverter.class)
     private DatabaseNamePattern database;
 
-    @ArgGroup(multiplicity = "1")
+    @ArgGroup()
     private TargetOption target = new TargetOption();
 
     private static class TargetOption {
@@ -116,6 +118,11 @@ public class DumpCommand extends AbstractAdminCommand {
         }
 
         Config config = createConfig();
+
+        if (target.toDir == null && !toStdOut) {
+            target.toDir = createDefaultDumpsDir(config);
+        }
+
         InternalLog log;
         try (Log4jLogProvider logProvider = Util.configuredLogProvider(ctx.out(), verbose)) {
             log = logProvider.getLog(getClass());
@@ -185,6 +192,20 @@ public class DumpCommand extends AbstractAdminCommand {
         }
     }
 
+    private String createDefaultDumpsDir(Config config) {
+        Path defaultDumpPath = config.get(GraphDatabaseSettings.database_dumps_root_path);
+        try {
+            ctx.fs().mkdirs(defaultDumpPath);
+        } catch (IOException e) {
+            throw new CommandFailedException(
+                    format(
+                            "Unable to create default dumps directory at '%s': %s: %s",
+                            defaultDumpPath, e.getClass().getSimpleName(), e.getMessage()),
+                    e);
+        }
+        return defaultDumpPath.toString();
+    }
+
     private Config createConfig() {
         return createPrefilledConfigBuilder()
                 .set(GraphDatabaseSettings.read_only_database_default, true)
@@ -216,7 +237,7 @@ public class DumpCommand extends AbstractAdminCommand {
     }
 
     private static Path buildArchivePath(String database, Path to) {
-        return Files.isDirectory(to) ? to.resolve(database + ".dump") : to;
+        return to.resolve(database + ".dump");
     }
 
     private OutputStream openDumpStream(String databaseName, TargetOption destination) throws IOException {

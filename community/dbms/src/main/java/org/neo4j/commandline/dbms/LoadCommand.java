@@ -39,6 +39,7 @@ import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.function.ThrowingSupplier;
@@ -51,7 +52,10 @@ import picocli.CommandLine.Parameters;
         name = "load",
         header = "Load a database from an archive created with the dump command.",
         description = "Load a database from an archive. <archive-path> must be a directory containing an archive(s) "
-                + "created with the dump command. Existing databases can be replaced "
+                + "created with the dump command. "
+                + "If neither --from-path or --from-stdin is supplied `server.directories.dumps.root` setting will "
+                + "be searched for the archive. "
+                + "Existing databases can be replaced "
                 + "by specifying --overwrite-destination. It is not possible to replace a database that is mounted "
                 + "in a running Neo4j server. If --info is specified, then the database is not loaded, but information "
                 + "(i.e. file count, byte count, and format of load file) about the archive is printed instead.")
@@ -63,7 +67,7 @@ public class LoadCommand extends AbstractAdminCommand {
             converter = Converters.DatabaseNamePatternConverter.class)
     private DatabaseNamePattern database;
 
-    @ArgGroup(multiplicity = "1")
+    @ArgGroup()
     private SourceOption source = new SourceOption();
 
     private static class SourceOption {
@@ -111,13 +115,24 @@ public class LoadCommand extends AbstractAdminCommand {
                             + "Specify a directory as source or a single target database");
         }
 
+        Config config = buildConfig();
+        if (source.path == null && !source.stdIn) {
+            Path defaultDumpsPath = config.get(GraphDatabaseSettings.database_dumps_root_path);
+            if (!ctx.fs().isDirectory(defaultDumpsPath)) {
+                throw new CommandFailedException("The root location for storing dumps ('"
+                        + GraphDatabaseSettings.database_dumps_root_path.name() + "'=" + defaultDumpsPath
+                        + ") doesn't contain any dumps yet. Specify another directory with --from-path.");
+            }
+            source.path = defaultDumpsPath.toString();
+        }
+
         Set<DumpInfo> dbNames = getDbNames(ctx.fs());
 
         if (info) {
             inspectDump(dbNames);
         } else {
             try {
-                loadDump(dbNames);
+                loadDump(dbNames, config);
             } catch (IOException e) {
                 wrapIOException(e);
             }
@@ -144,15 +159,14 @@ public class LoadCommand extends AbstractAdminCommand {
         checkFailure(failedLoads, "Print metadata failed for databases: '");
     }
 
-    private ThrowingSupplier<InputStream, IOException> getArchiveInputStreamSupplier(Path path) throws IOException {
+    private ThrowingSupplier<InputStream, IOException> getArchiveInputStreamSupplier(Path path) {
         if (path != null) {
             return () -> Files.newInputStream(path);
         }
         return ctx::in;
     }
 
-    protected void loadDump(Set<DumpInfo> dbNames) throws IOException {
-        Config config = buildConfig();
+    protected void loadDump(Set<DumpInfo> dbNames, Config config) throws IOException {
         LoadDumpExecutor loadDumpExecutor = new LoadDumpExecutor(config, ctx.fs(), ctx.err(), loader);
 
         List<FailedLoad> failedLoads = new ArrayList<>();

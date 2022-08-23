@@ -96,16 +96,18 @@ class LoadCommandTest {
                 USAGE
 
                 load [--expand-commands] [--info] [--overwrite-destination] [--verbose]
-                     [--additional-config=<path>] (--from-path=<path> | --from-stdin) <database>
+                     [--additional-config=<path>] [--from-path=<path> | --from-stdin] <database>
 
                 DESCRIPTION
 
                 Load a database from an archive. <archive-path> must be a directory containing
-                an archive(s) created with the dump command. Existing databases can be replaced
-                by specifying --overwrite-destination. It is not possible to replace a database
-                that is mounted in a running Neo4j server. If --info is specified, then the
-                database is not loaded, but information (i.e. file count, byte count, and
-                format of load file) about the archive is printed instead.
+                an archive(s) created with the dump command. If neither --from-path or
+                --from-stdin is supplied `server.directories.dumps.root` setting will be
+                searched for the archive. Existing databases can be replaced by specifying
+                --overwrite-destination. It is not possible to replace a database that is
+                mounted in a running Neo4j server. If --info is specified, then the database is
+                not loaded, but information (i.e. file count, byte count, and format of load
+                file) about the archive is printed instead.
 
                 PARAMETERS
 
@@ -185,9 +187,8 @@ class LoadCommandTest {
         when(loader.getMetaData(any())).thenReturn(new Loader.DumpMetaData("ZSTD", "42", "1337"));
         var baos = new ByteArrayOutputStream();
         try (PrintStream out = new PrintStream(baos)) {
-            Path dir = Path.of(".");
-            var command =
-                    new LoadCommand(new ExecutionContext(dir, dir, out, out, testDirectory.getFileSystem()), loader);
+            var command = new LoadCommand(
+                    new ExecutionContext(homeDir, homeDir, out, out, testDirectory.getFileSystem()), loader);
             CommandLine.populateCommand(
                     command,
                     "foo",

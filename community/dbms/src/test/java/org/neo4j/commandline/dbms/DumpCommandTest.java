@@ -46,15 +46,16 @@ class DumpCommandTest {
                 USAGE
 
                 dump [--expand-commands] [--verbose] [--additional-config=<path>]
-                     (--to-path=<path> | --to-stdout) <database>
+                     [--to-path=<path> | --to-stdout] <database>
 
                 DESCRIPTION
 
                 Dump a database into a single-file archive. The archive can be used by the load
                 command. <destination-path> should be a directory (in which case a file called
                 <database>.dump will be created), or --to-stdout can be supplied to use
-                standard output. It is not possible to dump a database that is mounted in a
-                running Neo4j server.
+                standard output. If neither --to-path or --to-stdout is supplied `server.
+                directories.dumps.root` setting will be used as destination. It is not possible
+                to dump a database that is mounted in a running Neo4j server.
 
                 PARAMETERS
 
