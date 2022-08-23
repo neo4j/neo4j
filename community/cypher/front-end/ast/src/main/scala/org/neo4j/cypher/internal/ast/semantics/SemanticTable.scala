@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
@@ -144,6 +145,9 @@ class SemanticTable(
    */
   def isRelationshipNoFail(expr: Expression): Boolean =
     types.get(expr).map(_.specified).contains(CTRelationship.invariant)
+
+  def isMapNoFail(expr: Expression): Boolean =
+    types.get(expr).map(_.specified).contains(CTMap.invariant)
 
   def addNode(expr: Variable): SemanticTable =
     addTypeInfo(expr, CTNode.invariant)

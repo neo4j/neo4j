@@ -431,8 +431,9 @@ trait UpdateGraph {
         val (readNodeProps, readRelOrOtherProps) = readProps.partition(p => semanticTable.isNodeNoFail(p.map))
         val (readRelProps, readOtherProps) =
           readRelOrOtherProps.partition(p => semanticTable.isRelationshipNoFail(p.map))
+        val filteredOtherProps = readOtherProps.filterNot(p => semanticTable.isMapNoFail(p.map))
 
-        (readNodeProps.map(_.propertyKey), readRelProps.map(_.propertyKey), readOtherProps.map(_.propertyKey))
+        (readNodeProps.map(_.propertyKey), readRelProps.map(_.propertyKey), filteredOtherProps.map(_.propertyKey))
       } else {
         (Set.empty, Set.empty, Set.empty)
       }
