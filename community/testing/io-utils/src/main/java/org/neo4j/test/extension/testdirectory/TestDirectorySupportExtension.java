@@ -39,6 +39,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.extension.FileSystemExtension;
 import org.neo4j.test.extension.StatefulFieldExtension;
 import org.neo4j.test.utils.TestDirectory;
+import org.opentest4j.TestAbortedException;
 
 public class TestDirectorySupportExtension extends StatefulFieldExtension<TestDirectory>
         implements BeforeEachCallback,
@@ -94,7 +95,10 @@ public class TestDirectorySupportExtension extends StatefulFieldExtension<TestDi
     private void cleanUp(ExtensionContext context) {
         TestDirectory testDirectory = getStoredValue(context);
         try {
-            testDirectory.complete(context.getExecutionException().isEmpty() && !hasFailureMarker(context));
+            testDirectory.complete((context.getExecutionException().isEmpty()
+                            || isTestAssumptionCheckFailure(
+                                    context.getExecutionException().get()))
+                    && !hasFailureMarker(context));
         } catch (Exception e) {
             throw new JUnitException(
                     format("Fail to cleanup test directory for %s test.", context.getDisplayName()), e);
@@ -126,11 +130,20 @@ public class TestDirectorySupportExtension extends StatefulFieldExtension<TestDi
 
     @Override
     public void handleTestExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
-        if (getLifecycle(context) == PER_CLASS) {
-            var store = getTestDirectoryStore(context);
-            store.put(FAILURE_MARKER, TRUE);
+        if (!isTestAssumptionCheckFailure(throwable)) {
+            if (getLifecycle(context) == PER_CLASS) {
+                var store = getTestDirectoryStore(context);
+                store.put(FAILURE_MARKER, TRUE);
+            }
         }
         throw throwable;
+    }
+
+    private boolean isTestAssumptionCheckFailure(Throwable throwable) {
+        if (throwable instanceof TestAbortedException) {
+            return true;
+        }
+        return false;
     }
 
     private boolean hasFailureMarker(ExtensionContext context) {
