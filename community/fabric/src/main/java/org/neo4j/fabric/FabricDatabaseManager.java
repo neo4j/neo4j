@@ -29,6 +29,7 @@ import org.neo4j.fabric.config.FabricSettings;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 public class FabricDatabaseManager {
@@ -102,6 +103,11 @@ public class FabricDatabaseManager {
     }
 
     public boolean isFabricDatabase(String databaseNameRaw) {
+        // a "Fabric" database with special capabilities cannot exist in CE
+        return false;
+    }
+
+    public boolean isFabricDatabase(NamedDatabaseId databaseId) {
         // a "Fabric" database with special capabilities cannot exist in CE
         return false;
     }

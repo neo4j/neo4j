@@ -19,6 +19,8 @@
  */
 package org.neo4j.fabric.eval
 
+import org.neo4j.dbms.database.DatabaseContextProvider
+import org.neo4j.fabric.FabricDatabaseManager
 import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.kernel.database.NamedDatabaseId
@@ -45,6 +47,8 @@ trait DatabaseLookup {
   def databaseIds: SortedSet[NamedDatabaseId]
 
   def databaseId(databaseName: NormalizedDatabaseName): Option[NamedDatabaseId]
+
+  def isVirtualDatabase(databaseId: NamedDatabaseId): Boolean
 }
 
 object DatabaseLookup {
@@ -52,22 +56,27 @@ object DatabaseLookup {
   implicit val databaseNameOrdering: Ordering[NormalizedDatabaseName] = Ordering.by(_.name)
   implicit val databaseIdOrdering: Ordering[NamedDatabaseId] = Ordering.by(_.name)
 
-  class Default(databaseRef: DatabaseReferenceRepository) extends DatabaseLookup {
+  class Default(fabricDatabaseManager: FabricDatabaseManager) extends DatabaseLookup {
+
+    private val databaseReferenceRepo: DatabaseReferenceRepository = fabricDatabaseManager.databaseReferenceRepository()
 
     def databaseReferences: SortedSet[DatabaseReference] = {
-      val unsortedSet = databaseRef.getAllDatabaseReferences.asScala
+      val unsortedSet = databaseReferenceRepo.getAllDatabaseReferences.asScala
       SortedSet.empty[DatabaseReference] ++ unsortedSet
     }
 
     def databaseIds: SortedSet[NamedDatabaseId] = {
-      val unsortedSet = databaseRef.getInternalDatabaseReferences.asScala.map(_.databaseId)
+      val unsortedSet = databaseReferenceRepo.getInternalDatabaseReferences.asScala.map(_.databaseId)
       SortedSet.empty[NamedDatabaseId] ++ unsortedSet
     }
 
     def databaseId(databaseName: NormalizedDatabaseName): Option[NamedDatabaseId] = {
-      databaseRef.getByAlias(databaseName).toScala.collect {
+      databaseReferenceRepo.getByAlias(databaseName).toScala.collect {
         case ref: DatabaseReference.Internal => ref.databaseId
       }
     }
+
+    def isVirtualDatabase(databaseId: NamedDatabaseId): Boolean =
+      fabricDatabaseManager.isFabricDatabase(databaseId)
   }
 }
