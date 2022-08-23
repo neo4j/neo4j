@@ -42,6 +42,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.Race;
@@ -274,7 +275,9 @@ class RollbackIdLeakIT {
 
             @Override
             public GraphDatabaseService start() {
-                dbms = new TestDatabaseManagementServiceBuilder(directory.homePath()).build();
+                dbms = new TestDatabaseManagementServiceBuilder(directory.homePath())
+                        .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
+                        .build();
                 return dbms.database(DEFAULT_DATABASE_NAME);
             }
 
@@ -329,7 +332,9 @@ class RollbackIdLeakIT {
 
             @Override
             public GraphDatabaseService start() {
-                dbms = new TestDatabaseManagementServiceBuilder(directory.homePath()).build();
+                dbms = new TestDatabaseManagementServiceBuilder(directory.homePath())
+                        .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
+                        .build();
                 return dbms.database(DEFAULT_DATABASE_NAME);
             }
 
