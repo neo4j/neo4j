@@ -21,6 +21,9 @@
   },
   "stacktrace": {
     "$resolver": "exception",
-    "field": "message"
+    "field": "stackTrace",
+    "stackTrace": {
+      "stringified": true
+    }
   }
 }

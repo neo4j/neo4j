@@ -32,6 +32,7 @@ import static org.neo4j.logging.log4j.LoggerTarget.ROOT_LOGGER;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -236,7 +237,7 @@ class LogConfigTest {
         ctx = createLoggerFromXmlConfig(fs, xmlConfig);
 
         ExtendedLogger logger = ctx.getLogger("org.neo4j.classname");
-        logger.warn("test", new RuntimeException("stack"));
+        logger.warn("test", newThrowable("stack"));
 
         assertThat(Files.readString(targetFile))
                 .matches(format(
@@ -283,7 +284,7 @@ class LogConfigTest {
         ctx = createLoggerFromXmlConfig(fs, xmlConfig);
 
         ExtendedLogger logger = ctx.getLogger("org.neo4j.classname");
-        logger.info(new MyStructure(), new RuntimeException("test"));
+        logger.info(new MyStructure(), newThrowable("test"));
 
         assertThat(Files.readString(targetFile))
                 .matches("\\{\"time\":\"" + DATE_PATTERN
@@ -364,5 +365,14 @@ class LogConfigTest {
         protected void formatAsString(StringBuilder stringBuilder) {
             stringBuilder.append(1).append("c");
         }
+    }
+
+    static Throwable newThrowable(final String stackTrace) {
+        return new Throwable() {
+            @Override
+            public void printStackTrace(PrintWriter s) {
+                s.append(stackTrace);
+            }
+        };
     }
 }
