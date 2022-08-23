@@ -65,7 +65,6 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
 
     private final EvictionEvent evictionEvent = new PageCacheEvictionEvent();
     private final EvictionRunEvent evictionRunEvent = new DefaultEvictionRunEvent();
-    private final FileTruncateEvent fileTruncateEvent = new DefaultFileTruncateEvent();
     private final DatabaseFlushEvent databaseFlushEvent = new DatabaseFlushEvent(new DefaultPageCacheFileFlushEvent());
 
     public DefaultPageCacheTracer() {
@@ -104,11 +103,6 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     @Override
     public EvictionRunEvent beginEviction() {
         return evictionRunEvent;
-    }
-
-    @Override
-    public FileTruncateEvent beginFileTruncate() {
-        return fileTruncateEvent;
     }
 
     @Override
@@ -302,6 +296,16 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
+    public void filesTruncated(long truncatedFiles) {
+        this.fileTruncations.add(truncatedFiles);
+    }
+
+    @Override
+    public void bytesTruncated(long bytesTruncated) {
+        this.bytesTruncated.add(bytesTruncated);
+    }
+
+    @Override
     public void pins(long pins) {
         this.pins.add(pins);
     }
@@ -374,18 +378,6 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     @Override
     public void maxPages(long maxPages, long pageSize) {
         this.maxPages.set(maxPages);
-    }
-
-    private class DefaultFileTruncateEvent implements FileTruncateEvent {
-        @Override
-        public void close() {
-            fileTruncations.increment();
-        }
-
-        @Override
-        public void truncatedBytes(long oldLastPage, long pagesToKeep, int filePageSize) {
-            bytesTruncated.add((oldLastPage + 1 - pagesToKeep) * filePageSize);
-        }
     }
 
     private class PageCacheFlushEvent implements FlushEvent {

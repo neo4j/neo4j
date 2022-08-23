@@ -17,16 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.tracing;
+package org.neo4j.io.pagecache.tracing.version;
 
-public interface FileTruncateEvent extends AutoCloseablePageCacheTracerEvent {
-    FileTruncateEvent NULL = new FileTruncateEvent() {
-        @Override
-        public void truncatedBytes(long oldLastPage, long pagesToKeep, int filePageSize) {}
-
+public interface RegionSwitchEvent extends AutoCloseable {
+    RegionSwitchEvent NULL = new RegionSwitchEvent() {
         @Override
         public void close() {}
+
+        @Override
+        public void switchRegions(long oldRegion, long oldRegionMarker, long newRegion) {}
     };
 
-    void truncatedBytes(long oldLastPage, long pagesToKeep, int filePageSize);
+    @Override
+    void close();
+
+    void switchRegions(long oldRegion, long oldRegionMarker, long newRegion);
 }

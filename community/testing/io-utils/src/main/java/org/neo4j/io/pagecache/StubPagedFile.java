@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.monitoring.PageFileCounters;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
+import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
 
 public class StubPagedFile implements PagedFile {
     private final int pageSize;
@@ -118,5 +119,5 @@ public class StubPagedFile implements PagedFile {
     }
 
     @Override
-    public void truncate(long pagesToKeep) {}
+    public void truncate(long pagesToKeep, FileTruncateEvent truncateEvent) throws IOException {}
 }

@@ -25,6 +25,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.TransactionIdSequence;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
@@ -38,6 +39,7 @@ public class CommunityVersionStorageFactory implements VersionStorageFactory {
             JobScheduler scheduler,
             LogProvider logProvider,
             Dependencies dependencies,
+            DatabaseTracers databaseTracers,
             DatabaseLayout databaseLayout,
             DatabaseConfig databaseConfig) {
         return VersionStorage.EMPTY_STORAGE;

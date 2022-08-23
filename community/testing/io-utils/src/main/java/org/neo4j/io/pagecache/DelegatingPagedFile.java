@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.monitoring.PageFileCounters;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
 
 public class DelegatingPagedFile implements PagedFile {
     private final PagedFile delegate;
@@ -108,7 +109,7 @@ public class DelegatingPagedFile implements PagedFile {
     }
 
     @Override
-    public void truncate(long pagesToKeep) throws IOException {
-        delegate.truncate(pagesToKeep);
+    public void truncate(long pagesToKeep, FileTruncateEvent truncateEvent) throws IOException {
+        delegate.truncate(pagesToKeep, truncateEvent);
     }
 }

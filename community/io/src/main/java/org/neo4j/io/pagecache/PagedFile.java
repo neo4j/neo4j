@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.monitoring.PageFileCounters;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
 
 /**
  * The representation of a file that has been mapped into the associated page cache.
@@ -231,5 +232,5 @@ public interface PagedFile extends AutoCloseable {
      * This method does not protect from any concurrent readers of writers in locations that will be truncated.
      * If any such protection or guarantees are required those should be done elsewhere.
      */
-    void truncate(long pagesToKeep) throws IOException;
+    void truncate(long pagesToKeep, FileTruncateEvent truncateEvent) throws IOException;
 }

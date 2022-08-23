@@ -114,6 +114,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.version.VersionStorageTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseTracers;
@@ -210,7 +211,8 @@ class RecoveryIT {
         removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
 
         CheckpointTracer checkpointTracer = new CheckpointTracer();
-        var tracers = new DatabaseTracers(checkpointTracer, LockTracer.NONE, PageCacheTracer.NULL);
+        var tracers =
+                new DatabaseTracers(checkpointTracer, LockTracer.NONE, PageCacheTracer.NULL, VersionStorageTracer.NULL);
         recoverDatabase(tracers);
 
         // we should have only one pass over log tails during recovery
@@ -285,7 +287,8 @@ class RecoveryIT {
         removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var tracers = new DatabaseTracers(DatabaseTracer.NULL, LockTracer.NONE, pageCacheTracer);
+        var tracers =
+                new DatabaseTracers(DatabaseTracer.NULL, LockTracer.NONE, pageCacheTracer, VersionStorageTracer.NULL);
         recoverDatabase(tracers);
 
         long pins = pageCacheTracer.pins();

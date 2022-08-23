@@ -29,7 +29,6 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
-import org.neo4j.io.pagecache.tracing.FileTruncateEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -77,11 +76,6 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer {
     @Override
     public EvictionRunEvent beginEviction() {
         return tracer.add(new EvictionRunHEvent(tracer, 0));
-    }
-
-    @Override
-    public FileTruncateEvent beginFileTruncate() {
-        return FileTruncateEvent.NULL;
     }
 
     @Override
@@ -301,4 +295,10 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer {
 
     @Override
     public void chainsPatched(long chainsPatched) {}
+
+    @Override
+    public void filesTruncated(long truncatedFiles) {}
+
+    @Override
+    public void bytesTruncated(long bytesTruncated) {}
 }

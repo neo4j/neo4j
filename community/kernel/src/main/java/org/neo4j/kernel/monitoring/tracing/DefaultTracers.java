@@ -25,6 +25,7 @@ import static org.neo4j.kernel.monitoring.tracing.NullTracersFactory.NULL_TRACER
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.version.VersionStorageTracer;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.InternalLog;
@@ -92,39 +93,34 @@ import org.neo4j.time.SystemNanoClock;
  *     in the traced code to no longer be monomorphic. Implementations should be built with performance in mind, as
  *     the code being traced is often quite important for the performance of the database.
  * </p>
- * <p>
- *     The {@code default} and {@code null} implementation are always available, and 3rd party implementations can
- *     piggy-back on them and extend them. At least one 3rd party implementation is known at this point; the
- *     <a href="https://github.com/neo4j-contrib/neo4j-jfr">neo4j-jfr implementation</a>. It is recommended that
- *     those change the tracer or trace event interfaces, or add tracing to more subsystems, also make sure to keep
- *     the neo4j-jfr code base up to date.
- * </p>
  */
 public class DefaultTracers implements Tracers {
     private final PageCacheTracer pageCacheTracer;
     private final TracerFactory tracersFactory;
     private final SystemNanoClock clock;
+    private final InternalLog log;
 
     /**
      * Create a Tracers subsystem with the desired implementation, if it can be found and created.
      *
-     * Otherwise the default implementation is used, and a warning is logged to the given StringLogger.
+     * Otherwise, the default implementation is used, and a warning is logged to the given StringLogger.
      * @param desiredImplementationName The name of the desired {@link org.neo4j.kernel.monitoring.tracing
      * .TracerFactory} implementation, as given by its {@link TracerFactory#getName()} method.
-     * @param msgLog A {@link InternalLog} for logging when the desired implementation cannot be created.
+     * @param log A {@link InternalLog} for logging when the desired implementation cannot be created.
      * @param monitors the monitoring manager
      * @param jobScheduler a scheduler for async jobs
      */
     public DefaultTracers(
             String desiredImplementationName,
-            InternalLog msgLog,
+            InternalLog log,
             Monitors monitors,
             JobScheduler jobScheduler,
             SystemNanoClock clock,
             Config config) {
         this.clock = clock;
-        this.tracersFactory = createTracersFactory(desiredImplementationName, msgLog);
-        this.pageCacheTracer = tracersFactory.createPageCacheTracer(monitors, jobScheduler, clock, msgLog, config);
+        this.tracersFactory = createTracersFactory(desiredImplementationName, log);
+        this.pageCacheTracer = tracersFactory.createPageCacheTracer(monitors, jobScheduler, clock, log, config);
+        this.log = log;
     }
 
     @Override
@@ -140,6 +136,11 @@ public class DefaultTracers implements Tracers {
     @Override
     public DatabaseTracer getDatabaseTracer() {
         return tracersFactory.createDatabaseTracer(pageCacheTracer, clock);
+    }
+
+    @Override
+    public VersionStorageTracer getVersionStorageTracer() {
+        return tracersFactory.createVersionStorageTracer(pageCacheTracer, log);
     }
 
     private static TracerFactory createTracersFactory(String desiredImplementationName, InternalLog msgLog) {

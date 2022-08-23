@@ -310,6 +310,7 @@ public class Database extends AbstractDatabase {
                 scheduler,
                 internalLogProvider,
                 databaseDependencies,
+                tracers,
                 databaseLayout,
                 databaseConfig);
         databasePageCache = new DatabasePageCache(globalPageCache, ioController, versionStorage);

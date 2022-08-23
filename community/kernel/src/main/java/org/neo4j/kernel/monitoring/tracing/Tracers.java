@@ -20,6 +20,7 @@
 package org.neo4j.kernel.monitoring.tracing;
 
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.version.VersionStorageTracer;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.lock.LockTracer;
 
@@ -40,6 +41,11 @@ public interface Tracers {
         public DatabaseTracer getDatabaseTracer() {
             return DatabaseTracer.NULL;
         }
+
+        @Override
+        public VersionStorageTracer getVersionStorageTracer() {
+            return VersionStorageTracer.NULL;
+        }
     };
 
     PageCacheTracer getPageCacheTracer();
@@ -47,4 +53,6 @@ public interface Tracers {
     LockTracer getLockTracer();
 
     DatabaseTracer getDatabaseTracer();
+
+    VersionStorageTracer getVersionStorageTracer();
 }

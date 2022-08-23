@@ -20,26 +20,37 @@
 package org.neo4j.kernel.database;
 
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.version.VersionStorageTracer;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.lock.LockTracer;
 
 public class DatabaseTracers {
     public static final DatabaseTracers EMPTY =
-            new DatabaseTracers(DatabaseTracer.NULL, LockTracer.NONE, PageCacheTracer.NULL);
+            new DatabaseTracers(DatabaseTracer.NULL, LockTracer.NONE, PageCacheTracer.NULL, VersionStorageTracer.NULL);
 
     private final DatabaseTracer databaseTracer;
     private final LockTracer lockTracer;
     private final PageCacheTracer pageCacheTracer;
+    private final VersionStorageTracer versionStorageTracer;
 
     public DatabaseTracers(Tracers tracers) {
-        this(tracers.getDatabaseTracer(), tracers.getLockTracer(), tracers.getPageCacheTracer());
+        this(
+                tracers.getDatabaseTracer(),
+                tracers.getLockTracer(),
+                tracers.getPageCacheTracer(),
+                tracers.getVersionStorageTracer());
     }
 
-    public DatabaseTracers(DatabaseTracer databaseTracer, LockTracer lockTracer, PageCacheTracer pageCacheTracer) {
+    public DatabaseTracers(
+            DatabaseTracer databaseTracer,
+            LockTracer lockTracer,
+            PageCacheTracer pageCacheTracer,
+            VersionStorageTracer versionStorageTracer) {
         this.databaseTracer = databaseTracer;
         this.lockTracer = lockTracer;
         this.pageCacheTracer = pageCacheTracer;
+        this.versionStorageTracer = versionStorageTracer;
     }
 
     public DatabaseTracer getDatabaseTracer() {
@@ -52,5 +63,9 @@ public class DatabaseTracers {
 
     public PageCacheTracer getPageCacheTracer() {
         return pageCacheTracer;
+    }
+
+    public VersionStorageTracer getVersionStorageTracer() {
+        return versionStorageTracer;
     }
 }

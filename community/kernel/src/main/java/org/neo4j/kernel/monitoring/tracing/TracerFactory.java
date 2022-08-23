@@ -24,6 +24,7 @@ import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.version.VersionStorageTracer;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.InternalLog;
@@ -69,5 +70,12 @@ public interface TracerFactory extends NamedService {
      */
     default LockTracer createLockTracer(Clock clock) {
         return LockTracer.NONE;
+    }
+
+    /**
+     * Create a new version storage tracer instance. Tracer is used only in multi versioned enterprise store.
+     */
+    default VersionStorageTracer createVersionStorageTracer(PageCacheTracer pageCacheTracer, InternalLog log) {
+        return VersionStorageTracer.NULL;
     }
 }

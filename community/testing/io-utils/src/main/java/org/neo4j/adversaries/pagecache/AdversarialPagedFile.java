@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.monitoring.PageFileCounters;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
 
 /**
  * A {@linkplain PagedFile paged file} that wraps another paged file and an {@linkplain Adversary adversary} to provide
@@ -132,9 +133,9 @@ public class AdversarialPagedFile implements PagedFile {
     }
 
     @Override
-    public void truncate(long pagesToKeep) throws IOException {
+    public void truncate(long pagesToKeep, FileTruncateEvent fileTruncateEvent) throws IOException {
         adversary.injectFailure(IOException.class);
-        delegate.truncate(pagesToKeep);
+        delegate.truncate(pagesToKeep, fileTruncateEvent);
     }
 
     @Override

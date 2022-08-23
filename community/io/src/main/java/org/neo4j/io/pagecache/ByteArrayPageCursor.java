@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.monitoring.PageFileCounters;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
+import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
 
 /**
  * Wraps a byte array and present it as a PageCursor.
@@ -410,6 +411,6 @@ public class ByteArrayPageCursor extends PageCursor {
         }
 
         @Override
-        public void truncate(long pagesToKeep) {}
+        public void truncate(long pagesToKeep, FileTruncateEvent truncateEvent) {}
     }
 }

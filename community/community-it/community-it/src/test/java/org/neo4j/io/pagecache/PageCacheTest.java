@@ -111,6 +111,9 @@ import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
+import org.neo4j.io.pagecache.tracing.version.DefaultVersionStorageTracer;
+import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
+import org.neo4j.io.pagecache.tracing.version.RegionCollectionEvent;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.util.concurrent.BinaryLatch;
 import org.neo4j.util.concurrent.Futures;
@@ -4072,7 +4075,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 pf.flushAndForce(FileFlushEvent.NULL);
                 assertEquals(21L * filePageSize, fs.getFileSize(file));
 
-                pf.truncate(10);
+                pf.truncate(10, FileTruncateEvent.NULL);
                 assertEquals(10L * filePageSize, fs.getFileSize(file));
             }
         });
@@ -4082,6 +4085,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void truncatePageFileTraceEvents() {
         assertTimeoutPreemptively(ofMillis(SEMI_LONG_TIMEOUT_MILLIS), () -> {
             var cacheTracer = new DefaultPageCacheTracer();
+            var storageTracer = new DefaultVersionStorageTracer(cacheTracer);
             getPageCache(fs, maxPages, cacheTracer);
             Path file = file("a");
             try (PagedFile pf = map(file, filePageSize)) {
@@ -4090,12 +4094,26 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
                 pf.flushAndForce(FileFlushEvent.NULL);
 
-                pf.truncate(22);
-                pf.truncate(21);
-                pf.truncate(20);
-                pf.truncate(19);
-                pf.truncate(17);
-                pf.truncate(15);
+                try (RegionCollectionEvent collectionEvent = storageTracer.beginRegionCollection()) {
+                    try (var truncateEvent = collectionEvent.attemptTruncate()) {
+                        pf.truncate(22, truncateEvent);
+                    }
+                    try (var truncateEvent = collectionEvent.attemptTruncate()) {
+                        pf.truncate(21, truncateEvent);
+                    }
+                    try (var truncateEvent = collectionEvent.attemptTruncate()) {
+                        pf.truncate(20, truncateEvent);
+                    }
+                    try (var truncateEvent = collectionEvent.attemptTruncate()) {
+                        pf.truncate(19, truncateEvent);
+                    }
+                    try (var truncateEvent = collectionEvent.attemptTruncate()) {
+                        pf.truncate(17, truncateEvent);
+                    }
+                    try (var truncateEvent = collectionEvent.attemptTruncate()) {
+                        pf.truncate(15, truncateEvent);
+                    }
+                }
 
                 assertEquals(6, cacheTracer.filesTruncated());
                 assertEquals(11L * filePageSize, cacheTracer.bytesTruncated());
@@ -4115,7 +4133,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 pf.flushAndForce(FileFlushEvent.NULL);
                 assertEquals(2, pf.getLastPageId());
 
-                pf.truncate(1);
+                pf.truncate(1, FileTruncateEvent.NULL);
                 assertEquals(0, pf.getLastPageId());
             }
         });
@@ -4129,7 +4147,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             try (PagedFile pf = map(file, filePageSize)) {
                 assertThat(pf.getLastPageId()).isNegative();
 
-                pf.truncate(0);
+                pf.truncate(0, FileTruncateEvent.NULL);
                 assertThat(pf.getLastPageId()).isNegative();
             }
         });
@@ -4147,7 +4165,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 pf.flushAndForce(FileFlushEvent.NULL);
                 assertEquals(2, pf.getLastPageId());
 
-                pf.truncate(0);
+                pf.truncate(0, FileTruncateEvent.NULL);
                 assertThat(pf.getLastPageId()).isNegative();
 
                 try (PageCursor cursor = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
@@ -4175,7 +4193,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                         }
                     }
 
-                    pf.truncate(pagesToKeep);
+                    pf.truncate(pagesToKeep, FileTruncateEvent.NULL);
                 }
 
                 assertEquals(pagesToKeep - 1, pf.getLastPageId());
@@ -4191,6 +4209,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             // number of pages to keep matching flush vector size to make calculation easier
             long pagesToKeep = 128;
             var cacheTracer = new DefaultPageCacheTracer();
+            var versionStorageTracer = new DefaultVersionStorageTracer(cacheTracer);
             getPageCache(fs, 1000, cacheTracer);
             Path file = file("a");
             try (PagedFile pf = map(file, filePageSize)) {
@@ -4205,7 +4224,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     long beforeTruncation = cacheTracer.bytesTruncated();
                     long beforeWriter = cacheTracer.bytesWritten();
 
-                    pf.truncate(pagesToKeep);
+                    try (var regionCollection = versionStorageTracer.beginRegionCollection();
+                            var truncateEvent = regionCollection.attemptTruncate()) {
+                        pf.truncate(pagesToKeep, truncateEvent);
+                    }
                     try (FileFlushEvent fileFlushEvent = cacheTracer.beginFileFlush()) {
                         pf.flushAndForce(fileFlushEvent);
                     }
@@ -4230,7 +4252,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
                 assertEquals(10, pf.getLastPageId());
 
-                pf.truncate(4);
+                pf.truncate(4, FileTruncateEvent.NULL);
                 assertEquals(3, pf.getLastPageId());
             }
         });
@@ -4251,7 +4273,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 pf.flushAndForce(FileFlushEvent.NULL);
                 assertEquals(21L * filePageSize, fs.getFileSize(file));
 
-                pf.truncate(7);
+                pf.truncate(7, FileTruncateEvent.NULL);
                 assertEquals(7L * filePageSize, fs.getFileSize(file));
 
                 for (int i = 7; i < 25; i++) {
@@ -4280,7 +4302,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
                 pf.flushAndForce(FileFlushEvent.NULL);
 
-                pf.truncate(5);
+                pf.truncate(5, FileTruncateEvent.NULL);
                 for (int i = 0; i < 4; i++) {
                     try (PageCursor cursor = pf.io(i, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
                         assertTrue(cursor.next());
@@ -4305,7 +4327,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
                 pf.flushAndForce(FileFlushEvent.NULL);
 
-                pf.truncate(7);
+                pf.truncate(7, FileTruncateEvent.NULL);
 
                 for (int i = 7; i < 24; i++) {
                     try (PageCursor cursor = pf.io(i, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {

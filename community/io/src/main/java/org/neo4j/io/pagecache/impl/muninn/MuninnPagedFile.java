@@ -46,6 +46,7 @@ import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
+import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
 
 final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     static final int UNMAPPED_TTE = -1;
@@ -279,20 +280,18 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     }
 
     @Override
-    public synchronized void truncate(long pagesToKeep) throws IOException {
-        try (var truncateEvent = pageCacheTracer.beginFileTruncate()) {
-            long lastPageId = getLastPageId();
-            if (lastPageId < pagesToKeep) {
-                return;
-            }
-            // header state update
-            setLastPageIdTo(pagesToKeep - 1);
-            // update translation table
-            truncateCapacity(pagesToKeep);
-            // truncate file
-            swapper.truncate(pagesToKeep * filePageSize);
-            truncateEvent.truncatedBytes(lastPageId, pagesToKeep, filePageSize);
+    public synchronized void truncate(long pagesToKeep, FileTruncateEvent truncateEvent) throws IOException {
+        long lastPageId = getLastPageId();
+        if (lastPageId < pagesToKeep) {
+            return;
         }
+        // header state update
+        setLastPageIdTo(pagesToKeep - 1);
+        // update translation table
+        truncateCapacity(pagesToKeep);
+        // truncate file
+        swapper.truncate(pagesToKeep * filePageSize);
+        truncateEvent.truncatedBytes(lastPageId, pagesToKeep, filePageSize);
     }
 
     @Override

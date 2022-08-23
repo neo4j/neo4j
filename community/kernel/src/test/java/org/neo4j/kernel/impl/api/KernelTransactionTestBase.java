@@ -55,6 +55,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.version.DefaultVersionStorageTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseIdRepository;
@@ -188,6 +189,7 @@ class KernelTransactionTestBase {
         var readOnlyLookup = new ConfigBasedLookupFactory(config, databaseIdRepository);
         var readOnlyChecker = new ReadOnlyDatabases(readOnlyLookup);
         DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
+        DefaultVersionStorageTracer versionStorageTracer = new DefaultVersionStorageTracer(pageCacheTracer);
         return new KernelTransactionImplementation(
                 config,
                 mock(DatabaseTransactionEventListeners.class),
@@ -198,7 +200,8 @@ class KernelTransactionTestBase {
                 txPool,
                 clock,
                 new AtomicReference<>(CpuClock.NOT_AVAILABLE),
-                new DatabaseTracers(new DefaultTracer(pageCacheTracer), LockTracer.NONE, pageCacheTracer),
+                new DatabaseTracers(
+                        new DefaultTracer(pageCacheTracer), LockTracer.NONE, pageCacheTracer, versionStorageTracer),
                 storageEngine,
                 any -> CanWrite.INSTANCE,
                 new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY),

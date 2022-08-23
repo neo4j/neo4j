@@ -44,6 +44,7 @@ import org.neo4j.io.pagecache.monitoring.PageFileCounters;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileMappedListener;
+import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
 
 /**
  * Wrapper around global page cache for an individual database. Abstracts the knowledge that database can have about other databases mapped files
@@ -278,8 +279,8 @@ public class DatabasePageCache implements PageCache {
         }
 
         @Override
-        public void truncate(long pagesToKeep) throws IOException {
-            delegate.truncate(pagesToKeep);
+        public void truncate(long pagesToKeep, FileTruncateEvent fileTruncateEvent) throws IOException {
+            delegate.truncate(pagesToKeep, fileTruncateEvent);
         }
 
         @Override
