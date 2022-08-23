@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.EXACT;
+import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.RANGE;
+import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.STRING_CONTAINS;
+import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.STRING_PREFIX;
+import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.STRING_SUFFIX;
+
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
@@ -73,11 +79,10 @@ public abstract class TextIndexCapability implements IndexCapability {
             return false;
         }
 
-        return switch (queryType) {
-            case EXACT, RANGE, STRING_PREFIX, STRING_CONTAINS, STRING_SUFFIX -> true;
-            default -> false;
-        };
+        return isIndexQueryTypeSupported(queryType);
     }
+
+    abstract boolean isIndexQueryTypeSupported(IndexQueryType indexQueryType);
 
     @Override
     public double getCostMultiplier(IndexQueryType... queryTypes) {
@@ -109,6 +114,14 @@ public abstract class TextIndexCapability implements IndexCapability {
         protected double costMultiplierGood() {
             return COST_MULTIPLIER_TEXT_GOOD;
         }
+
+        @Override
+        boolean isIndexQueryTypeSupported(IndexQueryType indexQueryType) {
+            return switch (indexQueryType) {
+                case EXACT, RANGE, STRING_PREFIX, STRING_CONTAINS, STRING_SUFFIX -> true;
+                default -> false;
+            };
+        }
     }
 
     private static class Trigram extends TextIndexCapability {
@@ -121,6 +134,14 @@ public abstract class TextIndexCapability implements IndexCapability {
         @Override
         protected double costMultiplierGood() {
             return COST_MULTIPLIER_TRIGRAM_GOOD;
+        }
+
+        @Override
+        boolean isIndexQueryTypeSupported(IndexQueryType indexQueryType) {
+            return switch (indexQueryType) {
+                case EXACT, STRING_PREFIX, STRING_CONTAINS, STRING_SUFFIX -> true;
+                default -> false;
+            };
         }
     }
 }
