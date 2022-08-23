@@ -49,16 +49,12 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.virtual.MapValue;
 
 /**
- * This state machine oversees the exchange of messages for the Bolt protocol.
- * Central to this are the five active states -- CONNECTED, READY, STREAMING,
- * FAILED and INTERRUPTED -- as well as the transitions between them which
- * correspond to the Bolt protocol request messages INIT, ACK_FAILURE, RESET,
- * RUN, DISCARD_ALL and PULL_ALL. Of particular note is RESET which exhibits
- * dual behaviour in both marking the current query for termination and clearing
- * down the current connection state.
+ * This state machine oversees the exchange of messages for the Bolt protocol. Central to this are the five active states -- CONNECTED, READY, STREAMING, FAILED
+ * and INTERRUPTED -- as well as the transitions between them which correspond to the Bolt protocol request messages INIT, ACK_FAILURE, RESET, RUN, DISCARD_ALL
+ * and PULL_ALL. Of particular note is RESET which exhibits dual behaviour in both marking the current query for termination and clearing down the current
+ * connection state.
  * <p>
- * To help ensure a secure protocol, any transition not explicitly defined here
- * (i.e. a message sent out of sequence) will result in an immediate failure
+ * To help ensure a secure protocol, any transition not explicitly defined here (i.e. a message sent out of sequence) will result in an immediate failure
  * response and a closed connection.
  */
 public abstract class AbstractBoltStateMachine implements BoltStateMachine
@@ -168,15 +164,12 @@ public abstract class AbstractBoltStateMachine implements BoltStateMachine
     }
 
     /**
-     * When this is invoked, the machine will make attempts
-     * at interrupting any currently running action,
-     * and will then ignore all inbound messages until a {@code RESET}
-     * message is received. If this is called multiple times, an equivalent number
-     * of reset messages must be received before the SSM goes back to a good state.
+     * When this is invoked, the machine will make attempts at interrupting any currently running action, and will then ignore all inbound messages until a
+     * {@code RESET} message is received. If this is called multiple times, an equivalent number of reset messages must be received before the SSM goes back to
+     * a good state.
      * <p>
-     * You can imagine this is as a "call ahead" mechanism used by RESET to
-     * cancel any statements ahead of it in line, without compromising the single-
-     * threaded processing of messages that the state machine does.
+     * You can imagine this is as a "call ahead" mechanism used by RESET to cancel any statements ahead of it in line, without compromising the single- threaded
+     * processing of messages that the state machine does.
      * <p>
      * This can be used to cancel a long-running statement or transaction.
      */
@@ -191,16 +184,30 @@ public abstract class AbstractBoltStateMachine implements BoltStateMachine
     }
 
     /**
-     * When this is invoked, the machine will check whether the related transaction is
-     * marked for termination and releasing the related transactional resources.
+     * When this is invoked, the machine will check whether the related transaction is marked for termination and releasing the related transactional
+     * resources.
      */
     @Override
     public void validateTransaction() throws KernelException
     {
-        var status = transactionManager().transactionStatus( connectionState.getCurrentTransactionId() );
+        var currentTxId = connectionState.getCurrentTransactionId();
+        if ( currentTxId == null )
+        {
+            return;
+        }
+
+        var status = transactionManager().transactionStatus( currentTxId );
         if ( status.value().equals( TransactionStatus.Value.INTERRUPTED ) )
         {
             connectionState().setPendingTerminationNotice( status.error() );
+
+            try
+            {
+                transactionManager().rollback( currentTxId );
+            }
+            catch ( TransactionNotFoundException ignore )
+            {
+            }
         }
     }
 

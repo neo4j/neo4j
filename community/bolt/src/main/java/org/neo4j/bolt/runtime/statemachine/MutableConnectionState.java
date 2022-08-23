@@ -142,6 +142,7 @@ public class MutableConnectionState implements BoltResponseHandler
     {
         pendingError = null;
         pendingIgnore = false;
+        pendingTerminationNotice = null;
     }
 
     public boolean canProcessMessage()

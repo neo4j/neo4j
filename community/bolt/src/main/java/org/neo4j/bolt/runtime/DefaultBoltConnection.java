@@ -219,6 +219,8 @@ public class DefaultBoltConnection implements BoltConnection
                 // condition to this thread
                 if ( waitForMessage || !queue.isEmpty() )
                 {
+                    machine.validateTransaction();
+
                     queue.drainTo( batch, batchCount );
                     // if we expect one message but did not get any (because it was already
                     // processed), silently exit
@@ -235,10 +237,6 @@ public class DefaultBoltConnection implements BoltConnection
                                 batch.add( nextJob );
 
                                 break;
-                            }
-                            else
-                            {
-                                machine.validateTransaction();
                             }
                         }
                     }
