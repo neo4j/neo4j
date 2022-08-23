@@ -109,7 +109,7 @@ class DatabaseStartupTest {
                             .causeOfFailure(databaseService.databaseId())
                             .get())
                     .hasRootCauseExactlyInstanceOf(IllegalArgumentException.class)
-                    .hasRootCauseMessage("Unknown store version 'bad-even_worse-1-1'");
+                    .hasRootCauseMessage("Unknown store version 'bad-even_worse-1.1'");
         } finally {
             managementService.shutdown();
         }

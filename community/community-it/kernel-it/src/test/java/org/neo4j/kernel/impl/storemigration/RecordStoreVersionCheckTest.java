@@ -158,7 +158,7 @@ class RecordStoreVersionCheckTest {
         assertEquals(StoreVersionCheck.MigrationOutcome.STORE_VERSION_RETRIEVAL_FAILURE, result.outcome());
         assertNull(result.versionToMigrateFrom());
         assertNotNull(result.cause());
-        assertThat(result.cause()).hasMessageContaining("Unknown store version 'engine_1-family_1-1-1'");
+        assertThat(result.cause()).hasMessageContaining("Unknown store version 'engine_1-family_1-1.1'");
     }
 
     @Test
@@ -177,7 +177,7 @@ class RecordStoreVersionCheckTest {
         assertEquals(StoreVersionCheck.UpgradeOutcome.STORE_VERSION_RETRIEVAL_FAILURE, result.outcome());
         assertNull(result.versionToUpgradeFrom());
         assertNotNull(result.cause());
-        assertThat(result.cause()).hasMessageContaining("Unknown store version 'engine_1-family_1-1-1");
+        assertThat(result.cause()).hasMessageContaining("Unknown store version 'engine_1-family_1-1.1");
     }
 
     @Test
@@ -236,7 +236,7 @@ class RecordStoreVersionCheckTest {
 
         StoreId storeId = StoreId.retrieveFromStore(fileSystem, databaseLayout, pageCache, cursorContext);
         assertNotNull(storeId);
-        assertEquals("record-aligned-1-1", storeId.getStoreVersionUserString());
+        assertEquals("record-aligned-1.1", storeId.getStoreVersionUserString());
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat(cursorTracer.pins()).isEqualTo(1);

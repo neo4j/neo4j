@@ -279,7 +279,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
       "currentSecondariesCount" -> 0,
       "requestedPrimariesCount" -> null,
       "requestedSecondariesCount" -> null,
-      "store" -> "record-aligned-1-1",
+      "store" -> "record-aligned-1.1",
       "lastCommittedTxn" -> null,
       "replicationLag" -> 0
     )

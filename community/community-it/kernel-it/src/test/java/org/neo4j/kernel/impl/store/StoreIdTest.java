@@ -59,7 +59,7 @@ class StoreIdTest {
     private RecordDatabaseLayout databaseLayout;
 
     @ParameterizedTest
-    @CsvSource({"standard,record-standard-1-1", "aligned,record-aligned-1-1"})
+    @CsvSource({"standard,record-standard-1.1", "aligned,record-aligned-1.1"})
     void testRetrievalOfStoreId(String format, String expectedStoreVersion) throws IOException {
         assertNull(StoreId.retrieveFromStore(fileSystem, databaseLayout, pageCache, NULL_CONTEXT));
         var dbms = new TestDatabaseManagementServiceBuilder(databaseLayout)
