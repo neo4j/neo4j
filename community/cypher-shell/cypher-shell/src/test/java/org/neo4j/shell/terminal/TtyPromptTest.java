@@ -29,11 +29,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -44,31 +46,72 @@ class TtyPromptTest
 {
 
     @Test
-    void readLine() throws IOException
+    void readLineUtf8() throws IOException
     {
-        assertRead( "one line\n", "one line" );
-        assertRead( "one line\r", "one line" );
-        assertRead( "one line\r\n", "one line" );
-        assertRead( "one line\nand more", "one line" );
-        assertRead( "one line with tab \t\n", "one line with tab \t" );
-        assertRead( "\n", "" );
-        assertRead( "åäö\n", "åäö" );
-        assertRead( "incomplete line", null );
-        assertRead( "", null );
+        readLineTest( UTF_8 );
     }
 
     @Test
-    void readPassword() throws IOException
+    void readLineIso8859_1() throws IOException
     {
-        assertReadPassword( "one line\n", "one line" );
-        assertReadPassword( "one line\r", "one line" );
-        assertReadPassword( "one line\r\n", "one line" );
-        assertReadPassword( "one line\nand more", "one line" );
-        assertReadPassword( "one line with tab \t\n", "one line with tab \t" );
-        assertReadPassword( "\n", "" );
-        assertReadPassword( "åäö\n", "åäö" );
-        assertReadPassword( "incomplete line", null );
-        assertReadPassword( "", null );
+        readLineTest( ISO_8859_1 );
+    }
+
+    @Test
+    void readLineUsAscii() throws IOException
+    {
+        readLineTest( StandardCharsets.US_ASCII );
+    }
+
+    private void readLineTest( Charset charset ) throws IOException
+    {
+        assertRead( "one line\n", "one line", charset );
+        assertRead( "one line\r", "one line", charset );
+        assertRead( "one line\r\n", "one line", charset );
+        assertRead( "one line\nand more", "one line", charset );
+        assertRead( "one line with tab \t\n", "one line with tab \t", charset );
+        assertRead( "\n", "", charset );
+        assertRead( "incomplete line", null, charset );
+        assertRead( "", null, charset );
+    }
+
+    @Test
+    void readPasswordUtf8() throws IOException
+    {
+        readPasswordTest( UTF_8 );
+    }
+
+    @Test
+    void readPasswordIso8859() throws IOException
+    {
+        readPasswordTest( ISO_8859_1 );
+    }
+
+    @Test
+    void readPasswordUsAscii() throws IOException
+    {
+        readPasswordTest( StandardCharsets.US_ASCII );
+    }
+
+    private void readPasswordTest( Charset charset ) throws IOException
+    {
+        assertReadPassword( "one line\n", "one line", charset );
+        assertReadPassword( "one line\r", "one line", charset );
+        assertReadPassword( "one line\r\n", "one line", charset );
+        assertReadPassword( "one line\nand more", "one line", charset );
+        assertReadPassword( "one line with tab \t\n", "one line with tab \t", charset );
+        assertReadPassword( "\n", "", charset );
+        assertReadPassword( "incomplete line", null, charset );
+        assertReadPassword( "", null, charset );
+    }
+
+    @Test
+    void readSpecialCharacters() throws IOException
+    {
+        assertRead( "åäö😅\n", "åäö😅", UTF_8 );
+        assertRead( "åäö\n", "åäö", ISO_8859_1 );
+        assertReadPassword( "åäö🐞\n", "åäö🐞", UTF_8 );
+        assertReadPassword( "åäö\n", "åäö", ISO_8859_1 );
     }
 
     @Test
@@ -137,19 +180,17 @@ class TtyPromptTest
         assertThat( prompt.readLine( "> " ), is( "åäö" ) );
     }
 
-    private void assertRead( String input, String expected ) throws IOException
+    private void assertRead( String input, String expected, Charset defaultCharset ) throws IOException
     {
         final var out = new ByteArrayOutputStream();
-        final var charset = Charset.defaultCharset();
-        assertThat( newTtyPrompt( input, out, charset).readLine( "Read me: " ), is( expected ) );
-        assertThat( out.toString( charset ), is( "Read me: " ) );
+        assertThat( newTtyPrompt( input, out, defaultCharset ).readLine( "Read me: " ), is( expected ) );
+        assertThat( out.toString( defaultCharset ), is( "Read me: " ) );
     }
 
-    private void assertReadPassword( String input, String expected ) throws IOException
+    private void assertReadPassword( String input, String expected, Charset defaultCharset ) throws IOException
     {
         final var out = new ByteArrayOutputStream();
-        final var charset = Charset.defaultCharset();
-        assertThat( newTtyPrompt( input, out, charset ).readPassword( "Read me: " ), is( expected ) );
+        assertThat( newTtyPrompt( input, out, defaultCharset ).readPassword( "Read me: " ), is( expected ) );
 
         if ( input.contains( "\n" ) || input.contains( "\r" ) )
         {
