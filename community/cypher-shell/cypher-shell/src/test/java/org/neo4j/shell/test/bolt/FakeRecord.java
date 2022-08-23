@@ -150,7 +150,7 @@ class FakeRecord implements Record {
 
     @Override
     public <T> Iterable<T> values(Function<Value, T> function) {
-        return () -> valueMap.values().stream().map(function::apply).iterator();
+        return () -> valueMap.values().stream().map(function).iterator();
     }
 
     @Override

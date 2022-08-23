@@ -33,6 +33,7 @@ import org.neo4j.io.pagecache.PageCacheOpenOptions;
 public class AbstractDynamicStoreLETest extends AbstractDynamicStoreTest {
 
     @BeforeEach
+    @Override
     void before() throws IOException {
         try (StoreChannel channel = fs.write(storeFile)) {
             var buffer = ByteBuffers.allocate(pageCache.pageSize(), getByteOrder(), INSTANCE);

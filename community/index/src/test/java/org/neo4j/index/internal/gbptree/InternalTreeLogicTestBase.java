@@ -1903,6 +1903,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
     }
 
     // KEEP even if unused
+    @SuppressWarnings("unused")
     private void printTree() throws IOException {
         long currentPageId = cursor.getCurrentPageId();
         cursor.next(root.id());

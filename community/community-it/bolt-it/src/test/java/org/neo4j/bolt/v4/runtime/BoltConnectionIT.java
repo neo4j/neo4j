@@ -39,7 +39,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.protocol.common.fsm.AbstractStateMachine;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.result.BoltResult;
@@ -48,8 +47,6 @@ import org.neo4j.bolt.protocol.v40.fsm.StateMachineV40;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.SessionExtension;
 import org.neo4j.bolt.testing.response.ResponseRecorder;
-import org.neo4j.bolt.transaction.StatementProcessorTxManager;
-import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -329,12 +326,6 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase {
         // messages until reset is reached.
         machine.interrupt();
         machine.process(reset(), recorder);
-    }
-
-    private static boolean hasTransaction(StateMachine machine) {
-        TransactionManager txManager =
-                ((AbstractStateMachine) machine).stateMachineContext().transactionManager();
-        return ((StatementProcessorTxManager) txManager).getCurrentNoOfOpenTx() > 0;
     }
 
     static String createLocalIrisData(StateMachine machine) throws Exception {

@@ -146,6 +146,7 @@ class AdminCommandConfigurationTest {
             config = createPrefilledConfigBuilder().build();
         }
 
+        @Override
         protected Optional<String> commandConfigName() {
             return Optional.of(COMMAND_CONFIG_FILE_NAME);
         }

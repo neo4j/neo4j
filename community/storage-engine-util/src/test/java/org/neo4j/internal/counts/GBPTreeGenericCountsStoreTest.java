@@ -413,7 +413,7 @@ class GBPTreeGenericCountsStoreTest {
         incrementNodeCount(BASE_TX_ID + 2, labelId, -2);
         closeCountsStore();
         deleteCountsStore();
-        GBPTreeCountsStore.Monitor monitor = mock(GBPTreeCountsStore.Monitor.class);
+        GBPTreeGenericCountsStore.Monitor monitor = mock(GBPTreeGenericCountsStore.Monitor.class);
         // instantiate, but don't start
         instantiateCountsStore(
                 new Rebuilder() {

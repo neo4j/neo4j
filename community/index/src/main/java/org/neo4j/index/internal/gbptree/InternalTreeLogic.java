@@ -42,6 +42,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.keyCount;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
+import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
 import org.neo4j.index.internal.gbptree.TreeNode.Overflow;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -98,7 +99,7 @@ class InternalTreeLogic<KEY, VALUE> {
     private final KEY newKeyPlaceHolder;
     private final KEY readKey;
     private final VALUE readValue;
-    private final GBPTree.Monitor monitor;
+    private final Monitor monitor;
     private final TreeWriterCoordination coordination;
     final byte layerType;
 
@@ -165,7 +166,7 @@ class InternalTreeLogic<KEY, VALUE> {
             IdProvider idProvider,
             TreeNode<KEY, VALUE> bTreeNode,
             Layout<KEY, VALUE> layout,
-            MultiRootGBPTree.Monitor monitor,
+            Monitor monitor,
             TreeWriterCoordination coordination,
             byte layerType) {
         this.idProvider = idProvider;

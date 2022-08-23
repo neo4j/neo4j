@@ -115,6 +115,7 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
         }
     }
 
+    @Override
     protected boolean doStoreValuePassesQueryFilter(
             long reference, PropertySelection propertySelection, PropertyIndexQuery[] query) {
         read.singleRelationship(reference, relationshipScanCursor);

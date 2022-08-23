@@ -284,13 +284,5 @@ class Neo4jTransactionalContextTest {
         public long pageFaults() {
             return faults;
         }
-
-        void setHits(long hits) {
-            this.hits = hits;
-        }
-
-        void setFaults(long faults) {
-            this.faults = faults;
-        }
     }
 }

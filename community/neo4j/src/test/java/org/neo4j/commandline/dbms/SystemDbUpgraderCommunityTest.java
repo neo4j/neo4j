@@ -30,6 +30,7 @@ public class SystemDbUpgraderCommunityTest extends SystemDbUpgraderAbstractTestB
         return new CommunityMigrationEditionModuleFactory();
     }
 
+    @Override
     protected Map<Setting<?>, Object> baseConfig() {
         return Map.of();
     }

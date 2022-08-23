@@ -74,7 +74,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -833,24 +832,6 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
 
     private static LoginContext loginContext(boolean isWriteTx) {
         return isWriteTx ? AnonymousContext.write() : AnonymousContext.read();
-    }
-
-    private static void initializeAndClose(KernelTransactionImplementation tx, int times, boolean isWriteTx)
-            throws Exception {
-        for (int i = 0; i < times; i++) {
-            tx.initialize(
-                    i + 10,
-                    KernelTransaction.Type.IMPLICIT,
-                    loginContext(isWriteTx)
-                            .authorize(
-                                    LoginContext.IdLookup.EMPTY,
-                                    GraphDatabaseSettings.DEFAULT_DATABASE_NAME,
-                                    CommunitySecurityLog.NULL_LOG),
-                    0L,
-                    0L,
-                    EMBEDDED_CONNECTION);
-            tx.close();
-        }
     }
 
     private TransactionRepresentation getObservedFirstTransaction() {

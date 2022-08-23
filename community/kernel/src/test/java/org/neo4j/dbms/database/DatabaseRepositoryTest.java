@@ -102,10 +102,6 @@ class DatabaseRepositoryTest {
             databaseIds.put(new NormalizedDatabaseName(dbId.name()), dbId);
         }
 
-        void add(String dbName) {
-            databaseIds.put(new NormalizedDatabaseName(dbName), from(dbName, UUID.randomUUID()));
-        }
-
         @Override
         public Optional<NamedDatabaseId> getByName(NormalizedDatabaseName databaseName) {
             return Optional.ofNullable(databaseIds.get(databaseName));

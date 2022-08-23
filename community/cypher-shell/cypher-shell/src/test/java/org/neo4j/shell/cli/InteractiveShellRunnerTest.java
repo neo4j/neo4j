@@ -202,9 +202,6 @@ class InteractiveShellRunnerTest {
 
     @Test
     void unescapedBangWorks() throws Exception {
-        // given
-        PrintStream mockedErr = mock(PrintStream.class);
-
         // Bangs need escaping in JLine by default, just like in bash, but we have disabled that
         var runner = runner(":set var \"String with !bang\"\n");
 
@@ -218,9 +215,6 @@ class InteractiveShellRunnerTest {
 
     @Test
     void escapedBangWorks() throws Exception {
-        // given
-        PrintStream mockedErr = mock(PrintStream.class);
-
         // Bangs need escaping in JLine by default, just like in bash, but we have disabled that
         var runner = runner(":set var \"String with \\!bang\"\n");
 
@@ -742,9 +736,5 @@ class InteractiveShellRunnerTest {
 
     private CypherStatement cypher(String cypher) {
         return new CypherStatement(cypher, true, 0, cypher.length() - 1);
-    }
-
-    private CypherStatement cypher(String cypher, int beginOffset) {
-        return new CypherStatement(cypher, true, beginOffset, beginOffset + cypher.length() - 1);
     }
 }

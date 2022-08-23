@@ -33,6 +33,7 @@ import java.io.UncheckedIOException;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
+import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageCursorUtil;
 import org.neo4j.io.pagecache.PagedFile;
@@ -43,7 +44,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
     private final ReadWriteLock checkpointLock;
     private final ReadWriteLock writerLock;
     private final FreeListIdProvider freeList;
-    private final GBPTree.Monitor monitor;
+    private final Monitor monitor;
     private final Consumer<Throwable> exceptionMessageAppender;
     private final LongSupplier generationSupplier;
     private final StructurePropagation<K> structurePropagation;
@@ -75,7 +76,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
             ReadWriteLock checkpointLock,
             ReadWriteLock writerLock,
             FreeListIdProvider freeList,
-            GBPTree.Monitor monitor,
+            Monitor monitor,
             Consumer<Throwable> exceptionMessageAppender,
             LongSupplier generationSupplier) {
         this.layout = layout;

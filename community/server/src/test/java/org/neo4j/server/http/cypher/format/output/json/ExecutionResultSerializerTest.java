@@ -34,10 +34,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 import static org.neo4j.test.mockito.mock.GraphMock.link;
-import static org.neo4j.test.mockito.mock.GraphMock.node;
 import static org.neo4j.test.mockito.mock.GraphMock.path;
-import static org.neo4j.test.mockito.mock.GraphMock.relationship;
-import static org.neo4j.test.mockito.mock.Properties.properties;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockCartesian;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockCartesian_3D;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84;
@@ -1089,16 +1086,6 @@ class ExecutionResultSerializerTest {
 
     private static void writeError(ExecutionResultSerializer serializer, Status status, String message) {
         serializer.writeFailure(new FailureEvent(status, message));
-    }
-
-    private static Path mockPath(
-            Map<String, Object> startNodeProperties,
-            Map<String, Object> relationshipProperties,
-            Map<String, Object> endNodeProperties) {
-        Node startNode = node(1, properties(startNodeProperties));
-        Node endNode = node(2, properties(endNodeProperties));
-        Relationship relationship = relationship(1, properties(relationshipProperties), startNode, "RELATED", endNode);
-        return path(startNode, Link.link(relationship, endNode));
     }
 
     private static Set<String> identifiersOf(JsonNode root) {

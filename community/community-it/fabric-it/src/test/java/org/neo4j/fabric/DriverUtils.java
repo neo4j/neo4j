@@ -43,10 +43,6 @@ public class DriverUtils {
         return getBoltUri(portRegister, "neo4j");
     }
 
-    private static URI getBoltDirectUri(ConnectorPortRegister portRegister) {
-        return getBoltUri(portRegister, "bolt");
-    }
-
     private static URI getBoltUri(ConnectorPortRegister portRegister, String scheme) {
         HostnamePort hostPort = portRegister.getLocalAddress(ConnectorType.BOLT);
         try {

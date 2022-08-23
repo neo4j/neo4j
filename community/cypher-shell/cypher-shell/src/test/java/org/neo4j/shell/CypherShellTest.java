@@ -36,8 +36,6 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
 import org.neo4j.shell.commands.CommandHelper;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.parameter.ParameterService;
@@ -141,8 +139,6 @@ class CypherShellTest {
 
     @Test
     void executeShouldPrintResult() throws CommandException {
-        Driver mockedDriver = mock(Driver.class);
-        Session session = mock(Session.class);
         BoltResult result = mock(ListBoltResult.class);
 
         BoltStateHandler boltStateHandler = mock(BoltStateHandler.class);
@@ -155,7 +151,6 @@ class CypherShellTest {
                 })
                 .when(mockedPrettyPrinter)
                 .format(any(BoltResult.class), any());
-        when(mockedDriver.session()).thenReturn(session);
 
         OfflineTestShell shell = new OfflineTestShell(printer, boltStateHandler, mockedPrettyPrinter);
         shell.execute(new CypherStatement("RETURN 999;", true, 0, 0));

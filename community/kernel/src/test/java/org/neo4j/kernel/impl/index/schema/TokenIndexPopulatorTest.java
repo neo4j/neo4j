@@ -42,7 +42,7 @@ import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.EntityType;
-import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -242,8 +242,9 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey, TokenSca
         assertTrue(checkpointCompletedCall.get());
     }
 
-    private static GBPTree.Monitor.Adaptor getCheckpointCompletedListener(AtomicBoolean checkpointCompletedCall) {
-        return new GBPTree.Monitor.Adaptor() {
+    private static MultiRootGBPTree.Monitor.Adaptor getCheckpointCompletedListener(
+            AtomicBoolean checkpointCompletedCall) {
+        return new MultiRootGBPTree.Monitor.Adaptor() {
             @Override
             public void checkpointCompleted() {
                 checkpointCompletedCall.set(true);

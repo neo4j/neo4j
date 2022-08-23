@@ -20,7 +20,6 @@
 package org.neo4j.commandline.admin.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -145,10 +144,6 @@ class SetInitialPasswordCommandIT {
         assertNotNull(neo4j);
         assertTrue(neo4j.credentials().matchesPassword(UTF8.encode(password)));
         assertThat(neo4j.hasFlag(User.PASSWORD_CHANGE_REQUIRED)).isEqualTo(passwordChangeRequired);
-    }
-
-    private void assertNoAuthIniFile() {
-        assertFalse(fileSystem.fileExists(getAuthFile("auth.ini")));
     }
 
     private Path getAuthFile(String name) {

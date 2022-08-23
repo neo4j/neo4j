@@ -51,7 +51,7 @@ class ReadyStateTest {
     private ReadyState state;
 
     @BeforeEach
-    private void prepareStateMachine() {
+    void prepareStateMachine() {
         this.routingTableGetter = mock(RoutingTableGetter.class);
 
         this.failedState = mock(FailedState.class);

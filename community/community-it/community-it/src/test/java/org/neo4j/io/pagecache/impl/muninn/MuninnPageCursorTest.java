@@ -63,14 +63,14 @@ class MuninnPageCursorTest {
     private final LifeSupport life = new LifeSupport();
 
     @BeforeEach
-    private void start() {
+    void start() {
         jobScheduler = JobSchedulerFactory.createScheduler();
         life.add(jobScheduler);
         life.start();
     }
 
     @AfterEach
-    private void stop() {
+    void stop() {
         life.shutdown();
     }
 

@@ -841,6 +841,7 @@
                   -Xep:NarrowingCompoundAssignment:OFF -Xep:JavaLocalDateTimeGetNano:OFF -Xep:JavaLocalTimeGetNano:OFF \
                   -Xep:SelfComparison:WARN -Xep:BadAnnotationImplementation:WARN -Xep:ModifyingCollectionWithItself:WARN \
                   -Xep:BoxedPrimitiveEquality:WARN -Xep:BanJNDI:WARN -Xep:CanIgnoreReturnValueSuggester:OFF \
+                  -Xep:ByteBufferBackingArray:OFF -Xep:LongDoubleConversion:OFF -Xep:NarrowCalculation:OFF \
                   -XepExcludedPaths:.*/target/generated-sources/.*</arg>
                 <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
                 <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>

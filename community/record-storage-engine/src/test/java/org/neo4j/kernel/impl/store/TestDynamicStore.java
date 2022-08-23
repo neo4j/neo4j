@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -183,7 +184,7 @@ class TestDynamicStore {
                 store.allocateRecords(records, bytes, NULL_CONTEXT, INSTANCE);
                 try (var storeCursor = storeCursors.writeCursor(DYNAMIC_ARRAY_STORE_CURSOR)) {
                     for (DynamicRecord record : records) {
-                        assert !set.contains(record.getId());
+                        assertFalse(set.contains(record.getId()));
                         store.updateRecord(record, storeCursor, NULL_CONTEXT, storeCursors);
                         set.add(record.getId());
                     }

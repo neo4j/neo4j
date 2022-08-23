@@ -219,7 +219,7 @@ class GBPTreeCountsStoreTest {
     }
 
     private void instantiateCountsStore(
-            CountsBuilder builder, DatabaseReadOnlyChecker readOnlyChecker, GBPTreeCountsStore.Monitor monitor)
+            CountsBuilder builder, DatabaseReadOnlyChecker readOnlyChecker, GBPTreeGenericCountsStore.Monitor monitor)
             throws IOException {
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         countsStore = new GBPTreeCountsStore(

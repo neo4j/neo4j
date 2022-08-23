@@ -27,9 +27,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.shell.prettyprint.OutputFormatter.NEWLINE;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Value;
@@ -62,12 +61,7 @@ class TablePlanFormatterTest {
     @Test
     void withEmptyDetails() {
         Plan plan = mock(Plan.class);
-        Map<String, Value> args = new HashMap<>(2) {
-            {
-                put("EstimatedRows", new FloatValue(55));
-                put("Details", new StringValue(""));
-            }
-        };
+        Map<String, Value> args = Map.of("EstimatedRows", new FloatValue(55), "Details", new StringValue(""));
         when(plan.arguments()).thenReturn(args);
         when(plan.operatorType()).thenReturn("Projection");
 
@@ -124,28 +118,14 @@ class TablePlanFormatterTest {
                 "Details", new StringValue(stringOfLength(TablePlanFormatter.MAX_DETAILS_COLUMN_WIDTH + 5)));
         when(childPlan.arguments()).thenReturn(args);
         when(childPlan.operatorType()).thenReturn("Expand");
-        doReturn(new ArrayList<Plan>() {
-                    {
-                        add(argumentPlan);
-                        add(argumentPlan);
-                    }
-                })
-                .when(childPlan)
-                .children();
+        doReturn(List.of(argumentPlan, argumentPlan)).when(childPlan).children();
 
         Plan plan = mock(Plan.class);
         String details = stringOfLength(TablePlanFormatter.MAX_DETAILS_COLUMN_WIDTH + 1);
         args = Collections.singletonMap("Details", new StringValue(details));
         when(plan.arguments()).thenReturn(args);
         when(plan.operatorType()).thenReturn("Projection");
-        doReturn(new ArrayList<Plan>() {
-                    {
-                        add(childPlan);
-                        add(childPlan);
-                    }
-                })
-                .when(plan)
-                .children();
+        doReturn(List.of(childPlan, childPlan)).when(plan).children();
 
         assertThat(
                 tablePlanFormatter.formatPlan(plan),

@@ -22,8 +22,6 @@ package org.neo4j.commandline.dbms;
 import static java.lang.Boolean.FALSE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
-import static org.neo4j.internal.helpers.collection.Iterables.asIterable;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -38,7 +36,6 @@ import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.event.DatabaseEventContext;
 import org.neo4j.graphdb.event.DatabaseEventListenerAdapter;
-import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.facade.SystemDbUpgrader;
 import org.neo4j.graphdb.factory.module.edition.migration.MigrationEditionModuleFactory;
 import org.neo4j.io.ByteUnit;
@@ -92,10 +89,6 @@ public abstract class SystemDbUpgraderAbstractTestBase {
         @Override
         public void databaseStart(DatabaseEventContext eventContext) {
             startedDatabases.add(eventContext.getDatabaseName());
-        }
-
-        private GraphDatabaseDependencies dependencies() {
-            return newDependencies().databaseEventListeners(asIterable(this));
         }
     }
 }

@@ -30,6 +30,7 @@ public class Neo4jCommand extends Neo4jAdminCommand {
         super(AdminTool.Neo4jAlias.class, environment);
     }
 
+    @Override
     protected CommandLine getActualAdminCommand(ExecutionContext executionContext) {
         return AdminTool.Neo4jAlias.getCommandLine(executionContext);
     }

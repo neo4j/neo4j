@@ -250,6 +250,7 @@ public final class SettingImpl<T> implements Setting<T> {
             return this;
         }
 
+        @Override
         public Builder<T> internal() {
             this.internal = true;
             return this;

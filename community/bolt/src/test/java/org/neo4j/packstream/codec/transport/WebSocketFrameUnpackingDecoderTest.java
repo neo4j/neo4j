@@ -35,7 +35,7 @@ class WebSocketFrameUnpackingDecoderTest {
     private EmbeddedChannel channel;
 
     @BeforeEach
-    private void prepareChannel() {
+    void prepareChannel() {
         this.channel = new EmbeddedChannel(new WebSocketFrameUnpackingDecoder());
     }
 

@@ -53,7 +53,6 @@ public interface UserRepository extends Lifecycle {
      * Replaces the users in the repository with the given users.
      * @param users the new users
      * @throws InvalidArgumentsException if any username is not valid
-     * @throws IOException if the underlying storage for users fails
      */
     void setUsers(ListSnapshot<User> users) throws InvalidArgumentsException;
 

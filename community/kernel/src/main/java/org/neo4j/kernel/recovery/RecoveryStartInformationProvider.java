@@ -85,7 +85,6 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
      *
      * @return {@link LogPosition#UNSPECIFIED} if there is no need to recover otherwise the {@link LogPosition} to
      * start recovery from
-     * @throws IOException if log files cannot be read
      */
     @Override
     public RecoveryStartInformation get() {

@@ -121,10 +121,6 @@ class StatementJlineParserTest {
         return new CypherStatement(cypher, true, 0, cypher.length() - 1);
     }
 
-    private CommandStatement command(String command, List<String> args, int begin, int end) {
-        return new CommandStatement(command, args, true, begin, end);
-    }
-
     private CommandStatement command(String command, List<String> args, boolean complete, int begin, int end) {
         return new CommandStatement(command, args, complete, begin, end);
     }
@@ -140,12 +136,6 @@ class StatementJlineParserTest {
     private void assertSimpleParse(String line, StatementParser.ParsedStatement... statements) {
         assertThat(
                 parse(line),
-                is(new SimpleParsedStatements(new ParsedStatements(List.of(statements)), line, line.length())));
-    }
-
-    private void assertSimpleParse(String line, ParseContext context, StatementParser.ParsedStatement... statements) {
-        assertThat(
-                parse(line, context),
                 is(new SimpleParsedStatements(new ParsedStatements(List.of(statements)), line, line.length())));
     }
 }

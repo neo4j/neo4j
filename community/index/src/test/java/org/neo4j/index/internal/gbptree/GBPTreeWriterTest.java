@@ -252,7 +252,7 @@ class GBPTreeWriterTest {
         }
     }
 
-    private static class TreeHeightTracker extends GBPTree.Monitor.Adaptor {
+    private static class TreeHeightTracker extends MultiRootGBPTree.Monitor.Adaptor {
         int treeHeight;
 
         @Override

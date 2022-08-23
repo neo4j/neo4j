@@ -22,11 +22,12 @@ package org.neo4j.index.internal.gbptree;
 import java.nio.file.Path;
 import java.util.StringJoiner;
 import java.util.concurrent.CountDownLatch;
+import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
 
 class GBPTreeCleanupJob implements CleanupJob {
     private final CrashGenerationCleaner crashGenerationCleaner;
     private final CountDownLatch lock;
-    private final GBPTree.Monitor monitor;
+    private final Monitor monitor;
     private final Path indexFile;
     private volatile boolean needed;
     private volatile Throwable failure;
@@ -34,14 +35,11 @@ class GBPTreeCleanupJob implements CleanupJob {
     /**
      * @param crashGenerationCleaner {@link CrashGenerationCleaner} to use for cleaning.
      * @param lock {@link LongSpinLatch} to be released when job has either successfully finished or failed.
-     * @param monitor {@link GBPTree.Monitor} to report to
+     * @param monitor {@link Monitor} to report to
      * @param indexFile Target file
      */
     GBPTreeCleanupJob(
-            CrashGenerationCleaner crashGenerationCleaner,
-            CountDownLatch lock,
-            GBPTree.Monitor monitor,
-            Path indexFile) {
+            CrashGenerationCleaner crashGenerationCleaner, CountDownLatch lock, Monitor monitor, Path indexFile) {
         this.crashGenerationCleaner = crashGenerationCleaner;
         this.lock = lock;
         this.monitor = monitor;

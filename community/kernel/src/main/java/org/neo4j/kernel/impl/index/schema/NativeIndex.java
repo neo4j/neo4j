@@ -31,6 +31,7 @@ import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
+import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
@@ -81,7 +82,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
 
     void instantiateTree(RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter) {
         ensureDirectoryExist();
-        GBPTree.Monitor monitor = treeMonitor();
+        MultiRootGBPTree.Monitor monitor = treeMonitor();
         Path storeFile = indexFiles.getStoreFile();
         tree = new GBPTree<>(
                 pageCache,
@@ -110,8 +111,8 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
     protected void afterTreeInstantiation(GBPTree<KEY, NullValue> tree) { // no-op per default
     }
 
-    private GBPTree.Monitor treeMonitor() {
-        GBPTree.Monitor treeMonitor = monitors.newMonitor(GBPTree.Monitor.class, monitorTag);
+    private MultiRootGBPTree.Monitor treeMonitor() {
+        MultiRootGBPTree.Monitor treeMonitor = monitors.newMonitor(MultiRootGBPTree.Monitor.class, monitorTag);
         IndexProvider.Monitor indexMonitor = monitors.newMonitor(IndexProvider.Monitor.class, monitorTag);
         return new IndexMonitorAdaptor(treeMonitor, indexMonitor, indexFiles, descriptor);
     }

@@ -84,7 +84,7 @@ class SchemaStore44MigratorTest {
     private TokenHolders tokenHolders;
 
     @BeforeEach
-    private void setup() throws KernelException {
+    void setup() throws KernelException {
         tokenHolders = new TokenHolders(
                 new DelegatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY),
                 new DelegatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_LABEL),

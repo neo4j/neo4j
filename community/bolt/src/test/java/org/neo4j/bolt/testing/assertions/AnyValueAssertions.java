@@ -37,14 +37,6 @@ public final class AnyValueAssertions extends AbstractAssert<AnyValueAssertions,
         return new AnyValueAssertions(value);
     }
 
-    public static InstanceOfAssertFactory<AnyValue, AnyValueAssertions> anyValue() {
-        return new InstanceOfAssertFactory<>(AnyValue.class, AnyValueAssertions::new);
-    }
-
-    public static InstanceOfAssertFactory<TextValue, StringAssert> textValue() {
-        return new InstanceOfAssertFactory<>(TextValue.class, value -> new StringAssert(value.stringValue()));
-    }
-
     public static InstanceOfAssertFactory<BooleanValue, BooleanAssert> booleanValue() {
         return new InstanceOfAssertFactory<>(BooleanValue.class, value -> new BooleanAssert(value.booleanValue()));
     }
@@ -57,6 +49,7 @@ public final class AnyValueAssertions extends AbstractAssert<AnyValueAssertions,
         return new BooleanAssert(((BooleanValue) this.actual).booleanValue());
     }
 
+    @Override
     public StringAssert asString() {
         if (!(this.actual instanceof TextValue)) {
             failWithMessage("Expected string value but got <%s>", this.actual);
@@ -73,12 +66,6 @@ public final class AnyValueAssertions extends AbstractAssert<AnyValueAssertions,
 
     public AnyValueAssertions isEqualTo(String expected) {
         this.asString().isEqualTo(expected);
-
-        return this;
-    }
-
-    public AnyValueAssertions isEqualToIgnoringCase(String expected) {
-        this.asString().isEqualToIgnoringCase(expected);
 
         return this;
     }

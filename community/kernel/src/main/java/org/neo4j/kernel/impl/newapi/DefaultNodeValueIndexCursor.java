@@ -148,6 +148,7 @@ class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultN
         }
     }
 
+    @Override
     protected boolean doStoreValuePassesQueryFilter(
             long reference, PropertySelection propertySelection, PropertyIndexQuery[] query) {
         read.singleNode(reference, securityNodeCursor);

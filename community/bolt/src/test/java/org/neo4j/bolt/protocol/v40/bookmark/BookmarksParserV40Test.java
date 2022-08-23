@@ -249,7 +249,7 @@ class BookmarksParserV40Test {
     }
 
     @Test
-    void shouldErrorWhenDatabaseIdContainsInvalidTxId() throws Exception {
+    void shouldErrorWhenDatabaseIdContainsInvalidTxId() {
         var wrongBookmarkString =
                 stringValue(String.format("%s:neo4j", dbId.databaseId().uuid().toString()));
 
@@ -380,10 +380,6 @@ class BookmarksParserV40Test {
 
         @Override
         public void attachTo(ResponseHandler state) {}
-
-        public String getText() {
-            return text;
-        }
 
         @Override
         public boolean equals(Object o) {

@@ -260,6 +260,7 @@ public class TransactionHandleRegistry implements TransactionRegistry {
         rollbackSuspended(Predicates.alwaysTrue());
     }
 
+    @Override
     public void rollbackSuspendedTransactionsIdleSince(final long oldestLastActiveTime) {
         rollbackSuspended(item -> {
             try {

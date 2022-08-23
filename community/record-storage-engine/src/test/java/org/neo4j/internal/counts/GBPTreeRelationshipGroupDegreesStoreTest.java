@@ -220,7 +220,9 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
     }
 
     private void instantiateCountsStore(
-            DegreesRebuilder builder, DatabaseReadOnlyChecker readOnlyChecker, GBPTreeCountsStore.Monitor monitor)
+            DegreesRebuilder builder,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            GBPTreeGenericCountsStore.Monitor monitor)
             throws IOException {
         countsStore = new GBPTreeRelationshipGroupDegreesStore(
                 pageCache,

@@ -19,7 +19,6 @@
  */
 package org.neo4j.harness.junit.extension;
 
-import static java.time.ZoneOffset.UTC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -29,18 +28,14 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.Neo4j;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.server.HTTP;
 
 class Neo4jExtensionRegisterIT {
@@ -102,18 +97,6 @@ class Neo4jExtensionRegisterIT {
                 quotedJson("{'statements':[{'statement':'MATCH (n:User) RETURN n'}]}"));
 
         assertThat(response.get("results").get(0).get("data").size()).isEqualTo(2);
-    }
-
-    private static String currentTimeZoneOffsetString() {
-        ZoneOffset offset = OffsetDateTime.now().getOffset();
-        return offset.equals(UTC) ? "+0000" : offset.toString().replace(":", "");
-    }
-
-    private static String contentOf(String file, GraphDatabaseService databaseService) throws IOException {
-        GraphDatabaseAPI api = (GraphDatabaseAPI) databaseService;
-        Config config = api.getDependencyResolver().resolveDependency(Config.class);
-        Path homeDir = config.get(GraphDatabaseSettings.neo4j_home);
-        return Files.readString(homeDir.resolve(file));
     }
 
     private static Path createTempDirectory() {

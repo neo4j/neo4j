@@ -31,6 +31,7 @@ import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
+import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
@@ -161,7 +162,7 @@ public class TokenIndex implements ConsistencyCheckable {
 
     void instantiateTree(RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter) {
         ensureDirectoryExist();
-        GBPTree.Monitor monitor = treeMonitor();
+        MultiRootGBPTree.Monitor monitor = treeMonitor();
         index = new GBPTree<>(
                 pageCache,
                 indexFiles.getStoreFile(),
@@ -182,8 +183,8 @@ public class TokenIndex implements ConsistencyCheckable {
         singleUpdater = new TokenIndexUpdater(1_000);
     }
 
-    private GBPTree.Monitor treeMonitor() {
-        GBPTree.Monitor treeMonitor = monitors.newMonitor(GBPTree.Monitor.class, monitorTag);
+    private MultiRootGBPTree.Monitor treeMonitor() {
+        MultiRootGBPTree.Monitor treeMonitor = monitors.newMonitor(MultiRootGBPTree.Monitor.class, monitorTag);
         IndexProvider.Monitor indexMonitor = monitors.newMonitor(IndexProvider.Monitor.class, monitorTag);
         return new IndexMonitorAdaptor(treeMonitor, indexMonitor, indexFiles, monitoringDescriptor);
     }

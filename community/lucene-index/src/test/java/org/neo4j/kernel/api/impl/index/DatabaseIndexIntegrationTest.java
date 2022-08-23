@@ -237,11 +237,6 @@ class DatabaseIndexIntegrationTest {
             this.signal = signal;
         }
 
-        public Directory open(Path dir, CountDownLatch signal) throws IOException {
-            Directory directory = open(dir);
-            return new SyncNotifierDirectory(directory, signal);
-        }
-
         @Override
         public Directory open(Path dir) throws IOException {
             Files.createDirectories(dir);

@@ -564,6 +564,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
         }
     }
 
+    @FunctionalInterface
     public interface Monitor {
         void ignoredTransaction(long txId);
     }

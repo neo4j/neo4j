@@ -49,7 +49,7 @@ import org.neo4j.logging.NullLog;
 
 public class ResultHandlerTest {
     @Test
-    void shouldCallHaltOnUnexpectedFailures() throws Exception {
+    void shouldCallHaltOnUnexpectedFailures() {
         // Given
         var ch = mock(Channel.class);
         doThrow(new RuntimeException("Something went horribly wrong"))
@@ -100,16 +100,6 @@ public class ResultHandlerTest {
                                 + "This can be caused by temporary network problems, but if you see this often, ensure your "
                                 + "applications are properly waiting for operations to complete before exiting.",
                         new Object[] {null});
-    }
-
-    private static void testLoggingOfOriginalErrorWhenOutputIsClosed(Error original) throws Exception {
-        var outputClosed = new RuntimeException("UH OH!");
-        AssertableLogProvider logProvider = emulateFailureWritingError(original, outputClosed);
-
-        assertThat(logProvider)
-                .forClass(ResultHandler.class)
-                .forLevel(WARN)
-                .containsMessageWithException("Unable to send error back to the client", original.cause());
     }
 
     private static void testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure(Error original) throws Exception {

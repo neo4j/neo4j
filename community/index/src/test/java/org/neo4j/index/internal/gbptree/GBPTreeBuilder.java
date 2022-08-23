@@ -93,7 +93,7 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
         return this;
     }
 
-    public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(GBPTree.Monitor monitor) {
+    public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(Monitor monitor) {
         this.monitor = monitor;
         return this;
     }

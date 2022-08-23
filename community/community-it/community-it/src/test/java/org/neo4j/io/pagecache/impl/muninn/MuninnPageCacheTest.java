@@ -1948,10 +1948,6 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
             this.cursorId = cursorId;
         }
 
-        public int getCursorId() {
-            return cursorId;
-        }
-
         @Override
         public void close() throws Exception {
             pageCursor.close();
