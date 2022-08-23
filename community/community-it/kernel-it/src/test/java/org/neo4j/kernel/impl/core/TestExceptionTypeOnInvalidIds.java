@@ -33,6 +33,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -60,11 +61,14 @@ public class TestExceptionTypeOnInvalidIds {
     @BeforeEach
     void createDatabase() {
         Path writableLayout = testDirectory.homePath("writable");
-        writableService = new TestDatabaseManagementServiceBuilder(writableLayout).build();
+        writableService = new TestDatabaseManagementServiceBuilder(writableLayout)
+                .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(testDirectory.getFileSystem()))
+                .build();
         writableDb = writableService.database(DEFAULT_DATABASE_NAME);
 
         Path readOnlyLayout = testDirectory.homePath("readOnly");
         TestDatabaseManagementServiceBuilder readOnlyBuilder = new TestDatabaseManagementServiceBuilder(readOnlyLayout);
+        readOnlyBuilder.setFileSystem(new UncloseableDelegatingFileSystemAbstraction(testDirectory.getFileSystem()));
         // Create database
         readOnlyBuilder.build().shutdown();
         readOnlyService =
