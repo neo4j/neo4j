@@ -135,10 +135,18 @@ public class TestDirectory {
         return directory != null;
     }
 
+    public Path cleanDirectory(String name) throws IOException {
+        return clean(fileSystem, directory(name));
+    }
+
     public Path directory(String name) {
         Path dir = homePath().resolve(name);
         createDirectory(dir);
         return dir;
+    }
+
+    public Path cleanDirectory(String name, String... path) throws IOException {
+        return clean(fileSystem, directory(name, path));
     }
 
     public Path directory(String name, String... path) {
@@ -179,8 +187,8 @@ public class TestDirectory {
         return format("%s[\"%s\"]", getClass().getSimpleName(), testDirectoryName);
     }
 
-    public Path cleanDirectory(String name) throws IOException {
-        return cleanPath(fileSystem, ensureBase().resolve(name));
+    private Path cleanBaseDirectory(String name) throws IOException {
+        return clean(fileSystem, ensureBase().resolve(name));
     }
 
     public void complete(boolean success) throws IOException {
@@ -236,7 +244,7 @@ public class TestDirectory {
         String dir = getDateTime() + "_" + DigestUtils.md5Hex(test).substring(0, 5);
         evaluateClassBaseTestFolder();
         register(test, dir);
-        return cleanDirectory(dir);
+        return cleanBaseDirectory(dir);
     }
 
     private String getDateTime() {
@@ -267,14 +275,6 @@ public class TestDirectory {
     }
 
     private static Path clean(FileSystemAbstraction fs, Path dir) throws IOException {
-        if (fs.fileExists(dir)) {
-            fs.deleteRecursively(dir);
-        }
-        fs.mkdirs(dir);
-        return dir;
-    }
-
-    private static Path cleanPath(FileSystemAbstraction fs, Path dir) throws IOException {
         if (fs.fileExists(dir)) {
             fs.deleteRecursively(dir);
         }
