@@ -1093,6 +1093,32 @@
     "enterpriseOnly": true
   },
   {
+    "admin": true,
+    "name": "dbms.cluster.cordonServer",
+    "option": {
+      "deprecated": false
+    },
+    "signature": "dbms.cluster.cordonServer(server :: STRING?) :: VOID",
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "worksOnSystem": true,
+    "returnDescription": [],
+    "description": "Mark a server in the topology as not suitable for new allocations. It will not force current allocations off the server. This is useful when deallocating databases when you have multiple unavailable servers.",
+    "rolesExecution": [
+      "admin"
+    ],
+    "argumentDescription": [
+      {
+        "name": "server",
+        "description": "server :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "mode": "WRITE",
+    "enterpriseOnly": true
+  },
+  {
     "name": "dbms.cluster.protocols",
     "description": "Overview of installed protocols",
     "mode": "DBMS",
@@ -1222,30 +1248,24 @@
   },
   {
     "admin": true,
-    "name": "dbms.cluster.setDefaultDatabase",
+    "name": "dbms.cluster.uncordonServer",
     "option": {
       "deprecated": false
     },
-    "signature": "dbms.cluster.setDefaultDatabase(databaseName :: STRING?) :: (result :: STRING?)",
+    "signature": "dbms.cluster.uncordonServer(server :: STRING?) :: VOID",
     "rolesBoostedExecution": [
       "admin"
     ],
     "worksOnSystem": true,
-    "returnDescription": [
-      {
-        "name": "result",
-        "description": "result :: STRING?",
-        "type": "STRING?"
-      }
-    ],
-    "description": "Change the default database to the provided value. The database must exist and the old default database must be stopped.",
+    "returnDescription": [],
+    "description": "Remove the cordon on a server, returning it to 'enabled'.",
     "rolesExecution": [
       "admin"
     ],
     "argumentDescription": [
       {
-        "name": "databaseName",
-        "description": "databaseName :: STRING?",
+        "name": "server",
+        "description": "server :: STRING?",
         "type": "STRING?"
       }
     ],
@@ -2059,6 +2079,95 @@
     "enterpriseOnly": true
   },
   {
+    "admin": true,
+    "name": "dbms.setDatabaseAllocator",
+    "option": {
+      "deprecated": false
+    },
+    "signature": "dbms.setDatabaseAllocator(allocator :: STRING?) :: VOID",
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "worksOnSystem": true,
+    "returnDescription": [],
+    "description": "With this method you can set the allocator, which is responsible to select servers for hosting databases.",
+    "rolesExecution": [
+      "admin"
+    ],
+    "argumentDescription": [
+      {
+        "name": "allocator",
+        "description": "allocator :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "mode": "WRITE",
+    "enterpriseOnly": true
+  },
+  {
+    "admin": true,
+    "name": "dbms.setDefaultAllocationNumbers",
+    "option": {
+      "deprecated": false
+    },
+    "signature": "dbms.setDefaultAllocationNumbers(primaries :: INTEGER?, secondaries :: INTEGER?) :: VOID",
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "worksOnSystem": true,
+    "returnDescription": [],
+    "description": "With this method you can set the default number of primaries and secondaries.",
+    "rolesExecution": [
+      "admin"
+    ],
+    "argumentDescription": [
+      {
+        "name": "primaries",
+        "description": "primaries :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "secondaries",
+        "description": "secondaries :: INTEGER?",
+        "type": "INTEGER?"
+      }
+    ],
+    "mode": "WRITE",
+    "enterpriseOnly": true
+  },
+  {
+    "admin": true,
+    "name": "dbms.setDefaultDatabase",
+    "option": {
+      "deprecated": false
+    },
+    "signature": "dbms.setDefaultDatabase(databaseName :: STRING?) :: (result :: STRING?)",
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "worksOnSystem": true,
+    "returnDescription": [
+      {
+        "name": "result",
+        "description": "result :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "description": "Change the default database to the provided value. The database must exist and the old default database must be stopped.",
+    "rolesExecution": [
+      "admin"
+    ],
+    "argumentDescription": [
+      {
+        "name": "databaseName",
+        "description": "databaseName :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "mode": "WRITE",
+    "enterpriseOnly": true
+  },
+  {
     "name": "dbms.showCurrentUser",
     "description": "Show the current user.",
     "mode": "DBMS",
@@ -2094,6 +2203,48 @@
       "deprecated": false
     },
     "enterpriseOnly": false
+  },
+  {
+    "admin": true,
+    "name": "dbms.showTopologyGraphConfig",
+    "option": {
+      "deprecated": false
+    },
+    "signature": "dbms.showTopologyGraphConfig() :: (allocator :: STRING?, defaultNumberOfPrimaries :: INTEGER?, defaultNumberOfSecondaries :: INTEGER?, defaultDatabase :: STRING?)",
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "worksOnSystem": true,
+    "returnDescription": [
+      {
+        "name": "allocator",
+        "description": "allocator :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "defaultNumberOfPrimaries",
+        "description": "defaultNumberOfPrimaries :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "defaultNumberOfSecondaries",
+        "description": "defaultNumberOfSecondaries :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "defaultDatabase",
+        "description": "defaultDatabase :: STRING?",
+        "type": "STRING?"
+      }
+
+    ],
+    "description": "With this method the configuration of the Topology Graph can be displayed.",
+    "rolesExecution": [
+      "admin"
+    ],
+    "argumentDescription": [],
+    "mode": "READ",
+    "enterpriseOnly": true
   },
   {
     "name": "dbms.upgrade",
