@@ -84,7 +84,6 @@ public class Neo4jWithSocket {
 
     public void init(TestInfo testInfo) throws IOException {
         var testName = testInfo.getTestMethod().get().getName();
-        testDirectory.prepareDirectory(testInfo.getTestClass().get(), testName);
         workingDirectory = testDirectory.directory(testName);
 
         ensureDatabase(settings -> {});
