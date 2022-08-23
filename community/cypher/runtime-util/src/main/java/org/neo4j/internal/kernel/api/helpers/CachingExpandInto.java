@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api.helpers;
 
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.relationshipsCursor;
 import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
@@ -146,7 +147,7 @@ public class CachingExpandInto extends DefaultCloseListenable {
 
         int secondDegree = degreeCache.getIfAbsentPut(
                 secondNode,
-                        direction.reverse(),
+                direction.reverse(),
                 () -> positionCursorAndCalculateTotalDegreeIfCheap(
                         read, secondNode, nodeCursor, direction.reverse(), types));
 
@@ -175,7 +176,7 @@ public class CachingExpandInto extends DefaultCloseListenable {
         } else if (firstNodeHasCheapDegrees) {
             int txStateDegreeSecond = calculateDegreeInTxState(secondNode, selection(types, direction.reverse()));
             return expandFromNodeWithLesserDegree(
-                    nodeCursor, traversalCursor, firstNode, types, secondNode, txStateDegreeSecond > secondDegree);
+                    nodeCursor, traversalCursor, firstNode, types, secondNode, txStateDegreeSecond > firstDegree);
         } else {
             // Both nodes have a costly degree to compute, in general this means that both nodes are non-dense
             // we'll use the degree in the tx-state to decide what node to start with.
@@ -429,6 +430,8 @@ public class CachingExpandInto extends DefaultCloseListenable {
         private final long firstNode;
         private final long secondNode;
 
+        private int degree;
+
         private HeapTrackingArrayList<Relationship> connections;
         private final ScopedMemoryTracker innerMemoryTracker;
 
@@ -470,6 +473,7 @@ public class CachingExpandInto extends DefaultCloseListenable {
 
         @Override
         public void closeInternal() {
+            degree = 0;
             connections = null;
             innerMemoryTracker.close();
         }
@@ -502,6 +506,7 @@ public class CachingExpandInto extends DefaultCloseListenable {
         @Override
         public boolean next() {
             while (allRelationships.next()) {
+                degree++;
                 if (allRelationships.otherNodeReference() == otherNode) {
                     innerMemoryTracker.allocateHeap(Relationship.RELATIONSHIP_SHALLOW_SIZE);
                     connections.add(relationship(allRelationships));
@@ -518,6 +523,9 @@ public class CachingExpandInto extends DefaultCloseListenable {
             // We hand over both the inner memory tracker (via connections) and the connection to the cache. Only the
             // shallow size of this cursor is discarded.
             long diff = innerMemoryTracker.estimatedHeapMemory() - EXPAND_INTO_SELECTION_CURSOR_SHALLOW_SIZE;
+            long startNode = otherNode == secondNode ? firstNode : secondNode;
+            Direction relativeDirection = firstNode != secondNode && otherNode == firstNode ? INCOMING : OUTGOING;
+            degreeCache.put(startNode, relativeDirection, degree);
             relationshipCache.add(firstNode, secondNode, direction, connections, diff);
             close();
             return false;
@@ -558,7 +566,7 @@ public class CachingExpandInto extends DefaultCloseListenable {
 
     static class NodeDegreeCache {
         private static final long FLIP_HIGH_BIT_MASK = 1L << 63;
-        static final long DEGREE_CACHE_SHALLOW_SIZE = shallowSizeOfInstance( NodeDegreeCache.class);
+        static final long DEGREE_CACHE_SHALLOW_SIZE = shallowSizeOfInstance(NodeDegreeCache.class);
 
         private final int capacity;
         private final MutableLongIntMap degreeCache;
@@ -574,7 +582,7 @@ public class CachingExpandInto extends DefaultCloseListenable {
         }
 
         public int getIfAbsentPut(long node, Direction direction, IntFunction0 update) {
-            //if incoming we flip the highest bit in the node id
+            // if incoming we flip the highest bit in the node id
             long nodeWithDirection = direction == INCOMING ? FLIP_HIGH_BIT_MASK | node : node;
 
             if (degreeCache.size() >= capacity) {
@@ -591,6 +599,19 @@ public class CachingExpandInto extends DefaultCloseListenable {
                     degreeCache.put(nodeWithDirection, value);
                     return value;
                 }
+            }
+        }
+
+        public void put(long node, Direction direction, int degree) {
+            // if incoming we flip the highest bit in the node id
+            long nodeWithDirection = direction == INCOMING ? FLIP_HIGH_BIT_MASK | node : node;
+
+            if (degreeCache.size() >= capacity) {
+                if (degreeCache.containsKey(nodeWithDirection)) {
+                    degreeCache.put(nodeWithDirection, degree);
+                }
+            } else {
+                degreeCache.put(nodeWithDirection, degree);
             }
         }
     }
