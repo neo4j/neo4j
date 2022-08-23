@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -128,6 +129,31 @@ class Neo4jTransactionalContextTest
         assertThrows(RuntimeException.class, context::commitAndRestartTx );
 
         Mockito.verify( userTransaction ).rollback();
+    }
+
+    @Test
+    void shouldCloseInnerTransactionOnOuterTermination()
+    {
+        // Given
+        ExecutingQuery executingQuery = mock(ExecutingQuery.class);
+        InternalTransaction transaction = mock(InternalTransaction.class, new ReturnsDeepStubs());
+        InternalTransaction innerTransaction = mock(InternalTransaction.class, new ReturnsDeepStubs());
+
+        KernelTransaction kernelTransaction = mockTransaction(statement);
+        when(transaction.kernelTransaction()).thenReturn(kernelTransaction);
+        when(transaction.transactionType()).thenReturn(KernelTransaction.Type.IMPLICIT);
+        GraphDatabaseQueryService graph = mock(GraphDatabaseQueryService.class);
+        when(graph.beginTransaction( any(), any(), any() )).thenReturn( innerTransaction );
+        TransactionTerminatedException error = new TransactionTerminatedException( Status.Transaction.Terminated );
+        when(innerTransaction.kernelTransaction()).thenThrow(error);
+
+        // When
+        Neo4jTransactionalContext transactionalContext =
+                new Neo4jTransactionalContext( graph, transaction, statement, executingQuery, transactionFactory );
+
+        // Then
+        assertThatThrownBy(transactionalContext::contextWithNewTransaction).isSameAs(error);
+        verify(innerTransaction).close();
     }
 
     @Test
