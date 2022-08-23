@@ -65,7 +65,6 @@ class DiagnosticsReportCommandIT {
 
     private Path homeDir;
     private Path configDir;
-    private Path configFile;
     private String originalUserDir;
     private ExecutionContext ctx;
 
@@ -75,8 +74,7 @@ class DiagnosticsReportCommandIT {
         configDir = testDirectory.directory("config-dir");
 
         // Touch config
-        configFile = configDir.resolve("neo4j.conf");
-        Files.createFile(configFile);
+        Files.createFile(configDir.resolve("neo4j.conf"));
 
         // To make sure files are resolved from the working directory
         originalUserDir =
@@ -177,7 +175,7 @@ class DiagnosticsReportCommandIT {
         Path confFile = testDirectory.createFile("neo4j.conf");
         Files.write(confFile, singletonList(GraphDatabaseSettings.logs_directory.name() + "=customLogDir/"));
 
-        // Create some log files that should be found. debug.log has already been created during setup.
+        // Create some log files that should be found.
         testDirectory.directory("customLogDir");
         testDirectory.createFile("customLogDir/debug.log");
         testDirectory.createFile("customLogDir/debug.log.01.zip");
@@ -201,6 +199,28 @@ class DiagnosticsReportCommandIT {
             assertTrue(Files.exists(logsDir.resolve("debug.log.01.zip")));
             assertTrue(Files.exists(logsDir.resolve("neo4j.log")));
             assertTrue(Files.exists(logsDir.resolve("neo4j.log.01")));
+        }
+    }
+
+    @Test
+    void includeAllAdminConfigFiles() throws IOException {
+        // Create some config files that should be found. neo4j.conf has already been created during setup.
+        Files.createFile(configDir.resolve("neo4j-admin.conf"));
+        Files.createFile(configDir.resolve("neo4j-admin-database-check.conf"));
+
+        String[] args = {"config", "--to-path=" + testDirectory.absolutePath() + "/reports"};
+        DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
+        CommandLine.populateCommand(diagnosticsReportCommand, args);
+        diagnosticsReportCommand.execute();
+
+        Path[] files = FileUtils.listPaths(testDirectory.homePath().resolve("reports"));
+        assertThat(files.length).isEqualTo(1);
+
+        try (FileSystem fileSystem = FileSystems.newFileSystem(files[0])) {
+            Path confDir = fileSystem.getPath("config");
+            assertTrue(Files.exists(confDir.resolve("neo4j.conf")));
+            assertTrue(Files.exists(confDir.resolve("neo4j-admin.conf")));
+            assertTrue(Files.exists(confDir.resolve("neo4j-admin-database-check.conf")));
         }
     }
 
@@ -256,7 +276,7 @@ class DiagnosticsReportCommandIT {
                     .isEqualTo(String.format("Finding running instance of neo4j%n"
                             + "No running instance of neo4j was found. Online reports will be omitted.%n"
                             + "All available classifiers:%n"
-                            + "  config     include configuration file%n"
+                            + "  config     include configuration files%n"
                             + "  logs       include log files%n"
                             + "  plugins    include a view of the plugin directory%n"
                             + "  ps         include a list of running processes%n"

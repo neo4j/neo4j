@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +40,7 @@ public final class DiagnosticsReportSources {
     }
 
     /**
-     * Create a diagnostics source the will copy a file into the archive.
+     * Create a diagnostics source that will copy a file into the archive.
      *
      * @param destination final destination in archive.
      * @param fs filesystem abstraction to use.
@@ -59,12 +60,28 @@ public final class DiagnosticsReportSources {
      */
     public static List<DiagnosticsReportSource> newDiagnosticsRotatingFile(
             String destinationFolder, FileSystemAbstraction fs, Path file) {
+
+        return newDiagnosticsMatchingFiles(destinationFolder, fs, file.getParent(), path -> path.getFileName()
+                .toString()
+                .startsWith(file.getFileName().toString()));
+    }
+
+    /**
+     * @param destinationFolder destination folder (including trailing '/') in archive.
+     * @param fs filesystem abstraction to use.
+     * @param sourceFolder folder to look for files in
+     * @param filter filter when listing files
+     * @return a list of diagnostics sources consisting of the files matching the filter.
+     */
+    public static List<DiagnosticsReportSource> newDiagnosticsMatchingFiles(
+            String destinationFolder,
+            FileSystemAbstraction fs,
+            Path sourceFolder,
+            DirectoryStream.Filter<Path> filter) {
         List<DiagnosticsReportSource> files = new ArrayList<>();
 
         try {
-            Path[] paths = fs.listFiles(file.getParent(), path -> path.getFileName()
-                    .toString()
-                    .startsWith(file.getFileName().toString()));
+            Path[] paths = fs.listFiles(sourceFolder, filter);
 
             if (paths != null) {
                 for (Path path : paths) {
@@ -74,7 +91,7 @@ public final class DiagnosticsReportSources {
             }
         } catch (IOException e) {
             files.add(newDiagnosticsString(
-                    destinationFolder, () -> "Error reading files in directory: " + e.getMessage()));
+                    destinationFolder + "error", () -> "Error reading files in directory: " + e.getMessage()));
         }
 
         return files;

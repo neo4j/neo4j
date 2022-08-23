@@ -176,7 +176,12 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
 
         // Register sources provided by this tool
         reporter.registerSource(
-                "config", DiagnosticsReportSources.newDiagnosticsFile("neo4j.conf", ctx.fs(), configFile()));
+                "config", DiagnosticsReportSources.newDiagnosticsFile("config/neo4j.conf", ctx.fs(), configFile()));
+        DiagnosticsReportSources.newDiagnosticsMatchingFiles("config/", ctx.fs(), ctx.confDir(), path -> {
+                    String fileName = path.getFileName().toString();
+                    return fileName.startsWith("neo4j-admin") && fileName.endsWith(".conf");
+                })
+                .forEach(conf -> reporter.registerSource("config", conf));
 
         reporter.registerSource("ps", runningProcesses());
 
@@ -208,7 +213,7 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
             case "logs":
                 return "include log files";
             case "config":
-                return "include configuration file";
+                return "include configuration files";
             case "plugins":
                 return "include a view of the plugin directory";
             case "tree":
