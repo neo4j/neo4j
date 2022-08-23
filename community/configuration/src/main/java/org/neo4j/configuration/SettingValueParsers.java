@@ -33,6 +33,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -214,63 +215,49 @@ public final class SettingValueParsers {
 
     public static final SettingValueParser<String> JVM_ADDITIONAL = new SettingValueParser<>() {
         private String parseLine(String line) {
-            var builder = new StringBuilder();
+            List<String> tokens = new ArrayList<>();
+            StringBuilder sb = new StringBuilder();
 
-            var quoting = false;
-            var pendingQuote = false;
-            var atBoundary = true;
-            for (int i = 0; i < line.length(); i++) {
-                char c = line.charAt(i);
-                switch (c) {
-                    case '"':
-                        if (atBoundary) {
-                            pendingQuote = true;
-                            atBoundary = false;
-                        } else {
-                            if (quoting) {
-                                if (pendingQuote) {
-                                    builder.append('"');
-                                    pendingQuote = false;
-                                } else {
-                                    pendingQuote = true;
-                                }
-                            } else {
-                                pendingQuote = false;
-                                builder.append('"');
-                            }
-                        }
-                        break;
-                    case ' ':
-                        if (pendingQuote) {
-                            quoting = false;
-                            pendingQuote = false;
-                        }
-                        if (quoting) {
-                            builder.append(' ');
-                        } else if (!atBoundary) {
-                            // Start interpreting the rest as a new setting
-                            builder.append(System.lineSeparator());
-                            atBoundary = true;
-                        }
-                        break;
-                    default:
-                        if (pendingQuote) {
-                            quoting = true;
-                            pendingQuote = false;
-                        }
-                        atBoundary = false;
-                        builder.append(c);
-                        break;
+            char inQuote = 0;
+            for (char c : line.toCharArray()) {
+                if (c == '"' || c == '\'') {
+                    if (inQuote == 0) {
+                        inQuote = c; // Starting new quote
+                    } else if (c == inQuote) {
+                        inQuote = 0; // End of current quote
+                    }
                 }
+                if (inQuote == 0 && Character.isWhitespace(c)) {
+                    addToken(tokens, sb);
+                    continue;
+                }
+                sb.append(c);
             }
-            if (pendingQuote) {
-                quoting = false;
-                pendingQuote = false;
+            addToken(tokens, sb);
+
+            if (inQuote != 0) {
+                throw new IllegalArgumentException("Missing end quote: " + inQuote);
             }
-            if (quoting) {
-                throw new IllegalArgumentException("Missing end quote");
+
+            return tokens.stream().map(s -> peelQuotes(s)).collect(Collectors.joining(System.lineSeparator()));
+        }
+
+        private static void addToken(List<String> tokens, StringBuilder sb) {
+            if (sb.length() > 0) {
+                tokens.add(sb.toString());
+                sb.setLength(0);
             }
-            return builder.toString();
+        }
+
+        /**
+         * Remove matching surrounding double and single quotes, ignoring white space characters.
+         */
+        private static String peelQuotes(String s) {
+            s = s.strip();
+            while (s.length() > 2 && (s.startsWith("'") && s.endsWith("'") || s.startsWith("\"") && s.endsWith("\""))) {
+                s = s.substring(1, s.length() - 1).trim();
+            }
+            return s;
         }
 
         @Override
