@@ -249,28 +249,6 @@ class FakeDbmsLaunchTest {
         }
 
         @Test
-        void shouldBeAbleToPrintCorrectVersion() {
-            assertThat(execute("version")).isEqualTo(EXIT_CODE_OK);
-            assertThat(out.toString()).contains(Version.getNeo4jVersion());
-
-            clearOutAndErr();
-            assertThat(execute("--version")).isEqualTo(EXIT_CODE_OK);
-            assertThat(out.toString()).contains(Version.getNeo4jVersion());
-        }
-
-        @Test
-        void shouldBeAbleToPrintCorrectVersionWhenRunning() {
-            assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
-            ProcessHandle firstHandle = getProcess().get();
-            assertThat(execute("version")).isEqualTo(EXIT_CODE_OK);
-            assertThat(out.toString()).contains(Version.getNeo4jVersion());
-            ProcessHandle secondHandle = getProcess().get();
-            assertThat(firstHandle.pid()).isEqualTo(secondHandle.pid());
-            assertThat(execute("stop")).isEqualTo(EXIT_CODE_OK);
-            assertFalse(firstHandle.isAlive());
-        }
-
-        @Test
         @EnabledOnOs(OS.LINUX) // stop involves services on windows
         void shouldBeAbleToStopRunningServerWithConfigErrors() {
             assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
@@ -536,6 +514,28 @@ class FakeDbmsLaunchTest {
         void shouldPrintUsageOnHelp() {
             assertThat(execute("help")).isEqualTo(EXIT_CODE_OK);
             assertThat(out.toString()).contains("Usage: neo4j");
+        }
+
+        @Test
+        void shouldBeAbleToPrintCorrectVersion() {
+            assertThat(execute("version")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).contains(Version.getNeo4jVersion());
+
+            clearOutAndErr();
+            assertThat(execute("--version")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).contains(Version.getNeo4jVersion());
+        }
+
+        @Test
+        void shouldBeAbleToPrintCorrectVersionWhenRunning() {
+            assertThat(execute("start")).isEqualTo(EXIT_CODE_OK);
+            ProcessHandle firstHandle = getProcess().get();
+            assertThat(execute("version")).isEqualTo(EXIT_CODE_OK);
+            assertThat(out.toString()).contains(Version.getNeo4jVersion());
+            ProcessHandle secondHandle = getProcess().get();
+            assertThat(firstHandle.pid()).isEqualTo(secondHandle.pid());
+            assertThat(execute("stop")).isEqualTo(EXIT_CODE_OK);
+            assertFalse(firstHandle.isAlive());
         }
     }
 

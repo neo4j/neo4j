@@ -20,7 +20,6 @@
 package org.neo4j.cli;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.neo4j.cli.AdminTool.VersionProvider;
 import static picocli.CommandLine.IVersionProvider;
 
 import java.io.PrintWriter;
@@ -30,6 +29,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.SystemUtils;
@@ -47,8 +47,9 @@ import picocli.CommandLine.Model.UsageMessageSpec;
         name = "neo4j-admin",
         description = "Neo4j database administration tool.",
         mixinStandardHelpOptions = true,
-        versionProvider = VersionProvider.class,
+        versionProvider = AdminTool.VersionProvider.class,
         footerHeading = "\nEnvironment variables:\n",
+        subcommands = {AdminTool.VersionCommand.class, HelpCommand.class},
         footer = {
             "  NEO4J_CONF    Path to directory which contains neo4j.conf.",
             "  NEO4J_DEBUG   Set to anything to enable debug output.",
@@ -104,7 +105,8 @@ public class AdminTool {
                 var messageSpec = new UsageMessageSpec().description(commandGroup.getDescription());
                 CommandSpec commandSpec =
                         CommandSpec.create().name(commandGroup.getDisplayName()).usageMessage(messageSpec);
-                CommandLine groupCommandLine = new CommandLine(commandSpec, new ContextInjectingFactory(ctx));
+                CommandLine groupCommandLine = new CommandLine(commandSpec, new ContextInjectingFactory(ctx))
+                        .addSubcommand(null, HelpCommand.class, "-h", "--help");
                 registerGroupCommands(commandProviders, commandGroup, ctx, groupCommandLine, type -> true);
                 commandLine.addSubcommand(groupCommandLine);
             }
@@ -123,9 +125,8 @@ public class AdminTool {
 
     private static void registerCommands(
             CommandLine cmd, Strategy strategy, Collection<CommandProvider> commandProviders) {
-        CommandLine commandLine = cmd.addSubcommand(HelpCommand.class);
         for (CommandGroup commandGroup : CommandGroup.values()) {
-            strategy.registerCommandsFromGroup(commandGroup, commandLine, commandProviders);
+            strategy.registerCommandsFromGroup(commandGroup, cmd, commandProviders);
         }
     }
 
@@ -264,6 +265,22 @@ public class AdminTool {
                 clazz = clazz.getSuperclass();
             }
             throw new IllegalStateException("Instance of " + object.getClass() + " is not a command.");
+        }
+    }
+
+    @Command(name = "version", description = "Print version information and exit.")
+    public static class VersionCommand implements Callable<Integer> {
+
+        private final ExecutionContext ctx;
+
+        public VersionCommand(ExecutionContext ctx) {
+            this.ctx = ctx;
+        }
+
+        @Override
+        public Integer call() throws Exception {
+            ctx.out().println("neo4j " + Version.getNeo4jVersion());
+            return 0;
         }
     }
 }

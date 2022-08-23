@@ -135,7 +135,7 @@ class MigrateConfigCommandTest {
 
                                 USAGE
 
-                                migrate-configuration [--expand-commands] [--verbose] [--from-path=<path>]
+                                migrate-configuration [-h] [--expand-commands] [--verbose] [--from-path=<path>]
                                                       [--to-path=<path>]
 
                                 DESCRIPTION
@@ -153,6 +153,7 @@ class MigrateConfigCommandTest {
                                       --expand-commands    Allow command expansion in config value evaluation.
                                       --from-path=<path>   Path to the configuration directory used as a source
                                                              for the migration.
+                                  -h, --help               Show this help message and exit.
                                       --to-path=<path>     Path to a directory where the migrated configuration
                                                              files should be written.
                                       --verbose            Enable verbose output.""");

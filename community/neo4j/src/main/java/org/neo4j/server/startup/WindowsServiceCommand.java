@@ -21,6 +21,7 @@ package org.neo4j.server.startup;
 
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.ExecutionContext;
+import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
 @Command(
@@ -29,9 +30,16 @@ import picocli.CommandLine.Command;
         subcommands = {
             WindowsServiceCommand.Install.class,
             WindowsServiceCommand.Update.class,
-            WindowsServiceCommand.Uninstall.class
+            WindowsServiceCommand.Uninstall.class,
+            CommandLine.HelpCommand.class
         })
 public class WindowsServiceCommand {
+
+    @CommandLine.Option(
+            names = {"-h", "--help"},
+            usageHelp = true,
+            description = "Show this help message and exit.")
+    private boolean helpRequested;
 
     @Command(name = "install", description = "Install the Windows service.")
     public static class Install extends AbstractCommand {

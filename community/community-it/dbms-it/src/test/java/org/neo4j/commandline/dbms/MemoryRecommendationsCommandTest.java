@@ -106,7 +106,7 @@ class MemoryRecommendationsCommandTest {
 
                                 USAGE
 
-                                memory-recommendation [--docker] [--expand-commands] [--verbose]
+                                memory-recommendation [-h] [--docker] [--expand-commands] [--verbose]
                                                       [--memory=<size>]
 
                                 DESCRIPTION
@@ -128,6 +128,7 @@ class MemoryRecommendationsCommandTest {
                                                             to a file and pass the file to a docker container
                                                             using '--env-file' docker option.
                                       --expand-commands   Allow command expansion in config value evaluation.
+                                  -h, --help              Show this help message and exit.
                                       --memory=<size>     Recommend memory settings with respect to the given
                                                             amount of memory, instead of the total memory of
                                                             the system running the command.

@@ -95,7 +95,7 @@ class LoadCommandTest {
 
                 USAGE
 
-                load [--expand-commands] [--info] [--overwrite-destination] [--verbose]
+                load [-h] [--expand-commands] [--info] [--overwrite-destination] [--verbose]
                      [--additional-config=<path>] [--from-path=<path> | --from-stdin] <database>
 
                 DESCRIPTION
@@ -122,6 +122,7 @@ class LoadCommandTest {
                       --from-path=<path>   Path to directory containing archive(s) created with
                                              the dump command.
                       --from-stdin         Read dump from standard input.
+                  -h, --help               Show this help message and exit.
                       --info               Print meta-data information about the archive file,
                                              instead of loading the contained database.
                       --overwrite-destination

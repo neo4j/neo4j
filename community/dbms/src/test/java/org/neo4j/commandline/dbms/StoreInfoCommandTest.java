@@ -105,7 +105,7 @@ class StoreInfoCommandTest {
 
                 USAGE
 
-                info [--expand-commands] [--verbose] [--additional-config=<path>]
+                info [-h] [--expand-commands] [--verbose] [--additional-config=<path>]
                      [--format=<structuredFormat>] [--from-path=<path>] [<database>]
 
                 DESCRIPTION
@@ -129,6 +129,7 @@ class StoreInfoCommandTest {
                                              'text' or 'json'.
                                              Default: text
                       --from-path=<path>   Path to databases directory.
+                  -h, --help               Show this help message and exit.
                       --verbose            Enable verbose output.""");
     }
 

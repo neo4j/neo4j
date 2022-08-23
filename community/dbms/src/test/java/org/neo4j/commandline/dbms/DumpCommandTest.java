@@ -45,7 +45,7 @@ class DumpCommandTest {
 
                 USAGE
 
-                dump [--expand-commands] [--verbose] [--additional-config=<path>]
+                dump [-h] [--expand-commands] [--verbose] [--additional-config=<path>]
                      [--to-path=<path> | --to-stdout] <database>
 
                 DESCRIPTION
@@ -67,6 +67,7 @@ class DumpCommandTest {
                       --additional-config=<path>
                                           Configuration file with additional configuration.
                       --expand-commands   Allow command expansion in config value evaluation.
+                  -h, --help              Show this help message and exit.
                       --to-path=<path>    Destination folder of database dump.
                       --to-stdout         Use standard output as destination for database dump.
                       --verbose           Enable verbose output.""");

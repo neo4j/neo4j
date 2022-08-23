@@ -91,7 +91,7 @@ class CheckConsistencyCommandIT {
 
                         USAGE
 
-                        check [--expand-commands] [--verbose] [--additional-config=<path>]
+                        check [-h] [--expand-commands] [--verbose] [--additional-config=<path>]
                               [--check-graph=<true/false>] [--check-index-structure=<true/false>]
                               [--check-indexes=<true/false>] [--report-dir=<path>]
                               (--database=<database> | --backup=<path>)
@@ -123,6 +123,7 @@ class CheckConsistencyCommandIT {
                                                       Default: true
                               --database=<database> Name of the database to check.
                               --expand-commands     Allow command expansion in config value evaluation.
+                          -h, --help                Show this help message and exit.
                               --report-dir=<path>   Directory where consistency report will be written.
                                                       Default: .
                               --verbose             Enable verbose output.""");

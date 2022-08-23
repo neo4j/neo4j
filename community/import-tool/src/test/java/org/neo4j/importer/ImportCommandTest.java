@@ -69,6 +69,7 @@ class ImportCommandTest {
     }
 
     private static final String[] sharedOptions = {
+        "-h",
         "--expand-commands",
         "--verbose",
         "--additional-config",

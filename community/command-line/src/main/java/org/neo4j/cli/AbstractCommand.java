@@ -41,6 +41,12 @@ public abstract class AbstractCommand implements Callable<Integer> {
     @Option(names = "--verbose", arity = "0", description = "Enable verbose output.")
     protected boolean verbose;
 
+    @Option(
+            names = {"-h", "--help"},
+            usageHelp = true,
+            description = "Show this help message and exit.")
+    private boolean helpRequested;
+
     @Option(names = "--expand-commands", description = "Allow command expansion in config value evaluation.")
     protected boolean allowCommandExpansion;
 

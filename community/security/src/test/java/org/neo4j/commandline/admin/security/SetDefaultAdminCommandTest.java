@@ -75,7 +75,7 @@ class SetDefaultAdminCommandTest {
                         """
                                 USAGE
 
-                                set-default-admin [--expand-commands] [--verbose] <username>
+                                set-default-admin [-h] [--expand-commands] [--verbose] <username>
 
                                 DESCRIPTION
 
@@ -89,6 +89,7 @@ class SetDefaultAdminCommandTest {
                                 OPTIONS
 
                                       --expand-commands   Allow command expansion in config value evaluation.
+                                  -h, --help              Show this help message and exit.
                                       --verbose           Enable verbose output.""");
     }
 

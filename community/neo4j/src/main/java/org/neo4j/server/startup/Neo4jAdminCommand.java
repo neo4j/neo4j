@@ -21,7 +21,6 @@ package org.neo4j.server.startup;
 
 import static org.neo4j.server.startup.Bootloader.ARG_EXPAND_COMMANDS;
 
-import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -32,7 +31,6 @@ import org.neo4j.cli.AdminTool;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.internal.Version;
 import org.neo4j.util.VisibleForTesting;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -160,8 +158,7 @@ public class Neo4jAdminCommand implements Callable<Integer>, VerboseCommand {
                 .setErr(new PrintWriter(environment.err(), true))
                 .setUnmatchedArgumentsAllowed(true)
                 .setUnmatchedOptionsArePositionalParams(true)
-                .setExpandAtFiles(false)
-                .addSubcommand("version", new VersionCommand(environment.out()), "--version");
+                .setExpandAtFiles(false);
     }
 
     public static void main(String[] args) {
@@ -192,22 +189,6 @@ public class Neo4jAdminCommand implements Callable<Integer>, VerboseCommand {
                 return failure.getExitCode();
             }
             return commandLine.getCommandSpec().exitCodeOnExecutionException();
-        }
-    }
-
-    @CommandLine.Command(name = "version", description = "Print version information and exit.")
-    static class VersionCommand implements Callable<Integer> {
-
-        private final PrintStream out;
-
-        protected VersionCommand(PrintStream out) {
-            this.out = out;
-        }
-
-        @Override
-        public Integer call() throws Exception {
-            out.println("neo4j " + Version.getNeo4jVersion());
-            return 0;
         }
     }
 

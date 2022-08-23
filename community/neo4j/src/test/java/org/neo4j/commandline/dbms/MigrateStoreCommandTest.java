@@ -43,7 +43,7 @@ class MigrateStoreCommandTest {
 
                          USAGE
 
-                         migrate [--expand-commands] [--verbose] [--additional-config=<path>]
+                         migrate [-h] [--expand-commands] [--verbose] [--additional-config=<path>]
                                  [--pagecache=<size>] [--to-format=<format name>] <database>
 
                          DESCRIPTION
@@ -62,6 +62,7 @@ class MigrateStoreCommandTest {
                                --additional-config=<path>
                                                     Configuration file with additional configuration.
                                --expand-commands    Allow command expansion in config value evaluation.
+                           -h, --help               Show this help message and exit.
                                --pagecache=<size>   The size of the page cache to use for the migration
                                                       process. The general rule is that values up to the
                                                       size of the database proportionally increase
