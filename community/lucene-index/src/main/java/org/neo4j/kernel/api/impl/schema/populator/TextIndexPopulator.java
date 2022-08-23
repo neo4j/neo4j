@@ -17,29 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.schema.trigram;
+package org.neo4j.kernel.api.impl.schema.populator;
 
 import org.apache.lucene.document.Document;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
-import org.neo4j.kernel.api.impl.schema.populator.LuceneIndexPopulator;
+import org.neo4j.kernel.api.impl.schema.TextDocumentStructure;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 
-class TrigramIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<ValueIndexReader>> {
-    TrigramIndexPopulator(DatabaseIndex<ValueIndexReader> luceneIndex, IndexUpdateIgnoreStrategy ignoreStrategy) {
+/**
+ * A {@link LuceneIndexPopulator} used for non-unique Lucene schema indexes, Performs index sampling.
+ */
+public class TextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<ValueIndexReader>> {
+
+    public TextIndexPopulator(DatabaseIndex<ValueIndexReader> luceneIndex, IndexUpdateIgnoreStrategy ignoreStrategy) {
         super(luceneIndex, ignoreStrategy);
     }
 
     @Override
     protected Document updateAsDocument(ValueIndexEntryUpdate<?> update) {
-        return TrigramDocumentStructure.createLuceneDocument(update.getEntityId(), update.values()[0]);
+        return TextDocumentStructure.documentRepresentingProperties(update.getEntityId(), update.values());
     }
 
     @Override
     public IndexUpdater newPopulatingUpdater(CursorContext cursorContext) {
-        return new TrigramIndexPopulatingUpdater(writer, ignoreStrategy);
+        return new TextIndexPopulatingUpdater(writer, ignoreStrategy);
     }
 }

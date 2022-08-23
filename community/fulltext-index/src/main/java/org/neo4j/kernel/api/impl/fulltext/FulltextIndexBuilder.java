@@ -103,7 +103,7 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
             writerConfigFactory = () -> IndexWriterConfigs.standard(config, analyzer);
         }
         WritableIndexPartitionFactory partitionFactory = new WritableIndexPartitionFactory(writerConfigFactory);
-        LuceneFulltextIndex fulltextIndex = new LuceneFulltextIndex(
+        FulltextIndex fulltextIndex = new FulltextIndex(
                 storageBuilder.build(),
                 partitionFactory,
                 descriptor,
@@ -111,6 +111,6 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
                 config,
                 analyzer,
                 propertyNames);
-        return new WritableFulltextIndex(indexUpdateSink, fulltextIndex, readOnlyChecker);
+        return new WritableFulltextDatabaseIndex(indexUpdateSink, fulltextIndex, readOnlyChecker);
     }
 }

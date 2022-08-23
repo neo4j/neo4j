@@ -54,16 +54,13 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
-import org.neo4j.kernel.api.impl.index.DroppableIndex;
-import org.neo4j.kernel.api.impl.index.DroppableLuceneIndex;
 import org.neo4j.kernel.api.impl.index.LuceneMinimalIndexAccessor;
+import org.neo4j.kernel.api.impl.index.MinimalDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.SchemaIndexMigrator;
-import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
-import org.neo4j.kernel.api.impl.schema.SchemaIndex;
+import org.neo4j.kernel.api.impl.schema.AbstractTextIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -138,18 +135,6 @@ public class FulltextIndexProvider extends IndexProvider {
         return new IndexStorageFactory(directoryFactory, fileSystem, structure);
     }
 
-    private boolean indexIsOnline(PartitionedIndexStorage indexStorage, IndexDescriptor descriptor) throws IOException {
-        try (SchemaIndex index = LuceneSchemaIndexBuilder.create(descriptor, readOnlyChecker, config)
-                .withIndexStorage(indexStorage)
-                .build()) {
-            if (index.exists()) {
-                index.open();
-                return index.isOnline();
-            }
-            return false;
-        }
-    }
-
     private PartitionedIndexStorage getIndexStorage(long indexId) {
         return indexStorageFactory.indexStorageOf(indexId);
     }
@@ -207,7 +192,9 @@ public class FulltextIndexProvider extends IndexProvider {
         }
 
         try {
-            return indexIsOnline(indexStorage, index) ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
+            return AbstractTextIndexProvider.indexIsOnline(indexStorage, index, config)
+                    ? InternalIndexState.ONLINE
+                    : InternalIndexState.POPULATING;
         } catch (IOException e) {
             return InternalIndexState.POPULATING;
         }
@@ -216,10 +203,9 @@ public class FulltextIndexProvider extends IndexProvider {
     @Override
     public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor) {
         PartitionedIndexStorage indexStorage = getIndexStorage(descriptor.getId());
-        DatabaseIndex<FulltextIndexReader> fulltextIndex = new DroppableIndex<>(
-                new DroppableLuceneIndex<>(indexStorage, new ReadOnlyIndexPartitionFactory(), descriptor, config));
+        var index = new MinimalDatabaseIndex<>(indexStorage, descriptor, config);
         log.debug("Creating dropper for fulltext schema index: %s", descriptor);
-        return new LuceneMinimalIndexAccessor<>(descriptor, fulltextIndex, isReadOnly());
+        return new LuceneMinimalIndexAccessor<>(descriptor, index, isReadOnly());
     }
 
     private boolean isReadOnly() {
@@ -256,10 +242,9 @@ public class FulltextIndexProvider extends IndexProvider {
             return new FulltextIndexPopulator(descriptor, fulltextIndex, propertyNames, UPDATE_IGNORE_STRATEGY);
         } catch (Exception e) {
             PartitionedIndexStorage indexStorage = getIndexStorage(descriptor.getId());
-            DatabaseIndex<FulltextIndexReader> fulltextIndex = new DroppableIndex<>(
-                    new DroppableLuceneIndex<>(indexStorage, new ReadOnlyIndexPartitionFactory(), descriptor, config));
+            var index = new MinimalDatabaseIndex<FulltextIndexReader>(indexStorage, descriptor, config);
             log.debug("Creating failed index populator for fulltext schema index: %s", descriptor, e);
-            return new FailedFulltextIndexPopulator(descriptor, fulltextIndex, e);
+            return new FailedFulltextIndexPopulator(descriptor, index, e);
         }
     }
 

@@ -25,12 +25,13 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Predicate;
 import org.apache.lucene.document.Document;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
-import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
@@ -75,13 +76,15 @@ public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> imple
             writer.addDocuments(updates.size(), () -> updates.stream()
                     .map(u -> (ValueIndexEntryUpdate<?>) u)
                     .filter(Predicate.not(ignoreStrategy::ignore))
-                    .map(LuceneIndexPopulator::updateAsDocument)
+                    .map(this::updateAsDocument)
                     .filter(Objects::nonNull)
                     .iterator());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
+
+    protected abstract Document updateAsDocument(ValueIndexEntryUpdate<?> update);
 
     @Override
     public void close(boolean populationCompletedSuccessfully, CursorContext cursorContext) {
@@ -105,6 +108,24 @@ public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> imple
         }
     }
 
+    @Override
+    public void includeSample(IndexEntryUpdate<?> update) {
+        // no-op
+    }
+
+    @Override
+    public IndexSample sample(CursorContext cursorContext) {
+        try {
+            luceneIndex.maybeRefreshBlocking();
+            try (var reader = luceneIndex.getIndexReader();
+                    var sampler = reader.createSampler()) {
+                return sampler.sampleIndex(cursorContext);
+            }
+        } catch (IOException | IndexNotFoundKernelException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private boolean updatesForCorrectIndex(Collection<? extends IndexEntryUpdate<?>> updates) {
         for (IndexEntryUpdate<?> update : updates) {
             if (!update.indexKey().schema().equals(luceneIndex.getDescriptor().schema())) {
@@ -112,9 +133,5 @@ public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> imple
             }
         }
         return true;
-    }
-
-    private static Document updateAsDocument(ValueIndexEntryUpdate<?> update) {
-        return LuceneDocumentStructure.documentRepresentingProperties(update.getEntityId(), update.values());
     }
 }

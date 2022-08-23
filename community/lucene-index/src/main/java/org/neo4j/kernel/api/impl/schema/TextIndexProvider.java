@@ -35,7 +35,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.impl.schema.populator.NonUniqueLuceneIndexPopulator;
+import org.neo4j.kernel.api.impl.schema.populator.TextIndexPopulator;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 
-public class TextIndexProvider extends AbstractLuceneIndexProvider {
+public class TextIndexProvider extends AbstractTextIndexProvider {
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("text", "1.0");
     public static final IndexCapability CAPABILITY = TextIndexCapability.text();
 
@@ -90,17 +90,17 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider {
             MemoryTracker memoryTracker,
             TokenNameLookup tokenNameLookup,
             ImmutableSet<OpenOption> openOptions) {
-        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create(descriptor, readOnlyChecker, config)
+        var index = TextIndexBuilder.create(descriptor, readOnlyChecker, config)
                 .withFileSystem(fileSystem)
                 .withSamplingConfig(samplingConfig)
                 .withIndexStorage(getIndexStorage(descriptor.getId()))
                 .withWriterConfig(() -> IndexWriterConfigs.population(config))
                 .build();
 
-        if (luceneIndex.isReadOnly()) {
+        if (index.isReadOnly()) {
             throw new UnsupportedOperationException("Can't create populator for read only index");
         }
-        return new NonUniqueLuceneIndexPopulator(luceneIndex, UPDATE_IGNORE_STRATEGY);
+        return new TextIndexPopulator(index, UPDATE_IGNORE_STRATEGY);
     }
 
     @Override
@@ -110,11 +110,11 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider {
             TokenNameLookup tokenNameLookup,
             ImmutableSet<OpenOption> openOptions)
             throws IOException {
-        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create(descriptor, readOnlyChecker, config)
+        var index = TextIndexBuilder.create(descriptor, readOnlyChecker, config)
                 .withSamplingConfig(samplingConfig)
                 .withIndexStorage(getIndexStorage(descriptor.getId()))
                 .build();
-        luceneIndex.open();
-        return new LuceneIndexAccessor(luceneIndex, descriptor, tokenNameLookup, UPDATE_IGNORE_STRATEGY);
+        index.open();
+        return new TextIndexAccessor(index, descriptor, tokenNameLookup, UPDATE_IGNORE_STRATEGY);
     }
 }

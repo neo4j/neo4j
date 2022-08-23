@@ -74,11 +74,6 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
     }
 
     @Override
-    public void includeSample(IndexEntryUpdate<?> update) {
-        // Index sampling is not our thing, really.
-    }
-
-    @Override
     public IndexSample sample(CursorContext cursorContext) {
         return new IndexSample();
     }
@@ -88,7 +83,8 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
         return descriptor.getIndexConfig().asMap();
     }
 
-    private Document updateAsDocument(ValueIndexEntryUpdate<?> update) {
+    @Override
+    protected Document updateAsDocument(ValueIndexEntryUpdate<?> update) {
         return LuceneFulltextDocumentStructure.documentRepresentingProperties(
                 update.getEntityId(), propertyNames, update.values());
     }
@@ -104,20 +100,14 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
                 long nodeId = valueUpdate.getEntityId();
                 Term term = LuceneFulltextDocumentStructure.newTermForChangeOrRemove(nodeId);
                 switch (valueUpdate.updateMode()) {
-                    case ADDED:
-                    case CHANGED:
-                        luceneIndex
-                                .getIndexWriter()
-                                .updateOrDeleteDocument(
-                                        term,
-                                        LuceneFulltextDocumentStructure.documentRepresentingProperties(
-                                                nodeId, propertyNames, valueUpdate.values()));
-                        break;
-                    case REMOVED:
-                        luceneIndex.getIndexWriter().deleteDocuments(term);
-                        break;
-                    default:
-                        throw new UnsupportedOperationException();
+                    case ADDED, CHANGED -> luceneIndex
+                            .getIndexWriter()
+                            .updateOrDeleteDocument(
+                                    term,
+                                    LuceneFulltextDocumentStructure.documentRepresentingProperties(
+                                            nodeId, propertyNames, valueUpdate.values()));
+                    case REMOVED -> luceneIndex.getIndexWriter().deleteDocuments(term);
+                    default -> throw new UnsupportedOperationException();
                 }
             } catch (IOException e) {
                 throw new UncheckedIOException(e);

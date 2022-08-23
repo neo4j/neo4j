@@ -53,10 +53,10 @@ import org.neo4j.kernel.api.index.IndexReader;
  * Abstract implementation of a partitioned index.
  * Such index may consist of one or multiple separate Lucene indexes that are represented as independent
  * {@link AbstractIndexPartition partitions}.
- * Class and it's subclasses should not be directly used, instead please use corresponding writable or read only
+ * Class and it's subclasses should not be directly used, instead please use corresponding writable or droppable
  * wrapper.
- * @see WritableAbstractDatabaseIndex
- * @see ReadOnlyAbstractDatabaseIndex
+ * @see WritableDatabaseIndex
+ * @see MinimalDatabaseIndex
  */
 public abstract class AbstractLuceneIndex<READER extends IndexReader> {
     private static final String KEY_STATUS = "status";
@@ -90,8 +90,6 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader> {
      * and will create its first partition.
      * <p>
      * <b>Index creation do not automatically open it. To be able to use index please open it first.</b>
-     *
-     * @throws IOException
      */
     public void create() throws IOException {
         ensureNotOpen();
@@ -102,8 +100,6 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader> {
 
     /**
      * Open index with all allocated partitions.
-     *
-     * @throws IOException
      */
     public void open() throws IOException {
         Set<Map.Entry<Path, Directory>> indexDirectories =
@@ -124,7 +120,6 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader> {
      * Check lucene index existence within all allocated partitions.
      *
      * @return true if index exist in all partitions, false when index is empty or does not exist
-     * @throws IOException
      */
     public boolean exists() throws IOException {
         List<Path> folders = indexStorage.listFolders();
@@ -175,9 +170,9 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader> {
         return true;
     }
 
-    public LuceneIndexWriter getIndexWriter(WritableAbstractDatabaseIndex writableAbstractDatabaseIndex) {
+    public LuceneIndexWriter getIndexWriter(WritableDatabaseIndex<?, ?> writableDatabaseIndex) {
         ensureOpen();
-        return new PartitionedIndexWriter(writableAbstractDatabaseIndex, config);
+        return new PartitionedIndexWriter(writableDatabaseIndex, config);
     }
 
     public READER getIndexReader() throws IOException {
@@ -253,7 +248,6 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader> {
      * Snapshot of all file in all index partitions.
      *
      * @return iterator over all index files.
-     * @throws IOException
      * @see WritableIndexSnapshotFileIterator
      */
     public ResourceIterator<Path> snapshot() throws IOException {
@@ -280,8 +274,6 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader> {
 
     /**
      * Refresh all partitions to make newly inserted data visible for readers.
-     *
-     * @throws IOException
      */
     public void maybeRefreshBlocking() throws IOException {
         try {
@@ -316,7 +308,6 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader> {
      * Add new partition to the index.
      *
      * @return newly created partition
-     * @throws IOException
      */
     AbstractIndexPartition addNewPartition() throws IOException {
         ensureOpen();
@@ -370,7 +361,6 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader> {
      * Check if this index is marked as online.
      *
      * @return <code>true</code> if index is online, <code>false</code> otherwise
-     * @throws IOException
      */
     public boolean isOnline() throws IOException {
         ensureOpen();
@@ -384,8 +374,6 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader> {
 
     /**
      * Marks index as online by including "status" -> "online" map into commit metadata of the first partition.
-     *
-     * @throws IOException
      */
     public void markAsOnline() throws IOException {
         ensureOpen();
@@ -399,7 +387,6 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader> {
      * Writes the given failure message to the failure storage.
      *
      * @param failure the failure message.
-     * @throws IOException
      */
     public void markAsFailed(String failure) throws IOException {
         indexStorage.storeIndexFailure(failure);

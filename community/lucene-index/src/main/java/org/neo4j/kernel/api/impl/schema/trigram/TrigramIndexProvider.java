@@ -38,7 +38,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider;
+import org.neo4j.kernel.api.impl.schema.AbstractTextIndexProvider;
 import org.neo4j.kernel.api.impl.schema.TextIndexCapability;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -49,7 +49,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
-public class TrigramIndexProvider extends AbstractLuceneIndexProvider {
+public class TrigramIndexProvider extends AbstractTextIndexProvider {
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("text", "2.0");
     public static final IndexCapability CAPABILITY = TextIndexCapability.trigram();
 

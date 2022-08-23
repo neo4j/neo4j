@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 
 /**
- * This class collects the common features of {@link ReadOnlyAbstractDatabaseIndex} and {@link WritableAbstractDatabaseIndex}.
+ * This class collects the common features of {@link MinimalDatabaseIndex} and {@link WritableDatabaseIndex}.
  */
 abstract class AbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, READER extends ValueIndexReader>
         implements DatabaseIndex<READER> {

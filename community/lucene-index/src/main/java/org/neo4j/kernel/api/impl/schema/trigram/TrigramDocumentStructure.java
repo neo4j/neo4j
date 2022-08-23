@@ -58,6 +58,10 @@ class TrigramDocumentStructure {
         return document;
     }
 
+    static long getNodeId(Document from) {
+        return Long.parseLong(from.get(ENTITY_ID_KEY));
+    }
+
     private static class TrigramField extends Field {
         private static final FieldType TYPE = new FieldType();
 

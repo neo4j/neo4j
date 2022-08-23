@@ -30,7 +30,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.sampler.AggregatingIndexSampler;
-import org.neo4j.kernel.api.index.AbstractValueIndexReader;
+import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexReader;
 import org.neo4j.kernel.api.index.BridgingIndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
@@ -40,15 +40,14 @@ import org.neo4j.values.storable.Value;
 
 /**
  * Index reader that is able to read/sample multiple partitions of a partitioned Lucene index.
- * Internally uses multiple {@link SimpleValueIndexReader}s for individual partitions.
- *
- * @see SimpleValueIndexReader
+ * Internally uses multiple {@link TextIndexReader} or {@link TrigramIndexReader}s for individual partitions.
  */
-public class PartitionedValueIndexReader extends AbstractValueIndexReader {
+public class PartitionedValueIndexReader implements ValueIndexReader {
+    private final IndexDescriptor descriptor;
     private final List<ValueIndexReader> indexReaders;
 
     public PartitionedValueIndexReader(IndexDescriptor descriptor, List<ValueIndexReader> readers) {
-        super(descriptor);
+        this.descriptor = descriptor;
         this.indexReaders = readers;
     }
 

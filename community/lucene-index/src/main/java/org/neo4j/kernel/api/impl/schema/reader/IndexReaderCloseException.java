@@ -24,10 +24,6 @@ import java.io.UncheckedIOException;
 
 /**
  * Exception that will be thrown in case if there was a problem during index reader close
- *
- * @see org.apache.lucene.search.IndexSearcher
- * @see org.neo4j.kernel.api.impl.index.partition.PartitionSearcher
- * @see SimpleValueIndexReader
  */
 public class IndexReaderCloseException extends UncheckedIOException {
     private IndexReaderCloseException(String message, IOException cause) {

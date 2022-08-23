@@ -61,7 +61,7 @@ import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.index.AbstractValueIndexReader;
+import org.neo4j.kernel.api.impl.schema.AbstractTextIndexReader;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -203,7 +203,7 @@ class DatabaseIndexIntegrationTest {
     }
 
     private static class WritableTestDatabaseIndex
-            extends WritableAbstractDatabaseIndex<TestLuceneIndex, AbstractValueIndexReader> {
+            extends WritableDatabaseIndex<TestLuceneIndex, AbstractTextIndexReader> {
         WritableTestDatabaseIndex(PartitionedIndexStorage indexStorage) {
             super(
                     new TestLuceneIndex(
@@ -213,19 +213,19 @@ class DatabaseIndexIntegrationTest {
         }
     }
 
-    private static class TestLuceneIndex extends AbstractLuceneIndex<AbstractValueIndexReader> {
+    private static class TestLuceneIndex extends AbstractLuceneIndex<AbstractTextIndexReader> {
 
         TestLuceneIndex(PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory) {
             super(indexStorage, partitionFactory, null, Config.defaults());
         }
 
         @Override
-        protected AbstractValueIndexReader createSimpleReader(List<AbstractIndexPartition> partitions) {
+        protected AbstractTextIndexReader createSimpleReader(List<AbstractIndexPartition> partitions) {
             return null;
         }
 
         @Override
-        protected AbstractValueIndexReader createPartitionedReader(List<AbstractIndexPartition> partitions) {
+        protected AbstractTextIndexReader createPartitionedReader(List<AbstractIndexPartition> partitions) {
             return null;
         }
     }

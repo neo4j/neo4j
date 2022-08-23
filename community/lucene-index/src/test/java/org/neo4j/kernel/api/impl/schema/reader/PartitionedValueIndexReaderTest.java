@@ -67,9 +67,9 @@ class PartitionedValueIndexReaderTest {
     private final IndexDescriptor schemaIndexDescriptor = IndexPrototype.forSchema(forLabel(LABEL_ID, PROP_KEY))
             .withName("index")
             .materialise(0);
-    private final SimpleValueIndexReader indexReader1 = mock(SimpleValueIndexReader.class);
-    private final SimpleValueIndexReader indexReader2 = mock(SimpleValueIndexReader.class);
-    private final SimpleValueIndexReader indexReader3 = mock(SimpleValueIndexReader.class);
+    private final TextIndexReader indexReader1 = mock(TextIndexReader.class);
+    private final TextIndexReader indexReader2 = mock(TextIndexReader.class);
+    private final TextIndexReader indexReader3 = mock(TextIndexReader.class);
 
     @Test
     void partitionedReaderCloseAllReaders() {
@@ -219,7 +219,7 @@ class PartitionedValueIndexReaderTest {
         assertThat(client.needStoreFilter).isEqualTo(needStoreFilter);
     }
 
-    private void setNeedStoreFilter(SimpleValueIndexReader indexReader, boolean needStoreFilter)
+    private void setNeedStoreFilter(TextIndexReader indexReader, boolean needStoreFilter)
             throws IndexNotApplicableKernelException {
         doAnswer(invocation -> {
                     // This is out outer client

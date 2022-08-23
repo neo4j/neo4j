@@ -246,13 +246,13 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport> {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(
                         "Index query not supported for %s index. Query: %s",
-                        getIndex(NODE_INDEX_NAME).getIndexProvider().getKey(), query);
+                        org.neo4j.graphdb.schema.IndexType.TEXT, query);
 
         assertThatThrownBy(() -> indexedRelations(exists(token.propertyKey(SINCE))))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(
                         "Index query not supported for %s index. Query: %s",
-                        getIndex(REL_INDEX_NAME).getIndexProvider().getKey(), query);
+                        org.neo4j.graphdb.schema.IndexType.TEXT, query);
     }
 
     @Test
@@ -262,14 +262,14 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport> {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(
                         "Index query not supported for %s index. Query: %s",
-                        getIndex(NODE_INDEX_NAME).getIndexProvider().getKey(), name);
+                        org.neo4j.graphdb.schema.IndexType.TEXT, name);
 
         PropertyIndexQuery since = exact(token.propertyKey(SINCE), 694_717_800);
         assertThatThrownBy(() -> indexedRelations(since))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(
                         "Index query not supported for %s index. Query: %s",
-                        getIndex(REL_INDEX_NAME).getIndexProvider().getKey(), since);
+                        org.neo4j.graphdb.schema.IndexType.TEXT, since);
     }
 
     protected IndexProviderDescriptor getIndexProviderDescriptor() {

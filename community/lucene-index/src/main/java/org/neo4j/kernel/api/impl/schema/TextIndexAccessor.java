@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.schema.trigram;
+package org.neo4j.kernel.api.impl.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.function.ToLongFunction;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -32,46 +33,56 @@ import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.ValueIndexReader;
+import org.neo4j.kernel.impl.api.LuceneIndexValueValidator;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.values.storable.Value;
 
-class TrigramIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexReader, DatabaseIndex<ValueIndexReader>> {
+public class TextIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexReader, DatabaseIndex<ValueIndexReader>> {
 
-    TrigramIndexAccessor(
+    private final LuceneIndexValueValidator valueValidator;
+
+    public TextIndexAccessor(
             DatabaseIndex<ValueIndexReader> luceneIndex,
             IndexDescriptor descriptor,
+            TokenNameLookup tokenNameLookup,
             IndexUpdateIgnoreStrategy ignoreStrategy) {
         super(luceneIndex, descriptor, ignoreStrategy);
+        this.valueValidator = new LuceneIndexValueValidator(descriptor, tokenNameLookup);
     }
 
     @Override
     protected IndexUpdater getIndexUpdater(IndexUpdateMode mode) {
-        return new Updater(mode.requiresIdempotency(), mode.requiresRefresh());
+        return new TextIndexUpdater(mode.requiresIdempotency(), mode.requiresRefresh());
     }
 
     @Override
     public BoundedIterable<Long> newAllEntriesValueReader(
             long fromIdInclusive, long toIdExclusive, CursorContext cursorContext) {
-        return super.newAllEntriesReader(TrigramDocumentStructure::getNodeId, fromIdInclusive, toIdExclusive);
+        return super.newAllEntriesReader(TextDocumentStructure::getNodeId, fromIdInclusive, toIdExclusive);
     }
 
     @Override
     public IndexEntriesReader[] newAllEntriesValueReader(ToLongFunction<Document> entityIdReader, int numPartitions) {
-        return super.newAllEntriesValueReader(TrigramDocumentStructure::getNodeId, numPartitions);
+        return super.newAllEntriesValueReader(TextDocumentStructure::getNodeId, numPartitions);
     }
 
-    private class Updater extends AbstractLuceneIndexUpdater {
+    @Override
+    public void validateBeforeCommit(long entityId, Value[] tuple) {
+        valueValidator.validate(entityId, tuple);
+    }
 
-        Updater(boolean idempotent, boolean refresh) {
+    private class TextIndexUpdater extends AbstractLuceneIndexUpdater {
+
+        TextIndexUpdater(boolean idempotent, boolean refresh) {
             super(idempotent, refresh);
         }
 
         @Override
         protected void addIdempotent(long entityId, Value[] values) {
             try {
-                Document document = TrigramDocumentStructure.createLuceneDocument(entityId, values[0]);
-                writer.updateOrDeleteDocument(TrigramDocumentStructure.newTermForChangeOrRemove(entityId), document);
+                Document document = TextDocumentStructure.documentRepresentingProperties(entityId, values);
+                writer.updateOrDeleteDocument(TextDocumentStructure.newTermForChangeOrRemove(entityId), document);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -80,7 +91,7 @@ class TrigramIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexReader,
         @Override
         protected void add(long entityId, Value[] values) {
             try {
-                Document document = TrigramDocumentStructure.createLuceneDocument(entityId, values[0]);
+                Document document = TextDocumentStructure.documentRepresentingProperties(entityId, values);
                 writer.nullableAddDocument(document);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
@@ -90,8 +101,8 @@ class TrigramIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexReader,
         @Override
         protected void change(long entityId, Value[] values) {
             try {
-                Term term = TrigramDocumentStructure.newTermForChangeOrRemove(entityId);
-                Document document = TrigramDocumentStructure.createLuceneDocument(entityId, values[0]);
+                Term term = TextDocumentStructure.newTermForChangeOrRemove(entityId);
+                Document document = TextDocumentStructure.documentRepresentingProperties(entityId, values);
                 writer.updateOrDeleteDocument(term, document);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
@@ -101,7 +112,7 @@ class TrigramIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexReader,
         @Override
         protected void remove(long entityId) {
             try {
-                Term term = TrigramDocumentStructure.newTermForChangeOrRemove(entityId);
+                Term term = TextDocumentStructure.newTermForChangeOrRemove(entityId);
                 writer.deleteDocuments(term);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);

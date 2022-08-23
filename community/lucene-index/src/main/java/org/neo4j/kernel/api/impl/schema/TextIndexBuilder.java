@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.schema.trigram;
+package org.neo4j.kernel.api.impl.schema;
 
 import java.util.function.Supplier;
 import org.apache.lucene.index.IndexWriter;
@@ -35,13 +35,21 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 
-class TrigramIndexBuilder extends AbstractLuceneIndexBuilder<TrigramIndexBuilder> {
+/**
+ * Helper builder class to simplify construction and instantiation of lucene text indexes.
+ * Most of the values already have most useful default value, that still can be overridden by corresponding
+ * builder methods.
+ *
+ * @see TextIndex
+ * @see AbstractLuceneIndexBuilder
+ */
+public class TextIndexBuilder extends AbstractLuceneIndexBuilder<TextIndexBuilder> {
     private final IndexDescriptor descriptor;
     private final Config config;
     private IndexSamplingConfig samplingConfig;
     private Supplier<IndexWriterConfig> writerConfigFactory;
 
-    private TrigramIndexBuilder(IndexDescriptor descriptor, DatabaseReadOnlyChecker readOnlyChecker, Config config) {
+    private TextIndexBuilder(IndexDescriptor descriptor, DatabaseReadOnlyChecker readOnlyChecker, Config config) {
         super(readOnlyChecker);
         this.descriptor = descriptor;
         this.config = config;
@@ -50,23 +58,23 @@ class TrigramIndexBuilder extends AbstractLuceneIndexBuilder<TrigramIndexBuilder
     }
 
     /**
-     * Create new lucene schema index builder.
+     * Create new text index builder.
      *
-     * @return {@link TrigramIndexBuilder} that can be used to build trigram based Text index built on Lucene
+     * @return {@link TextIndexBuilder} that can be used to build simple Text index built on Lucene
      * @param descriptor The descriptor for this index
      */
-    static TrigramIndexBuilder create(
+    public static TextIndexBuilder create(
             IndexDescriptor descriptor, DatabaseReadOnlyChecker readOnlyChecker, Config config) {
-        return new TrigramIndexBuilder(descriptor, readOnlyChecker, config);
+        return new TextIndexBuilder(descriptor, readOnlyChecker, config);
     }
 
     /**
-     * Specify lucene schema index sampling config
+     * Specify text index sampling config
      *
      * @param samplingConfig sampling config
      * @return index builder
      */
-    TrigramIndexBuilder withSamplingConfig(IndexSamplingConfig samplingConfig) {
+    public TextIndexBuilder withSamplingConfig(IndexSamplingConfig samplingConfig) {
         this.samplingConfig = samplingConfig;
         return this;
     }
@@ -77,19 +85,19 @@ class TrigramIndexBuilder extends AbstractLuceneIndexBuilder<TrigramIndexBuilder
      * @param writerConfigFactory the supplier of writer configs
      * @return index builder
      */
-    TrigramIndexBuilder withWriterConfig(Supplier<IndexWriterConfig> writerConfigFactory) {
+    public TextIndexBuilder withWriterConfig(Supplier<IndexWriterConfig> writerConfigFactory) {
         this.writerConfigFactory = writerConfigFactory;
         return this;
     }
 
     /**
-     * Build lucene schema index with specified configuration
+     * Build text index with specified configuration
      *
-     * @return lucene schema index
+     * @return text index
      */
-    DatabaseIndex<ValueIndexReader> build() {
+    public DatabaseIndex<ValueIndexReader> build() {
         PartitionedIndexStorage storage = storageBuilder.build();
-        var index = new TrigramIndex(
+        var index = new TextIndex(
                 storage, descriptor, samplingConfig, new WritableIndexPartitionFactory(writerConfigFactory), config);
         return new WritableDatabaseIndex<>(index, readOnlyChecker);
     }

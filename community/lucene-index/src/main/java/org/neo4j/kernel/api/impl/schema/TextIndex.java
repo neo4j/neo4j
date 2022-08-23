@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.schema.trigram;
+package org.neo4j.kernel.api.impl.schema;
 
 import java.io.IOException;
 import java.util.List;
@@ -27,16 +27,21 @@ import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.impl.schema.reader.PartitionedValueIndexReader;
+import org.neo4j.kernel.api.impl.schema.reader.TextIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 
-class TrigramIndex extends AbstractLuceneIndex<ValueIndexReader> {
+/**
+ * Implementation of Lucene text index that support multiple partitions.
+ */
+class TextIndex extends AbstractLuceneIndex<ValueIndexReader> {
+
     private final IndexSamplingConfig samplingConfig;
+
     private final TaskCoordinator taskCoordinator = new TaskCoordinator();
 
-    TrigramIndex(
+    TextIndex(
             PartitionedIndexStorage indexStorage,
             IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
@@ -58,9 +63,9 @@ class TrigramIndex extends AbstractLuceneIndex<ValueIndexReader> {
     }
 
     @Override
-    protected TrigramIndexReader createSimpleReader(List<AbstractIndexPartition> partitions) throws IOException {
+    protected TextIndexReader createSimpleReader(List<AbstractIndexPartition> partitions) throws IOException {
         AbstractIndexPartition searcher = getFirstPartition(partitions);
-        return new TrigramIndexReader(searcher.acquireSearcher(), descriptor, samplingConfig, taskCoordinator);
+        return new TextIndexReader(searcher.acquireSearcher(), descriptor, samplingConfig, taskCoordinator);
     }
 
     @Override
@@ -68,7 +73,7 @@ class TrigramIndex extends AbstractLuceneIndex<ValueIndexReader> {
             throws IOException {
         List<ValueIndexReader> readers = acquireSearchers(partitions).stream()
                 .map(partitionSearcher -> (ValueIndexReader)
-                        new TrigramIndexReader(partitionSearcher, descriptor, samplingConfig, taskCoordinator))
+                        new TextIndexReader(partitionSearcher, descriptor, samplingConfig, taskCoordinator))
                 .toList();
         return new PartitionedValueIndexReader(descriptor, readers);
     }

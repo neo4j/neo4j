@@ -37,7 +37,7 @@ public class AllNodesCollector extends SimpleCollector {
     public static List<Long> getAllNodes(Directory directory, Value propertyValue) throws IOException {
         try (SearcherManager manager = new SearcherManager(directory, new Neo4jSearcherFactory())) {
             IndexSearcher searcher = manager.acquire();
-            Query query = LuceneDocumentStructure.newSeekQuery(propertyValue);
+            Query query = TextDocumentStructure.newSeekQuery(propertyValue);
             AllNodesCollector collector = new AllNodesCollector();
             searcher.search(query, collector);
             return collector.nodeIds;
@@ -49,7 +49,7 @@ public class AllNodesCollector extends SimpleCollector {
 
     @Override
     public void collect(int doc) throws IOException {
-        nodeIds.add(LuceneDocumentStructure.getNodeId(reader.document(doc)));
+        nodeIds.add(TextDocumentStructure.getNodeId(reader.document(doc)));
     }
 
     @Override

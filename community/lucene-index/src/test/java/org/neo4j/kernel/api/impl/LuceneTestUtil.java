@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
-import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
+import org.neo4j.kernel.api.impl.schema.TextDocumentStructure;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -38,10 +38,10 @@ public class LuceneTestUtil {
     }
 
     public static Document documentRepresentingProperties(long nodeId, Object... objects) {
-        return LuceneDocumentStructure.documentRepresentingProperties(nodeId, Values.values(objects));
+        return TextDocumentStructure.documentRepresentingProperties(nodeId, Values.values(objects));
     }
 
     public static Query newSeekQuery(Object... objects) {
-        return LuceneDocumentStructure.newSeekQuery(Values.values(objects));
+        return TextDocumentStructure.newSeekQuery(Values.values(objects));
     }
 }

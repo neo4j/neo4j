@@ -28,7 +28,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
+import org.neo4j.kernel.api.impl.index.WritableDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 
 /**
@@ -45,10 +45,10 @@ public class PartitionedIndexWriter implements LuceneIndexWriter {
     // it could happen that 2 threads reserve space in a partition (without claiming it by doing addDocument):
     private static final Integer DEFAULT_MAXIMUM_PARTITION_SIZE = IndexWriter.MAX_DOCS - (IndexWriter.MAX_DOCS / 10);
 
-    private final WritableAbstractDatabaseIndex index;
+    private final WritableDatabaseIndex<?, ?> index;
     private final int maximumPartitionSize;
 
-    public PartitionedIndexWriter(WritableAbstractDatabaseIndex index, Config config) {
+    public PartitionedIndexWriter(WritableDatabaseIndex<?, ?> index, Config config) {
         this.index = index;
         var configuredMaxPartitionSize = config.get(GraphDatabaseInternalSettings.lucene_max_partition_size);
         maximumPartitionSize = Objects.requireNonNullElse(configuredMaxPartitionSize, DEFAULT_MAXIMUM_PARTITION_SIZE);
@@ -67,11 +67,9 @@ public class PartitionedIndexWriter implements LuceneIndexWriter {
     @Override
     public void updateDocument(Term term, Document doc) throws IOException {
         List<AbstractIndexPartition> partitions = index.getPartitions();
-        if (WritableAbstractDatabaseIndex.hasSinglePartition(partitions)
-                && writablePartition(WritableAbstractDatabaseIndex.getFirstPartition(partitions), 1)) {
-            WritableAbstractDatabaseIndex.getFirstPartition(partitions)
-                    .getIndexWriter()
-                    .updateDocument(term, doc);
+        if (WritableDatabaseIndex.hasSinglePartition(partitions)
+                && writablePartition(WritableDatabaseIndex.getFirstPartition(partitions), 1)) {
+            WritableDatabaseIndex.getFirstPartition(partitions).getIndexWriter().updateDocument(term, doc);
         } else {
             deleteDocuments(term);
             addDocument(doc);
