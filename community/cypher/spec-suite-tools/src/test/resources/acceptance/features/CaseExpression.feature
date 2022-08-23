@@ -59,16 +59,22 @@ Feature: CaseExpression
     When executing query:
       """
       MATCH (n)
-      RETURN CASE
-               WHEN id(n) >= 0 THEN [p=(n)-->() | p]
-               ELSE 42
-             END AS p
+      WITH n, CASE
+        WHEN id(n) >= 0 THEN [p=(n)-->() | p]
+        ELSE 42
+        END AS p
+      WITH n, p UNWIND CASE
+          WHEN p = [] THEN [null]
+          ELSE p
+        END AS path
+      RETURN n, path
       """
     Then the result should be, in any order:
-      | p                                      |
-      | [<(:A)-[:T]->(:C)>, <(:A)-[:T]->(:B)>] |
-      | []                                     |
-      | []                                     |
+      | n    | path              |
+      | (:A) | <(:A)-[:T]->(:C)> |
+      | (:A) | <(:A)-[:T]->(:B)> |
+      | (:B) | null              |
+      | (:C) | null              |
     And no side effects
 
   Scenario: Returning a CASE expression into integer
@@ -107,18 +113,22 @@ Feature: CaseExpression
     When executing query:
       """
       MATCH (n)
-      RETURN CASE
-               WHEN n:A1 THEN [p=(n)-->(:B1) | p]
-               WHEN n:A2 THEN [p=(n)-->(:B2) | p]
-               ELSE 42
-             END AS p
+      WITH n, CASE
+          WHEN n:A1 THEN [p=(n)-->(:B1) | p]
+          WHEN n:A2 THEN [p=(n)-->(:B2) | p]
+          ELSE 42
+          END AS p
+      WITH n, p UNWIND p as path
+      RETURN n, path
       """
     Then the result should be, in any order:
-      | p                                            |
-      | [<(:A1)-[:T2]->(:B1)>, <(:A1)-[:T1]->(:B1)>] |
-      | [<(:A2)-[:T2]->(:B2)>, <(:A2)-[:T1]->(:B2)>] |
-      | 42                                           |
-      | 42                                           |
+      | n   | path                 |
+      |(:A1)| <(:A1)-[:T2]->(:B1)> |
+      |(:A1)| <(:A1)-[:T1]->(:B1)> |
+      |(:A2)| <(:A2)-[:T2]->(:B2)> |
+      |(:A2)| <(:A2)-[:T1]->(:B2)> |
+      |(:B1)| 42                   |
+      |(:B2)| 42                   |
     And no side effects
 
   Scenario: Using a CASE expression in a WITH, positive case
@@ -132,16 +142,22 @@ Feature: CaseExpression
     When executing query:
       """
       MATCH (n)
-      WITH CASE
-             WHEN id(n) >= 0 THEN [p=(n)-->() | p]
-             ELSE 42
-           END AS p, count(n) AS c
-      RETURN p, c
+      WITH n, CASE
+              WHEN id(n) >= 0 THEN [p=(n)-->() | p]
+              ELSE 42
+          END AS p
+      WITH n, p UNWIND CASE
+          WHEN p = [] THEN [null]
+          ELSE p
+          END AS path
+      RETURN n, path
       """
     Then the result should be, in any order:
-      | p                                      | c |
-      | [<(:A)-[:T]->(:C)>, <(:A)-[:T]->(:B)>] | 1 |
-      | []                                     | 2 |
+      | n    | path              |
+      | (:A) | <(:A)-[:T]->(:C)> |
+      | (:A) | <(:A)-[:T]->(:B)> |
+      | (:B) | null              |
+      | (:C) | null              |
     And no side effects
 
   Scenario: Using a CASE expression in a WITH, negative case
@@ -179,18 +195,25 @@ Feature: CaseExpression
     When executing query:
       """
       MATCH (n)
-      WITH CASE
-             WHEN n:A1 THEN [p=(n)-->(:B1) | p]
-             WHEN n:A2 THEN [p=(n)-->(:B2) | p]
-             ELSE 42
-           END AS p, count(n) AS c
-      RETURN p, c
+      WITH n, CASE
+              WHEN n:A1 THEN [p=(n)-->(:B1) | p]
+              WHEN n:A2 THEN [p=(n)-->(:B2) | p]
+              ELSE 42
+          END AS p
+      WITH n, p UNWIND CASE
+          WHEN p = [] THEN [null]
+          ELSE p
+          END AS path
+      RETURN n, path
       """
     Then the result should be, in any order:
-      | p                                            | c |
-      | [<(:A1)-[:T2]->(:B1)>, <(:A1)-[:T1]->(:B1)>] | 1 |
-      | [<(:A2)-[:T2]->(:B2)>, <(:A2)-[:T1]->(:B2)>] | 1 |
-      | 42                                           | 2 |
+      | n     | path                 |
+      | (:A1) | <(:A1)-[:T2]->(:B1)> |
+      | (:A1) | <(:A1)-[:T1]->(:B1)> |
+      | (:A2) | <(:A2)-[:T2]->(:B2)> |
+      | (:A2) | <(:A2)-[:T1]->(:B2)> |
+      | (:B1) | 42                   |
+      | (:B2) | 42                   |
     And no side effects
 
   Scenario: Using a CASE expression in a WHERE, positive case

@@ -138,14 +138,20 @@ Feature: PatternExpressionAcceptance
       """
     When executing query:
       """
-      MATCH (n)
-      RETURN [p=(n)-->() | p] AS p
+       MATCH (n)
+       WITH [p=(n)-->() | p] AS p, n
+       WITH n, p UNWIND CASE
+           WHEN p = [] THEN [null]
+           ELSE p
+         END AS path
+       RETURN n, path
       """
     Then the result should be, in any order:
-      | p                                      |
-      | [<(:A)-[:T]->(:C)>, <(:A)-[:T]->(:B)>] |
-      | []                                     |
-      | []                                     |
+      |n    | path              |
+      |(:A) | <(:A)-[:T]->(:C)> |
+      |(:A) | <(:A)-[:T]->(:B)> |
+      |(:B) | null              |
+      |(:C) | null              |
     And no side effects
 
   Scenario: Returning a pattern expression with label predicate
@@ -195,12 +201,14 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (n)-->(b)
-      WITH [p=(n)-->() | p] AS p, count(b) AS c
+      WITH [p=(n)-->() | p] AS paths, count(b) as c
+      WITH c, paths UNWIND paths as p
       RETURN p, c
       """
     Then the result should be, in any order:
-      | p                                      | c |
-      | [<(:A)-[:T]->(:C)>, <(:A)-[:T]->(:B)>] | 2 |
+      | p                 | c |
+      | <(:A)-[:T]->(:C)> | 2 |
+      | <(:A)-[:T]->(:B)> | 2 |
     And no side effects
 
   Scenario: Using a variable-length pattern expression in a WITH
