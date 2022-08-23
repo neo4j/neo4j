@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestS
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
-import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IsQuerySupportedDefaults.text_2_0
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexCapabilities.text_2_0
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
@@ -1280,7 +1280,7 @@ class IndexPlanningIntegrationTest
         existsSelectivity = 0.5,
         uniqueSelectivity = 0.1,
         indexType = IndexType.TEXT,
-        maybeIsQuerySupported = Some(text_2_0)
+        maybeIndexCapability = Some(text_2_0)
       )
       .build()
 
@@ -1420,7 +1420,7 @@ class IndexPlanningIntegrationTest
         existsSelectivity = 0.5,
         uniqueSelectivity = 0.1,
         indexType = IndexType.TEXT,
-        maybeIsQuerySupported = Some(text_2_0)
+        maybeIndexCapability = Some(text_2_0)
       )
       .build()
 

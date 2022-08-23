@@ -37,8 +37,8 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.prepareForCac
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexCapabilities
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
-import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IsQuerySupportedDefaults
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -305,10 +305,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
             )
         }
 
-        val isQuerySupported = indexDef.indexType match {
-          case IndexType.Range => IsQuerySupportedDefaults.range
-          case IndexType.Text  => IsQuerySupportedDefaults.text_1_0
-          case IndexType.Point => IsQuerySupportedDefaults.point
+        val indexCapability = indexDef.indexType match {
+          case IndexType.Range => IndexCapabilities.range
+          case IndexType.Text  => IndexCapabilities.text_1_0
+          case IndexType.Point => IndexCapabilities.point
         }
 
         IndexDescriptor(
@@ -317,7 +317,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           indexDef.propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_)),
           valueCapability = canGetValue,
           orderCapability = indexAttributes.withOrdering,
-          isQuerySupported = isQuerySupported,
+          maybeKernelIndexCapability = Some(indexCapability),
           isUnique = indexAttributes.isUnique
         )
       }

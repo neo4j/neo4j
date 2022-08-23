@@ -23,12 +23,16 @@ import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.EntityType
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.toValueCategory
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.symbols
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.graphdb
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType
+import org.neo4j.values.storable.ValueCategory
 
 import scala.language.implicitConversions
 
@@ -41,21 +45,6 @@ sealed trait IndexOrderCapability
 object IndexOrderCapability {
   case object NONE extends IndexOrderCapability
   case object BOTH extends IndexOrderCapability
-}
-
-sealed trait IndexQueryType
-
-object IndexQueryType {
-//  case object TOKEN_LOOKUP extends IndexQueryType
-//  case object ALL_ENTRIES extends IndexQueryType
-  case object EXISTS extends IndexQueryType
-  case object EXACT extends IndexQueryType
-  case object RANGE extends IndexQueryType
-  case object BOUNDING_BOX extends IndexQueryType
-  case object STRING_PREFIX extends IndexQueryType
-  case object STRING_SUFFIX extends IndexQueryType
-  case object STRING_CONTAINS extends IndexQueryType
-//  case object FULLTEXT_SEARCH extends IndexQueryType
 }
 
 object IndexDescriptor {
@@ -108,6 +97,56 @@ object IndexDescriptor {
   }
 
   implicit def toKernelEncode(properties: Seq[PropertyKeyId]): Array[Int] = properties.map(_.id).toArray
+
+  private def toArrayValueCategory(cypherType: CypherType): ValueCategory =
+    cypherType match {
+      case _: symbols.AnyType           => ValueCategory.ANYTHING
+      case _: symbols.DateType          => ValueCategory.TEMPORAL_ARRAY
+      case _: symbols.NodeType          => ValueCategory.UNKNOWN
+      case _: symbols.PathType          => ValueCategory.UNKNOWN
+      case _: symbols.TimeType          => ValueCategory.TEMPORAL_ARRAY
+      case _: symbols.FloatType         => ValueCategory.NUMBER_ARRAY
+      case _: symbols.PointType         => ValueCategory.GEOMETRY_ARRAY
+      case _: symbols.NumberType        => ValueCategory.NUMBER_ARRAY
+      case _: symbols.StringType        => ValueCategory.TEXT_ARRAY
+      case _: symbols.BooleanType       => ValueCategory.BOOLEAN_ARRAY
+      case _: symbols.IntegerType       => ValueCategory.NUMBER_ARRAY
+      case _: symbols.DateTimeType      => ValueCategory.TEMPORAL_ARRAY
+      case _: symbols.DurationType      => ValueCategory.TEMPORAL_ARRAY
+      case _: symbols.GeometryType      => ValueCategory.GEOMETRY_ARRAY
+      case _: symbols.GraphRefType      => ValueCategory.UNKNOWN
+      case _: symbols.LocalTimeType     => ValueCategory.TEMPORAL_ARRAY
+      case _: symbols.RelationshipType  => ValueCategory.UNKNOWN
+      case _: symbols.LocalDateTimeType => ValueCategory.TEMPORAL_ARRAY
+      case _: symbols.MapType           => ValueCategory.UNKNOWN
+      case _                            => ValueCategory.UNKNOWN
+    }
+
+  private def toValueCategory(cypherType: CypherType): ValueCategory = {
+    cypherType match {
+      case _: symbols.AnyType           => ValueCategory.ANYTHING
+      case _: symbols.DateType          => ValueCategory.TEMPORAL
+      case _: symbols.NodeType          => ValueCategory.UNKNOWN
+      case _: symbols.PathType          => ValueCategory.UNKNOWN
+      case _: symbols.TimeType          => ValueCategory.TEMPORAL
+      case _: symbols.FloatType         => ValueCategory.NUMBER
+      case _: symbols.PointType         => ValueCategory.GEOMETRY
+      case _: symbols.NumberType        => ValueCategory.NUMBER
+      case _: symbols.StringType        => ValueCategory.TEXT
+      case _: symbols.BooleanType       => ValueCategory.BOOLEAN
+      case _: symbols.IntegerType       => ValueCategory.NUMBER
+      case _: symbols.DateTimeType      => ValueCategory.TEMPORAL
+      case _: symbols.DurationType      => ValueCategory.TEMPORAL
+      case _: symbols.GeometryType      => ValueCategory.GEOMETRY
+      case _: symbols.GraphRefType      => ValueCategory.UNKNOWN
+      case _: symbols.LocalTimeType     => ValueCategory.TEMPORAL
+      case _: symbols.RelationshipType  => ValueCategory.UNKNOWN
+      case _: symbols.LocalDateTimeType => ValueCategory.TEMPORAL
+      case _: symbols.MapType           => ValueCategory.UNKNOWN
+      case symbols.ListType(cypherType) => toArrayValueCategory(cypherType)
+      case _                            => ValueCategory.UNKNOWN
+    }
+  }
 }
 
 case class IndexDescriptor(
@@ -117,12 +156,19 @@ case class IndexDescriptor(
   behaviours: Set[IndexBehaviour] = Set.empty[IndexBehaviour],
   orderCapability: IndexOrderCapability = IndexOrderCapability.NONE,
   valueCapability: GetValueFromIndexBehavior = DoNotGetValue,
-  isQuerySupported: (IndexQueryType, CypherType) => Boolean = (_, _) => false,
+  maybeKernelIndexCapability: Option[org.neo4j.internal.schema.IndexCapability] = None,
   isUnique: Boolean = false
 ) {
   val isComposite: Boolean = properties.length > 1
 
-  // TODO equals and hashCode will not like isQuerySupported
+  def isQuerySupported(indexQueryType: IndexQueryType, cypherType: CypherType): Boolean = {
+    maybeKernelIndexCapability match {
+      case Some(indexCapability) =>
+        val valueCategory: ValueCategory = toValueCategory(cypherType)
+        indexCapability.isQuerySupported(indexQueryType, valueCategory)
+      case None => false
+    }
+  }
 
   def property: PropertyKeyId =
     if (isComposite) throw new IllegalArgumentException("Cannot get single property of multi-property index")
@@ -131,5 +177,8 @@ case class IndexDescriptor(
   def withBehaviours(bs: Set[IndexBehaviour]): IndexDescriptor = copy(behaviours = bs)
   def withOrderCapability(oc: IndexOrderCapability): IndexDescriptor = copy(orderCapability = oc)
   def withValueCapability(vc: GetValueFromIndexBehavior): IndexDescriptor = copy(valueCapability = vc)
+
+  def withKernelIndexCapability(kqt: org.neo4j.internal.schema.IndexCapability): IndexDescriptor =
+    copy(maybeKernelIndexCapability = Some(kqt))
   def unique(setUnique: Boolean = true): IndexDescriptor = copy(isUnique = setUnique)
 }

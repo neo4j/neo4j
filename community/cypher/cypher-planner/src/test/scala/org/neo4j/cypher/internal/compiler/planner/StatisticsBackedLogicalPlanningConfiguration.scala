@@ -37,10 +37,10 @@ import org.neo4j.cypher.internal.compiler.helpers.TokenContainer
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Cardinalities
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.ExistenceConstraintDefinition
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexCapabilities
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition.EntityType
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Indexes
-import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IsQuerySupportedDefaults
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Options
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.RelDef
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getProvidesOrder
@@ -61,7 +61,6 @@ import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
-import org.neo4j.cypher.internal.planner.spi.IndexQueryType
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
@@ -72,12 +71,11 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
-import org.neo4j.cypher.internal.util.symbols.CTPoint
-import org.neo4j.cypher.internal.util.symbols.CTString
-import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.graphdb
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.schema.ConstraintType
+import org.neo4j.internal.schema.IndexCapability
+import org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.IndexType.FULLTEXT
 import org.neo4j.internal.schema.IndexType.LOOKUP
@@ -173,8 +171,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
     isUnique: Boolean = false,
     withValues: Boolean = false,
     withOrdering: IndexOrderCapability = IndexOrderCapability.NONE,
-    // TODO do we need a different default value?
-    isQuerySupported: (IndexQueryType, CypherType) => Boolean = (_, _) => false
+    indexCapability: IndexCapability = NO_CAPABILITY
   )
 
   object IndexDefinition {
@@ -226,45 +223,11 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
     case POINT    => true
   }
 
-  object IsQuerySupportedDefaults {
-
-    val text_1_0: (IndexQueryType, CypherType) => Boolean = (queryType, cypherType) => {
-      cypherType == CTString &&
-      Set[IndexQueryType](
-        IndexQueryType.EXACT,
-        IndexQueryType.RANGE,
-        IndexQueryType.STRING_PREFIX,
-        IndexQueryType.STRING_SUFFIX,
-        IndexQueryType.STRING_CONTAINS
-      ).contains(queryType)
-    }
-
-    val text_2_0: (IndexQueryType, CypherType) => Boolean = (queryType, cypherType) => {
-      cypherType == CTString &&
-      Set[IndexQueryType](
-        IndexQueryType.EXACT,
-        IndexQueryType.STRING_PREFIX,
-        IndexQueryType.STRING_SUFFIX,
-        IndexQueryType.STRING_CONTAINS
-      ).contains(queryType)
-    }
-
-    val point: (IndexQueryType, CypherType) => Boolean = (queryType, cypherType) => {
-      cypherType == CTPoint &&
-      Set[IndexQueryType](
-        IndexQueryType.EXACT,
-        IndexQueryType.BOUNDING_BOX
-      ).contains(queryType)
-    }
-
-    val range: (IndexQueryType, CypherType) => Boolean = (queryType, _) => {
-      Set[IndexQueryType](
-        IndexQueryType.EXISTS,
-        IndexQueryType.EXACT,
-        IndexQueryType.RANGE,
-        IndexQueryType.STRING_PREFIX
-      ).contains(queryType)
-    }
+  object IndexCapabilities {
+    val text_1_0: IndexCapability = org.neo4j.kernel.api.impl.schema.TextIndexCapability.text()
+    val text_2_0: IndexCapability = org.neo4j.kernel.api.impl.schema.TextIndexCapability.trigram()
+    val point: IndexCapability = org.neo4j.kernel.impl.index.schema.PointIndexProvider.CAPABILITY
+    val range: IndexCapability = org.neo4j.kernel.impl.index.schema.RangeIndexProvider.CAPABILITY
   }
 }
 
@@ -359,7 +322,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
     withValues: Boolean = false,
     providesOrder: IndexOrderCapability = IndexOrderCapability.NONE,
     indexType: graphdb.schema.IndexType = graphdb.schema.IndexType.RANGE,
-    maybeIsQuerySupported: Option[(IndexQueryType, CypherType) => Boolean] = None
+    maybeIndexCapability: Option[IndexCapability] = None
   ): StatisticsBackedLogicalPlanningConfigurationBuilder = {
 
     val indexDef = IndexDefinition(
@@ -371,7 +334,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
       isUnique = isUnique,
       withValues = withValues,
       withOrdering = providesOrder,
-      isQuerySupported = defaultIsQuerySupported(indexType, maybeIsQuerySupported)
+      indexCapability = defaultIndexCapability(indexType, maybeIndexCapability)
     )
 
     addLabel(label).addIndexDefAndProperties(indexDef, properties)
@@ -386,7 +349,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
     withValues: Boolean = false,
     providesOrder: IndexOrderCapability = IndexOrderCapability.NONE,
     indexType: graphdb.schema.IndexType = graphdb.schema.IndexType.RANGE,
-    maybeIsQuerySupported: Option[(IndexQueryType, CypherType) => Boolean] = None
+    maybeIndexCapability: Option[IndexCapability] = None
   ): StatisticsBackedLogicalPlanningConfigurationBuilder = {
 
     val indexDef = IndexDefinition(
@@ -398,22 +361,22 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
       isUnique = isUnique,
       withValues = withValues,
       withOrdering = providesOrder,
-      isQuerySupported = defaultIsQuerySupported(indexType, maybeIsQuerySupported)
+      indexCapability = defaultIndexCapability(indexType, maybeIndexCapability)
     )
 
     addRelType(relType).addIndexDefAndProperties(indexDef, properties)
   }
 
-  private def defaultIsQuerySupported(
+  private def defaultIndexCapability(
     indexType: graphdb.schema.IndexType,
-    maybeIsQuerySupported: Option[(IndexQueryType, CypherType) => Boolean]
-  ): (IndexQueryType, CypherType) => Boolean = {
-    maybeIsQuerySupported match {
+    maybeIndexCapability: Option[IndexCapability]
+  ): IndexCapability = {
+    maybeIndexCapability match {
       case Some(value) => value
       case None => indexType match {
-          case graphdb.schema.IndexType.TEXT  => IsQuerySupportedDefaults.text_1_0 // TODO change to text_2_0
-          case graphdb.schema.IndexType.RANGE => IsQuerySupportedDefaults.range
-          case graphdb.schema.IndexType.POINT => IsQuerySupportedDefaults.point
+          case graphdb.schema.IndexType.TEXT  => IndexCapabilities.text_1_0
+          case graphdb.schema.IndexType.RANGE => IndexCapabilities.range
+          case graphdb.schema.IndexType.POINT => IndexCapabilities.point
           case graphdb.schema.IndexType.LOOKUP =>
             throw new IllegalArgumentException("Please provide a maybeIsQuerySupported for LOOKUP index")
           case graphdb.schema.IndexType.FULLTEXT =>
@@ -911,7 +874,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
             props,
             valueCapability = canGetValue,
             orderCapability = indexDef.withOrdering,
-            isQuerySupported = indexDef.isQuerySupported,
+            maybeKernelIndexCapability = Some(indexDef.indexCapability),
             isUnique = indexDef.isUnique
           )
         }

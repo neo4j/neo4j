@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.planner.spi.EventuallyConsistent
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
-import org.neo4j.cypher.internal.planner.spi.IndexQueryType
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
@@ -44,20 +43,16 @@ import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
-import org.neo4j.cypher.internal.util.symbols
-import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.exceptions.KernelException
 import org.neo4j.internal.kernel.api.InternalIndexState
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
 import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.schema
 import org.neo4j.internal.schema.ConstraintDescriptor
-import org.neo4j.internal.schema.IndexQuery
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.logging.InternalLog
-import org.neo4j.values.storable.ValueCategory
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.ListHasAsScala
@@ -276,67 +271,6 @@ class TransactionBoundPlanContext(
     pointIndexGetForRelTypeAndProperties(relTypeName, propertyKey).isDefined
   }
 
-  private def toArrayValueCategory(cypherType: CypherType): ValueCategory =
-    cypherType match {
-      case _: symbols.AnyType           => ValueCategory.ANYTHING
-      case _: symbols.DateType          => ValueCategory.TEMPORAL_ARRAY
-      case _: symbols.NodeType          => ValueCategory.UNKNOWN
-      case _: symbols.PathType          => ValueCategory.UNKNOWN
-      case _: symbols.TimeType          => ValueCategory.TEMPORAL_ARRAY
-      case _: symbols.FloatType         => ValueCategory.NUMBER_ARRAY
-      case _: symbols.PointType         => ValueCategory.GEOMETRY_ARRAY
-      case _: symbols.NumberType        => ValueCategory.NUMBER_ARRAY
-      case _: symbols.StringType        => ValueCategory.TEXT_ARRAY
-      case _: symbols.BooleanType       => ValueCategory.BOOLEAN_ARRAY
-      case _: symbols.IntegerType       => ValueCategory.NUMBER_ARRAY
-      case _: symbols.DateTimeType      => ValueCategory.TEMPORAL_ARRAY
-      case _: symbols.DurationType      => ValueCategory.TEMPORAL_ARRAY
-      case _: symbols.GeometryType      => ValueCategory.GEOMETRY_ARRAY
-      case _: symbols.GraphRefType      => ValueCategory.UNKNOWN
-      case _: symbols.LocalTimeType     => ValueCategory.TEMPORAL_ARRAY
-      case _: symbols.RelationshipType  => ValueCategory.UNKNOWN
-      case _: symbols.LocalDateTimeType => ValueCategory.TEMPORAL_ARRAY
-      case _: symbols.MapType           => ValueCategory.UNKNOWN
-      case _                            => ValueCategory.UNKNOWN
-    }
-
-  private def toValueCategory(cypherType: CypherType): ValueCategory = {
-    cypherType match {
-      case _: symbols.AnyType           => ValueCategory.ANYTHING
-      case _: symbols.DateType          => ValueCategory.TEMPORAL
-      case _: symbols.NodeType          => ValueCategory.UNKNOWN
-      case _: symbols.PathType          => ValueCategory.UNKNOWN
-      case _: symbols.TimeType          => ValueCategory.TEMPORAL
-      case _: symbols.FloatType         => ValueCategory.NUMBER
-      case _: symbols.PointType         => ValueCategory.GEOMETRY
-      case _: symbols.NumberType        => ValueCategory.NUMBER
-      case _: symbols.StringType        => ValueCategory.TEXT
-      case _: symbols.BooleanType       => ValueCategory.BOOLEAN
-      case _: symbols.IntegerType       => ValueCategory.NUMBER
-      case _: symbols.DateTimeType      => ValueCategory.TEMPORAL
-      case _: symbols.DurationType      => ValueCategory.TEMPORAL
-      case _: symbols.GeometryType      => ValueCategory.GEOMETRY
-      case _: symbols.GraphRefType      => ValueCategory.UNKNOWN
-      case _: symbols.LocalTimeType     => ValueCategory.TEMPORAL
-      case _: symbols.RelationshipType  => ValueCategory.UNKNOWN
-      case _: symbols.LocalDateTimeType => ValueCategory.TEMPORAL
-      case _: symbols.MapType           => ValueCategory.UNKNOWN
-      case symbols.ListType(cypherType) => toArrayValueCategory(cypherType)
-      case _                            => ValueCategory.UNKNOWN
-    }
-  }
-
-  private def toKernelIndexQueryType(indexQueryType: IndexQueryType): IndexQuery.IndexQueryType =
-    indexQueryType match {
-      case IndexQueryType.EXISTS          => schema.IndexQuery.IndexQueryType.EXISTS
-      case IndexQueryType.EXACT           => schema.IndexQuery.IndexQueryType.EXACT
-      case IndexQueryType.RANGE           => schema.IndexQuery.IndexQueryType.RANGE
-      case IndexQueryType.BOUNDING_BOX    => schema.IndexQuery.IndexQueryType.BOUNDING_BOX
-      case IndexQueryType.STRING_PREFIX   => schema.IndexQuery.IndexQueryType.STRING_PREFIX
-      case IndexQueryType.STRING_SUFFIX   => schema.IndexQuery.IndexQueryType.STRING_SUFFIX
-      case IndexQueryType.STRING_CONTAINS => schema.IndexQuery.IndexQueryType.STRING_CONTAINS
-    }
-
   private def getOnlineIndex(reference: schema.IndexDescriptor): Option[IndexDescriptor] = {
     try {
       tc.schemaRead.indexGetStateNonLocking(reference) match {
@@ -364,12 +298,6 @@ class TransactionBoundPlanContext(
             } else {
               DoNotGetValue
             }
-          val scalaIsQuerySupported: (IndexQueryType, CypherType) => Boolean =
-            (indexQueryType: IndexQueryType, cypherType: CypherType) => {
-              val valueCategory: ValueCategory = toValueCategory(cypherType)
-              val kernelIndexQueryType: schema.IndexQuery.IndexQueryType = toKernelIndexQueryType(indexQueryType)
-              reference.getCapability.isQuerySupported(kernelIndexQueryType, valueCategory)
-            }
           if (behaviours.contains(EventuallyConsistent)) {
             // Ignore eventually consistent indexes. Those are for explicit querying via procedures.
             None
@@ -382,7 +310,7 @@ class TransactionBoundPlanContext(
                 behaviours,
                 orderCapability,
                 valueCapability,
-                scalaIsQuerySupported,
+                Some(reference.getCapability),
                 isUnique
               )
             }

@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.graphcounts.GraphCountsJson
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexCapabilities
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
-import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IsQuerySupportedDefaults
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getProvidesOrder
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getWithValues
+import org.neo4j.internal.schema.IndexCapability
 import org.neo4j.internal.schema.IndexType
 import org.scalatest.FunSuite
 import org.scalatest.Matchers.contain
@@ -37,10 +38,10 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends FunSuite
    */
   val unsupportedIndexTypes: Set[IndexType] = Set(IndexType.LOOKUP, IndexType.FULLTEXT)
 
-  def isQuerySupported(indexType: IndexType) = indexType match {
-    case IndexType.TEXT  => IsQuerySupportedDefaults.text_1_0
-    case IndexType.RANGE => IsQuerySupportedDefaults.range
-    case IndexType.POINT => IsQuerySupportedDefaults.point
+  private def indexCapability(indexType: IndexType): IndexCapability = indexType match {
+    case IndexType.TEXT  => IndexCapabilities.text_1_0
+    case IndexType.RANGE => IndexCapabilities.range
+    case IndexType.POINT => IndexCapabilities.point
   }
 
   test("processGraphCount for node indexes") {
@@ -82,7 +83,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends FunSuite
             propExistsSelectivity = 1.0 / personCount,
             withValues = getWithValues(indexType),
             withOrdering = getProvidesOrder(indexType),
-            isQuerySupported = isQuerySupported(indexType)
+            indexCapability = indexCapability(indexType)
           )
         }
       }
@@ -130,7 +131,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends FunSuite
             propExistsSelectivity = 1.0 / friendCount,
             withValues = getWithValues(indexType),
             withOrdering = getProvidesOrder(indexType),
-            isQuerySupported = isQuerySupported(indexType)
+            indexCapability = indexCapability(indexType)
           )
         }
       }
