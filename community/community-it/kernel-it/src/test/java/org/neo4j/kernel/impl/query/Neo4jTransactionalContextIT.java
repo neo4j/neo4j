@@ -36,6 +36,8 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -77,8 +79,10 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.builtin.TransactionId;
+import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.util.concurrent.BinaryLatch;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
@@ -537,6 +541,42 @@ class Neo4jTransactionalContextIT {
 
         // Then
         assertThrows(TransactionTerminatedException.class, ctx::contextWithNewTransaction);
+    }
+
+    @Test
+    void contextWithNewTransactionThrowsAfterTransactionTerminateRace()
+            throws ExecutionException, InterruptedException {
+        KernelTransactions ktxs = graph.getDependencyResolver().resolveDependency(KernelTransactions.class);
+        try (OtherThreadExecutor otherThreadExecutor = new OtherThreadExecutor("")) {
+            for (int i = 0; i < 100; i++) {
+                try (var tx = graph.beginTransaction(IMPLICIT, LoginContext.AUTH_DISABLED)) {
+                    var ctx = createTransactionContext(tx);
+
+                    // When
+                    BinaryLatch latch = new BinaryLatch();
+                    Future<Object> future = otherThreadExecutor.executeDontWait(() -> {
+                        latch.release();
+                        tx.kernelTransaction().markForTermination(Status.Transaction.Terminated);
+                        return null;
+                    });
+
+                    latch.await();
+                    try {
+                        TransactionalContext newContext = ctx.contextWithNewTransaction();
+                        // If we succeed to create a new context before the termination, just close it and try again
+                        newContext.transaction().close();
+                        newContext.close();
+                    } catch (TransactionTerminatedException e) {
+                        // Since we terminate the outer tx, this is expected
+                    } finally {
+                        future.get();
+                        ctx.close();
+                    }
+                }
+                // Then
+                assertThat(ktxs.getNumberOfActiveTransactions()).isZero();
+            }
+        }
     }
 
     @Test
