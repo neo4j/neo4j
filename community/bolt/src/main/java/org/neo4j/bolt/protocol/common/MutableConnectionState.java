@@ -117,6 +117,7 @@ public class MutableConnectionState implements ResponseHandler {
     public void resetPendingFailedAndIgnored() {
         pendingError = null;
         pendingIgnore = false;
+        pendingTerminationNotice = null;
     }
 
     public boolean canProcessMessage() {

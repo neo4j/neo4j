@@ -178,6 +178,8 @@ public class DefaultBoltConnection implements BoltConnection {
             boolean waitForMessage = false;
             boolean loop = false;
             do {
+                machine.validateTransaction();
+
                 // exit loop if we'll close the connection
                 if (willClose()) {
                     break;
@@ -200,8 +202,6 @@ public class DefaultBoltConnection implements BoltConnection {
                                 batch.add(nextJob);
 
                                 break;
-                            } else {
-                                machine.validateTransaction();
                             }
                         }
                     }

@@ -76,7 +76,7 @@ public class TransactionTerminationIT {
 
         assertThat(connection)
                 .receivesSuccess()
-                .receivesFailure(Status.Transaction.Terminated)
+                .receivesFailure(Status.Transaction.Terminated, Status.Transaction.LockClientStopped)
                 .receivesSuccess();
     }
 

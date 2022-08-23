@@ -23,9 +23,11 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.neo4j.packstream.testing.PackstreamConnectionAssertions.packstreamConnection;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.InstanceOfAssertFactory;
@@ -210,9 +212,14 @@ public final class BoltConnectionAssertions
         return this;
     }
 
-    public BoltConnectionAssertions receivesFailure(Status status) {
-        return this.receivesFailure(meta ->
-                Assertions.assertThat(meta).containsEntry("code", status.code().serialize()));
+    public BoltConnectionAssertions receivesFailure(Status... statuses) {
+        return this.receivesFailure(meta -> Assertions.assertThat(meta).satisfies(metaMap -> {
+            var code = metaMap.get("code");
+            var serializedList = Arrays.stream(statuses)
+                    .map(status -> status.code().serialize())
+                    .collect(Collectors.toList());
+            Assertions.assertThat(code).isIn(serializedList);
+        }));
     }
 
     public BoltConnectionAssertions receivesFailure(Status status, String message) {

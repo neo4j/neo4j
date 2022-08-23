@@ -155,9 +155,7 @@ public class TransactionStateMachine implements StatementProcessor {
             Optional<Status> statusOpt = tx.getReasonIfTerminated();
 
             if (statusOpt.isPresent() && statusOpt.get().code().classification().rollbackTransaction()) {
-                Status pendingTerminationNotice = statusOpt.get();
-                reset();
-                return pendingTerminationNotice;
+                return statusOpt.get();
             }
         }
         return null;

@@ -174,9 +174,19 @@ public abstract class AbstractStateMachine implements StateMachine {
      */
     @Override
     public void validateTransaction() throws KernelException {
-        var status = transactionManager().transactionStatus(connectionState.getCurrentTransactionId());
+        var currentTxId = connectionState.getCurrentTransactionId();
+        if (currentTxId == null) {
+            return;
+        }
+
+        var status = transactionManager().transactionStatus(currentTxId);
         if (status.value().equals(TransactionStatus.Value.INTERRUPTED)) {
             connectionState().setPendingTerminationNotice(status.error());
+
+            try {
+                transactionManager().rollback(currentTxId);
+            } catch (TransactionNotFoundException ignore) {
+            }
         }
     }
 
