@@ -214,12 +214,28 @@ trait GraphIcing {
       createNodeIndex(None, label, Seq(property), IndexType.TEXT)
     }
 
+    def createTextNodeIndexWithOptions(
+      label: String,
+      property: String,
+      options: Map[String, String]
+    ): IndexDefinition = {
+      createNodeIndex(None, label, Seq(property), IndexType.TEXT, options = options)
+    }
+
     def createTextNodeIndexWithName(name: String, label: String, property: String): IndexDefinition = {
       createNodeIndex(Some(name), label, Seq(property), IndexType.TEXT)
     }
 
     def createTextRelationshipIndex(relType: String, property: String): IndexDefinition = {
       createRelationshipIndex(None, relType, Seq(property), IndexType.TEXT)
+    }
+
+    def createTextRelationshipIndexWithOptions(
+      relType: String,
+      property: String,
+      options: Map[String, String]
+    ): IndexDefinition = {
+      createRelationshipIndex(None, relType, Seq(property), IndexType.TEXT, options = options)
     }
 
     def createTextRelationshipIndexWithName(name: String, relType: String, property: String): IndexDefinition = {
@@ -301,7 +317,7 @@ trait GraphIcing {
     private def optionsString(options: Map[String, String]): String = {
       if (options.nonEmpty) {
         val keyValueString = options
-          .map { case (key, value) => s"$key: $value" }
+          .map { case (key, value) => s"$key: '$value'" }
           .mkString("{ ", ", ", "}")
         " OPTIONS " + keyValueString
       } else {
