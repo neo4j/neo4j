@@ -38,14 +38,14 @@ import org.neo4j.configuration.Config;
 import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.locker.FileLockException;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
-import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.util.VisibleForTesting;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
@@ -132,11 +132,26 @@ public class CheckCommand extends AbstractAdminCommand {
     }
 
     protected ConsistencyCheckService.Result checkWith(Config config, MemoryTracker memoryTracker) {
-        final var layout = Optional.ofNullable(target.backup) // Consistency checker only supports Record format for now
-                .map(RecordDatabaseLayout::ofFlat)
-                .orElseGet(() -> RecordDatabaseLayout.of(Neo4jLayout.of(config), target.database.name()));
+        final DatabaseLayout layout;
+        {
+            final Neo4jLayout neo4jLayout;
+            final String database;
+            if (target.database != null) {
+                neo4jLayout = Neo4jLayout.of(config);
+                database = target.database.name();
+            } else {
+                final var backup = FileUtils.getCanonicalFile(target.backup);
+                neo4jLayout = Neo4jLayout.ofFlat(backup.getParent());
+                database = backup.getFileName().toString();
+            }
 
-        checkDatabaseExistence(layout);
+            final var storageEngineFactory = StorageEngineFactory.selectStorageEngine(ctx.fs(), neo4jLayout, database)
+                    .orElseThrow(() ->
+                            new IllegalArgumentException("No storage engine found for '%s' with database name '%s'"
+                                    .formatted(neo4jLayout, database)));
+            layout = storageEngineFactory.databaseLayout(neo4jLayout, database);
+        }
+
         try (var ignored = LockChecker.checkDatabaseLock(layout)) {
             checkDbState(ctx.fs(), layout, config, memoryTracker);
             // Only output progress indicator if a console receives the output
@@ -168,15 +183,6 @@ public class CheckCommand extends AbstractAdminCommand {
                     "You do not have permission to check database consistency.", e, ExitCode.NOPERM);
         } catch (IOException e) {
             throw new CommandFailedException("Consistency checking failed. " + e.getMessage(), e, ExitCode.IOERR);
-        }
-    }
-
-    private static void checkDatabaseExistence(DatabaseLayout layout) {
-        try {
-            Validators.CONTAINS_EXISTING_DATABASE.validate(layout.databaseDirectory());
-        } catch (IllegalArgumentException e) {
-            throw new CommandFailedException(
-                    "Database does not exist: " + layout.getDatabaseName(), e, ExitCode.NOINPUT);
         }
     }
 

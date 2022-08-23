@@ -173,9 +173,20 @@ public interface StorageEngineFactory {
      * Check if a store described by provided database layout exists in provided file system
      * @param fileSystem store file system
      * @param databaseLayout store database layout
-     * @return true of store exist, false otherwise
+     * @return true if store exist, false otherwise
      */
     boolean storageExists(FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout);
+
+    /**
+     * Check if a store described by provided Neo4j layout, and database name exists in provided file system
+     * @param fileSystem store file system
+     * @param neo4jLayout store layout
+     * @param databaseName store name
+     * @return true if store exist, false otherwise
+     */
+    default boolean storageExists(FileSystemAbstraction fileSystem, Neo4jLayout neo4jLayout, String databaseName) {
+        return storageExists(fileSystem, databaseLayout(neo4jLayout, databaseName));
+    }
 
     /**
      * Check if a format is supported by the factory
@@ -452,6 +463,18 @@ public interface StorageEngineFactory {
     static Optional<StorageEngineFactory> selectStorageEngine(FileSystemAbstraction fs, DatabaseLayout databaseLayout) {
         return allAvailableStorageEngines().stream()
                 .filter(engine -> engine.storageExists(fs, databaseLayout))
+                .findFirst();
+    }
+
+    /**
+     * @return the first {@link StorageEngineFactory} that returns {@code true} when asked about
+     * {@link StorageEngineFactory#storageExists(FileSystemAbstraction, Neo4jLayout, String)} for the given
+     * {@code neo4jLayout} and {@code databaseName}.
+     */
+    static Optional<StorageEngineFactory> selectStorageEngine(
+            FileSystemAbstraction fs, Neo4jLayout neo4jLayout, String databaseName) {
+        return allAvailableStorageEngines().stream()
+                .filter(engine -> engine.storageExists(fs, neo4jLayout, databaseName))
                 .findFirst();
     }
 
