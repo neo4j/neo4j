@@ -150,7 +150,9 @@ public class CachingExpandInto extends DefaultCloseListenable {
         Direction reverseDirection = direction.reverse();
         // Check secondNode, will position nodeCursor at secondNode
         int secondDegree = degreeCache.getIfAbsentPut(
-                secondNode, reverseDirection, () -> calculateTotalDegreeIfCheap(read, secondNode, nodeCursor, reverseDirection, types));
+                secondNode,
+                reverseDirection,
+                () -> calculateTotalDegreeIfCheap(read, secondNode, nodeCursor, reverseDirection, types));
 
         if (secondDegree == 0) {
             return Cursors.emptyTraversalCursor(read);
@@ -166,8 +168,8 @@ public class CachingExpandInto extends DefaultCloseListenable {
         // Both can determine degree cheaply, start with the one with the lesser degree
         if (firstNodeHasCheapDegrees && secondNodeHasCheapDegrees) {
             // Note that we have already positioned the cursor at firstNode
-            int firstDegree =
-                    degreeCache.getIfAbsentPut(firstNode, direction, () -> calculateTotalDegree(nodeCursor, direction, types));
+            int firstDegree = degreeCache.getIfAbsentPut(
+                    firstNode, direction, () -> calculateTotalDegree(nodeCursor, direction, types));
             long toNode;
             Direction relDirection;
             if (firstDegree < secondDegree) {
@@ -553,7 +555,7 @@ public class CachingExpandInto extends DefaultCloseListenable {
 
     static class NodeDegreeCache {
         private static final long FLIP_HIGH_BIT_MASK = 1L << 63;
-        static final long DEGREE_CACHE_SHALLOW_SIZE = shallowSizeOfInstance( NodeDegreeCache.class);
+        static final long DEGREE_CACHE_SHALLOW_SIZE = shallowSizeOfInstance(NodeDegreeCache.class);
 
         private final int capacity;
         private final MutableLongIntMap degreeCache;
@@ -569,7 +571,7 @@ public class CachingExpandInto extends DefaultCloseListenable {
         }
 
         public int getIfAbsentPut(long node, Direction direction, IntFunction0 update) {
-            //if incoming we flip the highest bit in the node id
+            // if incoming we flip the highest bit in the node id
             long nodeWithDirection = direction == INCOMING ? FLIP_HIGH_BIT_MASK | node : node;
 
             if (degreeCache.size() >= capacity) {
