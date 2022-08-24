@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.util.Converters;
 public class CommandLineArgs {
     public static final String CONFIG_DIR_ARG = "config-dir";
     public static final String HOME_DIR_ARG = "home-dir";
-    public static final String VERSION_ARG = "version";
     public static final String EXPAND_COMMAND_ARG = "expand-commands";
     public static final String ALLOW_CONSOLE_APPENDERS = "allow-console-appenders";
     private final Args args;
@@ -58,7 +57,7 @@ public class CommandLineArgs {
     }
 
     public static CommandLineArgs parse(String[] argv) {
-        Args args = Args.withFlags(VERSION_ARG).parse(argv);
+        Args args = Args.parse(argv);
         return new CommandLineArgs(args, parseConfigOverrides(args));
     }
 
@@ -94,10 +93,6 @@ public class CommandLineArgs {
         }
 
         return Path.of(args.get(HOME_DIR_ARG));
-    }
-
-    public boolean version() {
-        return args.getBoolean(VERSION_ARG, FALSE);
     }
 
     public boolean expandCommands() {

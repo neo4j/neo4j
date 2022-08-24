@@ -43,7 +43,6 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
-import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.logging.log4j.Neo4jLoggerContext;
@@ -75,11 +74,6 @@ public abstract class NeoBootstrapper implements Bootstrapper {
 
     public static int start(Bootstrapper boot, String... argv) {
         CommandLineArgs args = CommandLineArgs.parse(argv);
-
-        if (args.version()) {
-            System.out.println("neo4j " + Version.getNeo4jVersion());
-            return 0;
-        }
 
         if (args.homeDir() == null) {
             throw new ServerStartupException("Argument --home-dir is required and was not provided.");
@@ -250,7 +244,6 @@ public abstract class NeoBootstrapper implements Bootstrapper {
     protected abstract void checkLicenseAgreement(Path homeDir);
 
     private static Log4jLogProvider setupLogging(Config config, boolean allowConsoleAppenders) {
-
         Path xmlConfig = config.get(GraphDatabaseSettings.user_logging_config_path);
         boolean allowDefaultXmlConfig = !config.isExplicitlySet(GraphDatabaseSettings.user_logging_config_path);
         Neo4jLoggerContext ctx = createLoggerFromXmlConfig(
