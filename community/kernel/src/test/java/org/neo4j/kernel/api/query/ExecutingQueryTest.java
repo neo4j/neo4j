@@ -42,7 +42,6 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.lock.ResourceType;
-import org.neo4j.memory.HeapHighWaterMarkTracker;
 import org.neo4j.test.FakeCpuClock;
 import org.neo4j.test.FakeMemoryTracker;
 import org.neo4j.time.Clocks;
@@ -202,8 +201,7 @@ class ExecutingQueryTest {
                 Thread.currentThread().getId(),
                 Thread.currentThread().getName(),
                 clock,
-                FakeCpuClock.NOT_AVAILABLE,
-                true);
+                FakeCpuClock.NOT_AVAILABLE);
 
         // when
         QuerySnapshot snapshot = query.snapshot();
@@ -211,34 +209,6 @@ class ExecutingQueryTest {
         // then
         assertEquals(snapshot.cpuTimeMicros(), OptionalLong.empty());
         assertEquals(snapshot.idleTimeMicros(), OptionalLong.empty());
-    }
-
-    @Test
-    void shouldNotReportHeapAllocationIfNotTracked() {
-        // given
-        ExecutingQuery query = new ExecutingQuery(
-                17,
-                ClientConnectionInfo.EMBEDDED_CONNECTION,
-                from(DEFAULT_DATABASE_NAME, UUID.randomUUID()),
-                "neo4j",
-                "neo4j",
-                "hello world",
-                EMPTY_MAP,
-                Collections.emptyMap(),
-                () -> lockCount,
-                () -> 0,
-                () -> 1,
-                Thread.currentThread().getId(),
-                Thread.currentThread().getName(),
-                clock,
-                FakeCpuClock.NOT_AVAILABLE,
-                false);
-
-        // when
-        QuerySnapshot snapshot = query.snapshot();
-
-        // then
-        assertEquals(HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED, snapshot.allocatedBytes());
     }
 
     @Test
@@ -259,8 +229,7 @@ class ExecutingQueryTest {
                 Thread.currentThread().getId(),
                 Thread.currentThread().getName(),
                 clock,
-                FakeCpuClock.NOT_AVAILABLE,
-                true);
+                FakeCpuClock.NOT_AVAILABLE);
 
         // when
         QuerySnapshot snapshot = query.snapshot();
@@ -407,8 +376,7 @@ class ExecutingQueryTest {
                 Thread.currentThread().getId(),
                 Thread.currentThread().getName(),
                 clock,
-                cpuClock,
-                true);
+                cpuClock);
     }
 
     private static class PageCursorCountersStub implements PageCursorCounters {

@@ -20,12 +20,9 @@
 package org.neo4j.kernel.impl.api;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.resources.CpuClock;
@@ -36,17 +33,12 @@ public class ExecutingQueryFactory {
     private static final AtomicLong lastQueryId = new AtomicLong();
     private final SystemNanoClock clock;
     private final AtomicReference<CpuClock> cpuClockRef;
-    private final AtomicBoolean trackQueryAllocations;
-    private final SettingChangeListener<Boolean> configListener;
     private final Config config;
 
     public ExecutingQueryFactory(SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef, Config config) {
         this.clock = clock;
         this.cpuClockRef = cpuClockRef;
-        this.trackQueryAllocations = new AtomicBoolean(config.get(GraphDatabaseSettings.track_query_allocation));
-        this.configListener = (before, after) -> trackQueryAllocations.set(after);
         this.config = config;
-        config.addListener(GraphDatabaseSettings.track_query_allocation, configListener);
     }
 
     public ExecutingQuery createForStatement(StatementInfo statement, String queryText, MapValue queryParameters) {
@@ -80,8 +72,7 @@ public class ExecutingQueryFactory {
                 thread.getId(),
                 thread.getName(),
                 clock,
-                cpuClockRef.get(),
-                trackQueryAllocations.get());
+                cpuClockRef.get());
     }
 
     public static void bindToStatement(ExecutingQuery executingQuery, StatementInfo statement) {
@@ -95,9 +86,5 @@ public class ExecutingQueryFactory {
 
     public static void unbindFromTransaction(ExecutingQuery executingQuery, long userTransactionId) {
         executingQuery.onTransactionUnbound(userTransactionId);
-    }
-
-    public void dispose() {
-        config.removeListener(GraphDatabaseSettings.track_query_allocation, configListener);
     }
 }

@@ -92,7 +92,7 @@ class CypherConfiguration private (val config: Config) {
 
   val operatorFusionOverPipelineLimit: Int =
     config.get(GraphDatabaseInternalSettings.cypher_pipelined_operator_fusion_over_pipeline_limit).intValue()
-  val memoryTrackingController: MemoryTrackingController = new ConfigMemoryTrackingController(config)
+  val memoryTrackingController: MemoryTrackingController = MEMORY_TRACKING_ENABLED_CONTROLLER
   val enableMonitors: Boolean = config.get(GraphDatabaseInternalSettings.cypher_enable_runtime_monitors)
 
   val disallowSplittingTop: Boolean = config.get(

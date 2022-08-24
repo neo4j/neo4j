@@ -68,7 +68,5 @@ public class StatementQueryRegistry implements QueryRegistry {
     }
 
     @Override
-    public void dispose() {
-        factory.dispose();
-    }
+    public void dispose() {}
 }

@@ -61,7 +61,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.licenses_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.load_csv_file_url_root;
 import static org.neo4j.configuration.GraphDatabaseSettings.lock_acquisition_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries;
-import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_allocation_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_detailed_time_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_early_raw_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_obfuscate_literals;
@@ -100,7 +99,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.query_statistics_div
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
 import static org.neo4j.configuration.GraphDatabaseSettings.script_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.shutdown_transaction_end_timeout;
-import static org.neo4j.configuration.GraphDatabaseSettings.track_query_allocation;
 import static org.neo4j.configuration.GraphDatabaseSettings.track_query_cpu_time;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_log_buffer_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
@@ -653,8 +651,6 @@ public final class SettingMigrators {
             migrateSettingNameChange(values, log, "dbms.logs.query.enabled", log_queries);
             migrateSettingNameChange(
                     values, log, "dbms.logs.query.early_raw_logging_enabled", log_queries_early_raw_logging_enabled);
-            migrateSettingNameChange(
-                    values, log, "dbms.logs.query.allocation_logging_enabled", log_queries_allocation_logging_enabled);
         }
 
         private void migrateDefaultAddress(
@@ -740,7 +736,6 @@ public final class SettingMigrators {
 
         private void migrateTransactionAndTrackingSettings(
                 Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migrateSettingNameChange(values, log, "dbms.track_query_allocation", track_query_allocation);
             migrateSettingNameChange(values, log, "dbms.track_query_cpu_time", track_query_cpu_time);
             migrateSettingNameChange(values, log, "dbms.transaction.bookmark_ready_timeout", bookmark_ready_timeout);
             migrateSettingNameChange(values, log, "dbms.transaction.concurrent.maximum", max_concurrent_transactions);

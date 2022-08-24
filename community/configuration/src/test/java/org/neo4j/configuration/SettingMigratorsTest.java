@@ -68,7 +68,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.licenses_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.load_csv_file_url_root;
 import static org.neo4j.configuration.GraphDatabaseSettings.lock_acquisition_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries;
-import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_allocation_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_detailed_time_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_early_raw_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_obfuscate_literals;
@@ -107,7 +106,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.query_statistics_div
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
 import static org.neo4j.configuration.GraphDatabaseSettings.script_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.shutdown_transaction_end_timeout;
-import static org.neo4j.configuration.GraphDatabaseSettings.track_query_allocation;
 import static org.neo4j.configuration.GraphDatabaseSettings.track_query_cpu_time;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_log_buffer_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
@@ -514,7 +512,6 @@ class SettingMigratorsTest {
         Files.write(
                 confFile,
                 List.of(
-                        "dbms.track_query_allocation=false",
                         "dbms.track_query_cpu_time=true",
                         "dbms.transaction.bookmark_ready_timeout=100s",
                         "dbms.transaction.concurrent.maximum=17",
@@ -527,7 +524,6 @@ class SettingMigratorsTest {
         var logProvider = new AssertableLogProvider();
         config.setLogger(logProvider.getLog(Config.class));
 
-        assertFalse(config.get(track_query_allocation));
         assertTrue(config.get(track_query_cpu_time));
         assertEquals(ofSeconds(100), config.get(bookmark_ready_timeout));
         assertEquals(17, config.get(max_concurrent_transactions));
@@ -685,7 +681,6 @@ class SettingMigratorsTest {
         assertEquals(9, config.get(query_log_max_parameter_length));
         assertEquals(VERBOSE, config.get(log_queries));
         assertTrue(config.get(log_queries_early_raw_logging_enabled));
-        assertFalse(config.get(log_queries_allocation_logging_enabled));
     }
 
     @Test

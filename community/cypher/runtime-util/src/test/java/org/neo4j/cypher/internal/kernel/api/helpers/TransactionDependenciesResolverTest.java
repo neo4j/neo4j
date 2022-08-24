@@ -173,8 +173,7 @@ class TransactionDependenciesResolverTest {
                 Thread.currentThread().getId(),
                 Thread.currentThread().getName(),
                 Clocks.nanoClock(),
-                CpuClock.NOT_AVAILABLE,
-                true);
+                CpuClock.NOT_AVAILABLE);
     }
 
     private static class TestKernelTransactionHandleWithLocks extends TestKernelTransactionHandle {

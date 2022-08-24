@@ -342,12 +342,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     public static final Setting<Boolean> track_query_cpu_time =
             newBuilder("db.track_query_cpu_time", BOOL, false).dynamic().build();
 
-    @Description("Enables or disables tracking of how many bytes are allocated by the execution of a query. "
-            + "If enabled, calling `SHOW TRANSACTIONS` will display the allocated bytes. "
-            + "This can also be logged in the query log by using `db.logs.query.allocation_logging_enabled`.")
-    public static final Setting<Boolean> track_query_allocation =
-            newBuilder("db.track_query_allocation", BOOL, true).dynamic().build();
-
     @Description("The maximum number of concurrently running transactions. If set to 0, limit is disabled.")
     public static final Setting<Integer> max_concurrent_transactions =
             newBuilder("db.transaction.concurrent.maximum", INT, 1000).dynamic().build();
@@ -734,15 +728,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             "Log detailed time information for the executed queries being logged, such as `(planning: 92, waiting: 0)`.")
     public static final Setting<Boolean> log_queries_detailed_time_logging_enabled = newBuilder(
                     "db.logs.query.time_logging_enabled", BOOL, false)
-            .dynamic()
-            .build();
-
-    @Description("Log allocated bytes for the executed queries being logged. "
-            + "The logged number is cumulative over the duration of the query, "
-            + "i.e. for memory intense or long-running queries the value may be larger "
-            + "than the current memory allocation. Requires `db.track_query_allocation=true`")
-    public static final Setting<Boolean> log_queries_allocation_logging_enabled = newBuilder(
-                    "db.logs.query.allocation_logging_enabled", BOOL, true)
             .dynamic()
             .build();
 

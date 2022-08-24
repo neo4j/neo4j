@@ -273,7 +273,7 @@ object QueryState {
     prePopulateResults: Boolean,
     input: InputDataStream
   ): QueryState = {
-    val queryHeapHighWatermarkTracker = QueryMemoryTracker(memoryTrackingController.memoryTracking(doProfile))
+    val queryHeapHighWatermarkTracker = QueryMemoryTracker(memoryTrackingController.memoryTracking)
     apply(
       query,
       resources,

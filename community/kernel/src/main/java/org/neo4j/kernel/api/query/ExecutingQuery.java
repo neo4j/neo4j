@@ -120,8 +120,7 @@ public class ExecutingQuery {
             long threadExecutingTheQueryId,
             String threadExecutingTheQueryName,
             SystemNanoClock clock,
-            CpuClock cpuClock,
-            boolean trackQueryAllocations) {
+            CpuClock cpuClock) {
         // Capture timestamps first
         this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos(threadExecutingTheQueryId);
         this.startTimeNanos = clock.nanos();
@@ -138,7 +137,7 @@ public class ExecutingQuery {
         this.threadExecutingTheQueryName = threadExecutingTheQueryName;
         this.clock = clock;
         this.cpuClock = cpuClock;
-        this.memoryTracker = trackQueryAllocations ? HeapHighWaterMarkTracker.ZERO : HeapHighWaterMarkTracker.NONE;
+        this.memoryTracker = HeapHighWaterMarkTracker.ZERO;
     }
 
     // NOTE: test/benchmarking constructor
@@ -157,8 +156,7 @@ public class ExecutingQuery {
             long threadExecutingTheQueryId,
             String threadExecutingTheQueryName,
             SystemNanoClock clock,
-            CpuClock cpuClock,
-            boolean trackQueryAllocations) {
+            CpuClock cpuClock) {
         this(
                 queryId,
                 clientConnection,
@@ -170,8 +168,7 @@ public class ExecutingQuery {
                 threadExecutingTheQueryId,
                 threadExecutingTheQueryName,
                 clock,
-                cpuClock,
-                trackQueryAllocations);
+                cpuClock);
         onTransactionBound(new TransactionBinding(namedDatabaseId, hitsSupplier, faultsSupplier, activeLockCount, 1));
     }
 

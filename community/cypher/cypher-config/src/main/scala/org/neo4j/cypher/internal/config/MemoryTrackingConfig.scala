@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal.config
 
-import org.neo4j.configuration.Config
-import org.neo4j.configuration.GraphDatabaseSettings
-import org.neo4j.configuration.SettingChangeListener
 import org.neo4j.cypher.internal.config.CUSTOM_MEMORY_TRACKING_CONTROLLER.MemoryTrackerDecorator
 import org.neo4j.memory.MemoryTracker
 
@@ -37,39 +34,17 @@ case class CUSTOM_MEMORY_TRACKING(decorator: MemoryTracker => MemoryTracker) ext
  * Controller of memory tracking. Needed to make memory tracking dynamically configurable.
  */
 trait MemoryTrackingController {
-  def memoryTracking(doProfile: Boolean): MemoryTracking
-}
-
-class ConfigMemoryTrackingController(config: Config) extends MemoryTrackingController {
-
-  @volatile private var _memoryTracking: MemoryTracking =
-    getMemoryTracking(config.get(GraphDatabaseSettings.track_query_allocation))
-
-  override def memoryTracking(doProfile: Boolean): MemoryTracking =
-    if (doProfile && _memoryTracking == NO_TRACKING) {
-      getMemoryTracking(trackQueryAllocation = true)
-    } else {
-      _memoryTracking
-    }
-
-  config.addListener(
-    GraphDatabaseSettings.track_query_allocation,
-    new SettingChangeListener[java.lang.Boolean] {
-
-      override def accept(before: java.lang.Boolean, after: java.lang.Boolean): Unit =
-        _memoryTracking = getMemoryTracking(after)
-    }
-  )
-
-  private def getMemoryTracking(trackQueryAllocation: Boolean): MemoryTracking =
-    if (trackQueryAllocation) MEMORY_TRACKING
-    else NO_TRACKING
+  def memoryTracking: MemoryTracking
 }
 
 object CUSTOM_MEMORY_TRACKING_CONTROLLER {
   type MemoryTrackerDecorator = MemoryTracker => MemoryTracker
 }
 
+case object MEMORY_TRACKING_ENABLED_CONTROLLER extends MemoryTrackingController {
+  override def memoryTracking: MemoryTracking = MEMORY_TRACKING
+}
+
 case class CUSTOM_MEMORY_TRACKING_CONTROLLER(decorator: MemoryTrackerDecorator) extends MemoryTrackingController {
-  override def memoryTracking(doProfile: Boolean): MemoryTracking = CUSTOM_MEMORY_TRACKING(decorator)
+  override def memoryTracking: MemoryTracking = CUSTOM_MEMORY_TRACKING(decorator)
 }

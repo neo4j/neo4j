@@ -67,7 +67,6 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](
       edition.copyWith(
-        GraphDatabaseSettings.track_query_allocation -> java.lang.Boolean.TRUE,
         GraphDatabaseSettings.memory_transaction_max_size -> Long.box(MemoryManagementTestBase.maxMemory)
       ),
       runtime
