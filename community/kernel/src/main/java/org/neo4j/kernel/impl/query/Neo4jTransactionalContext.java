@@ -227,15 +227,13 @@ public class Neo4jTransactionalContext implements TransactionalContext {
 
             return new Neo4jTransactionalContext(
                     graph, newTransaction, newStatement, executingQuery, transactionFactory, onClose);
-        } catch (RuntimeException exception) {
-            IOUtils.close(
-                    (ignored, throwable) -> {
-                        exception.addSuppressed(throwable);
-                        return exception;
-                    },
-                    onClose,
-                    newTransaction);
-            throw exception;
+        } catch (Throwable outer) {
+            try {
+                IOUtils.closeAll(onClose, newTransaction);
+            } catch (Throwable inner) {
+                outer.addSuppressed(inner);
+            }
+            throw outer;
         }
     }
 
