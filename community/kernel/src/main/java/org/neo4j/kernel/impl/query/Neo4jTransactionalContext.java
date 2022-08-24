@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.query;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -261,17 +262,17 @@ public class Neo4jTransactionalContext implements TransactionalContext
                     transactionFactory,
                     onClose );
         }
-        catch ( RuntimeException exception )
+        catch ( Throwable outer )
         {
-            IOUtils.close(
-                    ( ignored, throwable ) ->
-                    {
-                        exception.addSuppressed( throwable );
-                        return exception;
-                    },
-                    onClose,
-                    newTransaction );
-            throw exception;
+            try
+            {
+                IOUtils.closeAll( onClose, newTransaction );
+            }
+            catch ( Throwable inner )
+            {
+                outer.addSuppressed( inner );
+            }
+            throw outer;
         }
     }
 
