@@ -731,11 +731,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .dynamic()
             .build();
 
-    @Description("Logs which runtime that was used to run the query.")
-    public static final Setting<Boolean> log_queries_runtime_logging_enabled = newBuilder(
-                    "db.logs.query.runtime_logging_enabled", BOOL, true)
-            .dynamic()
-            .build();
 
     @Description("Log query text and parameters without obfuscating passwords. "
             + "This allows queries to be logged earlier before parsing starts.")

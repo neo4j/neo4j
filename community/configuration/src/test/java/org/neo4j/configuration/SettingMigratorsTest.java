@@ -93,7 +93,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_obfuscat
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_parameter_full_entities;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_parameter_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_query_plan;
-import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_runtime_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_transaction_id;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_transaction_threshold;
@@ -673,7 +672,6 @@ class SettingMigratorsTest {
         assertEquals(INFO, config.get(log_queries_transactions_level));
         assertTrue(config.get(log_queries_detailed_time_logging_enabled));
         assertEquals(Duration.ofMinutes(8), config.get(log_queries_threshold));
-        assertFalse(config.get(log_queries_runtime_logging_enabled));
         assertTrue(config.get(log_queries_query_plan));
         assertFalse(config.get(log_queries_parameter_logging_enabled));
         assertTrue(config.get(log_queries_parameter_full_entities));
