@@ -262,6 +262,24 @@ class MainTest
         assertTrue( result.getOutput().toString( UTF_8 ).matches( "Neo4j Driver \\d+\\.\\d+\\.\\d+.*\\R" ) );
     }
 
+    @Test
+    void disconnectOnClose1() throws Exception
+    {
+        testWithMockUser("mr", "close").args("-u mr -p close").run(false).assertSuccess();
+
+        verify(mockShell, times(1)).connect(any(), any());
+        verify(mockShell, times(0)).disconnect();
+    }
+
+    @Test
+    void disconnectOnClose2() throws Exception
+    {
+        testWithMockUser("mr", "close").args("-u mr -p close").run(true).assertSuccess();
+
+        verify(mockShell, times(1)).connect(any(), any());
+        verify(mockShell, times(1)).disconnect();
+    }
+
     private AssertableMain.AssertableMainBuilder testWithMocks()
     {
         return new AssertableMain.AssertableMainBuilder().outputInteractive( true ).shell( mockShell ).runnerFactory( mockRunnerFactory );

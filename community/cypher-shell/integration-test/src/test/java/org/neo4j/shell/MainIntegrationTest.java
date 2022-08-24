@@ -887,6 +887,16 @@ class MainIntegrationTest
                 );
     }
 
+    @Test
+    void disconnectOnClose() throws ArgumentParserException, IOException
+    {
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--file", fileFromResource( "empty.cypher" ) )
+                .run( true )
+                .assertSuccessAndDisconnected()
+                .assertThatOutput( emptyString() );
+    }
+
     private void assertUserCanConnectAndRunQuery( String user, String password ) throws Exception
     {
         buildTest().addArgs( "-u", user, "-p", password, "--format", "plain", "return 42 as x;" ).run().assertSuccess();
@@ -1012,7 +1022,7 @@ class MainIntegrationTest
     private static class TestBuilder extends AssertableMain.AssertableMainBuilder
     {
         @Override
-        public AssertableMain run() throws ArgumentParserException, IOException
+        public AssertableMain run( boolean closeMain ) throws ArgumentParserException, IOException
         {
             assertNull( runnerFactory );
             assertNull( shell );
@@ -1029,6 +1039,12 @@ class MainIntegrationTest
                     .build();
             var main = new Main( args, outPrintStream, errPrintStream, isOutputInteractive, terminal );
             var exitCode = main.startShell();
+
+            if ( closeMain )
+            {
+                main.close();
+            }
+
             return new AssertableMain( exitCode, out, err, main.getCypherShell() );
         }
     }
