@@ -71,7 +71,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.licenses_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.load_csv_file_url_root;
 import static org.neo4j.configuration.GraphDatabaseSettings.lock_acquisition_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries;
-import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_detailed_time_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_early_raw_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_obfuscate_literals;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_parameter_full_entities;
@@ -632,8 +631,6 @@ public final class SettingMigrators {
                     values, log, "dbms.logs.query.transaction.threshold", log_queries_transaction_threshold);
             migrateSettingNameChange(
                     values, log, "dbms.logs.query.transaction.enabled", log_queries_transactions_level);
-            migrateSettingNameChange(
-                    values, log, "dbms.logs.query.time_logging_enabled", log_queries_detailed_time_logging_enabled);
             migrateSettingNameChange(values, log, "dbms.logs.query.threshold", log_queries_threshold);
             migrateSettingNameChange(values, log, "dbms.logs.query.plan_description_enabled", log_queries_query_plan);
             migrateSettingNameChange(

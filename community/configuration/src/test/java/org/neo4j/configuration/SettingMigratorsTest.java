@@ -87,7 +87,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.licenses_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.load_csv_file_url_root;
 import static org.neo4j.configuration.GraphDatabaseSettings.lock_acquisition_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries;
-import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_detailed_time_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_early_raw_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_obfuscate_literals;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_parameter_full_entities;
@@ -670,7 +669,6 @@ class SettingMigratorsTest {
         assertTrue(config.get(log_queries_transaction_id));
         assertEquals(Duration.ofDays(7), config.get(log_queries_transaction_threshold));
         assertEquals(INFO, config.get(log_queries_transactions_level));
-        assertTrue(config.get(log_queries_detailed_time_logging_enabled));
         assertEquals(Duration.ofMinutes(8), config.get(log_queries_threshold));
         assertTrue(config.get(log_queries_query_plan));
         assertFalse(config.get(log_queries_parameter_logging_enabled));

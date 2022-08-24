@@ -19,6 +19,26 @@
  */
 package org.neo4j.configuration;
 
+import org.eclipse.collections.api.factory.Maps;
+
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.configuration.connectors.ConnectorDefaults;
+import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.io.ByteUnit;
+import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.logging.Level;
+import org.neo4j.logging.LogTimeZone;
+
 import static java.lang.Runtime.getRuntime;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
@@ -52,24 +72,6 @@ import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 import static org.neo4j.configuration.SettingValueParsers.setOf;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
-
-import java.nio.file.Path;
-import java.time.Duration;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import org.eclipse.collections.api.factory.Maps;
-import org.neo4j.annotations.api.PublicApi;
-import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.configuration.connectors.ConnectorDefaults;
-import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.io.ByteUnit;
-import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.logging.Level;
-import org.neo4j.logging.LogTimeZone;
 
 @ServiceProvider
 @PublicApi
@@ -723,14 +725,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
                     "db.logs.query.parameter_full_entities", BOOL, false)
             .dynamic()
             .build();
-
-    @Description(
-            "Log detailed time information for the executed queries being logged, such as `(planning: 92, waiting: 0)`.")
-    public static final Setting<Boolean> log_queries_detailed_time_logging_enabled = newBuilder(
-                    "db.logs.query.time_logging_enabled", BOOL, false)
-            .dynamic()
-            .build();
-
 
     @Description("Log query text and parameters without obfuscating passwords. "
             + "This allows queries to be logged earlier before parsing starts.")
