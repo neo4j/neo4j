@@ -64,15 +64,7 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
             Monitors monitors,
             Config config,
             DatabaseReadOnlyChecker readOnlyChecker) {
-        super(
-                IndexType.TEXT,
-                DESCRIPTOR,
-                fileSystem,
-                directoryFactory,
-                directoryStructureFactory,
-                monitors,
-                config,
-                readOnlyChecker);
+        super(IndexType.TEXT, DESCRIPTOR, fileSystem, directoryFactory, directoryStructureFactory, monitors, config);
         this.fileSystem = fileSystem;
         this.config = config;
         this.readOnlyChecker = readOnlyChecker;

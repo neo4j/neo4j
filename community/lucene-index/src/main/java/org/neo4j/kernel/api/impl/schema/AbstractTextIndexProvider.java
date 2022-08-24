@@ -26,7 +26,6 @@ import java.nio.file.OpenOption;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -60,7 +59,6 @@ public abstract class AbstractTextIndexProvider extends IndexProvider {
 
     private final IndexStorageFactory indexStorageFactory;
     private final Config config;
-    private final DatabaseReadOnlyChecker readOnlyChecker;
     private final Monitor monitor;
     private final IndexType supportedIndexType;
 
@@ -71,14 +69,12 @@ public abstract class AbstractTextIndexProvider extends IndexProvider {
             DirectoryFactory directoryFactory,
             IndexDirectoryStructure.Factory directoryStructureFactory,
             Monitors monitors,
-            Config config,
-            DatabaseReadOnlyChecker readOnlyChecker) {
+            Config config) {
         super(descriptor, directoryStructureFactory);
         this.supportedIndexType = supportedIndexType;
         this.monitor = monitors.newMonitor(Monitor.class, descriptor.toString());
         this.indexStorageFactory = buildIndexStorageFactory(fileSystem, directoryFactory);
         this.config = config;
-        this.readOnlyChecker = readOnlyChecker;
     }
 
     @VisibleForTesting
