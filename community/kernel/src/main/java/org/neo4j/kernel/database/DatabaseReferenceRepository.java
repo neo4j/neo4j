@@ -21,6 +21,7 @@ package org.neo4j.kernel.database;
 
 import java.util.Optional;
 import java.util.Set;
+import org.neo4j.kernel.database.DatabaseReference.Composite;
 import org.neo4j.kernel.database.DatabaseReference.External;
 import org.neo4j.kernel.database.DatabaseReference.Internal;
 
@@ -94,6 +95,11 @@ public interface DatabaseReferenceRepository {
      * Fetch all known {@link  External} references
      */
     Set<External> getExternalDatabaseReferences();
+
+    /**
+     * Fetch all known {@link  Composite} references
+     */
+    Set<Composite> getCompositeDatabaseReferences();
 
     interface Caching extends DatabaseReferenceRepository {
         void invalidateAll();

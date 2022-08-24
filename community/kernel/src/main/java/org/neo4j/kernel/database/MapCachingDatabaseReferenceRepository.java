@@ -72,6 +72,12 @@ public class MapCachingDatabaseReferenceRepository implements DatabaseReferenceR
     }
 
     @Override
+    public Set<DatabaseReference.Composite> getCompositeDatabaseReferences() {
+        // Can't cache getAll call
+        return delegate.getCompositeDatabaseReferences();
+    }
+
+    @Override
     public void invalidateAll() {
         this.databaseRefsByName = new ConcurrentHashMap<>();
     }

@@ -144,7 +144,7 @@ class CommunityEditionEndToEndTest {
         var fabricExecutor = dependencyResolver.resolveDependency(FabricExecutor.class);
         var databaseName = new NormalizedDatabaseName("mega");
         var databaseId = DatabaseIdFactory.from(databaseName.name(), UUID.randomUUID());
-        var databaseRef = new DatabaseReference.Internal(databaseName, databaseId);
+        var databaseRef = new DatabaseReference.Internal(databaseName, databaseId, true);
         var transactionInfo = new FabricTransactionInfo(
                 org.neo4j.bolt.protocol.common.message.AccessMode.READ,
                 AUTH_DISABLED,

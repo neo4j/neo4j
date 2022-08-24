@@ -22,6 +22,7 @@ package org.neo4j.fabric.planning
 import org.neo4j.cypher.internal.FullyParsedQuery
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.QueryOptions
+import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
@@ -31,6 +32,7 @@ import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.fabric.cache.FabricQueryCache
 import org.neo4j.fabric.config.FabricConfig
+import org.neo4j.fabric.eval.Catalog
 import org.neo4j.fabric.eval.UseEvaluation
 import org.neo4j.fabric.pipeline.FabricFrontEnd
 import org.neo4j.fabric.planning.FabricPlan.DebugOptions
@@ -62,18 +64,20 @@ case class FabricPlanner(
   def instance(
     queryString: String,
     queryParams: MapValue,
-    defaultGraphName: String
+    defaultGraphName: String,
+    catalog: Catalog
   ): PlannerInstance =
-    instance(queryString, queryParams, defaultGraphName, CancellationChecker.NeverCancelled)
+    instance(queryString, queryParams, defaultGraphName, catalog, CancellationChecker.NeverCancelled)
 
   def instance(
     queryString: String,
     queryParams: MapValue,
     defaultGraphName: String,
+    catalog: Catalog,
     cancellationChecker: CancellationChecker
   ): PlannerInstance = {
     val query = frontend.preParsing.preParse(queryString)
-    PlannerInstance(query, queryParams, defaultGraphName, fabricContextName, cancellationChecker)
+    PlannerInstance(query, queryParams, defaultGraphName, fabricContextName, catalog, cancellationChecker)
   }
 
   case class PlannerInstance(
@@ -81,10 +85,13 @@ case class FabricPlanner(
     queryParams: MapValue,
     defaultContextName: String,
     fabricContextName: Option[String],
+    catalog: Catalog,
     cancellationChecker: CancellationChecker
   ) {
 
     private lazy val pipeline = frontend.Pipeline(query, queryParams, cancellationChecker)
+
+    private val useHelper = new UseHelper(catalog, defaultContextName, fabricContextName)
 
     lazy val plan: FabricPlan = {
       val plan = queryCache.computeIfAbsent(
@@ -106,9 +113,9 @@ case class FabricPlanner(
         new FabricFragmenter(defaultContextName, query.statement, prepared.statement(), prepared.semantics())
       val fragments = fragmenter.fragment
 
-      val fabricContext = inFabricContext(fragments)
+      val fabricContext = useHelper.rootTargetsCompositeContext(fragments)
 
-      val stitcher = FabricStitcher(query.statement, fabricContext, fabricContextName, pipeline)
+      val stitcher = FabricStitcher(query.statement, fabricContext, fabricContextName, pipeline, useHelper)
       val stitchedFragments = stitcher.convert(fragments)
 
       FabricPlan(
@@ -127,7 +134,7 @@ case class FabricPlanner(
       !QueryType.sensitive(plan.query)
 
     private def optionsFor(fragment: Fragment) =
-      if (isFabricFragment(fragment))
+      if (useHelper.fragmentTargetsCompositeContext(fragment))
         QueryOptions.default.copy(
           queryOptions = QueryOptions.default.queryOptions.copy(
             runtime = CypherRuntimeOption.slotted,
@@ -155,29 +162,47 @@ case class FabricPlanner(
       fragment.remoteQuery.extractedLiterals
     )
 
-    private def inFabricContext(fragment: Fragment): Boolean = {
-      def inFabricDefaultContext =
-        fabricContextName.contains(defaultContextName)
-
-      inFabricDefaultContext || isFabricFragment(fragment)
-    }
-
-    private def isFabricFragment(fragment: Fragment): Boolean = {
-      def isFabricUse(use: Use): Boolean =
-        UseEvaluation.evaluateStatic(use.graphSelection)
-          .exists(cn => cn.parts == fabricContextName.toList)
-
-      def check(frag: Fragment): Boolean = frag match {
-        case chain: Fragment.Chain     => isFabricUse(chain.use)
-        case union: Fragment.Union     => check(union.lhs) && check(union.rhs)
-        case command: Fragment.Command => isFabricUse(command.use)
-      }
-
-      check(fragment)
-    }
+    def targetsComposite(fragment: Fragment.Exec): Boolean =
+      useHelper.fragmentTargetsCompositeContext(fragment)
 
     private[planning] def withForceFabricContext(force: Boolean) =
       if (force) this.copy(fabricContextName = Some(defaultContextName))
       else this.copy(fabricContextName = None)
   }
+}
+
+class UseHelper(catalog: Catalog, defaultContextName: String, fabricContextName: Option[String]) {
+
+  def rootTargetsCompositeContext(fragment: Fragment): Boolean = {
+    def inFabricDefaultContext =
+      fabricContextName.contains(defaultContextName)
+
+    def inCompositeDefaultContext =
+      isComposite(CatalogName(defaultContextName))
+
+    inFabricDefaultContext || inCompositeDefaultContext || fragmentTargetsCompositeContext(fragment)
+  }
+
+  def fragmentTargetsCompositeContext(fragment: Fragment): Boolean = {
+    def check(frag: Fragment): Boolean = frag match {
+      case chain: Fragment.Chain     => useTargetsCompositeContext(chain.use)
+      case union: Fragment.Union     => check(union.lhs) && check(union.rhs)
+      case command: Fragment.Command => useTargetsCompositeContext(command.use)
+    }
+
+    check(fragment)
+  }
+
+  def useTargetsCompositeContext(use: Use): Boolean = {
+    UseEvaluation.evaluateStatic(use.graphSelection).exists(name => {
+      val isFabric = name.parts == fabricContextName.toList
+      isFabric || isComposite(name)
+    })
+  }
+
+  private def isComposite(name: CatalogName): Boolean =
+    catalog.resolveOption(name) match {
+      case Some(_: Catalog.Composite) => true
+      case _                          => false
+    }
 }

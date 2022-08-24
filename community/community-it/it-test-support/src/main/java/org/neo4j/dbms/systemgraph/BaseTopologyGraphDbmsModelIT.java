@@ -27,6 +27,7 @@ import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_TIMEOUT;
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.LOGGING_LEVEL;
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.SSL_ENFORCED;
 import static org.neo4j.dbms.systemgraph.InstanceModeConstraint.PRIMARY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.COMPOSITE_DATABASE_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.CONNECTS_WITH_RELATIONSHIP;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_CREATED_AT_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY;
@@ -43,6 +44,8 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STORE_F
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STORE_RANDOM_ID_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UPDATE_ID_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_VIRTUAL_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DELETED_DATABASE_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DRIVER_SETTINGS_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseStatus.OFFLINE;
@@ -56,6 +59,7 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.INSTANCE_NAME_PR
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.INSTANCE_STATUS_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.INSTANCE_UUID_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.InstanceStatus.ENABLED;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAMESPACE_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.PRIMARY_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.REMOTE_DATABASE_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.REMOVED_INSTANCE_LABEL;
@@ -296,6 +300,11 @@ public abstract class BaseTopologyGraphDbmsModelIT {
             return this;
         }
 
+        public DatabaseNodeBuilder asVirtual() {
+            node.setProperty(DATABASE_VIRTUAL_PROPERTY, true);
+            return this;
+        }
+
         public DatabaseNodeBuilder withInitialMembers(Set<ServerId> initialMembers) {
             node.setProperty(
                     DATABASE_INITIAL_SERVERS_PROPERTY,
@@ -386,7 +395,15 @@ public abstract class BaseTopologyGraphDbmsModelIT {
         var referenceNode = tx.createNode(DATABASE_NAME_LABEL);
         referenceNode.setProperty(PRIMARY_PROPERTY, primary);
         referenceNode.setProperty(DATABASE_NAME_PROPERTY, name);
+        referenceNode.setProperty(NAMESPACE_PROPERTY, DEFAULT_NAMESPACE);
         referenceNode.createRelationshipTo(databaseNode, TARGETS_RELATIONSHIP);
+        return referenceNode;
+    }
+
+    protected Node createInternalReferenceForDatabase(
+            Transaction tx, String namespace, String name, boolean primary, NamedDatabaseId databaseId) {
+        var referenceNode = createInternalReferenceForDatabase(tx, name, primary, databaseId);
+        referenceNode.setProperty(NAMESPACE_PROPERTY, namespace);
         return referenceNode;
     }
 
@@ -394,6 +411,28 @@ public abstract class BaseTopologyGraphDbmsModelIT {
             Transaction tx, String name, String targetName, RemoteUri uri, UUID uuid) {
         var referenceNode = tx.createNode(REMOTE_DATABASE_LABEL, DATABASE_NAME_LABEL);
         referenceNode.setProperty(PRIMARY_PROPERTY, false);
+        referenceNode.setProperty(NAMESPACE_PROPERTY, DEFAULT_NAMESPACE);
+        referenceNode.setProperty(DATABASE_NAME_PROPERTY, name);
+        referenceNode.setProperty(TARGET_NAME_PROPERTY, targetName);
+        var uriString =
+                String.format("%s://%s", uri.getScheme(), uri.getAddresses().get(0));
+        referenceNode.setProperty(URL_PROPERTY, uriString);
+        referenceNode.setProperty(VERSION_PROPERTY, uuid.toString());
+        return referenceNode;
+    }
+
+    protected Node createExternalReferenceForDatabase(
+            Transaction tx, String namespace, String name, String targetName, RemoteUri uri, UUID uuid) {
+        var referenceNode = createExternalReferenceForDatabase(tx, name, targetName, uri, uuid);
+        referenceNode.setProperty(NAMESPACE_PROPERTY, namespace);
+        return referenceNode;
+    }
+
+    protected Node createCompositeReferenceForDatabase(
+            Transaction tx, String name, String targetName, RemoteUri uri, UUID uuid) {
+        var referenceNode = tx.createNode(COMPOSITE_DATABASE_LABEL, DATABASE_NAME_LABEL);
+        referenceNode.setProperty(PRIMARY_PROPERTY, false);
+        referenceNode.setProperty(NAMESPACE_PROPERTY, DEFAULT_NAMESPACE);
         referenceNode.setProperty(DATABASE_NAME_PROPERTY, name);
         referenceNode.setProperty(TARGET_NAME_PROPERTY, targetName);
         var uriString =

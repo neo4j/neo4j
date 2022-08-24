@@ -124,8 +124,10 @@ public class FabricExecutor {
                     .getSessionDatabaseReference()
                     .alias()
                     .name();
+
+            var catalog = fabricTransaction.getCatalogSnapshot();
             var plannerInstance =
-                    planner.instance(statement, parameters, defaultGraphName, fabricTransaction.cancellationChecker());
+                    planner.instance(statement, parameters, defaultGraphName, catalog, fabricTransaction.cancellationChecker());
             var plan = plannerInstance.plan();
             var query = plan.query();
 
@@ -138,7 +140,7 @@ public class FabricExecutor {
                 log.debug(String.format("Fabric plan: %s", Fragment.pretty().asString(query)));
             }
             var statementResult = fabricTransaction.execute(ctx -> {
-                var useEvaluator = useEvaluation.instance(statement, ctx.getCatalogSnapshot());
+                var useEvaluator = useEvaluation.instance(statement, catalog);
                 FabricStatementExecution execution;
                 if (plan.debugOptions().logRecords()) {
                     execution = new FabricLoggingStatementExecution(
@@ -365,8 +367,9 @@ public class FabricExecutor {
                 FragmentResult input = run(fragment.input(), argument);
                 if (fragment.executable()) {
                     FabricQuery.LocalQuery localQuery = plannerInstance.asLocal(fragment);
-                    FragmentResult fragmentResult =
-                            runLocalQueryAt(local, transactionMode, localQuery.query(), parameters, input.records);
+                    var targetsComposite = plannerInstance.targetsComposite(fragment);
+                    FragmentResult fragmentResult = runLocalQueryAt(
+                            local, transactionMode, localQuery.query(), parameters, targetsComposite, input.records);
                     Mono<QueryExecutionType> executionType =
                             mergeExecutionType(input.executionType, fragmentResult.executionType);
                     return new FragmentResult(fragmentResult.records, fragmentResult.planDescription, executionType);
@@ -388,9 +391,10 @@ public class FabricExecutor {
                 TransactionMode transactionMode,
                 FullyParsedQuery query,
                 MapValue parameters,
+                boolean targetsComposite,
                 Flux<Record> input) {
 
-            ExecutionOptions executionOptions = plan.inFabricContext() && !isFabricDatabase(location)
+            ExecutionOptions executionOptions = plan.inFabricContext() && !targetsComposite
                     ? new ExecutionOptions(location.getGraphId())
                     : new ExecutionOptions();
 
@@ -494,12 +498,6 @@ public class FabricExecutor {
             }
         }
 
-        private boolean isFabricDatabase(Location.Local location) {
-            return fabricDatabaseName
-                    .map(name -> name.name().equals(location.getDatabaseName()))
-                    .orElse(false);
-        }
-
         private void updateSummary(Summary summary) {
             if (summary != null) {
                 this.statistics.add(summary.getQueryStatistics());
@@ -599,10 +597,12 @@ public class FabricExecutor {
                 TransactionMode transactionMode,
                 FullyParsedQuery query,
                 MapValue parameters,
+                boolean targetsComposite,
                 Flux<Record> input) {
             String id = executionId();
             trace(id, "local " + location.getGraphId(), compact(query.description()));
-            return traceRecords(id, super.runLocalQueryAt(location, transactionMode, query, parameters, input));
+            return traceRecords(
+                    id, super.runLocalQueryAt(location, transactionMode, query, parameters, targetsComposite, input));
         }
 
         @Override

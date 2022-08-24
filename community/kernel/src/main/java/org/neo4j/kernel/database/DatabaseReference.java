@@ -20,7 +20,9 @@
 package org.neo4j.kernel.database;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import org.neo4j.configuration.helpers.RemoteUri;
 
@@ -137,10 +139,67 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
     public static final class Internal extends DatabaseReference {
         private final NormalizedDatabaseName alias;
         private final NamedDatabaseId namedDatabaseId;
+        private final boolean primary;
 
-        public Internal(NormalizedDatabaseName alias, NamedDatabaseId namedDatabaseId) {
+        public Internal(NormalizedDatabaseName alias, NamedDatabaseId namedDatabaseId, boolean primary) {
             this.alias = alias;
             this.namedDatabaseId = namedDatabaseId;
+            this.primary = primary;
+        }
+
+        public NamedDatabaseId databaseId() {
+            return namedDatabaseId;
+        }
+
+        @Override
+        public NormalizedDatabaseName alias() {
+            return alias;
+        }
+
+        @Override
+        public boolean isPrimary() {
+            return primary;
+        }
+
+        @Override
+        public UUID id() {
+            return namedDatabaseId.databaseId().uuid();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Internal internal = (Internal) o;
+            return primary == internal.primary
+                    && Objects.equals(alias, internal.alias)
+                    && Objects.equals(namedDatabaseId, internal.namedDatabaseId);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(alias, namedDatabaseId, primary);
+        }
+
+        @Override
+        public String toString() {
+            return "DatabaseReference.Internal{" + "alias="
+                    + alias + ", namedDatabaseId="
+                    + namedDatabaseId + ", primary="
+                    + primary + '}';
+        }
+    }
+
+    public static final class Composite extends DatabaseReference {
+        private final NormalizedDatabaseName alias;
+        private final NamedDatabaseId namedDatabaseId;
+        private final List<DatabaseReference> components;
+
+        public Composite(
+                NormalizedDatabaseName alias, NamedDatabaseId namedDatabaseId, Set<DatabaseReference> components) {
+            this.alias = alias;
+            this.namedDatabaseId = namedDatabaseId;
+            this.components = components.stream().sorted().toList();
         }
 
         public NamedDatabaseId databaseId() {
@@ -162,26 +221,31 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
             return namedDatabaseId.databaseId().uuid();
         }
 
+        public List<DatabaseReference> components() {
+            return components;
+        }
+
         @Override
         public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            Internal internal = (Internal) o;
-            return Objects.equals(alias, internal.alias) && Objects.equals(namedDatabaseId, internal.namedDatabaseId);
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Composite composite = (Composite) o;
+            return Objects.equals(alias, composite.alias)
+                    && Objects.equals(namedDatabaseId, composite.namedDatabaseId)
+                    && Objects.equals(components, composite.components);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(alias, namedDatabaseId);
+            return Objects.hash(alias, namedDatabaseId, components);
         }
 
         @Override
         public String toString() {
-            return "DatabaseReference.Internal{" + "name=" + alias + ", namedDatabaseId=" + namedDatabaseId + '}';
+            return "DatabaseReference.Composite{" + "alias="
+                    + alias + ", namedDatabaseId="
+                    + namedDatabaseId + ", components="
+                    + components + '}';
         }
     }
 }

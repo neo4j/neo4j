@@ -131,7 +131,8 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
         // is set to false.
         // Under both circumstances, external references are not supported, therefore it is safe to produce an internal
         // reference for the target db here.
-        return new DatabaseReference.Internal(new NormalizedDatabaseName(namedDatabaseId.name()), namedDatabaseId);
+        return new DatabaseReference.Internal(
+                new NormalizedDatabaseName(namedDatabaseId.name()), namedDatabaseId, true);
     }
 
     private InternalTransaction beginInternalTransaction(

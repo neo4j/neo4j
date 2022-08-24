@@ -23,12 +23,19 @@ import org.neo4j.configuration.helpers.NormalizedGraphName
 import org.neo4j.configuration.helpers.RemoteUri
 import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.fabric.eval.Catalog.byIdView
+import org.neo4j.fabric.eval.Catalog.byQualifiedName
+import org.neo4j.fabric.eval.Catalog.normalize
 import org.neo4j.fabric.util.Errors
 import org.neo4j.fabric.util.Errors.show
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.IntegralValue
+import org.neo4j.values.storable.StringValue
 
+import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
+import java.util.Base64
 import java.util.UUID
 
 object Catalog {
@@ -50,7 +57,7 @@ object Catalog {
     graphName: NormalizedGraphName,
     databaseName: NormalizedDatabaseName
   ) extends ConcreteGraph {
-    def name: Option[String] = Some(graphName.name())
+    override def name: Option[String] = Some(graphName.name())
     override def toString: String = s"internal graph $id" + name.map(n => s" ($n)").getOrElse("")
   }
 
@@ -68,7 +75,7 @@ object Catalog {
     graphName: NormalizedGraphName,
     databaseName: NormalizedDatabaseName
   ) extends Alias {
-    def name: Option[String] = Some(graphName.name())
+    override def name: Option[String] = Some(graphName.name())
     override def toString: String = s"graph alias $id" + name.map(n => s" ($n)").getOrElse("")
   }
 
@@ -80,9 +87,26 @@ object Catalog {
     remoteDatabaseName: NormalizedDatabaseName,
     uri: RemoteUri
   ) extends Alias {
-    def name: Option[String] = Some(graphName.name())
+    override def name: Option[String] = Some(graphName.name())
 
     override def toString: String = s"graph alias $id" + name.map(n => s" ($n)").getOrElse("")
+  }
+
+  case class Composite(
+    id: Long,
+    uuid: UUID,
+    databaseName: NormalizedDatabaseName
+  ) extends ConcreteGraph {
+    override def name: Option[String] = Some(databaseName.name())
+
+    override def toString: String = s"composite $id" + name.map(n => s" ($n)").getOrElse("")
+  }
+
+  case class NamespacedGraph(namespace: String, graph: Graph) extends Graph {
+    override def id: Long = graph.id
+    override def uuid: UUID = graph.uuid
+    override def name: Option[String] = graph.name
+    override def toString: String = s"${graph.toString} in namespace $namespace"
   }
 
   trait View extends Entry {
@@ -101,14 +125,16 @@ object Catalog {
       }
   }
 
-  case class View1[A1 <: AnyValue](a1: Arg[A1])(f: A1 => Graph) extends View {
-    val arity = 1
-    val signature = Seq(a1)
+  abstract class View1[A1 <: AnyValue](a1: Arg[A1]) extends View {
+    val arity: Int = 1
+    val signature: Seq[Arg[A1]] = Seq(a1)
 
     def eval(args: Seq[AnyValue]): Graph = {
       checkArity(args)
-      f(cast(a1, args(0), args))
+      eval(cast(a1, args(0), args))
     }
+
+    def eval(a1Value: A1): Graph
   }
 
   case class Arg[T <: AnyValue](name: String, tpe: Class[T])
@@ -118,12 +144,29 @@ object Catalog {
     externalGraphs: Seq[Graph],
     graphAliases: Seq[Graph],
     fabricNamespace: Option[String]
+  ): Catalog =
+    create(internalGraphs, externalGraphs, graphAliases, Seq.empty, fabricNamespace)
+
+  def create(
+    internalGraphs: Seq[Graph],
+    externalGraphs: Seq[Graph],
+    graphAliases: Seq[Graph],
+    composites: Seq[(Composite, Seq[Graph])],
+    fabricNamespace: Option[String]
   ): Catalog = {
     if (fabricNamespace.isEmpty) {
-      val internalByName = byName(internalGraphs)
-      val aliasesByName = byName(graphAliases)
-      internalByName ++ aliasesByName
+
+      val databasesAndAliases = byQualifiedName(internalGraphs ++ graphAliases)
+      val compositesAndAliases = composites.foldLeft(Catalog.empty) { case (catalog, (composite, aliases)) =>
+        val byName = byQualifiedName(composite +: aliases)
+        val byNameView = graphByNameView(aliases, composite.databaseName.name())
+        catalog ++ byName ++ byNameView
+      }
+
+      databasesAndAliases ++ compositesAndAliases
+
     } else {
+
       val allGraphs = externalGraphs ++ internalGraphs
       val byId = byIdView(allGraphs, fabricNamespace.get)
       val externalByName = byName(externalGraphs, fabricNamespace.get)
@@ -134,6 +177,18 @@ object Catalog {
     }
   }
 
+  def empty: Catalog = Catalog(Map())
+
+  def byQualifiedName(graphs: Seq[Catalog.Graph]): Catalog =
+    Catalog((for {
+      graph <- graphs
+      name <- graph.name
+      catalogName = graph match {
+        case n: NamespacedGraph => normalizedName(n.namespace, name)
+        case _                  => normalizedName(name)
+      }
+    } yield catalogName -> graph).toMap)
+
   private def byName(graphs: Seq[Catalog.Graph], namespace: String*): Catalog =
     Catalog((for {
       graph <- graphs
@@ -141,15 +196,46 @@ object Catalog {
       fqn = namespace :+ name
     } yield CatalogName(fqn.toList) -> graph).toMap)
 
-  private def byIdView(lookupIn: Seq[Catalog.Graph], namespace: String): Catalog = {
+  private def byIdView(graphs: Seq[Catalog.Graph], namespace: String): Catalog = {
     Catalog(Map(
-      CatalogName(namespace, "graph") -> View1(Arg("gid", classOf[IntegralValue]))(gid =>
-        lookupIn
-          .collectFirst { case g: ConcreteGraph if g.id == gid.longValue() => g }
-          .getOrElse(Errors.entityNotFound("Graph", show(gid)))
-      )
+      normalizedName(namespace, "graph") -> new ByIdView(graphs)
     ))
   }
+
+  class ByIdView(graphs: Seq[Catalog.Graph]) extends View1(Arg("gid", classOf[IntegralValue])) {
+
+    override def eval(gid: IntegralValue): Graph = {
+      val gidValue = gid.longValue();
+      graphs
+        .collectFirst { case g: ConcreteGraph if g.id == gidValue => g }
+        .getOrElse(Errors.entityNotFound("Graph", show(gid)))
+    }
+  }
+
+  private def graphByNameView(graphs: Seq[Catalog.Graph], namespace: String): Catalog = {
+    Catalog(Map(
+      normalizedName(namespace, "graph") -> new ByNameView(namespace, graphs)
+    ))
+  }
+
+  class ByNameView(namespace: String, graphs: Seq[Catalog.Graph]) extends View1(Arg("gid", classOf[StringValue])) {
+
+    override def eval(arg: StringValue): Graph = {
+      val name = normalize(arg.stringValue())
+      graphs
+        .collectFirst { case g if g.name.contains(name) => g }
+        .getOrElse(Errors.entityNotFound("Graph", s"${show(arg)} in $namespace"))
+    }
+  }
+
+  private def normalize(graphName: String): String =
+    new NormalizedGraphName(graphName).name()
+
+  private def normalize(name: CatalogName): CatalogName =
+    CatalogName(name.parts.map(normalize))
+
+  private def normalizedName(parts: String*): CatalogName =
+    normalize(CatalogName(parts: _*))
 }
 
 case class Catalog(entries: Map[CatalogName, Catalog.Entry]) {
@@ -157,21 +243,31 @@ case class Catalog(entries: Map[CatalogName, Catalog.Entry]) {
   def resolve(name: CatalogName): Catalog.Graph =
     resolve(name, Seq())
 
-  def resolve(name: CatalogName, args: Seq[AnyValue]): Catalog.Graph = {
-    val normalizedName = CatalogName(name.parts.map(normalize))
+  def resolve(name: CatalogName, args: Seq[AnyValue]): Catalog.Graph =
+    resolveOption(name, args).getOrElse(Errors.entityNotFound("Catalog entry", show(name)))
+
+  def resolveOption(name: CatalogName): Option[Catalog.Graph] =
+    resolveOption(name, Seq())
+
+  def resolveOption(name: CatalogName, args: Seq[AnyValue]): Option[Catalog.Graph] = {
+    val normalizedName = normalize(name)
     entries.get(normalizedName) match {
-      case None => Errors.entityNotFound("Catalog entry", show(name))
+      case None =>
+        None
 
       case Some(g: Catalog.Graph) =>
         if (args.nonEmpty) Errors.wrongArity(0, args.size, InputPosition.NONE)
-        else g
+        else Some(g)
 
-      case Some(v: Catalog.View) => v.eval(args)
+      case Some(v: Catalog.View) =>
+        Some(v.eval(args))
     }
   }
 
-  private def normalize(name: String): String =
-    new NormalizedGraphName(name).name
+  def graphNamesIn(namespace: String): Array[String] =
+    entries.collect {
+      case (CatalogName(List(`namespace`, name)), _: Catalog.Graph) => name
+    }.toArray
 
   def ++(that: Catalog): Catalog = Catalog(this.entries ++ that.entries)
 }

@@ -58,11 +58,11 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         createInternalReferenceForDatabase(tx, "barAlias", false, barDb);
 
         var expected = Set.of(
-                new DatabaseReference.Internal(new NormalizedDatabaseName("foo"), fooDb),
-                new DatabaseReference.Internal(new NormalizedDatabaseName("bar"), barDb),
-                new DatabaseReference.Internal(new NormalizedDatabaseName("fooAlias"), fooDb),
-                new DatabaseReference.Internal(new NormalizedDatabaseName("fooOtherAlias"), fooDb),
-                new DatabaseReference.Internal(new NormalizedDatabaseName("barAlias"), barDb));
+                new DatabaseReference.Internal(new NormalizedDatabaseName("foo"), fooDb, true),
+                new DatabaseReference.Internal(new NormalizedDatabaseName("bar"), barDb, true),
+                new DatabaseReference.Internal(new NormalizedDatabaseName("fooAlias"), fooDb, false),
+                new DatabaseReference.Internal(new NormalizedDatabaseName("fooOtherAlias"), fooDb, false),
+                new DatabaseReference.Internal(new NormalizedDatabaseName("barAlias"), barDb, false));
 
         // when
         var aliases = dbmsModel.getAllInternalDatabaseReferences();
@@ -102,6 +102,79 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
     }
 
     @Test
+    void canReturnAllCompositeDatabaseReferences() {
+        // given
+        var remoteAddress = new SocketAddress("my.neo4j.com", 7687);
+        var remoteNeo4j = new RemoteUri("neo4j", List.of(remoteAddress), null);
+        var remAliasId1 = randomUUID();
+        var remAliasId2 = randomUUID();
+        var remAliasId3 = randomUUID();
+        var remAliasId4 = randomUUID();
+        var remAliasId5 = randomUUID();
+        var locDb = newDatabase(b -> b.withDatabase("loc"));
+        createInternalReferenceForDatabase(tx, "locAlias", false, locDb);
+        createExternalReferenceForDatabase(tx, "remAlias", "rem1", remoteNeo4j, remAliasId1);
+        var compDb1 = newDatabase(b -> b.withDatabase("compDb1").asVirtual());
+        createInternalReferenceForDatabase(tx, compDb1.name(), true, compDb1);
+        createInternalReferenceForDatabase(tx, compDb1.name(), "locAlias", false, locDb);
+        createExternalReferenceForDatabase(tx, compDb1.name(), "remAlias", "rem2", remoteNeo4j, remAliasId2);
+        createExternalReferenceForDatabase(tx, compDb1.name(), "remAlias2", "rem3", remoteNeo4j, remAliasId3);
+        var compDb2 = newDatabase(b -> b.withDatabase("compDb2").asVirtual());
+        createInternalReferenceForDatabase(tx, compDb2.name(), true, compDb2);
+        createInternalReferenceForDatabase(tx, compDb2.name(), "locAlias", false, locDb);
+        createExternalReferenceForDatabase(tx, compDb2.name(), "remAlias", "rem4", remoteNeo4j, remAliasId4);
+        createExternalReferenceForDatabase(tx, compDb2.name(), "remAlias3", "rem5", remoteNeo4j, remAliasId5);
+
+        // then
+        assertThat(dbmsModel.getAllCompositeDatabaseReferences())
+                .isEqualTo(Set.of(
+                        new DatabaseReference.Composite(
+                                new NormalizedDatabaseName(compDb1.name()),
+                                compDb1,
+                                Set.of(
+                                        new DatabaseReference.Internal(
+                                                new NormalizedDatabaseName("locAlias"), locDb, false),
+                                        new DatabaseReference.External(
+                                                new NormalizedDatabaseName("rem2"),
+                                                new NormalizedDatabaseName("remAlias"),
+                                                remoteNeo4j,
+                                                remAliasId2),
+                                        new DatabaseReference.External(
+                                                new NormalizedDatabaseName("rem3"),
+                                                new NormalizedDatabaseName("remAlias2"),
+                                                remoteNeo4j,
+                                                remAliasId3))),
+                        new DatabaseReference.Composite(
+                                new NormalizedDatabaseName(compDb2.name()),
+                                compDb2,
+                                Set.of(
+                                        new DatabaseReference.Internal(
+                                                new NormalizedDatabaseName("locAlias"), locDb, false),
+                                        new DatabaseReference.External(
+                                                new NormalizedDatabaseName("rem4"),
+                                                new NormalizedDatabaseName("remAlias"),
+                                                remoteNeo4j,
+                                                remAliasId4),
+                                        new DatabaseReference.External(
+                                                new NormalizedDatabaseName("rem5"),
+                                                new NormalizedDatabaseName("remAlias3"),
+                                                remoteNeo4j,
+                                                remAliasId5)))));
+
+        assertThat(dbmsModel.getAllInternalDatabaseReferences())
+                .isEqualTo(Set.of(
+                        new DatabaseReference.Internal(new NormalizedDatabaseName("loc"), locDb, true),
+                        new DatabaseReference.Internal(new NormalizedDatabaseName("locAlias"), locDb, false)));
+
+        assertThat(dbmsModel.getAllExternalDatabaseReferences())
+                .isEqualTo(Set.of(new DatabaseReference.External(
+                        new NormalizedDatabaseName("rem1"),
+                        new NormalizedDatabaseName("remAlias"),
+                        remoteNeo4j,
+                        remAliasId1)));
+    }
+
+    @Test
     void canReturnAllDatabaseReferences() {
         // given
         var fooDb = newDatabase(b -> b.withDatabase("foo"));
@@ -109,13 +182,28 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         var remoteAddress = new SocketAddress("my.neo4j.com", 7687);
         var remoteNeo4j = new RemoteUri("neo4j", List.of(remoteAddress), null);
         var barId = UUID.randomUUID();
+        var barId2 = UUID.randomUUID();
         createExternalReferenceForDatabase(tx, "bar", "foo", remoteNeo4j, barId);
+        var compDb1 = newDatabase(b -> b.withDatabase("compDb1").asVirtual());
+        createInternalReferenceForDatabase(tx, compDb1.name(), true, compDb1);
+        createInternalReferenceForDatabase(tx, compDb1.name(), "locAlias", false, fooDb);
+        createExternalReferenceForDatabase(tx, compDb1.name(), "remAlias", "rem", remoteNeo4j, barId2);
 
         var expected = Set.of(
                 new DatabaseReference.External(
                         new NormalizedDatabaseName("foo"), new NormalizedDatabaseName("bar"), remoteNeo4j, barId),
-                new DatabaseReference.Internal(new NormalizedDatabaseName("foo"), fooDb),
-                new DatabaseReference.Internal(new NormalizedDatabaseName("fooAlias"), fooDb));
+                new DatabaseReference.Internal(new NormalizedDatabaseName("foo"), fooDb, true),
+                new DatabaseReference.Internal(new NormalizedDatabaseName("fooAlias"), fooDb, false),
+                new DatabaseReference.Composite(
+                        new NormalizedDatabaseName(compDb1.name()),
+                        compDb1,
+                        Set.of(
+                                new DatabaseReference.Internal(new NormalizedDatabaseName("locAlias"), fooDb, false),
+                                new DatabaseReference.External(
+                                        new NormalizedDatabaseName("rem"),
+                                        new NormalizedDatabaseName("remAlias"),
+                                        remoteNeo4j,
+                                        barId2))));
 
         // when
         var aliases = dbmsModel.getAllDatabaseReferences();

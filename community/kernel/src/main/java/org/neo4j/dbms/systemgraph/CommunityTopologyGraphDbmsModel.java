@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -36,6 +37,7 @@ import org.neo4j.configuration.helpers.RemoteUri;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.helpers.SocketAddressParser;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -89,50 +91,73 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
         }
     }
 
+    private Stream<DatabaseReference.Internal> getAllPrimaryStandardDatabaseReferencesInRoot() {
+        return tx.findNodes(DATABASE_LABEL).stream()
+                .filter(node -> !node.hasProperty(DATABASE_VIRTUAL_PROPERTY))
+                .map(CommunityTopologyGraphDbmsModel::getDatabaseId)
+                .map(this::primaryRefFromDatabaseId);
+    }
+
     @Override
     public Set<DatabaseReference> getAllDatabaseReferences() {
-        var primaryRefs = getAllDatabaseIds().stream().map(this::primaryRefFromDatabaseId);
-        var internalAliasRefs = getAllInternalDatabaseReferences0();
+        var primaryRefs = getAllPrimaryStandardDatabaseReferencesInRoot();
+        var internalAliasRefs = getAllInternalDatabaseReferencesInRoot();
         var internalRefs = Stream.concat(primaryRefs, internalAliasRefs);
-        var externalRefs = getAllExternalDatabaseReferences0();
+        var externalRefs = getAllExternalDatabaseReferencesInRoot();
+        var compositeRefs = getAllCompositeDatabaseReferencesInRoot();
 
-        return Stream.concat(internalRefs, externalRefs).collect(Collectors.toUnmodifiableSet());
+        return Stream.of(internalRefs, externalRefs, compositeRefs)
+                .flatMap(s -> s)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     @Override
     public Set<DatabaseReference.Internal> getAllInternalDatabaseReferences() {
-        var primaryRefs = getAllDatabaseIds().stream().map(this::primaryRefFromDatabaseId);
-        var localAliasRefs = getAllInternalDatabaseReferences0();
+        var primaryRefs = getAllPrimaryStandardDatabaseReferencesInRoot();
+        var localAliasRefs = getAllInternalDatabaseReferencesInRoot();
 
         return Stream.concat(primaryRefs, localAliasRefs).collect(Collectors.toUnmodifiableSet());
     }
 
     private DatabaseReference.Internal primaryRefFromDatabaseId(NamedDatabaseId databaseId) {
         var alias = new NormalizedDatabaseName(databaseId.name());
-        return new DatabaseReference.Internal(alias, databaseId);
+        return new DatabaseReference.Internal(alias, databaseId, true);
     }
 
-    private Stream<DatabaseReference.Internal> getAllInternalDatabaseReferences0() {
-        return tx.findNodes(DATABASE_NAME_LABEL, NAMESPACE_PROPERTY, DEFAULT_NAMESPACE).stream()
-                .flatMap(
-                        alias -> getTargetedDatabase(alias).flatMap(db -> createInternalReference(alias, db)).stream());
+    private Stream<DatabaseReference.Internal> getAllInternalDatabaseReferencesInRoot() {
+        return getAllInternalDatabaseReferencesInNamespace(DEFAULT_NAMESPACE);
+    }
+
+    private Stream<DatabaseReference.Internal> getAllInternalDatabaseReferencesInNamespace(String namespace) {
+        return getAliasNodesInNamespace(DATABASE_NAME_LABEL, namespace)
+                .flatMap(alias -> getTargetedDatabaseNode(alias)
+                        .filter(node -> !node.hasProperty(DATABASE_VIRTUAL_PROPERTY))
+                        .map(CommunityTopologyGraphDbmsModel::getDatabaseId)
+                        .flatMap(db -> createInternalReference(alias, db))
+                        .stream());
     }
 
     private Optional<DatabaseReference.Internal> createInternalReference(Node alias, NamedDatabaseId targetedDatabase) {
         return ignoreConcurrentDeletes(() -> {
             var aliasName =
                     new NormalizedDatabaseName(getPropertyOnNode(DATABASE_NAME, alias, NAME_PROPERTY, String.class));
-            return Optional.of(new DatabaseReference.Internal(aliasName, targetedDatabase));
+            var primary = getPropertyOnNode(DATABASE_NAME, alias, PRIMARY_PROPERTY, Boolean.class);
+            return Optional.of(new DatabaseReference.Internal(aliasName, targetedDatabase, primary));
         });
     }
 
     @Override
     public Set<DatabaseReference.External> getAllExternalDatabaseReferences() {
-        return getAllExternalDatabaseReferences0().collect(Collectors.toUnmodifiableSet());
+        return getAllExternalDatabaseReferencesInRoot().collect(Collectors.toUnmodifiableSet());
     }
 
-    private Stream<DatabaseReference.External> getAllExternalDatabaseReferences0() {
-        return tx.findNodes(REMOTE_DATABASE_LABEL).stream().flatMap(alias -> createExternalReference(alias).stream());
+    private Stream<DatabaseReference.External> getAllExternalDatabaseReferencesInRoot() {
+        return getAllExternalDatabaseReferencesInNamespace(DEFAULT_NAMESPACE);
+    }
+
+    private Stream<DatabaseReference.External> getAllExternalDatabaseReferencesInNamespace(String namespace) {
+        return getAliasNodesInNamespace(REMOTE_DATABASE_LABEL, namespace)
+                .flatMap(alias -> createExternalReference(alias).stream());
     }
 
     private Optional<DatabaseReference.External> createExternalReference(Node ref) {
@@ -149,6 +174,44 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
             var uuid = getPropertyOnNode(REMOTE_DATABASE_LABEL_DESCRIPTION, ref, VERSION_PROPERTY, String.class);
             return Optional.of(new DatabaseReference.External(targetName, aliasName, remoteUri, UUID.fromString(uuid)));
         });
+    }
+
+    @Override
+    public Set<DatabaseReference.Composite> getAllCompositeDatabaseReferences() {
+        return getAllCompositeDatabaseReferencesInRoot().collect(Collectors.toUnmodifiableSet());
+    }
+
+    private Stream<DatabaseReference.Composite> getAllCompositeDatabaseReferencesInRoot() {
+        return getAliasNodesInNamespace(DATABASE_NAME_LABEL, DEFAULT_NAMESPACE)
+                .flatMap(alias -> getTargetedDatabaseNode(alias)
+                        .filter(db -> db.hasProperty(DATABASE_VIRTUAL_PROPERTY))
+                        .flatMap(db -> createCompositeReference(alias, db))
+                        .stream());
+    }
+
+    private Optional<DatabaseReference.Composite> createCompositeReference(Node alias, Node db) {
+        return ignoreConcurrentDeletes(() -> {
+            var aliasName = getName(DATABASE_NAME, alias);
+            var compositeName = getName(DATABASE, db);
+            var components = getAllDatabaseReferencesInComposite(compositeName);
+            var databaseId = getDatabaseId(db);
+            return Optional.of(new DatabaseReference.Composite(aliasName, databaseId, components));
+        });
+    }
+
+    private NormalizedDatabaseName getName(String labelName, Node node) {
+        return new NormalizedDatabaseName(getPropertyOnNode(labelName, node, NAME_PROPERTY, String.class));
+    }
+
+    private Stream<Node> getAliasNodesInNamespace(Label label, String namespace) {
+        return tx.findNodes(label, NAMESPACE_PROPERTY, namespace).stream();
+    }
+
+    private Set<DatabaseReference> getAllDatabaseReferencesInComposite(NormalizedDatabaseName compositeName) {
+        var internalRefs = getAllInternalDatabaseReferencesInNamespace(compositeName.name());
+        var externalRefs = getAllExternalDatabaseReferencesInNamespace(compositeName.name());
+
+        return Stream.concat(internalRefs, externalRefs).collect(Collectors.toUnmodifiableSet());
     }
 
     @Override
@@ -267,6 +330,15 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
                 return stream.findFirst()
                         .map(Relationship::getEndNode)
                         .map(CommunityTopologyGraphDbmsModel::getDatabaseId);
+            }
+        });
+    }
+
+    private static Optional<Node> getTargetedDatabaseNode(Node aliasNode) {
+        return ignoreConcurrentDeletes(() -> {
+            try (Stream<Relationship> stream =
+                    aliasNode.getRelationships(Direction.OUTGOING, TARGETS_RELATIONSHIP).stream()) {
+                return stream.findFirst().map(Relationship::getEndNode);
             }
         });
     }

@@ -266,6 +266,11 @@ public interface TopologyGraphDbmsModel {
     Set<DatabaseReference.External> getAllExternalDatabaseReferences();
 
     /**
+     * Fetches all known composite database references
+     */
+    Set<DatabaseReference.Composite> getAllCompositeDatabaseReferences();
+
+    /**
      * Fetches the {@link DatabaseReference} corresponding to the provided name.
      *
      * @param databaseName the database alias to resolve a {@link DatabaseReference} for.

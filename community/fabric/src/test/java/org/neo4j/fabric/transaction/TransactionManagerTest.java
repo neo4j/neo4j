@@ -103,7 +103,7 @@ class TransactionManagerTest {
     private static FabricTransactionInfo createTransactionInfo() {
         var databaseName = new NormalizedDatabaseName("a");
         var databaseId = DatabaseIdFactory.from(databaseName.name(), UUID.randomUUID());
-        var databaseRef = new DatabaseReference.Internal(databaseName, databaseId);
+        var databaseRef = new DatabaseReference.Internal(databaseName, databaseId, true);
         return new FabricTransactionInfo(
                 AccessMode.READ,
                 LoginContext.AUTH_DISABLED,

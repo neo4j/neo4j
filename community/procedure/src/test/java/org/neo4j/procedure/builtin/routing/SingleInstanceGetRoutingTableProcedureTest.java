@@ -94,7 +94,7 @@ import org.neo4j.values.virtual.MapValueBuilder;
 public class SingleInstanceGetRoutingTableProcedureTest {
     protected static final NamedDatabaseId ID = from(DEFAULT_DATABASE_NAME, UUID.randomUUID());
     protected static final DatabaseReference.Internal REF =
-            new DatabaseReference.Internal(new NormalizedDatabaseName(ID.name()), ID);
+            new DatabaseReference.Internal(new NormalizedDatabaseName(ID.name()), ID, true);
     private static final String UNKNOWN_DATABASE_NAME = "unknownDatabaseName";
     private static Context procCtx;
 

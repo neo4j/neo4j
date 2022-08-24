@@ -65,9 +65,9 @@ public interface FabricTransaction {
         void validateStatementType(StatementType type);
 
         DatabaseReference getSessionDatabaseReference();
-
-        Catalog getCatalogSnapshot();
     }
+
+    Catalog getCatalogSnapshot();
 
     CancellationChecker cancellationChecker();
 }

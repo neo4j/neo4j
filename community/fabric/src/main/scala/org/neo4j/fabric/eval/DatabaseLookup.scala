@@ -39,13 +39,6 @@ trait DatabaseLookup {
     */
   def databaseReferences: SortedSet[DatabaseReference]
 
-  /**
-   * Returns all known database Ids for this DBMS.
-   *
-   * Note: returned set is sorted lexicographically by `NamedDatabaseId#name`, to provide stable iteration order.
-   */
-  def databaseIds: SortedSet[NamedDatabaseId]
-
   def databaseId(databaseName: NormalizedDatabaseName): Option[NamedDatabaseId]
 
   def isVirtualDatabase(databaseId: NamedDatabaseId): Boolean
@@ -63,11 +56,6 @@ object DatabaseLookup {
     def databaseReferences: SortedSet[DatabaseReference] = {
       val unsortedSet = databaseReferenceRepo.getAllDatabaseReferences.asScala
       SortedSet.empty[DatabaseReference] ++ unsortedSet
-    }
-
-    def databaseIds: SortedSet[NamedDatabaseId] = {
-      val unsortedSet = databaseReferenceRepo.getInternalDatabaseReferences.asScala.map(_.databaseId)
-      SortedSet.empty[NamedDatabaseId] ++ unsortedSet
     }
 
     def databaseId(databaseName: NormalizedDatabaseName): Option[NamedDatabaseId] = {

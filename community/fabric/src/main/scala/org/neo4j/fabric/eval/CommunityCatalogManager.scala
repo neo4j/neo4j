@@ -21,9 +21,12 @@ package org.neo4j.fabric.eval
 
 import org.neo4j.configuration.helpers.NormalizedGraphName
 import org.neo4j.fabric.eval.Catalog.Alias
+import org.neo4j.fabric.eval.Catalog.Composite
 import org.neo4j.fabric.eval.Catalog.ExternalAlias
+import org.neo4j.fabric.eval.Catalog.Graph
 import org.neo4j.fabric.eval.Catalog.InternalAlias
 import org.neo4j.fabric.eval.Catalog.InternalGraph
+import org.neo4j.fabric.eval.Catalog.NamespacedGraph
 import org.neo4j.fabric.executor.Location
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.event.TransactionData
@@ -32,6 +35,8 @@ import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners
+
+import scala.jdk.CollectionConverters.ListHasAsScala
 
 class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: GlobalTransactionEventListeners)
     extends CatalogManager {
@@ -86,36 +91,72 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: Globa
   }
 
   protected def createCatalog(): Catalog = {
-    val internals = getInternals()
-    val maxId = internals.map(_.id).reduceOption(_ max _).getOrElse(-1L)
-    val aliases = getAliases(maxId + 1)
-    Catalog.create(internals, Seq.empty, aliases.toSeq, None)
+    val idProvider = new IdProvider
+    val internals = getInternals(idProvider)
+    val aliases = getAliases(idProvider)
+    val composites = getComposites(idProvider)
+    Catalog.create(internals, Seq.empty, aliases, composites, None)
   }
 
-  protected def getInternals(firstId: Long = 0): Seq[InternalGraph] = for {
-    (databaseId, idx) <- databaseLookup.databaseIds.toSeq zip indicesFrom(firstId)
-    graphName = new NormalizedGraphName(databaseId.name)
-    databaseName = new NormalizedDatabaseName(databaseId.name)
-  } yield InternalGraph(idx, databaseId.databaseId.uuid, graphName, databaseName)
+  protected def getInternals(ids: IdProvider): Seq[InternalGraph] = {
+    val references = databaseLookup.databaseReferences.toSeq
+    val primaryRefs = references.collect {
+      case int: DatabaseReference.Internal if int.isPrimary => int
+    }
+    for {
+      (ref, idx) <- primaryRefs.zip(ids.sequence)
+      databaseId = ref.databaseId
+      graphName = new NormalizedGraphName(databaseId.name)
+      databaseName = new NormalizedDatabaseName(databaseId.name)
+    } yield InternalGraph(idx, databaseId.databaseId.uuid, graphName, databaseName)
+  }
 
-  protected def getAliases(firstId: Long) = {
-    val nonPrimaryRefs = databaseLookup.databaseReferences.to(LazyList).filter(!_.isPrimary)
-    val aliases = for {
-      (ref, idx) <- nonPrimaryRefs zip indicesFrom(firstId)
+  protected def getAliases(ids: IdProvider): Seq[Graph] = {
+    val references = databaseLookup.databaseReferences.toSeq
+    val nonPrimaryRefs = references.collect {
+      case int: DatabaseReference.Internal if !int.isPrimary => int
+      case ext: DatabaseReference.External if !ext.isPrimary => ext
+    }
+    for {
+      (ref, idx) <- nonPrimaryRefs.zip(ids.sequence)
       alias <- aliasFactory(ref, idx)
     } yield alias
-    aliases.toSet
   }
 
-  protected def aliasFactory(ref: DatabaseReference, idx: Long): Option[Alias] = ref match {
-    case i: DatabaseReference.Internal if i.isPrimary => None // ignore primary aliases
-    case i: DatabaseReference.Internal =>
-      Some(InternalAlias(idx, i.databaseId.databaseId.uuid, new NormalizedGraphName(i.alias.name), i.alias))
-    case e: DatabaseReference.External =>
-      Some(ExternalAlias(idx, e.id, new NormalizedGraphName(e.alias.name), e.alias, e.targetAlias, e.externalUri))
-    case other => None // ignore unexpected reference types
+  protected def getComposites(ids: IdProvider): Seq[(Composite, Seq[Graph])] = {
+    val references = databaseLookup.databaseReferences.toSeq
+    val compositeRefs = references.collect {
+      case comp: DatabaseReference.Composite => comp
+    }
+    for {
+      (compositeRef, idx) <- compositeRefs.zip(ids.sequence)
+      compositeAliases = for {
+        (componentRef, idx) <- compositeRef.components.asScala.toSeq.zip(ids.sequence)
+        alias <- aliasFactory(componentRef, idx)
+      } yield NamespacedGraph(compositeRef.alias().name(), alias)
+    } yield (
+      Composite(idx, compositeRef.databaseId.databaseId.uuid, databaseName(compositeRef.databaseId)),
+      compositeAliases
+    )
+
   }
-  private def indicesFrom(firstId: Long) = LazyList.iterate(firstId)(_ + 1)
+
+  private def aliasFactory(ref: DatabaseReference, idx: Long): Option[Alias] = ref match {
+    case i: DatabaseReference.Internal if i.isPrimary =>
+      None // ignore primary aliases
+    case i: DatabaseReference.Internal =>
+      Some(InternalAlias(idx, i.databaseId.databaseId.uuid, graphName(i.alias), databaseName(i.databaseId())))
+    case e: DatabaseReference.External =>
+      Some(ExternalAlias(idx, e.id, graphName(e.alias), e.alias, e.targetAlias, e.externalUri))
+    case other =>
+      None // ignore unexpected reference types
+  }
+
+  protected def graphName(databaseName: NormalizedDatabaseName): NormalizedGraphName =
+    new NormalizedGraphName(databaseName.name)
+
+  protected def databaseName(databaseId: NamedDatabaseId): NormalizedDatabaseName =
+    new NormalizedDatabaseName(databaseId.name)
 
   override def locationOf(
     sessionDatabase: DatabaseReference,
@@ -128,5 +169,19 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: Globa
     case Catalog.InternalAlias(id, uuid, _, databaseName) =>
       new Location.Local(id, uuid, databaseName.name())
     case _ => throw new IllegalArgumentException(s"Unexpected graph type $graph")
+  }
+
+  class IdProvider(startingFrom: Long = 0) {
+    private var next: Long = startingFrom
+
+    private def getAndIncrement(): Long = {
+      val value = next
+      next = next + 1L
+      value
+    }
+
+    def sequence: IterableOnce[Long] = new IterableOnce[Long] {
+      override def iterator: Iterator[Long] = Iterator.continually(getAndIncrement())
+    }
   }
 }

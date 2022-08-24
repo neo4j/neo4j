@@ -36,8 +36,8 @@ public class MapCachingDatabaseReferenceRepositoryTest {
     private final NamedDatabaseId dbId = DatabaseIdFactory.from("random", UUID.randomUUID());
     private final NormalizedDatabaseName name = new NormalizedDatabaseName(dbId.name());
     private final NormalizedDatabaseName aliasName = new NormalizedDatabaseName("foo");
-    private final DatabaseReference ref = new DatabaseReference.Internal(name, dbId);
-    private final DatabaseReference aliasRef = new DatabaseReference.Internal(aliasName, dbId);
+    private final DatabaseReference ref = new DatabaseReference.Internal(name, dbId, true);
+    private final DatabaseReference aliasRef = new DatabaseReference.Internal(aliasName, dbId, false);
 
     private DatabaseReferenceRepository.Caching databaseRefRepo;
 
@@ -75,12 +75,15 @@ public class MapCachingDatabaseReferenceRepositoryTest {
         databaseRefRepo.getAllDatabaseReferences();
         databaseRefRepo.getInternalDatabaseReferences();
         databaseRefRepo.getExternalDatabaseReferences();
+        databaseRefRepo.getCompositeDatabaseReferences();
         databaseRefRepo.getAllDatabaseReferences();
         databaseRefRepo.getInternalDatabaseReferences();
         databaseRefRepo.getExternalDatabaseReferences();
+        databaseRefRepo.getCompositeDatabaseReferences();
 
         verify(delegate, atLeast(2)).getAllDatabaseReferences();
         verify(delegate, atLeast(2)).getInternalDatabaseReferences();
         verify(delegate, atLeast(2)).getExternalDatabaseReferences();
+        verify(delegate, atLeast(2)).getCompositeDatabaseReferences();
     }
 }

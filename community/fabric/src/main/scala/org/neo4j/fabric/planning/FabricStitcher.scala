@@ -54,7 +54,8 @@ case class FabricStitcher(
   queryString: String,
   allowMultiGraph: Boolean,
   fabricContextName: Option[String],
-  pipeline: FabricFrontEnd#Pipeline
+  pipeline: FabricFrontEnd#Pipeline,
+  useHelper: UseHelper
 ) {
 
   /**
@@ -265,10 +266,9 @@ case class FabricStitcher(
     override def isInvalidOverride: Option[Use] = outer match {
       case None => None
       case Some(outer) =>
-        def outerIsFabric =
-          UseEvaluation.evaluateStatic(outer.graphSelection).exists(_.parts == fabricContextName.toSeq)
+        def outerIsComposite = useHelper.useTargetsCompositeContext(outer)
         def same = outer.graphSelection == inner.graphSelection
-        if (!outerIsFabric && !same) Some(inner) else None
+        if (!outerIsComposite && !same) Some(inner) else None
     }
   }
 

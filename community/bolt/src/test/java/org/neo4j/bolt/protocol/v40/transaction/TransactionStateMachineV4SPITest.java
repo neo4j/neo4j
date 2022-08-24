@@ -48,7 +48,7 @@ class TransactionStateMachineV4SPITest {
         var dbSpi = mock(BoltGraphDatabaseServiceSPI.class);
         var databaseName = new NormalizedDatabaseName("morty");
         var databaseId = from(databaseName.name(), UUID.randomUUID());
-        var databaseRef = new DatabaseReference.Internal(databaseName, databaseId);
+        var databaseRef = new DatabaseReference.Internal(databaseName, databaseId, true);
 
         var connection = ConnectionMockFactory.newInstance();
 
@@ -73,7 +73,7 @@ class TransactionStateMachineV4SPITest {
         var tx = mock(BoltTransaction.class);
         var databaseName = new NormalizedDatabaseName("morty");
         var databaseId = from(databaseName.name(), UUID.randomUUID());
-        var databaseRef = new DatabaseReference.Internal(databaseName, databaseId);
+        var databaseRef = new DatabaseReference.Internal(databaseName, databaseId, true);
 
         when(tx.getBookmarkMetadata()).thenReturn(new BookmarkMetadata(42L, databaseId));
         when(dbSpi.getDatabaseReference()).thenReturn(databaseRef);

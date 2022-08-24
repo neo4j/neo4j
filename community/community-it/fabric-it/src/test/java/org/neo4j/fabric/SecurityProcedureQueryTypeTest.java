@@ -29,6 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.fabric.eval.Catalog;
 import org.neo4j.fabric.planning.FabricPlanner;
 import org.neo4j.fabric.planning.QueryType;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -65,7 +66,7 @@ class SecurityProcedureQueryTypeTest {
 
     @Test
     void showCurrentUserShouldBeReadQueryType() {
-        var instance = planner.instance("CALL dbms.showCurrentUser()", MapValue.EMPTY, "system");
+        var instance = planner.instance("CALL dbms.showCurrentUser()", MapValue.EMPTY, "system", Catalog.empty());
         // DBMS mode gives READ
         assertThat(instance.plan().queryType()).isEqualTo(QueryType.READ());
     }

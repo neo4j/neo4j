@@ -70,7 +70,8 @@ public final class TestDatabaseReferenceRepository {
     public static DatabaseReference.Internal internalDatabaseReference(String databaseName, String aliasName) {
         var normalizedAlias = new NormalizedDatabaseName(aliasName);
         var dbId = DatabaseIdFactory.from(databaseName, UUID.nameUUIDFromBytes(databaseName.getBytes(UTF_8)));
-        return new DatabaseReference.Internal(normalizedAlias, dbId);
+        return new DatabaseReference.Internal(
+                normalizedAlias, dbId, Objects.equals(normalizedAlias.name(), dbId.name()));
     }
 
     public static DatabaseReference.External externalDatabaseReference(String databaseName) {
@@ -90,7 +91,7 @@ public final class TestDatabaseReferenceRepository {
 
     public static class Fixed implements DatabaseReferenceRepository {
         private static final DatabaseReference SYSTEM_DATABASE_REFERENCE = new DatabaseReference.Internal(
-                new NormalizedDatabaseName(SYSTEM_DATABASE_NAME), NAMED_SYSTEM_DATABASE_ID);
+                new NormalizedDatabaseName(SYSTEM_DATABASE_NAME), NAMED_SYSTEM_DATABASE_ID, true);
 
         private final Map<NormalizedDatabaseName, DatabaseReference> databaseReferences;
 
@@ -125,6 +126,11 @@ public final class TestDatabaseReferenceRepository {
         @Override
         public Set<DatabaseReference.External> getExternalDatabaseReferences() {
             return getDatabaseReferences(DatabaseReference.External.class);
+        }
+
+        @Override
+        public Set<DatabaseReference.Composite> getCompositeDatabaseReferences() {
+            return Set.of();
         }
 
         private <T extends DatabaseReference> Set<T> getDatabaseReferences(Class<T> type) {
