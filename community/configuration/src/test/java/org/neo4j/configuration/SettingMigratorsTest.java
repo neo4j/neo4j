@@ -93,7 +93,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_paramete
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_parameter_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_query_plan;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_threshold;
-import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_transaction_id;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_transaction_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_transactions_level;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
@@ -666,7 +665,6 @@ class SettingMigratorsTest {
 
         Config config = Config.newBuilder().fromFile(confFile).build();
 
-        assertTrue(config.get(log_queries_transaction_id));
         assertEquals(Duration.ofDays(7), config.get(log_queries_transaction_threshold));
         assertEquals(INFO, config.get(log_queries_transactions_level));
         assertEquals(Duration.ofMinutes(8), config.get(log_queries_threshold));

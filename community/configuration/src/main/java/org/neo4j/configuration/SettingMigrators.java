@@ -77,7 +77,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_paramete
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_parameter_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_query_plan;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_threshold;
-import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_transaction_id;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_transaction_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_transactions_level;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
@@ -626,7 +625,6 @@ public final class SettingMigrators {
 
         private void migrateQueryLoggingSettings(
                 Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migrateSettingNameChange(values, log, "dbms.logs.query.transaction_id.enabled", log_queries_transaction_id);
             migrateSettingNameChange(
                     values, log, "dbms.logs.query.transaction.threshold", log_queries_transaction_threshold);
             migrateSettingNameChange(

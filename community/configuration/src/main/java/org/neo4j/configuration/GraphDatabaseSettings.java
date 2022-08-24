@@ -656,13 +656,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
         INFO,
         VERBOSE
     }
-
-    @Description("Log transaction ID for the executed queries.")
-    public static final Setting<Boolean> log_queries_transaction_id = newBuilder(
-                    "db.logs.query.transaction_id.enabled", BOOL, false)
-            .dynamic()
-            .build();
-
     @Description("Log the start and end of a transaction. Valid values are 'OFF', 'INFO', or 'VERBOSE'.\n"
             + "OFF:  no logging.\n"
             + "INFO: log start and end of transactions that take longer than the configured threshold, db.logs.query.transaction.threshold.\n"
