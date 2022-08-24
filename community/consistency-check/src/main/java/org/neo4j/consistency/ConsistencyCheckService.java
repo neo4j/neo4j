@@ -92,7 +92,7 @@ public class ConsistencyCheckService {
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
     private final boolean verbose;
-    private final Path reportDir;
+    private final Path reportPath;
     private final ConsistencyFlags consistencyFlags;
     private final PageCacheTracer pageCacheTracer;
     private final CursorContextFactory contextFactory;
@@ -124,7 +124,7 @@ public class ConsistencyCheckService {
             FileSystemAbstraction fileSystem,
             PageCache pageCache,
             boolean verbose,
-            Path reportDir,
+            Path reportPath,
             ConsistencyFlags consistencyFlags,
             PageCacheTracer pageCacheTracer,
             CursorContextFactory contextFactory,
@@ -137,7 +137,7 @@ public class ConsistencyCheckService {
         this.fileSystem = fileSystem;
         this.pageCache = pageCache;
         this.verbose = verbose;
-        this.reportDir = reportDir;
+        this.reportPath = reportPath;
         this.consistencyFlags = consistencyFlags;
         this.pageCacheTracer = pageCacheTracer;
         this.contextFactory = contextFactory;
@@ -154,7 +154,7 @@ public class ConsistencyCheckService {
                 fileSystem,
                 pageCache,
                 verbose,
-                reportDir,
+                reportPath,
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
@@ -171,7 +171,7 @@ public class ConsistencyCheckService {
                 fileSystem,
                 pageCache,
                 verbose,
-                reportDir,
+                reportPath,
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
@@ -188,7 +188,7 @@ public class ConsistencyCheckService {
                 fileSystem,
                 pageCache,
                 verbose,
-                reportDir,
+                reportPath,
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
@@ -205,7 +205,7 @@ public class ConsistencyCheckService {
                 fileSystem,
                 pageCache,
                 verbose,
-                reportDir,
+                reportPath,
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
@@ -222,7 +222,7 @@ public class ConsistencyCheckService {
                 fileSystem,
                 pageCache,
                 verbose,
-                reportDir,
+                reportPath,
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
@@ -239,7 +239,7 @@ public class ConsistencyCheckService {
                 fileSystem,
                 pageCache,
                 verbose,
-                reportDir,
+                reportPath,
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
@@ -256,7 +256,7 @@ public class ConsistencyCheckService {
                 fileSystem,
                 pageCache,
                 verbose,
-                reportDir,
+                reportPath,
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
@@ -273,7 +273,7 @@ public class ConsistencyCheckService {
                 fileSystem,
                 pageCache,
                 verbose,
-                reportDir,
+                reportPath,
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
@@ -290,14 +290,14 @@ public class ConsistencyCheckService {
                 fileSystem,
                 pageCache,
                 verbose,
-                reportDir,
+                reportPath,
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
                 memoryTracker);
     }
 
-    public ConsistencyCheckService with(Path reportDir) {
+    public ConsistencyCheckService with(Path reportPath) {
         return new ConsistencyCheckService(
                 timestamp,
                 layout,
@@ -307,7 +307,7 @@ public class ConsistencyCheckService {
                 fileSystem,
                 pageCache,
                 verbose,
-                reportDir,
+                reportPath,
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
@@ -324,7 +324,7 @@ public class ConsistencyCheckService {
                 fileSystem,
                 pageCache,
                 verbose,
-                reportDir,
+                reportPath,
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
@@ -341,7 +341,7 @@ public class ConsistencyCheckService {
                 fileSystem,
                 pageCache,
                 verbose,
-                reportDir,
+                reportPath,
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
@@ -358,7 +358,7 @@ public class ConsistencyCheckService {
                 fileSystem,
                 pageCache,
                 verbose,
-                reportDir,
+                reportPath,
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
@@ -622,10 +622,10 @@ public class ConsistencyCheckService {
     }
 
     private Path chooseReportFile(Config config) {
-        final var path = Objects.requireNonNullElse(reportDir, defaultReportDir(config))
+        final var path = Objects.requireNonNullElse(reportPath, defaultReportDir(config))
                 .toAbsolutePath()
                 .normalize();
-        return path.resolve(defaultLogFileName(timestamp));
+        return path.getFileName().endsWith(".report") ? path : path.resolve(defaultLogFileName(timestamp));
     }
 
     private static Path defaultReportDir(Config config) {
