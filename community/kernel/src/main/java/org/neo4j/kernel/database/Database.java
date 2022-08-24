@@ -977,7 +977,10 @@ public class Database extends AbstractDatabase {
 
     @Override
     protected void deleteDatabaseFilesOnDrop() {
-        deleteDatabaseFiles(List.of(databaseLayout.databaseDirectory(), databaseLayout.getTransactionLogsDirectory()));
+        deleteDatabaseFiles(List.of(
+                databaseLayout.databaseDirectory(),
+                databaseLayout.getTransactionLogsDirectory(),
+                databaseLayout.getScriptDirectory()));
     }
 
     private void deleteDatabaseFiles(List<Path> files) {

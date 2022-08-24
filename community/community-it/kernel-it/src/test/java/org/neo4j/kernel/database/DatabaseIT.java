@@ -145,6 +145,7 @@ class DatabaseIT {
 
         assertFalse(fs.fileExists(databaseLayout.databaseDirectory()));
         assertFalse(fs.fileExists(databaseLayout.getTransactionLogsDirectory()));
+        assertFalse(fs.fileExists(databaseLayout.getScriptDirectory()));
     }
 
     @Test
@@ -167,6 +168,7 @@ class DatabaseIT {
 
         assertFalse(fs.fileExists(databaseLayout.databaseDirectory()));
         assertFalse(fs.fileExists(databaseLayout.getTransactionLogsDirectory()));
+        assertFalse(fs.fileExists(databaseLayout.getScriptDirectory()));
     }
 
     @Test
