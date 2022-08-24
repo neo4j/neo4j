@@ -272,6 +272,7 @@ trait IndexMatch {
   def propertyPredicates: Seq[IndexCompatiblePredicate]
   def indexDescriptor: IndexDescriptor
   def predicateSet(newPredicates: Seq[IndexCompatiblePredicate], exactPredicatesCanGetValue: Boolean): PredicateSet
+  def variableName: String
 }
 
 /**

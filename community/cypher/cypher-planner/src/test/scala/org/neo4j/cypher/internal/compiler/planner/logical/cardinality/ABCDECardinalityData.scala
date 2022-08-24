@@ -94,6 +94,7 @@ trait ABCDECardinalityData extends CardinalityIntegrationTestSupport {
   val B_T2_C_sel = 0.0031
 
   val C_T1_D_sel = 0.02
+  val C_T1_C_sel = 0.05
 
   val D_T1_C_sel = 0.3
   val D_T2_C_sel = 0.07
@@ -128,7 +129,7 @@ trait ABCDECardinalityData extends CardinalityIntegrationTestSupport {
 
   val C_T1_A = 0
   val C_T1_B = 0
-  val C_T1_C = 0
+  val C_T1_C = C * C * C_T1_C_sel
   val C_T1_D = C * D * C_T1_D_sel
   val C_T1_E = 0
   val C_T2_A = 0

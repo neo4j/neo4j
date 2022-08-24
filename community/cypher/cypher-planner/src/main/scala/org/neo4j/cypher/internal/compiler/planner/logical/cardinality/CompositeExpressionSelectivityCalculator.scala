@@ -169,7 +169,7 @@ case class CompositeExpressionSelectivityCalculator(
     }
 
     val selectivitiesForPredicates = indexMatches
-      .groupBy(_.indexDescriptor)
+      .groupBy(im => (im.indexDescriptor, im.variableName))
       .values
       .flatMap { indexMatches =>
         // If we have multiple index matches for the same index,
@@ -218,7 +218,7 @@ case class CompositeExpressionSelectivityCalculator(
       notCoveredPredicates.map(singleExpressionSelectivityCalculator(_, labelInfo, relTypeInfo)(semanticTable))
     // Use composite index selectivities for all covered predicates.
     val coveredPredicatesSelectivities =
-      compositeDisjointPredicatesWithSelectivities.map(selectivityForCompositeIndexPredicates(_, combiner))
+      compositeDisjointPredicatesWithSelectivities.toSeq.map(selectivityForCompositeIndexPredicates(_, combiner))
 
     combiner.andTogetherSelectivities(notCoveredPredicatesSelectivities ++ coveredPredicatesSelectivities).getOrElse(
       Selectivity.ONE

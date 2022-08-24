@@ -171,6 +171,10 @@ abstract class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunS
     expectCardinality(C * CpropBarExists * CpropBarUnique)
   }
 
+  test("MATCH (c1:C)-[:T1]->(c2:C) WHERE c1.prop = 42 AND c1.bar = 43 AND c2.prop = 42 AND c2.bar = 42") {
+    expectCardinality(C_T1_C * CpropBarExists * CpropBarUnique * CpropBarExists * CpropBarUnique)
+  }
+
   test("MATCH (c:C) WHERE c.prop = 42 AND c.bar IS NOT NULL") {
     expectCardinality(C * CpropBarExists * sqrt(CpropBarUnique))
   }
