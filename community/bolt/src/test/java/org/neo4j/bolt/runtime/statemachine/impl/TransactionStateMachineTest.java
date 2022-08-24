@@ -207,7 +207,7 @@ class TransactionStateMachineTest
     }
 
     @Test
-    void shouldResetInAutoCommitTransactionWhileStatementIsRunningWhenValidated() throws Exception
+    void shouldNotResetInAutoCommitTransactionWhileStatementIsRunningWhenValidated() throws Exception
     {
         BoltTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -227,15 +227,14 @@ class TransactionStateMachineTest
         stateMachine.validateTransaction();
 
         assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
-        assertNull( stateMachine.ctx.currentTransaction );
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).isEmpty();
+        assertNotNull( stateMachine.ctx.currentTransaction );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).isNotEmpty();
 
         verify( transaction ).getReasonIfTerminated();
-        verify( transaction ).rollback();
     }
 
     @Test
-    void shouldResetInExplicitTransactionUponTxBeginWhenValidated() throws Exception
+    void shouldNotResetInExplicitTransactionUponTxBeginWhenValidated() throws Exception
     {
         BoltTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -249,16 +248,15 @@ class TransactionStateMachineTest
         // verify transaction, which is timed out
         stateMachine.validateTransaction();
 
-        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
-        assertNull( stateMachine.ctx.currentTransaction );
+        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.EXPLICIT_TRANSACTION );
+        assertNotNull( stateMachine.ctx.currentTransaction );
         assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).isEmpty();
 
         verify( transaction ).getReasonIfTerminated();
-        verify( transaction ).rollback();
     }
 
     @Test
-    void shouldResetInExplicitTransactionWhileStatementIsRunningWhenValidated() throws Exception
+    void shouldNotResetInExplicitTransactionWhileStatementIsRunningWhenValidated() throws Exception
     {
         BoltTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -274,12 +272,11 @@ class TransactionStateMachineTest
         // verify transaction, which is timed out
         stateMachine.validateTransaction();
 
-        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
-        assertNull( stateMachine.ctx.currentTransaction );
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).isEmpty();
+        assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.EXPLICIT_TRANSACTION );
+        assertNotNull( stateMachine.ctx.currentTransaction );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).isNotEmpty();
 
         verify( transaction ).getReasonIfTerminated();
-        verify( transaction ).rollback();
     }
 
     @Test
