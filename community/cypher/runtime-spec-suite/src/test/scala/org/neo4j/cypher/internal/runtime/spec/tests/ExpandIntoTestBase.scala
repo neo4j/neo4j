@@ -957,6 +957,34 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
     runtimeResult should beColumns("a", "b").withSingleRow(a, b)
   }
 
+  test("two connected sparse nodes where one node appears twice IV") {
+    // given
+    val (a, b) = given {
+      val a = tx.createNode(Label.label("A"))
+      val ab = tx.createNode(Label.label("A"), Label.label("B"))
+      val ba = tx.createNode(Label.label("B"), Label.label("A"))
+      makeDense(a)
+
+      a.createRelationshipTo(tx.createNode(Label.label("FOO")), RelationshipType.withName("T"))
+      ab.createRelationshipTo(ba, RelationshipType.withName("T"))
+      (ab, ba)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .expandInto("(a)-[r:T]->(b)")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B", "a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a", "b").withSingleRow(a, b)
+  }
+
   def makeDense(node: Node): Unit = {
     (1 to 51).foreach(_ =>
       node.createRelationshipTo(tx.createNode(Label.label("IGNORE")), RelationshipType.withName("IGNORE"))

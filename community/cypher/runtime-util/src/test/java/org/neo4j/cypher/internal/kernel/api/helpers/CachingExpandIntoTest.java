@@ -178,8 +178,8 @@ class CachingExpandIntoTest
         findConnections( expandInto, cursor, 43, 42, 4 );
         findConnections( expandInto, cursor, 42, 43, 5 );
 
-        // Then, only call once for 42 and once for 43
-        verify( cursor, times( 4 ) ).degree( any( RelationshipSelection.class ) );
+        // Then, degree will be cached during expansion
+        verify( cursor, times( 3 ) ).degree( any( RelationshipSelection.class ) );
 
         assertReleasesHeap( expandInto );
     }
@@ -279,9 +279,11 @@ class CachingExpandIntoTest
 
     private void findConnections( CachingExpandInto expandInto, NodeCursor cursor, long from, long to, int... types )
     {
+        RelationshipTraversalCursor traversal = mock( RelationshipTraversalCursor.class );
+        //NOTE: this needs to be the same as the decree in mockCursor
+        when( traversal.next() ).thenReturn( true, true, true, true, true, true, true, false );
         RelationshipTraversalCursor relationships =
-                expandInto.connectingRelationships( cursor, mock( RelationshipTraversalCursor.class ), from,
-                       types, to );
+                expandInto.connectingRelationships( cursor, traversal, from, types, to );
 
         // While we traverse the relationships, we estimate with the cursor, which references the CachingExpandInto
         assertEstimatesCorrectly( relationships );
