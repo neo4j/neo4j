@@ -70,6 +70,7 @@ import org.neo4j.cypher.internal.expressions.NumberLiteral
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
@@ -107,6 +108,7 @@ import org.neo4j.cypher.internal.expressions.functions.Id
 import org.neo4j.cypher.internal.expressions.functions.Length3_5
 import org.neo4j.cypher.internal.expressions.functions.Max
 import org.neo4j.cypher.internal.expressions.functions.Min
+import org.neo4j.cypher.internal.expressions.functions.Nodes
 import org.neo4j.cypher.internal.expressions.functions.Sum
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.InputPosition
@@ -403,6 +405,10 @@ trait AstConstructionTestSupport extends CypherTestSupport {
       RelationshipPattern(None, Seq.empty, None, None, BOTH)(pos),
       NodePattern(Some(nodeVar2), Seq.empty, None, None)(pos)
     )(pos))(pos))(Set.empty, "", "")
+
+  def nodes(p: PathExpression): FunctionInvocation = {
+    FunctionInvocation(FunctionName(Nodes.name)(p.position), p)(p.position)
+  }
 
   def query(part: QueryPart): Query =
     Query(None, part)(pos)

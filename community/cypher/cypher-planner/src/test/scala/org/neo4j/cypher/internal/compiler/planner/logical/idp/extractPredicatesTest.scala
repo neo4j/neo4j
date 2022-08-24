@@ -135,6 +135,25 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     solvedPredicates shouldBe empty
   }
 
+  test("p=(n)-[rel:*1..3]->(m) WHERE ALL (x in nodes(p) WHERE x = n or x = m)") {
+
+    val pathExpression = PathExpression(
+      NodePathStep(
+        varFor("n"),
+        MultiRelationshipPathStep(varFor("rel"), SemanticDirection.OUTGOING, Some(varFor("m")), NilPathStep()(pos))(pos))(pos))(pos)
+
+    val rewrittenPredicate = AllIterablePredicate(
+      FilterScope(varFor("x"), Some(ors(equals(varFor("x"), varFor("n")), equals(varFor("x"), varFor("m")))))(pos),
+      function("nodes", pathExpression))(pos)
+
+    val (nodePredicates, relationshipPredicates, solvedPredicates) =
+      extractPredicates(Seq(rewrittenPredicate), "rel", "rel_RELS", "rel_NODES", "n", "m")
+
+    nodePredicates shouldBe empty
+    relationshipPredicates shouldBe empty
+    solvedPredicates shouldBe empty
+  }
+
   test("p = (n)-[r*1]->() WHERE ALL (x IN relationships(p) WHERE length(p) = 1)") {
     val pathExpression = PathExpression(
       NodePathStep(
