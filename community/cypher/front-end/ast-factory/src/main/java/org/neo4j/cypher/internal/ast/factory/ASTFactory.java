@@ -524,6 +524,14 @@ public interface ASTFactory<
     List<DATABASE_SCOPE> databaseScopes(
             POS p, List<SimpleEither<String, PARAMETER>> databaseNames, ScopeType scopeType);
 
+    // Server Administration Commands
+
+    ADMINISTRATION_COMMAND dropServer(POS p, SimpleEither<String, PARAMETER> serverName);
+
+    ADMINISTRATION_COMMAND showServers(POS p, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where);
+
+    ADMINISTRATION_COMMAND deallocateServers(POS p, List<SimpleEither<String, PARAMETER>> serverNames);
+
     // Database Administration Commands
 
     ADMINISTRATION_COMMAND createDatabase(

@@ -1473,7 +1473,33 @@ class PrettifierIT extends CypherFunSuite {
         |    ORDER BY name ASCENDING
         |    SKIP 1
         |    LIMIT 1
-        |    WHERE name = "neo4j"""".stripMargin
+        |    WHERE name = "neo4j"""".stripMargin,
+    "drop server 'abc'" ->
+      """DROP SERVER "abc"""",
+    "drop server $abc" ->
+      "DROP SERVER $abc",
+    "deallocate databases from server 'abc'" ->
+      """DEALLOCATE DATABASES FROM SERVER "abc"""",
+    "deallocate database from server $name, 'abc'" ->
+      """DEALLOCATE DATABASES FROM SERVERS $name, "abc"""",
+    "show servers" ->
+      "SHOW SERVERS",
+    "show servers YIELD * where name = 'serverId' Return *" ->
+      """SHOW SERVERS
+        |  YIELD *
+        |    WHERE name = "serverId"
+        |  RETURN *""".stripMargin,
+    "show servers YIELD * Return DISTINCT name" ->
+      """SHOW SERVERS
+        |  YIELD *
+        |  RETURN DISTINCT name""".stripMargin,
+    "show servers yield name order by name skip 1 limit 1 where name='serverId'" ->
+      """SHOW SERVERS
+        |  YIELD name
+        |    ORDER BY name ASCENDING
+        |    SKIP 1
+        |    LIMIT 1
+        |    WHERE name = "serverId"""".stripMargin
   ) ++ privilegeTests()
 
   def privilegeTests(): Seq[(String, String)] = {

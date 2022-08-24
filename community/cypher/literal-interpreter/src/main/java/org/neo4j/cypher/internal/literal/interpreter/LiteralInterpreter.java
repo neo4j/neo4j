@@ -137,7 +137,7 @@ public class LiteralInterpreter
             List<NULL> order,
             NULL orderPos,
             Object skip,
-            NULL skipPostion,
+            NULL skipPosition,
             Object limit,
             NULL limitPosition) {
         throw new UnsupportedOperationException("newReturnClause is not a literal");
@@ -812,6 +812,23 @@ public class LiteralInterpreter
     @Override
     public List<NULL> databaseScopes(NULL p, List<SimpleEither<String, Object>> databaseNames, ScopeType scopeType) {
         throw new UnsupportedOperationException("databaseScopes is not a literal");
+    }
+
+    // Server commands
+
+    @Override
+    public NULL dropServer(NULL p, SimpleEither<String, Object> serverName) {
+        throw new UnsupportedOperationException("dropServer is not a literal");
+    }
+
+    @Override
+    public NULL showServers(NULL p, NULL yieldExpr, NULL returnWithoutGraph, NULL aNull) {
+        throw new UnsupportedOperationException("showServers is not a literal");
+    }
+
+    @Override
+    public NULL deallocateServers(NULL p, List<SimpleEither<String, Object>> serverNames) {
+        throw new UnsupportedOperationException("deallocateServers is not a literal");
     }
 
     // Database commands

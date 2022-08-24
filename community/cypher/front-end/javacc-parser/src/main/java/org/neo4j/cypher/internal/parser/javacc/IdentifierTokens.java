@@ -58,6 +58,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DATA;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DATABASE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DATABASES;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DBMS;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DEALLOCATE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DEFAULT_TOKEN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DEFINED;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DELETE;
@@ -248,6 +249,7 @@ public class IdentifierTokens {
             DATABASE,
             DATABASES,
             DBMS,
+            DEALLOCATE,
             DEFAULT_TOKEN,
             DEFINED,
             DELETE,

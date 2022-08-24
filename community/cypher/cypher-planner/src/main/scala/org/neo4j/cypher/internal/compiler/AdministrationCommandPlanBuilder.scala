@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.ast.CreateUserAction
 import org.neo4j.cypher.internal.ast.DatabasePrivilege
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DbmsPrivilege
+import org.neo4j.cypher.internal.ast.DeallocateServers
 import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DropAliasAction
@@ -52,6 +53,7 @@ import org.neo4j.cypher.internal.ast.DropDatabaseAction
 import org.neo4j.cypher.internal.ast.DropDatabaseAlias
 import org.neo4j.cypher.internal.ast.DropRole
 import org.neo4j.cypher.internal.ast.DropRoleAction
+import org.neo4j.cypher.internal.ast.DropServer
 import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DropUserAction
 import org.neo4j.cypher.internal.ast.GrantPrivilege
@@ -78,6 +80,7 @@ import org.neo4j.cypher.internal.ast.RevokeGrantType
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.RevokeType
+import org.neo4j.cypher.internal.ast.ServerManagementAction
 import org.neo4j.cypher.internal.ast.SetDatabaseAccessAction
 import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
@@ -92,6 +95,8 @@ import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowRoleAction
 import org.neo4j.cypher.internal.ast.ShowRoles
+import org.neo4j.cypher.internal.ast.ShowServerAction
+import org.neo4j.cypher.internal.ast.ShowServers
 import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.ShowUserPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsers
@@ -775,6 +780,28 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             showAliases.yields,
             showAliases.returns
           ))
+
+      case c @ DropServer(name) =>
+        val assertAllowed = plans.AssertAllowedDbmsActions(ServerManagementAction)
+        Some(plans.LogSystemCommand(plans.DropServer(assertAllowed, name), prettifier.asString(c)))
+
+      case showServers: ShowServers =>
+        val assertAllowed = plans.AssertAllowedDbmsActions(ShowServerAction)
+        Some(plans.ShowServers(
+          assertAllowed,
+          showServers.defaultColumns.useAllColumns,
+          showServers.defaultColumnNames,
+          showServers.yields,
+          showServers.returns
+        ))
+
+      case c @ DeallocateServers(names) =>
+        val plan = names.foldLeft(
+          plans.AssertAllowedDbmsActions(ServerManagementAction).asInstanceOf[plans.AdministrationCommandLogicalPlan]
+        ) {
+          case (source, server) => plans.DeallocateServer(source, server)
+        }
+        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!
       case Query(SingleQuery(Seq(

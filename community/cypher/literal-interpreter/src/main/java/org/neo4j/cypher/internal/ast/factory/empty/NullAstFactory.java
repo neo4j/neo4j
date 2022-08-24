@@ -1136,6 +1136,21 @@ public class NullAstFactory
     }
 
     @Override
+    public NULL dropServer(NULL p, SimpleEither<String, NULL> serverName) {
+        return null;
+    }
+
+    @Override
+    public NULL showServers(NULL p, NULL yieldExpr, NULL returnWithoutGraph, NULL aNull) {
+        return null;
+    }
+
+    @Override
+    public NULL deallocateServers(NULL p, List<SimpleEither<String, NULL>> serverNames) {
+        return null;
+    }
+
+    @Override
     public NULL createDatabase(
             NULL p,
             boolean replace,

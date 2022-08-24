@@ -60,6 +60,7 @@ import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.DatabasePrivilege
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DbmsPrivilege
+import org.neo4j.cypher.internal.ast.DeallocateServers
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.DefaultGraphScope
 import org.neo4j.cypher.internal.ast.Delete
@@ -71,6 +72,7 @@ import org.neo4j.cypher.internal.ast.DropDatabase
 import org.neo4j.cypher.internal.ast.DropDatabaseAlias
 import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.DropRole
+import org.neo4j.cypher.internal.ast.DropServer
 import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.ElementQualifier
@@ -160,6 +162,7 @@ import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
+import org.neo4j.cypher.internal.ast.ShowServers
 import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.ast.ShowUserPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsers
@@ -708,6 +711,25 @@ case class Prettifier(
       case x @ ShowAliases(yields, _) =>
         val (y: String, r: String) = showClausesAsString(yields)
         s"${x.name}$y$r"
+
+      case x @ DropServer(serverName) =>
+        val name = serverName match {
+          case Left(s)          => expr.quote(s)
+          case Right(parameter) => expr(parameter)
+        }
+        s"${x.name} $name"
+
+      case x @ ShowServers(yields, _) =>
+        val (y: String, r: String) = showClausesAsString(yields)
+        s"${x.name}$y$r"
+
+      case x @ DeallocateServers(serverNames) =>
+        val commandString = if (serverNames.length > 1) s"${x.name}S" else x.name
+        val names = serverNames.map {
+          case Left(s)          => expr.quote(s)
+          case Right(parameter) => expr(parameter)
+        }
+        s"$commandString ${names.mkString(", ")}"
     }
     useString + commandString
   }

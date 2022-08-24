@@ -394,6 +394,7 @@ TOKEN [IGNORE_CASE] :
     | < DATABASE: "DATABASE">
     | < DATABASES: "DATABASES">
     | < DBMS: "DBMS">
+    | < DEALLOCATE: "DEALLOCATE" >
     | < DEFAULT_TOKEN: "DEFAULT">
     | < DEFINED: "DEFINED">
     | < DELETE: "DELETE" >
@@ -3223,6 +3224,7 @@ STATEMENT_WITH_GRAPH CommandWithUseGraph( USE_CLAUSE useClause ) throws Exceptio
         | s=GrantCommand()
         | s=StartDatabase()
         | s=StopDatabase()
+        | s=DeallocateDatabaseFromServers()
     )
     {
         return astFactory.useGraph( s, useClause );
@@ -3243,6 +3245,7 @@ STATEMENT_WITH_GRAPH DropCommand() throws Exception:
         | s=DropConstraint( start )
         | s=DropIndex( start )
         | s=DropAlias( start )
+        | s=DropServer( start )
     )
     {
         return s;
@@ -3304,6 +3307,7 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) :
         | statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.ALL )
         | clauses=ShowTransactions( start )
         | statement=ShowAliases( start, useClause )
+        | statement=ShowServers( start, useClause )
         | statement=ShowPrivileges( start, useClause )
         | <ROLE> statement=ShowRolePrivileges( start, useClause )
 
@@ -4264,6 +4268,50 @@ ADMINISTRATION_COMMAND RevokeCommand() throws Exception:
     }
 }
 
+// Server commands
+
+ADMINISTRATION_COMMAND DropServer( Token start ):
+{
+    SimpleEither<String, PARAMETER> serverName = null;
+}
+{
+    <SERVER> serverName=StringOrParameter()
+    {
+        return astFactory.dropServer( pos( start ), serverName );
+    }
+}
+
+STATEMENT_WITH_GRAPH ShowServers( Token start, USE_CLAUSE useClause ):
+{
+    YIELD yield = null;
+    RETURN_CLAUSE returnClause = null;
+    WHERE where = null;
+}
+{
+    <SERVERS>
+    (
+        ( yield = YieldClause() ( returnClause = ReturnClause() )? )
+        | ( where=WhereClause() )
+    )?
+    {
+        return astFactory.useGraph( astFactory.showServers( pos( start ), yield, returnClause, where ), useClause );
+    }
+}
+
+ADMINISTRATION_COMMAND DeallocateDatabaseFromServers():
+{
+    Token start;
+    List<SimpleEither<String, PARAMETER>> serverNames = new ArrayList<>();
+    SimpleEither<String, PARAMETER> entry;
+}
+{
+    start=<DEALLOCATE> ( <DATABASE> | <DATABASES> ) <FROM> ( <SERVER> | <SERVERS> )
+    entry=StringOrParameter() { serverNames.add( entry ); } ( "," entry=StringOrParameter() { serverNames.add( entry ); } )*
+    {
+        return astFactory.deallocateServers( pos( start ), serverNames );
+    }
+}
+
 // Role commands
 
 ADMINISTRATION_COMMAND CreateRole( Token start, boolean replace ):
@@ -4508,30 +4556,6 @@ EXPRESSION passwordExpression():
             return astFactory.passwordExpression( parameter );
         }
     }
-}
-
-Token StringToken():
-{
-   Token stringLiteral = null;
-}
-{
-    (
-        stringLiteral=<STRING_LITERAL1>
-        | stringLiteral=<STRING_LITERAL2>
-    )
-    {
-        return stringLiteral;
-    }
-}
-
-SimpleEither<String, PARAMETER> StringOrParameter():
-{
-    Token token = null;
-    PARAMETER parameter = null;
-}
-{
-    token=StringToken() { return SimpleEither.<String, PARAMETER>left( token.image ); }
-    | parameter=Parameter( ParameterType.STRING ) { return SimpleEither.<String, PARAMETER>right( parameter ); }
 }
 
 Optional<Boolean> PasswordChangeRequired( Token start, Optional<Boolean> changeRequired ) throws Exception:
@@ -5613,6 +5637,30 @@ List<String> TransactionIdStringList():
     }
 }
 
+Token StringToken():
+{
+   Token stringLiteral = null;
+}
+{
+    (
+        stringLiteral=<STRING_LITERAL1>
+        | stringLiteral=<STRING_LITERAL2>
+    )
+    {
+        return stringLiteral;
+    }
+}
+
+SimpleEither<String, PARAMETER> StringOrParameter():
+{
+    Token token = null;
+    PARAMETER parameter = null;
+}
+{
+    token=StringToken() { return SimpleEither.<String, PARAMETER>left( token.image ); }
+    | parameter=Parameter( ParameterType.STRING ) { return SimpleEither.<String, PARAMETER>right( parameter ); }
+}
+
 SimpleEither<Map<String, EXPRESSION>, PARAMETER> MapOrParameter():
 {
     Map<String, EXPRESSION> map = null;
@@ -5728,6 +5776,7 @@ Token UnescapedSymbolicNameString() :
         | t=<DATABASE>
         | t=<DATABASES>
         | t=<DBMS>
+        | t=<DEALLOCATE>
         | t=<DEFAULT_TOKEN>
         | t=<DEFINED>
         | t=<DELETE>

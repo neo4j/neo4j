@@ -628,6 +628,72 @@ object RevokePrivilege {
     RevokePrivilege(GraphPrivilege(action, scope)(InputPosition.NONE), resource, qualifier, roleNames, revokeType)
 }
 
+// Server commands
+
+final case class DropServer(serverName: Either[String, Parameter])(
+  val position: InputPosition
+) extends WriteAdministrationCommand {
+  override def name: String = "DROP SERVER"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
+final case class ShowServers(override val yieldOrWhere: YieldOrWhere, defaultColumns: DefaultOrAllShowColumns)(
+  val position: InputPosition
+) extends ReadAdministrationCommand {
+  override val defaultColumnSet: List[ShowColumn] = defaultColumns.columns
+
+  override def name: String = "SHOW SERVERS"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+
+  override def withYieldOrWhere(newYieldOrWhere: YieldOrWhere): ShowServers =
+    this.copy(yieldOrWhere = newYieldOrWhere)(position)
+}
+
+object ShowServers {
+
+  def apply(yieldOrWhere: YieldOrWhere)(position: InputPosition): ShowServers = {
+    val showColumns = List(
+      (ShowColumn("serverId")(position), false),
+      (ShowColumn("name")(position), true),
+      (ShowColumn("address")(position), true),
+      (ShowColumn("state")(position), true),
+      (ShowColumn("health")(position), true),
+      (ShowColumn("hosting", CTList(CTString))(position), true),
+      (ShowColumn("requestedHosting", CTList(CTString))(position), false),
+      (ShowColumn("tags", CTList(CTString))(position), false),
+      (ShowColumn("allowedDatabases", CTList(CTString))(position), false),
+      (ShowColumn("deniedDatabases", CTList(CTString))(position), false),
+      (ShowColumn("modeConstraint")(position), false),
+      (ShowColumn("version")(position), false)
+    )
+    val briefShowColumns = showColumns.filter(_._2).map(_._1)
+    val allShowColumns = showColumns.map(_._1)
+
+    val allColumns = yieldOrWhere match {
+      case Some(Left(_)) => true
+      case _             => false
+    }
+    val columns = DefaultOrAllShowColumns(allColumns, briefShowColumns, allShowColumns)
+    ShowServers(yieldOrWhere, columns)(position)
+  }
+}
+
+final case class DeallocateServers(serverNames: Seq[Either[String, Parameter]])(
+  val position: InputPosition
+) extends WriteAdministrationCommand {
+  override def name: String = "DEALLOCATE DATABASES FROM SERVER"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
 // Database commands
 
 final case class ShowDatabase(

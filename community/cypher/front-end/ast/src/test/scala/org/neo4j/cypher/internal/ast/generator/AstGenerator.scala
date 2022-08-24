@@ -90,6 +90,7 @@ import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.DatabaseAction
 import org.neo4j.cypher.internal.ast.DatabasePrivilegeQualifier
 import org.neo4j.cypher.internal.ast.DbmsAction
+import org.neo4j.cypher.internal.ast.DeallocateServers
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.DefaultGraphScope
 import org.neo4j.cypher.internal.ast.Delete
@@ -107,6 +108,7 @@ import org.neo4j.cypher.internal.ast.DropIndexAction
 import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.DropRole
 import org.neo4j.cypher.internal.ast.DropRoleAction
+import org.neo4j.cypher.internal.ast.DropServer
 import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DropUserAction
 import org.neo4j.cypher.internal.ast.DumpData
@@ -233,6 +235,7 @@ import org.neo4j.cypher.internal.ast.ShowRoleAction
 import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
 import org.neo4j.cypher.internal.ast.ShowServerAction
+import org.neo4j.cypher.internal.ast.ShowServers
 import org.neo4j.cypher.internal.ast.ShowTransactionAction
 import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.ast.ShowUserAction
@@ -2172,10 +2175,31 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     _showAliases
   )
 
+  // Server commands
+
+  def _serverCommand: Gen[AdministrationCommand] = oneOf(
+    _dropServer,
+    _deallocateServer,
+    _showServers
+  )
+
+  def _showServers: Gen[ShowServers] = for {
+    yields <- _eitherYieldOrWhere
+  } yield ShowServers(yields)(pos)
+
+  def _dropServer: Gen[DropServer] = for {
+    serverName <- _nameAsEither
+  } yield DropServer(serverName)(pos)
+
+  def _deallocateServer: Gen[DeallocateServers] = for {
+    servers <- _listOfNameOfEither
+  } yield DeallocateServers(servers)(pos)
+
   // Top level administration command
 
   def _adminCommand: Gen[AdministrationCommand] = for {
-    command <- oneOf(_userCommand, _roleCommand, _privilegeCommand, _multiDatabaseCommand, _aliasCommands)
+    command <-
+      oneOf(_userCommand, _roleCommand, _privilegeCommand, _multiDatabaseCommand, _aliasCommands, _serverCommand)
     use <- frequency(1 -> some(_use), 9 -> const(None))
   } yield command.withGraph(use)
 

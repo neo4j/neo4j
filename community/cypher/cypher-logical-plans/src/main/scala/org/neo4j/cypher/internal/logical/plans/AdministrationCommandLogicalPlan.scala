@@ -429,6 +429,24 @@ case class EnsureAliasIsNotRemote(source: AdministrationCommandLogicalPlan, alia
   implicit idGen: IdGen
 ) extends DatabaseAdministrationLogicalPlan(Some(source))
 
+case class DropServer(
+  source: AdministrationCommandLogicalPlan,
+  serverName: Either[String, Parameter]
+)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
+
+case class ShowServers(
+  source: AdministrationCommandLogicalPlan,
+  verbose: Boolean,
+  override val returnColumns: List[String],
+  yields: Option[Yield],
+  returns: Option[Return]
+)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
+
+case class DeallocateServer(
+  source: AdministrationCommandLogicalPlan,
+  serverNames: Either[String, Parameter]
+)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
+
 case class EnsureValidNumberOfDatabases(source: CreateDatabase)(implicit idGen: IdGen)
     extends DatabaseAdministrationLogicalPlan(Some(source))
 

@@ -99,6 +99,7 @@ import org.neo4j.cypher.internal.ast.DatabaseResource
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DbmsAction
 import org.neo4j.cypher.internal.ast.DbmsPrivilege
+import org.neo4j.cypher.internal.ast.DeallocateServers
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.DefaultGraphScope
 import org.neo4j.cypher.internal.ast.Delete
@@ -121,6 +122,7 @@ import org.neo4j.cypher.internal.ast.DropNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.DropRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.DropRole
 import org.neo4j.cypher.internal.ast.DropRoleAction
+import org.neo4j.cypher.internal.ast.DropServer
 import org.neo4j.cypher.internal.ast.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DropUserAction
@@ -248,6 +250,7 @@ import org.neo4j.cypher.internal.ast.ShowRoleAction
 import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
 import org.neo4j.cypher.internal.ast.ShowServerAction
+import org.neo4j.cypher.internal.ast.ShowServers
 import org.neo4j.cypher.internal.ast.ShowTransactionAction
 import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.ast.ShowUserAction
@@ -2057,6 +2060,25 @@ class Neo4jASTFactory(query: String)
     }
     list
   }
+
+  // Server commands
+
+  override def dropServer(p: InputPosition, serverName: SimpleEither[String, Parameter]): DropServer =
+    DropServer(serverName.asScala)(p)
+
+  override def showServers(
+    p: InputPosition,
+    yieldExpr: Yield,
+    returnWithoutGraph: Return,
+    where: Where
+  ): ShowServers =
+    ShowServers(yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
+
+  override def deallocateServers(
+    p: InputPosition,
+    serverNames: util.List[SimpleEither[String, Parameter]]
+  ): DeallocateServers =
+    DeallocateServers(serverNames.asScala.map(_.asScala).toList)(p)
 
   // Database commands
 
