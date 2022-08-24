@@ -64,7 +64,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.log_queries;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_detailed_time_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_early_raw_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_obfuscate_literals;
-import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_page_detail_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_parameter_full_entities;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_parameter_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_query_plan;
@@ -643,8 +642,6 @@ public final class SettingMigrators {
                     values, log, "dbms.logs.query.parameter_logging_enabled", log_queries_parameter_logging_enabled);
             migrateSettingNameChange(
                     values, log, "dbms.logs.query.parameter_full_entities", log_queries_parameter_full_entities);
-            migrateSettingNameChange(
-                    values, log, "dbms.logs.query.page_logging_enabled", log_queries_page_detail_logging_enabled);
             migrateSettingNameChange(values, log, "dbms.logs.query.obfuscate_literals", log_queries_obfuscate_literals);
             migrateSettingNameChange(
                     values, log, "dbms.logs.query.max_parameter_length", query_log_max_parameter_length);

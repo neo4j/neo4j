@@ -19,6 +19,25 @@
  */
 package org.neo4j.configuration;
 
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
+
+import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.HttpConnector;
+import org.neo4j.configuration.connectors.HttpsConnector;
+import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.io.ByteUnit;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.utils.TestDirectory;
+
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -71,7 +90,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.log_queries;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_detailed_time_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_early_raw_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_obfuscate_literals;
-import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_page_detail_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_parameter_full_entities;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_parameter_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_query_plan;
@@ -124,23 +142,6 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.fs.FileSystemUtils.pathToString;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.connectors.HttpsConnector;
-import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.io.ByteUnit;
-import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
 class SettingMigratorsTest {
@@ -676,7 +677,6 @@ class SettingMigratorsTest {
         assertTrue(config.get(log_queries_query_plan));
         assertFalse(config.get(log_queries_parameter_logging_enabled));
         assertTrue(config.get(log_queries_parameter_full_entities));
-        assertFalse(config.get(log_queries_page_detail_logging_enabled));
         assertTrue(config.get(log_queries_obfuscate_literals));
         assertEquals(9, config.get(query_log_max_parameter_length));
         assertEquals(VERBOSE, config.get(log_queries));
