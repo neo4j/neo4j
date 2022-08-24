@@ -20,12 +20,17 @@
 package org.neo4j.graphdb.traversal;
 
 import java.util.function.Predicate;
+import org.neo4j.annotations.api.PublicApi;
 
 import org.neo4j.graphdb.Path;
 
 /**
- * Copied from kernel package so that we can hide kernel from the public API.
+ * A `BranchCollisionPolicy` defines when a collision is detected and accepted in a bidirectional traversal, see {@link BidirectionalTraversalDescription}.
+ *
+ * Given an evaluator and a path predicate, a `BranchCollisionPolicy` will create a `BranchCollisionDetector`, which will detect collisions between two
+ * traversers and use the `Evaluator` and `Path` predicate to decide whether the resulting path will be included in the result.
  */
+@PublicApi
 public interface BranchCollisionPolicy
 {
     BranchCollisionDetector create( Evaluator evaluator, Predicate<Path> pathPredicate );

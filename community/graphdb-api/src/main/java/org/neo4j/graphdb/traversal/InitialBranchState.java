@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 
@@ -27,6 +28,7 @@ import org.neo4j.graphdb.PathExpander;
  *
  * @param <STATE> type of initial state to produce.
  */
+@PublicApi
 public interface InitialBranchState<STATE>
 {
     InitialBranchState<Object> NO_STATE = path -> null;
