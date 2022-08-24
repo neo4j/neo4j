@@ -89,11 +89,15 @@ public class FabricDatabaseManager {
         return () -> new DatabaseNotFoundException("Database " + databaseNameRaw + " not found");
     }
 
+    private static Supplier<UnavailableException> unavailable(String databaseNameRaw) {
+        return () -> new UnavailableException("Database " + databaseNameRaw + " is not available on current server");
+    }
+
     private void assertInternalDatabaseAvailable(DatabaseReference.Internal databaseReference)
             throws UnavailableException {
         var ctx = databaseContextProvider
                 .getDatabaseContext(databaseReference.databaseId())
-                .orElseThrow(databaseNotFound(databaseReference.alias().name()));
+                .orElseThrow(unavailable(databaseReference.alias().name()));
         ctx.database().getDatabaseAvailabilityGuard().assertDatabaseAvailable();
     }
 
