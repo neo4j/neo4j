@@ -25,6 +25,7 @@ import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.InternalLogProvider;
 
 public final class SingleInstanceRoutingProcedureInstaller extends AbstractRoutingProcedureInstaller {
@@ -34,6 +35,7 @@ public final class SingleInstanceRoutingProcedureInstaller extends AbstractRouti
     private final ConnectorPortRegister portRegister;
     private final Config config;
     private final InternalLogProvider logProvider;
+    private final DefaultDatabaseResolver defaultDatabaseResolver;
 
     public SingleInstanceRoutingProcedureInstaller(
             DatabaseAvailabilityChecker databaseAvailabilityChecker,
@@ -41,13 +43,15 @@ public final class SingleInstanceRoutingProcedureInstaller extends AbstractRouti
             ClientRoutingDomainChecker clientRoutingDomainChecker,
             ConnectorPortRegister portRegister,
             Config config,
-            InternalLogProvider logProvider) {
+            InternalLogProvider logProvider,
+            DefaultDatabaseResolver defaultDatabaseResolver) {
         this.databaseAvailabilityChecker = databaseAvailabilityChecker;
         this.databaseReferenceRepo = databaseReferenceRepo;
         this.clientRoutingDomainChecker = clientRoutingDomainChecker;
         this.portRegister = portRegister;
         this.config = config;
         this.logProvider = logProvider;
+        this.defaultDatabaseResolver = defaultDatabaseResolver;
     }
 
     @Override
@@ -65,6 +69,7 @@ public final class SingleInstanceRoutingProcedureInstaller extends AbstractRouti
                 clientRoutingDomainChecker,
                 config,
                 logProvider,
-                () -> false);
+                () -> false,
+                defaultDatabaseResolver);
     }
 }

@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -71,9 +72,13 @@ import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.database.TestDatabaseReferenceRepository;
@@ -91,12 +96,18 @@ public class SingleInstanceGetRoutingTableProcedureTest {
     protected static final DatabaseReference.Internal REF =
             new DatabaseReference.Internal(new NormalizedDatabaseName(ID.name()), ID);
     private static final String UNKNOWN_DATABASE_NAME = "unknownDatabaseName";
+    private static Context procCtx;
 
     @Target(ElementType.METHOD)
     @Retention(RetentionPolicy.RUNTIME)
     @ParameterizedTest(name = "{1} {0}")
     @MethodSource("routingConfigs")
     private @interface RoutingConfigsTest {}
+
+    @BeforeAll
+    static void beforeAll() {
+        procCtx = createContext();
+    }
 
     private static Config newConfig(RoutingMode routingMode) {
         return Config.newBuilder()
@@ -167,7 +178,7 @@ public class SingleInstanceGetRoutingTableProcedureTest {
         var input = new AnyValue[] {MapValue.EMPTY, stringValue(DEFAULT_DATABASE_NAME)};
 
         // when
-        var exception = assertThrows(ProcedureException.class, () -> proc.apply(null, input, null));
+        var exception = assertThrows(ProcedureException.class, () -> proc.apply(procCtx, input, null));
 
         // then
         assertEquals(Status.Procedure.ProcedureCallFailed, exception.status());
@@ -466,7 +477,7 @@ public class SingleInstanceGetRoutingTableProcedureTest {
             Map<String, ?> clientContext, GetRoutingTableProcedure procedure, String clientAddress, String databaseName)
             throws ProcedureException {
         var ctx = newClientContext(clientAddress, clientContext);
-        var rawResult = procedure.apply(null, new AnyValue[] {ctx, Values.stringValue(databaseName)}, null);
+        var rawResult = procedure.apply(procCtx, new AnyValue[] {ctx, Values.stringValue(databaseName)}, null);
         var result = RoutingResultFormat.parse(rawResult.next());
         assertThat(rawResult.hasNext())
                 .as("Routing procedure should only ever return a single row")
@@ -510,13 +521,15 @@ public class SingleInstanceGetRoutingTableProcedureTest {
             Config config,
             InternalLogProvider logProvider) {
         var clientRoutingDomainChecker = SimpleClientRoutingDomainChecker.fromConfig(config, logProvider);
+        var defaultDatabaseResolver = mock(DefaultDatabaseResolver.class);
         return new SingleInstanceRoutingProcedureInstaller(
                         databaseAvailabilityChecker,
                         databaseReferenceRepo,
                         clientRoutingDomainChecker,
                         portRegister,
                         config,
-                        logProvider)
+                        logProvider,
+                        defaultDatabaseResolver)
                 .createProcedure(DEFAULT_NAMESPACE);
     }
 
@@ -556,9 +569,19 @@ public class SingleInstanceGetRoutingTableProcedureTest {
     private static RoutingResult invoke(GetRoutingTableProcedure proc, String databaseName, MapValue context)
             throws ProcedureException {
         var input = new AnyValue[] {context, stringValue(databaseName)};
-        var result = proc.apply(null, input, null);
+        var result = proc.apply(procCtx, input, null);
         var routingResultAndTtl = RoutingResultFormat.parse(result.next());
         assertFalse(result.hasNext(), "Routing procedure should only return a single row");
         return routingResultAndTtl;
+    }
+
+    private static Context createContext() {
+        var ctx = mock(Context.class);
+        var securityContext = mock(SecurityContext.class);
+        var subject = mock(AuthSubject.class);
+        when(ctx.securityContext()).thenReturn(securityContext);
+        when(securityContext.subject()).thenReturn(subject);
+        when(subject.executingUser()).thenReturn("user");
+        return ctx;
     }
 }

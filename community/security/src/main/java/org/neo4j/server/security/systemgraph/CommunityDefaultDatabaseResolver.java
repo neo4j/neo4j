@@ -55,7 +55,7 @@ public class CommunityDefaultDatabaseResolver extends TransactionEventListenerAd
             return cachedResult;
         }
 
-        String defaultDatabase = config.get(GraphDatabaseSettings.default_database);
+        String defaultDatabase = getDefaultDatabase();
         try (Transaction tx = getSystemDb().beginTx()) {
             Node defaultDatabaseNode = tx.findNode(DATABASE_LABEL, DATABASE_DEFAULT_PROPERTY, true);
             if (defaultDatabaseNode != null) {
@@ -79,6 +79,10 @@ public class CommunityDefaultDatabaseResolver extends TransactionEventListenerAd
             systemDb = systemDbSupplier.get();
         }
         return systemDb;
+    }
+
+    public String getDefaultDatabase() {
+        return config.get(GraphDatabaseSettings.default_database);
     }
 
     @Override

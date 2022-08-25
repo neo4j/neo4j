@@ -144,6 +144,9 @@ public class DatabaseManagementServiceFactory {
 
         edition.bootstrapFabricServices();
 
+        edition.createDefaultDatabaseResolver(globalModule);
+        globalDependencies.satisfyDependency(edition.getDefaultDatabaseResolver());
+
         setupProcedures(globalModule, edition, databaseContextProvider);
 
         var dbmsRuntimeSystemGraphComponent = new DbmsRuntimeSystemGraphComponent(globalModule.getGlobalConfig());
@@ -151,9 +154,6 @@ public class DatabaseManagementServiceFactory {
 
         edition.registerSystemGraphComponents(globalModule.getSystemGraphComponents(), globalModule);
         edition.registerSystemGraphInitializer(globalModule);
-
-        edition.createDefaultDatabaseResolver(globalModule);
-        globalDependencies.satisfyDependency(edition.getDefaultDatabaseResolver());
 
         edition.createSecurityModule(globalModule);
         SecurityProvider securityProvider = edition.getSecurityProvider();

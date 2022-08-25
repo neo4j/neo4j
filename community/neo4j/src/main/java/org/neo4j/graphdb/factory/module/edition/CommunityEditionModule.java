@@ -252,7 +252,8 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                 clientRoutingDomainChecker,
                 portRegister,
                 config,
-                logProvider);
+                logProvider,
+                defaultDatabaseResolver);
     }
 
     @Override

@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 
@@ -55,7 +56,8 @@ class SingleInstanceRoutingProcedureInstallerTest {
                 clientRoutingDomainChecker,
                 portRegister,
                 config,
-                logProvider);
+                logProvider,
+                mock(DefaultDatabaseResolver.class));
         GlobalProcedures procedures = spy(new GlobalProceduresRegistry());
 
         installer.install(procedures);

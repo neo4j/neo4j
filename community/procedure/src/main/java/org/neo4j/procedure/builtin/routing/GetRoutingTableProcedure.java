@@ -19,7 +19,6 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.nullValue;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
@@ -46,6 +45,7 @@ import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.procedure.Mode;
@@ -68,10 +68,11 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
     private final ClientSideRoutingTableProvider clientSideRoutingTableProvider;
     private final ServerSideRoutingTableProvider serverSideRoutingTableProvider;
     private final ClientRoutingDomainChecker clientRoutingDomainChecker;
-    private final String defaultDatabaseName;
     private final Supplier<GraphDatabaseSettings.RoutingMode> defaultRouterSupplier;
     private final Supplier<Boolean> boltEnabled;
     private final InstanceClusterView instanceClusterView;
+    private final DefaultDatabaseResolver defaultDatabaseResolver;
+    private final String defaultDbFromConfig;
 
     public GetRoutingTableProcedure(
             List<String> namespace,
@@ -81,7 +82,8 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
             ClientRoutingDomainChecker clientRoutingDomainChecker,
             Config config,
             InternalLogProvider logProvider,
-            InstanceClusterView instanceClusterView) {
+            InstanceClusterView instanceClusterView,
+            DefaultDatabaseResolver defaultDatabaseResolver) {
         this(
                 namespace,
                 databaseReferenceRepo,
@@ -91,7 +93,8 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
                 clientRoutingDomainChecker,
                 config,
                 logProvider,
-                instanceClusterView);
+                instanceClusterView,
+                defaultDatabaseResolver);
     }
 
     public GetRoutingTableProcedure(
@@ -103,7 +106,8 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
             ClientRoutingDomainChecker clientRoutingDomainChecker,
             Config config,
             InternalLogProvider logProvider,
-            InstanceClusterView instanceClusterView) {
+            InstanceClusterView instanceClusterView,
+            DefaultDatabaseResolver defaultDatabaseResolver) {
         this.signature = buildSignature(namespace, DESCRIPTION);
         this.databaseReferenceRepo = databaseReferenceRepo;
         this.log = logProvider.getLog(getClass());
@@ -111,10 +115,11 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
         this.clientSideRoutingTableProvider = clientSideRoutingTableProvider;
         this.serverSideRoutingTableProvider = serverSideRoutingTableProvider;
         this.clientRoutingDomainChecker = clientRoutingDomainChecker;
-        this.defaultDatabaseName = config.get(default_database);
         this.defaultRouterSupplier = () -> config.get(GraphDatabaseSettings.routing_default_router);
-        this.boltEnabled = () -> config.get(BoltConnector.enabled);
         this.instanceClusterView = instanceClusterView;
+        this.defaultDatabaseResolver = defaultDatabaseResolver;
+        this.defaultDbFromConfig = config.get(GraphDatabaseSettings.default_database);
+        this.boltEnabled = () -> config.get(BoltConnector.enabled);
     }
 
     @Override
@@ -125,7 +130,8 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
     @Override
     public RawIterator<AnyValue[], ProcedureException> apply(
             Context ctx, AnyValue[] input, ResourceTracker resourceTracker) throws ProcedureException {
-        var databaseReference = extractDatabaseReference(input);
+        var user = ctx.securityContext().subject().executingUser();
+        var databaseReference = extractDatabaseReference(input, user);
         var routingContext = extractRoutingContext(input);
 
         assertBoltConnectorEnabled(databaseReference);
@@ -164,20 +170,22 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
         }
     }
 
-    private DatabaseReference extractDatabaseReference(AnyValue[] input) throws ProcedureException {
+    private DatabaseReference extractDatabaseReference(AnyValue[] input, String user) throws ProcedureException {
         var arg = input[1];
         final String databaseName;
         if (arg == Values.NO_VALUE) {
-            databaseName = defaultDatabaseName;
+            databaseName = defaultDatabaseResolver.defaultDatabase(user);
         } else if (arg instanceof TextValue) {
             databaseName = ((TextValue) arg).stringValue();
         } else {
             throw new IllegalArgumentException("Illegal database name argument " + arg);
         }
 
+        // On dbms creation, the start of the default database might be slightly delayed. This is a trick to
+        // make sure driver retries, even though the database is not found at the moment.
         return databaseReferenceRepo
                 .getByAlias(databaseName)
-                .orElseThrow(() -> databaseName.equals(defaultDatabaseName)
+                .orElseThrow(() -> databaseName.equals(defaultDbFromConfig)
                         ? BaseRoutingTableProcedureValidator.databaseNotAvailableException(databaseName)
                         : BaseRoutingTableProcedureValidator.databaseNotFoundException(databaseName));
     }
