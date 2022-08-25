@@ -145,11 +145,12 @@ public class CachingExpandInto extends DefaultCloseListenable {
             return new FromCachedSelectionCursor(connections, read, firstNode, secondNode);
         }
 
+        Direction reverseDirection = direction.reverse();
         int secondDegree = degreeCache.getIfAbsentPut(
                 secondNode,
-                direction.reverse(),
+                reverseDirection,
                 () -> positionCursorAndCalculateTotalDegreeIfCheap(
-                        read, secondNode, nodeCursor, direction.reverse(), types));
+                        read, secondNode, nodeCursor, reverseDirection, types));
 
         if (secondDegree == 0) {
             return Cursors.emptyTraversalCursor(read);
@@ -174,14 +175,14 @@ public class CachingExpandInto extends DefaultCloseListenable {
             return expandFromNodeWithLesserDegree(
                     nodeCursor, traversalCursor, firstNode, types, secondNode, txStateDegreeFirst <= secondDegree);
         } else if (firstNodeHasCheapDegrees) {
-            int txStateDegreeSecond = calculateDegreeInTxState(secondNode, selection(types, direction.reverse()));
+            int txStateDegreeSecond = calculateDegreeInTxState(secondNode, selection(types, reverseDirection));
             return expandFromNodeWithLesserDegree(
                     nodeCursor, traversalCursor, firstNode, types, secondNode, txStateDegreeSecond > firstDegree);
         } else {
             // Both nodes have a costly degree to compute, in general this means that both nodes are non-dense
             // we'll use the degree in the tx-state to decide what node to start with.
             int txStateDegreeFirst = calculateDegreeInTxState(firstNode, selection(types, direction));
-            int txStateDegreeSecond = calculateDegreeInTxState(secondNode, selection(types, direction.reverse()));
+            int txStateDegreeSecond = calculateDegreeInTxState(secondNode, selection(types, reverseDirection));
             return expandFromNodeWithLesserDegree(
                     nodeCursor,
                     traversalCursor,
@@ -582,6 +583,7 @@ public class CachingExpandInto extends DefaultCloseListenable {
         }
 
         public int getIfAbsentPut(long node, Direction direction, IntFunction0 update) {
+            assert node >= 0;
             // if incoming we flip the highest bit in the node id
             long nodeWithDirection = direction == INCOMING ? FLIP_HIGH_BIT_MASK | node : node;
 
@@ -603,6 +605,7 @@ public class CachingExpandInto extends DefaultCloseListenable {
         }
 
         public void put(long node, Direction direction, int degree) {
+            assert node >= 0;
             // if incoming we flip the highest bit in the node id
             long nodeWithDirection = direction == INCOMING ? FLIP_HIGH_BIT_MASK | node : node;
 
