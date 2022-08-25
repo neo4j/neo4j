@@ -107,7 +107,7 @@ class MemoryRecommendationsCommandTest {
                                 USAGE
 
                                 memory-recommendation [-h] [--docker] [--expand-commands] [--verbose]
-                                                      [--memory=<size>]
+                                                      [--additional-config=<path>] [--memory=<size>]
 
                                 DESCRIPTION
 
@@ -121,6 +121,8 @@ class MemoryRecommendationsCommandTest {
 
                                 OPTIONS
 
+                                      --additional-config=<path>
+                                                          Configuration file with additional configuration.
                                       --docker            The recommended memory settings are produced in the
                                                             form of environment variables that can be directly
                                                             passed to Neo4j docker container. The recommended

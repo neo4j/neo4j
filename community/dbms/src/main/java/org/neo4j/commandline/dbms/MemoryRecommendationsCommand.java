@@ -42,7 +42,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
-import org.neo4j.cli.AbstractCommand;
+import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
@@ -70,7 +70,7 @@ import picocli.CommandLine.Option;
                         + "memory specified with the --memory argument. The heuristic assumes that the system is dedicated to "
                         + "running Neo4j. If this is not the case, then use the --memory argument to specify how much memory "
                         + "can be expected to be dedicated to Neo4j. The output is formatted such that it can be copy-pasted into the neo4j.conf file.")
-public class MemoryRecommendationsCommand extends AbstractCommand {
+public class MemoryRecommendationsCommand extends AbstractAdminCommand {
     // Fields: {System Memory in GiBs; OS memory reserve in GiBs; JVM Heap memory in GiBs}.
     // And the page cache gets what's left, though always at least 100 MiB.
     // Heap never goes beyond 31 GiBs.

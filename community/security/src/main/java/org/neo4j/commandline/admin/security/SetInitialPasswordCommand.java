@@ -26,7 +26,7 @@ import static picocli.CommandLine.Parameters;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import org.neo4j.cli.AbstractCommand;
+import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
@@ -46,7 +46,7 @@ import org.neo4j.util.VisibleForTesting;
                 "Sets the initial password of the initial admin user ('" + INITIAL_USER_NAME + "'). "
                         + "And removes the requirement to change password on first login. "
                         + "IMPORTANT: this change will only take effect if performed before the database is started for the first time.")
-public class SetInitialPasswordCommand extends AbstractCommand implements PasswordCommand {
+public class SetInitialPasswordCommand extends AbstractAdminCommand implements PasswordCommand {
     @Option(
             names = "--require-password-change",
             defaultValue = "false",

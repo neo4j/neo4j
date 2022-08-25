@@ -23,7 +23,7 @@ import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Parameters;
 
 import java.nio.file.Path;
-import org.neo4j.cli.AbstractCommand;
+import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
@@ -42,7 +42,7 @@ import org.neo4j.util.VisibleForTesting;
         name = "set-default-admin",
         description = "Sets the default admin user.%n"
                 + "This user will be granted the admin role on startup if the system has no roles.")
-public class SetDefaultAdminCommand extends AbstractCommand {
+public class SetDefaultAdminCommand extends AbstractAdminCommand {
     public static final String ADMIN_INI = "admin.ini";
 
     @Parameters

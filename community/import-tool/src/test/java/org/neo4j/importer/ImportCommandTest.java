@@ -64,7 +64,7 @@ class ImportCommandTest {
         final var help = getUsageHelp(command);
         // All non-hidden subcommands
         var subcommands = help.subcommands().keySet();
-        var expectedSubcommands = Set.of("full");
+        var expectedSubcommands = Set.of("full", "help");
         assertThat(subcommands).isEqualTo(expectedSubcommands);
     }
 
