@@ -72,11 +72,14 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport> {
     private static final Label PERSON = label("PERSON");
     private static final RelationshipType FRIEND = RelationshipType.withName("FRIEND");
     private static final IndexAccessMonitor MONITOR = new IndexAccessMonitor();
-    private static final String NODE_INDEX_NAME = "some_node_text_index";
+    static final String NODE_INDEX_NAME = "some_node_text_index";
     private static final String REL_INDEX_NAME = "some_rel_text_index";
-    private static final String NAME = "name";
+    static final String NAME = "name";
     private static final String ADDRESS = "address";
     private static final String SINCE = "since";
+
+    long mikeNodeId;
+    long noahNodeId;
 
     @BeforeEach
     void setup() {
@@ -116,6 +119,7 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport> {
             var mike = tx.createNode(PERSON);
             mike.setProperty(NAME, "Mike Smith");
             mike.setProperty(ADDRESS, "United Kingdom");
+            mikeNodeId = mike.getId();
 
             var james = tx.createNode(PERSON);
             james.setProperty(NAME, "James Smith");
@@ -131,6 +135,7 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport> {
             var noah = tx.createNode(PERSON);
             noah.setProperty(NAME, "Noah");
             noah.createRelationshipTo(mike, FRIEND).setProperty(SINCE, "4 years");
+            noahNodeId = noah.getId();
 
             var alex = tx.createNode(PERSON);
             alex.setProperty(NAME, "Alex");
@@ -306,7 +311,7 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport> {
         }
     }
 
-    private IndexDescriptor getIndex(String indexName) {
+    IndexDescriptor getIndex(String indexName) {
         return schemaRead.indexGetForName(indexName);
     }
 

@@ -46,22 +46,33 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
+import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.log4j.Log4jLogProvider;
@@ -102,8 +113,25 @@ class SpecialisedIndexFullCheckTest {
 
         abstract Object notIndexedValue();
 
+        void createNodeIndex(Transaction tx, String propertyKey) {
+            tx.schema()
+                    .indexFor(label("Label1"))
+                    .on(propertyKey)
+                    .withIndexType(type())
+                    .create();
+        }
+
+        void createRelIndex(Transaction tx, String propertyKey) {
+            tx.schema()
+                    .indexFor(withName("Type1"))
+                    .on(propertyKey)
+                    .withIndexType(type())
+                    .create();
+        }
+
         @BeforeEach
         protected void setUp() {
+            settings.put(GraphDatabaseInternalSettings.trigram_index, true);
             fixture = createFixture();
         }
 
@@ -256,6 +284,7 @@ class SpecialisedIndexFullCheckTest {
 
             var config = Config.newBuilder()
                     .set(GraphDatabaseSettings.neo4j_home, testDirectory.homePath())
+                    .set(settings)
                     .build();
             return new ConsistencyCheckService(Neo4jLayout.of(config).databaseLayout("neo4j"))
                     .with(config)
@@ -269,27 +298,11 @@ class SpecialisedIndexFullCheckTest {
                 @Override
                 protected void generateInitialData(GraphDatabaseService db) {
                     try (var tx = db.beginTx()) {
-                        tx.schema()
-                                .indexFor(label("Label1"))
-                                .on(PROP1)
-                                .withIndexType(type())
-                                .create();
-                        tx.schema()
-                                .indexFor(label("Label1"))
-                                .on(PROP2)
-                                .withIndexType(type())
-                                .create();
+                        createNodeIndex(tx, PROP1);
+                        createNodeIndex(tx, PROP2);
 
-                        tx.schema()
-                                .indexFor(withName("Type1"))
-                                .on(PROP1)
-                                .withIndexType(type())
-                                .create();
-                        tx.schema()
-                                .indexFor(withName("Type1"))
-                                .on(PROP2)
-                                .withIndexType(type())
-                                .create();
+                        createRelIndex(tx, PROP1);
+                        createRelIndex(tx, PROP2);
                         tx.commit();
                     }
                     try (var tx = db.beginTx()) {
@@ -389,6 +402,16 @@ class SpecialisedIndexFullCheckTest {
         }
 
         @Override
+        void createNodeIndex(Transaction tx, String propertyKey) {
+            createNodeTextIndex((TransactionImpl) tx, propertyKey, TextIndexProvider.DESCRIPTOR);
+        }
+
+        @Override
+        void createRelIndex(Transaction tx, String propertyKey) {
+            createRelTextIndex((TransactionImpl) tx, propertyKey, TextIndexProvider.DESCRIPTOR);
+        }
+
+        @Override
         Object indexedValue() {
             return "some text";
         }
@@ -401,6 +424,72 @@ class SpecialisedIndexFullCheckTest {
         @Override
         Object notIndexedValue() {
             return 123;
+        }
+    }
+
+    @Nested
+    class TrigramTextIndex extends TestBase {
+
+        @Override
+        IndexType type() {
+            return IndexType.TEXT;
+        }
+
+        @Override
+        void createNodeIndex(Transaction tx, String propertyKey) {
+            createNodeTextIndex((TransactionImpl) tx, propertyKey, TrigramIndexProvider.DESCRIPTOR);
+        }
+
+        @Override
+        void createRelIndex(Transaction tx, String propertyKey) {
+            createRelTextIndex((TransactionImpl) tx, propertyKey, TrigramIndexProvider.DESCRIPTOR);
+        }
+
+        @Override
+        Object indexedValue() {
+            return "some text";
+        }
+
+        @Override
+        Object anotherIndexedValue() {
+            return "another piece of text";
+        }
+
+        @Override
+        Object notIndexedValue() {
+            return 123;
+        }
+    }
+
+    private void createRelTextIndex(TransactionImpl tx, String propertyKey, IndexProviderDescriptor descriptor) {
+        try {
+            KernelTransaction kernelTransaction = tx.kernelTransaction();
+            TokenWrite tokenWrite = kernelTransaction.tokenWrite();
+            int type = tokenWrite.relationshipTypeGetOrCreateForName("Type1");
+            int prop = tokenWrite.propertyKeyGetOrCreateForName(propertyKey);
+
+            IndexPrototype prototype = IndexPrototype.forSchema(SchemaDescriptors.forRelType(type, prop))
+                    .withIndexType(org.neo4j.internal.schema.IndexType.TEXT)
+                    .withIndexProvider(descriptor);
+            kernelTransaction.schemaWrite().indexCreate(prototype);
+        } catch (KernelException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void createNodeTextIndex(TransactionImpl tx, String propertyKey, IndexProviderDescriptor descriptor) {
+        try {
+            KernelTransaction kernelTransaction = tx.kernelTransaction();
+            TokenWrite tokenWrite = kernelTransaction.tokenWrite();
+            int label = tokenWrite.labelGetOrCreateForName("Label1");
+            int prop = tokenWrite.propertyKeyGetOrCreateForName(propertyKey);
+
+            IndexPrototype prototype = IndexPrototype.forSchema(SchemaDescriptors.forLabel(label, prop))
+                    .withIndexType(org.neo4j.internal.schema.IndexType.TEXT)
+                    .withIndexProvider(descriptor);
+            kernelTransaction.schemaWrite().indexCreate(prototype);
+        } catch (KernelException e) {
+            throw new RuntimeException(e);
         }
     }
 

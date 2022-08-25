@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.schema.AbstractTextIndexReader;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 
 public class TrigramIndexReader extends AbstractTextIndexReader {
@@ -80,20 +81,28 @@ public class TrigramIndexReader extends AbstractTextIndexReader {
         return TrigramQueryFactory.needStoreFilter(predicate);
     }
 
+    /**
+     * This isn't perfect. We will get false positives for searches where additional trigrams
+     * than the trigrams of the property value is also stored in the index.
+     * But since we are doing a query for the specific entity id it should be a pretty safe bet that if
+     * we find an entity with the matching id and all the trigrams of our search word are indexed, then what
+     * is stored in the index is most likely indexed correctly.
+     * Don't use this for anything critical, but for a best effort consistency check it is fine.
+     */
     @Override
     public long countIndexedEntities(
             long entityId, CursorContext cursorContext, int[] propertyKeyIds, Value... propertyValues) {
-        // TODO: Most likely trigram index countIndexesEntities doesn't work correctly since we don't filter through the
-        //       store. Probably we will need to do the same as fulltext index and just verify the entity id without
-        //       checking the property value.
         Query entityIdQuery = TrigramQueryFactory.getById(entityId);
 
         BooleanQuery.Builder entityIdAndValueQuery = new BooleanQuery.Builder();
         entityIdAndValueQuery.add(entityIdQuery, BooleanClause.Occur.MUST);
-        for (Value propertyValue : propertyValues) {
-            Query valueQuery = TrigramQueryFactory.exact(propertyValue);
-            entityIdAndValueQuery.add(valueQuery, BooleanClause.Occur.MUST);
-        }
+
+        Preconditions.checkState(
+                propertyKeyIds.length == 1,
+                "Text index does not support composite indexing. Tried to query index with multiple property keys.");
+        Query valueQuery = TrigramQueryFactory.exact(propertyValues[0]);
+        entityIdAndValueQuery.add(valueQuery, BooleanClause.Occur.MUST);
+
         try {
             TotalHitCountCollector collector = new TotalHitCountCollector();
             getIndexSearcher().search(entityIdAndValueQuery.build(), collector);

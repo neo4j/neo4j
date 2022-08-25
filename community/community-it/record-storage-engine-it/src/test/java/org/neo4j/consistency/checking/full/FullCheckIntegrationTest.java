@@ -93,6 +93,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.LookupAccessorsFromRunningDb;
 import org.neo4j.consistency.RecordType;
@@ -119,6 +120,7 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaRule;
@@ -133,6 +135,8 @@ import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
+import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -221,6 +225,7 @@ public class FullCheckIntegrationTest {
 
     @BeforeEach
     protected void setUp() {
+        settings.put(GraphDatabaseInternalSettings.trigram_index, true);
         fixture = createFixture();
     }
 
@@ -2009,6 +2014,22 @@ public class FullCheckIntegrationTest {
 
     @ParameterizedTest
     @EnumSource(EntityType.class)
+    void shouldReportDuplicatedIndexRulesForSameIndexTypeDifferentProviders(EntityType entityType) throws Exception {
+        // Given
+        int entityTokenId = createEntityToken(entityType);
+        int propertyKeyId = createPropertyKey();
+        createIndexRule(entityType, IndexType.TEXT, TextIndexProvider.DESCRIPTOR, entityTokenId, propertyKeyId);
+        createIndexRule(entityType, IndexType.TEXT, TrigramIndexProvider.DESCRIPTOR, entityTokenId, propertyKeyId);
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on(stats).verify(RecordType.SCHEMA, 1).andThatsAllFolks();
+    }
+
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
     void shouldReportDuplicatedCompositeIndexRules(EntityType entityType) throws Exception {
         // Given
         int entityTokenId = createEntityToken(entityType);
@@ -3019,6 +3040,16 @@ public class FullCheckIntegrationTest {
     private void createIndexRule(
             EntityType entityType, IndexType indexType, final int entityTokenId, final int... propertyKeyIds)
             throws Exception {
+        createIndexRule(entityType, indexType, null, entityTokenId, propertyKeyIds);
+    }
+
+    private void createIndexRule(
+            EntityType entityType,
+            IndexType indexType,
+            IndexProviderDescriptor descriptor,
+            final int entityTokenId,
+            final int... propertyKeyIds)
+            throws Exception {
         AtomicReference<String> indexName = new AtomicReference<>();
         fixture.apply(new GraphStoreFixture.Transaction() {
             @Override
@@ -3030,17 +3061,22 @@ public class FullCheckIntegrationTest {
                 IndexDescriptor index;
                 switch (entityType) {
                     case RELATIONSHIP:
-                        index = forSchema(forRelType(entityTokenId, propertyKeyIds), DESCRIPTOR)
+                        IndexPrototype indexPrototype1 = forSchema(
+                                        forRelType(entityTokenId, propertyKeyIds), DESCRIPTOR)
                                 .withIndexType(indexType)
-                                .withName(name)
-                                .materialise(id);
+                                .withName(name);
+                        indexPrototype1 =
+                                descriptor != null ? indexPrototype1.withIndexProvider(descriptor) : indexPrototype1;
+                        index = indexPrototype1.materialise(id);
                         break;
                     case NODE:
                     default:
-                        index = forSchema(forLabel(entityTokenId, propertyKeyIds), DESCRIPTOR)
+                        IndexPrototype indexPrototype2 = forSchema(forLabel(entityTokenId, propertyKeyIds), DESCRIPTOR)
                                 .withIndexType(indexType)
-                                .withName(name)
-                                .materialise(id);
+                                .withName(name);
+                        indexPrototype2 =
+                                descriptor != null ? indexPrototype2.withIndexProvider(descriptor) : indexPrototype2;
+                        index = indexPrototype2.materialise(id);
                         break;
                 }
                 indexName.set(name);
