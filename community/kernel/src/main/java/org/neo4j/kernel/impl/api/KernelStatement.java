@@ -217,10 +217,6 @@ public class KernelStatement extends CloseableResourceManager implements AssertO
         }
     }
 
-    public void dispose() {
-        queryRegistry.dispose();
-    }
-
     private String getStatementNotClosedMessage(int leakedStatements) {
         String additionalInstruction = traceStatements
                 ? StringUtils.EMPTY

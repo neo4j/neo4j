@@ -1089,7 +1089,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         storageReader.close();
         transactionMemoryPool.close();
         removeConfigChangeListeners(config);
-        currentStatement.dispose();
     }
 
     /**

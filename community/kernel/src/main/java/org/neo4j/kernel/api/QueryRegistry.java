@@ -53,13 +53,4 @@ public interface QueryRegistry {
      * Unregisters a query that was stopped
      */
     void unbindExecutingQuery(ExecutingQuery executingQuery, long userTransactionId);
-
-    /**
-     * Registers an already known query with a statement.
-     *
-     * This is used solely for snapshot retry. (see SnapshotExecutionEngine)
-     */
-    void registerExecutingQuery(ExecutingQuery executingQuery);
-
-    void dispose();
 }
