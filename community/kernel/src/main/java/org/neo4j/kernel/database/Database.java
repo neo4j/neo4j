@@ -534,6 +534,8 @@ public class Database extends AbstractDatabase {
 
         life.add(idController);
         life.add(onStart(this::registerUpgradeListener));
+        life.add(databaseHealth);
+        life.add(databaseAvailabilityGuard);
         life.add(databaseAvailability);
         life.setLast(checkpointerLifecycle);
 

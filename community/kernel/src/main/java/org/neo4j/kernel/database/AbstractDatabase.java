@@ -153,9 +153,6 @@ public abstract class AbstractDatabase extends LifecycleAdapter implements Lifec
         }
         init(); // Ensure we're initialized
         try {
-            life.add(databaseHealth);
-            life.add(databaseAvailabilityGuard);
-
             specificStart();
 
             life.start();
