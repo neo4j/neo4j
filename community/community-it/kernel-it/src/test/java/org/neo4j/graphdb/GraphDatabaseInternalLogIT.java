@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.logging.log4j.LogConfig.DEBUG_LOG;
 import static org.neo4j.logging.log4j.LogConfig.SERVER_LOGS_XML;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -35,6 +36,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.concurrent.Callable;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -128,7 +130,7 @@ class GraphDatabaseInternalLogIT {
     }
 
     @Test
-    @Timeout(value = 1, unit = MINUTES)
+    @Timeout(value = 3, unit = MINUTES)
     void shouldHandleReconfiguringOfXmlConfiguration() throws IOException, InterruptedException {
         // Given
         Path log4jXmlConfig = testDir.homePath().resolve(SERVER_LOGS_XML);
@@ -165,9 +167,12 @@ class GraphDatabaseInternalLogIT {
 
         assertThat(internalLog).isRegularFile();
         assertThat(internalLog2).isRegularFile();
-        assertThat(countOccurrences(internalLog, "An info entry")).isGreaterThan(0);
-        assertThat(countOccurrencesJson(internalLog2, "message", "An info entry"))
-                .isGreaterThan(0);
+        assertEventuallyContains(() -> countOccurrences(internalLog, "An info entry"));
+        assertEventuallyContains(() -> countOccurrencesJson(internalLog2, "message", "An info entry"));
+    }
+
+    private static void assertEventuallyContains(Callable<Long> instances) {
+        assertEventually(instances, l -> l > 0, 1, MINUTES);
     }
 
     private static long countOccurrences(Path file, String substring) throws IOException {
