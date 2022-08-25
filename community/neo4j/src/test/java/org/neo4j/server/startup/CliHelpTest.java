@@ -175,7 +175,7 @@ class CliHelpTest extends ServerProcessTestBase {
     void helpCommandWithSubcommandArgumentShouldWorkForWindowsServiceCommand() {
         assertThat(execute("server", "windows-service", "help", "install")).isEqualTo(0);
         assertThat(out.toString())
-                .contains("neo4j-admin server windows-service install [-h] [--expand-commands] [--verbose] [COMMAND]")
+                .contains("neo4j-admin server windows-service install [-h] [--expand-commands] [--verbose]")
                 .contains("Install the Windows service.");
     }
 
