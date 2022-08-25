@@ -22,6 +22,7 @@ package org.neo4j.commandline.dbms;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.commandline.Util.wrapIOException;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.dbms.archive.Dumper.DUMP_EXTENSION;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Help.Visibility.ALWAYS;
 import static picocli.CommandLine.Option;
@@ -100,7 +101,6 @@ public class LoadCommand extends AbstractAdminCommand {
     private boolean info;
 
     private final Loader loader;
-    private static final String DUMP_SUFFIX = ".dump";
     public static String SYSTEM_ERR_MESSAGE = "WARNING! You are loading a dump of Neo4j's internal system database.%n"
             + "This system database dump may contain unwanted metadata for the DBMS it was taken from;%n"
             + "Loading it should only be done after consulting the Neo4j Operations Manual.%n";
@@ -228,14 +228,14 @@ public class LoadCommand extends AbstractAdminCommand {
         Path dumpDir = Path.of(source.path);
         if (!database.containsPattern()) {
             return Set.of(new DumpInfo(
-                    database.getDatabaseName(), dumpDir.resolve(database.getDatabaseName() + DUMP_SUFFIX)));
+                    database.getDatabaseName(), dumpDir.resolve(database.getDatabaseName() + DUMP_EXTENSION)));
         } else {
             Set<DumpInfo> dbNames = MutableSetFactoryImpl.INSTANCE.empty();
             try {
                 for (Path path : fs.listFiles(dumpDir)) {
                     String fileName = path.getFileName().toString();
-                    if (!fs.isDirectory(path) && fileName.endsWith(DUMP_SUFFIX)) {
-                        String dbName = fileName.substring(0, fileName.length() - 5);
+                    if (!fs.isDirectory(path) && fileName.endsWith(DUMP_EXTENSION)) {
+                        String dbName = fileName.substring(0, fileName.length() - DUMP_EXTENSION.length());
                         if (database.matches(dbName)) {
                             dbNames.add(new DumpInfo(dbName, path));
                         }

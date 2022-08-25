@@ -33,6 +33,7 @@ import java.nio.file.Path;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +45,9 @@ import org.neo4j.consistency.CheckCommand;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
+import org.neo4j.dbms.archive.CheckDatabase;
+import org.neo4j.dbms.archive.CheckDump;
+import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -148,6 +152,14 @@ class CheckCommandIT {
                               --from-path=<path>     Path to directory containing dump/backup artifacts to check the consistency of.
                               --temp-path=<path>     Path to directory to be used as a staging area to extract dump/backup artifacts, if needed.
                                                        Default:  <from-path>""");
+    }
+
+    @Test
+    void correctCheckDatabasesFound() {
+        final var checkDatabases = CheckDatabase.all().stream()
+                .map(CheckDatabase::getClass)
+                .collect(Collectors.<Class<? extends CheckDatabase>>toUnmodifiableSet());
+        assertThat(checkDatabases).containsExactlyInAnyOrder(CheckDump.class);
     }
 
     @Test
@@ -313,14 +325,42 @@ class CheckCommandIT {
                 .hasMessageContainingAll(nonsense, "is not a valid size");
     }
 
+    @Test
+    void dumpNeedsToBePath() {
+        final var dumpPath = homeDir.resolve("dir/does/not/exist");
+
+        final var consistencyCheckService =
+                new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
+
+        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CommandLine.populateCommand(checkCommand, "--from-path=" + dumpPath, dbName);
+
+        assertThatThrownBy(checkCommand::execute)
+                .isInstanceOf(CommandFailedException.class)
+                .hasMessageContainingAll(
+                        "Could not find a valid", "dump", "named", dbName, "to check at path", dumpPath.toString());
+    }
+
+    @Test
+    void checkDump() {
+        final var dump = testDirectory.directory("dump");
+        final var ctx = new ExecutionContext(homeDir, confPath);
+        final var dumpCommand = new DumpCommand(ctx, new Dumper(ctx.out()));
+        CommandLine.populateCommand(dumpCommand, "--to-path=" + dump, dbName);
+        assertThatCode(dumpCommand::execute).doesNotThrowAnyException();
+
+        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath));
+        CommandLine.populateCommand(checkCommand, "--from-path=" + dump, dbName);
+        assertThatCode(checkCommand::execute).doesNotThrowAnyException();
+    }
+
     private void prepareBackupDatabase(DatabaseLayout backupLayout) throws IOException {
-        testDirectory.getFileSystem().deleteRecursively(homeDir);
+        filesytem.deleteRecursively(homeDir);
         prepareDatabase(backupLayout);
     }
 
     private static void prepareDatabase(DatabaseLayout databaseLayout) {
-        final var managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
-        managementService.shutdown();
+        new TestDatabaseManagementServiceBuilder(databaseLayout).build().shutdown();
     }
 
     private void verifyCheckableLayout(TrackingConsistencyCheckService service, DatabaseLayout plainLayout) {

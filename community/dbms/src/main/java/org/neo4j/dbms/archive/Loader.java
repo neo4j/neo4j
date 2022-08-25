@@ -58,7 +58,7 @@ public class Loader {
     }
 
     public Loader(FileSystemAbstraction filesystem, PrintStream output) {
-        this(filesystem, printStreamPrinter(output));
+        this(filesystem, output != null ? printStreamPrinter(output) : emptyPrinter());
     }
 
     private Loader(FileSystemAbstraction filesystem, OutputProgressPrinter progressPrinter) {

@@ -51,6 +51,7 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.logging.InternalLogProvider;
 
 public class Dumper {
+    public static final String DUMP_EXTENSION = ".dump";
     private final List<ArchiveOperation> operations;
     private final ArchiveProgressPrinter progressPrinter;
 

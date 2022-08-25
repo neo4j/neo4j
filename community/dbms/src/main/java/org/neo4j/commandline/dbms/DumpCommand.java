@@ -21,6 +21,7 @@ package org.neo4j.commandline.dbms;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.dbms.archive.Dumper.DUMP_EXTENSION;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 import static picocli.CommandLine.Command;
@@ -245,7 +246,7 @@ public class DumpCommand extends AbstractAdminCommand {
     }
 
     private static Path buildArchivePath(String database, Path to) {
-        return to.resolve(database + ".dump");
+        return to.resolve(database + DUMP_EXTENSION);
     }
 
     private OutputStream openDumpStream(String databaseName, TargetOption destination) throws IOException {

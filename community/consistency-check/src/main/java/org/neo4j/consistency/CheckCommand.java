@@ -37,8 +37,14 @@ import org.neo4j.commandline.Util;
 import org.neo4j.commandline.dbms.CannotWriteException;
 import org.neo4j.commandline.dbms.LockChecker;
 import org.neo4j.configuration.Config;
+import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.ConsistencyFlags;
+import org.neo4j.dbms.archive.CheckDatabase;
+import org.neo4j.dbms.archive.CheckDatabase.Source;
+import org.neo4j.dbms.archive.CheckDatabase.Source.DataTxnSource;
+import org.neo4j.dbms.archive.CheckDatabase.Source.PathSource;
+import org.neo4j.io.IOUtils.AutoCloseables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -92,6 +98,12 @@ public class CheckCommand extends AbstractAdminCommand {
 
         @ArgGroup(exclusive = false)
         private FromAndTemp fromAndTemp;
+
+        public Source toSource() {
+            return fromAndTemp != null
+                    ? new PathSource(fromAndTemp.fromPath(), fromAndTemp.tempPath())
+                    : new DataTxnSource(sourceOptions.dataPath(), sourceOptions.txnPath());
+        }
 
         private static final class FromAndTemp {
             @Option(
@@ -154,53 +166,67 @@ public class CheckCommand extends AbstractAdminCommand {
         return createPrefilledConfigBuilder();
     }
 
-    protected ConsistencyCheckService.Result checkWith(Config config, MemoryTracker memoryTracker) {
-        if (sourceOptions != null) {
-            throw new NotImplementedException("new source options have yet to be implemented");
-        }
+    protected Result checkWith(Config config, MemoryTracker memoryTracker) {
+        try (var autoClosables = new AutoCloseables()) {
+            final DatabaseLayout layout;
+            try {
+                if (sourceOptions != null) {
+                    if (sourceOptions.sourceOptions != null) {
+                        throw new NotImplementedException("new source options have yet to be implemented");
+                    }
 
-        final DatabaseLayout layout;
-        {
-            final var neo4jLayout = Neo4jLayout.of(config);
-            final var storageEngineFactory = StorageEngineFactory.selectStorageEngine(
-                            ctx.fs(), neo4jLayout, database.name())
-                    .orElseThrow(() ->
-                            new IllegalArgumentException("No storage engine found for '%s' with database name '%s'"
-                                    .formatted(neo4jLayout, database.name())));
-            layout = storageEngineFactory.databaseLayout(neo4jLayout, database.name());
-        }
-
-        try (var ignored = LockChecker.checkDatabaseLock(layout)) {
-            checkDbState(ctx.fs(), layout, config, memoryTracker);
-            // Only output progress indicator if a console receives the output
-            final var processOut = System.console() != null ? System.out : null;
-
-            try (var logProvider = Util.configuredLogProvider(ctx.out(), verbose)) {
-                return consistencyCheckService
-                        .with(layout)
-                        .with(config)
-                        .with(processOut)
-                        .with(logProvider)
-                        .with(ctx.fs())
-                        .verbose(verbose)
-                        .with(options.reportPath())
-                        .with(flags)
-                        .runFullConsistencyCheck();
-            } catch (ConsistencyCheckIncompleteException e) {
+                    // assumes path is to directory containing dump; checking backup artifacts not implemented yet
+                    layout = CheckDatabase.selectAndExtract(
+                            ctx.fs(), sourceOptions.toSource(), database, ctx.out(), force, autoClosables);
+                } else {
+                    final var neo4jLayout = Neo4jLayout.of(config);
+                    final var storageEngineFactory = StorageEngineFactory.selectStorageEngine(
+                                    ctx.fs(), neo4jLayout, database.name())
+                            .orElseThrow(() -> new IllegalArgumentException(
+                                    "No storage engine found for '%s' with database name '%s'"
+                                            .formatted(neo4jLayout, database.name())));
+                    layout = storageEngineFactory.databaseLayout(neo4jLayout, database.name());
+                }
+            } catch (IOException e) {
                 throw new CommandFailedException(
-                        "Consistency checking failed. " + e.getMessage(), e, ExitCode.SOFTWARE);
+                        "Failed to prepare for consistency check: " + e.getMessage(), e, ExitCode.IOERR);
+            } catch (Exception e) {
+                throw new CommandFailedException(
+                        "Failed to prepare for consistency check: " + e.getMessage(), e, ExitCode.SOFTWARE);
             }
 
-        } catch (FileLockException e) {
-            throw new CommandFailedException(
-                    "The database is in use. Stop database '%s' and try again.".formatted(layout.getDatabaseName()),
-                    e,
-                    ExitCode.FAIL);
-        } catch (CannotWriteException e) {
-            throw new CommandFailedException(
-                    "You do not have permission to check database consistency.", e, ExitCode.NOPERM);
-        } catch (IOException e) {
-            throw new CommandFailedException("Consistency checking failed. " + e.getMessage(), e, ExitCode.IOERR);
+            try (var ignored = LockChecker.checkDatabaseLock(layout)) {
+                checkDbState(ctx.fs(), layout, config, memoryTracker);
+                try (var logProvider = Util.configuredLogProvider(ctx.out(), verbose)) {
+                    return consistencyCheckService
+                            .with(layout)
+                            .with(config)
+                            .with(ctx.out())
+                            .with(logProvider)
+                            .with(ctx.fs())
+                            .verbose(verbose)
+                            .with(options.reportPath())
+                            .with(flags)
+                            .runFullConsistencyCheck();
+                } catch (ConsistencyCheckIncompleteException e) {
+                    throw new CommandFailedException(
+                            "Consistency checking failed. " + e.getMessage(), e, ExitCode.SOFTWARE);
+                }
+
+            } catch (FileLockException e) {
+                throw new CommandFailedException(
+                        "The database is in use. Stop database '%s' and try again.".formatted(layout.getDatabaseName()),
+                        e,
+                        ExitCode.FAIL);
+            } catch (CannotWriteException e) {
+                throw new CommandFailedException(
+                        "You do not have permission to check database consistency.", e, ExitCode.NOPERM);
+            }
+
+        } catch (CommandFailedException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new CommandFailedException("Consistency checking failed. " + e.getMessage(), e, ExitCode.SOFTWARE);
         }
     }
 
@@ -209,6 +235,7 @@ public class CheckCommand extends AbstractAdminCommand {
             DatabaseLayout databaseLayout,
             Config additionalConfiguration,
             MemoryTracker memoryTracker) {
+
         if (checkRecoveryState(fs, databaseLayout, additionalConfiguration, memoryTracker)) {
             throw new CommandFailedException(
                     """
