@@ -19,26 +19,6 @@
  */
 package org.neo4j.configuration;
 
-import org.eclipse.collections.api.factory.Maps;
-
-import java.nio.file.Path;
-import java.time.Duration;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.neo4j.annotations.api.PublicApi;
-import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.configuration.connectors.ConnectorDefaults;
-import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.io.ByteUnit;
-import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.logging.Level;
-import org.neo4j.logging.LogTimeZone;
-
 import static java.lang.Runtime.getRuntime;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
@@ -72,6 +52,24 @@ import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 import static org.neo4j.configuration.SettingValueParsers.setOf;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.eclipse.collections.api.factory.Maps;
+import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.configuration.connectors.ConnectorDefaults;
+import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.io.ByteUnit;
+import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.logging.Level;
+import org.neo4j.logging.LogTimeZone;
 
 @ServiceProvider
 @PublicApi
@@ -656,6 +654,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
         INFO,
         VERBOSE
     }
+
     @Description("Log the start and end of a transaction. Valid values are 'OFF', 'INFO', or 'VERBOSE'.\n"
             + "OFF:  no logging.\n"
             + "INFO: log start and end of transactions that take longer than the configured threshold, db.logs.query.transaction.threshold.\n"
@@ -708,14 +707,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "This only takes effect if `db.logs.query.parameter_logging_enabled = true`.")
     public static final Setting<Integer> query_log_max_parameter_length = newBuilder(
                     "db.logs.query.max_parameter_length", INT, Integer.MAX_VALUE)
-            .dynamic()
-            .build();
-
-    @Description(
-            "Log complete parameter entities including id, labels or relationship type, and properties. If false, "
-                    + "only the entity id will be logged. This only takes effect if `db.logs.query.parameter_logging_enabled = true`.")
-    public static final Setting<Boolean> log_queries_parameter_full_entities = newBuilder(
-                    "db.logs.query.parameter_full_entities", BOOL, false)
             .dynamic()
             .build();
 

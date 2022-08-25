@@ -19,16 +19,6 @@
  */
 package org.neo4j.configuration;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-
-import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.logging.InternalLog;
-
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
 import static org.neo4j.configuration.BootloaderSettings.gc_logging_enabled;
@@ -73,7 +63,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.lock_acquisition_tim
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_early_raw_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_obfuscate_literals;
-import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_parameter_full_entities;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_parameter_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_query_plan;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_threshold;
@@ -120,6 +109,15 @@ import static org.neo4j.configuration.connectors.BoltConnectorInternalSettings.t
 import static org.neo4j.configuration.connectors.BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes;
 import static org.neo4j.configuration.connectors.BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout;
 import static org.neo4j.configuration.connectors.BoltConnectorInternalSettings.unsupported_thread_pool_queue_size;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.logging.InternalLog;
 
 public final class SettingMigrators {
 
@@ -633,8 +631,6 @@ public final class SettingMigrators {
             migrateSettingNameChange(values, log, "dbms.logs.query.plan_description_enabled", log_queries_query_plan);
             migrateSettingNameChange(
                     values, log, "dbms.logs.query.parameter_logging_enabled", log_queries_parameter_logging_enabled);
-            migrateSettingNameChange(
-                    values, log, "dbms.logs.query.parameter_full_entities", log_queries_parameter_full_entities);
             migrateSettingNameChange(values, log, "dbms.logs.query.obfuscate_literals", log_queries_obfuscate_literals);
             migrateSettingNameChange(
                     values, log, "dbms.logs.query.max_parameter_length", query_log_max_parameter_length);
