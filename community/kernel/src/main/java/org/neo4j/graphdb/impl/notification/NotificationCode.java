@@ -150,7 +150,11 @@ public enum NotificationCode {
     HOME_DATABASE_NOT_PRESENT(
             SeverityLevel.WARNING,
             Status.Database.DatabaseNotFound,
-            "The home database provided does not currently exist in the DBMS. This command will not take effect until this database is created.");
+            "The home database provided does not currently exist in the DBMS. This command will not take effect until this database is created."),
+    DEPRECATED_DATABASE_NAME(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "Databases and aliases with unescaped `.` are deprecated unless to indicate that they belong to a composite database. Names containing `.` should be escaped.");
 
     private final Status status;
     private final String description;

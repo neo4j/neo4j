@@ -45,3 +45,6 @@ case class SubqueryVariableShadowing(position: InputPosition, varName: String) e
 case class HomeDatabaseNotPresent(databaseName: String) extends InternalNotification
 
 case class FixedLengthRelationshipInShortestPath(position: InputPosition) extends InternalNotification
+
+case class DeprecatedDatabaseNameNotification(databaseName: String, position: Option[InputPosition])
+    extends InternalNotification

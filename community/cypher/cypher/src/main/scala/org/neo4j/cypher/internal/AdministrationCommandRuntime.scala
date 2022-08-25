@@ -19,7 +19,10 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.HomeDatabaseAction
+import org.neo4j.cypher.internal.ast.NamespacedName
+import org.neo4j.cypher.internal.ast.ParameterName
 import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetHomeDatabaseAction
 import org.neo4j.cypher.internal.expressions.Parameter
@@ -33,16 +36,24 @@ import org.neo4j.cypher.internal.procs.ThrowException
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
 import org.neo4j.cypher.internal.security.SecureHasher
 import org.neo4j.cypher.internal.security.SystemGraphCredential
+import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
 import org.neo4j.cypher.internal.util.HomeDatabaseNotPresent
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.StringType
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.COMPOSITE_DATABASE_LABEL
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_LABEL
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DISPLAY_NAME_PROPERTY
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAMESPACE_PROPERTY
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAME_PROPERTY
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS_RELATIONSHIP
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.exceptions.ParameterNotFoundException
 import org.neo4j.exceptions.ParameterWrongTypeException
+import org.neo4j.graphdb.Direction
 import org.neo4j.graphdb.Transaction
 import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
@@ -61,6 +72,9 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
 import java.util.UUID
+
+import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.util.Using
 
 trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
   override def correspondingRuntimeOption: Option[CypherRuntimeOption] = None
@@ -117,7 +131,7 @@ object AdministrationCommandRuntime {
         val hashedPwKey = ensureUniqueParamName(internalKey(parameterPassword.name) + "_hashed", otherParams)
         val passwordByteKey = ensureUniqueParamName(internalKey(parameterPassword.name) + "_bytes", otherParams)
 
-        def convertPasswordParameters(transaction: Transaction, params: MapValue): MapValue = {
+        def convertPasswordParameters(params: MapValue): MapValue = {
           val encodedPassword = getValidPasswordParameter(params, parameterPassword.name)
           val hashedPassword =
             if (isEncryptedPassword) validateAndFormatEncryptedPassword(encodedPassword)
@@ -127,7 +141,13 @@ object AdministrationCommandRuntime {
             Values.byteArray(encodedPassword)
           )
         }
-        PasswordExpression(hashedPwKey, Values.NO_VALUE, passwordByteKey, Values.NO_VALUE, convertPasswordParameters)
+        PasswordExpression(
+          hashedPwKey,
+          Values.NO_VALUE,
+          passwordByteKey,
+          Values.NO_VALUE,
+          (_, params) => convertPasswordParameters(params)
+        )
 
       case _ => throw new IllegalStateException(s"Internal error when processing password.")
     }
@@ -183,7 +203,8 @@ object AdministrationCommandRuntime {
     val uuidKey = internalKey("uuid")
     val homeDatabaseFields = defaultDatabase.map {
       case RemoveHomeDatabaseAction => NameFields(s"${internalPrefix}homeDatabase", Values.NO_VALUE, IdentityConverter)
-      case SetHomeDatabaseAction(name) => getNameFields("homeDatabase", name, s => new NormalizedDatabaseName(s).name())
+      case SetHomeDatabaseAction(name) =>
+        getNameFields("homeDatabase", name.asLegacyName, s => new NormalizedDatabaseName(s).name())
     }
     val userNameFields = getNameFields("username", userName)
     val nonPasswordParameterNames = Array(
@@ -258,16 +279,17 @@ object AdministrationCommandRuntime {
     password: Option[expressions.Expression],
     requirePasswordChange: Option[Boolean],
     suspended: Option[Boolean],
-    defaultDatabase: Option[HomeDatabaseAction] = None
+    homeDatabase: Option[HomeDatabaseAction] = None
   )(
     sourcePlan: Option[ExecutionPlan],
     normalExecutionEngine: ExecutionEngine,
     securityAuthorizationHandler: SecurityAuthorizationHandler
   ): ExecutionPlan = {
     val userNameFields = getNameFields("username", userName)
-    val homeDatabaseFields = defaultDatabase.map {
+    val homeDatabaseFields = homeDatabase.map {
       case RemoveHomeDatabaseAction => NameFields(s"${internalPrefix}homeDatabase", Values.NO_VALUE, IdentityConverter)
-      case SetHomeDatabaseAction(name) => getNameFields("homeDatabase", name, s => new NormalizedDatabaseName(s).name())
+      case SetHomeDatabaseAction(name) =>
+        getNameFields("homeDatabase", name.asLegacyName, s => new NormalizedDatabaseName(s).name())
     }
     val nonPasswordParameterNames = Array(userNameFields.nameKey) ++ homeDatabaseFields.map(_.nameKey)
     val maybePw =
@@ -361,7 +383,7 @@ object AdministrationCommandRuntime {
       params.get(ddf.nameKey) match {
         case tv: TextValue =>
           val notifications: Set[InternalNotification] =
-            if (Iterators.asList(tx.findNodes(DATABASE_NAME_LABEL, DATABASE_NAME_PROPERTY, tv.stringValue())).isEmpty) {
+            if (Iterators.asList(tx.findNodes(DATABASE_NAME_LABEL, DISPLAY_NAME_PROPERTY, tv.stringValue())).isEmpty) {
               Set(HomeDatabaseNotPresent(tv.stringValue()))
             } else {
               Set.empty
@@ -458,12 +480,93 @@ object AdministrationCommandRuntime {
       )
   }
 
+  /**
+   *
+   * @param nameKey parameter key used in the "inner" cypher
+   * @param name the namespaced name or parameter
+   * @param valueMapper function to apply to the value
+   * @return
+   */
+  private[internal] def getDatabaseNameFields(
+    nameKey: String,
+    name: DatabaseName,
+    valueMapper: String => String = identity
+  ): DatabaseNameFields = name match {
+    case name @ NamespacedName(_, None) =>
+      DatabaseNameFields(
+        s"$internalPrefix$nameKey",
+        Values.utf8Value(valueMapper(name.name)),
+        s"$internalPrefix${nameKey}_namespace",
+        Values.utf8Value(DEFAULT_NAMESPACE),
+        s"$internalPrefix${nameKey}_displayName",
+        Values.utf8Value(valueMapper(name.name)),
+        wasParameter = false,
+        IdentityConverter
+      )
+    case name @ NamespacedName(_, Some(namespace)) =>
+      DatabaseNameFields(
+        s"$internalPrefix$nameKey",
+        Values.utf8Value(valueMapper(name.name)),
+        s"$internalPrefix${nameKey}_namespace",
+        Values.utf8Value(valueMapper(namespace)),
+        s"$internalPrefix${nameKey}_displayName",
+        Values.utf8Value(
+          (if (namespace == DEFAULT_NAMESPACE) valueMapper(name.name)
+           else valueMapper(namespace) + "." + valueMapper(name.name))
+        ),
+        wasParameter = false,
+        IdentityConverter
+      )
+    case ParameterName(parameter) =>
+      def rename: String => String = paramName => internalKey(paramName)
+      val displayNameKey = internalKey(parameter.name + "_displayName")
+      DatabaseNameFields(
+        rename(parameter.name),
+        Values.NO_VALUE,
+        internalKey(parameter.name + "_namespace"),
+        Values.utf8Value(DEFAULT_NAMESPACE),
+        displayNameKey,
+        Values.NO_VALUE,
+        wasParameter = true,
+        (_, params) => {
+          val paramValue = params.get(parameter.name)
+          if (!paramValue.isInstanceOf[TextValue]) {
+            throw new ParameterWrongTypeException(
+              s"Expected parameter $$${parameter.name} to have type String but was $paramValue"
+            )
+          } else {
+            val nameParts = paramValue.asInstanceOf[TextValue].stringValue().split('.')
+            if (nameParts.length == 1) {
+              params.updatedWith(rename(parameter.name), Values.utf8Value(valueMapper(nameParts(0))))
+                .updatedWith(displayNameKey, Values.utf8Value(valueMapper(nameParts(0))))
+            } else {
+              val displayName =
+                if (nameParts(0).equals(DEFAULT_NAMESPACE))
+                  Values.utf8Value(valueMapper(nameParts.tail.mkString(".")))
+                else paramValue
+              params.updatedWith(
+                internalKey(parameter.name + "_namespace"),
+                Values.utf8Value(valueMapper(nameParts(0)))
+              )
+                .updatedWith(internalKey(parameter.name), Values.utf8Value(valueMapper(nameParts.tail.mkString("."))))
+                .updatedWith(displayNameKey, displayName)
+            }
+          }
+        }
+      )
+  }
+
+  private[internal] def runtimeStringValue(field: DatabaseName, params: MapValue): String = field match {
+    case n: NamespacedName => n.toString
+    case ParameterName(p)  => runtimeStringValue(p.name, params)
+  }
+
   private[internal] def runtimeStringValue(field: Either[String, Parameter], params: MapValue): String = field match {
-    case Left(u)  => u
+    case Left(s)  => s
     case Right(p) => runtimeStringValue(p.name, params)
   }
 
-  private def runtimeStringValue(parameter: String, params: MapValue): String = {
+  private[internal] def runtimeStringValue(parameter: String, params: MapValue): String = {
     val value: AnyValue =
       if (params.containsKey(parameter))
         params.get(parameter)
@@ -478,8 +581,8 @@ object AdministrationCommandRuntime {
 
   case class RenamingStringParameterConverter(
     parameter: String,
-    rename: String => String = identity _,
-    valueMapper: TextValue => TextValue = identity _
+    rename: String => String = identity,
+    valueMapper: TextValue => TextValue = identity
   ) extends ((Transaction, MapValue) => MapValue) {
 
     def apply(transaction: Transaction, params: MapValue): MapValue = {
@@ -497,5 +600,85 @@ object AdministrationCommandRuntime {
     def apply(transaction: Transaction, map: MapValue): MapValue = map
   }
 
-  case class NameFields(nameKey: String, nameValue: Value, nameConverter: (Transaction, MapValue) => MapValue)
+  trait NameConverter {
+    val nameConverter: (Transaction, MapValue) => MapValue
+  }
+
+  case class NameFields(
+    nameKey: String,
+    nameValue: Value,
+    override val nameConverter: (Transaction, MapValue) => MapValue
+  ) extends NameConverter
+
+  case class DatabaseNameFields(
+    nameKey: String,
+    nameValue: Value,
+    namespaceKey: String,
+    namespaceValue: Value,
+    displayNameKey: String,
+    displayNameValue: Value,
+    wasParameter: Boolean,
+    override val nameConverter: (Transaction, MapValue) => MapValue
+  ) extends NameConverter {
+
+    val keys: Array[String] = Array(nameKey, namespaceKey, displayNameKey)
+    val values: Array[AnyValue] = Array(nameValue, namespaceValue, displayNameValue)
+
+    def asNodeFilter: String = s"{$NAME_PROPERTY: $$`$nameKey`, $NAMESPACE_PROPERTY: $$`$namespaceKey`}"
+
+  }
+
+  type Show[T] = (T, MapValue) => String
+
+  object Show {
+    implicit val showDatabaseName: Show[DatabaseName] = (databaseName, p) => runtimeStringValue(databaseName, p)
+    implicit val showString: Show[Either[String, Parameter]] = (s, p) => runtimeStringValue(s, p)
+  }
+
+  /*
+   * This is a bit of a kludge to get around database names being ambiguous in 5.0 for backward
+   * compatibility. We assume that 'db.name' means 'name' in composite 'db' but in case db does
+   * not exist we need to rewrite the parameters to mean 'db.name' in the default namespace. Also flag
+   * this usage as deprecated.
+   */
+  def checkNamespaceExists(aliasNameFields: DatabaseNameFields)(
+    tx: Transaction,
+    params: MapValue
+  ): (MapValue, Set[InternalNotification]) = {
+
+    def paramString(key: String) = params.get(key).asInstanceOf[StringValue].stringValue()
+
+    if (paramString(aliasNameFields.namespaceKey) != DEFAULT_NAMESPACE) {
+      // Check to see if there is a composite database node for this alias
+      // MATCH (dbname:DatabaseName{name: name})-[:TARGETS]->(:CompositeDatabase) WHERE dbname.namespace = namespace
+      val compositeDatabaseExists = Using.resource(tx.findNodes(
+        DATABASE_NAME_LABEL,
+        DATABASE_NAME_PROPERTY,
+        paramString(aliasNameFields.namespaceKey)
+      )) { nodes =>
+        nodes.asScala.exists(n =>
+          n.getProperty(NAMESPACE_PROPERTY).equals(DEFAULT_NAMESPACE) && n.getSingleRelationship(
+            TARGETS_RELATIONSHIP,
+            Direction.OUTGOING
+          ).getEndNode.hasLabel(COMPOSITE_DATABASE_LABEL)
+        )
+      }
+      if (!compositeDatabaseExists) {
+        val aliasName = paramString(aliasNameFields.namespaceKey) + "." + paramString(aliasNameFields.nameKey)
+        // This is just a regular local alias with . in the name, so use the default namespace
+        (
+          params.updatedWith(
+            aliasNameFields.nameKey,
+            Values.utf8Value(aliasName)
+          )
+            .updatedWith(aliasNameFields.namespaceKey, Values.utf8Value(DEFAULT_NAMESPACE)),
+          if (aliasNameFields.wasParameter) Set.empty else Set(DeprecatedDatabaseNameNotification(aliasName, None))
+        )
+      } else {
+        (params, Set.empty)
+      }
+    } else {
+      (params, Set.empty)
+    }
+  }
 }

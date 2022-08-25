@@ -33,8 +33,8 @@ import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.memory.HeapHighWaterMarkTracker
 
 import java.util
-import java.util.Collections
 
+import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.util.Using
 
 /**
@@ -45,7 +45,8 @@ case class SystemCommandRuntimeResult(
   execution: SystemCommandExecutionResult,
   subscriber: SystemCommandQuerySubscriber,
   securityContext: SecurityContext,
-  kernelTransaction: KernelTransaction
+  kernelTransaction: KernelTransaction,
+  runtimeNotifications: Set[InternalNotification]
 ) extends RuntimeResult {
 
   override val fieldNames: Array[String] = execution.fieldNames()
@@ -80,7 +81,7 @@ case class SystemCommandRuntimeResult(
     hasMore
   }
 
-  override def notifications(): util.Set[InternalNotification] = Collections.emptySet()
+  override def notifications(): util.Set[InternalNotification] = runtimeNotifications.asJava
 }
 
 class SystemCommandExecutionResult(val inner: InternalExecutionResult) {

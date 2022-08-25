@@ -162,12 +162,19 @@ public interface TopologyGraphDbmsModel {
     Label DATABASE_NAME_LABEL = Label.label("DatabaseName");
     String DATABASE_NAME = DATABASE_NAME_LABEL.name();
     String DATABASE_NAME_LABEL_DESCRIPTION = "Database alias";
+
+    Label COMPOSITE_DATABASE_LABEL = Label.label("CompositeDatabase");
+    String COMPOSITE_DATABASE = COMPOSITE_DATABASE_LABEL.name();
     String NAME_PROPERTY = "name";
     String VERSION_PROPERTY = "version"; // used to refresh connection pool on change
     RelationshipType TARGETS_RELATIONSHIP = RelationshipType.withName("TARGETS");
     String TARGETS = TARGETS_RELATIONSHIP.name();
     String TARGET_NAME_PROPERTY = "target_name";
     String PRIMARY_PROPERTY = "primary";
+    String NAMESPACE_PROPERTY = "namespace";
+
+    String DISPLAY_NAME_PROPERTY = "displayName";
+    String DEFAULT_NAMESPACE = "system-root";
     Label REMOTE_DATABASE_LABEL = Label.label("Remote");
     String REMOTE_DATABASE = REMOTE_DATABASE_LABEL.name();
     String REMOTE_DATABASE_LABEL_DESCRIPTION = "Remote Database alias";
@@ -188,6 +195,10 @@ public interface TopologyGraphDbmsModel {
     RelationshipType CONNECTS_WITH_RELATIONSHIP = RelationshipType.withName("CONNECTS_WITH");
     String CONNECTS_WITH = CONNECTS_WITH_RELATIONSHIP.name();
 
+    RelationshipType PROPERTIES_RELATIONSHIP = RelationshipType.withName("PROPERTIES");
+    String PROPERTIES = PROPERTIES_RELATIONSHIP.name();
+    Label ALIAS_PROPERTIES_LABEL = Label.label("AliasProperties");
+    String ALIAS_PROPERTIES = ALIAS_PROPERTIES_LABEL.name();
     Label INSTANCE_LABEL = Label.label("Instance");
     Label REMOVED_INSTANCE_LABEL = Label.label("RemovedInstance");
     String INSTANCE_UUID_PROPERTY = "uuid";

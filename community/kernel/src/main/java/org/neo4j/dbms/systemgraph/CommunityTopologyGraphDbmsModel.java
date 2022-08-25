@@ -113,7 +113,7 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
     }
 
     private Stream<DatabaseReference.Internal> getAllInternalDatabaseReferences0() {
-        return tx.findNodes(DATABASE_NAME_LABEL).stream()
+        return tx.findNodes(DATABASE_NAME_LABEL, NAMESPACE_PROPERTY, DEFAULT_NAMESPACE).stream()
                 .flatMap(
                         alias -> getTargetedDatabase(alias).flatMap(db -> createInternalReference(alias, db)).stream());
     }
@@ -222,7 +222,7 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
     }
 
     private Optional<DatabaseReference> getInternalDatabaseReference(String databaseName) {
-        var aliasNode = Optional.ofNullable(tx.findNode(DATABASE_NAME_LABEL, NAME_PROPERTY, databaseName));
+        var aliasNode = findAliasNodeInDefaultNamespace(databaseName);
         return aliasNode.flatMap(alias -> getTargetedDatabase(alias).flatMap(db -> createInternalReference(alias, db)));
     }
 
@@ -232,8 +232,8 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
     }
 
     private Optional<NamedDatabaseId> getDatabaseIdByAlias0(String databaseName) {
-        var node = Optional.ofNullable(tx.findNode(DATABASE_NAME_LABEL, NAME_PROPERTY, databaseName));
-        return node.flatMap(CommunityTopologyGraphDbmsModel::getTargetedDatabase);
+        return findAliasNodeInDefaultNamespace(databaseName)
+                .flatMap(CommunityTopologyGraphDbmsModel::getTargetedDatabase);
     }
 
     private Optional<NamedDatabaseId> getDatabaseIdBy(String propertyKey, String propertyValue) {
@@ -307,6 +307,14 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
                     String.format("%s has non %s property %s.", labelName, type.getSimpleName(), key));
         }
         return type.cast(value);
+    }
+
+    private Optional<Node> findAliasNodeInDefaultNamespace(String databaseName) {
+        return tx.findNodes(DATABASE_NAME_LABEL, NAME_PROPERTY, databaseName).stream()
+                .filter(n -> getOptionalPropertyOnNode(DATABASE_NAME, n, NAMESPACE_PROPERTY, String.class)
+                        .orElse(DEFAULT_NAMESPACE)
+                        .equals(DEFAULT_NAMESPACE))
+                .findFirst();
     }
 
     private static <T> Optional<T> ignoreConcurrentDeletes(Supplier<Optional<T>> operation) {

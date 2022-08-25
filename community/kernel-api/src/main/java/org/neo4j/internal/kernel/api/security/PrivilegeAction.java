@@ -64,6 +64,8 @@ public enum PrivilegeAction {
     CREATE_DATABASE,
     DROP_DATABASE,
     SET_DATABASE_ACCESS,
+    CREATE_COMPOSITE_DATABASE,
+    DROP_COMPOSITE_DATABASE,
 
     CREATE_ALIAS,
     DROP_ALIAS,
@@ -155,6 +157,19 @@ public enum PrivilegeAction {
         }
     },
 
+    COMPOSITE_DATABASE_MANAGEMENT {
+        @Override
+        public boolean satisfies(PrivilegeAction action) {
+            switch (action) {
+                case CREATE_COMPOSITE_DATABASE:
+                case DROP_COMPOSITE_DATABASE:
+                    return true;
+                default:
+                    return this == action;
+            }
+        }
+    },
+
     DATABASE_MANAGEMENT {
         @Override
         public boolean satisfies(PrivilegeAction action) {
@@ -163,7 +178,9 @@ public enum PrivilegeAction {
                 case DROP_DATABASE:
                     return true;
                 default:
-                    return ALTER_DATABASE.satisfies(action) || this == action;
+                    return ALTER_DATABASE.satisfies(action)
+                            || COMPOSITE_DATABASE_MANAGEMENT.satisfies(action)
+                            || this == action;
             }
         }
     },

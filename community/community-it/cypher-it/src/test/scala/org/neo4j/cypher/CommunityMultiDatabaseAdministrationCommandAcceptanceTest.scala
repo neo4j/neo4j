@@ -49,6 +49,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
   private val onlineStatus = DatabaseStatus.Online.stringValue()
   private val defaultConfig = Config.defaults()
   private val accessString = "read-write"
+  private val typeString = "standard"
   private val localHostString = "localhost:7687"
   private val dbDefaultMap = Map("db" -> DEFAULT_DATABASE_NAME)
   private val nameDefaultMap = Map("name" -> DEFAULT_DATABASE_NAME)
@@ -160,7 +161,10 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DATABASES")
 
     // THEN
-    result.toSet should be(Set(db(DEFAULT_DATABASE_NAME, home = true, default = true), db(SYSTEM_DATABASE_NAME)))
+    result.toSet should be(Set(
+      db(DEFAULT_DATABASE_NAME, home = true, default = true),
+      db(SYSTEM_DATABASE_NAME, dbType = SYSTEM_DATABASE_NAME)
+    ))
   }
 
   test("should fail when showing databases when not on system database") {
@@ -179,7 +183,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DEFAULT DATABASE")
 
     // THEN
-    result.toList should be(List(homeOrdefaultDb(DEFAULT_DATABASE_NAME)))
+    result.toList should be(List(homeOrDefaultDb(DEFAULT_DATABASE_NAME)))
   }
 
   test("should show custom default database using show default database command") {
@@ -192,7 +196,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DEFAULT DATABASE")
 
     // THEN
-    result.toList should be(List(homeOrdefaultDb("foo")))
+    result.toList should be(List(homeOrDefaultDb("foo")))
   }
 
   test("should show correct default database for switch of default database") {
@@ -204,7 +208,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DEFAULT DATABASE")
 
     // THEN
-    result.toSet should be(Set(homeOrdefaultDb(DEFAULT_DATABASE_NAME)))
+    result.toSet should be(Set(homeOrDefaultDb(DEFAULT_DATABASE_NAME)))
 
     // GIVEN
     config.set(default_database, "foo")
@@ -217,7 +221,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
 
     // Required because current acceptance test machinery doesn't actually start foo
     //   but the defaultDb row constructor assumes currentStatus -> started
-    val expectedRow = homeOrdefaultDb("foo") + ("currentStatus" -> "unknown")
+    val expectedRow = homeOrDefaultDb("foo") ++ Map("currentStatus" -> "unknown")
     result2.toSet should be(Set(expectedRow))
   }
 
@@ -237,7 +241,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW HOME DATABASE")
 
     // THEN
-    result.toList should be(List(homeOrdefaultDb(DEFAULT_DATABASE_NAME)))
+    result.toList should be(List(homeOrDefaultDb(DEFAULT_DATABASE_NAME)))
   }
 
   // yield / skip / limit / order by / where
@@ -265,9 +269,10 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DATABASE $db YIELD *", dbDefaultMap).toList.head
 
     // THEN
-    result should have size 23
+    result should have size 25
     result should contain.allOf(
       "name" -> DEFAULT_DATABASE_NAME,
+      "type" -> "standard",
       "access" -> "read-write",
       "aliases" -> Seq(),
       "address" -> localHostString,
@@ -281,7 +286,8 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
       "requestedSecondariesCount" -> null,
       "store" -> "record-aligned-1.1",
       "lastCommittedTxn" -> null,
-      "replicationLag" -> 0
+      "replicationLag" -> 0,
+      "constituents" -> Seq.empty
     )
   }
 
@@ -427,7 +433,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute(s"SHOW DATABASE $DEFAULT_DATABASE_NAME YIELD *").toList.head
 
     // THEN
-    result should contain allElementsOf homeOrdefaultDb(DEFAULT_DATABASE_NAME)
+    result should contain allElementsOf homeOrDefaultDb(DEFAULT_DATABASE_NAME)
     result("replicationLag") shouldBe 0
     result("lastCommittedTxn") shouldBe null
     result("serverID") should beAValidUUID()
@@ -701,11 +707,67 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     )
   }
 
+  test("should fail on creating composite database from community") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // THEN
+
+    assertFailure("CREATE COMPOSITE DATABASE foo", "Unsupported administration command: CREATE COMPOSITE DATABASE foo")
+
+    assertFailure(
+      "CREATE COMPOSITE DATABASE $foo",
+      "Unsupported administration command: CREATE COMPOSITE DATABASE $foo"
+    )
+
+    assertFailure(
+      s"CREATE COMPOSITE DATABASE $DEFAULT_DATABASE_NAME",
+      s"Unsupported administration command: CREATE COMPOSITE DATABASE $DEFAULT_DATABASE_NAME"
+    )
+
+    assertFailure(
+      s"CREATE COMPOSITE DATABASE $DEFAULT_DATABASE_NAME IF NOT EXISTS",
+      s"Unsupported administration command: CREATE COMPOSITE DATABASE $DEFAULT_DATABASE_NAME IF NOT EXISTS"
+    )
+
+    assertFailure(
+      s"CREATE OR REPLACE COMPOSITE DATABASE $DEFAULT_DATABASE_NAME",
+      s"Unsupported administration command: CREATE OR REPLACE COMPOSITE DATABASE $DEFAULT_DATABASE_NAME"
+    )
+  }
+
+  test("should fail on dropping composite database from community") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // THEN
+
+    assertFailure("DROP COMPOSITE DATABASE foo", "Unsupported administration command: DROP COMPOSITE DATABASE foo")
+
+    assertFailure("DROP COMPOSITE DATABASE $foo", "Unsupported administration command: DROP COMPOSITE DATABASE $foo")
+
+    assertFailure(
+      s"DROP COMPOSITE DATABASE $DEFAULT_DATABASE_NAME",
+      s"Unsupported administration command: DROP COMPOSITE DATABASE $DEFAULT_DATABASE_NAME"
+    )
+
+    assertFailure(
+      s"DROP COMPOSITE DATABASE foo IF EXISTS",
+      s"Unsupported administration command: DROP COMPOSITE DATABASE foo IF EXISTS"
+    )
+  }
+
   // Helper methods
 
-  private def db(name: String, home: Boolean = false, default: Boolean = false): Map[String, Any] =
+  private def db(
+    name: String,
+    dbType: String = typeString,
+    home: Boolean = false,
+    default: Boolean = false
+  ): Map[String, Any] =
     Map(
       "name" -> name,
+      "type" -> dbType,
       "aliases" -> Seq.empty,
       "access" -> accessString,
       "address" -> localHostString,
@@ -715,12 +777,14 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
       "currentStatus" -> onlineStatus,
       "statusMessage" -> "",
       "default" -> default,
-      "home" -> home
+      "home" -> home,
+      "constituents" -> List()
     )
 
-  private def homeOrdefaultDb(name: String): Map[String, Any] =
+  private def homeOrDefaultDb(name: String): Map[String, Any] =
     Map(
       "name" -> name,
+      "type" -> typeString,
       "aliases" -> Seq.empty,
       "access" -> accessString,
       "address" -> localHostString,
@@ -728,7 +792,8 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
       "writer" -> true,
       "requestedStatus" -> onlineStatus,
       "currentStatus" -> onlineStatus,
-      "statusMessage" -> ""
+      "statusMessage" -> "",
+      "constituents" -> List()
     )
 
   // Disable normal database creation because we need different settings on each test

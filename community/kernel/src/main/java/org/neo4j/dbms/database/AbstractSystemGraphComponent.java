@@ -21,15 +21,16 @@ package org.neo4j.dbms.database;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
-import java.util.List;
+import java.util.Arrays;
+import java.util.Optional;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintCreator;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
-import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.util.Preconditions;
 
 /**
@@ -88,17 +89,28 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
         }
     }
 
-    protected static void initializeSystemGraphConstraint(Transaction tx, Label label, String property) {
+    protected static void initializeSystemGraphConstraint(Transaction tx, Label label, String... properties) {
         // Makes the creation of constraints for security idempotent
-        if (!hasUniqueConstraint(tx, label, property)) {
-            tx.schema().constraintFor(label).assertPropertyIsUnique(property).create();
+        if (!hasUniqueConstraint(tx, label, properties)) {
+            ConstraintCreator cb = tx.schema().constraintFor(label);
+            for (String prop : properties) {
+                cb = cb.assertPropertyIsUnique(prop);
+            }
+            cb.create();
         }
     }
 
-    protected static boolean hasUniqueConstraint(Transaction tx, Label label, String property) {
-        return Iterators.stream(tx.schema().getConstraints(label).iterator())
-                .anyMatch(constraintDefinition ->
-                        Iterables.asList(constraintDefinition.getPropertyKeys()).equals(List.of(property))
-                                && constraintDefinition.isConstraintType(ConstraintType.UNIQUENESS));
+    protected static boolean hasUniqueConstraint(Transaction tx, Label label, String... properties) {
+        return findUniqueConstraint(tx, label, properties).isPresent();
+    }
+
+    protected static Optional<ConstraintDefinition> findUniqueConstraint(
+            Transaction tx, Label label, String... properties) {
+        for (ConstraintDefinition constraintDefinition : tx.schema().getConstraints(label)) {
+            if (constraintDefinition.getPropertyKeys().equals(Arrays.asList(properties))
+                    && constraintDefinition.isConstraintType(ConstraintType.UNIQUENESS))
+                return Optional.of(constraintDefinition);
+        }
+        return Optional.empty();
     }
 }

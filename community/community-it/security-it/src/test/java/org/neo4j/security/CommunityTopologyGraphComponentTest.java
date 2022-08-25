@@ -28,17 +28,23 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_ACCESS_
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DISPLAY_NAME_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseAccess.READ_WRITE;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAMESPACE_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAME_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.PRIMARY_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS_RELATIONSHIP;
 
 import java.time.Clock;
+import java.util.Map;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DefaultSystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponent;
@@ -48,6 +54,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -70,6 +77,7 @@ class CommunityTopologyGraphComponentTest {
     static void setup() {
         dbms = new TestDatabaseManagementServiceBuilder(directory.homePath())
                 .impermanent()
+                .setConfig(Map.of(GraphDatabaseInternalSettings.trace_cursors, true))
                 .noOpSystemGraphInitializer()
                 .build();
         system = dbms.database(SYSTEM_DATABASE_NAME);
@@ -249,6 +257,40 @@ class CommunityTopologyGraphComponentTest {
 
         // THEN
         inTx(tx -> shouldHavePrimaryAlias(DEFAULT_DATABASE_NAME, tx));
+    }
+
+    @Test
+    void shouldHaveNamespaceAndDisplayNameOnUpgradeToV1() throws Exception {
+        // GIVEN
+        initializeSystem();
+        CommunityTopologyGraphComponent component =
+                new CommunityTopologyGraphComponent(Config.defaults(), NullLogProvider.getInstance());
+        component.initializeSystemGraph(system, true);
+
+        inTx(tx -> {
+            // Remove any namespaces / displaynames to get 4.4 behaviour
+            try (ResourceIterator<Node> nodes = tx.findNodes(DATABASE_NAME_LABEL)) {
+                nodes.forEachRemaining(node -> {
+                    node.removeProperty(NAMESPACE_PROPERTY);
+                    node.removeProperty(DISPLAY_NAME_PROPERTY);
+                });
+            }
+        });
+        setComponentVersionTo(0);
+
+        // WHEN
+        component.upgradeToCurrent(system);
+
+        // THEN
+        inTx(tx -> {
+            try (ResourceIterator<Node> nodes = tx.findNodes(DATABASE_NAME_LABEL)) {
+                nodes.forEachRemaining(node -> {
+                    String name = (String) node.getProperty(NAME_PROPERTY);
+                    assertThat(node.getProperty(DISPLAY_NAME_PROPERTY)).isEqualTo(name);
+                    assertThat(node.getProperty(NAMESPACE_PROPERTY)).isEqualTo(DEFAULT_NAMESPACE);
+                });
+            }
+        });
     }
 
     private static void shouldHavePrimaryAlias(String dbName, Transaction tx) {

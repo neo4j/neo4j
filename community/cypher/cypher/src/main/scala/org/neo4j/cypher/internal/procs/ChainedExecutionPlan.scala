@@ -42,6 +42,7 @@ import org.neo4j.values.virtual.MapValue
 import java.util
 
 import scala.jdk.CollectionConverters.SetHasAsJava
+import scala.jdk.CollectionConverters.SetHasAsScala
 
 /**
  * System commands are broken down into a linear chain of sub-commands. The outermost (or last) command
@@ -60,7 +61,8 @@ abstract class ChainedExecutionPlan[T <: QueryContext with CountingQueryContext]
     params: MapValue,
     prePopulateResults: Boolean,
     ignore: InputDataStream,
-    subscriber: QuerySubscriber
+    subscriber: QuerySubscriber,
+    previousNotifications: Set[InternalNotification]
   ): RuntimeResult
 
   def createContext(originalCtx: QueryContext): T
@@ -79,20 +81,30 @@ abstract class ChainedExecutionPlan[T <: QueryContext with CountingQueryContext]
     val sourceResult =
       source.map(_.run(ctx, executionMode, params, prePopulateResults, ignore, querySubscriber(ctx, subscriber)))
     sourceResult match {
-      case Some(_: IgnoredRuntimeResult) =>
-        onSkip(ctx, subscriber)
-      case Some(UpdatingSystemCommandRuntimeResult(newCtx, _)) =>
-        runSpecific(newCtx.asInstanceOf[T], executionMode, params, prePopulateResults, ignore, subscriber)
+      case Some(i: IgnoredRuntimeResult) =>
+        onSkip(ctx, subscriber, i.runtimeNotifications)
+      case Some(UpdatingSystemCommandRuntimeResult(newCtx, runtimeNotifications)) =>
+        runSpecific(
+          newCtx.asInstanceOf[T],
+          executionMode,
+          params,
+          prePopulateResults,
+          ignore,
+          subscriber,
+          runtimeNotifications
+        )
+      case Some(r: RuntimeResult) =>
+        runSpecific(ctx, executionMode, params, prePopulateResults, ignore, subscriber, r.notifications.asScala.toSet)
       case _ =>
-        runSpecific(ctx, executionMode, params, prePopulateResults, ignore, subscriber)
+        runSpecific(ctx, executionMode, params, prePopulateResults, ignore, subscriber, Set.empty)
     }
   }
 
-  def onSkip(ctx: T, subscriber: QuerySubscriber): RuntimeResult = {
+  def onSkip(ctx: T, subscriber: QuerySubscriber, runtimeNotifications: Set[InternalNotification]): RuntimeResult = {
     // When an operation in the chain switches the entire chain to ignore mode we still need to notify the outer most subscriber
     // This is a no-op for all elements of the chain except the last (outermost) which will be the BoltAdapterSubscriber
     subscriber.onResultCompleted(ctx.getStatistics)
-    IgnoredRuntimeResult()
+    IgnoredRuntimeResult(runtimeNotifications)
   }
 
   override def metadata: Seq[Argument] = Nil

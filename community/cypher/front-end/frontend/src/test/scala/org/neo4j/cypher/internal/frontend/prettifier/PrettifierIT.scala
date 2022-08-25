@@ -1055,6 +1055,12 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED",
     "create user abc set plaintext password $password" ->
       "CREATE USER abc SET PASSWORD $password CHANGE REQUIRED",
+    "create user abc set password $password set home database neo4j" ->
+      "CREATE USER abc SET PASSWORD $password CHANGE REQUIRED SET HOME DATABASE neo4j",
+    "create user abc set password $password set home database a.b" ->
+      "CREATE USER abc SET PASSWORD $password CHANGE REQUIRED SET HOME DATABASE a.b",
+    "create user abc set password $password set home database `a.b`" ->
+      "CREATE USER abc SET PASSWORD $password CHANGE REQUIRED SET HOME DATABASE `a.b`",
     "rename user alice to bob" ->
       "RENAME USER alice TO bob",
     "rename user `a%i$e` if exists to `b!b`" ->
@@ -1097,6 +1103,10 @@ class PrettifierIT extends CypherFunSuite {
       "ALTER USER abc SET PASSWORD $password",
     "alter user abc set status active set home database db1 set password change not required" ->
       "ALTER USER abc SET PASSWORD CHANGE NOT REQUIRED SET STATUS ACTIVE SET HOME DATABASE db1",
+    "alter user abc set status active set home database db1.db2 set password change not required" ->
+      "ALTER USER abc SET PASSWORD CHANGE NOT REQUIRED SET STATUS ACTIVE SET HOME DATABASE db1.db2",
+    "alter user abc set status active set home database `db1.db2` set password change not required" ->
+      "ALTER USER abc SET PASSWORD CHANGE NOT REQUIRED SET STATUS ACTIVE SET HOME DATABASE `db1.db2`",
     "alter user abc set status active set password change not required" ->
       "ALTER USER abc SET PASSWORD CHANGE NOT REQUIRED SET STATUS ACTIVE",
     "alter user abc set home database null" ->
@@ -1398,6 +1408,22 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE DATABASE `graph.db` OPTIONS {existingData: \"use\", existingDataSeedInstance: \"84c3ee6f-260e-47db-a4b6-589c807f2c2e\"} WAIT",
     "create database graph.db options $ops wait" ->
       "CREATE DATABASE `graph.db` OPTIONS $ops WAIT",
+    "create composite database composite" ->
+      "CREATE COMPOSITE DATABASE composite",
+    "create composite database `composite.DB`" ->
+      "CREATE COMPOSITE DATABASE `composite.DB`",
+    "create or replace composite database composite" ->
+      "CREATE OR REPLACE COMPOSITE DATABASE composite",
+    "create composite database composite if not exists" ->
+      "CREATE COMPOSITE DATABASE composite IF NOT EXISTS",
+    "create composite database composite if not exists wait 10 seconds" ->
+      "CREATE COMPOSITE DATABASE composite IF NOT EXISTS WAIT 10 SECONDS",
+    "create composite database $c" ->
+      "CREATE COMPOSITE DATABASE $c",
+    "create or replace composite database $c" ->
+      "CREATE OR REPLACE COMPOSITE DATABASE $c",
+    "create composite database $c if not exists" ->
+      "CREATE COMPOSITE DATABASE $c IF NOT EXISTS",
     "DROP database foO_Bar_42" ->
       "DROP DATABASE foO_Bar_42 DESTROY DATA",
     "DROP database $foo" ->
@@ -1410,6 +1436,10 @@ class PrettifierIT extends CypherFunSuite {
       "DROP DATABASE foO_Bar_42 DUMP DATA",
     "DROP database foO_Bar_42 Destroy DATA" ->
       "DROP DATABASE foO_Bar_42 DESTROY DATA",
+    "DROP composite database foo Destroy DATA" ->
+      "DROP COMPOSITE DATABASE foo DESTROY DATA",
+    "DROP composite database $foo DUMP DATA" ->
+      "DROP COMPOSITE DATABASE $foo DUMP DATA",
     "alter database foo set ACCESS read only" ->
       "ALTER DATABASE foo SET ACCESS READ ONLY".stripMargin,
     "alteR databaSe foo if EXISTS SEt access read WRITE" ->
@@ -1419,7 +1449,7 @@ class PrettifierIT extends CypherFunSuite {
     "start database foO_Bar_42" ->
       "START DATABASE foO_Bar_42",
     "start database graph.db" ->
-      "START DATABASE `graph.db`",
+      "START DATABASE graph.db",
     "stop database $foo" ->
       "STOP DATABASE $foo",
     "stop database foO_Bar_42" ->
@@ -1430,12 +1460,20 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE ALIAS alias IF NOT EXISTS FOR DATABASE database",
     "create or replace alias alias FOR database database" ->
       "CREATE OR REPLACE ALIAS alias FOR DATABASE database",
+    "create or replace alias alias FOR database database properties {foo:7}" ->
+      "CREATE OR REPLACE ALIAS alias FOR DATABASE database PROPERTIES {foo: 7}",
+    "create or replace alias alias FOR database database properties { foo : $param }" ->
+      "CREATE OR REPLACE ALIAS alias FOR DATABASE database PROPERTIES {foo: $param}",
     "create alias alias FOR database database at 'url' user user password 'password'" ->
       """CREATE ALIAS alias FOR DATABASE database AT "url" USER user PASSWORD '******'""",
     "create or replace alias alias FOR database database at 'url' user user password 'password' driver { ssl_enforced: $val }" ->
       """CREATE OR REPLACE ALIAS alias FOR DATABASE database AT "url" USER user PASSWORD '******' DRIVER {ssl_enforced: $val}""",
     "create alias $alias if not exists FOR database $database at $url user $user password $password driver { }" ->
       """CREATE ALIAS $alias IF NOT EXISTS FOR DATABASE $database AT $url USER $user PASSWORD $password DRIVER {}""",
+    "create alias $alias if not exists FOR database $database at $url user $user password $password driver { } properties { }" ->
+      """CREATE ALIAS $alias IF NOT EXISTS FOR DATABASE $database AT $url USER $user PASSWORD $password DRIVER {} PROPERTIES {}""",
+    "create alias $alias if not exists FOR database $database at $url user $user password $password properties { foo: 'bar' }" ->
+      """CREATE ALIAS $alias IF NOT EXISTS FOR DATABASE $database AT $url USER $user PASSWORD $password PROPERTIES {foo: "bar"}""",
     "alter alias alias if exists set database target database" ->
       "ALTER ALIAS alias IF EXISTS SET DATABASE TARGET database",
     "alter alias alias set database target database" ->
@@ -1458,6 +1496,10 @@ class PrettifierIT extends CypherFunSuite {
       "SHOW ALIASES FOR DATABASE",
     "show aliases for database" ->
       "SHOW ALIASES FOR DATABASE",
+    "show alias a.BLAh for database" ->
+      "SHOW ALIAS a.BLAh FOR DATABASE",
+    "show alias $foo for database" ->
+      "SHOW ALIAS $foo FOR DATABASE",
     "show aliases for database YIELD * where name = 'neo4j' Return *" ->
       """SHOW ALIASES FOR DATABASE
         |  YIELD *
@@ -1764,8 +1806,10 @@ class PrettifierIT extends CypherFunSuite {
                 s"$action $prettifiedDatabaseAction ON DATABASES $$foo, bar $preposition $$role",
               s"$action $databaseAction on databases FoO $preposition role" ->
                 s"$action $prettifiedDatabaseAction ON DATABASE FoO $preposition role",
-              s"$action $databaseAction on databases F.o.O $preposition role" ->
+              s"$action $databaseAction on databases `F.o.O` $preposition role" ->
                 s"$action $prettifiedDatabaseAction ON DATABASE `F.o.O` $preposition role",
+              s"$action $databaseAction on databases F.o.O $preposition role" ->
+                s"$action $prettifiedDatabaseAction ON DATABASE F.`o.O` $preposition role",
               s"$action $databaseAction on home database $preposition role" ->
                 s"$action $prettifiedDatabaseAction ON HOME DATABASE $preposition role",
               s"$action $databaseAction on default database $preposition role" ->

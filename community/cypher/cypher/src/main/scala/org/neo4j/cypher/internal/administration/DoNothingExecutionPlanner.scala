@@ -19,16 +19,23 @@
  */
 package org.neo4j.cypher.internal.administration
 
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.Show
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.Show.showDatabaseName
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.Show.showString
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.checkNamespaceExists
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.followerError
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.getDatabaseNameFields
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.getNameFields
-import org.neo4j.cypher.internal.AdministrationCommandRuntime.runtimeStringValue
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
+import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAMESPACE_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAME_PROPERTY
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
@@ -78,7 +85,7 @@ case class DoNothingExecutionPlanner(
     )
 
   def planDoNothingIfDatabaseNotExists(
-    name: Either[String, Parameter],
+    name: DatabaseName,
     valueMapper: String => String,
     operation: String,
     sourcePlan: Option[ExecutionPlan]
@@ -95,7 +102,7 @@ case class DoNothingExecutionPlanner(
   }
 
   def planDoNothingIfDatabaseExists(
-    name: Either[String, Parameter],
+    name: DatabaseName,
     valueMapper: String => String,
     sourcePlan: Option[ExecutionPlan]
   ): ExecutionPlan =
@@ -135,40 +142,46 @@ case class DoNothingExecutionPlanner(
 
   private def planDoNothingDatabase(
     planName: String,
-    name: Either[String, Parameter],
+    name: DatabaseName,
     valueMapper: String => String,
     queryHandler: QueryHandler,
     sourcePlan: Option[ExecutionPlan]
   ): ExecutionPlan = {
-    val nameFields = getNameFields("name", name, valueMapper = valueMapper)
+    val nameFields = getDatabaseNameFields("name", name, valueMapper = valueMapper)
     UpdatingSystemCommandExecutionPlan(
       planName,
       normalExecutionEngine,
       securityAuthorizationHandler,
+      // Need to be backward compatible to 4.4 here because the upgrade to 5.0 uses CREATE DATABASE IF NOT EXISTS
       s"""
-         |MATCH (d:$DATABASE_NAME {$NAME_PROPERTY: $$`${nameFields.nameKey}`}) RETURN d.$NAME_PROPERTY
-         |UNION
-         |MATCH (d:$DATABASE {$NAME_PROPERTY: $$`${nameFields.nameKey}`}) RETURN d.$NAME_PROPERTY
+          MATCH (d:$DATABASE_NAME ${nameFields.asNodeFilter}) RETURN d.$NAME_PROPERTY
+          UNION
+          MATCH (d:$DATABASE_NAME {$NAME_PROPERTY: $$`${nameFields.nameKey}`})
+            WHERE d.$NAMESPACE_PROPERTY IS NULL AND $$`${nameFields.namespaceKey}`='$DEFAULT_NAMESPACE' RETURN d.$NAME_PROPERTY
         """.stripMargin,
-      VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)),
+      VirtualValues.map(
+        nameFields.keys,
+        nameFields.values
+      ),
       queryHandler,
       sourcePlan,
-      parameterConverter = nameFields.nameConverter
+      parameterConverter = nameFields.nameConverter,
+      parameterValidator = checkNamespaceExists(nameFields)
     )
   }
 
-  private def handleErrorFn(
+  private def handleErrorFn[T](
     operation: String,
     labelDescription: String,
-    name: Either[String, Parameter]
-  ): (Throwable, MapValue) => Throwable = {
+    name: T
+  )(implicit show: Show[T]): (Throwable, MapValue) => Throwable = {
     case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
       new DatabaseAdministrationOnFollowerException(
-        s"Failed to $operation the specified ${labelDescription.toLowerCase} '${runtimeStringValue(name, p)}': $followerError",
+        s"Failed to $operation the specified ${labelDescription.toLowerCase} '${show(name, p)}': $followerError",
         error
       )
     case (error, p) => new IllegalStateException(
-        s"Failed to $operation the specified ${labelDescription.toLowerCase} '${runtimeStringValue(name, p)}'.",
+        s"Failed to $operation the specified ${labelDescription.toLowerCase} '${show(name, p)}'.",
         error
       ) // should not get here but need a default case
   }

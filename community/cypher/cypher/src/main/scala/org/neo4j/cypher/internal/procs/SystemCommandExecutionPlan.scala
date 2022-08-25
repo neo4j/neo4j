@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.ProfileMode
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.graphdb.Transaction
@@ -55,6 +56,7 @@ case class SystemCommandExecutionPlan(
   checkCredentialsExpired: Boolean = true,
   parameterGenerator: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY,
   parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p,
+  parameterValidator: (Transaction, MapValue) => (MapValue, Set[InternalNotification]) = (_, p) => (p, Set.empty),
   modeConverter: SecurityContext => SecurityContext = s => s.withMode(AccessMode.Static.READ)
 ) extends AdministrationChainedExecutionPlan(source) {
 
@@ -64,7 +66,8 @@ case class SystemCommandExecutionPlan(
     params: MapValue,
     prePopulateResults: Boolean,
     ignore: InputDataStream,
-    subscriber: QuerySubscriber
+    subscriber: QuerySubscriber,
+    previousNotifications: Set[InternalNotification]
   ): RuntimeResult = {
 
     val tc: TransactionalContext = ctx.kernelTransactionalContext
@@ -72,8 +75,16 @@ case class SystemCommandExecutionPlan(
     withFullDatabaseAccess(tc) { elevatedSecurityContext =>
       val securityContext = tc.securityContext()
       val tx = tc.transaction()
-      val updatedParams =
-        parameterConverter(tx, safeMergeParameters(systemParams, params, parameterGenerator.apply(tx, securityContext)))
+      val (updatedParams, notifications) = {
+        parameterValidator(
+          tx,
+          parameterConverter(
+            tx,
+            safeMergeParameters(systemParams, params, parameterGenerator.apply(tx, securityContext))
+          )
+        )
+      }
+
       val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, queryHandler, updatedParams)
       val execution = normalExecutionEngine.executeSubquery(
         query,
@@ -91,7 +102,8 @@ case class SystemCommandExecutionPlan(
         new SystemCommandExecutionResult(execution),
         systemSubscriber,
         elevatedSecurityContext,
-        tc.kernelTransaction()
+        tc.kernelTransaction(),
+        previousNotifications ++ notifications
       )
     }
   }
@@ -189,7 +201,7 @@ class SystemCommandQuerySubscriber(
 
   def shouldIgnoreResult(): Boolean = ignore
 
-  def getContextUpdates(): MapValue = contextUpdates
+  def getContextUpdates: MapValue = contextUpdates
 
   override def equals(obj: Any): Boolean = inner.equals(obj)
 }

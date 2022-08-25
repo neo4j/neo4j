@@ -30,10 +30,11 @@ sealed trait DefaultScope
 
 sealed trait GraphScope extends GraphOrDatabaseScope
 
-final case class NamedGraphScope(graph: Either[String, Parameter])(val position: InputPosition) extends GraphScope {
+final case class NamedGraphScope(graph: DatabaseName)(val position: InputPosition)
+    extends GraphScope {
 
   override def dup(children: Seq[AnyRef]): NamedGraphScope.this.type =
-    this.copy(children.head.asInstanceOf[Either[String, Parameter]])(position).asInstanceOf[this.type]
+    this.copy(children.head.asInstanceOf[DatabaseName])(position).asInstanceOf[this.type]
 }
 
 final case class AllGraphsScope()(val position: InputPosition) extends GraphScope
@@ -48,11 +49,11 @@ sealed trait DatabaseScope extends GraphOrDatabaseScope {
   val showCommandName: String
 }
 
-final case class NamedDatabaseScope(database: Either[String, Parameter])(val position: InputPosition)
+final case class NamedDatabaseScope(database: DatabaseName)(val position: InputPosition)
     extends DatabaseScope {
 
   override def dup(children: Seq[AnyRef]): NamedDatabaseScope.this.type =
-    this.copy(children.head.asInstanceOf[Either[String, Parameter]])(position).asInstanceOf[this.type]
+    this.copy(children.head.asInstanceOf[DatabaseName])(position).asInstanceOf[this.type]
 
   override val showCommandName: String = "ShowDatabase"
 }

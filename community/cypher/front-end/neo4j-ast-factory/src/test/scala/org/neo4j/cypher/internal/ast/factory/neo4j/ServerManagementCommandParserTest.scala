@@ -87,7 +87,7 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("DROP SERVER $name") {
-    assertAst(ast.DropServer(param("name"))(defaultPos))
+    assertAst(ast.DropServer(stringParam("name"))(defaultPos))
   }
 
   test("DROP SERVER name") {
@@ -104,10 +104,10 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("DEALLOCATE DATABASES FROM SERVER $name") {
-    assertAst(ast.DeallocateServers(Seq(param("name")))(defaultPos))
+    assertAst(ast.DeallocateServers(Seq(stringParam("name")))(defaultPos))
   }
 
   test("DEALLOCATE DATABASE FROM SERVERS $name, 'foo'") {
-    assertAst(ast.DeallocateServers(Seq(param("name"), literal("foo")))(defaultPos))
+    assertAst(ast.DeallocateServers(Seq(stringParam("name"), literal("foo")))(defaultPos))
   }
 }

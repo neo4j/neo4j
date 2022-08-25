@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaComman
 
 class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
   private val databaseScopeFoo = ast.NamedDatabaseScope(literalFoo)(_)
-  private val databaseScopeParamFoo = ast.NamedDatabaseScope(paramFoo)(_)
-  private val databaseScopeBar = ast.NamedDatabaseScope(literalBar)(_)
-  private val databaseScopeParamBar = ast.NamedDatabaseScope(param("bar"))(_)
+  private val databaseScopeParamFoo = ast.NamedDatabaseScope(namespacedParamFoo)(_)
+  private val databaseScopeBar = ast.NamedDatabaseScope(namespacedName("bar"))(_)
+  private val databaseScopeParamBar = ast.NamedDatabaseScope(stringParamName("bar"))(_)
 
   Seq(
     ("GRANT", "TO", grantDatabasePrivilege: databasePrivilegeFunc),
@@ -102,7 +102,7 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationAnd
           test(s"$verb $privilege ON DATABASE more.Dots.more.Dots $preposition role") {
             yields(privilegeFunc(
               action,
-              List(ast.NamedDatabaseScope(literal("more.Dots.more.Dots")) _),
+              List(ast.NamedDatabaseScope(namespacedName("more", "Dots", "more", "Dots")) _),
               Seq(literalRole)
             ))
           }
@@ -421,7 +421,7 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationAnd
         yields(privilegeFunc(
           ast.TerminateTransactionAction,
           List(ast.AllDatabasesScope() _),
-          List(ast.UserQualifier(param("user1")) _, ast.UserQualifier(param("user2")) _),
+          List(ast.UserQualifier(stringParam("user1")) _, ast.UserQualifier(stringParam("user2")) _),
           Seq(literalRole1, literalRole2)
         ))
       }
@@ -547,7 +547,7 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationAnd
         yields(privilegeFunc(
           ast.AllTransactionActions,
           List(ast.AllDatabasesScope() _),
-          List(ast.UserQualifier(literalUser1) _, ast.UserQualifier(param("user2")) _),
+          List(ast.UserQualifier(literalUser1) _, ast.UserQualifier(stringParam("user2")) _),
           Seq(literalRole)
         ))
       }

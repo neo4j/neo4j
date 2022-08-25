@@ -22,6 +22,7 @@ package org.neo4j.storemigration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_LABEL;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAMESPACE_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAME_PROPERTY;
 import static org.neo4j.graphdb.schema.IndexType.LOOKUP;
 import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_LABEL;
@@ -100,14 +101,14 @@ public class DatabaseMigrationCommunityIT extends DatabaseMigrationITBase {
         try (Transaction tx = system.beginTx()) {
             List<ConstraintDefinition> constraints =
                     Iterables.asList(tx.schema().getConstraints());
-            verifyHasUniqueConstraint(constraints, DATABASE_NAME_LABEL, NAME_PROPERTY);
+            verifyHasUniqueConstraint(constraints, DATABASE_NAME_LABEL, NAME_PROPERTY, NAMESPACE_PROPERTY);
             verifyHasUniqueConstraint(constraints, DATABASE_LABEL, NAME_PROPERTY);
             verifyHasUniqueConstraint(constraints, USER_LABEL, "id");
             verifyHasUniqueConstraint(constraints, USER_LABEL, "name");
             assertThat(constraints).hasSize(4);
 
             List<IndexDefinition> indexes = Iterables.asList(tx.schema().getIndexes());
-            verifyHasIndex(indexes, DATABASE_NAME_LABEL, NAME_PROPERTY);
+            verifyHasIndex(indexes, DATABASE_NAME_LABEL, NAME_PROPERTY, NAMESPACE_PROPERTY);
             verifyHasIndex(indexes, DATABASE_LABEL, NAME_PROPERTY);
             verifyHasIndex(indexes, USER_LABEL, "id");
             verifyHasIndex(indexes, USER_LABEL, "name");

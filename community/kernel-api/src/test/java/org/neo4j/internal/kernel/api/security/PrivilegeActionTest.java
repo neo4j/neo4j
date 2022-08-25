@@ -29,8 +29,10 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ALTER_DATAB
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ALTER_USER;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ASSIGN_PRIVILEGE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ASSIGN_ROLE;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.COMPOSITE_DATABASE_MANAGEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CONSTRAINT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_ALIAS;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_COMPOSITE_DATABASE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_CONSTRAINT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_DATABASE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_ELEMENT;
@@ -45,6 +47,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DATABASE_MA
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DBMS_ACTIONS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DELETE_ELEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_ALIAS;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_COMPOSITE_DATABASE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_CONSTRAINT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_DATABASE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_INDEX;
@@ -108,7 +111,10 @@ class PrivilegeActionTest {
         expected.put(ROLE_MANAGEMENT, Set.of(SHOW_ROLE, CREATE_ROLE, RENAME_ROLE, DROP_ROLE, ASSIGN_ROLE, REMOVE_ROLE));
         expected.put(USER_MANAGEMENT, Set.of(SHOW_USER, CREATE_USER, RENAME_USER, DROP_USER, ALTER_USER));
         expected.put(ALTER_USER, Set.of(SET_USER_STATUS, SET_PASSWORDS, SET_USER_HOME_DATABASE));
-        expected.put(DATABASE_MANAGEMENT, Set.of(CREATE_DATABASE, DROP_DATABASE, ALTER_DATABASE));
+        expected.put(
+                DATABASE_MANAGEMENT,
+                Set.of(CREATE_DATABASE, DROP_DATABASE, ALTER_DATABASE, COMPOSITE_DATABASE_MANAGEMENT));
+        expected.put(COMPOSITE_DATABASE_MANAGEMENT, Set.of(CREATE_COMPOSITE_DATABASE, DROP_COMPOSITE_DATABASE));
         expected.put(ALTER_DATABASE, Set.of(SET_DATABASE_ACCESS));
         expected.put(ALIAS_MANAGEMENT, Set.of(CREATE_ALIAS, DROP_ALIAS, ALTER_ALIAS, SHOW_ALIAS));
         expected.put(PRIVILEGE_MANAGEMENT, Set.of(SHOW_PRIVILEGE, ASSIGN_PRIVILEGE, REMOVE_PRIVILEGE));

@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.SuboptimalIndexForConstainsQueryNotification
 import org.neo4j.cypher.internal.compiler.SuboptimalIndexForEndsWithQueryNotification
 import org.neo4j.cypher.internal.util.CartesianProductNotification
+import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
@@ -202,6 +203,11 @@ object NotificationWrapping {
     case FixedLengthRelationshipInShortestPath(pos) =>
       NotificationCode.DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP.notification(
         pos.withOffset(offset).asInputPosition
+      )
+
+    case DeprecatedDatabaseNameNotification(name, pos) => NotificationCode.DEPRECATED_DATABASE_NAME.notification(
+        pos.map(_.withOffset(offset).asInputPosition).getOrElse(graphdb.InputPosition.empty),
+        NotificationDetail.Factory.message("Deprecated name", s"Name: $name")
       )
 
     case _ => throw new IllegalStateException("Missing mapping for notification detail.")

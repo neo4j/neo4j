@@ -36,6 +36,7 @@ import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAMESPACE_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS
 import org.neo4j.graphdb.Transaction
 import org.neo4j.internal.kernel.api.security.AccessMode
@@ -49,7 +50,8 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
 import java.util
-import java.util.Collections
+
+import scala.jdk.CollectionConverters.SetHasAsJava
 
 /**
  * This plan calls the internal procedure dbms.admin.wait which waits for a transaction to replicate across a cluster.
@@ -61,14 +63,20 @@ case class WaitReconciliationExecutionPlan(
   systemParams: MapValue,
   queryHandler: QueryHandler,
   databaseNameParamKey: String,
+  databaseNamespaceParamKey: String,
   timeoutInSeconds: Long,
   source: ExecutionPlan,
-  parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p
+  parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p,
+  parameterValidator: (Transaction, MapValue) => (MapValue, Set[InternalNotification]) = (_, p) => (p, Set.empty)
 ) extends AdministrationChainedExecutionPlan(Some(source)) {
 
   private val txIdParam = "__internal_transactionId"
 
-  override def onSkip(ctx: SystemUpdateCountingQueryContext, subscriber: QuerySubscriber): RuntimeResult = {
+  override def onSkip(
+    ctx: SystemUpdateCountingQueryContext,
+    subscriber: QuerySubscriber,
+    runtimeNotifications: Set[InternalNotification]
+  ): RuntimeResult = {
     SingleRowRuntimeResult(
       Array("address", "state", "message", "success"),
       Array(
@@ -77,7 +85,8 @@ case class WaitReconciliationExecutionPlan(
         Values.stringValue("No operation needed"),
         Values.booleanValue(true)
       ),
-      subscriber
+      subscriber,
+      runtimeNotifications
     )
   }
 
@@ -87,11 +96,12 @@ case class WaitReconciliationExecutionPlan(
     params: MapValue,
     prePopulateResults: Boolean,
     ignore: InputDataStream,
-    subscriber: QuerySubscriber
+    subscriber: QuerySubscriber,
+    previousNotifications: Set[InternalNotification]
   ): RuntimeResult = {
 
     val query =
-      s"""OPTIONAL MATCH (d:$DATABASE_NAME {$DATABASE_NAME_PROPERTY: $$`$databaseNameParamKey`})-[:$TARGETS]-(db:$DATABASE)
+      s"""OPTIONAL MATCH (d:$DATABASE_NAME {$DATABASE_NAME_PROPERTY: $$`$databaseNameParamKey`, $NAMESPACE_PROPERTY: $$`$databaseNamespaceParamKey`})-[:$TARGETS]-(db:$DATABASE)
          |WITH coalesce(db.$DATABASE_UUID_PROPERTY,$$`__internal_databaseUuid`) as uuid, coalesce(db.$DATABASE_NAME_PROPERTY,$$`__internal_deletedDatabaseName`) as name
          |CALL dbms.admin.wait($$`$txIdParam`, uuid, name, $timeoutInSeconds)
          |YIELD address, state, message, success RETURN address, state, message, success""".stripMargin
@@ -99,8 +109,16 @@ case class WaitReconciliationExecutionPlan(
 
     var revertAccessModeChange: KernelTransaction.Revertable = null
     try {
-      val updatedParams =
-        parameterConverter(tc.transaction(), safeMergeParameters(systemParams, params, ctx.contextVars))
+      val tx = tc.transaction()
+      val (updatedParams, notifications) = {
+        parameterValidator(
+          tx,
+          parameterConverter(
+            tx,
+            safeMergeParameters(systemParams, params, ctx.contextVars)
+          )
+        )
+      }
 
       // We can't wait for a transaction from the same transaction so commit the existing transaction
       // and start a new one like PERIODIC COMMIT does
@@ -131,7 +149,8 @@ case class WaitReconciliationExecutionPlan(
         new SystemCommandExecutionResult(execution),
         systemSubscriber,
         fullAccess,
-        tc.kernelTransaction()
+        tc.kernelTransaction(),
+        previousNotifications ++ notifications
       )
     } finally {
       if (revertAccessModeChange != null) revertAccessModeChange.close()
@@ -143,8 +162,12 @@ case class WaitReconciliationExecutionPlan(
   override def metadata: Seq[Argument] = Nil
 }
 
-case class SingleRowRuntimeResult(cols: Array[String], row: Array[Value], subscriber: QuerySubscriber)
-    extends RuntimeResult {
+case class SingleRowRuntimeResult(
+  cols: Array[String],
+  row: Array[Value],
+  subscriber: QuerySubscriber,
+  runtimeNotifications: Set[InternalNotification]
+) extends RuntimeResult {
   import org.neo4j.cypher.internal.runtime.QueryStatistics
 
   private var cs = ConsumptionState.NOT_STARTED
@@ -166,5 +189,5 @@ case class SingleRowRuntimeResult(cols: Array[String], row: Array[Value], subscr
   }
   override def cancel(): Unit = cs = ConsumptionState.EXHAUSTED
   override def await(): Boolean = cs == ConsumptionState.NOT_STARTED
-  override def notifications(): util.Set[InternalNotification] = Collections.emptySet()
+  override def notifications(): util.Set[InternalNotification] = runtimeNotifications.asJava
 }

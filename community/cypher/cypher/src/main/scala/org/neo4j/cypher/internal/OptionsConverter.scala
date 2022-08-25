@@ -50,7 +50,6 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.DoubleValue
 import org.neo4j.values.storable.IntegralValue
-import org.neo4j.values.storable.NoValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.utils.PrettyPrinter
 import org.neo4j.values.virtual.ListValue
@@ -492,44 +491,3 @@ case class CreateDatabaseOptions(
   seedCredentials: Option[String],
   seedConfig: Option[String]
 )
-
-object MapValueOps {
-
-  implicit class Ops(mv: MapValue) extends Map[String, AnyValue] {
-
-    def getOption(key: String): Option[AnyValue] = mv.get(key) match {
-      case _: NoValue => None
-      case value      => Some(value)
-    }
-
-    override def +[V1 >: AnyValue](kv: (String, V1)): Map[String, V1] = {
-      val mvb = new MapValueBuilder()
-      mv.foreach((k, v) => mvb.add(k, v))
-      mvb.add(kv._1, kv._2.asInstanceOf[AnyValue])
-      mvb.build()
-    }
-
-    override def get(key: String): Option[AnyValue] = getOption(key)
-
-    override def iterator: Iterator[(String, AnyValue)] = {
-      val keys = mv.keySet().iterator()
-      new Iterator[(String, AnyValue)] {
-        override def hasNext: Boolean = keys.hasNext
-
-        override def next(): (String, AnyValue) = {
-          val k = keys.next()
-          (k, mv.get(k))
-        }
-      }
-    }
-
-    override def removed(key: String): Map[String, AnyValue] = {
-      val mvb = new MapValueBuilder()
-      mv.foreach((k, v) => if (!k.equals(key)) mvb.add(k, v))
-      mvb.build()
-    }
-
-    override def updated[V1 >: AnyValue](key: String, value: V1): Map[String, V1] =
-      mv.updatedWith(VirtualValues.map(Array(key), Array(value.asInstanceOf[AnyValue])))
-  }
-}

@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.ParameterName
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 
@@ -32,13 +34,13 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   private val passwordNew = pw("new")
   private val passwordCurrent = pw("current")
   private val passwordEmpty = pw("")
-  private val paramPassword = pwParam("password")
-  private val paramPasswordNew = pwParam("newPassword")
-  private val paramPasswordCurrent = pwParam("currentPassword")
-  private val paramDb = param("db")
+  private val paramPassword: Parameter = pwParam("password")
+  private val paramPasswordNew: Parameter = pwParam("newPassword")
+  private val paramPasswordCurrent: Parameter = pwParam("currentPassword")
+  private val paramDb: ParameterName = stringParamName("db")
   private val pwParamString = s"$$password"
   private val paramString = s"$$param"
-  private val paramAst = param("param")
+  private val paramAst: Either[String, Parameter] = stringParam("param")
 
   //  Showing user
   test("SHOW USERS") {
@@ -565,7 +567,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
       literalFoo,
       isEncryptedPassword = false,
       password,
-      ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(Left("db1")))),
+      ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
       ast.IfExistsThrowError
     ))
   }
@@ -585,7 +587,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
       literalFoo,
       isEncryptedPassword = false,
       password,
-      ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(Left("db1")))),
+      ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
       ast.IfExistsReplace
     ))
   }
@@ -595,7 +597,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
       literalFoo,
       isEncryptedPassword = false,
       password,
-      ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(Left("db1")))),
+      ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
       ast.IfExistsDoNothing
     ))
   }
@@ -615,7 +617,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
       literalFoo,
       isEncryptedPassword = false,
       password,
-      ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(Left("#dfkfop!")))),
+      ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(namespacedName("#dfkfop!")))),
       ast.IfExistsThrowError
     ))
   }
@@ -625,7 +627,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
       literalFoo,
       isEncryptedPassword = false,
       password,
-      ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(Left("null")))),
+      ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(namespacedName("null")))),
       ast.IfExistsThrowError
     ))
   }
@@ -640,7 +642,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
           literalFoo,
           isEncryptedPassword = false,
           password,
-          ast.UserOptions(Some(true), Some(false), Some(ast.SetHomeDatabaseAction(Left("db1")))),
+          ast.UserOptions(Some(true), Some(false), Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
           ast.IfExistsThrowError
         ))
       }
@@ -654,7 +656,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
             literalFoo,
             isEncryptedPassword = false,
             password,
-            ast.UserOptions(Some(true), Some(false), Some(ast.SetHomeDatabaseAction(Left("db1")))),
+            ast.UserOptions(Some(true), Some(false), Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
             ast.IfExistsThrowError
           ))
         }
@@ -851,15 +853,15 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("RENAME USER foo TO $bar") {
-    yields(ast.RenameUser(literalFoo, param("bar"), ifExists = false))
+    yields(ast.RenameUser(literalFoo, stringParam("bar"), ifExists = false))
   }
 
   test("RENAME USER $foo TO bar") {
-    yields(ast.RenameUser(param("foo"), literalBar, ifExists = false))
+    yields(ast.RenameUser(stringParam("foo"), literalBar, ifExists = false))
   }
 
   test("RENAME USER $foo TO $bar") {
-    yields(ast.RenameUser(param("foo"), param("bar"), ifExists = false))
+    yields(ast.RenameUser(stringParam("foo"), stringParam("bar"), ifExists = false))
   }
 
   test("RENAME USER foo IF EXISTS TO bar") {
@@ -867,15 +869,15 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("RENAME USER foo IF EXISTS TO $bar") {
-    yields(ast.RenameUser(literalFoo, param("bar"), ifExists = true))
+    yields(ast.RenameUser(literalFoo, stringParam("bar"), ifExists = true))
   }
 
   test("RENAME USER $foo IF EXISTS TO bar") {
-    yields(ast.RenameUser(param("foo"), literalBar, ifExists = true))
+    yields(ast.RenameUser(stringParam("foo"), literalBar, ifExists = true))
   }
 
   test("RENAME USER $foo IF EXISTS TO $bar") {
-    yields(ast.RenameUser(param("foo"), param("bar"), ifExists = true))
+    yields(ast.RenameUser(stringParam("foo"), stringParam("bar"), ifExists = true))
   }
 
   test("RENAME USER foo TO ``") {
@@ -1254,7 +1256,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
       literalFoo,
       None,
       None,
-      ast.UserOptions(None, None, Some(ast.SetHomeDatabaseAction(Left("db1")))),
+      ast.UserOptions(None, None, Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
       ifExists = false
     ))
   }
@@ -1274,7 +1276,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
       literalFoo,
       None,
       None,
-      ast.UserOptions(None, None, Some(ast.SetHomeDatabaseAction(Left("null")))),
+      ast.UserOptions(None, None, Some(ast.SetHomeDatabaseAction(namespacedName("null")))),
       ifExists = false
     ))
   }
@@ -1287,7 +1289,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
       ast.UserOptions(
         requirePasswordChange = Some(true),
         suspended = None,
-        Some(ast.SetHomeDatabaseAction(Left("db1")))
+        Some(ast.SetHomeDatabaseAction(namespacedName("db1")))
       ),
       ifExists = false
     ))
@@ -1298,7 +1300,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
       literalFoo,
       Some(false),
       Some(password),
-      ast.UserOptions(None, None, Some(ast.SetHomeDatabaseAction(Left("db1")))),
+      ast.UserOptions(None, None, Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
       ifExists = false
     ))
   }
@@ -1318,7 +1320,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
       literalFoo,
       None,
       None,
-      ast.UserOptions(None, None, Some(ast.SetHomeDatabaseAction(Left("#dfkfop!")))),
+      ast.UserOptions(None, None, Some(ast.SetHomeDatabaseAction(namespacedName("#dfkfop!")))),
       ifExists = false
     ))
   }
@@ -1377,7 +1379,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
           literalFoo,
           None,
           None,
-          ast.UserOptions(Some(true), Some(false), Some(ast.SetHomeDatabaseAction(Left("db1")))),
+          ast.UserOptions(Some(true), Some(false), Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
           ifExists = false
         ))
       }
@@ -1394,7 +1396,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
           literalFoo,
           Some(false),
           Some(password),
-          ast.UserOptions(Some(false), Some(false), Some(ast.SetHomeDatabaseAction(Left("db1")))),
+          ast.UserOptions(Some(false), Some(false), Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
           ifExists = false
         ))
       }
@@ -1412,7 +1414,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
           literalFoo,
           Some(false),
           Some(password),
-          ast.UserOptions(Some(true), Some(false), Some(ast.SetHomeDatabaseAction(Left("db1")))),
+          ast.UserOptions(Some(true), Some(false), Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
           ifExists = false
         ))
       }

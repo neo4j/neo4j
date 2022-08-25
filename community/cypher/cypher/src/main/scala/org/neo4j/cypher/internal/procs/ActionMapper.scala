@@ -38,7 +38,9 @@ import org.neo4j.cypher.internal.ast.AlterDatabaseAction
 import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
+import org.neo4j.cypher.internal.ast.CompositeDatabaseManagementActions
 import org.neo4j.cypher.internal.ast.CreateAliasAction
+import org.neo4j.cypher.internal.ast.CreateCompositeDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateConstraintAction
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateElementAction
@@ -50,6 +52,7 @@ import org.neo4j.cypher.internal.ast.CreateRoleAction
 import org.neo4j.cypher.internal.ast.CreateUserAction
 import org.neo4j.cypher.internal.ast.DeleteElementAction
 import org.neo4j.cypher.internal.ast.DropAliasAction
+import org.neo4j.cypher.internal.ast.DropCompositeDatabaseAction
 import org.neo4j.cypher.internal.ast.DropConstraintAction
 import org.neo4j.cypher.internal.ast.DropDatabaseAction
 import org.neo4j.cypher.internal.ast.DropIndexAction
@@ -151,11 +154,14 @@ object ActionMapper {
     case AssignRoleAction => security.PrivilegeAction.ASSIGN_ROLE
     case RemoveRoleAction => security.PrivilegeAction.REMOVE_ROLE
 
-    case AllDatabaseManagementActions => security.PrivilegeAction.DATABASE_MANAGEMENT
-    case CreateDatabaseAction         => security.PrivilegeAction.CREATE_DATABASE
-    case DropDatabaseAction           => security.PrivilegeAction.DROP_DATABASE
-    case AlterDatabaseAction          => security.PrivilegeAction.ALTER_DATABASE
-    case SetDatabaseAccessAction      => security.PrivilegeAction.SET_DATABASE_ACCESS
+    case AllDatabaseManagementActions       => security.PrivilegeAction.DATABASE_MANAGEMENT
+    case CreateDatabaseAction               => security.PrivilegeAction.CREATE_DATABASE
+    case DropDatabaseAction                 => security.PrivilegeAction.DROP_DATABASE
+    case AlterDatabaseAction                => security.PrivilegeAction.ALTER_DATABASE
+    case SetDatabaseAccessAction            => security.PrivilegeAction.SET_DATABASE_ACCESS
+    case CreateCompositeDatabaseAction      => security.PrivilegeAction.CREATE_COMPOSITE_DATABASE
+    case DropCompositeDatabaseAction        => security.PrivilegeAction.DROP_COMPOSITE_DATABASE
+    case CompositeDatabaseManagementActions => security.PrivilegeAction.COMPOSITE_DATABASE_MANAGEMENT
 
     case AllAliasManagementActions => security.PrivilegeAction.ALIAS_MANAGEMENT
     case CreateAliasAction         => security.PrivilegeAction.CREATE_ALIAS

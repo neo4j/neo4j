@@ -20,6 +20,9 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.DatabaseName
+import org.neo4j.cypher.internal.ast.NamespacedName
+import org.neo4j.cypher.internal.ast.ParameterName
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
@@ -63,6 +66,9 @@ class AdministrationAndSchemaCommandParserTestBase extends JavaccParserAstTestBa
     }
   }
 
+  implicit val stringConvertor: String => Either[String, Parameter] = s => Left(s)
+  implicit val namespacedNameConvertor: String => DatabaseName = s => NamespacedName(s)(pos)
+
   val propSeq = Seq("prop")
   val accessString = "access"
   val actionString = "action"
@@ -71,18 +77,19 @@ class AdministrationAndSchemaCommandParserTestBase extends JavaccParserAstTestBa
   val literalEmpty: Either[String, Parameter] = literal("")
   val literalUser: Either[String, Parameter] = literal("user")
   val literalUser1: Either[String, Parameter] = literal("user1")
-  val literalFoo: Either[String, Parameter] = literal("foo")
+  def literalFoo[T](implicit convertor: String => T): T = literal("foo")
   val literalFColonOo: Either[String, Parameter] = literal("f:oo")
   val literalBar: Either[String, Parameter] = literal("bar")
   val literalRole: Either[String, Parameter] = literal("role")
   val literalRColonOle: Either[String, Parameter] = literal("r:ole")
   val literalRole1: Either[String, Parameter] = literal("role1")
   val literalRole2: Either[String, Parameter] = literal("role2")
-  val paramUser: Either[String, Parameter] = param("user")
-  val paramFoo: Either[String, Parameter] = param("foo")
-  val paramRole: Either[String, Parameter] = param("role")
-  val paramRole1: Either[String, Parameter] = param("role1")
-  val paramRole2: Either[String, Parameter] = param("role2")
+  val paramUser: Either[String, Parameter] = stringParam("user")
+  val paramFoo: Either[String, Parameter] = stringParam("foo")
+  val namespacedParamFoo: ParameterName = ParameterName(Parameter("foo", CTString)(_))(_)
+  val paramRole: Either[String, Parameter] = stringParam("role")
+  val paramRole1: Either[String, Parameter] = stringParam("role1")
+  val paramRole2: Either[String, Parameter] = stringParam("role2")
   val accessVar: Variable = varFor(accessString)
   val labelQualifierA: InputPosition => ast.LabelQualifier = ast.LabelQualifier("A")(_)
   val labelQualifierB: InputPosition => ast.LabelQualifier = ast.LabelQualifier("B")(_)
@@ -91,12 +98,17 @@ class AdministrationAndSchemaCommandParserTestBase extends JavaccParserAstTestBa
   val elemQualifierA: InputPosition => ast.ElementQualifier = ast.ElementQualifier("A")(_)
   val elemQualifierB: InputPosition => ast.ElementQualifier = ast.ElementQualifier("B")(_)
   val graphScopeFoo: InputPosition => ast.NamedGraphScope = ast.NamedGraphScope(literalFoo)(_)
-  val graphScopeParamFoo: InputPosition => ast.NamedGraphScope = ast.NamedGraphScope(paramFoo)(_)
+  val graphScopeParamFoo: InputPosition => ast.NamedGraphScope = ast.NamedGraphScope(namespacedParamFoo)(_)
   val graphScopeBaz: InputPosition => ast.NamedGraphScope = ast.NamedGraphScope(literal("baz"))(_)
 
-  def literal(name: String): Either[String, Parameter] = Left(name)
+  def literal[T](name: String)(implicit convertor: String => T): T = convertor(name)
 
-  def param(name: String): Either[String, Parameter] = Right(Parameter(name, CTString)(_))
+  def stringParam(name: String): Either[String, Parameter] = Right(parameter(name, CTString))
+  def stringParamName(name: String): ParameterName = ParameterName(parameter(name, CTString))(pos)
+
+  def namespacedName(nameParts: String*): NamespacedName =
+    if (nameParts.size == 1) NamespacedName(nameParts.head)(_)
+    else NamespacedName(nameParts.tail.toList, Some(nameParts.head))(_)
 
   def toUtf8Bytes(pw: String): Array[Byte] = pw.getBytes(StandardCharsets.UTF_8)
 

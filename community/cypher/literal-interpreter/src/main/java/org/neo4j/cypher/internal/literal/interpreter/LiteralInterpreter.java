@@ -97,7 +97,8 @@ public class LiteralInterpreter
                 NULL, // POS,
                 NULL, // ENTITY_TYPE,
                 NULL, // PATH_PATTERN_LENGTH,
-                NULL> { // PATTERN_ATOM>
+                NULL, // PATTERN_ATOM>
+                NULL> { // DATABASE NAME
 
     public static final ZoneId DEFAULT_ZONE_ID = ZoneId.systemDefault();
     public static final String LONG_MIN_VALUE_DECIMAL_STRING =
@@ -589,7 +590,7 @@ public class LiteralInterpreter
             boolean encrypted,
             boolean changeRequired,
             Boolean suspended,
-            SimpleEither<String, Object> homeDatabase) {
+            NULL homeDatabase) {
         throw new UnsupportedOperationException("createUser is not a literal");
     }
 
@@ -621,7 +622,7 @@ public class LiteralInterpreter
             boolean encrypted,
             Boolean changeRequired,
             Boolean suspended,
-            SimpleEither<String, Object> homeDatabase,
+            NULL homeDatabase,
             boolean removeHome) {
         throw new UnsupportedOperationException("alterUser is not a literal");
     }
@@ -805,12 +806,12 @@ public class LiteralInterpreter
     }
 
     @Override
-    public List<NULL> graphScopes(NULL p, List<SimpleEither<String, Object>> graphNames, ScopeType scopeType) {
+    public List<NULL> graphScopes(NULL p, List<NULL> graphNames, ScopeType scopeType) {
         throw new UnsupportedOperationException("graphScopes is not a literal");
     }
 
     @Override
-    public List<NULL> databaseScopes(NULL p, List<SimpleEither<String, Object>> databaseNames, ScopeType scopeType) {
+    public List<NULL> databaseScopes(NULL p, List<NULL> databaseNames, ScopeType scopeType) {
         throw new UnsupportedOperationException("databaseScopes is not a literal");
     }
 
@@ -837,7 +838,7 @@ public class LiteralInterpreter
     public NULL createDatabase(
             NULL p,
             boolean replace,
-            SimpleEither<String, Object> databaseName,
+            NULL databaseName,
             boolean ifNotExists,
             NULL aNull,
             SimpleEither<Map<String, Object>, Object> options) {
@@ -846,13 +847,12 @@ public class LiteralInterpreter
 
     @Override
     public NULL dropDatabase(
-            NULL p, SimpleEither<String, Object> databaseName, boolean ifExists, boolean dumpData, NULL wait) {
+            NULL p, NULL databaseName, boolean ifExists, boolean composite, boolean dumpData, NULL wait) {
         throw new UnsupportedOperationException("dropDatabase is not a literal");
     }
 
     @Override
-    public NULL alterDatabase(
-            NULL p, SimpleEither<String, Object> databaseName, boolean ifExists, AccessType accessType) {
+    public NULL alterDatabase(NULL p, NULL databaseName, boolean ifExists, AccessType accessType) {
         throw new UnsupportedOperationException("alterDatabase is not a literal");
     }
 
@@ -862,17 +862,23 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL databaseScope(NULL p, SimpleEither<String, Object> name, boolean isDefault, boolean isHome) {
+    public NULL createCompositeDatabase(
+            NULL p, boolean replace, NULL compositeDatabaseName, boolean ifNotExists, NULL wait) {
+        throw new UnsupportedOperationException("createCompositeDatabase is not a literal");
+    }
+
+    @Override
+    public NULL databaseScope(NULL p, NULL name, boolean isDefault, boolean isHome) {
         throw new UnsupportedOperationException("databaseScope is not a literal");
     }
 
     @Override
-    public NULL startDatabase(NULL p, SimpleEither<String, Object> databaseName, NULL wait) {
+    public NULL startDatabase(NULL p, NULL databaseName, NULL wait) {
         throw new UnsupportedOperationException("startDatabase is not a literal");
     }
 
     @Override
-    public NULL stopDatabase(NULL p, SimpleEither<String, Object> databaseName, NULL wait) {
+    public NULL stopDatabase(NULL p, NULL databaseName, NULL wait) {
         throw new UnsupportedOperationException("stopDatabase is not a literal");
     }
 
@@ -885,9 +891,10 @@ public class LiteralInterpreter
     public NULL createLocalDatabaseAlias(
             NULL p,
             boolean replace,
-            SimpleEither<String, Object> aliasName,
-            SimpleEither<String, Object> targetName,
-            boolean ifNotExists) {
+            NULL aliasName,
+            NULL targetName,
+            boolean ifNotExists,
+            SimpleEither<Map<String, Object>, Object> properties) {
         throw new UnsupportedOperationException("createLocalDatabaseAlias is not a literal");
     }
 
@@ -895,43 +902,49 @@ public class LiteralInterpreter
     public NULL createRemoteDatabaseAlias(
             NULL p,
             boolean replace,
-            SimpleEither<String, Object> aliasName,
-            SimpleEither<String, Object> targetName,
+            NULL aliasName,
+            NULL targetName,
             boolean ifNotExists,
             SimpleEither<String, Object> url,
             SimpleEither<String, Object> username,
             Object password,
-            SimpleEither<Map<String, Object>, Object> driverSettings) {
+            SimpleEither<Map<String, Object>, Object> driverSettings,
+            SimpleEither<Map<String, Object>, Object> properties) {
         throw new UnsupportedOperationException("createRemoteDatabaseAlias is not a literal");
     }
 
     @Override
     public NULL alterLocalDatabaseAlias(
-            NULL p, SimpleEither<String, Object> aliasName, SimpleEither<String, Object> targetName, boolean ifExists) {
+            NULL p,
+            NULL aliasName,
+            NULL targetName,
+            boolean ifExists,
+            SimpleEither<Map<String, Object>, Object> properties) {
         throw new UnsupportedOperationException("alterLocalDatabaseAlias is not a literal");
     }
 
     @Override
     public NULL alterRemoteDatabaseAlias(
             NULL p,
-            SimpleEither<String, Object> aliasName,
-            SimpleEither<String, Object> targetName,
+            NULL aliasName,
+            NULL targetName,
             boolean ifExists,
             SimpleEither<String, Object> url,
             SimpleEither<String, Object> username,
             Object password,
-            SimpleEither<Map<String, Object>, Object> driverSettings) {
+            SimpleEither<Map<String, Object>, Object> driverSettings,
+            SimpleEither<Map<String, Object>, Object> properties) {
         throw new UnsupportedOperationException("alterRemoteDatabaseAlias is not a literal");
     }
 
     @Override
-    public NULL dropAlias(NULL p, SimpleEither<String, Object> aliasName, boolean ifExists) {
+    public NULL dropAlias(NULL p, NULL aliasName, boolean ifExists) {
 
         throw new UnsupportedOperationException("dropAlias is not a literal");
     }
 
     @Override
-    public NULL showAliases(NULL p, NULL yieldExpr, NULL returnWithoutGraph, NULL aNull) {
+    public NULL showAliases(NULL p, NULL aliasName, NULL yieldExpr, NULL returnWithoutGraph, NULL aNull) {
         throw new UnsupportedOperationException("showAliases is not a literal");
     }
 
@@ -1460,6 +1473,16 @@ public class LiteralInterpreter
     @Override
     public NULL nodeOrRelationshipType() {
         return null;
+    }
+
+    @Override
+    public NULL databaseName(NULL pos, List<String> names) {
+        throw new UnsupportedOperationException("databaseName is not a literal");
+    }
+
+    @Override
+    public NULL databaseName(Object param) {
+        throw new UnsupportedOperationException("databaseName is not a literal");
     }
 
     private static MapValue asMapValue(Map<String, ?> map) {

@@ -28,7 +28,9 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_PR
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STARTED_AT_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STATUS_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DELETED_DATABASE_LABEL;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAMESPACE_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAME_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.PRIMARY_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS_RELATIONSHIP;
@@ -46,6 +48,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 
@@ -82,7 +85,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent {
             return Status.UNSUPPORTED;
         }
 
-        if (hasUniqueConstraint(tx, DATABASE_NAME_LABEL, NAME_PROPERTY)
+        if (hasUniqueConstraint(tx, DATABASE_NAME_LABEL, NAME_PROPERTY, NAMESPACE_PROPERTY)
                 && hasUniqueConstraint(tx, DATABASE_LABEL, DATABASE_NAME_PROPERTY)) {
             return Status.CURRENT;
         } else {
@@ -92,7 +95,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent {
 
     @Override
     protected void initializeSystemGraphConstraints(Transaction tx) {
-        initializeSystemGraphConstraint(tx, DATABASE_NAME_LABEL, NAME_PROPERTY);
+        initializeSystemGraphConstraint(tx, DATABASE_NAME_LABEL, NAME_PROPERTY, NAMESPACE_PROPERTY);
         initializeSystemGraphConstraint(tx, DATABASE_LABEL, DATABASE_NAME_PROPERTY);
     }
 
@@ -121,6 +124,11 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent {
     @Override
     public void upgradeToCurrent(GraphDatabaseService system) throws Exception {
         SystemGraphComponent.executeWithFullAccess(system, this::initializeSystemGraphConstraints);
+        SystemGraphComponent.executeWithFullAccess(system, DefaultSystemGraphComponent::dropOldConstraints);
+    }
+
+    private static void dropOldConstraints(Transaction tx) {
+        findUniqueConstraint(tx, DATABASE_NAME_LABEL, DATABASE_NAME_PROPERTY).ifPresent(ConstraintDefinition::drop);
     }
 
     private static boolean hasDatabaseNode(Transaction tx) {
@@ -199,6 +207,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent {
 
         Node nameNode = tx.createNode(DATABASE_NAME_LABEL);
         nameNode.setProperty(NAME_PROPERTY, databaseName);
+        nameNode.setProperty(NAMESPACE_PROPERTY, DEFAULT_NAMESPACE);
         nameNode.setProperty(PRIMARY_PROPERTY, true);
         nameNode.createRelationshipTo(databaseNode, TARGETS_RELATIONSHIP);
         return databaseNode;

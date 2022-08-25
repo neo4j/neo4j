@@ -61,7 +61,10 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
       ("PRIVILEGE MANAGEMENT", ast.AllPrivilegeActions),
       ("SHOW SERVER", ast.ShowServerAction),
       ("SHOW SERVERS", ast.ShowServerAction),
-      ("SERVER MANAGEMENT", ast.ServerManagementAction)
+      ("SERVER MANAGEMENT", ast.ServerManagementAction),
+      ("COMPOSITE DATABASE MANAGEMENT", ast.CompositeDatabaseManagementActions),
+      ("CREATE COMPOSITE DATABASE", ast.CreateCompositeDatabaseAction),
+      ("DROP COMPOSITE DATABASE", ast.DropCompositeDatabaseAction)
     ).foreach {
       case (privilege: String, action: ast.DbmsAction) =>
         test(s"$command $privilege ON DBMS $preposition role") {

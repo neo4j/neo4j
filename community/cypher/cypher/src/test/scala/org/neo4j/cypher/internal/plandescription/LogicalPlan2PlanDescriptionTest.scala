@@ -41,10 +41,12 @@ import org.neo4j.cypher.internal.ast.ExecuteBoostedProcedureAction
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.FulltextIndexes
+import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
+import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
@@ -4641,7 +4643,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         GrantDatabaseAction(
           privLhsLP,
           CreateNodeLabelAction,
-          NamedDatabaseScope(util.Left("foo"))(pos),
+          NamedDatabaseScope(NamespacedName("foo")(pos))(pos),
           UserAllQualifier()(pos),
           util.Left("role1")
         ),
@@ -4759,20 +4761,55 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       adminPlanDescription
     )
 
-    assertGood(attach(CreateDatabase(privLhsLP, util.Left("db1"), NoOptions), 1.0), adminPlanDescription)
-
-    assertGood(attach(DropDatabase(privLhsLP, util.Left("db1"), DumpData), 1.0), adminPlanDescription)
-
-    assertGood(attach(AlterDatabase(privLhsLP, util.Left("db1"), ReadOnlyAccess), 1.0), adminPlanDescription)
-
-    assertGood(attach(AlterDatabase(privLhsLP, util.Left("db1"), ReadWriteAccess), 1.0), adminPlanDescription)
-
-    assertGood(attach(StartDatabase(privLhsLP, util.Left("db1")), 1.0), adminPlanDescription)
-
-    assertGood(attach(StopDatabase(privLhsLP, util.Left("db1")), 1.0), adminPlanDescription)
+    assertGood(
+      attach(CreateDatabase(privLhsLP, util.Left("db1"), NoOptions, IfExistsDoNothing, false), 1.0),
+      adminPlanDescription
+    )
 
     assertGood(
-      attach(CreateLocalDatabaseAlias(privLhsLP, util.Left("alias1"), util.Left("db1"), replace = false), 1.0),
+      attach(DropDatabase(privLhsLP, NamespacedName("db1")(pos), DumpData, false), 1.0),
+      adminPlanDescription
+    )
+
+    assertGood(
+      attach(AlterDatabase(privLhsLP, NamespacedName("db1")(pos), ReadOnlyAccess), 1.0),
+      adminPlanDescription
+    )
+
+    assertGood(
+      attach(AlterDatabase(privLhsLP, NamespacedName("db1")(pos), ReadWriteAccess), 1.0),
+      adminPlanDescription
+    )
+
+    assertGood(attach(StartDatabase(privLhsLP, NamespacedName("db1")(pos)), 1.0), adminPlanDescription)
+
+    assertGood(attach(StopDatabase(privLhsLP, NamespacedName("db1")(pos)), 1.0), adminPlanDescription)
+
+    assertGood(
+      attach(
+        CreateLocalDatabaseAlias(
+          privLhsLP,
+          NamespacedName("alias1")(pos),
+          NamespacedName("db1")(pos),
+          None,
+          replace = false
+        ),
+        1.0
+      ),
+      adminPlanDescription
+    )
+
+    assertGood(
+      attach(
+        CreateLocalDatabaseAlias(
+          privLhsLP,
+          NamespacedName("alias1")(pos),
+          NamespacedName("db1")(pos),
+          Some(util.Left(Map("a" -> stringLiteral("b")))),
+          replace = false
+        ),
+        1.0
+      ),
       adminPlanDescription
     )
 
@@ -4780,12 +4817,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateRemoteDatabaseAlias(
           privLhsLP,
-          util.Left("alias1"),
-          util.Left("db1"),
+          NamespacedName("alias1")(pos),
+          NamespacedName("db1")(pos),
           replace = false,
           util.Left("url"),
           util.Left("user"),
           varFor("password"),
+          None,
           None
         ),
         1.0
@@ -4793,10 +4831,18 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       adminPlanDescription
     )
 
-    assertGood(attach(DropDatabaseAlias(privLhsLP, util.Left("alias1")), 1.0), adminPlanDescription)
+    assertGood(attach(DropDatabaseAlias(privLhsLP, NamespacedName("alias1")(pos)), 1.0), adminPlanDescription)
 
     assertGood(
-      attach(AlterLocalDatabaseAlias(privLhsLP, util.Left("alias1"), util.Left("db2")), 1.0),
+      attach(
+        AlterLocalDatabaseAlias(
+          Some(privLhsLP),
+          NamespacedName("alias1")(pos),
+          Some(NamespacedName("db2")(pos)),
+          None
+        ),
+        1.0
+      ),
       adminPlanDescription
     )
 
@@ -4804,24 +4850,39 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         AlterRemoteDatabaseAlias(
           privLhsLP,
-          util.Left("alias1"),
-          Some(util.Left("db2")),
+          NamespacedName("alias1")(pos),
+          Some(NamespacedName("db2")(pos)),
           Some(util.Left("url")),
           Some(util.Left("user")),
           Some(varFor("password")),
-          None
+          None,
+          Some(Left(Map("some" -> StringLiteral("prop")(pos))))
         ),
         1.0
       ),
       adminPlanDescription
     )
 
-    assertGood(attach(ShowAliases(privLhsLP, verbose = false, List.empty, None, None), 1.0), adminPlanDescription)
-
-    assertGood(attach(EnsureValidNonSystemDatabase(privLhsLP, util.Left("db1"), "action1"), 1.0), adminPlanDescription)
+    assertGood(attach(ShowAliases(privLhsLP, None, verbose = false, List.empty, None, None), 1.0), adminPlanDescription)
 
     assertGood(
-      attach(EnsureValidNumberOfDatabases(CreateDatabase(privLhsLP, util.Left("db1"), NoOptions)), 1.0),
+      attach(
+        ShowAliases(privLhsLP, Some(NamespacedName("alias1")(pos)), verbose = false, List.empty, None, None),
+        1.0
+      ),
+      adminPlanDescription
+    )
+
+    assertGood(
+      attach(EnsureValidNonSystemDatabase(privLhsLP, NamespacedName("db1")(pos), "action1"), 1.0),
+      adminPlanDescription
+    )
+
+    assertGood(
+      attach(
+        EnsureValidNumberOfDatabases(CreateDatabase(privLhsLP, util.Left("db1"), NoOptions, IfExistsDoNothing, false)),
+        1.0
+      ),
       adminPlanDescription
     )
 
@@ -4847,7 +4908,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(AssertAllowedDbmsActionsOrSelf(util.Left("user1"), DropRoleAction), 1.0), adminPlanDescription)
 
     assertGood(
-      attach(AssertAllowedDatabaseAction(StopDatabaseAction, util.Left("db1"), None), 1.0),
+      attach(AssertAllowedDatabaseAction(StopDatabaseAction, NamespacedName("db1")(pos), None), 1.0),
       adminPlanDescription
     )
 
@@ -4855,16 +4916,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(AssertNotBlockedRemoteAliasManagement(), 1.0), adminPlanDescription)
 
-    assertGood(attach(AssertNotBlockedDropAlias(util.Left("alias")), 1.0), adminPlanDescription)
+    assertGood(attach(AssertNotBlockedDropAlias(NamespacedName("alias")(pos)), 1.0), adminPlanDescription)
 
     assertGood(
       attach(
         WaitForCompletion(
           StartDatabase(
-            AssertAllowedDatabaseAction(StartDatabaseAction, Left("db1"), Some(privLhsLP)),
-            Left("db1")
+            AssertAllowedDatabaseAction(StartDatabaseAction, NamespacedName("db1")(pos), Some(privLhsLP)),
+            NamespacedName("db1")(pos)
           ),
-          util.Left("db1"),
+          NamespacedName("db1")(pos),
           IndefiniteWait
         ),
         1.0

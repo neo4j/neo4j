@@ -28,10 +28,24 @@ class CommunityAliasAdministrationCommandAcceptanceTest extends CommunityAdminis
     )
   }
 
+  test("should fail on creating local alias (in composite) from community") {
+    assertFailure(
+      "CREATE ALIAS composite.alias FOR DATABASE foo",
+      "Unsupported administration command: CREATE ALIAS composite.alias FOR DATABASE foo"
+    )
+  }
+
   test("should fail on creating remote alias from community") {
     assertFailure(
       "CREATE ALIAS alias FOR DATABASE foo AT 'url' USER user PASSWORD 'password'",
       "Unsupported administration command: CREATE ALIAS alias FOR DATABASE foo AT 'url' USER user PASSWORD 'password'"
+    )
+  }
+
+  test("should fail on creating remote alias (in composite) from community") {
+    assertFailure(
+      "CREATE ALIAS composite.alias FOR DATABASE foo AT 'url' USER user PASSWORD 'password'",
+      "Unsupported administration command: CREATE ALIAS composite.alias FOR DATABASE foo AT 'url' USER user PASSWORD 'password'"
     )
   }
 
@@ -51,6 +65,13 @@ class CommunityAliasAdministrationCommandAcceptanceTest extends CommunityAdminis
 
   test("should fail on drop alias from community") {
     assertFailure("DROP ALIAS alias FOR DATABASE", "Unsupported administration command: DROP ALIAS alias FOR DATABASE")
+  }
+
+  test("should fail on drop alias (in composite) from community") {
+    assertFailure(
+      "DROP ALIAS composite.alias FOR DATABASE",
+      "Unsupported administration command: DROP ALIAS composite.alias FOR DATABASE"
+    )
   }
 
   test("should fail on show aliases from community") {

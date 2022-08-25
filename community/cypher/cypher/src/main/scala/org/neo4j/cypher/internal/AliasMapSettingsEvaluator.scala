@@ -40,10 +40,12 @@ import org.neo4j.values.virtual.VirtualValues
 
 import java.util.function.Supplier
 
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
-class DriverSettingsEvaluator(proceduresSupplier: Supplier[GlobalProcedures]) {
+class AliasMapSettingsEvaluator(proceduresSupplier: Supplier[GlobalProcedures]) {
   private val evaluator = new StaticEvaluation.StaticEvaluator(proceduresSupplier)
+
+  type ExpressionMapOrParamValue = Either[Map[String, Expression], AnyValue]
 
   def evaluate(expression: Expression, params: MapValue): AnyValue = {
     try {
@@ -54,36 +56,54 @@ class DriverSettingsEvaluator(proceduresSupplier: Supplier[GlobalProcedures]) {
     }
   }
 
-  def convert(
+  def convertDriverSettings(
     driverSettings: Option[Either[Map[String, Expression], Parameter]],
     params: MapValue,
     operation: String
-  ): Option[Map[String, AnyValue]] = driverSettings.map {
-    case Left(map) => DriverSettingsEvaluator.convert(
-        VirtualValues.map(
-          map.keys.map(_.toLowerCase).toArray,
-          map.mapValues(v =>
-            evaluate(v, params)
-          ).values.toArray
-        ),
-        operation
-      )
-    case Right(parameter) =>
-      val settings = params.get(parameter.name)
-      settings match {
-        case mv: MapValue =>
-          val builder = new MapValueBuilder()
-          mv.foreach((k, v) => builder.add(k.toLowerCase(), v))
-          DriverSettingsEvaluator.convert(builder.build(), operation)
-        case _ =>
+  ): Option[Map[String, AnyValue]] = {
+    driverSettings.map(settings =>
+      evaluateMap(params).applyOrElse(
+        settings.map(param => params.get(param.name)),
+        (param: ExpressionMapOrParamValue) =>
           throw new InvalidArgumentsException(
-            s"Failed to $operation: Invalid driver settings '$settings'. Expected a map value."
+            s"Failed to $operation: Invalid driver settings '${param.toOption.get}'. Expected a map value."
           )
-      }
+      )
+    ).map(AliasMapSettingsEvaluator.convert(_, operation))
+  }
+
+  def convertPropertiesMap(
+    settingsMap: Option[Either[Map[String, Expression], Parameter]],
+    params: MapValue,
+    operation: String
+  ): Option[MapValue] = {
+    settingsMap.map(settings =>
+      evaluateMap(params).applyOrElse(
+        settings.map(param => params.get(param.name)),
+        (param: ExpressionMapOrParamValue) =>
+          throw new InvalidArgumentsException(
+            s"Failed to $operation: Invalid properties '${param.toOption.get}'. Expected a map value."
+          )
+      )
+    )
+  }
+
+  private val evaluateMap: MapValue => PartialFunction[ExpressionMapOrParamValue, MapValue] = params => {
+    case Left(map) =>
+      VirtualValues.map(
+        map.keys.map(_.toLowerCase).toArray,
+        map.view.mapValues(v =>
+          evaluate(v, params)
+        ).values.toArray
+      )
+    case Right(mv: MapValue) =>
+      val builder = new MapValueBuilder()
+      mv.foreach((k, v) => builder.add(k.toLowerCase(), v))
+      builder.build()
   }
 }
 
-object DriverSettingsEvaluator {
+object AliasMapSettingsEvaluator {
 
   private def convert(settings: MapValue, operation: String): Map[String, AnyValue] = {
     val ssl_enforced = "ssl_enforced"
@@ -105,11 +125,11 @@ object DriverSettingsEvaluator {
 
     val invalidKeys = settings.keySet().asScala.toSet.diff(validKeys)
 
-    if (invalidKeys.nonEmpty)
+    if (invalidKeys.nonEmpty) {
       throw new InvalidArgumentsException(
         s"Failed to $operation: Invalid driver setting(s) provided: ${invalidKeys.mkString(", ")}. Valid driver settings are: ${validKeys.mkString(", ")}"
       )
-
+    }
     def throwExceptionWhenInvalidValue(key: String, expectedType: String) =
       throw new InvalidArgumentsException(
         s"Failed to $operation: Invalid driver settings value for '$key'. Expected $expectedType value."

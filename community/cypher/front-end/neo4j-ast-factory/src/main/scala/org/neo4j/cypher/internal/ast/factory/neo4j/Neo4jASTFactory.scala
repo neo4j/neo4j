@@ -60,6 +60,7 @@ import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CommandResultItem
+import org.neo4j.cypher.internal.ast.CompositeDatabaseManagementActions
 import org.neo4j.cypher.internal.ast.ConstraintVersion0
 import org.neo4j.cypher.internal.ast.ConstraintVersion1
 import org.neo4j.cypher.internal.ast.ConstraintVersion2
@@ -67,6 +68,8 @@ import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateAliasAction
 import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
+import org.neo4j.cypher.internal.ast.CreateCompositeDatabase
+import org.neo4j.cypher.internal.ast.CreateCompositeDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateConstraintAction
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
@@ -94,6 +97,7 @@ import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.CreateUserAction
 import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.DatabaseAction
+import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.DatabasePrivilege
 import org.neo4j.cypher.internal.ast.DatabaseResource
 import org.neo4j.cypher.internal.ast.DatabaseScope
@@ -108,6 +112,7 @@ import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DescSortItem
 import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DropAliasAction
+import org.neo4j.cypher.internal.ast.DropCompositeDatabaseAction
 import org.neo4j.cypher.internal.ast.DropConstraintAction
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropDatabase
@@ -164,6 +169,7 @@ import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.MergeAdminAction
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.NamedGraphScope
+import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NoWait
@@ -174,6 +180,7 @@ import org.neo4j.cypher.internal.ast.OnMatch
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.OrderBy
+import org.neo4j.cypher.internal.ast.ParameterName
 import org.neo4j.cypher.internal.ast.ParsedAsYield
 import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
@@ -495,7 +502,8 @@ class Neo4jASTFactory(query: String)
       InputPosition,
       EntityType,
       GraphPatternQuantifier,
-      PatternAtom
+      PatternAtom,
+      DatabaseName
     ] {
 
   override def newSingleQuery(p: InputPosition, clauses: util.List[Clause]): Query = {
@@ -1677,9 +1685,9 @@ class Neo4jASTFactory(query: String)
     encrypted: Boolean,
     changeRequired: Boolean,
     suspended: lang.Boolean,
-    homeDatabase: SimpleEither[String, Parameter]
+    homeDatabase: DatabaseName
   ): AdministrationCommand = {
-    val homeAction = if (homeDatabase == null) None else Some(SetHomeDatabaseAction(homeDatabase.asScala))
+    val homeAction = if (homeDatabase == null) None else Some(SetHomeDatabaseAction(homeDatabase))
     val userOptions = UserOptions(Some(changeRequired), asBooleanOption(suspended), homeAction)
     CreateUser(username.asScala, encrypted, password, userOptions, ifExistsDo(replace, ifNotExists))(p)
   }
@@ -1713,7 +1721,7 @@ class Neo4jASTFactory(query: String)
     encrypted: Boolean,
     changeRequired: lang.Boolean,
     suspended: lang.Boolean,
-    homeDatabase: SimpleEither[String, Parameter],
+    homeDatabase: DatabaseName,
     removeHome: Boolean
   ): AlterUser = {
     val maybePassword = Option(password)
@@ -1721,7 +1729,7 @@ class Neo4jASTFactory(query: String)
     val homeAction =
       if (removeHome) Some(RemoveHomeDatabaseAction)
       else if (homeDatabase == null) None
-      else Some(SetHomeDatabaseAction(homeDatabase.asScala))
+      else Some(SetHomeDatabaseAction(homeDatabase))
     val userOptions = UserOptions(asBooleanOption(changeRequired), asBooleanOption(suspended), homeAction)
     AlterUser(username.asScala, isEncrypted, maybePassword, userOptions, ifExists)(p)
   }
@@ -1913,45 +1921,48 @@ class Neo4jASTFactory(query: String)
     case ActionType.TRANSACTION_SHOW      => ShowTransactionAction
     case ActionType.TRANSACTION_TERMINATE => TerminateTransactionAction
 
-    case ActionType.DBMS_ALL                  => AllDbmsAction
-    case ActionType.USER_ALL                  => AllUserActions
-    case ActionType.USER_SHOW                 => ShowUserAction
-    case ActionType.USER_ALTER                => AlterUserAction
-    case ActionType.USER_CREATE               => CreateUserAction
-    case ActionType.USER_DROP                 => DropUserAction
-    case ActionType.USER_RENAME               => RenameUserAction
-    case ActionType.USER_PASSWORD             => SetPasswordsAction
-    case ActionType.USER_STATUS               => SetUserStatusAction
-    case ActionType.USER_HOME                 => SetUserHomeDatabaseAction
-    case ActionType.USER_IMPERSONATE          => ImpersonateUserAction
-    case ActionType.ROLE_ALL                  => AllRoleActions
-    case ActionType.ROLE_SHOW                 => ShowRoleAction
-    case ActionType.ROLE_CREATE               => CreateRoleAction
-    case ActionType.ROLE_DROP                 => DropRoleAction
-    case ActionType.ROLE_RENAME               => RenameRoleAction
-    case ActionType.ROLE_ASSIGN               => AssignRoleAction
-    case ActionType.ROLE_REMOVE               => RemoveRoleAction
-    case ActionType.DATABASE_MANAGEMENT       => AllDatabaseManagementActions
-    case ActionType.DATABASE_CREATE           => CreateDatabaseAction
-    case ActionType.DATABASE_DROP             => DropDatabaseAction
-    case ActionType.DATABASE_ALTER            => AlterDatabaseAction
-    case ActionType.SET_DATABASE_ACCESS       => SetDatabaseAccessAction
-    case ActionType.ALIAS_MANAGEMENT          => AllAliasManagementActions
-    case ActionType.ALIAS_CREATE              => CreateAliasAction
-    case ActionType.ALIAS_DROP                => DropAliasAction
-    case ActionType.ALIAS_ALTER               => AlterAliasAction
-    case ActionType.ALIAS_SHOW                => ShowAliasAction
-    case ActionType.PRIVILEGE_ALL             => AllPrivilegeActions
-    case ActionType.PRIVILEGE_ASSIGN          => AssignPrivilegeAction
-    case ActionType.PRIVILEGE_REMOVE          => RemovePrivilegeAction
-    case ActionType.PRIVILEGE_SHOW            => ShowPrivilegeAction
-    case ActionType.EXECUTE_FUNCTION          => ExecuteFunctionAction
-    case ActionType.EXECUTE_BOOSTED_FUNCTION  => ExecuteBoostedFunctionAction
-    case ActionType.EXECUTE_PROCEDURE         => ExecuteProcedureAction
-    case ActionType.EXECUTE_BOOSTED_PROCEDURE => ExecuteBoostedProcedureAction
-    case ActionType.EXECUTE_ADMIN_PROCEDURE   => ExecuteAdminProcedureAction
-    case ActionType.SERVER_SHOW               => ShowServerAction
-    case ActionType.SERVER_MANAGEMENT         => ServerManagementAction
+    case ActionType.DBMS_ALL                      => AllDbmsAction
+    case ActionType.USER_ALL                      => AllUserActions
+    case ActionType.USER_SHOW                     => ShowUserAction
+    case ActionType.USER_ALTER                    => AlterUserAction
+    case ActionType.USER_CREATE                   => CreateUserAction
+    case ActionType.USER_DROP                     => DropUserAction
+    case ActionType.USER_RENAME                   => RenameUserAction
+    case ActionType.USER_PASSWORD                 => SetPasswordsAction
+    case ActionType.USER_STATUS                   => SetUserStatusAction
+    case ActionType.USER_HOME                     => SetUserHomeDatabaseAction
+    case ActionType.USER_IMPERSONATE              => ImpersonateUserAction
+    case ActionType.ROLE_ALL                      => AllRoleActions
+    case ActionType.ROLE_SHOW                     => ShowRoleAction
+    case ActionType.ROLE_CREATE                   => CreateRoleAction
+    case ActionType.ROLE_DROP                     => DropRoleAction
+    case ActionType.ROLE_RENAME                   => RenameRoleAction
+    case ActionType.ROLE_ASSIGN                   => AssignRoleAction
+    case ActionType.ROLE_REMOVE                   => RemoveRoleAction
+    case ActionType.DATABASE_MANAGEMENT           => AllDatabaseManagementActions
+    case ActionType.DATABASE_CREATE               => CreateDatabaseAction
+    case ActionType.DATABASE_DROP                 => DropDatabaseAction
+    case ActionType.DATABASE_COMPOSITE_MANAGEMENT => CompositeDatabaseManagementActions
+    case ActionType.DATABASE_COMPOSITE_CREATE     => CreateCompositeDatabaseAction
+    case ActionType.DATABASE_COMPOSITE_DROP       => DropCompositeDatabaseAction
+    case ActionType.DATABASE_ALTER                => AlterDatabaseAction
+    case ActionType.SET_DATABASE_ACCESS           => SetDatabaseAccessAction
+    case ActionType.ALIAS_MANAGEMENT              => AllAliasManagementActions
+    case ActionType.ALIAS_CREATE                  => CreateAliasAction
+    case ActionType.ALIAS_DROP                    => DropAliasAction
+    case ActionType.ALIAS_ALTER                   => AlterAliasAction
+    case ActionType.ALIAS_SHOW                    => ShowAliasAction
+    case ActionType.PRIVILEGE_ALL                 => AllPrivilegeActions
+    case ActionType.PRIVILEGE_ASSIGN              => AssignPrivilegeAction
+    case ActionType.PRIVILEGE_REMOVE              => RemovePrivilegeAction
+    case ActionType.PRIVILEGE_SHOW                => ShowPrivilegeAction
+    case ActionType.EXECUTE_FUNCTION              => ExecuteFunctionAction
+    case ActionType.EXECUTE_BOOSTED_FUNCTION      => ExecuteBoostedFunctionAction
+    case ActionType.EXECUTE_PROCEDURE             => ExecuteProcedureAction
+    case ActionType.EXECUTE_BOOSTED_PROCEDURE     => ExecuteBoostedProcedureAction
+    case ActionType.EXECUTE_ADMIN_PROCEDURE       => ExecuteAdminProcedureAction
+    case ActionType.SERVER_SHOW                   => ShowServerAction
+    case ActionType.SERVER_MANAGEMENT             => ServerManagementAction
 
     case ActionType.GRAPH_ALL          => AllGraphAction
     case ActionType.GRAPH_WRITE        => WriteAction
@@ -2033,7 +2044,7 @@ class Neo4jASTFactory(query: String)
 
   override def graphScopes(
     p: InputPosition,
-    graphNames: util.List[SimpleEither[String, Parameter]],
+    graphNames: util.List[DatabaseName],
     scopeType: ScopeType
   ): util.List[GraphScope] = {
     val list = new util.ArrayList[GraphScope]()
@@ -2041,14 +2052,15 @@ class Neo4jASTFactory(query: String)
       case ScopeType.ALL     => list.add(AllGraphsScope()(p))
       case ScopeType.HOME    => list.add(HomeGraphScope()(p))
       case ScopeType.DEFAULT => list.add(DefaultGraphScope()(p))
-      case ScopeType.NAMED   => graphNames.asScala.foreach(db => list.add(NamedGraphScope(db.asScala)(p)))
+      case ScopeType.NAMED =>
+        graphNames.asScala.foreach(db => list.add(NamedGraphScope(db)(p)))
     }
     list
   }
 
   override def databaseScopes(
     p: InputPosition,
-    databaseNames: util.List[SimpleEither[String, Parameter]],
+    databaseNames: util.List[DatabaseName],
     scopeType: ScopeType
   ): util.List[DatabaseScope] = {
     val list = new util.ArrayList[DatabaseScope]()
@@ -2056,7 +2068,8 @@ class Neo4jASTFactory(query: String)
       case ScopeType.ALL     => list.add(AllDatabasesScope()(p))
       case ScopeType.HOME    => list.add(HomeDatabaseScope()(p))
       case ScopeType.DEFAULT => list.add(DefaultDatabaseScope()(p))
-      case ScopeType.NAMED   => databaseNames.asScala.foreach(db => list.add(NamedDatabaseScope(db.asScala)(p)))
+      case ScopeType.NAMED =>
+        databaseNames.asScala.foreach(db => list.add(NamedDatabaseScope(db)(p)))
     }
     list
   }
@@ -2085,18 +2098,24 @@ class Neo4jASTFactory(query: String)
   override def createDatabase(
     p: InputPosition,
     replace: Boolean,
-    databaseName: SimpleEither[String, Parameter],
+    databaseName: DatabaseName,
     ifNotExists: Boolean,
     wait: WaitUntilComplete,
     options: SimpleEither[util.Map[String, Expression], Parameter]
   ): CreateDatabase = {
-    CreateDatabase(databaseName.asScala, ifExistsDo(replace, ifNotExists), asOptionsAst(options), wait)(p)
+    CreateDatabase(
+      databaseName,
+      ifExistsDo(replace, ifNotExists),
+      asOptionsAst(options),
+      wait
+    )(p)
   }
 
   override def dropDatabase(
     p: InputPosition,
-    databaseName: SimpleEither[String, Parameter],
+    databaseName: DatabaseName,
     ifExists: Boolean,
+    composite: Boolean,
     dumpData: Boolean,
     wait: WaitUntilComplete
   ): DropDatabase = {
@@ -2107,12 +2126,12 @@ class Neo4jASTFactory(query: String)
         DestroyData
       }
 
-    DropDatabase(databaseName.asScala, ifExists, action, wait)(p)
+    DropDatabase(databaseName, ifExists, composite, action, wait)(p)
   }
 
   override def alterDatabase(
     p: InputPosition,
-    databaseName: SimpleEither[String, Parameter],
+    databaseName: DatabaseName,
     ifExists: Boolean,
     accessType: AccessType
   ): AlterDatabase = {
@@ -2120,7 +2139,7 @@ class Neo4jASTFactory(query: String)
       case READ_ONLY  => ReadOnlyAccess
       case READ_WRITE => ReadWriteAccess
     }
-    AlterDatabase(databaseName.asScala, ifExists, access)(p)
+    AlterDatabase(databaseName, ifExists, access)(p)
   }
 
   override def showDatabase(
@@ -2139,12 +2158,12 @@ class Neo4jASTFactory(query: String)
 
   override def databaseScope(
     p: InputPosition,
-    databaseName: SimpleEither[String, Parameter],
+    databaseName: DatabaseName,
     isDefault: Boolean,
     isHome: Boolean
   ): DatabaseScope = {
     if (databaseName != null) {
-      NamedDatabaseScope(databaseName.asScala)(p)
+      NamedDatabaseScope(databaseName)(p)
     } else if (isDefault) {
       DefaultDatabaseScope()(p)
     } else if (isHome) {
@@ -2156,18 +2175,18 @@ class Neo4jASTFactory(query: String)
 
   override def startDatabase(
     p: InputPosition,
-    databaseName: SimpleEither[String, Parameter],
+    databaseName: DatabaseName,
     wait: WaitUntilComplete
   ): StartDatabase = {
-    StartDatabase(databaseName.asScala, wait)(p)
+    StartDatabase(databaseName, wait)(p)
   }
 
   override def stopDatabase(
     p: InputPosition,
-    databaseName: SimpleEither[String, Parameter],
+    databaseName: DatabaseName,
     wait: WaitUntilComplete
   ): StopDatabase = {
-    StopDatabase(databaseName.asScala, wait)(p)
+    StopDatabase(databaseName, wait)(p)
   }
 
   override def wait(wait: Boolean, seconds: Long): WaitUntilComplete = {
@@ -2185,83 +2204,114 @@ class Neo4jASTFactory(query: String)
   override def createLocalDatabaseAlias(
     p: InputPosition,
     replace: Boolean,
-    aliasName: SimpleEither[String, Parameter],
-    targetName: SimpleEither[String, Parameter],
-    ifNotExists: Boolean
+    aliasName: DatabaseName,
+    targetName: DatabaseName,
+    ifNotExists: Boolean,
+    properties: SimpleEither[util.Map[String, Expression], Parameter]
   ): CreateLocalDatabaseAlias = {
     CreateLocalDatabaseAlias(
-      aliasName.asScala,
-      targetName.asScala,
-      ifExistsDo(replace, ifNotExists)
+      aliasName,
+      targetName,
+      ifExistsDo(replace, ifNotExists),
+      Option(properties).map(asExpressionMapAst)
     )(p)
   }
 
   override def createRemoteDatabaseAlias(
     p: InputPosition,
     replace: Boolean,
-    aliasName: SimpleEither[String, Parameter],
-    targetName: SimpleEither[String, Parameter],
+    aliasName: DatabaseName,
+    targetName: DatabaseName,
     ifNotExists: Boolean,
     url: SimpleEither[String, Parameter],
     username: SimpleEither[String, Parameter],
     password: Expression,
-    driverSettings: SimpleEither[util.Map[String, Expression], Parameter]
+    driverSettings: SimpleEither[util.Map[String, Expression], Parameter],
+    properties: SimpleEither[util.Map[String, Expression], Parameter]
   ): CreateRemoteDatabaseAlias = {
     CreateRemoteDatabaseAlias(
-      aliasName.asScala,
-      targetName.asScala,
+      aliasName,
+      targetName,
       ifExistsDo(replace, ifNotExists),
       url.asScala,
       username.asScala,
       password,
-      Option(driverSettings).map(asDriverSettingsAst)
+      Option(driverSettings).map(asExpressionMapAst),
+      Option(properties).map(asExpressionMapAst)
     )(p)
   }
 
   override def alterLocalDatabaseAlias(
     p: InputPosition,
-    aliasName: SimpleEither[String, Parameter],
-    targetName: SimpleEither[String, Parameter],
-    ifExists: Boolean
+    aliasName: DatabaseName,
+    targetName: DatabaseName,
+    ifExists: Boolean,
+    properties: SimpleEither[util.Map[String, Expression], Parameter]
   ): AlterLocalDatabaseAlias = {
     AlterLocalDatabaseAlias(
-      aliasName.asScala,
-      targetName.asScala,
-      ifExists
+      aliasName,
+      Option(targetName),
+      ifExists,
+      Option(properties).map(asExpressionMapAst)
     )(p)
   }
 
   override def alterRemoteDatabaseAlias(
     p: InputPosition,
-    aliasName: SimpleEither[String, Parameter],
-    targetName: SimpleEither[String, Parameter],
+    aliasName: DatabaseName,
+    targetName: DatabaseName,
     ifExists: Boolean,
     url: SimpleEither[String, Parameter],
     username: SimpleEither[String, Parameter],
     password: Expression,
-    driverSettings: SimpleEither[util.Map[String, Expression], Parameter]
+    driverSettings: SimpleEither[util.Map[String, Expression], Parameter],
+    properties: SimpleEither[util.Map[String, Expression], Parameter]
   ): AlterRemoteDatabaseAlias = {
     AlterRemoteDatabaseAlias(
-      aliasName.asScala,
-      Option(targetName).map(_.asScala),
+      aliasName,
+      Option(targetName),
       ifExists,
       Option(url).map(_.asScala),
       Option(username).map(_.asScala),
       Option(password),
-      Option(driverSettings).map(asDriverSettingsAst)
+      Option(driverSettings).map(asExpressionMapAst),
+      Option(properties).map(asExpressionMapAst)
     )(p)
   }
 
   override def dropAlias(
     p: InputPosition,
-    aliasName: SimpleEither[String, Parameter],
+    aliasName: DatabaseName,
     ifExists: Boolean
   ): DropDatabaseAlias = {
-    DropDatabaseAlias(aliasName.asScala, ifExists)(p)
+    DropDatabaseAlias(aliasName, ifExists)(p)
   }
 
-  override def showAliases(p: InputPosition, yieldExpr: Yield, returnWithoutGraph: Return, where: Where): ShowAliases =
-    ShowAliases(yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
+  override def showAliases(
+    p: InputPosition,
+    aliasName: DatabaseName,
+    yieldExpr: Yield,
+    returnWithoutGraph: Return,
+    where: Where
+  ): ShowAliases =
+    ShowAliases(
+      Option(aliasName),
+      yieldOrWhere(yieldExpr, returnWithoutGraph, where)
+    )(p)
+
+  override def createCompositeDatabase(
+    p: InputPosition,
+    replace: Boolean,
+    compositeDatabaseName: DatabaseName,
+    ifNotExists: Boolean,
+    wait: WaitUntilComplete
+  ): AdministrationCommand = {
+    CreateCompositeDatabase(compositeDatabaseName, ifExistsDo(replace, ifNotExists), wait)(p)
+  }
+
+  override def databaseName(p: InputPosition, names: util.List[String]): DatabaseName = NamespacedName(names)(p)
+
+  override def databaseName(param: Parameter): DatabaseName = ParameterName(param)(param.position)
 
   private def ifExistsDo(replace: Boolean, ifNotExists: Boolean): IfExistsDo = {
     (replace, ifNotExists) match {
@@ -2296,7 +2346,7 @@ class Neo4jASTFactory(query: String)
       case None               => NoOptions
     }
 
-  private def asDriverSettingsAst(driverSettings: SimpleEither[util.Map[String, Expression], Parameter])
+  private def asExpressionMapAst(driverSettings: SimpleEither[util.Map[String, Expression], Parameter])
     : Either[Map[String, Expression], Parameter] =
     driverSettings.asScala match {
       case Left(map)    => Left(map.asScala.toMap)

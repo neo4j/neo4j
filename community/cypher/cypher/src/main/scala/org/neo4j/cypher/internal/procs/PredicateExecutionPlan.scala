@@ -33,16 +33,36 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.values.virtual.MapValue
 
 import java.util
-import java.util.Collections
+
+import scala.jdk.CollectionConverters.SetHasAsJava
+
+trait Predicate {
+  def execute(transactionalContext: TransactionalContext, params: MapValue): Boolean
+}
+
+case class SecurityPredicate(predicateFn: (MapValue, SecurityContext) => Boolean) extends Predicate {
+
+  override def execute(transactionalContext: TransactionalContext, params: MapValue): Boolean =
+    predicateFn(params, transactionalContext.securityContext)
+}
+
+case class DatabaseSecurityPredicate(predicateFn: (MapValue, TransactionalContext, SecurityContext) => Boolean)
+    extends Predicate {
+
+  override def execute(transactionalContext: TransactionalContext, params: MapValue): Boolean = {
+    predicateFn(params, transactionalContext, transactionalContext.securityContext())
+  }
+}
 
 class PredicateExecutionPlan(
-  predicate: (MapValue, SecurityContext) => Boolean,
+  predicate: Predicate,
   source: Option[ExecutionPlan] = None,
-  onViolation: (MapValue, SecurityContext) => Exception
+  onViolation: (MapValue, TransactionalContext, SecurityContext) => Exception
 ) extends AdministrationChainedExecutionPlan(source) {
 
   override def runSpecific(
@@ -51,13 +71,14 @@ class PredicateExecutionPlan(
     params: MapValue,
     prePopulateResults: Boolean,
     ignore: InputDataStream,
-    subscriber: QuerySubscriber
+    subscriber: QuerySubscriber,
+    previousNotifications: Set[InternalNotification]
   ): RuntimeResult = {
     val securityContext = originalCtx.transactionalContext.securityContext
-    if (predicate(params, securityContext)) {
-      NoRuntimeResult(subscriber)
+    if (predicate.execute(originalCtx.kernelTransactionalContext, params)) {
+      NoRuntimeResult(subscriber, previousNotifications)
     } else {
-      throw onViolation(params, securityContext)
+      throw onViolation(params, originalCtx.kernelTransactionalContext, securityContext)
     }
   }
 
@@ -66,7 +87,18 @@ class PredicateExecutionPlan(
   override def metadata: Seq[Argument] = Nil
 }
 
-case class NoRuntimeResult(subscriber: QuerySubscriber) extends EmptyQuerySubscription(subscriber) with RuntimeResult {
+object PredicateExecutionPlan {
+
+  def apply(
+    predicate: (MapValue, SecurityContext) => Boolean,
+    source: Option[ExecutionPlan] = None,
+    onViolation: (MapValue, TransactionalContext, SecurityContext) => Exception
+  ) = new PredicateExecutionPlan(SecurityPredicate(predicate), source, onViolation)
+
+}
+
+case class NoRuntimeResult(subscriber: QuerySubscriber, runtimeNotifications: Set[InternalNotification])
+    extends EmptyQuerySubscription(subscriber) with RuntimeResult {
 
   override def fieldNames(): Array[String] = Array.empty
 
@@ -80,5 +112,5 @@ case class NoRuntimeResult(subscriber: QuerySubscriber) extends EmptyQuerySubscr
 
   override def queryProfile(): QueryProfile = QueryProfile.NONE
 
-  override def notifications(): util.Set[InternalNotification] = Collections.emptySet()
+  override def notifications(): util.Set[InternalNotification] = runtimeNotifications.asJava
 }

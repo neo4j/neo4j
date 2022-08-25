@@ -76,7 +76,8 @@ public interface ASTFactory<
                 POS,
                 ENTITY_TYPE,
                 PATH_PATTERN_QUANTIFIER,
-                PATTERN_ATOM>
+                PATTERN_ATOM,
+                DATABASE_NAME>
         extends ASTExpressionFactory<
                 EXPRESSION,
                 LABEL_EXPRESSION,
@@ -402,7 +403,7 @@ public interface ASTFactory<
             boolean encrypted,
             boolean changeRequired,
             Boolean suspended,
-            SimpleEither<String, PARAMETER> homeDatabase);
+            DATABASE_NAME homeDatabase);
 
     ADMINISTRATION_COMMAND dropUser(POS p, boolean ifExists, SimpleEither<String, PARAMETER> username);
 
@@ -422,7 +423,7 @@ public interface ASTFactory<
             boolean encrypted,
             Boolean changeRequired,
             Boolean suspended,
-            SimpleEither<String, PARAMETER> homeDatabase,
+            DATABASE_NAME homeDatabase,
             boolean removeHome);
 
     EXPRESSION passwordExpression(PARAMETER password);
@@ -519,10 +520,9 @@ public interface ASTFactory<
 
     List<PRIVILEGE_QUALIFIER> procedureQualifier(POS p, List<String> procedures);
 
-    List<GRAPH_SCOPE> graphScopes(POS p, List<SimpleEither<String, PARAMETER>> graphNames, ScopeType scopeType);
+    List<GRAPH_SCOPE> graphScopes(POS p, List<DATABASE_NAME> graphNames, ScopeType scopeType);
 
-    List<DATABASE_SCOPE> databaseScopes(
-            POS p, List<SimpleEither<String, PARAMETER>> databaseNames, ScopeType scopeType);
+    List<DATABASE_SCOPE> databaseScopes(POS p, List<DATABASE_NAME> databaseNames, ScopeType scopeType);
 
     // Server Administration Commands
 
@@ -537,65 +537,76 @@ public interface ASTFactory<
     ADMINISTRATION_COMMAND createDatabase(
             POS p,
             boolean replace,
-            SimpleEither<String, PARAMETER> databaseName,
+            DATABASE_NAME databaseName,
             boolean ifNotExists,
             WAIT_CLAUSE waitClause,
             SimpleEither<Map<String, EXPRESSION>, PARAMETER> options);
 
     ADMINISTRATION_COMMAND dropDatabase(
-            POS p, SimpleEither<String, PARAMETER> databaseName, boolean ifExists, boolean dumpData, WAIT_CLAUSE wait);
+            POS p, DATABASE_NAME databaseName, boolean ifExists, boolean composite, boolean dumpData, WAIT_CLAUSE wait);
 
-    ADMINISTRATION_COMMAND alterDatabase(
-            POS p, SimpleEither<String, PARAMETER> databaseName, boolean ifExists, AccessType accessType);
+    ADMINISTRATION_COMMAND alterDatabase(POS p, DATABASE_NAME databaseName, boolean ifExists, AccessType accessType);
 
     ADMINISTRATION_COMMAND showDatabase(
             POS p, DATABASE_SCOPE scope, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where);
 
-    ADMINISTRATION_COMMAND startDatabase(POS p, SimpleEither<String, PARAMETER> databaseName, WAIT_CLAUSE wait);
+    ADMINISTRATION_COMMAND startDatabase(POS p, DATABASE_NAME databaseName, WAIT_CLAUSE wait);
 
-    ADMINISTRATION_COMMAND stopDatabase(POS p, SimpleEither<String, PARAMETER> databaseName, WAIT_CLAUSE wait);
+    ADMINISTRATION_COMMAND stopDatabase(POS p, DATABASE_NAME databaseName, WAIT_CLAUSE wait);
 
-    DATABASE_SCOPE databaseScope(
-            POS p, SimpleEither<String, PARAMETER> databaseName, boolean isDefault, boolean isHome);
+    DATABASE_SCOPE databaseScope(POS p, DATABASE_NAME databaseName, boolean isDefault, boolean isHome);
 
     WAIT_CLAUSE wait(boolean wait, long seconds);
+
+    DATABASE_NAME databaseName(POS p, List<String> names);
+
+    DATABASE_NAME databaseName(PARAMETER param);
 
     // Alias Administration Commands
     ADMINISTRATION_COMMAND createLocalDatabaseAlias(
             POS p,
             boolean replace,
-            SimpleEither<String, PARAMETER> aliasName,
-            SimpleEither<String, PARAMETER> targetName,
-            boolean ifNotExists);
+            DATABASE_NAME aliasName,
+            DATABASE_NAME targetName,
+            boolean ifNotExists,
+            SimpleEither<Map<String, EXPRESSION>, PARAMETER> properties);
 
     ADMINISTRATION_COMMAND createRemoteDatabaseAlias(
             POS p,
             boolean replace,
-            SimpleEither<String, PARAMETER> aliasName,
-            SimpleEither<String, PARAMETER> targetName,
+            DATABASE_NAME aliasName,
+            DATABASE_NAME targetName,
             boolean ifNotExists,
             SimpleEither<String, PARAMETER> url,
             SimpleEither<String, PARAMETER> username,
             EXPRESSION password,
-            SimpleEither<Map<String, EXPRESSION>, PARAMETER> driverSettings);
+            SimpleEither<Map<String, EXPRESSION>, PARAMETER> driverSettings,
+            SimpleEither<Map<String, EXPRESSION>, PARAMETER> properties);
 
     ADMINISTRATION_COMMAND alterLocalDatabaseAlias(
             POS p,
-            SimpleEither<String, PARAMETER> aliasName,
-            SimpleEither<String, PARAMETER> targetName,
-            boolean ifExists);
+            DATABASE_NAME aliasName,
+            DATABASE_NAME targetName,
+            boolean ifExists,
+            SimpleEither<Map<String, EXPRESSION>, PARAMETER> properties);
 
     ADMINISTRATION_COMMAND alterRemoteDatabaseAlias(
             POS p,
-            SimpleEither<String, PARAMETER> aliasName,
-            SimpleEither<String, PARAMETER> targetName,
+            DATABASE_NAME aliasName,
+            DATABASE_NAME targetName,
             boolean ifExists,
             SimpleEither<String, PARAMETER> url,
             SimpleEither<String, PARAMETER> username,
             EXPRESSION password,
-            SimpleEither<Map<String, EXPRESSION>, PARAMETER> driverSettings);
+            SimpleEither<Map<String, EXPRESSION>, PARAMETER> driverSettings,
+            SimpleEither<Map<String, EXPRESSION>, PARAMETER> properties);
 
-    ADMINISTRATION_COMMAND dropAlias(POS p, SimpleEither<String, PARAMETER> aliasName, boolean ifExists);
+    ADMINISTRATION_COMMAND dropAlias(POS p, DATABASE_NAME aliasName, boolean ifExists);
 
-    ADMINISTRATION_COMMAND showAliases(POS p, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where);
+    ADMINISTRATION_COMMAND showAliases(
+            POS p, DATABASE_NAME aliasName, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where);
+
+    // Composite Database
+    ADMINISTRATION_COMMAND createCompositeDatabase(
+            POS p, boolean replace, DATABASE_NAME compositeDatabaseName, boolean ifNotExists, WAIT_CLAUSE waitClause);
 }

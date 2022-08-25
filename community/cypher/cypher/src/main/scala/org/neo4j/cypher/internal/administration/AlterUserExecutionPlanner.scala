@@ -38,7 +38,7 @@ case class AlterUserExecutionPlanner(
       new PredicateExecutionPlan(
         (_, _) => false,
         sourcePlan,
-        (params, _) => {
+        (params, _, _) => {
           val user = runtimeStringValue(alterUser.userName, params)
           throw new CantCompileQueryException(
             s"Failed to alter the specified user '$user': '$command' is not available in community edition."
@@ -58,7 +58,7 @@ case class AlterUserExecutionPlanner(
         alterUser.initialPassword,
         alterUser.requirePasswordChange,
         suspended = None,
-        defaultDatabase = None
+        homeDatabase = None
       )(sourcePlan, normalExecutionEngine, securityAuthorizationHandler)
     }
   }

@@ -166,6 +166,12 @@ case object AlterDatabaseAction extends DatabaseManagementAction("ALTER DATABASE
 
 case object SetDatabaseAccessAction extends DatabaseManagementAction("SET DATABASE ACCESS")
 
+case object CompositeDatabaseManagementActions extends DatabaseManagementAction("COMPOSITE DATABASE MANAGEMENT")
+
+case object CreateCompositeDatabaseAction extends DatabaseManagementAction("CREATE COMPOSITE DATABASE")
+
+case object DropCompositeDatabaseAction extends DatabaseManagementAction("DROP COMPOSITE DATABASE")
+
 abstract class AliasManagementAction(override val name: String) extends DbmsAction(name)
 
 case object AllAliasManagementActions extends AliasManagementAction("ALIAS MANAGEMENT")

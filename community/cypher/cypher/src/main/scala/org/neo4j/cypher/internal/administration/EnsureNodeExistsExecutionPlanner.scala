@@ -19,19 +19,27 @@
  */
 package org.neo4j.cypher.internal.administration
 
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.Show
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.Show.showDatabaseName
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.Show.showString
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.checkNamespaceExists
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.followerError
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.getDatabaseNameFields
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.getNameFields
-import org.neo4j.cypher.internal.AdministrationCommandRuntime.runtimeStringValue
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
+import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_LABEL_DESCRIPTION
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
+import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.values.virtual.VirtualValues
 
 case class EnsureNodeExistsExecutionPlanner(
@@ -57,26 +65,54 @@ case class EnsureNodeExistsExecutionPlanner(
          |${extraFilter("node")}
          |RETURN node""".stripMargin,
       VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)),
-      QueryHandler
-        .handleNoResult(p =>
-          Some(new InvalidArgumentException(
-            s"Failed to $action the specified ${labelDescription.toLowerCase} '${runtimeStringValue(name, p)}': $labelDescription does not exist."
-          ))
-        )
-        .handleError {
-          case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
-            new DatabaseAdministrationOnFollowerException(
-              s"Failed to $action the specified ${labelDescription.toLowerCase} '${runtimeStringValue(name, p)}': $followerError",
-              error
-            )
-          case (error, p) => new IllegalStateException(
-              s"Failed to $action the specified ${labelDescription.toLowerCase} '${runtimeStringValue(name, p)}'.",
-              error
-            ) // should not get here but need a default case
-        },
+      queryHandler(action, labelDescription, name),
       sourcePlan,
       parameterConverter = nameFields.nameConverter
     )
   }
 
+  def planEnsureDatabaseNodeExists(
+    aliasName: DatabaseName,
+    extraFilter: String => String,
+    action: String,
+    sourcePlan: Option[ExecutionPlan]
+  ): ExecutionPlan = {
+    val aliasNameFields =
+      getDatabaseNameFields("aliasName", aliasName, new NormalizedDatabaseName(_).name())
+
+    UpdatingSystemCommandExecutionPlan(
+      "EnsureNodeExists",
+      normalExecutionEngine,
+      securityAuthorizationHandler,
+      s"""MATCH (node:$DATABASE_NAME ${aliasNameFields.asNodeFilter})
+         |${extraFilter("node")}
+         |RETURN node""".stripMargin,
+      VirtualValues.map(aliasNameFields.keys, aliasNameFields.values),
+      queryHandler(action, DATABASE_NAME_LABEL_DESCRIPTION, aliasName),
+      sourcePlan,
+      parameterConverter = aliasNameFields.nameConverter,
+      parameterValidator = checkNamespaceExists(aliasNameFields)
+    )
+
+  }
+
+  private def queryHandler[T](action: String, labelDescription: String, value: T)(implicit show: Show[T]) = {
+    QueryHandler
+      .handleNoResult(p =>
+        Some(new InvalidArgumentException(
+          s"Failed to $action the specified ${labelDescription.toLowerCase} '${show(value, p)}': $labelDescription does not exist."
+        ))
+      )
+      .handleError {
+        case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
+          new DatabaseAdministrationOnFollowerException(
+            s"Failed to $action the specified ${labelDescription.toLowerCase} '${show(value, p)}': $followerError",
+            error
+          )
+        case (error, p) => new IllegalStateException(
+            s"Failed to $action the specified ${labelDescription.toLowerCase} '${show(value, p)}'.",
+            error
+          ) // should not get here but need a default case
+      }
+  }
 }

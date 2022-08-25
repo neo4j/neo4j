@@ -46,6 +46,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CHANGE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.COMMAND;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.COMMANDS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.COMMIT;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.COMPOSITE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CONSTRAINT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CONSTRAINTS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CONTAINS;
@@ -140,6 +141,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PRIVILEGE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PRIVILEGES;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROCEDURE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROCEDURES;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROPERTIES;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROPERTY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.RANGE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.READ;
@@ -237,6 +239,7 @@ public class IdentifierTokens {
             COMMAND,
             COMMANDS,
             COMMIT,
+            COMPOSITE,
             CONSTRAINT,
             CONSTRAINTS,
             CONTAINS,
@@ -330,6 +333,7 @@ public class IdentifierTokens {
             PRIVILEGES,
             PROCEDURE,
             PROCEDURES,
+            PROPERTIES,
             PROPERTY,
             RANGE,
             READ,

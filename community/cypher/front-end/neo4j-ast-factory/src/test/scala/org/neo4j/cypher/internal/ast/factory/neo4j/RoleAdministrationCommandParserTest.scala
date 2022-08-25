@@ -333,7 +333,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("CREATE ROLE foo AS COPY OF $bar") {
-    yields(ast.CreateRole(literalFoo, Some(param("bar")), ast.IfExistsThrowError))
+    yields(ast.CreateRole(literalFoo, Some(stringParam("bar")), ast.IfExistsThrowError))
   }
 
   test("CREATE ROLE foo AS COPY OF ``") {
@@ -426,15 +426,15 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("RENAME ROLE foo TO $bar") {
-    yields(ast.RenameRole(literalFoo, param("bar"), ifExists = false))
+    yields(ast.RenameRole(literalFoo, stringParam("bar"), ifExists = false))
   }
 
   test("RENAME ROLE $foo TO bar") {
-    yields(ast.RenameRole(param("foo"), literalBar, ifExists = false))
+    yields(ast.RenameRole(stringParam("foo"), literalBar, ifExists = false))
   }
 
   test("RENAME ROLE $foo TO $bar") {
-    yields(ast.RenameRole(param("foo"), param("bar"), ifExists = false))
+    yields(ast.RenameRole(stringParam("foo"), stringParam("bar"), ifExists = false))
   }
 
   test("RENAME ROLE foo IF EXISTS TO bar") {
@@ -442,15 +442,15 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("RENAME ROLE foo IF EXISTS TO $bar") {
-    yields(ast.RenameRole(literalFoo, param("bar"), ifExists = true))
+    yields(ast.RenameRole(literalFoo, stringParam("bar"), ifExists = true))
   }
 
   test("RENAME ROLE $foo IF EXISTS TO bar") {
-    yields(ast.RenameRole(param("foo"), literalBar, ifExists = true))
+    yields(ast.RenameRole(stringParam("foo"), literalBar, ifExists = true))
   }
 
   test("RENAME ROLE $foo IF EXISTS TO $bar") {
-    yields(ast.RenameRole(param("foo"), param("bar"), ifExists = true))
+    yields(ast.RenameRole(stringParam("foo"), stringParam("bar"), ifExists = true))
   }
 
   test("RENAME ROLE foo TO ``") {
@@ -638,24 +638,24 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test(s"GRANT ROLE $$a TO $$x") {
-    yields(ast.GrantRolesToUsers(Seq(param("a")), Seq(param("x"))))
+    yields(ast.GrantRolesToUsers(Seq(stringParam("a")), Seq(stringParam("x"))))
   }
 
   test(s"REVOKE ROLE $$a FROM $$x") {
-    yields(ast.RevokeRolesFromUsers(Seq(param("a")), Seq(param("x"))))
+    yields(ast.RevokeRolesFromUsers(Seq(stringParam("a")), Seq(stringParam("x"))))
   }
 
   test(s"GRANT ROLES a, $$b, $$c TO $$x, y, z") {
     yields(ast.GrantRolesToUsers(
-      Seq(literal("a"), param("b"), param("c")),
-      Seq(param("x"), literal("y"), literal("z"))
+      Seq(literal("a"), stringParam("b"), stringParam("c")),
+      Seq(stringParam("x"), literal("y"), literal("z"))
     ))
   }
 
   test(s"REVOKE ROLES a, $$b, $$c FROM $$x, y, z") {
     yields(ast.RevokeRolesFromUsers(
-      Seq(literal("a"), param("b"), param("c")),
-      Seq(param("x"), literal("y"), literal("z"))
+      Seq(literal("a"), stringParam("b"), stringParam("c")),
+      Seq(stringParam("x"), literal("y"), literal("z"))
     ))
   }
 
@@ -674,6 +674,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
         |  "ALL"
         |  "ALTER"
         |  "ASSIGN"
+        |  "COMPOSITE"
         |  "CONSTRAINT"
         |  "CONSTRAINTS"
         |  "CREATE"""".stripMargin

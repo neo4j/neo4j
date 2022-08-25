@@ -121,7 +121,8 @@ public class Cypher<STATEMENT,
                     POS,
                     ENTITY_TYPE,
                     PATTERN_QUANTIFIER,
-                    PATTERN_ATOM> {
+                    PATTERN_ATOM,
+                    DATABASE_NAME> {
 
     ASTExceptionFactory exceptionFactory;
     ASTFactory<STATEMENT,
@@ -163,7 +164,8 @@ public class Cypher<STATEMENT,
                POS,
                ENTITY_TYPE,
                PATTERN_QUANTIFIER,
-               PATTERN_ATOM> astFactory;
+               PATTERN_ATOM,
+               DATABASE_NAME> astFactory;
     // to distinguish a bar that follows a label expression from the or-operator as part of a label expression, this stack keeps track of the current context
     Stack<ExpectBar> labelExpressionStack = new Stack<>();
 
@@ -206,7 +208,8 @@ public class Cypher<STATEMENT,
                              POS,
                              ENTITY_TYPE,
                              PATTERN_QUANTIFIER,
-                             PATTERN_ATOM> astFactory,
+                             PATTERN_ATOM,
+                             DATABASE_NAME> astFactory,
                   ASTExceptionFactory exceptionFactory,
                   CharStream stream) {
         this(stream);
@@ -382,6 +385,7 @@ TOKEN [IGNORE_CASE] :
     | < COMMAND: "COMMAND">
     | < COMMANDS: "COMMANDS">
     | < COMMIT: "COMMIT" >
+    | < COMPOSITE: "COMPOSITE" >
     | < CONSTRAINT: "CONSTRAINT" >
     | < CONSTRAINTS: "CONSTRAINTS" >
     | < CONTAINS: "CONTAINS" >
@@ -494,6 +498,7 @@ TOKEN [IGNORE_CASE] :
     | < PRIVILEGES: "PRIVILEGES" >
     | < PROCEDURE: "PROCEDURE" >
     | < PROCEDURES: "PROCEDURES" >
+    | < PROPERTIES: "PROPERTIES" >
     | < PROPERTY: "PROPERTY" >
     | < QUESTION: "?" >
     | < RANGE: "RANGE" >
@@ -3188,6 +3193,7 @@ STATEMENT_WITH_GRAPH CreateCommand( USE_CLAUSE useClause ) throws Exception:
         | statement=CreateConstraint( start, replace )
         | statement=CreateIndex( start, replace )
         | statement=CreateAlias( start, replace )
+        | statement=CreateCompositeDatabase( start, replace )
     )
     {
         return astFactory.useGraph( statement, useClause );
@@ -4414,7 +4420,7 @@ ADMINISTRATION_COMMAND CreateUser( Token start, boolean replace ) throws Excepti
     boolean encrypted = false;
     Optional<Boolean> changeRequired = Optional.empty();
     Optional<Boolean> suspended = Optional.empty();
-    Optional<SimpleEither<String, PARAMETER>> homeDatabase = Optional.empty();
+    Optional<DATABASE_NAME> homeDatabase = Optional.empty();
 }
 {
     <USER>
@@ -4490,7 +4496,7 @@ ADMINISTRATION_COMMAND AlterUser( Token start ) throws Exception:
     boolean encrypted = false;
     Optional<Boolean> changeRequired = Optional.empty();
     Optional<Boolean> suspended = Optional.empty();
-    Optional<SimpleEither<String, PARAMETER>> homeDatabase = Optional.empty();
+    Optional<DATABASE_NAME> homeDatabase = Optional.empty();
     boolean removeHome = false;
     String passwordSetError = "Duplicate SET PASSWORD clause";
 }
@@ -4587,16 +4593,16 @@ Optional<Boolean> UserStatus( Token start, Optional<Boolean> suspended ) throws 
     }
 }
 
-Optional<SimpleEither<String, PARAMETER>> HomeDatabase( Token start, Optional<SimpleEither<String, PARAMETER>> homeDatabase ) throws Exception:
+Optional<DATABASE_NAME> HomeDatabase( Token start, Optional<DATABASE_NAME> homeDatabase ) throws Exception:
 {
     String errorMessage = "Duplicate SET HOME DATABASE clause";
-    SimpleEither<String, PARAMETER> home = null;
+    AliasName<DATABASE_NAME, PARAMETER> home = null;
 }
 {
-    <HOME> <DATABASE> home=SymbolicDatabaseNameStringOrParameter()
+    <HOME> <DATABASE> home=SymbolicAliasName()
     {
         assertNotAlreadySet( homeDatabase.orElse(null), start, errorMessage );
-        return Optional.of( home );
+        return Optional.of( home.getLocalAliasName(astFactory) );
     }
 }
 
@@ -4820,7 +4826,7 @@ PRIVILEGE_TYPE privilege(Token start) throws Exception:
 PRIVILEGE_TYPE allPrivilege(Token start) throws Exception:
 {
     ADMINISTRATION_ACTION action = null;
-    List<SimpleEither<String, PARAMETER>> names = null;
+    List<DATABASE_NAME> names = null;
     boolean isAll = false;
     String type = null;
     Token t = null;
@@ -4852,11 +4858,11 @@ PRIVILEGE_TYPE allPrivilege(Token start) throws Exception:
             assertValidType( t, type, "DBMS" );
             return astFactory.dbmsPrivilege( pos(start), astFactory.privilegeAction( ActionType.DBMS_ALL ), astFactory.allQualifier() );
         }
-        | (t=<GRAPH> | t=<GRAPHS>) (<TIMES> { scopeType = ScopeType.ALL; } | names=SymbolicDatabaseNameStringOrParameterList()) {
+        | (t=<GRAPH> | t=<GRAPHS>) (<TIMES> { scopeType = ScopeType.ALL; } | names=SymbolicAliasNameList()) {
             assertValidType( t, type, "GRAPH" );
             return astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_ALL ), astFactory.graphScopes( pos( t ), names, scopeType ), null, astFactory.allQualifier() );
         }
-        | (t=<DATABASE> | t=<DATABASES>) (<TIMES> { scopeType = ScopeType.ALL; } | names=SymbolicDatabaseNameStringOrParameterList()) {
+        | (t=<DATABASE> | t=<DATABASES>) (<TIMES> { scopeType = ScopeType.ALL; } | names=SymbolicAliasNameList() ) {
             assertValidType( t, type, "DATABASE" );
             return astFactory.databasePrivilege( pos(start), astFactory.privilegeAction( ActionType.DATABASE_ALL ), astFactory.databaseScopes( pos( t ), names, scopeType ), astFactory.allDatabasesQualifier() );
         }
@@ -4890,6 +4896,7 @@ PRIVILEGE_TYPE createPrivilege(Token start):
                | <ALIAS> { action = astFactory.privilegeAction( ActionType.ALIAS_CREATE ); }
                | <ROLE> { action = astFactory.privilegeAction( ActionType.ROLE_CREATE ); }
                | <USER> { action = astFactory.privilegeAction( ActionType.USER_CREATE ); }
+               | <COMPOSITE> <DATABASE> { action = astFactory.privilegeAction( ActionType.DATABASE_COMPOSITE_CREATE ); }
            ) <ON> <DBMS> { privilege = astFactory.dbmsPrivilege( pos(start), action,  astFactory.allQualifier() ); }
        ) | ( <ON> graphs=graphScopeList() qualifier=graphQualifier() { privilege = astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_CREATE ), graphs, null, qualifier ); } )
     ) { return privilege; }
@@ -4915,6 +4922,7 @@ PRIVILEGE_TYPE dropPrivilege(Token start):
                | <ALIAS> { action = astFactory.privilegeAction( ActionType.ALIAS_DROP ); }
                | <ROLE> { action = astFactory.privilegeAction( ActionType.ROLE_DROP ); }
                | <USER> { action = astFactory.privilegeAction( ActionType.USER_DROP ); }
+               | <COMPOSITE> <DATABASE> { action = astFactory.privilegeAction( ActionType.DATABASE_COMPOSITE_DROP ); }
            ) <ON> <DBMS> { privilege = astFactory.dbmsPrivilege( pos(start), action, astFactory.allQualifier() ); }
        )
     ) { return privilege; }
@@ -5049,6 +5057,7 @@ PRIVILEGE_TYPE dbmsPrivilege(Token start):
             <PRIVILEGE> { action = astFactory.privilegeAction( ActionType.PRIVILEGE_ASSIGN ); }
             | <ROLE> { action = astFactory.privilegeAction( ActionType.ROLE_ASSIGN ); }
         )
+        | <COMPOSITE> <DATABASE> <MANAGEMENT> { action = astFactory.privilegeAction( ActionType.DATABASE_COMPOSITE_MANAGEMENT ); }
         | <DATABASE> <MANAGEMENT> { action = astFactory.privilegeAction( ActionType.DATABASE_MANAGEMENT ); }
         | <ALIAS> <MANAGEMENT> { action = astFactory.privilegeAction( ActionType.ALIAS_MANAGEMENT ); }
         | <EXECUTE> (
@@ -5210,18 +5219,18 @@ List<PRIVILEGE_QUALIFIER> graphQualifier():
 
 ADMINISTRATION_COMMAND CreateDatabase( Token start, boolean replace ):
 {
-    SimpleEither<String, PARAMETER> databaseName = null;
+    AliasName<DATABASE_NAME, PARAMETER> databaseName = null;
     boolean ifNotExists = false;
     WAIT_CLAUSE wait = astFactory.wait( false, -1 );
     SimpleEither<Map<String, EXPRESSION>, PARAMETER> options = null;
 }
 {
-    <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter()
+    <DATABASE> databaseName=SymbolicAliasName()
     ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )?
     ( options=Options() )?
     ( wait = WaitClause() )?
     {
-       return astFactory.createDatabase( pos( start ), replace, databaseName, ifNotExists, wait, options );
+       return astFactory.createDatabase( pos( start ), replace, databaseName.getLocalAliasName(astFactory), ifNotExists, wait, options );
     }
 }
 
@@ -5236,62 +5245,80 @@ SimpleEither<Map<String, EXPRESSION>, PARAMETER> Options() :
     }
 }
 
+ADMINISTRATION_COMMAND CreateCompositeDatabase( Token start, boolean replace ) throws Exception:
+{
+    AliasName<DATABASE_NAME, PARAMETER> compositeDatabaseName = null;
+    WAIT_CLAUSE wait = astFactory.wait( false, -1 );
+    boolean ifNotExists = false;
+}
+{
+    <COMPOSITE> <DATABASE>
+    compositeDatabaseName=SymbolicAliasName()
+    ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )?
+    ( wait = WaitClause() )?
+    {
+       return astFactory.createCompositeDatabase( pos( start ), replace, compositeDatabaseName.getLocalAliasName(astFactory), ifNotExists, wait );
+    }
+}
+
 ADMINISTRATION_COMMAND DropDatabase( Token start ):
 {
-    SimpleEither<String, PARAMETER> databaseName = null;
+    AliasName<DATABASE_NAME, PARAMETER> databaseName = null;
     boolean ifExists = false;
     WAIT_CLAUSE wait = astFactory.wait( false, -1 );
     boolean dumpData = false;
+    boolean composite = false;
 }
 {
-    <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter()
+    ( <COMPOSITE> { composite = true; } )?
+    <DATABASE> databaseName=SymbolicAliasName()
     ( <IF> <EXISTS> { ifExists = true; } )?
     ( ( <DUMP> { dumpData = true; } | <DESTROY> ) <DATA> )?
     ( wait = WaitClause() )?
     {
-        return astFactory.dropDatabase( pos( start ), databaseName, ifExists, dumpData, wait );
+        return astFactory.dropDatabase( pos( start ), databaseName.getLocalAliasName(astFactory), ifExists, composite, dumpData, wait );
     }
 }
 
 ADMINISTRATION_COMMAND AlterDatabase( Token start ):
 {
-    SimpleEither<String, PARAMETER> databaseName = null;
+    AliasName<DATABASE_NAME, PARAMETER> databaseName = null;
     boolean ifExists = false;
     AccessType accessType = AccessType.READ_WRITE;
 }
 {
     <DATABASE>
-    databaseName=SymbolicDatabaseNameStringOrParameter()
+    databaseName=SymbolicAliasName()
     ( <IF> <EXISTS> { ifExists = true; } )?
     <SET> <ACCESS> <READ> ( <ONLY> { accessType = AccessType.READ_ONLY; } | <WRITE> )
     {
-        return astFactory.alterDatabase( pos( start ), databaseName, ifExists, accessType );
+        return astFactory.alterDatabase( pos( start ), databaseName.getLocalAliasName(astFactory), ifExists, accessType );
     }
 }
 
 ADMINISTRATION_COMMAND StartDatabase():
 {
     Token start;
-    SimpleEither<String, PARAMETER> databaseName;
+    AliasName<DATABASE_NAME, PARAMETER> databaseName;
     WAIT_CLAUSE wait = astFactory.wait( false, -1 );
 }
 {
-    start=<START> <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter() ( wait=WaitClause() )?
+    start=<START> <DATABASE> databaseName=SymbolicAliasName() ( wait=WaitClause() )?
     {
-      return astFactory.startDatabase( pos( start ), databaseName, wait );
+      return astFactory.startDatabase( pos( start ), databaseName.getLocalAliasName(astFactory), wait );
     }
 }
 
 ADMINISTRATION_COMMAND StopDatabase():
 {
     Token start;
-    SimpleEither<String, PARAMETER> databaseName;
+    AliasName<DATABASE_NAME, PARAMETER> databaseName;
     WAIT_CLAUSE wait = astFactory.wait( false, -1 );
 }
 {
-    start=<STOP> <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter() ( wait=WaitClause() )?
+    start=<STOP> <DATABASE> databaseName=SymbolicAliasName() ( wait=WaitClause() )?
     {
-      return astFactory.stopDatabase( pos( start ), databaseName, wait );
+      return astFactory.stopDatabase( pos( start ), databaseName.getLocalAliasName(astFactory), wait );
     }
 }
 
@@ -5335,31 +5362,31 @@ STATEMENT_WITH_GRAPH ShowDatabase( Token start, USE_CLAUSE useClause ):
 DATABASE_SCOPE DatabaseScope():
 {
     Token start = null;
-    SimpleEither<String, PARAMETER> name = null;
+    AliasName<DATABASE_NAME, PARAMETER> name = null;
     boolean isDefault = false;
     boolean isHome = false;
 }
 {
     (
-        start=<DATABASE> name=SymbolicDatabaseNameStringOrParameter()
+        start=<DATABASE> name=SymbolicAliasName()
         | start=<DATABASES>
         | start=<DEFAULT_TOKEN> <DATABASE> { isDefault = true; }
         | start=<HOME> <DATABASE> { isHome = true; }
     )
   {
-    return astFactory.databaseScope( pos( start ), name, isDefault, isHome );
+        return astFactory.databaseScope( pos( start ), name == null ? null : name.getLocalAliasName(astFactory), isDefault, isHome );
   }
 }
 
 List<DATABASE_SCOPE> DatabaseScopeList():
 {
     Token start = null;
-    List<SimpleEither<String, PARAMETER>> names = null;
+    List<DATABASE_NAME> names = null;
     ScopeType type = ScopeType.NAMED;
 }
 {
     (
-        (start=<DATABASE> | start=<DATABASES>) (<TIMES> { type = ScopeType.ALL; } | names=SymbolicDatabaseNameStringOrParameterList())
+        (start=<DATABASE> | start=<DATABASES>) (<TIMES> { type = ScopeType.ALL; } | names=SymbolicAliasNameList())
         | start=<DEFAULT_TOKEN> <DATABASE> { type = ScopeType.DEFAULT; }
         | start=<HOME> <DATABASE> { type = ScopeType.HOME; }
     )
@@ -5371,12 +5398,12 @@ List<DATABASE_SCOPE> DatabaseScopeList():
 List<GRAPH_SCOPE> graphScopeList():
 {
     Token start = null;
-    List<SimpleEither<String, PARAMETER>> names = null;
+    List<DATABASE_NAME> names = null;
     ScopeType type = ScopeType.NAMED;
 }
 {
     (
-        (start=<GRAPH> | start=<GRAPHS>) (<TIMES> { type = ScopeType.ALL; } | names=SymbolicDatabaseNameStringOrParameterList())
+        (start=<GRAPH> | start=<GRAPHS>) (<TIMES> { type = ScopeType.ALL; } | names=SymbolicAliasNameList() )
         | start=<DEFAULT_TOKEN> <GRAPH> { type = ScopeType.DEFAULT; }
         | start=<HOME> <GRAPH> { type = ScopeType.HOME; }
     )
@@ -5387,61 +5414,64 @@ List<GRAPH_SCOPE> graphScopeList():
 
 ADMINISTRATION_COMMAND CreateAlias( Token start, boolean replace ) throws Exception:
 {
-    AliasName<PARAMETER> aliasName = null;
-    SimpleEither<String, PARAMETER> targetName = null;
+    AliasName<DATABASE_NAME, PARAMETER> aliasName = null;
+    AliasName<DATABASE_NAME, PARAMETER> targetName = null;
     boolean ifNotExists = false;
     SimpleEither<String, PARAMETER> url = null;
     SimpleEither<String, PARAMETER> username = null;
     EXPRESSION password = null;
     SimpleEither<Map<String, EXPRESSION>, PARAMETER> driverSettings = null;
+    SimpleEither<Map<String, EXPRESSION>, PARAMETER> properties = null;
 }
 {
     <ALIAS>
     aliasName=SymbolicAliasName()
     ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )?
-    <FOR> <DATABASE> targetName=SymbolicDatabaseNameStringOrParameter()
+    <FOR> <DATABASE> targetName=SymbolicAliasName()
     (
         <AT> url=StringOrParameter()
         <USER> username=SymbolicNameOrStringParameter()
         <PASSWORD> password=passwordExpression()
         ( <DRIVER> driverSettings=MapOrParameter() )?
     )?
+    ( <PROPERTIES> properties=MapOrParameter() )?
     {
        if ( url == null )
        {
-           return astFactory.createLocalDatabaseAlias( pos( start ), replace, aliasName.getLocalAliasName(), targetName, ifNotExists );
+           return astFactory.createLocalDatabaseAlias( pos( start ), replace, aliasName.getLocalAliasName(astFactory), targetName.getLocalAliasName(astFactory), ifNotExists, properties );
        }
        else
        {
-           return astFactory.createRemoteDatabaseAlias( pos( start ), replace, aliasName.getRemoteAliasName(), targetName, ifNotExists, url, username, password, driverSettings );
+           return astFactory.createRemoteDatabaseAlias( pos( start ), replace, aliasName.getRemoteAliasName(astFactory), targetName.getLocalAliasName(astFactory), ifNotExists, url, username, password, driverSettings, properties );
        }
     }
 }
 
 ADMINISTRATION_COMMAND DropAlias( Token start ):
 {
-    SimpleEither<String, PARAMETER> aliasName = null;
+    AliasName<DATABASE_NAME, PARAMETER> aliasName = null;
     boolean ifExists = false;
 }
 {
-    <ALIAS> aliasName=SymbolicDatabaseNameStringOrParameter()
+    <ALIAS> aliasName=SymbolicAliasName()
     (<IF> <EXISTS> { ifExists = true; })?
     <FOR> <DATABASE>
     {
-        return astFactory.dropAlias( pos( start ), aliasName, ifExists );
+        return astFactory.dropAlias( pos( start ), aliasName.getLocalAliasName(astFactory), ifExists );
     }
 }
 
 
 ADMINISTRATION_COMMAND AlterAlias( Token start ) throws Exception:
 {
-    AliasName<PARAMETER> aliasName = null;
-    SimpleEither<String, PARAMETER> targetName = null;
+    AliasName<DATABASE_NAME, PARAMETER> aliasName = null;
+    AliasName<DATABASE_NAME, PARAMETER> targetName = null;
     boolean ifExists = false;
     SimpleEither<String, PARAMETER> url = null;
     SimpleEither<String, PARAMETER> username = null;
     EXPRESSION password = null;
     SimpleEither<Map<String, EXPRESSION>, PARAMETER> driverSettings = null;
+    SimpleEither<Map<String, EXPRESSION>, PARAMETER> properties = null;
     Token errorStart = null;
     String alreadySet = "Duplicate SET DATABASE %s clause";
 }
@@ -5450,82 +5480,72 @@ ADMINISTRATION_COMMAND AlterAlias( Token start ) throws Exception:
     (<IF> <EXISTS> { ifExists = true; })?
     <SET> <DATABASE>
     (
-        errorStart=<TARGET> { assertNotAlreadySet( targetName, errorStart, String.format(alreadySet, errorStart.image) ); } targetName=SymbolicDatabaseNameStringOrParameter()  ( <AT> url=StringOrParameter() )?
+        errorStart=<TARGET> { assertNotAlreadySet( targetName, errorStart, String.format(alreadySet, errorStart.image) ); } targetName=SymbolicAliasName()  ( <AT> url=StringOrParameter() )?
         | errorStart=<USER> { assertNotAlreadySet( username, errorStart, String.format(alreadySet, errorStart.image) ); } username=SymbolicNameOrStringParameter()
         | errorStart=<PASSWORD> { assertNotAlreadySet( password, errorStart, String.format(alreadySet, errorStart.image) ); } password=passwordExpression()
         | errorStart=<DRIVER> { assertNotAlreadySet( driverSettings, errorStart, String.format(alreadySet, errorStart.image) ); } driverSettings=MapOrParameter()
+        | errorStart=<PROPERTIES> { assertNotAlreadySet( properties, errorStart, String.format(alreadySet, errorStart.image) ); } properties=MapOrParameter()
     )+
     {
         if ( url == null && username == null && password == null && driverSettings == null )
         {
-            return astFactory.alterLocalDatabaseAlias( pos( start ), aliasName.getLocalAliasName(), targetName, ifExists );
+            return astFactory.alterLocalDatabaseAlias( pos( start ), aliasName.getLocalAliasName(astFactory), targetName == null ? null : targetName.getLocalAliasName(astFactory), ifExists, properties );
         }
         else
         {
-            return astFactory.alterRemoteDatabaseAlias( pos( start ), aliasName.getRemoteAliasName(), targetName, ifExists, url, username, password, driverSettings );
+            return astFactory.alterRemoteDatabaseAlias( pos( start ), aliasName.getRemoteAliasName(astFactory), targetName == null ? null : targetName.getRemoteAliasName(astFactory),
+                ifExists, url, username, password, driverSettings, properties );
         }
     }
 }
 
 STATEMENT ShowAliases( Token start, USE_CLAUSE useClause ):
 {
+    AliasName<DATABASE_NAME, PARAMETER> aliasName = null;
     WHERE where = null;
     YIELD yieldClause = null;
     RETURN_CLAUSE returnClause = null;
 }
 {
     ( <ALIAS> | <ALIASES> )
+    ( LOOKAHEAD(SymbolicAliasName() <FOR>) aliasName=SymbolicAliasName() )?
     ( <FOR> ( <DATABASE> | <DATABASES> ))
     (
         ( yieldClause=YieldClause() ( returnClause=ReturnClause() )? )
         | where=WhereClause()
     )?
     {
-        return astFactory.useGraph( astFactory.showAliases( pos( start ), yieldClause, returnClause, where), useClause );
+        DATABASE_NAME maybeAliasName = aliasName == null ? null : aliasName.getLocalAliasName(astFactory);
+        return astFactory.useGraph( astFactory.showAliases( pos( start ), maybeAliasName, yieldClause, returnClause, where), useClause );
     }
 }
 
-List<SimpleEither<String, PARAMETER>> SymbolicDatabaseNameStringOrParameterList():
+List<DATABASE_NAME> SymbolicAliasNameList():
 {
-    SimpleEither<String, PARAMETER> dbSymbol = null;
-    List<SimpleEither<String, PARAMETER>> databases = new ArrayList<>();
+    AliasName<DATABASE_NAME, PARAMETER> dbSymbol = null;
+    List<DATABASE_NAME> databases = new ArrayList<>();
 }
 {
-    dbSymbol=SymbolicDatabaseNameStringOrParameter() { databases.add(dbSymbol); }
-    ("," dbSymbol=SymbolicDatabaseNameStringOrParameter() { databases.add(dbSymbol); } )*
+    dbSymbol=SymbolicAliasName() { databases.add(dbSymbol.getLocalAliasName(astFactory)); }
+    ("," dbSymbol=SymbolicAliasName() { databases.add(dbSymbol.getLocalAliasName(astFactory)); } )*
     {
         return databases;
     }
 }
 
-SimpleEither<String, PARAMETER> SymbolicDatabaseNameStringOrParameter():
-{
-    Token nameToken;
-    StringBuilder nameBuilder;
-    PARAMETER parameter;
-}
-{
-    nameToken=SymbolicNameString() { nameBuilder =new StringBuilder( nameToken.image ); }
-        ( <DOT> nameToken=SymbolicNameString() { nameBuilder.append( "." ); nameBuilder.append( nameToken.image ); } )*
-        {
-            return SimpleEither.<String, PARAMETER>left( nameBuilder.toString() );
-        }
-    | parameter=Parameter(ParameterType.STRING) { return SimpleEither.<String, PARAMETER>right( parameter ); }
-}
-
-AliasName<PARAMETER> SymbolicAliasName() throws Exception:
+AliasName<DATABASE_NAME, PARAMETER> SymbolicAliasName():
 {
     Token token;
-    AliasName<PARAMETER> name = null;
+    AliasName<DATABASE_NAME, PARAMETER> name = null;
     PARAMETER parameter;
 }
 {
-    token=SymbolicNameString() { name = new AliasName<PARAMETER>( exceptionFactory, token ); }
+    token=SymbolicNameString() { name = new AliasName<DATABASE_NAME, PARAMETER>( exceptionFactory, token ); }
         ( <DOT> token=SymbolicNameString() { name.add( token ); } )*
         {
             return name;
         }
-    | parameter=Parameter(ParameterType.STRING) { return new AliasName<PARAMETER>( exceptionFactory, parameter ); }
+    | parameter=Parameter(ParameterType.STRING) { return new AliasName<DATABASE_NAME, PARAMETER>( exceptionFactory, parameter ); }
 }
 
 List<SimpleEither<String, PARAMETER>> SymbolicNameOrStringParameterList() :
@@ -5764,6 +5784,7 @@ Token UnescapedSymbolicNameString() :
         | t=<COMMAND>
         | t=<COMMANDS>
         | t=<COMMIT>
+        | t=<COMPOSITE>
         | t=<CONSTRAINT>
         | t=<CONSTRAINTS>
         | t=<CONTAINS>
@@ -5855,6 +5876,7 @@ Token UnescapedSymbolicNameString() :
         | t=<PRIVILEGES>
         | t=<PROCEDURE>
         | t=<PROCEDURES>
+        | t=<PROPERTIES>
         | t=<PROPERTY>
         | t=<RANGE>
         | t=<READ>

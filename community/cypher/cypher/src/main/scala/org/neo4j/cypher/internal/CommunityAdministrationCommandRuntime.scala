@@ -127,7 +127,7 @@ case class CommunityAdministrationCommandRuntime(
     }.sorted.mkString(" and/or ")
   }
 
-  private def adminActionErrorMessage(permissionState: PermissionState, actions: Seq[AdministrationAction]) =
+  private[internal] def adminActionErrorMessage(permissionState: PermissionState, actions: Seq[AdministrationAction]) =
     permissionState match {
       case PermissionState.EXPLICIT_DENY =>
         "Permission denied for " + prettifyActionName(actions: _*) + ". " + checkShowUserPrivilegesText
@@ -145,7 +145,7 @@ case class CommunityAdministrationCommandRuntime(
       case _            => None
     }
 
-  private def checkActions(
+  private[internal] def checkActions(
     actions: Seq[DbmsAction],
     securityContext: SecurityContext
   ): Seq[(DbmsAction, PermissionState)] =
@@ -199,9 +199,9 @@ case class CommunityAdministrationCommandRuntime(
 
     // Check that the specified user is not the logged in user (eg. for some CREATE/DROP/ALTER USER commands)
     case AssertNotCurrentUser(source, userName, verb, violationMessage) => context =>
-        new PredicateExecutionPlan(
+        PredicateExecutionPlan(
           (params, sc) => !sc.subject().hasUsername(runtimeStringValue(userName, params)),
-          onViolation = (_, sc) =>
+          onViolation = (_, _, sc) =>
             new InvalidArgumentException(
               s"Failed to $verb the specified user '${sc.subject().executingUser()}': $violationMessage."
             ),

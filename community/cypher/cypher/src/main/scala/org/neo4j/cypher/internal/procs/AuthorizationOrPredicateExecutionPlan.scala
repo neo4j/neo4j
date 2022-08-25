@@ -28,6 +28,7 @@ import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DEN
 import org.neo4j.internal.kernel.api.security.PermissionState
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 
 case class AuthorizationOrPredicateExecutionPlan(
@@ -36,9 +37,9 @@ case class AuthorizationOrPredicateExecutionPlan(
   source: Option[ExecutionPlan] = None,
   violationMessage: (PermissionState, Seq[AdministrationAction]) => String = (_, _) => PERMISSION_DENIED
 ) extends PredicateExecutionPlan(
-      checkToPredicate(_, _, check),
+      SecurityPredicate(checkToPredicate(_, _, check)),
       source,
-      buildMessage(securityAuthorizationHandler, _, _, check, violationMessage)
+      buildMessage(securityAuthorizationHandler, _, _, _, check, violationMessage)
     )
 
 object AuthorizationOrPredicateExecutionPlan {
@@ -46,13 +47,14 @@ object AuthorizationOrPredicateExecutionPlan {
   private def buildMessage(
     securityAuthorizationHandler: SecurityAuthorizationHandler,
     params: MapValue,
+    transaction: TransactionalContext,
     securityContext: SecurityContext,
     check: (MapValue, SecurityContext) => Seq[(AdministrationAction, PermissionState)],
     messageGenerator: (PermissionState, Seq[AdministrationAction]) => String
   ): Exception = {
 
     val permissionStates = check.apply(params, securityContext)
-    val errorStates = permissionStates.groupBy(_._2).filterKeys(state => state != PermissionState.EXPLICIT_GRANT)
+    val errorStates = permissionStates.groupBy(_._2).view.filterKeys(state => state != PermissionState.EXPLICIT_GRANT)
 
     // In case an action requires privileges A OR B and the check returns EXPLICIT_DENY for A and NOT_GRANTED for B,
     // we only want to warn about the EXPLICIT_DENY since we do not have enough information to know whether there is also a GRANT on A,

@@ -32,6 +32,7 @@ import static org.neo4j.internal.schema.IndexType.RANGE;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -330,20 +331,20 @@ public abstract class DatabaseMigrationITBase {
     }
 
     protected static void verifyHasUniqueConstraint(
-            List<ConstraintDefinition> constraints, Label label, String property) {
+            List<ConstraintDefinition> constraints, Label label, String... property) {
         assertThat(constraints).anySatisfy(constraintDefinition -> {
             assertThat(constraintDefinition.getConstraintType()).isEqualTo(ConstraintType.UNIQUENESS);
             assertThat(constraintDefinition.getLabel()).isEqualTo(label);
-            assertThat(Iterables.asList(constraintDefinition.getPropertyKeys())).isEqualTo(List.of(property));
+            assertThat(Iterables.asList(constraintDefinition.getPropertyKeys())).isEqualTo(Arrays.asList(property));
         });
     }
 
-    protected static void verifyHasIndex(List<IndexDefinition> indexes, Label label, String property) {
+    protected static void verifyHasIndex(List<IndexDefinition> indexes, Label label, String... property) {
         assertThat(indexes).anySatisfy(indexDefinition -> {
             assertThat(indexDefinition.getIndexType()).isEqualTo(IndexType.RANGE);
             assertThat(indexDefinition.isNodeIndex()).isEqualTo(true);
             assertThat(Iterables.asList(indexDefinition.getLabels())).isEqualTo(List.of(label));
-            assertThat(Iterables.asList(indexDefinition.getPropertyKeys())).isEqualTo(List.of(property));
+            assertThat(Iterables.asList(indexDefinition.getPropertyKeys())).isEqualTo(Arrays.asList(property));
         });
     }
 

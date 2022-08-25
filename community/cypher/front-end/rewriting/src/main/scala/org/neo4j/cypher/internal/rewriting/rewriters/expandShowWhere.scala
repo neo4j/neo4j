@@ -63,7 +63,7 @@ case object expandShowWhere extends Step with PreparatoryRewritingRewriterFactor
       s.copy(yieldOrWhere = whereToYield(where, s.defaultColumnNames))(s.position)
     case s @ ShowCurrentUser(Some(Right(where)), _) =>
       s.copy(yieldOrWhere = whereToYield(where, s.defaultColumnNames))(s.position)
-    case s @ ShowAliases(Some(Right(where)), _) =>
+    case s @ ShowAliases(_, Some(Right(where)), _) =>
       s.copy(yieldOrWhere = whereToYield(where, s.defaultColumnNames))(s.position)
     case s @ ShowServers(Some(Right(where)), _) =>
       s.copy(yieldOrWhere = whereToYield(where, s.defaultColumnNames))(s.position)
@@ -87,7 +87,7 @@ case object expandShowWhere extends Step with PreparatoryRewritingRewriterFactor
     case s @ ShowCurrentUser(Some(Left((yieldClause, returnClause))), _)
       if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
       s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
-    case s @ ShowAliases(Some(Left((yieldClause, returnClause))), _)
+    case s @ ShowAliases(_, Some(Left((yieldClause, returnClause))), _)
       if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
       s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
     case s @ ShowServers(Some(Left((yieldClause, returnClause))), _)

@@ -57,6 +57,7 @@ class ExpandShowWhereTest extends CypherFunSuite with RewriteTest {
         ) if returnStar =>
         columns shouldBe List(
           "name",
+          "type",
           "aliases",
           "access",
           "address",
@@ -66,7 +67,8 @@ class ExpandShowWhereTest extends CypherFunSuite with RewriteTest {
           "currentStatus",
           "statusMessage",
           "default",
-          "home"
+          "home",
+          "constituents"
         )
       case _ => fail(
           s"\n$originalQuery\nshould be rewritten to:\nSHOW DATABASES YIELD * WHERE name STARTS WITH 's'\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}"
@@ -81,6 +83,7 @@ class ExpandShowWhereTest extends CypherFunSuite with RewriteTest {
 
     result match {
       case ShowAliases(
+          None,
           Some(Left((
             Yield(
               ReturnItems(returnStar, _, Some(columns)),
@@ -93,7 +96,7 @@ class ExpandShowWhereTest extends CypherFunSuite with RewriteTest {
           ))),
           _
         ) if returnStar =>
-        columns shouldBe List("name", "database", "location", "url", "user", "driver")
+        columns shouldBe List("name", "database", "location", "url", "user", "driver", "properties")
       case _ => fail(
           s"\n$originalQuery\nshould be rewritten to:\nSHOW ALIASES FOR DATABASE YIELD * WHERE name STARTS WITH 's'\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}"
         )

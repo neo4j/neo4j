@@ -122,7 +122,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
       test(s"$verb WRITE ON GRAPH `f:oo` $preposition role") {
         yields(func(
-          ast.GraphPrivilege(ast.WriteAction, List(ast.NamedGraphScope(literalFColonOo)(_)))(pos),
+          ast.GraphPrivilege(ast.WriteAction, List(ast.NamedGraphScope(namespacedName("f:oo"))(_)))(pos),
           List(ast.ElementsAllQualifier() _),
           Seq(literalRole)
         ))

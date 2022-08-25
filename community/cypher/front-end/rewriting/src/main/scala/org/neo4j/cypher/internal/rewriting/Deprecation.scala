@@ -17,6 +17,8 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.CreateDatabase
+import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetProperty
@@ -32,6 +34,7 @@ import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
 import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.FixedLengthRelationshipInShortestPath
@@ -74,6 +77,13 @@ object Deprecations {
           None,
           Some(FixedLengthRelationshipInShortestPath(relPat.position))
         )
+
+      case c @ CreateDatabase(nn @ NamespacedName(_, Some(_)), _, _, _) =>
+        Deprecation(
+          None,
+          Some(DeprecatedDatabaseNameNotification(nn.toString, Some(c.position)))
+        )
+
     }
   }
 

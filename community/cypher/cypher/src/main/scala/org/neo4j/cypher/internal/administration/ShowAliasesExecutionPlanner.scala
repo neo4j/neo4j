@@ -19,24 +19,36 @@
  */
 package org.neo4j.cypher.internal.administration
 
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.DatabaseNameFields
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.IdentityConverter
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.checkNamespaceExists
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.getDatabaseNameFields
 import org.neo4j.cypher.internal.AdministrationShowCommandUtils
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
+import org.neo4j.cypher.internal.ast.DatabaseName
+import org.neo4j.cypher.internal.ast.NamespacedName
+import org.neo4j.cypher.internal.ast.ParameterName
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.procs.SystemCommandExecutionPlan
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.ALIAS_PROPERTIES
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.CONNECTS_WITH
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DISPLAY_NAME_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DRIVER_SETTINGS
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAMESPACE_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAME_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.PRIMARY_PROPERTY
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.PROPERTIES
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.REMOTE_DATABASE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGET_NAME_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.URL_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.USERNAME_PROPERTY
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
+import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.values.virtual.VirtualValues
 
 case class ShowAliasesExecutionPlanner(
@@ -46,6 +58,7 @@ case class ShowAliasesExecutionPlanner(
 
   def planShowAliasesForDatabase(
     sourcePlan: Option[ExecutionPlan],
+    aliasName: Option[DatabaseName],
     verbose: Boolean,
     symbols: List[String],
     yields: Option[Yield],
@@ -53,13 +66,16 @@ case class ShowAliasesExecutionPlanner(
   ): ExecutionPlan = {
     // name | database | location | url | driver
     val returnStatement = AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("name"))
-    val verboseColumns = if (verbose) ", driverSettings{.*} as driver" else ""
+    val verboseColumns = if (verbose) ", driverSettings{.*} as driver, properties{.*} as properties" else ""
+    val (aliasNameFields, aliasPropertyFilter) = filterAliasByName(aliasName)
+
     val query =
-      s"""MATCH (alias:$DATABASE_NAME {$PRIMARY_PROPERTY: false})
+      s"""MATCH (alias:$DATABASE_NAME)
+         |$aliasPropertyFilter
          |OPTIONAL MATCH (alias)-[:$TARGETS]->(localDatabase:$DATABASE)<-[:$TARGETS]-(localPrimary:$DATABASE_NAME {$PRIMARY_PROPERTY: true})
          |OPTIONAL MATCH (alias)-[:$CONNECTS_WITH]->(driverSettings:$DRIVER_SETTINGS)
-         |WITH
-         |alias.$NAME_PROPERTY as name,
+         |OPTIONAL MATCH (alias)-[:$PROPERTIES]->(properties:$ALIAS_PROPERTIES)
+         |WITH alias.$DISPLAY_NAME_PROPERTY as name,
          |coalesce(localPrimary.$NAME_PROPERTY, alias.$TARGET_NAME_PROPERTY) as database,
          |CASE
          | WHEN "$REMOTE_DATABASE" in labels(alias) THEN "remote"
@@ -75,8 +91,35 @@ case class ShowAliasesExecutionPlanner(
       normalExecutionEngine,
       securityAuthorizationHandler,
       query,
-      VirtualValues.EMPTY_MAP,
-      source = sourcePlan
+      aliasNameFields.map(anf => VirtualValues.map(anf.keys, anf.values)).getOrElse(VirtualValues.EMPTY_MAP),
+      source = sourcePlan,
+      parameterConverter = aliasNameFields.map(_.nameConverter).getOrElse(IdentityConverter),
+      parameterValidator = aliasNameFields.map(checkNamespaceExists).getOrElse((_, p) => (p, Set.empty))
     )
   }
+
+  private def filterAliasByName(aliasName: Option[DatabaseName]): (Option[DatabaseNameFields], String) = {
+    val aliasNameFields =
+      aliasName.map((name: DatabaseName) =>
+        getDatabaseNameFields("aliasName", name, new NormalizedDatabaseName(_).name())
+      )
+
+    // If we have a literal, we know from the escaping whether this is an alias in a composite or not
+    // If it is a parameter, it could be either something that should be escaped, or an alias in a composite (or both)
+    def filter(anf: DatabaseNameFields) = aliasName match {
+      case Some(NamespacedName(_, _)) =>
+        s"""AND alias.$NAME_PROPERTY = $$`${anf.nameKey}` AND alias.$NAMESPACE_PROPERTY = $$`${anf.namespaceKey}`"""
+      case Some(ParameterName(_)) => s"AND alias.$DISPLAY_NAME_PROPERTY = $$`${anf.displayNameKey}`"
+      case None                   => s""
+    }
+    val aliasPropertyFilter = aliasNameFields
+      .map(anf =>
+        s"""
+           | WHERE alias.$PRIMARY_PROPERTY = false ${filter(anf)}
+           |""".stripMargin
+      )
+      .getOrElse(s"WHERE alias.$PRIMARY_PROPERTY = false")
+    (aliasNameFields, aliasPropertyFilter)
+  }
+
 }

@@ -78,6 +78,7 @@ public class NullAstFactory
                 NULL,
                 NULL,
                 NULL,
+                NULL,
                 NULL> {
 
     @Override
@@ -915,7 +916,7 @@ public class NullAstFactory
             boolean encrypted,
             boolean changeRequired,
             Boolean suspended,
-            SimpleEither<String, NULL> homeDatabase) {
+            NULL homeDatabase) {
         return null;
     }
 
@@ -944,7 +945,7 @@ public class NullAstFactory
             boolean encrypted,
             Boolean changeRequired,
             Boolean suspended,
-            SimpleEither<String, NULL> homeDatabase,
+            NULL homeDatabase,
             boolean removeHome) {
         return null;
     }
@@ -1126,12 +1127,12 @@ public class NullAstFactory
     }
 
     @Override
-    public List<NULL> graphScopes(NULL p, List<SimpleEither<String, NULL>> graphNames, ScopeType scopeType) {
+    public List<NULL> graphScopes(NULL p, List<NULL> graphNames, ScopeType scopeType) {
         return null;
     }
 
     @Override
-    public List<NULL> databaseScopes(NULL p, List<SimpleEither<String, NULL>> databaseNames, ScopeType scopeType) {
+    public List<NULL> databaseScopes(NULL p, List<NULL> databaseNames, ScopeType scopeType) {
         return null;
     }
 
@@ -1154,7 +1155,7 @@ public class NullAstFactory
     public NULL createDatabase(
             NULL p,
             boolean replace,
-            SimpleEither<String, NULL> databaseName,
+            NULL databaseName,
             boolean ifNotExists,
             NULL aNull,
             SimpleEither<Map<String, NULL>, NULL> options) {
@@ -1163,13 +1164,12 @@ public class NullAstFactory
 
     @Override
     public NULL dropDatabase(
-            NULL p, SimpleEither<String, NULL> databaseName, boolean ifExists, boolean dumpData, NULL wait) {
+            NULL p, NULL databaseName, boolean ifExists, boolean composite, boolean dumpData, NULL wait) {
         return null;
     }
 
     @Override
-    public NULL alterDatabase(
-            NULL p, SimpleEither<String, NULL> databaseName, boolean ifExists, AccessType accessType) {
+    public NULL alterDatabase(NULL p, NULL databaseName, boolean ifExists, AccessType accessType) {
         return null;
     }
 
@@ -1179,17 +1179,17 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL startDatabase(NULL p, SimpleEither<String, NULL> databaseName, NULL wait) {
+    public NULL startDatabase(NULL p, NULL databaseName, NULL wait) {
         return null;
     }
 
     @Override
-    public NULL stopDatabase(NULL p, SimpleEither<String, NULL> databaseName, NULL wait) {
+    public NULL stopDatabase(NULL p, NULL databaseName, NULL wait) {
         return null;
     }
 
     @Override
-    public NULL databaseScope(NULL p, SimpleEither<String, NULL> databaseName, boolean isDefault, boolean isHome) {
+    public NULL databaseScope(NULL p, NULL databaseName, boolean isDefault, boolean isHome) {
         return null;
     }
 
@@ -1202,9 +1202,10 @@ public class NullAstFactory
     public NULL createLocalDatabaseAlias(
             NULL p,
             boolean replace,
-            SimpleEither<String, NULL> aliasName,
-            SimpleEither<String, NULL> targetName,
-            boolean ifNotExists) {
+            NULL aliasName,
+            NULL targetName,
+            boolean ifNotExists,
+            SimpleEither<Map<String, NULL>, NULL> properties) {
         return null;
     }
 
@@ -1212,42 +1213,54 @@ public class NullAstFactory
     public NULL createRemoteDatabaseAlias(
             NULL p,
             boolean replace,
-            SimpleEither<String, NULL> aliasName,
-            SimpleEither<String, NULL> targetName,
+            NULL aliasName,
+            NULL targetName,
             boolean ifNotExists,
             SimpleEither<String, NULL> url,
             SimpleEither<String, NULL> username,
             NULL password,
-            SimpleEither<Map<String, NULL>, NULL> driverSettings) {
+            SimpleEither<Map<String, NULL>, NULL> driverSettings,
+            SimpleEither<Map<String, NULL>, NULL> properties) {
         return null;
     }
 
     @Override
     public NULL alterLocalDatabaseAlias(
-            NULL p, SimpleEither<String, NULL> aliasName, SimpleEither<String, NULL> targetName, boolean ifExists) {
+            NULL p,
+            NULL aliasName,
+            NULL targetName,
+            boolean ifExists,
+            SimpleEither<Map<String, NULL>, NULL> properties) {
         return null;
     }
 
     @Override
     public NULL alterRemoteDatabaseAlias(
             NULL p,
-            SimpleEither<String, NULL> aliasName,
-            SimpleEither<String, NULL> targetName,
+            NULL aliasName,
+            NULL targetName,
             boolean ifExists,
             SimpleEither<String, NULL> url,
             SimpleEither<String, NULL> username,
             NULL password,
-            SimpleEither<Map<String, NULL>, NULL> driverSettings) {
+            SimpleEither<Map<String, NULL>, NULL> driverSettings,
+            SimpleEither<Map<String, NULL>, NULL> properties) {
         return null;
     }
 
     @Override
-    public NULL dropAlias(NULL p, SimpleEither<String, NULL> aliasName, boolean ifExists) {
+    public NULL dropAlias(NULL p, NULL aliasName, boolean ifExists) {
         return null;
     }
 
     @Override
-    public NULL showAliases(NULL p, NULL yieldExpr, NULL returnWithoutGraph, NULL aNull) {
+    public NULL showAliases(NULL p, NULL aliasName, NULL yieldExpr, NULL returnWithoutGraph, NULL aNull) {
+        return null;
+    }
+
+    @Override
+    public NULL createCompositeDatabase(
+            NULL p, boolean replace, NULL compositeDatabaseName, boolean ifNotExists, NULL wait) {
         return null;
     }
 
@@ -1263,6 +1276,16 @@ public class NullAstFactory
 
     @Override
     public NULL nodeOrRelationshipType() {
+        return null;
+    }
+
+    @Override
+    public NULL databaseName(NULL pos, List<String> names) {
+        return null;
+    }
+
+    @Override
+    public NULL databaseName(NULL param) {
         return null;
     }
 }

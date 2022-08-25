@@ -68,7 +68,8 @@ case class UpdatingSystemCommandExecutionPlan(
     params: MapValue,
     prePopulateResults: Boolean,
     ignore: InputDataStream,
-    subscriber: QuerySubscriber
+    subscriber: QuerySubscriber,
+    previousNotifications: Set[InternalNotification]
   ): RuntimeResult = {
 
     val tc = ctx.kernelTransactionalContext
@@ -90,7 +91,7 @@ case class UpdatingSystemCommandExecutionPlan(
       val systemSubscriber =
         new SystemCommandQuerySubscriber(ctx, new RowDroppingQuerySubscriber(subscriber), queryHandler, updatedParams)
       assertCanWrite(tc, systemSubscriber)
-      initAndFinally.execute(ctx, notifications, updatedParams) { () =>
+      initAndFinally.execute(ctx, previousNotifications ++ notifications, updatedParams) { () =>
         val execution = normalExecutionEngine.executeSubquery(
           query,
           updatedParams,
@@ -109,9 +110,12 @@ case class UpdatingSystemCommandExecutionPlan(
         systemSubscriber.assertNotFailed()
 
         if (systemSubscriber.shouldIgnoreResult()) {
-          IgnoredRuntimeResult(notifications)
+          IgnoredRuntimeResult(previousNotifications ++ notifications)
         } else {
-          UpdatingSystemCommandRuntimeResult(ctx.withContextVars(systemSubscriber.getContextUpdates()), notifications)
+          UpdatingSystemCommandRuntimeResult(
+            ctx.withContextVars(systemSubscriber.getContextUpdates),
+            previousNotifications ++ notifications
+          )
         }
       }
     }

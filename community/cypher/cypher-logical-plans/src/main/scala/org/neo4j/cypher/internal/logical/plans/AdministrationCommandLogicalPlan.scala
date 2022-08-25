@@ -23,12 +23,14 @@ import org.neo4j.cypher.internal.ast.Access
 import org.neo4j.cypher.internal.ast.ActionResource
 import org.neo4j.cypher.internal.ast.AdministrationAction
 import org.neo4j.cypher.internal.ast.DatabaseAction
+import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DbmsAction
 import org.neo4j.cypher.internal.ast.DropDatabaseAdditionalAction
 import org.neo4j.cypher.internal.ast.GraphAction
 import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.HomeDatabaseAction
+import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.Return
@@ -177,6 +179,12 @@ object AssertAllowedDbmsActionsOrSelf {
 case class AssertAllowedDbmsActions(maybeSource: Option[PrivilegePlan], actions: Seq[DbmsAction])(implicit idGen: IdGen)
     extends PrivilegePlan(maybeSource)
 
+case class AssertCanDropDatabase(
+  source: PrivilegePlan,
+  namespacedName: DatabaseName,
+  defaultAction: DbmsAction
+)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
+
 case class AssertAllowedOneOfDbmsActions(maybeSource: Option[PrivilegePlan], actions: Seq[DbmsAction])(implicit
 idGen: IdGen) extends PrivilegePlan(maybeSource)
 
@@ -185,7 +193,7 @@ idGen: IdGen) extends PrivilegePlan
 
 case class AssertAllowedDatabaseAction(
   action: DatabaseAction,
-  database: Either[String, Parameter],
+  database: DatabaseName,
   maybeSource: Option[PrivilegePlan]
 )(implicit idGen: IdGen) extends PrivilegePlan(maybeSource)
 
@@ -198,7 +206,9 @@ case class AssertNotCurrentUser(
 
 case class AssertNotBlockedDatabaseManagement(action: AdministrationAction)(implicit idGen: IdGen) extends PrivilegePlan
 case class AssertNotBlockedRemoteAliasManagement()(implicit idGen: IdGen) extends PrivilegePlan
-case class AssertNotBlockedDropAlias(aliasName: Either[String, Parameter])(implicit idGen: IdGen) extends PrivilegePlan
+
+case class AssertNotBlockedDropAlias(aliasName: DatabaseName)(implicit idGen: IdGen)
+    extends PrivilegePlan
 
 case class GrantDbmsAction(
   source: PrivilegePlan,
@@ -312,14 +322,14 @@ case class DoNothingIfExists(
 
 case class DoNothingIfDatabaseNotExists(
   source: PrivilegePlan,
-  name: Either[String, Parameter],
+  name: DatabaseName,
   operation: String,
   valueMapper: String => String = s => s
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 case class DoNothingIfDatabaseExists(
   source: PrivilegePlan,
-  name: Either[String, Parameter],
+  name: DatabaseName,
   valueMapper: String => String = s => s
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
@@ -330,6 +340,13 @@ case class EnsureNodeExists(
   valueMapper: String => String = s => s,
   extraFilter: String => String = _ => "",
   labelDescription: String,
+  action: String
+)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+
+case class EnsureDatabaseNodeExists(
+  source: PrivilegePlan,
+  name: DatabaseName,
+  extraFilter: String => String = _ => "",
   action: String
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
@@ -345,66 +362,77 @@ case class ShowDatabase(
 case class CreateDatabase(
   source: AdministrationCommandLogicalPlan,
   databaseName: Either[String, Parameter],
-  options: Options
+  options: Options,
+  ifExistsDo: IfExistsDo,
+  isComposite: Boolean
 )(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 
 case class DropDatabase(
   source: AdministrationCommandLogicalPlan,
-  databaseName: Either[String, Parameter],
-  additionalAction: DropDatabaseAdditionalAction
+  databaseName: DatabaseName,
+  additionalAction: DropDatabaseAdditionalAction,
+  forceComposite: Boolean
 )(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 
 case class AlterDatabase(
   source: AdministrationCommandLogicalPlan,
-  databaseName: Either[String, Parameter],
+  databaseName: DatabaseName,
   access: Access
 )(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 
-case class StartDatabase(source: AdministrationCommandLogicalPlan, databaseName: Either[String, Parameter])(implicit
-idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
+case class StartDatabase(source: AdministrationCommandLogicalPlan, databaseName: DatabaseName)(
+  implicit idGen: IdGen
+) extends DatabaseAdministrationLogicalPlan(Some(source))
 
-case class StopDatabase(source: AdministrationCommandLogicalPlan, databaseName: Either[String, Parameter])(implicit
-idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
+case class StopDatabase(source: AdministrationCommandLogicalPlan, databaseName: DatabaseName)(
+  implicit idGen: IdGen
+) extends DatabaseAdministrationLogicalPlan(Some(source))
 
 case class CreateLocalDatabaseAlias(
   source: AdministrationCommandLogicalPlan,
-  aliasName: Either[String, Parameter],
-  targetName: Either[String, Parameter],
+  aliasName: DatabaseName,
+  targetName: DatabaseName,
+  properties: Option[Either[Map[String, Expression], Parameter]],
   replace: Boolean
 )(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 
 case class CreateRemoteDatabaseAlias(
   source: AdministrationCommandLogicalPlan,
-  aliasName: Either[String, Parameter],
-  targetName: Either[String, Parameter],
+  aliasName: DatabaseName,
+  targetName: DatabaseName,
   replace: Boolean,
   url: Either[String, Parameter],
   username: Either[String, Parameter],
   password: Expression,
-  driverSettings: Option[Either[Map[String, Expression], Parameter]]
+  driverSettings: Option[Either[Map[String, Expression], Parameter]],
+  properties: Option[Either[Map[String, Expression], Parameter]]
 )(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 
-case class DropDatabaseAlias(source: AdministrationCommandLogicalPlan, aliasName: Either[String, Parameter])(implicit
-idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
+case class DropDatabaseAlias(source: AdministrationCommandLogicalPlan, aliasName: DatabaseName)(
+  implicit idGen: IdGen
+) extends DatabaseAdministrationLogicalPlan(Some(source))
 
 case class AlterLocalDatabaseAlias(
-  source: AdministrationCommandLogicalPlan,
-  aliasName: Either[String, Parameter],
-  targetName: Either[String, Parameter]
-)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
+  source: Option[AdministrationCommandLogicalPlan],
+  aliasName: DatabaseName,
+  targetName: Option[DatabaseName],
+  properties: Option[Either[Map[String, Expression], Parameter]]
+)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(source)
 
 case class AlterRemoteDatabaseAlias(
   source: AdministrationCommandLogicalPlan,
-  aliasName: Either[String, Parameter],
-  targetName: Option[Either[String, Parameter]],
+  aliasName: DatabaseName,
+  targetName: Option[DatabaseName],
   url: Option[Either[String, Parameter]],
   username: Option[Either[String, Parameter]],
   password: Option[Expression],
-  driverSettings: Option[Either[Map[String, Expression], Parameter]]
+  driverSettings: Option[Either[Map[String, Expression], Parameter]],
+  properties: Option[Either[Map[String, Expression], Parameter]]
 )(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 
 case class ShowAliases(
   source: AdministrationCommandLogicalPlan,
+  aliasName: Option[DatabaseName],
   verbose: Boolean,
   override val returnColumns: List[String],
   yields: Option[Yield],
@@ -413,21 +441,27 @@ case class ShowAliases(
 
 case class EnsureValidNonSystemDatabase(
   source: AdministrationCommandLogicalPlan,
-  databaseName: Either[String, Parameter],
+  databaseName: DatabaseName,
   action: String,
-  aliasName: Option[Either[String, Parameter]] = None
+  aliasName: Option[DatabaseName] = None
 )(implicit idGen: IdGen)
     extends DatabaseAdministrationLogicalPlan(Some(source))
 
-case class EnsureDatabaseHasNoAliases(
+case class EnsureDatabaseSafeToDelete(
   source: AdministrationCommandLogicalPlan,
-  databaseName: Either[String, Parameter]
+  databaseName: DatabaseName
 )(implicit idGen: IdGen)
     extends DatabaseAdministrationLogicalPlan(Some(source))
 
 case class EnsureAliasIsNotRemote(source: AdministrationCommandLogicalPlan, aliasName: Either[String, Parameter])(
   implicit idGen: IdGen
 ) extends DatabaseAdministrationLogicalPlan(Some(source))
+
+case class EnsureNameIsNotAmbiguous(
+  source: AdministrationCommandLogicalPlan,
+  databaseName: Either[String, Parameter],
+  isComposite: Boolean
+)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 
 case class DropServer(
   source: AdministrationCommandLogicalPlan,
@@ -452,6 +486,6 @@ case class EnsureValidNumberOfDatabases(source: CreateDatabase)(implicit idGen: 
 
 case class WaitForCompletion(
   source: AdministrationCommandLogicalPlan,
-  databaseName: Either[String, Parameter],
+  databaseName: DatabaseName,
   waitForCompletion: WaitUntilComplete
 )(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))

@@ -39,7 +39,7 @@ case class CreateUserExecutionPlanner(
       new PredicateExecutionPlan(
         (_, _) => false,
         sourcePlan,
-        (params, _) => {
+        (params, _, _) => {
           val user = runtimeStringValue(createUser.userName, params)
           throw new CantCompileQueryException(
             s"Failed to create the specified user '$user': '$command' is not available in community edition."
