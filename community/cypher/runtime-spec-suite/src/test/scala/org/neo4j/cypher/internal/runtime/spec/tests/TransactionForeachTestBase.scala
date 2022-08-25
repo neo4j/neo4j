@@ -30,8 +30,6 @@ import org.neo4j.cypher.internal.logical.plans.Prober.Probe
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
-import org.neo4j.cypher.internal.runtime.spec.RecordingProbe
-import org.neo4j.cypher.internal.runtime.spec.RecordingRowsProbe
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
@@ -47,7 +45,6 @@ import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.logging.InternalLogProvider
-import org.scalatest.Assertion
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
@@ -161,13 +158,10 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
-    val probe = recordingProbe(
-      "n",
-      queryStatistics => {
-        queryStatistics.getNodesCreated shouldEqual 1
-        queryStatistics.getLabelsAdded shouldEqual 1
-      }
-    )
+    val probe = newProbe(queryStatistics => {
+      queryStatistics.getNodesCreated shouldEqual 1
+      queryStatistics.getLabelsAdded shouldEqual 1
+    })
 
     val query = new LogicalQueryBuilder(this)
       .produceResults()
@@ -195,13 +189,10 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
-    val probe = recordingProbe(
-      "n",
-      queryStatistics => {
-        queryStatistics.getNodesCreated shouldEqual batchSize
-        queryStatistics.getLabelsAdded shouldEqual batchSize
-      }
-    )
+    val probe = newProbe(queryStatistics => {
+      queryStatistics.getNodesCreated shouldEqual batchSize
+      queryStatistics.getLabelsAdded shouldEqual batchSize
+    })
 
     val query = new LogicalQueryBuilder(this)
       .produceResults()
@@ -229,14 +220,11 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
-    val probe = recordingProbe(
-      "n",
-      queryStatistics => {
-        queryStatistics.getNodesCreated shouldEqual 0
-        queryStatistics.getLabelsAdded shouldEqual 0
-        Iterables.count(tx.getAllNodes) shouldEqual 0
-      }
-    )
+    val probe = newProbe(queryStatistics => {
+      queryStatistics.getNodesCreated shouldEqual 0
+      queryStatistics.getLabelsAdded shouldEqual 0
+      Iterables.count(tx.getAllNodes) shouldEqual 0
+    })
 
     val query = new LogicalQueryBuilder(this)
       .produceResults()
@@ -297,15 +285,12 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     }
 
     var nodeCount: Long = 1
-    val probe = recordingProbe(
-      "n",
-      queryStatistics => {
-        val _nodeCount = nodeCount
-        nodeCount = tx.findNodes(Label.label("N")).stream().count()
-        queryStatistics.getNodesCreated shouldEqual _nodeCount
-        queryStatistics.getLabelsAdded shouldEqual _nodeCount
-      }
-    )
+    val probe = newProbe(queryStatistics => {
+      val _nodeCount = nodeCount
+      nodeCount = tx.findNodes(Label.label("N")).stream().count()
+      queryStatistics.getNodesCreated shouldEqual _nodeCount
+      queryStatistics.getLabelsAdded shouldEqual _nodeCount
+    })
 
     val query = new LogicalQueryBuilder(this)
       .produceResults()
@@ -340,15 +325,12 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     }
 
     var nodeCount: Long = 1
-    val probe = recordingProbe(
-      "n",
-      queryStatistics => {
-        val _nodeCount = nodeCount
-        nodeCount = tx.findNodes(Label.label("N")).stream().count()
-        queryStatistics.getNodesCreated shouldEqual nodeCount - _nodeCount
-        queryStatistics.getLabelsAdded shouldEqual nodeCount - _nodeCount
-      }
-    )
+    val probe = newProbe(queryStatistics => {
+      val _nodeCount = nodeCount
+      nodeCount = tx.findNodes(Label.label("N")).stream().count()
+      queryStatistics.getNodesCreated shouldEqual nodeCount - _nodeCount
+      queryStatistics.getLabelsAdded shouldEqual nodeCount - _nodeCount
+    })
 
     val query = new LogicalQueryBuilder(this)
       .produceResults()
@@ -383,15 +365,12 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     }
 
     var nodeCount: Long = 1
-    val probe = recordingProbe(
-      "a",
-      queryStatistics => {
-        val _nodeCount = nodeCount
-        nodeCount = tx.findNodes(Label.label("Label"), "prop", 2).stream().count()
-        queryStatistics.getNodesCreated shouldEqual _nodeCount
-        queryStatistics.getLabelsAdded shouldEqual _nodeCount
-      }
-    )
+    val probe = newProbe(queryStatistics => {
+      val _nodeCount = nodeCount
+      nodeCount = tx.findNodes(Label.label("Label"), "prop", 2).stream().count()
+      queryStatistics.getNodesCreated shouldEqual _nodeCount
+      queryStatistics.getLabelsAdded shouldEqual _nodeCount
+    })
 
     val query = new LogicalQueryBuilder(this)
       .produceResults()
@@ -424,26 +403,32 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       nodeGraph(1, "N")
     }
 
+    var nodeCount: Long = 1
+    val probe = newProbe(queryStatistics => {
+      val _nodeCount = nodeCount
+      nodeCount = tx.findNodes(Label.label("N")).stream().count()
+      queryStatistics.getNodesCreated shouldEqual _nodeCount
+      queryStatistics.getLabelsAdded shouldEqual _nodeCount
+    })
+
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .transactionForeach(1)
       .|.emptyResult()
+      .|.prober(probe)
       .|.create(createNode("n", "N"))
       .|.nodeByLabelScan("y", "N")
+      .eager()
       .transactionForeach(1)
       .|.emptyResult()
+      .|.prober(probe)
       .|.create(createNode("n", "N"))
       .|.nodeByLabelScan("y", "N")
       .input(variables = Seq("x"))
       .build(readOnly = false)
 
-    val stream = inputStreamWithSideEffectInNewTxn(
-      inputValues(inputRows: _*).stream(),
-      (tx, offset) => Iterables.count(tx.getAllNodes) shouldEqual Math.pow(2, 2 * offset)
-    )
-
     // then
-    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, stream)
+    val runtimeResult = execute(query, runtime, inputValues(inputRows: _*).stream())
 
     consume(runtimeResult)
 
@@ -746,12 +731,24 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Seq(n, m)
     }
 
+    var x = 0
+    val probe = newProbe(_ => {
+      x match {
+        case 0 =>
+          runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toSet shouldEqual Set(1L, 2L)
+        case 1 =>
+          runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toSet shouldEqual Set(2L, 2L)
+      }
+      x += 1
+    })
+
     val query = new LogicalQueryBuilder(this)
       .produceResults("prop")
       .projection("m.prop AS prop")
       .apply()
       .|.allNodeScan("m")
       .eager()
+      .prober(probe) // pipelined: probe placement still depends on lazy scheduling order
       .transactionForeach(1)
       .|.emptyResult()
       .|.setProperty("n", "prop", "2")
@@ -759,21 +756,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("n"))
       .build(readOnly = false)
 
-    val runtimeResult = execute(
-      query,
-      runtime,
-      inputStream = inputStreamWithSideEffectInNewTxn(
-        inputValues(nodes.map(n => Array[Any](n)): _*).stream(),
-        (externalTx, offset) => {
-          offset match {
-            case 0L =>
-              checkExternalAndRuntimeNodes(externalTx, runtimeTestSupport, 1L)
-            case 1L =>
-              checkExternalAndRuntimeNodes(externalTx, runtimeTestSupport, 2L)
-          }
-        }
-      )
-    )
+    val runtimeResult = execute(query, runtime, inputStream = inputValues(nodes.map(n => Array[Any](n)): _*).stream())
 
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
@@ -791,12 +774,24 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Seq(r, s)
     }
 
+    var x = 0
+    val probe = newProbe(_ => {
+      x match {
+        case 0 =>
+          runtimeTestSupport.tx.getAllRelationships.asScala.map(_.getProperty("prop")).toSet shouldEqual Set(1L, 2L)
+        case 1 =>
+          runtimeTestSupport.tx.getAllRelationships.asScala.map(_.getProperty("prop")).toSet shouldEqual Set(2L, 2L)
+      }
+      x += 1
+    })
+
     val query = new LogicalQueryBuilder(this)
       .produceResults("prop")
       .projection("s.prop AS prop")
       .apply()
       .|.relationshipTypeScan("(a)-[s:R]->(b)")
       .eager()
+      .prober(probe) // pipelined: probe placement still depends on lazy scheduling order
       .transactionForeach(1)
       .|.emptyResult()
       .|.setProperty("r", "prop", "2")
@@ -804,21 +799,8 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("r"))
       .build(readOnly = false)
 
-    val runtimeResult = execute(
-      query,
-      runtime,
-      inputStream = inputStreamWithSideEffectInNewTxn(
-        inputValues(relationships.map(r => Array[Any](r)): _*).stream(),
-        (externalTx, offset) => {
-          offset match {
-            case 0L =>
-              checkExternalAndRuntimeRelationships(externalTx, runtimeTestSupport, 1L)
-            case 1L =>
-              checkExternalAndRuntimeRelationships(externalTx, runtimeTestSupport, 2L)
-          }
-        }
-      )
-    )
+    val runtimeResult =
+      execute(query, runtime, inputStream = inputValues(relationships.map(r => Array[Any](r)): _*).stream())
 
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
@@ -836,12 +818,24 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Seq(p, q)
     }
 
+    var x = 0
+    val probe = newProbe(_ => {
+      x match {
+        case 0 =>
+          runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toSet shouldEqual Set(1L, 2L)
+        case 1 =>
+          runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toSet shouldEqual Set(2L, 2L)
+      }
+      x += 1
+    })
+
     val query = new LogicalQueryBuilder(this)
       .produceResults("prop")
       .projection("m.prop AS prop")
       .apply()
       .|.allNodeScan("m")
       .eager()
+      .prober(probe) // pipelined: probe placement still depends on lazy scheduling order
       .transactionForeach(1)
       .|.emptyResult()
       .|.setProperty("n", "prop", "2")
@@ -850,21 +844,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("p"))
       .build(readOnly = false)
 
-    val runtimeResult = execute(
-      query,
-      runtime,
-      inputStream = inputStreamWithSideEffectInNewTxn(
-        inputValues(paths.map(p => Array[Any](p)): _*).stream(),
-        (externalTx, offset) => {
-          offset match {
-            case 0L =>
-              checkExternalAndRuntimeNodes(externalTx, runtimeTestSupport, 1L)
-            case 1L =>
-              checkExternalAndRuntimeNodes(externalTx, runtimeTestSupport, 2L)
-          }
-        }
-      )
-    )
+    val runtimeResult = execute(query, runtime, inputStream = inputValues(paths.map(p => Array[Any](p)): _*).stream())
 
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
@@ -880,12 +860,24 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Seq(Array[Any](Array(n)), Array[Any](Array(m)))
     }
 
+    var x = 0
+    val probe = newProbe(_ => {
+      x match {
+        case 0 =>
+          runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toSet shouldEqual Set(1L, 2L)
+        case 1 =>
+          runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toSet shouldEqual Set(2L, 2L)
+      }
+      x += 1
+    })
+
     val query = new LogicalQueryBuilder(this)
       .produceResults("prop")
       .projection("m.prop AS prop")
       .apply()
       .|.allNodeScan("m")
       .eager()
+      .prober(probe) // pipelined: probe placement still depends on lazy scheduling order
       .transactionForeach(1)
       .|.emptyResult()
       .|.setProperty("n", "prop", "2")
@@ -894,21 +886,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("l"))
       .build(readOnly = false)
 
-    val runtimeResult = execute(
-      query,
-      runtime,
-      inputStream = inputStreamWithSideEffectInNewTxn(
-        inputValues(nodeRows.toSeq: _*).stream(),
-        (externalTx, offset) => {
-          offset match {
-            case 0L =>
-              checkExternalAndRuntimeNodes(externalTx, runtimeTestSupport, 1L)
-            case 1L =>
-              checkExternalAndRuntimeNodes(externalTx, runtimeTestSupport, 2L)
-          }
-        }
-      )
-    )
+    val runtimeResult = execute(query, runtime, inputStream = inputValues(nodeRows: _*).stream())
 
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
@@ -924,12 +902,24 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Seq(n, m)
     }
 
+    var x = 0
+    val probe = newProbe(_ => {
+      x match {
+        case 0 =>
+          runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toSet shouldEqual Set(1L, 2L)
+        case 1 =>
+          runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toSet shouldEqual Set(2L, 2L)
+      }
+      x += 1
+    })
+
     val query = new LogicalQueryBuilder(this)
       .produceResults("prop")
       .projection("o.prop AS prop")
       .apply()
       .|.allNodeScan("o")
       .eager()
+      .prober(probe) // pipelined: probe placement still depends on lazy scheduling order
       .transactionForeach(1)
       .|.emptyResult()
       .|.setProperty("n", "prop", "2")
@@ -941,17 +931,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(
       query,
       runtime,
-      inputStream = inputStreamWithSideEffectInNewTxn(
-        inputValues(nodes.map(n => Array[Any](java.util.Map.of("n", n))): _*).stream(),
-        (externalTx, offset) => {
-          offset match {
-            case 0L =>
-              checkExternalAndRuntimeNodes(externalTx, runtimeTestSupport, 1L)
-            case 1L =>
-              checkExternalAndRuntimeNodes(externalTx, runtimeTestSupport, 2L)
-          }
-        }
-      )
+      inputStream = inputValues(nodes.map(n => Array[Any](java.util.Map.of("n", n))): _*).stream()
     )
 
     consume(runtimeResult)
@@ -959,53 +939,8 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .withRows(singleColumn(Seq(2L, 2L, 2L, 2L)))
   }
 
-  private def checkExternalAndRuntimeNodes(
-    externalTx: InternalTransaction,
-    runtimeTestSupport: RuntimeTestSupport[CONTEXT],
-    firstItemVal: Long
-  ): Unit = {
-    val extAllNodes = externalTx.getAllNodes
-    try {
-      val runtimeAllNodes = runtimeTestSupport.tx.getAllNodes
-      try {
-        val externallyVisible = extAllNodes.asScala.map(_.getProperty("prop")).toList
-        val parentVisible = runtimeAllNodes.asScala.map(_.getProperty("prop")).toList
-        externallyVisible shouldEqual List(firstItemVal, 1L)
-        parentVisible shouldEqual List(firstItemVal, 1L)
-      } finally {
-        runtimeAllNodes.close()
-      }
-    } finally {
-      extAllNodes.close()
-    }
-  }
-
-  private def checkExternalAndRuntimeRelationships(
-    externalTx: InternalTransaction,
-    runtimeTestSupport: RuntimeTestSupport[CONTEXT],
-    firstItemVal: Long
-  ): Unit = {
-    val extAllRels = externalTx.getAllRelationships
-    try {
-      val runtimeAllRels = runtimeTestSupport.tx.getAllRelationships
-      try {
-        val externallyVisible = extAllRels.asScala.map(_.getProperty("prop")).toList
-        val parentVisible = runtimeAllRels.asScala.map(_.getProperty("prop")).toList
-        externallyVisible shouldEqual List(firstItemVal, 1L)
-        parentVisible shouldEqual List(firstItemVal, 1L)
-      } finally {
-        runtimeAllRels.close()
-      }
-    } finally {
-      extAllRels.close()
-    }
-  }
-
-  protected def recordingProbe(
-    variable: String,
-    assertion: QueryStatistics => Assertion
-  ): Prober.Probe with RecordingRowsProbe = {
-    val probe = new Probe {
+  protected def newProbe(assertion: QueryStatistics => Unit): Prober.Probe = {
+    new Probe {
       private var _prevTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics.empty
       private var _thisTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics.empty
       private var _transactionsCommitted = 0
@@ -1019,6 +954,5 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
         _thisTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics(queryStatistics)
       }
     }
-    new RecordingProbe(variable)(probe)
   }
 }
