@@ -41,6 +41,7 @@ import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.AvailabilityGuard;
+import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -87,12 +88,15 @@ public class TransactionManager extends LifecycleAdapter {
         if (availabilityGuard.isShutdown()) {
             throw new DatabaseShutdownException();
         }
+
+        var sessionDb = transactionInfo.getSessionDatabaseReference();
+        var databaseNameToAuthorizeFor = sessionDb instanceof DatabaseReference.Internal
+                ? ((DatabaseReference.Internal) sessionDb).databaseId().name()
+                : sessionDb.alias().name();
+
         transactionInfo
                 .getLoginContext()
-                .authorize(
-                        LoginContext.IdLookup.EMPTY,
-                        transactionInfo.getSessionDatabaseReference().alias().name(),
-                        securityLog);
+                .authorize(LoginContext.IdLookup.EMPTY, databaseNameToAuthorizeFor, securityLog);
 
         FabricTransactionImpl fabricTransaction = new FabricTransactionImpl(
                 transactionInfo,
