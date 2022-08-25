@@ -22,8 +22,10 @@ package org.neo4j.io;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -214,6 +216,20 @@ public final class IOUtils {
         }
         if (closeThrowable != null) {
             throw closeThrowable;
+        }
+    }
+
+    public static class AutoCloseables implements AutoCloseable {
+        private final List<AutoCloseable> autoCloseables = new ArrayList<>();
+
+        public <T extends AutoCloseable> T add(T autoCloseable) {
+            autoCloseables.add(autoCloseable);
+            return autoCloseable;
+        }
+
+        @Override
+        public void close() throws Exception {
+            closeAll(autoCloseables);
         }
     }
 
