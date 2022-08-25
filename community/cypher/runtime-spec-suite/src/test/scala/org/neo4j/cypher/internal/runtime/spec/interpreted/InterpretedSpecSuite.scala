@@ -114,7 +114,6 @@ import org.neo4j.cypher.internal.runtime.spec.tests.PartialTopNTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ProcedureCallDbHitsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ProcedureCallTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ProfileMemoryTestBase
-import org.neo4j.cypher.internal.runtime.spec.tests.ProfileMemoryTrackingDisabledTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ProfileRowsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ProjectEndpointsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ProjectionTestBase
@@ -361,8 +360,6 @@ class InterpretedMemoryDeallocationTest
 class InterpretedProfileMemoryTest extends ProfileMemoryTestBase(COMMUNITY.EDITION, InterpretedRuntime)
     with FullSupportProfileMemoryTestBase[CommunityRuntimeContext]
 
-class InterpretedProfileMemoryTrackingDisabledTest
-    extends ProfileMemoryTrackingDisabledTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedSubscriberErrorTest extends SubscriberErrorTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 
 class InterpretedExpressionTest extends ExpressionTestBase(COMMUNITY.EDITION, InterpretedRuntime)
