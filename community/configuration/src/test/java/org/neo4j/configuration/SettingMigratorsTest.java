@@ -70,7 +70,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.lock_acquisition_tim
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_early_raw_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_obfuscate_literals;
-import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_parameter_full_entities;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_parameter_logging_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_query_plan;
 import static org.neo4j.configuration.GraphDatabaseSettings.log_queries_threshold;
@@ -645,21 +644,15 @@ class SettingMigratorsTest {
         Files.write(
                 confFile,
                 List.of(
-                        "dbms.logs.query.transaction_id.enabled=true",
                         "dbms.logs.query.transaction.threshold=7d",
                         "dbms.logs.query.transaction.enabled=INFO",
-                        "dbms.logs.query.time_logging_enabled=true",
                         "dbms.logs.query.threshold=8m",
-                        "dbms.logs.query.runtime_logging_enabled=false",
                         "dbms.logs.query.plan_description_enabled=true",
                         "dbms.logs.query.parameter_logging_enabled=false",
-                        "dbms.logs.query.parameter_full_entities=true",
-                        "dbms.logs.query.page_logging_enabled=false",
                         "dbms.logs.query.obfuscate_literals=true",
                         "dbms.logs.query.max_parameter_length=9",
                         "dbms.logs.query.enabled=VERBOSE",
-                        "dbms.logs.query.early_raw_logging_enabled=true",
-                        "dbms.logs.query.allocation_logging_enabled=false"));
+                        "dbms.logs.query.early_raw_logging_enabled=true"));
 
         Config config = Config.newBuilder().fromFile(confFile).build();
 
@@ -668,7 +661,6 @@ class SettingMigratorsTest {
         assertEquals(Duration.ofMinutes(8), config.get(log_queries_threshold));
         assertTrue(config.get(log_queries_query_plan));
         assertFalse(config.get(log_queries_parameter_logging_enabled));
-        assertTrue(config.get(log_queries_parameter_full_entities));
         assertTrue(config.get(log_queries_obfuscate_literals));
         assertEquals(9, config.get(query_log_max_parameter_length));
         assertEquals(VERBOSE, config.get(log_queries));
