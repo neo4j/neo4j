@@ -123,6 +123,7 @@ import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.configuration.connectors.BoltConnectorInternalSettings.thread_pool_shutdown_wait_time;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.io.fs.FileSystemUtils.pathToString;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -360,17 +361,17 @@ class SettingMigratorsTest {
         Files.write(
                 confFile,
                 List.of(
-                        "dbms.directories.neo4j_home=" + a,
-                        "dbms.directories.data=" + b,
-                        "dbms.directories.transaction.logs.root=" + c,
-                        "dbms.directories.script.root=" + d,
-                        "dbms.directories.dumps.root=" + e,
-                        "dbms.directories.import=" + f,
-                        "dbms.directories.plugins=" + g,
-                        "dbms.directories.logs=" + h,
-                        "dbms.directories.licenses=" + i,
-                        "dbms.directories.run=" + j,
-                        "dbms.directories.lib=" + k));
+                        "dbms.directories.neo4j_home=" + pathToString(a),
+                        "dbms.directories.data=" + pathToString(b),
+                        "dbms.directories.transaction.logs.root=" + pathToString(c),
+                        "dbms.directories.script.root=" + pathToString(d),
+                        "dbms.directories.dumps.root=" + pathToString(e),
+                        "dbms.directories.import=" + pathToString(f),
+                        "dbms.directories.plugins=" + pathToString(g),
+                        "dbms.directories.logs=" + pathToString(h),
+                        "dbms.directories.licenses=" + pathToString(i),
+                        "dbms.directories.run=" + pathToString(j),
+                        "dbms.directories.lib=" + pathToString(k)));
 
         Config config = Config.newBuilder().fromFile(confFile).build();
         var logProvider = new AssertableLogProvider();

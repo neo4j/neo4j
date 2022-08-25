@@ -207,4 +207,14 @@ public final class FileSystemUtils {
             fs.deleteFile(fileToDelete);
         }
     }
+
+    /**
+     * Converts path to a string in a way that allows the string to be read back.
+     * This is to address windows paths with backslashes.
+     * @param path to convert.
+     * @return string representation of path.
+     */
+    public static String pathToString(Path path) {
+        return path.toString().replace("\\", "\\\\");
+    }
 }
