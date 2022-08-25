@@ -60,15 +60,12 @@ object extractPredicates {
       (ListSet.empty, ListSet.empty, ListSet.empty)
 
     /**
-     * Checks if an inner predicate depends on the path (i.e. the original start node or relationship). In that case
+     * Checks if an inner predicate depends on the path (i.e. the relationship or end node). In that case
      * we cannot solve the predicates during the traversal.
-     *
-     * We don't need to check for dependencies on the end node, since such predicates are not even suggested as
-     * available predicates here.
      */
     def pathDependent(innerPredicate: Expression) = {
       val names = innerPredicate.dependencies.map(_.name)
-      names.contains(originalRelationshipName)
+      names.contains(originalRelationshipName) || names.contains(targetNodeName)
     }
 
     availablePredicates.foldLeft(seed) {

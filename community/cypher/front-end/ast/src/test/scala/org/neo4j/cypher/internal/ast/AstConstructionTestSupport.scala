@@ -126,6 +126,7 @@ import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.expressions.functions.Id
 import org.neo4j.cypher.internal.expressions.functions.Max
 import org.neo4j.cypher.internal.expressions.functions.Min
+import org.neo4j.cypher.internal.expressions.functions.Nodes
 import org.neo4j.cypher.internal.expressions.functions.Sum
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.InputPosition
@@ -544,6 +545,10 @@ trait AstConstructionTestSupport extends CypherTestSupport {
       RelationshipPattern(None, None, None, None, None, BOTH)(pos),
       NodePattern(Some(nodeVar2), None, None, None)(pos)
     )(pos))(pos))(Set.empty)
+
+  def nodes(p: PathExpression): FunctionInvocation = {
+    FunctionInvocation(FunctionName(Nodes.name)(p.position), p)(p.position)
+  }
 
   def query(part: QueryPart): Query =
     Query(part)(pos)
