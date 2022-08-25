@@ -19,6 +19,7 @@
  */
 package org.neo4j.logging;
 
+import org.neo4j.io.IOUtils;
 import org.neo4j.logging.log4j.LoggerTarget;
 
 /**
@@ -46,5 +47,10 @@ public class DuplicatingLogProvider implements InternalLogProvider {
     @Override
     public InternalLog getLog(LoggerTarget target) {
         return new DuplicatingLog(logProvider1.getLog(target), logProvider2.getLog(target));
+    }
+
+    @Override
+    public void close() {
+        IOUtils.closeAllUnchecked(logProvider1, logProvider2);
     }
 }

@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.database.DatabaseIdFactory;
@@ -35,6 +36,7 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.logging.log4j.LogConfig;
+import org.neo4j.logging.log4j.Neo4jLoggerContext;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -47,13 +49,19 @@ class DatabaseLogServiceTest {
     private DatabaseLogService logService;
     private final NamedDatabaseId namedDatabaseId = DatabaseIdFactory.from("foo", UUID.randomUUID());
     private Path file;
+    private Neo4jLoggerContext ctx;
 
     @BeforeEach
     void setUp() {
         file = testDirectory.file("test.log");
-        InternalLogProvider logProvider = new Log4jLogProvider(
-                LogConfig.createTemporaryLoggerToSingleFile(testDirectory.getFileSystem(), file, Level.DEBUG, true));
+        ctx = LogConfig.createTemporaryLoggerToSingleFile(testDirectory.getFileSystem(), file, Level.DEBUG, true);
+        InternalLogProvider logProvider = new Log4jLogProvider(ctx);
         logService = new DatabaseLogService(namedDatabaseId, new SimpleLogService(logProvider));
+    }
+
+    @AfterEach
+    void tearDown() {
+        ctx.close();
     }
 
     @Test

@@ -30,17 +30,20 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.server.NeoWebServer;
 import org.neo4j.server.http.cypher.TransactionRegistry;
 
 public class TestWebContainer {
     private final DatabaseManagementService managementService;
     private final NeoWebServer neoWebServer;
+    private final InternalLogProvider logProvider;
 
-    public TestWebContainer(DatabaseManagementService managementService) {
+    public TestWebContainer(DatabaseManagementService managementService, InternalLogProvider logProvider) {
         requireNonNull(managementService);
         this.managementService = managementService;
         this.neoWebServer = getNeoWebServer(managementService);
+        this.logProvider = logProvider;
     }
 
     public URI getBaseUri() {
@@ -53,6 +56,7 @@ public class TestWebContainer {
 
     public void shutdown() {
         managementService.shutdown();
+        logProvider.close();
     }
 
     public DatabaseManagementService getDatabaseManagementService() {

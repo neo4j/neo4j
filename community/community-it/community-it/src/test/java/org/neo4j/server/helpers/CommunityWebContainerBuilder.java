@@ -100,7 +100,7 @@ public class CommunityWebContainerBuilder {
                 .fromFile(configFile)
                 .build();
         config.setLogger(log);
-        return new TestWebContainer(build(config));
+        return new TestWebContainer(build(config), logProvider);
     }
 
     private DatabaseManagementService build(Config config) {

@@ -19,7 +19,6 @@
  */
 package org.neo4j.logging.log4j;
 
-import java.io.Closeable;
 import java.io.OutputStream;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -28,7 +27,7 @@ import org.neo4j.logging.Level;
 /**
  * A {@link InternalLogProvider} implementation that uses the Log4j configuration ctx is connected to.
  */
-public class Log4jLogProvider implements InternalLogProvider, Closeable {
+public class Log4jLogProvider implements InternalLogProvider {
     private final Neo4jLoggerContext ctx;
 
     public Log4jLogProvider(Neo4jLoggerContext ctx) {

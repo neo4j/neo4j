@@ -30,6 +30,8 @@ import java.util.Optional;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.neo4j.test.OtherThreadExecutor;
 import picocli.CommandLine;
 
@@ -46,6 +48,7 @@ public class ServerConsoleCommandIT extends ServerProcessTestBase {
         return Neo4jCommand.asCommandLine(new Neo4jCommand(environment), environment);
     }
 
+    @DisabledOnOs(OS.WINDOWS)
     @Test
     void consoleShouldWriteToBothFileAndSystemOut() throws Exception {
         // Since the "console" command will run in a different JVM, that will inherit the stdout and stderr from the

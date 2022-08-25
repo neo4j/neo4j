@@ -55,22 +55,22 @@ class Log4jLogProviderTest {
     @Test
     void getLogShouldReturnLogWithCorrectCategory() throws IOException {
         Path file = dir.file("test.log");
-        Neo4jLoggerContext build = LogConfig.createTemporaryLoggerToSingleFile(fs, file, Level.INFO, true);
+        try (Neo4jLoggerContext ctx = LogConfig.createTemporaryLoggerToSingleFile(fs, file, Level.INFO, true)) {
+            Log4jLogProvider logProvider = new Log4jLogProvider(ctx);
 
-        Log4jLogProvider logProvider = new Log4jLogProvider(build);
+            InternalLog log = logProvider.getLog("stringAsCategory");
+            log.info("testMessage");
 
-        InternalLog log = logProvider.getLog("stringAsCategory");
-        log.info("testMessage");
+            InternalLog log2 = logProvider.getLog(Log4jLog.class);
+            log2.info("testMessage2");
 
-        InternalLog log2 = logProvider.getLog(Log4jLog.class);
-        log2.info("testMessage2");
-
-        assertThat(Files.readString(file))
-                .matches(format(
-                        DATE_PATTERN + " %-5s \\[stringAsCategory\\] testMessage%n" + DATE_PATTERN
-                                + " %-5s \\[o.n.l.l.Log4jLog\\] testMessage2%n",
-                        Level.INFO,
-                        Level.INFO));
+            assertThat(Files.readString(file))
+                    .matches(format(
+                            DATE_PATTERN + " %-5s \\[stringAsCategory\\] testMessage%n" + DATE_PATTERN
+                                    + " %-5s \\[o.n.l.l.Log4jLog\\] testMessage2%n",
+                            Level.INFO,
+                            Level.INFO));
+        }
     }
 
     @Test

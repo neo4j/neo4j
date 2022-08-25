@@ -19,12 +19,13 @@
  */
 package org.neo4j.logging;
 
+import java.io.Closeable;
 import org.neo4j.logging.log4j.LoggerTarget;
 
 /**
  * Used to obtain a {@link InternalLog} for a specified context
  */
-public interface InternalLogProvider extends LogProvider {
+public interface InternalLogProvider extends LogProvider, Closeable {
 
     /**
      * @param loggingClass the context for the returned {@link InternalLog}.
@@ -45,4 +46,9 @@ public interface InternalLogProvider extends LogProvider {
      * @return a {@link InternalLog} that logs messages to the specific target.
      */
     InternalLog getLog(LoggerTarget target);
+
+    @Override
+    default void close() {
+        // Most loggers don't need closing
+    }
 }
