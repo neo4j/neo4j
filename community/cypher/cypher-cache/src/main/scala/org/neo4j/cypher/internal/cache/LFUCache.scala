@@ -21,27 +21,54 @@ package org.neo4j.cypher.internal.cache
 
 import com.github.benmanes.caffeine.cache.Cache
 
+import java.util.concurrent.ConcurrentMap
+
 /**
  * Simple thread-safe cache with a least-frequently-used eviction policy.
  */
-class LFUCache[K <: AnyRef, V <: AnyRef](cacheFactory: CaffeineCacheFactory, val size: Int) {
+class LFUCache[K <: AnyRef, V <: AnyRef](
+  cacheFactory: CaffeineCacheFactory,
+  val size: Int,
+  tracer: CacheTracer[K] = new CacheTracer[K] {}
+) {
 
-  val inner: Cache[K, V] = cacheFactory.createCache(size)
+  private val inner: Cache[K, V] = cacheFactory.createCache(size)
 
-  def computeIfAbsent(key: K, f: => V): V = inner.get(key, (_: K) => f)
+  def computeIfAbsent(key: K, f: => V): V = {
+    var hit = true
 
-  def get(key: K): Option[V] = Option(inner.getIfPresent(key))
+    val result = inner.get(key, (_: K) => { hit = false; f })
+
+    if (hit) {
+      tracer.cacheHit(key, "")
+    } else {
+      tracer.cacheMiss(key, "")
+    }
+
+    result
+  }
+
+  def get(key: K): Option[V] = {
+    val res = Option(inner.getIfPresent(key))
+    if (res.isEmpty) tracer.cacheMiss(key, "")
+    else tracer.cacheHit(key, "")
+
+    res
+  }
 
   def put(key: K, value: V): Unit = inner.put(key, value)
 
-  /**
-   * Method for clearing the LRUCache
-   * @return the number of elements in the cache prior to the clearing
-   */
+  def estimatedSize(): Long = inner.estimatedSize()
+
+  def asMap(): ConcurrentMap[K, V] = inner.asMap()
+
+  def invalidate(key: K): Unit = inner.invalidate(key)
+
   def clear(): Long = {
     val priorSize = inner.estimatedSize()
     inner.invalidateAll()
     inner.cleanUp()
+    tracer.cacheFlush(priorSize)
     priorSize
   }
 }

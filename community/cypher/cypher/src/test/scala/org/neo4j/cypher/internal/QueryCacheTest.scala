@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.QueryCacheTest.newCache
 import org.neo4j.cypher.internal.QueryCacheTest.newKey
 import org.neo4j.cypher.internal.QueryCacheTest.newTracer
 import org.neo4j.cypher.internal.QueryCacheTest.staleAfterNTimes
+import org.neo4j.cypher.internal.cache.CacheTracer
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -55,7 +56,7 @@ class QueryCacheTest extends CypherFunSuite {
     v1 should equal(compiled(key))
     v1.compiledWithExpressionCodeGen should equal(false)
     val o = Mockito.inOrder(tracer)
-    o.verify(tracer).queryCompile(key, "")
+    o.verify(tracer).compute(key, "")
     verifyNoMoreInteractions(tracer)
 
     // When
@@ -63,7 +64,7 @@ class QueryCacheTest extends CypherFunSuite {
     // Then
     v2 should equal(compiled(key))
     v2.compiledWithExpressionCodeGen should equal(false)
-    o.verify(tracer).queryCompile(key, "")
+    o.verify(tracer).compute(key, "")
     verifyNoMoreInteractions(tracer)
   }
 
@@ -81,8 +82,8 @@ class QueryCacheTest extends CypherFunSuite {
     valueFromCache.compiledWithExpressionCodeGen should equal(false)
 
     val o = Mockito.inOrder(tracer)
-    o.verify(tracer).queryCacheMiss(key, "")
-    o.verify(tracer).queryCompile(key, "")
+    o.verify(tracer).cacheMiss(key, "")
+    o.verify(tracer).compute(key, "")
     verifyNoMoreInteractions(tracer)
   }
 
@@ -100,8 +101,8 @@ class QueryCacheTest extends CypherFunSuite {
     value1FromCache should equal(compiled(key1))
     value1FromCache.compiledWithExpressionCodeGen should equal(false)
     val o = Mockito.inOrder(tracer)
-    o.verify(tracer).queryCacheMiss(key1, "")
-    o.verify(tracer).queryCompile(key1, "")
+    o.verify(tracer).cacheMiss(key1, "")
+    o.verify(tracer).compute(key1, "")
     verifyNoMoreInteractions(tracer)
 
     // When
@@ -110,8 +111,8 @@ class QueryCacheTest extends CypherFunSuite {
     // Then
     value2FromCache should equal(compiled(key2))
     value2FromCache.compiledWithExpressionCodeGen should equal(false)
-    o.verify(tracer).queryCacheMiss(key2, "")
-    o.verify(tracer).queryCompile(key2, "")
+    o.verify(tracer).cacheMiss(key2, "")
+    o.verify(tracer).compute(key2, "")
     verifyNoMoreInteractions(tracer)
   }
 
@@ -125,8 +126,8 @@ class QueryCacheTest extends CypherFunSuite {
     cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
     // Then
     val o = Mockito.inOrder(tracer)
-    o.verify(tracer).queryCacheMiss(key, "")
-    o.verify(tracer).queryCompile(key, "")
+    o.verify(tracer).cacheMiss(key, "")
+    o.verify(tracer).compute(key, "")
     verifyNoMoreInteractions(tracer)
 
     // When
@@ -135,7 +136,7 @@ class QueryCacheTest extends CypherFunSuite {
     // Then
     valueFromCache should equal(compiled(key))
     valueFromCache.compiledWithExpressionCodeGen should equal(false)
-    o.verify(tracer).queryCacheHit(key, "")
+    o.verify(tracer).cacheHit(key, "")
     verifyNoMoreInteractions(tracer)
   }
 
@@ -154,8 +155,8 @@ class QueryCacheTest extends CypherFunSuite {
     valueFromCache1 should equal(compiled(key))
     valueFromCache1.compiledWithExpressionCodeGen should equal(true)
     val o = Mockito.inOrder(tracer)
-    o.verify(tracer).queryCacheMiss(key, "")
-    o.verify(tracer).queryCompileWithExpressionCodeGen(key, "")
+    o.verify(tracer).cacheMiss(key, "")
+    o.verify(tracer).computeWithExpressionCodeGen(key, "")
     verifyNoMoreInteractions(tracer)
 
     // When
@@ -164,8 +165,8 @@ class QueryCacheTest extends CypherFunSuite {
     // Then
     valueFromCache2 should equal(compiled(key))
     valueFromCache2.compiledWithExpressionCodeGen should equal(true)
-    o.verify(tracer).queryCacheHit(key, "")
-    o.verify(tracer).queryCompileWithExpressionCodeGen(key, "")
+    o.verify(tracer).cacheHit(key, "")
+    o.verify(tracer).computeWithExpressionCodeGen(key, "")
     verifyNoMoreInteractions(tracer)
   }
 
@@ -180,8 +181,8 @@ class QueryCacheTest extends CypherFunSuite {
     cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
     // Then
     val o = Mockito.inOrder(tracer)
-    o.verify(tracer).queryCacheMiss(key, "")
-    o.verify(tracer).queryCompile(key, "")
+    o.verify(tracer).cacheMiss(key, "")
+    o.verify(tracer).compute(key, "")
     verifyNoMoreInteractions(tracer)
 
     // When
@@ -191,9 +192,9 @@ class QueryCacheTest extends CypherFunSuite {
     valueFromCache should equal(compiled(key))
     valueFromCache.compiledWithExpressionCodeGen should equal(false)
 
-    o.verify(tracer).queryCacheStale(key, secondsSinceReplan, "", None)
-    o.verify(tracer).queryCacheHit(key, "")
-    o.verify(tracer).queryCompile(key, "")
+    o.verify(tracer).cacheStale(key, secondsSinceReplan, "", None)
+    o.verify(tracer).cacheHit(key, "")
+    o.verify(tracer).compute(key, "")
     verifyNoMoreInteractions(tracer)
   }
 
@@ -208,8 +209,8 @@ class QueryCacheTest extends CypherFunSuite {
     cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.skip)
     // Then
     val o = Mockito.inOrder(tracer)
-    o.verify(tracer).queryCacheMiss(key, "")
-    o.verify(tracer).queryCompile(key, "")
+    o.verify(tracer).cacheMiss(key, "")
+    o.verify(tracer).compute(key, "")
     verifyNoMoreInteractions(tracer)
 
     // When
@@ -219,7 +220,7 @@ class QueryCacheTest extends CypherFunSuite {
     valueFromCache should equal(compiled(key))
     valueFromCache.compiledWithExpressionCodeGen should equal(false)
 
-    o.verify(tracer).queryCacheHit(key, "")
+    o.verify(tracer).cacheHit(key, "")
     verifyNoMoreInteractions(tracer)
   }
 
@@ -241,10 +242,10 @@ class QueryCacheTest extends CypherFunSuite {
     valueFromCache.compiledWithExpressionCodeGen should equal(true)
 
     val o = Mockito.inOrder(tracer)
-    o.verify(tracer).queryCacheMiss(key, "")
-    o.verify(tracer).queryCompile(key, "")
-    o.verify(tracer, times(3)).queryCacheHit(key, "")
-    o.verify(tracer).queryCompileWithExpressionCodeGen(key, "")
+    o.verify(tracer).cacheMiss(key, "")
+    o.verify(tracer).compute(key, "")
+    o.verify(tracer, times(3)).cacheHit(key, "")
+    o.verify(tracer).computeWithExpressionCodeGen(key, "")
     verifyNoMoreInteractions(tracer)
   }
 
@@ -269,8 +270,8 @@ class QueryCacheTest extends CypherFunSuite {
     v1 should equal(compiled(key))
     v1.compiledWithExpressionCodeGen should equal(false)
     val o = Mockito.inOrder(tracer)
-    o.verify(tracer).queryCacheMiss(key, "")
-    o.verify(tracer).queryCompile(key, "")
+    o.verify(tracer).cacheMiss(key, "")
+    o.verify(tracer).compute(key, "")
     verifyNoMoreInteractions(tracer)
 
     // When
@@ -286,8 +287,8 @@ class QueryCacheTest extends CypherFunSuite {
     // Then
     v2 should equal(compiled(key))
     v2.compiledWithExpressionCodeGen should equal(true)
-    o.verify(tracer, times(3)).queryCacheHit(key, "")
-    o.verify(tracer).queryCompileWithExpressionCodeGen(key, "")
+    o.verify(tracer, times(3)).cacheHit(key, "")
+    o.verify(tracer).computeWithExpressionCodeGen(key, "")
     verifyNoMoreInteractions(tracer)
 
     // When
@@ -301,9 +302,9 @@ class QueryCacheTest extends CypherFunSuite {
     // Then
     v3 should equal(compiled(key))
     v3.compiledWithExpressionCodeGen should equal(true)
-    o.verify(tracer).queryCacheStale(key, secondsSinceReplan, "", None)
-    o.verify(tracer).queryCacheHit(key, "")
-    o.verify(tracer).queryCompileWithExpressionCodeGen(key, "")
+    o.verify(tracer).cacheStale(key, secondsSinceReplan, "", None)
+    o.verify(tracer).cacheHit(key, "")
+    o.verify(tracer).computeWithExpressionCodeGen(key, "")
     verifyNoMoreInteractions(tracer)
   }
 
@@ -325,9 +326,9 @@ class QueryCacheTest extends CypherFunSuite {
     valueFromCache.compiledWithExpressionCodeGen should equal(false)
 
     val o = Mockito.inOrder(tracer)
-    o.verify(tracer).queryCacheMiss(key, "")
-    o.verify(tracer).queryCompile(key, "")
-    o.verify(tracer, times(3)).queryCacheHit(key, "")
+    o.verify(tracer).cacheMiss(key, "")
+    o.verify(tracer).compute(key, "")
+    o.verify(tracer, times(3)).cacheHit(key, "")
     verifyNoMoreInteractions(tracer)
   }
 
@@ -344,11 +345,11 @@ class QueryCacheTest extends CypherFunSuite {
 
     // Then
     val o = Mockito.inOrder(tracer)
-    o.verify(tracer).queryCacheMiss(key, "")
-    o.verify(tracer).queryCompile(key, "")
-    o.verify(tracer, times(3)).queryCacheHit(key, "")
-    o.verify(tracer).queryCompileWithExpressionCodeGen(key, "")
-    o.verify(tracer, times(96)).queryCacheHit(key, "")
+    o.verify(tracer).cacheMiss(key, "")
+    o.verify(tracer).compute(key, "")
+    o.verify(tracer, times(3)).cacheHit(key, "")
+    o.verify(tracer).computeWithExpressionCodeGen(key, "")
+    o.verify(tracer, times(96)).cacheHit(key, "")
     verifyNoMoreInteractions(tracer)
   }
 

@@ -27,9 +27,11 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.cypher.internal.CommunityCompilerFactory;
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider;
+import org.neo4j.cypher.internal.cache.CacheFactory;
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
 import org.neo4j.cypher.internal.cache.CypherQueryCaches;
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory;
+import org.neo4j.cypher.internal.cache.SharedExecutorBasedCaffeineCacheFactory;
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration;
 import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration;
@@ -64,7 +66,12 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider {
         CypherPlannerConfiguration plannerConfig =
                 CypherPlannerConfiguration.fromCypherConfiguration(cypherConfig, spi.config(), isSystemDatabase);
         CypherRuntimeConfiguration runtimeConfig = CypherRuntimeConfiguration.fromCypherConfiguration(cypherConfig);
-        CaffeineCacheFactory cacheFactory = makeCacheFactory(spi);
+        CacheFactory cacheFactory;
+        if (spi.config().get(GraphDatabaseInternalSettings.enable_unified_query_caches) == Boolean.TRUE) {
+            cacheFactory = deps.resolveDependency(SharedExecutorBasedCaffeineCacheFactory.class);
+        } else {
+            cacheFactory = makeNonUnifiedCacheFactory(spi);
+        }
         Clock clock = Clock.systemUTC();
 
         CypherQueryCaches queryCaches = makeCypherQueryCaches(spi, queryService, cypherConfig, cacheFactory, clock);
@@ -98,7 +105,7 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider {
             SPI spi,
             GraphDatabaseCypherService queryService,
             CypherConfiguration cypherConfig,
-            CaffeineCacheFactory cacheFactory,
+            CacheFactory cacheFactory,
             Clock clock) {
         return new CypherQueryCaches(
                 new CypherQueryCaches.Config(cypherConfig),
@@ -109,7 +116,7 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider {
                 spi.logProvider());
     }
 
-    private static CaffeineCacheFactory makeCacheFactory(SPI spi) {
+    private static CaffeineCacheFactory makeNonUnifiedCacheFactory(SPI spi) {
         var monitoredExecutor = spi.jobScheduler().monitoredJobExecutor(Group.CYPHER_CACHE);
         return new ExecutorBasedCaffeineCacheFactory(
                 job -> monitoredExecutor.execute(systemJob("Query plan cache maintenance"), job));

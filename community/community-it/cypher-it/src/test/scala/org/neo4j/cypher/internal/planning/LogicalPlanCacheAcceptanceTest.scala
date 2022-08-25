@@ -63,7 +63,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
 
-class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
+class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
 
   private val cacheFactory = TestExecutorCaffeineCacheFactory
 
@@ -128,7 +128,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     super.beforeEach()
     counter = new CountingCacheTracer[CacheKey[AnyRef]]()
     compiler = createCompiler(cypherConfig())
-    kernelMonitors.addMonitorListener(counter)
+    kernelMonitors.addMonitorListener(counter, CypherQueryCaches.LogicalPlanCache.monitorTag)
   }
 
   private def runQuery(
@@ -345,7 +345,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
     counter = new CountingCacheTracer[CacheKey[AnyRef]]()
     compiler = createCompiler(cypherConfig(queryPlanTTL = 0), clock = clock)
-    compiler.kernelMonitors.addMonitorListener(counter)
+    compiler.kernelMonitors.addMonitorListener(counter, CypherQueryCaches.LogicalPlanCache.monitorTag)
     val query: String = "match (n:Person:Dog) return n"
 
     createLabeledNode("Dog")
@@ -369,7 +369,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
     counter = new CountingCacheTracer[CacheKey[AnyRef]]()
     compiler = createCompiler(cypherConfig(queryPlanTTL = 0), clock = clock)
-    compiler.kernelMonitors.addMonitorListener(counter)
+    compiler.kernelMonitors.addMonitorListener(counter, CypherQueryCaches.LogicalPlanCache.monitorTag)
     val query: String = "MATCH (n:Person) RETURN n"
     (0 until MIN_NODES_ALL).foreach { _ => createNode() }
     createLabeledNode("Person")
@@ -394,7 +394,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
     counter = new CountingCacheTracer[CacheKey[AnyRef]]()
     compiler = createCompiler(cypherConfig(queryPlanTTL = 0), clock = clock)
-    compiler.kernelMonitors.addMonitorListener(counter)
+    compiler.kernelMonitors.addMonitorListener(counter, CypherQueryCaches.LogicalPlanCache.monitorTag)
     val query: String = "MATCH (n:Person) RETURN n"
     (0 until MIN_NODES_WITH_LABEL * 3).foreach { _ => createLabeledNode("Person") }
 

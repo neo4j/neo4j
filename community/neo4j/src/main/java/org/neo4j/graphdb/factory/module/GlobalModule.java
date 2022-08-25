@@ -30,6 +30,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_bl
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
 import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
 import static org.neo4j.logging.log4j.LogConfig.createLoggerFromXmlConfig;
+import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
 
 import java.nio.file.Path;
 import java.util.function.Supplier;
@@ -45,6 +46,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.cypher.internal.cache.SharedExecutorBasedCaffeineCacheFactory;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
@@ -107,6 +109,7 @@ import org.neo4j.memory.MemoryPools;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.MonitoredJobExecutor;
 import org.neo4j.service.Services;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
@@ -147,6 +150,8 @@ public class GlobalModule {
     private final TransactionManager transactionManager;
     private final IOControllerService ioControllerService;
     private final CapabilitiesService capabilitiesService;
+
+    private final SharedExecutorBasedCaffeineCacheFactory unifiedExecutorBasedCaffeineCacheFactory;
 
     /**
      * @param globalConfig configuration affecting global aspects of the system.
@@ -277,6 +282,11 @@ public class GlobalModule {
         globalDependencies.satisfyDependency(capabilitiesService);
         globalDependencies.satisfyDependency(
                 tryResolveOrCreate(NativeAccess.class, NativeAccessProvider::getNativeAccess));
+
+        MonitoredJobExecutor monitoredExecutor = jobScheduler.monitoredJobExecutor(Group.CYPHER_CACHE);
+        unifiedExecutorBasedCaffeineCacheFactory = new SharedExecutorBasedCaffeineCacheFactory(
+                job -> monitoredExecutor.execute(systemJob("Query plan cache maintenance"), job));
+        globalDependencies.satisfyDependency(unifiedExecutorBasedCaffeineCacheFactory);
     }
 
     private Tracers createDefaultTracers() {

@@ -256,27 +256,27 @@ public class QueryInvalidationIT {
         private final AtomicLong waitTime = new AtomicLong();
 
         @Override
-        public void queryCacheHit(CacheKey<String> key, String metaData) {
+        public void cacheHit(CacheKey<String> key, String metaData) {
             hits.incrementAndGet();
         }
 
         @Override
-        public void queryCacheMiss(CacheKey<String> key, String metaData) {
+        public void cacheMiss(CacheKey<String> key, String metaData) {
             misses.incrementAndGet();
         }
 
         @Override
-        public void queryCompile(CacheKey<String> stringCacheKey, String metaData) {
+        public void compute(CacheKey<String> stringCacheKey, String metaData) {
             compilations.incrementAndGet();
         }
 
         @Override
-        public void queryCompileWithExpressionCodeGen(CacheKey<String> stringCacheKey, String metaData) {
+        public void computeWithExpressionCodeGen(CacheKey<String> stringCacheKey, String metaData) {
             compilations.incrementAndGet();
         }
 
         @Override
-        public void queryCacheStale(
+        public void cacheStale(
                 CacheKey<String> stringCacheKey, int secondsSincePlan, String metaData, Option<String> maybeReason) {
             discards.incrementAndGet();
             waitTime.addAndGet(secondsSincePlan);

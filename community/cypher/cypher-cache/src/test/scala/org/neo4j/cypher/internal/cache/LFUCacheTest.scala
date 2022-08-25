@@ -40,7 +40,7 @@ class LFUCacheTest extends CypherFunSuite {
 
     cache.clear() should be(5) // it returns the number of elements in the cache prior to the clearing
 
-    cache.inner.estimatedSize() should be(0)
+    cache.estimatedSize() should be(0)
 
     cache.get("A").isEmpty should be(true)
     cache.get("B").isEmpty should be(true)

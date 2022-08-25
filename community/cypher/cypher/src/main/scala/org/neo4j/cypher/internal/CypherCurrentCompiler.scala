@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
-import org.neo4j.cypher.internal.cache.CypherQueryCaches.ExecutionPlanCache.ExecutionPlanCacheKey
+import org.neo4j.cypher.internal.cache.CypherQueryCaches.ExecutionPlanCacheKey
 import org.neo4j.cypher.internal.compiler.phases.CachableLogicalPlanState
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer

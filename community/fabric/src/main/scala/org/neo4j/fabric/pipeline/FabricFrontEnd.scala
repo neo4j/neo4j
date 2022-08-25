@@ -27,7 +27,9 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ExpressionsInViewInvocations
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleGraphs
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseGraphSelector
+import org.neo4j.cypher.internal.cache.CacheTracer
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
+import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.PreParserCache
 import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper
 import org.neo4j.cypher.internal.compiler.phases.BaseContextImpl
@@ -69,7 +71,11 @@ case class FabricFrontEnd(
 
     private val preParser = new PreParser(
       cypherConfig,
-      new PreParserCache.Cache(cacheFactory, cypherConfig.queryCacheSize)
+      new PreParserCache.Cache(
+        cacheFactory,
+        cypherConfig.queryCacheSize,
+        new CacheTracer[CypherQueryCaches.PreParserCache.Key] {}
+      )
     )
 
     def executionType(options: QueryOptions, inFabricContext: Boolean): FabricPlan.ExecutionType =

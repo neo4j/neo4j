@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal
 import com.github.benmanes.caffeine.cache.Cache
 import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.QueryCache.NOT_PRESENT
+import org.neo4j.cypher.internal.cache.CacheTracer
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.MissingLabelNotification
 import org.neo4j.cypher.internal.compiler.MissingPropertyNameNotification
@@ -35,46 +36,6 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 
 import scala.jdk.CollectionConverters.MapHasAsScala
-
-/**
- * Tracer for cache activity.
- * Default implementations do nothing.
- */
-trait CacheTracer[QUERY_KEY] {
-
-  /**
-   * The item was found in the cache and was not stale.
-   */
-  def queryCacheHit(queryKey: QUERY_KEY, metaData: String): Unit = ()
-
-  /**
-   * The item was not found in the cache or was stale, or a miss was forced by replan=force.
-   */
-  def queryCacheMiss(queryKey: QUERY_KEY, metaData: String): Unit = ()
-
-  /**
-   * The compiler was invoked to compile a key to a query, avoiding expression code generation.
-   */
-  def queryCompile(queryKey: QUERY_KEY, metaData: String): Unit = ()
-
-  /**
-   * The compiler was invoked to compile a key to a query, requesting expression code generation.
-   */
-  def queryCompileWithExpressionCodeGen(queryKey: QUERY_KEY, metaData: String): Unit = ()
-
-  /**
-   * The item was found in the cache but has become stale.
-   * @param secondsSincePlan how long the last replan was ago
-   * @param maybeReason maybe a reason clarifying why the item was stale.
-   */
-  def queryCacheStale(queryKey: QUERY_KEY, secondsSincePlan: Int, metaData: String, maybeReason: Option[String]): Unit =
-    ()
-
-  /**
-   * The query cache was flushed.
-   */
-  def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit = ()
-}
 
 /**
  * For tracing when the key is CacheKey[T]
@@ -140,7 +101,8 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
   val tracer: CacheTracer[QUERY_KEY]
 ) {
 
-  private val inner: Cache[QUERY_KEY, CachedValue] = cacheFactory.createCache[QUERY_KEY, CachedValue](maximumSize)
+  private val inner: Cache[QUERY_KEY, CachedValue] =
+    cacheFactory.createCache[QUERY_KEY, CachedValue](maximumSize)
 
   def estimatedSize(): Long = inner.estimatedSize()
 
@@ -180,7 +142,7 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
    * return the query if it is not in the cache, or the cached execution plan is stale.
    *
    * @param queryKey the queryKey to retrieve the execution plan for
-   * @param tc TransactionalContext in which to compile and compute staleness
+   * @param tc       TransactionalContext in which to compile and compute staleness
    * @param compiler Compiler
    * @param metaData String which will be passed to the CacheTracer
    * @return A CacheLookup with an CachedExecutionPlan
@@ -194,7 +156,7 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
   ): EXECUTABLE_QUERY = {
     if (maximumSize == 0) {
       val result = compiler.compile()
-      tracer.queryCompile(queryKey, metaData)
+      tracer.compute(queryKey, metaData)
       result
     } else {
       inner.getIfPresent(queryKey) match {
@@ -222,7 +184,7 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
                     recompileOrGet(cachedValue, compiler, queryKey, metaData)
                   }
                 case Stale(secondsSincePlan, maybeReason) =>
-                  tracer.queryCacheStale(queryKey, secondsSincePlan, metaData, maybeReason)
+                  tracer.cacheStale(queryKey, secondsSincePlan, metaData, maybeReason)
                   if (cachedValue.recompiledWithExpressionCodeGen)
                     compileWithExpressionCodeGenAndCache(queryKey, compiler, metaData, hitCache = true)
                   else compileAndCache(queryKey, compiler, metaData, hitCache = true)
@@ -267,12 +229,12 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
     queryKey: QUERY_KEY,
     metaData: String
   ): EXECUTABLE_QUERY = {
-    tracer.queryCacheHit(queryKey, metaData)
+    tracer.cacheHit(queryKey, metaData)
     val newCachedValue =
       if (!cachedValue.recompiledWithExpressionCodeGen) {
         compiler.maybeCompileWithExpressionCodeGen(cachedValue.numberOfHits) match {
           case Some(recompiledQuery) =>
-            tracer.queryCompileWithExpressionCodeGen(queryKey, metaData)
+            tracer.computeWithExpressionCodeGen(queryKey, metaData)
             val recompiled = new CachedValue(recompiledQuery, recompiledWithExpressionCodeGen = true)
             inner.put(queryKey, recompiled)
             recompiled
@@ -290,7 +252,7 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
     hitCache: Boolean = false
   ): EXECUTABLE_QUERY = {
     val result = compileOrCompileWithExpressionCodeGenAndCache(queryKey, () => compiler.compile(), metaData, hitCache)
-    tracer.queryCompile(queryKey, metaData)
+    tracer.compute(queryKey, metaData)
     result
   }
 
@@ -306,7 +268,7 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
       metaData,
       hitCache
     )
-    tracer.queryCompileWithExpressionCodeGen(queryKey, metaData)
+    tracer.computeWithExpressionCodeGen(queryKey, metaData)
     result
   }
 
@@ -338,12 +300,12 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
   }
 
   private def hit(queryKey: QUERY_KEY, executableQuery: CachedValue, metaData: String): EXECUTABLE_QUERY = {
-    tracer.queryCacheHit(queryKey, metaData)
+    tracer.cacheHit(queryKey, metaData)
     executableQuery.value
   }
 
   private def miss(queryKey: QUERY_KEY, newExecutableQuery: EXECUTABLE_QUERY, metaData: String): EXECUTABLE_QUERY = {
-    tracer.queryCacheMiss(queryKey, metaData)
+    tracer.cacheMiss(queryKey, metaData)
     newExecutableQuery
   }
 
@@ -356,7 +318,7 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
     val priorSize = inner.estimatedSize()
     inner.invalidateAll()
     inner.cleanUp()
-    tracer.queryCacheFlush(priorSize)
+    tracer.cacheFlush(priorSize)
     priorSize
   }
 }

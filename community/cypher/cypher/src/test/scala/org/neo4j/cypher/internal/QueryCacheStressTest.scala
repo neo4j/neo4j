@@ -51,7 +51,7 @@ class QueryCacheStressTest extends CypherFunSuite {
 
     // Then
     Await.ready(futures, 60.seconds)
-    verify(tracer, atLeastOnce()).queryCompileWithExpressionCodeGen(key, "")
+    verify(tracer, atLeastOnce()).computeWithExpressionCodeGen(key, "")
   }
 
   test("should hit at least once when running from multiple threads") {
@@ -70,7 +70,7 @@ class QueryCacheStressTest extends CypherFunSuite {
     // Then
     Await.result(futures, 60.seconds)
 
-    verify(tracer, atLeastOnce()).queryCacheHit(key, "")
-    verify(tracer, atLeastOnce()).queryCacheMiss(key, "")
+    verify(tracer, atLeastOnce()).cacheHit(key, "")
+    verify(tracer, atLeastOnce()).cacheMiss(key, "")
   }
 }

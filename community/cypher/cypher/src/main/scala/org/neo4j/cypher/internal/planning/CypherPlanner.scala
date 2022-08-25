@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.ReusabilityState
 import org.neo4j.cypher.internal.SchemaCommandRuntime
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
+import org.neo4j.cypher.internal.cache.CypherQueryCaches.AstCache
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.LogicalPlanCache.CacheableLogicalPlan
 import org.neo4j.cypher.internal.compiler
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
@@ -207,7 +208,7 @@ case class CypherPlanner(
     cancellationChecker: CancellationChecker
   ): BaseState = {
 
-    val key = caches.astCache.key(preParsedQuery, params)
+    val key = AstCache.key(preParsedQuery, params)
     val maybeValue = caches.astCache.get(key)
     maybeValue.getOrElse {
       val parsedQuery = planner.parseQuery(

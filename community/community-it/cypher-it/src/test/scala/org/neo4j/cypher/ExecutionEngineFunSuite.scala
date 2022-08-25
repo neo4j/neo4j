@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.CacheTracer
+import org.neo4j.cypher.internal.cache.CacheTracer
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Entity
@@ -134,19 +134,19 @@ case class CacheCounts(
 class CountingCacheTracer[Key] extends CacheTracer[Key] {
   var counts: CacheCounts = CacheCounts()
 
-  override def queryCacheHit(queryKey: Key, metaData: String): Unit =
+  override def cacheHit(queryKey: Key, metaData: String): Unit =
     counts = counts.copy(hits = counts.hits + 1)
 
-  override def queryCacheMiss(queryKey: Key, metaData: String): Unit =
+  override def cacheMiss(queryKey: Key, metaData: String): Unit =
     counts = counts.copy(misses = counts.misses + 1)
 
-  override def queryCompile(queryKey: Key, metaData: String): Unit =
+  override def compute(queryKey: Key, metaData: String): Unit =
     counts = counts.copy(compilations = counts.compilations + 1)
 
-  override def queryCompileWithExpressionCodeGen(queryKey: Key, metaData: String): Unit =
+  override def computeWithExpressionCodeGen(queryKey: Key, metaData: String): Unit =
     counts = counts.copy(compilationsWithExpressionCodeGen = counts.compilationsWithExpressionCodeGen + 1)
 
-  override def queryCacheStale(
+  override def cacheStale(
     queryKey: Key,
     secondsSincePlan: Int,
     metaData: String,
@@ -154,6 +154,6 @@ class CountingCacheTracer[Key] extends CacheTracer[Key] {
   ): Unit =
     counts = counts.copy(evicted = counts.evicted + 1)
 
-  override def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit =
+  override def cacheFlush(sizeOfCacheBeforeFlush: Long): Unit =
     counts = counts.copy(flushes = counts.flushes + 1)
 }

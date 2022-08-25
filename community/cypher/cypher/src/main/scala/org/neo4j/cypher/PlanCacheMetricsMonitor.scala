@@ -28,7 +28,7 @@ class PlanCacheMetricsMonitor extends QueryCacheTracer[String] {
   private val counter = new AtomicLong()
   private val waitTime = new AtomicLong()
 
-  override def queryCacheStale(
+  override def cacheStale(
     queryKey: CacheKey[String],
     secondsSincePlan: Int,
     metaData: String,

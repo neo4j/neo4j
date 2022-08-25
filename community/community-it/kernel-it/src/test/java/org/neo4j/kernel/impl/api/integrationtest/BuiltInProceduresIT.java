@@ -292,7 +292,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
         private IndexSamplingMode samplingMode;
 
         @Override
-        public void queryCacheFlush(long sizeOfCacheBeforeFlush) {
+        public void cacheFlush(long sizeOfCacheBeforeFlush) {
             numberOfFlushedItems = sizeOfCacheBeforeFlush;
         }
 

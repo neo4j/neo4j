@@ -72,14 +72,14 @@ class FabricQueryCache(cacheFactory: CaffeineCacheFactory, size: Int) {
   def getMisses: Long = misses
 
   def getInnerCopy: Map[Key, Value] =
-    cache.inner.asMap().asScala.toMap
+    cache.asMap().asScala.toMap
 
   // mutable implementation for resource efficiency
   def clearByContext(contextName: ContextName): Long = {
     var clearedCount = 0
-    cache.inner.asMap().forEach((key, _) =>
+    cache.asMap().forEach((key, _) =>
       if (key._3 == contextName) {
-        cache.inner.invalidate(key)
+        cache.invalidate(key)
         clearedCount += 1
       }
     )

@@ -21,20 +21,24 @@ package org.neo4j.cypher.internal.cache
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
+import com.github.benmanes.caffeine.cache.Policy
 import com.github.benmanes.caffeine.cache.Ticker
+import com.github.benmanes.caffeine.cache.stats.CacheStats
 
+import java.lang
+import java.util
+import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.function
+import java.util.function.Consumer
 
-trait CaffeineCacheFactory {
-  def createCache[K <: AnyRef, V <: AnyRef](size: Int): Cache[K, V]
-  def createCache[K <: AnyRef, V <: AnyRef](size: Int, ttlAfterAccess: Long): Cache[K, V]
-  def createCache[K <: AnyRef, V <: AnyRef](ticker: Ticker, ttlAfterWrite: Long, size: Int): Cache[K, V]
-}
+import scala.collection.concurrent.TrieMap
 
-class ExecutorBasedCaffeineCacheFactory(executor: Executor) extends CaffeineCacheFactory {
+object ExecutorBasedCaffeineCacheFactory {
 
-  override def createCache[K <: AnyRef, V <: AnyRef](size: Int): Cache[K, V] = {
+  def createCache[K <: AnyRef, V <: AnyRef](executor: Executor, size: Int): Cache[K, V] = {
     Caffeine
       .newBuilder()
       .executor(executor)
@@ -42,7 +46,7 @@ class ExecutorBasedCaffeineCacheFactory(executor: Executor) extends CaffeineCach
       .build[K, V]()
   }
 
-  override def createCache[K <: AnyRef, V <: AnyRef](size: Int, ttlAfterAccess: Long): Cache[K, V] = {
+  def createCache[K <: AnyRef, V <: AnyRef](executor: Executor, size: Int, ttlAfterAccess: Long): Cache[K, V] = {
     Caffeine
       .newBuilder()
       .executor(executor)
@@ -51,7 +55,12 @@ class ExecutorBasedCaffeineCacheFactory(executor: Executor) extends CaffeineCach
       .build[K, V]()
   }
 
-  override def createCache[K <: AnyRef, V <: AnyRef](ticker: Ticker, ttlAfterWrite: Long, size: Int): Cache[K, V] =
+  def createCache[K <: AnyRef, V <: AnyRef](
+    executor: Executor,
+    ticker: Ticker,
+    ttlAfterWrite: Long,
+    size: Int
+  ): Cache[K, V] =
     Caffeine
       .newBuilder()
       .executor(executor)
@@ -59,4 +68,130 @@ class ExecutorBasedCaffeineCacheFactory(executor: Executor) extends CaffeineCach
       .ticker(ticker)
       .expireAfterWrite(ttlAfterWrite, TimeUnit.MILLISECONDS)
       .build[K, V]()
+}
+
+trait CacheFactory {
+  def resolveCacheKind(kind: String): CaffeineCacheFactory
+}
+
+trait CaffeineCacheFactory extends CacheFactory {
+  def createCache[K <: AnyRef, V <: AnyRef](size: Int): Cache[K, V]
+  def createCache[K <: AnyRef, V <: AnyRef](size: Int, ttlAfterAccess: Long): Cache[K, V]
+  def createCache[K <: AnyRef, V <: AnyRef](ticker: Ticker, ttlAfterWrite: Long, size: Int): Cache[K, V]
+}
+
+class ExecutorBasedCaffeineCacheFactory(executor: Executor) extends CaffeineCacheFactory {
+
+  override def createCache[K <: AnyRef, V <: AnyRef](size: Int): Cache[K, V] = {
+    ExecutorBasedCaffeineCacheFactory.createCache(executor, size)
+  }
+
+  override def createCache[K <: AnyRef, V <: AnyRef](size: Int, ttlAfterAccess: Long): Cache[K, V] = {
+    ExecutorBasedCaffeineCacheFactory.createCache(executor, size, ttlAfterAccess)
+  }
+
+  override def createCache[K <: AnyRef, V <: AnyRef](ticker: Ticker, ttlAfterWrite: Long, size: Int): Cache[K, V] =
+    ExecutorBasedCaffeineCacheFactory.createCache(executor, ticker, ttlAfterWrite, size)
+
+  override def resolveCacheKind(kind: String): CaffeineCacheFactory = this
+}
+
+class SharedExecutorBasedCaffeineCacheFactory(executor: Executor) extends CacheFactory {
+  self =>
+
+  val id = new AtomicInteger(0)
+
+  private val caches: TrieMap[String, Cache[_, _]] = scala.collection.concurrent.TrieMap()
+
+  def getCacheSizeOf(kind: String): Long = {
+    caches.get(kind) match {
+      case Some(cache) => cache.estimatedSize()
+      case None        => 0L
+    }
+  }
+
+  def createCache[K <: AnyRef, V <: AnyRef](size: Int, cacheKind: String): Cache[K, V] = {
+    SharedCacheContainer(
+      caches.getOrElseUpdate(
+        cacheKind,
+        ExecutorBasedCaffeineCacheFactory.createCache[(Int, K), V](executor, size)
+      ).asInstanceOf[Cache[(Int, K), V]],
+      id.getAndIncrement()
+    )
+  }
+
+  def createCache[K <: AnyRef, V <: AnyRef](size: Int, ttlAfterAccess: Long, cacheKind: String): Cache[K, V] = {
+    SharedCacheContainer(
+      caches.getOrElseUpdate(
+        cacheKind,
+        ExecutorBasedCaffeineCacheFactory.createCache(executor, size, ttlAfterAccess)
+      ).asInstanceOf[Cache[(Int, K), V]],
+      id.getAndIncrement()
+    )
+  }
+
+  def createCache[K <: AnyRef, V <: AnyRef](
+    ticker: Ticker,
+    ttlAfterWrite: Long,
+    size: Int,
+    cacheKind: String
+  ): Cache[K, V] = {
+    SharedCacheContainer(
+      caches.getOrElseUpdate(
+        cacheKind,
+        ExecutorBasedCaffeineCacheFactory.createCache(executor, ticker, ttlAfterWrite, size)
+      ).asInstanceOf[Cache[(Int, K), V]],
+      id.getAndIncrement()
+    )
+  }
+
+  override def resolveCacheKind(kind: String): CaffeineCacheFactory = new CaffeineCacheFactory {
+    override def createCache[K <: AnyRef, V <: AnyRef](size: Int): Cache[K, V] = self.createCache(size, kind)
+
+    override def createCache[K <: AnyRef, V <: AnyRef](size: Int, ttlAfterAccess: Long): Cache[K, V] =
+      self.createCache(size, ttlAfterAccess, kind)
+
+    override def createCache[K <: AnyRef, V <: AnyRef](ticker: Ticker, ttlAfterWrite: Long, size: Int): Cache[K, V] =
+      self.createCache(ticker, ttlAfterWrite, size, kind)
+    override def resolveCacheKind(kind: String): CaffeineCacheFactory = this
+  }
+}
+
+case class SharedCacheContainer[K, V](inner: Cache[(Int, K), V], id: Int) extends Cache[K, V] {
+
+  override def get(key: K, mappingFunction: function.Function[_ >: K, _ <: V]): V =
+    inner.get((id, key), _ => mappingFunction(key))
+  override def getIfPresent(key: K): V = inner.getIfPresent((id, key))
+  override def put(key: K, value: V): Unit = inner.put((id, key), value)
+  override def invalidate(key: K): Unit = inner.invalidate((id, key))
+
+  override def estimatedSize(): Long = {
+    var count = 0
+    forEachKey(_ => count += 1)
+    count
+  }
+  override def cleanUp(): Unit = inner.cleanUp()
+  override def stats(): CacheStats = inner.stats()
+
+  override def invalidateAll(): Unit =
+    forEachKey(inner.invalidate)
+
+  private def forEachKey(f: ((Int, K)) => Unit): Unit = {
+    val consumer = new Consumer[(Int, K)]() {
+      override def accept(key: (Int, K)): Unit = if (key._1 == id) f(key)
+    }
+    inner.asMap().keySet().forEach(consumer)
+  }
+
+  // These could very well be implemented using different approaches. However, we should know the use-case first before choosing an implementation.
+  override def getAllPresent(keys: lang.Iterable[_ <: K]): util.Map[K, V] = throw new UnsupportedOperationException
+
+  override def getAll(
+    keys: lang.Iterable[_ <: K],
+    mappingFunction: function.Function[_ >: util.Set[_ <: K], _ <: util.Map[_ <: K, _ <: V]]
+  ): util.Map[K, V] = throw new UnsupportedOperationException
+  override def putAll(map: util.Map[_ <: K, _ <: V]): Unit = throw new UnsupportedOperationException
+  override def invalidateAll(keys: lang.Iterable[_ <: K]): Unit = throw new UnsupportedOperationException
+  override def asMap(): ConcurrentMap[K, V] = throw new UnsupportedOperationException
+  override def policy(): Policy[K, V] = throw new UnsupportedOperationException
 }

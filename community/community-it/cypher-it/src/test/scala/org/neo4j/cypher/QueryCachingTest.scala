@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
-import org.neo4j.cypher.internal.CacheTracer
+import org.neo4j.cypher.internal.cache.CacheTracer
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Label
@@ -768,6 +768,7 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"String: cacheMiss: CacheKey($clearCacheQuery,$empty_parameters,false)",
       s"String: cacheCompile: CacheKey($clearCacheQuery,$empty_parameters,false)",
       s"AST:    cacheFlushDetected",
+      executionPlanCacheKeyFlush,
       s"String: cacheFlushDetected",
       // 4th run
       s"AST:    cacheMiss",
@@ -804,6 +805,7 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
 
   def executionPlanCacheKeyHit: String
   def executionPlanCacheKeyMiss: String
+  def executionPlanCacheKeyFlush: String
 
   private class LoggingTracer(
     traceAstLogicalPlanCache: Boolean = true,
@@ -812,20 +814,20 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
   ) {
 
     private class LoggingCacheTracer[Key](name: String, logKey: Boolean) extends CacheTracer[Key] {
-      override def queryCacheHit(key: Key, metaData: String): Unit = log += s"$name: cacheHit" + keySuffix(key)
-      override def queryCacheMiss(key: Key, metaData: String): Unit = log += s"$name: cacheMiss" + keySuffix(key)
-      override def queryCompile(key: Key, metaData: String): Unit = log += s"$name: cacheCompile" + keySuffix(key)
+      override def cacheHit(key: Key, metaData: String): Unit = log += s"$name: cacheHit" + keySuffix(key)
+      override def cacheMiss(key: Key, metaData: String): Unit = log += s"$name: cacheMiss" + keySuffix(key)
+      override def compute(key: Key, metaData: String): Unit = log += s"$name: cacheCompile" + keySuffix(key)
 
-      override def queryCompileWithExpressionCodeGen(key: Key, metaData: String): Unit =
+      override def computeWithExpressionCodeGen(key: Key, metaData: String): Unit =
         log += s"$name: cacheCompileWithExpressionCodeGen" + keySuffix(key)
 
-      override def queryCacheStale(
+      override def cacheStale(
         key: Key,
         secondsSincePlan: Int,
         metaData: String,
         maybeReason: Option[String]
       ): Unit = log += s"$name: cacheStale" + keySuffix(key)
-      override def queryCacheFlush(sizeBeforeFlush: Long): Unit = log += s"$name: cacheFlushDetected"
+      override def cacheFlush(sizeBeforeFlush: Long): Unit = log += s"$name: cacheFlushDetected"
 
       private def keySuffix(key: Key): String = if (logKey) s": $key" else ""
     }
@@ -871,10 +873,14 @@ class DefaultQueryCachingTest extends QueryCachingTest() {
   override def executionPlanCacheKeyHit: String = "ExecutionPlanCacheKey: cacheHit"
 
   override def executionPlanCacheKeyMiss: String = "ExecutionPlanCacheKey: cacheMiss"
+
+  override def executionPlanCacheKeyFlush: String = "ExecutionPlanCacheKey: cacheFlushDetected"
 }
 
 class NoExecutablePlanQueryCachingTest extends QueryCachingTest(0) {
   override def executionPlanCacheKeyHit: String = ""
 
   override def executionPlanCacheKeyMiss: String = ""
+
+  override def executionPlanCacheKeyFlush: String = ""
 }
