@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
@@ -985,8 +986,8 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
     runtimeResult should beColumns("a", "b").withSingleRow(a, b)
   }
 
-  def makeDense(node: Node): Unit = {
-    (1 to 51).foreach(_ =>
+  private def makeDense(node: Node): Unit = {
+    (1 to GraphDatabaseSettings.dense_node_threshold.defaultValue() + 1).foreach(_ =>
       node.createRelationshipTo(tx.createNode(Label.label("IGNORE")), RelationshipType.withName("IGNORE"))
     )
   }
