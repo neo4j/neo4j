@@ -47,25 +47,28 @@ public class CrsConfig implements GroupSetting {
         return new CrsConfig(crs.getName());
     }
 
-    private CrsConfig(String name) {
-        this.name = name;
-        crs = CoordinateReferenceSystem.byName(name);
-        List<Double> defaultValue = new ArrayList<>(Collections.nCopies(crs.getDimension(), Double.NaN));
-        min = getBuilder("min", listOf(DOUBLE), defaultValue)
-                .internal()
-                .addConstraint(size(crs.getDimension()))
-                .build();
-        max = getBuilder("max", listOf(DOUBLE), defaultValue)
-                .internal()
-                .addConstraint(size(crs.getDimension()))
-                .build();
+    public CrsConfig() {
+        this(null);
     }
 
-    public CrsConfig() {
-        name = null;
-        min = null;
-        max = null;
-        crs = null;
+    private CrsConfig(String name) {
+        this.name = name;
+        if (name != null) {
+            crs = CoordinateReferenceSystem.byName(name);
+            List<Double> defaultValue = new ArrayList<>(Collections.nCopies(crs.getDimension(), Double.NaN));
+            min = getBuilder("min", listOf(DOUBLE), defaultValue)
+                    .internal()
+                    .addConstraint(size(crs.getDimension()))
+                    .build();
+            max = getBuilder("max", listOf(DOUBLE), defaultValue)
+                    .internal()
+                    .addConstraint(size(crs.getDimension()))
+                    .build();
+        } else {
+            crs = null;
+            min = null;
+            max = null;
+        }
     }
 
     @Override
