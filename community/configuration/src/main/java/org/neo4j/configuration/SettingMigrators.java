@@ -185,7 +185,14 @@ public final class SettingMigrators {
                 "unsupported.dbms.topology_graph_updater.enable",
                 "unsupported.dbms.uris.rest",
                 "unsupported.dbms.reserved.page.header.bytes",
-                "cypher.default_language_version");
+                "cypher.default_language_version",
+                "dbms.logs.query.allocation_logging_enabled",
+                "dbms.logs.query.track_query_allocation",
+                "dbms.logs.query.page_logging_enabled",
+                "dbms.logs.query.runtime_logging_enabled",
+                "dbms.logs.query.time_logging_enabled",
+                "dbms.logs.query.transaction_id.enabled ",
+                "dbms.logs.query.parameter_full_entities");
         private static final Collection<Mapping> LEGACY_UNSUPPORTED_SETTINGS_MAPPING = List.of(
                 new Mapping("dbms.capabilities.blocked", "internal.dbms.capabilities.blocked"),
                 new Mapping("dbms.connector.bolt.tcp_keep_alive", "internal.server.bolt.tcp_keep_alive"),
