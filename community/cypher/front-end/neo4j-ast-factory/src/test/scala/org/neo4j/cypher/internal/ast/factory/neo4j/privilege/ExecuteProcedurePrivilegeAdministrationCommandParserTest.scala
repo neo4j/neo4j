@@ -41,216 +41,238 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
         ("EXECUTE BOOSTED PROCEDURE", ExecuteBoostedProcedureAction)
       ).foreach {
         case (execute, action) =>
-          test(s"$verb $execute * ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("*")), Seq(literalRole)))
-          }
+          Seq[Immutable](true, false).foreach {
+            immutable =>
+              val immutableString = immutableOrEmpty(immutable)
+              test(s"$verb$immutableString $execute * ON DBMS $preposition role") {
+                yields(func(action, List(procedureQualifier("*")), Seq(literalRole), immutable))
+              }
 
-          // The following two tests check that the plural form EXECUTE [BOOSTED] PROCEDURES is valid
+              // The following two tests check that the plural form EXECUTE [BOOSTED] PROCEDURES is valid
 
-          test(s"$verb ${execute}S * ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("*")), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString ${execute}S * ON DBMS $preposition role") {
+                yields(func(action, List(procedureQualifier("*")), Seq(literalRole), immutable))
+              }
 
-          test(s"$verb ${execute}S `*` ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("*")), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString ${execute}S `*` ON DBMS $preposition role") {
+                yields(func(action, List(procedureQualifier("*")), Seq(literalRole), immutable))
+              }
 
-          test(s"$verb $execute apoc.procedure ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("apoc.procedure")), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString $execute apoc.procedure ON DBMS $preposition role") {
+                yields(func(action, List(procedureQualifier("apoc.procedure")), Seq(literalRole), immutable))
+              }
 
-          test(s"$verb ${execute}S apoc.procedure ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("apoc.procedure")), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString ${execute}S apoc.procedure ON DBMS $preposition role") {
+                yields(func(action, List(procedureQualifier("apoc.procedure")), Seq(literalRole), immutable))
+              }
 
-          test(s"$verb $execute apoc.math.sin ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("apoc.math.sin")), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString $execute apoc.math.sin ON DBMS $preposition role") {
+                yields(func(action, List(procedureQualifier("apoc.math.sin")), Seq(literalRole), immutable))
+              }
 
-          test(s"$verb $execute apoc* ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("apoc*")), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString $execute apoc* ON DBMS $preposition role") {
+                yields(func(action, List(procedureQualifier("apoc*")), Seq(literalRole), immutable))
+              }
 
-          test(s"$verb $execute *apoc ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("*apoc")), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString $execute *apoc ON DBMS $preposition role") {
+                yields(func(action, List(procedureQualifier("*apoc")), Seq(literalRole), immutable))
+              }
 
-          test(s"$verb $execute *apoc, *.sin ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("*apoc"), procedureQualifier("*.sin")), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString $execute *apoc, *.sin ON DBMS $preposition role") {
+                yields(func(
+                  action,
+                  List(procedureQualifier("*apoc"), procedureQualifier("*.sin")),
+                  Seq(literalRole),
+                  immutable
+                ))
+              }
 
-          test(s"$verb $execute *.sin, apoc* ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("*.sin"), procedureQualifier("apoc*")), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString $execute *.sin, apoc* ON DBMS $preposition role") {
+                yields(func(
+                  action,
+                  List(procedureQualifier("*.sin"), procedureQualifier("apoc*")),
+                  Seq(literalRole),
+                  immutable
+                ))
+              }
 
-          test(s"$verb $execute *.sin ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("*.sin")), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString $execute *.sin ON DBMS $preposition role") {
+                yields(func(action, List(procedureQualifier("*.sin")), Seq(literalRole), immutable))
+              }
 
-          test(s"$verb $execute apoc.*.math.* ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("apoc.*.math.*")), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString $execute apoc.*.math.* ON DBMS $preposition role") {
+                yields(func(action, List(procedureQualifier("apoc.*.math.*")), Seq(literalRole), immutable))
+              }
 
-          test(s"$verb $execute math.*n ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("math.*n")), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString $execute math.*n ON DBMS $preposition role") {
+                yields(func(action, List(procedureQualifier("math.*n")), Seq(literalRole), immutable))
+              }
 
-          test(s"$verb $execute math.si? ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("math.si?")), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString $execute math.si? ON DBMS $preposition role") {
+                yields(func(action, List(procedureQualifier("math.si?")), Seq(literalRole), immutable))
+              }
 
-          test(s"$verb $execute mat*.sin ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("mat*.sin")), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString $execute mat*.sin ON DBMS $preposition role") {
+                yields(func(action, List(procedureQualifier("mat*.sin")), Seq(literalRole), immutable))
+              }
 
-          test(s"$verb $execute mat?.sin ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("mat?.sin")), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString $execute mat?.sin ON DBMS $preposition role") {
+                yields(func(action, List(procedureQualifier("mat?.sin")), Seq(literalRole), immutable))
+              }
 
-          test(s"$verb $execute ?ath.sin ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("?ath.sin")), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString $execute ?ath.sin ON DBMS $preposition role") {
+                yields(func(action, List(procedureQualifier("?ath.sin")), Seq(literalRole), immutable))
+              }
 
-          test(s"$verb $execute mat?.`a.\n`.*n ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("mat?.a.\n.*n")), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString $execute mat?.`a.\n`.*n ON DBMS $preposition role") {
+                yields(func(action, List(procedureQualifier("mat?.a.\n.*n")), Seq(literalRole), immutable))
+              }
 
-          test(s"$verb $execute `mat?`.`a.\n`.`*n` ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("mat?.a.\n.*n")), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString $execute `mat?`.`a.\n`.`*n` ON DBMS $preposition role") {
+                yields(func(action, List(procedureQualifier("mat?.a.\n.*n")), Seq(literalRole), immutable))
+              }
 
-          test(s"$verb $execute `a b` ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("a b")), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString $execute `a b` ON DBMS $preposition role") {
+                yields(func(action, List(procedureQualifier("a b")), Seq(literalRole), immutable))
+              }
 
-          test(s"$verb $execute a b ON DBMS $preposition role") {
-            assertAst(func(action, List(ProcedureQualifier("ab")(defaultPos)), Seq(Left("role")))(defaultPos))
-          }
+              test(s"$verb$immutableString $execute a b ON DBMS $preposition role") {
+                assertAst(
+                  func(action, List(ProcedureQualifier("ab")(defaultPos)), Seq(Left("role")), immutable)(defaultPos)
+                )
+              }
 
-          test(s"$verb $execute apoc.math.* ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("apoc.math.*")), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString $execute apoc.math.* ON DBMS $preposition role") {
+                yields(func(action, List(procedureQualifier("apoc.math.*")), Seq(literalRole), immutable))
+              }
 
-          test(s"$verb $execute math.sin, math.cos ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier("math.sin"), procedureQualifier("math.cos")), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString $execute math.sin, math.cos ON DBMS $preposition role") {
+                yields(func(
+                  action,
+                  List(procedureQualifier("math.sin"), procedureQualifier("math.cos")),
+                  Seq(literalRole),
+                  immutable
+                ))
+              }
 
-          test(s"$verb $execute apoc.math.sin, math.* ON DBMS $preposition role") {
-            yields(func(
-              action,
-              List(procedureQualifier("apoc.math.sin"), procedureQualifier("math.*")),
-              Seq(literalRole)
-            ))
-          }
+              test(s"$verb$immutableString $execute apoc.math.sin, math.* ON DBMS $preposition role") {
+                yields(func(
+                  action,
+                  List(procedureQualifier("apoc.math.sin"), procedureQualifier("math.*")),
+                  Seq(literalRole),
+                  immutable
+                ))
+              }
 
-          test(s"$verb $execute * $preposition role") {
-            val offset = testName.length
-            assertFailsWithMessage(
-              testName,
-              s"""Invalid input '': expected
-                 |  "*"
-                 |  "."
-                 |  "?"
-                 |  "ON"
-                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-            )
-          }
+              test(s"$verb$immutableString $execute * $preposition role") {
+                val offset = testName.length
+                assertFailsWithMessage(
+                  testName,
+                  s"""Invalid input '': expected
+                     |  "*"
+                     |  "."
+                     |  "?"
+                     |  "ON"
+                     |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                )
+              }
 
-          test(s"$verb $execute * ON DATABASE * $preposition role") {
-            val offset = testName.length
-            assertFailsWithMessage(
-              testName,
-              s"""Invalid input '': expected
-                 |  "*"
-                 |  "."
-                 |  "?"
-                 |  "ON"
-                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-            )
-          }
+              test(s"$verb$immutableString $execute * ON DATABASE * $preposition role") {
+                val offset = testName.length
+                assertFailsWithMessage(
+                  testName,
+                  s"""Invalid input '': expected
+                     |  "*"
+                     |  "."
+                     |  "?"
+                     |  "ON"
+                     |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                )
+              }
 
-          // Tests for invalid escaping
+              // Tests for invalid escaping
 
-          test(s"$verb $execute `ab?`* ON DBMS $preposition role") {
-            val offset = s"$verb $execute ".length
-            assertFailsWithMessage(
-              testName,
-              s"""Invalid input 'ab?': expected "*", ".", "?" or an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-            )
-          }
+              test(s"$verb$immutableString $execute `ab?`* ON DBMS $preposition role") {
+                val offset = s"$verb$immutableString $execute ".length
+                assertFailsWithMessage(
+                  testName,
+                  s"""Invalid input 'ab?': expected "*", ".", "?" or an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                )
+              }
 
-          test(s"$verb $execute a`ab?` ON DBMS $preposition role") {
-            val offset = s"$verb $execute a".length
-            assertFailsWithMessage(
-              testName,
-              s"""Invalid input 'ab?': expected
-                 |  "*"
-                 |  "."
-                 |  "?"
-                 |  "ON"
-                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-            )
-          }
+              test(s"$verb$immutableString $execute a`ab?` ON DBMS $preposition role") {
+                val offset = s"$verb$immutableString $execute a".length
+                assertFailsWithMessage(
+                  testName,
+                  s"""Invalid input 'ab?': expected
+                     |  "*"
+                     |  "."
+                     |  "?"
+                     |  "ON"
+                     |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                )
+              }
 
-          test(s"$verb $execute ab?`%ab`* ON DBMS $preposition role") {
-            val offset = s"$verb $execute ab?".length
-            assertFailsWithMessage(
-              testName,
-              s"""Invalid input '%ab': expected
-                 |  "*"
-                 |  "."
-                 |  "?"
-                 |  "ON"
-                 |  "YIELD"
-                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-            )
-          }
+              test(s"$verb$immutableString $execute ab?`%ab`* ON DBMS $preposition role") {
+                val offset = s"$verb$immutableString $execute ab?".length
+                assertFailsWithMessage(
+                  testName,
+                  s"""Invalid input '%ab': expected
+                     |  "*"
+                     |  "."
+                     |  "?"
+                     |  "ON"
+                     |  "YIELD"
+                     |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                )
+              }
 
-          test(s"$verb $execute apoc.`*`ab? ON DBMS $preposition role") {
-            val offset = s"$verb $execute apoc.".length
-            assertFailsWithMessage(
-              testName,
-              s"""Invalid input '*': expected
-                 |  "*"
-                 |  "."
-                 |  "?"
-                 |  "YIELD"
-                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-            )
-          }
+              test(s"$verb$immutableString $execute apoc.`*`ab? ON DBMS $preposition role") {
+                val offset = s"$verb$immutableString $execute apoc.".length
+                assertFailsWithMessage(
+                  testName,
+                  s"""Invalid input '*': expected
+                     |  "*"
+                     |  "."
+                     |  "?"
+                     |  "YIELD"
+                     |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                )
+              }
 
-          test(s"$verb $execute apoc.*`ab?` ON DBMS $preposition role") {
-            val offset = s"$verb $execute apoc.*".length
-            assertFailsWithMessage(
-              testName,
-              s"""Invalid input 'ab?': expected
-                 |  "*"
-                 |  "."
-                 |  "?"
-                 |  "ON"
-                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-            )
-          }
+              test(s"$verb$immutableString $execute apoc.*`ab?` ON DBMS $preposition role") {
+                val offset = s"$verb$immutableString $execute apoc.*".length
+                assertFailsWithMessage(
+                  testName,
+                  s"""Invalid input 'ab?': expected
+                     |  "*"
+                     |  "."
+                     |  "?"
+                     |  "ON"
+                     |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                )
+              }
 
-          test(s"$verb $execute `ap`oc.ab? ON DBMS $preposition role") {
-            val offset = s"$verb $execute ".length
-            assertFailsWithMessage(
-              testName,
-              s"""Invalid input 'ap': expected "*", ".", "?" or an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-            )
-          }
+              test(s"$verb$immutableString $execute `ap`oc.ab? ON DBMS $preposition role") {
+                val offset = s"$verb$immutableString $execute ".length
+                assertFailsWithMessage(
+                  testName,
+                  s"""Invalid input 'ap': expected "*", ".", "?" or an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                )
+              }
 
-          test(s"$verb $execute ap`oc`.ab? ON DBMS $preposition role") {
-            val offset = s"$verb $execute ap".length
-            assertFailsWithMessage(
-              testName,
-              s"""Invalid input 'oc': expected
-                 |  "*"
-                 |  "."
-                 |  "?"
-                 |  "ON"
-                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-            )
+              test(s"$verb$immutableString $execute ap`oc`.ab? ON DBMS $preposition role") {
+                val offset = s"$verb$immutableString $execute ap".length
+                assertFailsWithMessage(
+                  testName,
+                  s"""Invalid input 'oc': expected
+                     |  "*"
+                     |  "."
+                     |  "?"
+                     |  "ON"
+                     |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                )
+              }
           }
       }
   }
@@ -263,39 +285,43 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
     ("REVOKE", "FROM", revokeDbmsPrivilege: dbmsPrivilegeFunc)
   ).foreach {
     case (verb: String, preposition: String, func: dbmsPrivilegeFunc) =>
-      Seq(
-        "EXECUTE ADMIN PROCEDURES",
-        "EXECUTE ADMINISTRATOR PROCEDURES"
-      ).foreach {
-        command =>
-          test(s"$verb $command ON DBMS $preposition role") {
-            yields(func(ExecuteAdminProcedureAction, Seq(literalRole)))
+      Seq[Immutable](true, false).foreach {
+        immutable =>
+          val immutableString = immutableOrEmpty(immutable)
+          Seq(
+            "EXECUTE ADMIN PROCEDURES",
+            "EXECUTE ADMINISTRATOR PROCEDURES"
+          ).foreach {
+            command =>
+              test(s"$verb$immutableString $command ON DBMS $preposition role") {
+                yields(func(ExecuteAdminProcedureAction, Seq(literalRole), immutable))
+              }
+
+              test(s"$verb$immutableString $command * ON DBMS $preposition role") {
+                val offset = s"$verb$immutableString $command ".length
+                assertFailsWithMessage(
+                  testName,
+                  s"""Invalid input '*': expected "ON" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                )
+              }
+
+              test(s"$verb$immutableString $command ON DATABASE * $preposition role") {
+                val offset = s"$verb$immutableString $command ON ".length
+                assertFailsWithMessage(
+                  testName,
+                  s"""Invalid input 'DATABASE': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                )
+              }
+
           }
 
-          test(s"$verb $command * ON DBMS $preposition role") {
-            val offset = s"$verb $command ".length
+          test(s"$verb$immutableString EXECUTE ADMIN PROCEDURE ON DBMS $preposition role") {
+            val offset = s"$verb$immutableString EXECUTE ADMIN ".length
             assertFailsWithMessage(
               testName,
-              s"""Invalid input '*': expected "ON" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+              s"""Invalid input 'PROCEDURE': expected "PROCEDURES" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
             )
           }
-
-          test(s"$verb $command ON DATABASE * $preposition role") {
-            val offset = s"$verb $command ON ".length
-            assertFailsWithMessage(
-              testName,
-              s"""Invalid input 'DATABASE': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-            )
-          }
-
-      }
-
-      test(s"$verb EXECUTE ADMIN PROCEDURE ON DBMS $preposition role") {
-        val offset = s"$verb EXECUTE ADMIN ".length
-        assertFailsWithMessage(
-          testName,
-          s"""Invalid input 'PROCEDURE': expected "PROCEDURES" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-        )
       }
   }
 

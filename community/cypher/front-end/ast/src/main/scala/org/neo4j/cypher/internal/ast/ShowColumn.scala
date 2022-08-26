@@ -34,7 +34,23 @@ case class DefaultOrAllShowColumns(useAllColumns: Boolean, columns: List[ShowCol
 
 object DefaultOrAllShowColumns {
 
+  type ShowByDefault = Boolean
+
+  def apply(columns: List[(ShowColumn, ShowByDefault)], yieldOrWhere: YieldOrWhere): DefaultOrAllShowColumns = {
+
+    val briefShowColumns = columns.filter(_._2).map(_._1)
+    val allShowColumns = columns.map(_._1)
+
+    val allColumns = yieldOrWhere match {
+      case Some(Left(_)) => true
+      case _             => false
+    }
+
+    apply(allColumns, briefShowColumns, allShowColumns)
+  }
+
   def apply(useAllColumns: Boolean, brief: List[ShowColumn], all: List[ShowColumn]): DefaultOrAllShowColumns = {
     if (useAllColumns) DefaultOrAllShowColumns(useAllColumns, all) else DefaultOrAllShowColumns(useAllColumns, brief)
   }
+
 }

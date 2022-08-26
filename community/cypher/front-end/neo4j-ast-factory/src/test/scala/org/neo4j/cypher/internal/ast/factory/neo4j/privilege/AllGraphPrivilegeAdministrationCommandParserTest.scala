@@ -32,212 +32,229 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
     ("REVOKE", "FROM", revokeGraphPrivilege: noResourcePrivilegeFunc)
   ).foreach {
     case (verb: String, preposition: String, func: noResourcePrivilegeFunc) =>
-      // All versions of ALL [[GRAPH] PRIVILEGES] should be allowed
+      Seq[Immutable](true, false).foreach {
+        immutable =>
+          val immutableString = immutableOrEmpty(immutable)
+          // All versions of ALL [[GRAPH] PRIVILEGES] should be allowed
 
-      test(s"$verb ALL ON GRAPH foo $preposition role") {
-        yields(func(
-          ast.GraphPrivilege(ast.AllGraphAction, List(graphScopeFoo))(_),
-          List(ast.AllQualifier()(_)),
-          Seq(literalRole)
-        ))
-      }
+          test(s"$verb$immutableString ALL ON GRAPH foo $preposition role") {
+            yields(func(
+              ast.GraphPrivilege(ast.AllGraphAction, List(graphScopeFoo))(_),
+              List(ast.AllQualifier()(_)),
+              Seq(literalRole),
+              immutable
+            ))
+          }
 
-      test(s"$verb ALL PRIVILEGES ON GRAPH foo $preposition role") {
-        yields(func(
-          ast.GraphPrivilege(ast.AllGraphAction, List(graphScopeFoo))(_),
-          List(ast.AllQualifier()(_)),
-          Seq(literalRole)
-        ))
-      }
+          test(s"$verb$immutableString ALL PRIVILEGES ON GRAPH foo $preposition role") {
+            yields(func(
+              ast.GraphPrivilege(ast.AllGraphAction, List(graphScopeFoo))(_),
+              List(ast.AllQualifier()(_)),
+              Seq(literalRole),
+              immutable
+            ))
+          }
 
-      test(s"$verb ALL GRAPH PRIVILEGES ON GRAPH foo $preposition role") {
-        yields(func(
-          ast.GraphPrivilege(ast.AllGraphAction, List(graphScopeFoo))(_),
-          List(ast.AllQualifier()(_)),
-          Seq(literalRole)
-        ))
-      }
+          test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPH foo $preposition role") {
+            yields(func(
+              ast.GraphPrivilege(ast.AllGraphAction, List(graphScopeFoo))(_),
+              List(ast.AllQualifier()(_)),
+              Seq(literalRole),
+              immutable
+            ))
+          }
 
-      // Home graph should be allowed
+          // Home graph should be allowed
 
-      test(s"$verb ALL ON HOME GRAPH $preposition role") {
-        yields(func(
-          ast.GraphPrivilege(ast.AllGraphAction, List(ast.HomeGraphScope()(_)))(_),
-          List(ast.AllQualifier()(_)),
-          Seq(literalRole)
-        ))
-      }
+          test(s"$verb$immutableString ALL ON HOME GRAPH $preposition role") {
+            yields(func(
+              ast.GraphPrivilege(ast.AllGraphAction, List(ast.HomeGraphScope()(_)))(_),
+              List(ast.AllQualifier()(_)),
+              Seq(literalRole),
+              immutable
+            ))
+          }
 
-      test(s"$verb ALL PRIVILEGES ON HOME GRAPH $preposition role") {
-        yields(func(
-          ast.GraphPrivilege(ast.AllGraphAction, List(ast.HomeGraphScope()(_)))(_),
-          List(ast.AllQualifier()(_)),
-          Seq(literalRole)
-        ))
-      }
+          test(s"$verb$immutableString ALL PRIVILEGES ON HOME GRAPH $preposition role") {
+            yields(func(
+              ast.GraphPrivilege(ast.AllGraphAction, List(ast.HomeGraphScope()(_)))(_),
+              List(ast.AllQualifier()(_)),
+              Seq(literalRole),
+              immutable
+            ))
+          }
 
-      test(s"$verb ALL GRAPH PRIVILEGES ON HOME GRAPH $preposition role") {
-        yields(func(
-          ast.GraphPrivilege(ast.AllGraphAction, List(ast.HomeGraphScope()(_)))(_),
-          List(ast.AllQualifier()(_)),
-          Seq(literalRole)
-        ))
-      }
+          test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON HOME GRAPH $preposition role") {
+            yields(func(
+              ast.GraphPrivilege(ast.AllGraphAction, List(ast.HomeGraphScope()(_)))(_),
+              List(ast.AllQualifier()(_)),
+              Seq(literalRole),
+              immutable
+            ))
+          }
 
-      // Default graph should be allowed
+          // Default graph should be allowed
 
-      test(s"$verb ALL ON DEFAULT GRAPH $preposition role") {
-        yields(func(
-          ast.GraphPrivilege(ast.AllGraphAction, List(ast.DefaultGraphScope()(_)))(_),
-          List(ast.AllQualifier()(_)),
-          Seq(literalRole)
-        ))
-      }
+          test(s"$verb$immutableString ALL ON DEFAULT GRAPH $preposition role") {
+            yields(func(
+              ast.GraphPrivilege(ast.AllGraphAction, List(ast.DefaultGraphScope()(_)))(_),
+              List(ast.AllQualifier()(_)),
+              Seq(literalRole),
+              immutable
+            ))
+          }
 
-      test(s"$verb ALL PRIVILEGES ON DEFAULT GRAPH $preposition role") {
-        yields(func(
-          ast.GraphPrivilege(ast.AllGraphAction, List(ast.DefaultGraphScope()(_)))(_),
-          List(ast.AllQualifier()(_)),
-          Seq(literalRole)
-        ))
-      }
+          test(s"$verb$immutableString ALL PRIVILEGES ON DEFAULT GRAPH $preposition role") {
+            yields(func(
+              ast.GraphPrivilege(ast.AllGraphAction, List(ast.DefaultGraphScope()(_)))(_),
+              List(ast.AllQualifier()(_)),
+              Seq(literalRole),
+              immutable
+            ))
+          }
 
-      test(s"$verb ALL GRAPH PRIVILEGES ON DEFAULT GRAPH $preposition role") {
-        yields(func(
-          ast.GraphPrivilege(ast.AllGraphAction, List(ast.DefaultGraphScope()(_)))(_),
-          List(ast.AllQualifier()(_)),
-          Seq(literalRole)
-        ))
-      }
+          test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON DEFAULT GRAPH $preposition role") {
+            yields(func(
+              ast.GraphPrivilege(ast.AllGraphAction, List(ast.DefaultGraphScope()(_)))(_),
+              List(ast.AllQualifier()(_)),
+              Seq(literalRole),
+              immutable
+            ))
+          }
 
-      // Multiple graphs should be allowed
+          // Multiple graphs should be allowed
 
-      test(s"$verb ALL GRAPH PRIVILEGES ON GRAPHS * $preposition role") {
-        yields(func(
-          ast.GraphPrivilege(ast.AllGraphAction, List(ast.AllGraphsScope()(_)))(_),
-          List(ast.AllQualifier()(_)),
-          Seq(literalRole)
-        ))
-      }
+          test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPHS * $preposition role") {
+            yields(func(
+              ast.GraphPrivilege(ast.AllGraphAction, List(ast.AllGraphsScope()(_)))(_),
+              List(ast.AllQualifier()(_)),
+              Seq(literalRole),
+              immutable
+            ))
+          }
 
-      test(s"$verb ALL GRAPH PRIVILEGES ON GRAPHS foo,baz $preposition role") {
-        yields(func(
-          ast.GraphPrivilege(ast.AllGraphAction, List(graphScopeFoo, graphScopeBaz))(_),
-          List(ast.AllQualifier()(_)),
-          Seq(literalRole)
-        ))
-      }
+          test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPHS foo,baz $preposition role") {
+            yields(func(
+              ast.GraphPrivilege(ast.AllGraphAction, List(graphScopeFoo, graphScopeBaz))(_),
+              List(ast.AllQualifier()(_)),
+              Seq(literalRole),
+              immutable
+            ))
+          }
 
-      // Multiple roles should be allowed
+          // Multiple roles should be allowed
 
-      test(s"$verb ALL GRAPH PRIVILEGES ON GRAPHS foo $preposition role1, role2") {
-        yields(func(
-          ast.GraphPrivilege(ast.AllGraphAction, List(graphScopeFoo))(_),
-          List(ast.AllQualifier()(_)),
-          Seq(literalRole1, literalRole2)
-        ))
-      }
+          test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPHS foo $preposition role1, role2") {
+            yields(func(
+              ast.GraphPrivilege(ast.AllGraphAction, List(graphScopeFoo))(_),
+              List(ast.AllQualifier()(_)),
+              Seq(literalRole1, literalRole2),
+              immutable
+            ))
+          }
 
-      // Parameter values should be allowed
+          // Parameter values should be allowed
 
-      test(s"$verb ALL GRAPH PRIVILEGES ON GRAPH $$foo $preposition role") {
-        yields(func(
-          ast.GraphPrivilege(ast.AllGraphAction, List(graphScopeParamFoo))(_),
-          List(ast.AllQualifier()(_)),
-          Seq(literalRole)
-        ))
-      }
+          test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPH $$foo $preposition role") {
+            yields(func(
+              ast.GraphPrivilege(ast.AllGraphAction, List(graphScopeParamFoo))(_),
+              List(ast.AllQualifier()(_)),
+              Seq(literalRole),
+              immutable
+            ))
+          }
 
-      test(s"$verb ALL GRAPH PRIVILEGES ON GRAPH foo $preposition $$role") {
-        yields(func(
-          ast.GraphPrivilege(ast.AllGraphAction, List(graphScopeFoo))(_),
-          List(ast.AllQualifier()(_)),
-          Seq(paramRole)
-        ))
-      }
+          test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPH foo $preposition $$role") {
+            yields(func(
+              ast.GraphPrivilege(ast.AllGraphAction, List(graphScopeFoo))(_),
+              List(ast.AllQualifier()(_)),
+              Seq(paramRole),
+              immutable
+            ))
+          }
 
-      // Qualifier or resource should not be supported
+          // Qualifier or resource should not be supported
 
-      test(s"$verb ALL GRAPH PRIVILEGES ON GRAPH foo NODE A $preposition role") {
-        failsToParse
-      }
+          test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPH foo NODE A $preposition role") {
+            failsToParse
+          }
 
-      test(s"$verb ALL GRAPH PRIVILEGES ON GRAPH foo ELEMENTS * $preposition role") {
-        failsToParse
-      }
+          test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPH foo ELEMENTS * $preposition role") {
+            failsToParse
+          }
 
-      test(s"$verb ALL GRAPH PRIVILEGES {prop} ON GRAPH foo $preposition role") {
-        failsToParse
-      }
+          test(s"$verb$immutableString ALL GRAPH PRIVILEGES {prop} ON GRAPH foo $preposition role") {
+            failsToParse
+          }
 
-      // Invalid syntax
+          // Invalid syntax
 
-      test(s"$verb ALL GRAPH ON GRAPH foo $preposition role") {
-        failsToParse
-      }
+          test(s"$verb$immutableString ALL GRAPH ON GRAPH foo $preposition role") {
+            failsToParse
+          }
 
-      test(s"$verb GRAPH ON GRAPH foo $preposition role") {
-        val expected =
-          """Invalid input 'GRAPH': expected
-            |  "ACCESS"""".stripMargin
-        assertFailsWithMessageStart(testName, expected)
-      }
+          test(s"$verb$immutableString GRAPH ON GRAPH foo $preposition role") {
+            val expected =
+              """Invalid input 'GRAPH': expected
+                |  "ACCESS"""".stripMargin
+            assertFailsWithMessageStart(testName, expected)
+          }
 
-      test(s"$verb GRAPH PRIVILEGES ON GRAPH foo $preposition role") {
-        val expected =
-          """Invalid input 'GRAPH': expected
-            |  "ACCESS"""".stripMargin
-        assertFailsWithMessageStart(testName, expected)
-      }
+          test(s"$verb$immutableString GRAPH PRIVILEGES ON GRAPH foo $preposition role") {
+            val expected =
+              """Invalid input 'GRAPH': expected
+                |  "ACCESS"""".stripMargin
+            assertFailsWithMessageStart(testName, expected)
+          }
 
-      test(s"$verb PRIVILEGES ON GRAPH foo $preposition role") {
-        val expected =
-          """Invalid input 'PRIVILEGES': expected
-            |  "ACCESS"""".stripMargin
-        assertFailsWithMessageStart(testName, expected)
-      }
+          test(s"$verb$immutableString PRIVILEGES ON GRAPH foo $preposition role") {
+            val expected =
+              """Invalid input 'PRIVILEGES': expected
+                |  "ACCESS"""".stripMargin
+            assertFailsWithMessageStart(testName, expected)
+          }
 
-      // Database/dbms instead of graph keyword
+          // Database/dbms instead of graph keyword
 
-      test(s"$verb ALL GRAPH PRIVILEGES ON DATABASES * $preposition role") {
-        val offset = verb.length + 25
-        assertFailsWithMessage(
-          testName,
-          s"""Invalid input 'DATABASES': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
-        )
-      }
+          test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON DATABASES * $preposition role") {
+            val offset = verb.length + immutableString.length + 25
+            assertFailsWithMessage(
+              testName,
+              s"""Invalid input 'DATABASES': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
+            )
+          }
 
-      test(s"$verb ALL GRAPH PRIVILEGES ON DATABASE foo $preposition role") {
-        val offset = verb.length + 25
-        assertFailsWithMessage(
-          testName,
-          s"""Invalid input 'DATABASE': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
-        )
-      }
+          test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON DATABASE foo $preposition role") {
+            val offset = verb.length + immutableString.length + 25
+            assertFailsWithMessage(
+              testName,
+              s"""Invalid input 'DATABASE': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
+            )
+          }
 
-      test(s"$verb ALL GRAPH PRIVILEGES ON HOME DATABASE $preposition role") {
-        val offset = verb.length + 25
-        assertFailsWithMessage(
-          testName,
-          s"""Invalid input 'HOME': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
-        )
-      }
+          test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON HOME DATABASE $preposition role") {
+            val offset = verb.length + immutableString.length + 25
+            assertFailsWithMessage(
+              testName,
+              s"""Invalid input 'HOME': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
+            )
+          }
 
-      test(s"$verb ALL GRAPH PRIVILEGES ON DEFAULT DATABASE $preposition role") {
-        val offset = verb.length + 25
-        assertFailsWithMessage(
-          testName,
-          s"""Invalid input 'DEFAULT': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
-        )
-      }
+          test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON DEFAULT DATABASE $preposition role") {
+            val offset = verb.length + immutableString.length + 25
+            assertFailsWithMessage(
+              testName,
+              s"""Invalid input 'DEFAULT': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
+            )
+          }
 
-      test(s"$verb ALL GRAPH PRIVILEGES ON DBMS $preposition role") {
-        val offset = verb.length + 25
-        assertFailsWithMessage(
-          testName,
-          s"""Invalid input 'DBMS': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
-        )
+          test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON DBMS $preposition role") {
+            val offset = verb.length + immutableString.length + 25
+            assertFailsWithMessage(
+              testName,
+              s"""Invalid input 'DBMS': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
+            )
+          }
       }
   }
-
 }

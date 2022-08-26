@@ -93,6 +93,9 @@ public enum PrivilegeAction {
     ASSIGN_PRIVILEGE,
     REMOVE_PRIVILEGE,
 
+    ASSIGN_IMMUTABLE_PRIVILEGE,
+    REMOVE_IMMUTABLE_PRIVILEGE,
+
     /** Execute procedure or user defined function */
     EXECUTE,
     /** Execute procedure or user defined function with elevated access */

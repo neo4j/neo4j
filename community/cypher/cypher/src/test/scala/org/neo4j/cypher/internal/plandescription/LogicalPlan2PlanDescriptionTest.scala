@@ -4607,7 +4607,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(RevokeRoleFromUser(privLhsLP, util.Left("role"), util.Left("user")), 1.0), adminPlanDescription)
 
     assertGood(
-      attach(GrantDbmsAction(privLhsLP, ExecuteProcedureAction, ProcedureAllQualifier()(pos), util.Left("role1")), 1.0),
+      attach(
+        GrantDbmsAction(
+          privLhsLP,
+          ExecuteProcedureAction,
+          ProcedureAllQualifier()(pos),
+          util.Left("role1"),
+          immutable = false
+        ),
+        1.0
+      ),
       adminPlanDescription
     )
 
@@ -4617,7 +4626,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           privLhsLP,
           ExecuteBoostedProcedureAction,
           ProcedureQualifier("apoc.sin")(pos),
-          util.Left("role1")
+          util.Left("role1"),
+          immutable = false
         ),
         1.0
       ),
@@ -4631,7 +4641,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           ExecuteAdminProcedureAction,
           ProcedureAllQualifier()(pos),
           util.Left("role1"),
-          "GRANTED"
+          "GRANTED",
+          immutableOnly = false
         ),
         1.0
       ),
@@ -4645,7 +4656,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           CreateNodeLabelAction,
           NamedDatabaseScope(NamespacedName("foo")(pos))(pos),
           UserAllQualifier()(pos),
-          util.Left("role1")
+          util.Left("role1"),
+          immutable = false
         ),
         1.0
       ),
@@ -4659,7 +4671,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           CreateNodeLabelAction,
           AllDatabasesScope()(pos),
           UserQualifier(util.Left("user1"))(pos),
-          util.Left("role1")
+          util.Left("role1"),
+          immutable = false
         ),
         1.0
       ),
@@ -4674,7 +4687,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           AllDatabasesScope()(pos),
           UserQualifier(util.Left("user1"))(pos),
           util.Left("role1"),
-          "GRANTED"
+          "GRANTED",
+          immutableOnly = false
         ),
         1.0
       ),
@@ -4689,7 +4703,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           NoResource()(pos),
           DefaultGraphScope()(pos),
           LabelQualifier("Label1")(pos),
-          util.Left("role1")
+          util.Left("role1"),
+          immutable = false
         ),
         1.0
       ),
@@ -4704,7 +4719,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           AllPropertyResource()(pos),
           DefaultGraphScope()(pos),
           LabelQualifier("Label1")(pos),
-          util.Left("role1")
+          util.Left("role1"),
+          immutable = false
         ),
         1.0
       ),
@@ -4720,7 +4736,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           AllGraphsScope()(pos),
           ElementsAllQualifier()(pos),
           util.Left("role1"),
-          "GRANTED"
+          "GRANTED",
+          immutableOnly = false
         ),
         1.0
       ),
@@ -4757,7 +4774,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(ShowDatabase(AllDatabasesScope()(pos), false, List("foo", "bar"), None, None), 1.0),
+      attach(ShowDatabase(AllDatabasesScope()(pos), verbose = false, List("foo", "bar"), None, None), 1.0),
       adminPlanDescription
     )
 

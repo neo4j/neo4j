@@ -2041,9 +2041,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     qualifier <- _dbmsQualifier(dbmsAction)
     roleNames <- _listOfNameOfEither
     revokeType <- _revokeType
-    dbmsGrant = GrantPrivilege.dbmsAction(dbmsAction, roleNames, qualifier)(pos)
-    dbmsDeny = DenyPrivilege.dbmsAction(dbmsAction, roleNames, qualifier)(pos)
-    dbmsRevoke = RevokePrivilege.dbmsAction(dbmsAction, roleNames, revokeType, qualifier)(pos)
+    immutable <- boolean
+    dbmsGrant = GrantPrivilege.dbmsAction(dbmsAction, immutable, roleNames, qualifier)(pos)
+    dbmsDeny = DenyPrivilege.dbmsAction(dbmsAction, immutable, roleNames, qualifier)(pos)
+    dbmsRevoke = RevokePrivilege.dbmsAction(dbmsAction, immutable, roleNames, revokeType, qualifier)(pos)
     dbms <- oneOf(dbmsGrant, dbmsDeny, dbmsRevoke)
   } yield dbms
 
@@ -2059,10 +2060,20 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     databaseQualifier <- _databaseQualifier(databaseAction.isInstanceOf[TransactionManagementAction])
     roleNames <- _listOfNameOfEither
     revokeType <- _revokeType
-    databaseGrant = GrantPrivilege.databaseAction(databaseAction, databaseScope, roleNames, databaseQualifier)(pos)
-    databaseDeny = DenyPrivilege.databaseAction(databaseAction, databaseScope, roleNames, databaseQualifier)(pos)
+    immutable <- boolean
+    databaseGrant =
+      GrantPrivilege.databaseAction(databaseAction, immutable, databaseScope, roleNames, databaseQualifier)(pos)
+    databaseDeny =
+      DenyPrivilege.databaseAction(databaseAction, immutable, databaseScope, roleNames, databaseQualifier)(pos)
     databaseRevoke =
-      RevokePrivilege.databaseAction(databaseAction, databaseScope, roleNames, revokeType, databaseQualifier)(pos)
+      RevokePrivilege.databaseAction(
+        databaseAction,
+        immutable,
+        databaseScope,
+        roleNames,
+        revokeType,
+        databaseQualifier
+      )(pos)
     database <- oneOf(databaseGrant, databaseDeny, databaseRevoke)
   } yield database
 
@@ -2074,10 +2085,14 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     (qualifier, maybeResource) <- _graphQualifierAndResource(graphAction)
     roleNames <- _listOfNameOfEither
     revokeType <- _revokeType
-    graphGrant = GrantPrivilege.graphAction(graphAction, maybeResource, graphScope, qualifier, roleNames)(pos)
-    graphDeny = DenyPrivilege.graphAction(graphAction, maybeResource, graphScope, qualifier, roleNames)(pos)
+    immutable <- boolean
+    graphGrant =
+      GrantPrivilege.graphAction(graphAction, immutable, maybeResource, graphScope, qualifier, roleNames)(pos)
+    graphDeny = DenyPrivilege.graphAction(graphAction, immutable, maybeResource, graphScope, qualifier, roleNames)(pos)
     graphRevoke =
-      RevokePrivilege.graphAction(graphAction, maybeResource, graphScope, qualifier, roleNames, revokeType)(pos)
+      RevokePrivilege.graphAction(graphAction, immutable, maybeResource, graphScope, qualifier, roleNames, revokeType)(
+        pos
+      )
     graph <- oneOf(graphGrant, graphDeny, graphRevoke)
   } yield graph
 

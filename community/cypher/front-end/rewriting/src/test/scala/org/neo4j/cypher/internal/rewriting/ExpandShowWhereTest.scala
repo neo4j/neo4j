@@ -19,10 +19,13 @@ package org.neo4j.cypher.internal.rewriting
 import org.neo4j.cypher.internal.ast.ReadAdministrationCommand
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.ShowAliases
+import org.neo4j.cypher.internal.ast.ShowAllPrivileges
 import org.neo4j.cypher.internal.ast.ShowDatabase
+import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.Yield
+import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.StartsWith
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
@@ -115,16 +118,39 @@ class ExpandShowWhereTest extends CypherFunSuite with RewriteTest {
     assertRewrite(
       "SHOW PRIVILEGES WHERE scope STARTS WITH 's'",
       "SHOW PRIVILEGES YIELD * WHERE scope STARTS WITH 's'",
-      List("access", "action", "resource", "graph", "segment", "role")
+      List("access", "action", "resource", "graph", "segment", "role", "immutable")
     )
   }
 
   test("SHOW PRIVILEGES AS COMMANDS") {
-    assertRewrite(
-      "SHOW PRIVILEGES AS COMMANDS WHERE command CONTAINS 'MATCH'",
-      "SHOW PRIVILEGES AS COMMANDS YIELD * WHERE command CONTAINS 'MATCH'",
-      List("command")
-    )
+    val originalQuery = "SHOW PRIVILEGES AS COMMANDS WHERE command CONTAINS 'MATCH'"
+    val original = parseForRewriting(originalQuery)
+    val result = rewrite(original)
+
+    // SHOW PRIVILEGES AS COMMANDS has brief (List(command)) and verbose (List(command, immutable))
+    result match {
+      case ShowPrivilegeCommands(
+          ShowAllPrivileges(),
+          false,
+          Some(Left((
+            Yield(
+              ReturnItems(returnStar, _, Some(columns)),
+              None,
+              None,
+              None,
+              Some(Where(Contains(Variable("command"), StringLiteral("MATCH"))))
+            ),
+            None
+          ))),
+          _
+        ) if returnStar =>
+        columns shouldBe List(
+          "command"
+        )
+      case _ => fail(
+          s"\n$originalQuery\nshould be rewritten to:\nSHOW ALL PRIVILEGES AS COMMANDS YIELD * WHERE command CONTAINS \"MATCH\"\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}"
+        )
+    }
   }
 
   test("SHOW USERS") {

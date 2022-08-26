@@ -193,3 +193,11 @@ case object ShowPrivilegeAction extends PrivilegeManagementAction("SHOW PRIVILEG
 case object AssignPrivilegeAction extends PrivilegeManagementAction("ASSIGN PRIVILEGE")
 
 case object RemovePrivilegeAction extends PrivilegeManagementAction("REMOVE PRIVILEGE")
+
+sealed trait UnassignableAction
+
+case object AssignImmutablePrivilegeAction extends PrivilegeManagementAction("ASSIGN IMMUTABLE PRIVILEGE")
+    with UnassignableAction
+
+case object RemoveImmutablePrivilegeAction extends PrivilegeManagementAction("REMOVE IMMUTABLE PRIVILEGE")
+    with UnassignableAction

@@ -37,114 +37,138 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
         ("DELETE", ast.DeleteElementAction)
       ).foreach {
         case (createOrDelete, action) =>
-          test(s"$verb $createOrDelete ON GRAPH foo $preposition role") {
-            yields(func(
-              ast.GraphPrivilege(action, List(graphScopeFoo))(_),
-              List(ast.ElementsAllQualifier()(_)),
-              Seq(literalRole)
-            ))
-          }
+          Seq[Immutable](true, false).foreach {
+            immutable =>
+              val immutableString = immutableOrEmpty(immutable)
+              test(s"$verb$immutableString $createOrDelete ON GRAPH foo $preposition role") {
+                yields(func(
+                  ast.GraphPrivilege(action, List(graphScopeFoo))(_),
+                  List(ast.ElementsAllQualifier()(_)),
+                  Seq(literalRole),
+                  immutable
+                ))
+              }
 
-          test(s"$verb $createOrDelete ON GRAPH foo ELEMENTS A $preposition role") {
-            yields(func(ast.GraphPrivilege(action, List(graphScopeFoo))(_), List(elemQualifierA), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString $createOrDelete ON GRAPH foo ELEMENTS A $preposition role") {
+                yields(func(
+                  ast.GraphPrivilege(action, List(graphScopeFoo))(_),
+                  List(elemQualifierA),
+                  Seq(literalRole),
+                  immutable
+                ))
+              }
 
-          test(s"$verb $createOrDelete ON GRAPH foo NODE A $preposition role") {
-            yields(func(ast.GraphPrivilege(action, List(graphScopeFoo))(_), List(labelQualifierA), Seq(literalRole)))
-          }
+              test(s"$verb$immutableString $createOrDelete ON GRAPH foo NODE A $preposition role") {
+                yields(func(
+                  ast.GraphPrivilege(action, List(graphScopeFoo))(_),
+                  List(labelQualifierA),
+                  Seq(literalRole),
+                  immutable
+                ))
+              }
 
-          test(s"$verb $createOrDelete ON GRAPH foo RELATIONSHIPS * $preposition role") {
-            yields(func(
-              ast.GraphPrivilege(action, List(graphScopeFoo))(_),
-              List(ast.RelationshipAllQualifier()(_)),
-              Seq(literalRole)
-            ))
-          }
+              test(s"$verb$immutableString $createOrDelete ON GRAPH foo RELATIONSHIPS * $preposition role") {
+                yields(func(
+                  ast.GraphPrivilege(action, List(graphScopeFoo))(_),
+                  List(ast.RelationshipAllQualifier()(_)),
+                  Seq(literalRole),
+                  immutable
+                ))
+              }
 
-          // Home graph
+              // Home graph
 
-          test(s"$verb $createOrDelete ON HOME GRAPH $preposition role") {
-            yields(func(
-              ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_),
-              List(ast.ElementsAllQualifier()(_)),
-              Seq(literalRole)
-            ))
-          }
+              test(s"$verb$immutableString $createOrDelete ON HOME GRAPH $preposition role") {
+                yields(func(
+                  ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_),
+                  List(ast.ElementsAllQualifier()(_)),
+                  Seq(literalRole),
+                  immutable
+                ))
+              }
 
-          test(s"$verb $createOrDelete ON HOME GRAPH $preposition role1, role2") {
-            yields(func(
-              ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_),
-              List(ast.ElementsAllQualifier()(_)),
-              Seq(literalRole1, literalRole2)
-            ))
-          }
+              test(s"$verb$immutableString $createOrDelete ON HOME GRAPH $preposition role1, role2") {
+                yields(func(
+                  ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_),
+                  List(ast.ElementsAllQualifier()(_)),
+                  Seq(literalRole1, literalRole2),
+                  immutable
+                ))
+              }
 
-          test(s"$verb $createOrDelete ON HOME GRAPH $preposition $$role1, role2") {
-            yields(func(
-              ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_),
-              List(ast.ElementsAllQualifier()(_)),
-              Seq(paramRole1, literalRole2)
-            ))
-          }
+              test(s"$verb$immutableString $createOrDelete ON HOME GRAPH $preposition $$role1, role2") {
+                yields(func(
+                  ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_),
+                  List(ast.ElementsAllQualifier()(_)),
+                  Seq(paramRole1, literalRole2),
+                  immutable
+                ))
+              }
 
-          test(s"$verb $createOrDelete ON HOME GRAPH RELATIONSHIPS * $preposition role") {
-            yields(func(
-              ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_),
-              List(ast.RelationshipAllQualifier()(_)),
-              Seq(literalRole)
-            ))
-          }
+              test(s"$verb$immutableString $createOrDelete ON HOME GRAPH RELATIONSHIPS * $preposition role") {
+                yields(func(
+                  ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_),
+                  List(ast.RelationshipAllQualifier()(_)),
+                  Seq(literalRole),
+                  immutable
+                ))
+              }
 
-          // Both Home and * should not parse
-          test(s"$verb $createOrDelete ON HOME GRAPH * $preposition role") {
-            failsToParse
-          }
+              // Both Home and * should not parse
+              test(s"$verb$immutableString $createOrDelete ON HOME GRAPH * $preposition role") {
+                failsToParse
+              }
 
-          // Default graph
+              // Default graph
 
-          test(s"$verb $createOrDelete ON DEFAULT GRAPH $preposition role") {
-            yields(func(
-              ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_),
-              List(ast.ElementsAllQualifier()(_)),
-              Seq(literalRole)
-            ))
-          }
+              test(s"$verb$immutableString $createOrDelete ON DEFAULT GRAPH $preposition role") {
+                yields(func(
+                  ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_),
+                  List(ast.ElementsAllQualifier()(_)),
+                  Seq(literalRole),
+                  immutable
+                ))
+              }
 
-          test(s"$verb $createOrDelete ON DEFAULT GRAPH $preposition role1, role2") {
-            yields(func(
-              ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_),
-              List(ast.ElementsAllQualifier()(_)),
-              Seq(literalRole1, literalRole2)
-            ))
-          }
+              test(s"$verb$immutableString $createOrDelete ON DEFAULT GRAPH $preposition role1, role2") {
+                yields(func(
+                  ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_),
+                  List(ast.ElementsAllQualifier()(_)),
+                  Seq(literalRole1, literalRole2),
+                  immutable
+                ))
+              }
 
-          test(s"$verb $createOrDelete ON DEFAULT GRAPH $preposition $$role1, role2") {
-            yields(func(
-              ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_),
-              List(ast.ElementsAllQualifier()(_)),
-              Seq(paramRole1, literalRole2)
-            ))
-          }
+              test(s"$verb$immutableString $createOrDelete ON DEFAULT GRAPH $preposition $$role1, role2") {
+                yields(func(
+                  ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_),
+                  List(ast.ElementsAllQualifier()(_)),
+                  Seq(paramRole1, literalRole2),
+                  immutable
+                ))
+              }
 
-          test(s"$verb $createOrDelete ON DEFAULT GRAPH RELATIONSHIPS * $preposition role") {
-            yields(func(
-              ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_),
-              List(ast.RelationshipAllQualifier()(_)),
-              Seq(literalRole)
-            ))
-          }
+              test(s"$verb$immutableString $createOrDelete ON DEFAULT GRAPH RELATIONSHIPS * $preposition role") {
+                yields(func(
+                  ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_),
+                  List(ast.RelationshipAllQualifier()(_)),
+                  Seq(literalRole),
+                  immutable
+                ))
+              }
 
-          // Both Default and * should not parse
-          test(s"$verb $createOrDelete ON DEFAULT GRAPH * $preposition role") {
-            failsToParse
-          }
+              // Both Default and * should not parse
+              test(s"$verb$immutableString $createOrDelete ON DEFAULT GRAPH * $preposition role") {
+                failsToParse
+              }
 
-          test(s"$verb $createOrDelete ON DATABASE blah $preposition role") {
-            val offset = verb.length + createOrDelete.length + 5
-            assertFailsWithMessage(
-              testName,
-              s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
-            )
+              test(s"$verb$immutableString $createOrDelete ON DATABASE blah $preposition role") {
+                val offset = verb.length + immutableString.length + createOrDelete.length + 5
+                assertFailsWithMessage(
+                  testName,
+                  s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
+                )
+              }
           }
       }
   }

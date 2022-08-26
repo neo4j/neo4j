@@ -696,17 +696,18 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL databasePrivilege(NULL p, NULL action, List<NULL> scope, List<NULL> qualifier) {
+    public NULL databasePrivilege(NULL p, NULL action, List<NULL> scope, List<NULL> qualifier, boolean immutable) {
         throw new UnsupportedOperationException("databasePrivilege is not a literal");
     }
 
     @Override
-    public NULL dbmsPrivilege(NULL p, NULL action, List<NULL> qualifier) {
+    public NULL dbmsPrivilege(NULL p, NULL action, List<NULL> qualifier, boolean immutable) {
         throw new UnsupportedOperationException("dbmsPrivilege is not a literal");
     }
 
     @Override
-    public NULL graphPrivilege(NULL p, NULL action, List<NULL> scope, NULL resource, List<NULL> qualifier) {
+    public NULL graphPrivilege(
+            NULL p, NULL action, List<NULL> scope, NULL resource, List<NULL> qualifier, boolean immutable) {
         throw new UnsupportedOperationException("graphPrivilege is not a literal");
     }
 

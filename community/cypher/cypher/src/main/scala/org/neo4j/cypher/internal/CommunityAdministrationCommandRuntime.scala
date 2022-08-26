@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.ast.AdministrationAction
 import org.neo4j.cypher.internal.ast.DbmsAction
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
+import org.neo4j.cypher.internal.ast.UnassignableAction
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.logical.plans.AllowedNonAdministrationCommands
 import org.neo4j.cypher.internal.logical.plans.AlterUser
@@ -127,14 +128,22 @@ case class CommunityAdministrationCommandRuntime(
     }.sorted.mkString(" and/or ")
   }
 
-  private[internal] def adminActionErrorMessage(permissionState: PermissionState, actions: Seq[AdministrationAction]) =
+  private[internal] def adminActionErrorMessage(
+    permissionState: PermissionState,
+    actions: Seq[AdministrationAction]
+  ) = {
+    val allUnassignable = actions.forall(_.isInstanceOf[UnassignableAction])
+    val missingPrivilegeHelpMessageSuffix = if (allUnassignable) "" else s" $checkShowUserPrivilegesText"
+
     permissionState match {
       case PermissionState.EXPLICIT_DENY =>
-        "Permission denied for " + prettifyActionName(actions: _*) + ". " + checkShowUserPrivilegesText
+        s"Permission denied for ${prettifyActionName(actions: _*)}.$missingPrivilegeHelpMessageSuffix"
       case PermissionState.NOT_GRANTED =>
-        "Permission has not been granted for " + prettifyActionName(actions: _*) + ". " + checkShowUserPrivilegesText
+        val reason = if (allUnassignable) "cannot be" else "has not been"
+        s"Permission $reason granted for ${prettifyActionName(actions: _*)}.$missingPrivilegeHelpMessageSuffix"
       case PermissionState.EXPLICIT_GRANT => ""
     }
+  }
 
   private def getSource(
     maybeSource: Option[PrivilegePlan],

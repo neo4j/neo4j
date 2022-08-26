@@ -226,14 +226,14 @@ public interface ASTFactory<
      * Create a path-length object used to specify path lengths for variable length patterns.
      *
      * Note that paths will be reported in a quite specific manner:
-     *     Cypher       minLength   maxLength
-     *     ----------------------------------
-     *     [*]          null        null
-     *     [*2]         "2"         "2"
-     *     [*2..]       "2"         ""
-     *     [*..3]       ""          "3"
-     *     [*2..3]      "2"         "3"
-     *     [*..]        ""          ""      <- separate from [*] to allow specific error messages
+     * Cypher       minLength   maxLength
+     * ----------------------------------
+     * [*]          null        null
+     * [*2]         "2"         "2"
+     * [*2..]       "2"         ""
+     * [*..3]       ""          "3"
+     * [*2..3]      "2"         "3"
+     * [*..]        ""          ""      <- separate from [*] to allow specific error messages
      */
     PATH_LENGTH pathLength(POS p, POS pMin, POS pMax, String minLength, String maxLength);
 
@@ -469,16 +469,22 @@ public interface ASTFactory<
             boolean revokeDeny);
 
     PRIVILEGE_TYPE databasePrivilege(
-            POS p, ADMINISTRATION_ACTION action, List<DATABASE_SCOPE> scope, List<PRIVILEGE_QUALIFIER> qualifier);
+            POS p,
+            ADMINISTRATION_ACTION action,
+            List<DATABASE_SCOPE> scope,
+            List<PRIVILEGE_QUALIFIER> qualifier,
+            boolean immutable);
 
-    PRIVILEGE_TYPE dbmsPrivilege(POS p, ADMINISTRATION_ACTION action, List<PRIVILEGE_QUALIFIER> qualifier);
+    PRIVILEGE_TYPE dbmsPrivilege(
+            POS p, ADMINISTRATION_ACTION action, List<PRIVILEGE_QUALIFIER> qualifier, boolean immutable);
 
     PRIVILEGE_TYPE graphPrivilege(
             POS p,
             ADMINISTRATION_ACTION action,
             List<GRAPH_SCOPE> scope,
             PRIVILEGE_RESOURCE resource,
-            List<PRIVILEGE_QUALIFIER> qualifier);
+            List<PRIVILEGE_QUALIFIER> qualifier,
+            boolean immutable);
 
     ADMINISTRATION_ACTION privilegeAction(ActionType action);
 

@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.AlterDatabaseAction
 import org.neo4j.cypher.internal.ast.AlterLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterRemoteDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterUser
+import org.neo4j.cypher.internal.ast.AssignImmutablePrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.CallClause
@@ -209,6 +210,9 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         case c       => c.isInstanceOf[ClauseAllowedOnSystem]
       }
 
+    def assignPrivilegeAction(immutable: Boolean) =
+      if (immutable) AssignImmutablePrivilegeAction else AssignPrivilegeAction
+
     val maybeLogicalPlan: Option[plans.LogicalPlan] = from.statement() match {
       // SHOW USERS
       case su: ShowUsers => Some(plans.ShowUsers(
@@ -338,7 +342,10 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           plans.CopyRolePrivileges(
             plans.CopyRolePrivileges(
               plans.CreateRole(
-                plans.RequireRole(source, fromName),
+                plans.AssertAllRolePrivilegesCanBeCopied(
+                  plans.RequireRole(source, fromName),
+                  fromName
+                ),
                 roleName
               ),
               roleName,
@@ -390,100 +397,172 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT _ ON DBMS TO role
-      case c @ GrantPrivilege(DbmsPrivilege(action), _, qualifiers, roleNames) =>
+      case c @ GrantPrivilege(DbmsPrivilege(action), immutable, _, qualifiers, roleNames) =>
         val plan = (for (roleName <- roleNames; qualifier <- qualifiers; simpleQualifier <- qualifier.simplify) yield {
           (roleName, simpleQualifier)
-        }).foldLeft(plans.AssertAllowedDbmsActions(AssignPrivilegeAction).asInstanceOf[plans.PrivilegePlan]) {
-          case (source, (roleName, simpleQualifier)) => plans.GrantDbmsAction(source, action, simpleQualifier, roleName)
+        }).foldLeft(
+          plans.AssertAllowedDbmsActions(
+            plans.AssertDbmsActionIsAssignable(None, action), // this is the privilege being granted
+            assignPrivilegeAction(immutable) // this is the action of assigning a privilege
+          ).asInstanceOf[plans.PrivilegePlan]
+        ) {
+          case (source, (roleName, simpleQualifier)) =>
+            plans.GrantDbmsAction(source, action, simpleQualifier, roleName, immutable)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY _ ON DBMS TO role
-      case c @ DenyPrivilege(DbmsPrivilege(action), _, qualifiers, roleNames) =>
+      case c @ DenyPrivilege(DbmsPrivilege(action), immutable, _, qualifiers, roleNames) =>
         val plan = (for (roleName <- roleNames; qualifier <- qualifiers; simpleQualifier <- qualifier.simplify) yield {
           (roleName, simpleQualifier)
-        }).foldLeft(plans.AssertAllowedDbmsActions(AssignPrivilegeAction).asInstanceOf[plans.PrivilegePlan]) {
-          case (source, (roleName, simpleQualifier)) => plans.DenyDbmsAction(source, action, simpleQualifier, roleName)
+        }).foldLeft(
+          plans.AssertAllowedDbmsActions(
+            plans.AssertDbmsActionIsAssignable(None, action), // this is the privilege being granted
+            assignPrivilegeAction(immutable) // this is the action of assigning a privilege
+          ).asInstanceOf[plans.PrivilegePlan]
+        ) {
+          case (source, (roleName, simpleQualifier)) =>
+            plans.DenyDbmsAction(source, action, simpleQualifier, roleName, immutable)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE _ ON DBMS FROM role
-      case c @ RevokePrivilege(DbmsPrivilege(action), _, qualifiers, roleNames, revokeType) =>
+      case c @ RevokePrivilege(DbmsPrivilege(action), immutableOnly, _, qualifiers, roleNames, revokeType) =>
         val plan = (for (roleName <- roleNames; qualifier <- qualifiers; simpleQualifier <- qualifier.simplify) yield {
           (roleName, simpleQualifier)
-        }).foldLeft(plans.AssertAllowedDbmsActions(RemovePrivilegeAction).asInstanceOf[plans.PrivilegePlan]) {
+        }).foldLeft(
+          plans.AssertAllowedDbmsActions(RemovePrivilegeAction)
+            .asInstanceOf[plans.PrivilegePlan]
+        ) {
+          // recursively build privilege plan using `AssertDbmsPrivilegeCanBeMutated` as the innermost plan.
+          // use `planRevokes` to expand plans which are revoking BOTH (i.e. GRANT and DENY).
           case (previous, (roleName, simpleQualifier)) =>
-            planRevokes(previous, revokeType, (s, r) => plans.RevokeDbmsAction(s, action, simpleQualifier, roleName, r))
+            planRevokes(
+              previous,
+              revokeType,
+              (s, r) =>
+                plans.RevokeDbmsAction(
+                  planRevokes(
+                    s,
+                    revokeType,
+                    (s, r) => plans.AssertDbmsPrivilegeCanBeMutated(s, action, simpleQualifier, roleName, r)
+                  ),
+                  action,
+                  simpleQualifier,
+                  roleName,
+                  r,
+                  immutableOnly
+                )
+            )
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT _ ON DATABASE foo TO role
-      case c @ GrantPrivilege(DatabasePrivilege(action, dbScopes), _, qualifiers, roleNames) =>
+      case c @ GrantPrivilege(DatabasePrivilege(action, dbScopes), immutable, _, qualifiers, roleNames) =>
         val plan = (for (
           dbScope <- dbScopes; roleName <- roleNames; qualifier <- qualifiers; simpleQualifiers <- qualifier.simplify
         ) yield {
           (roleName, simpleQualifiers, dbScope)
-        }).foldLeft(plans.AssertAllowedDbmsActions(AssignPrivilegeAction).asInstanceOf[plans.PrivilegePlan]) {
+        }).foldLeft(
+          plans.AssertAllowedDbmsActions(assignPrivilegeAction(immutable)).asInstanceOf[plans.PrivilegePlan]
+        ) {
           case (source, (role, qualifier, dbScope: DatabaseScope)) =>
-            plans.GrantDatabaseAction(source, action, dbScope, qualifier, role)
+            plans.GrantDatabaseAction(source, action, dbScope, qualifier, role, immutable)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY _ ON DATABASE foo TO role
-      case c @ DenyPrivilege(DatabasePrivilege(action, dbScopes), _, qualifiers, roleNames) =>
+      case c @ DenyPrivilege(DatabasePrivilege(action, dbScopes), immutable, _, qualifiers, roleNames) =>
         val plan = (for (
           dbScope <- dbScopes; roleName <- roleNames; qualifier <- qualifiers; simpleQualifiers <- qualifier.simplify
         ) yield {
           (roleName, simpleQualifiers, dbScope)
-        }).foldLeft(plans.AssertAllowedDbmsActions(AssignPrivilegeAction).asInstanceOf[plans.PrivilegePlan]) {
+        }).foldLeft(
+          plans.AssertAllowedDbmsActions(assignPrivilegeAction(immutable)).asInstanceOf[plans.PrivilegePlan]
+        ) {
           case (source, (role, qualifier, dbScope: DatabaseScope)) =>
-            plans.DenyDatabaseAction(source, action, dbScope, qualifier, role)
+            plans.DenyDatabaseAction(source, action, dbScope, qualifier, role, immutable)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE _ ON DATABASE foo FROM role
-      case c @ RevokePrivilege(DatabasePrivilege(action, dbScopes), _, qualifiers, roleNames, revokeType) =>
+      case c @ RevokePrivilege(
+          DatabasePrivilege(action, dbScopes),
+          immutableOnly,
+          _,
+          qualifiers,
+          roleNames,
+          revokeType
+        ) =>
         val plan = (for (
           dbScope <- dbScopes; roleName <- roleNames; qualifier <- qualifiers; simpleQualifiers <- qualifier.simplify
         ) yield {
           (roleName, simpleQualifiers, dbScope)
         }).foldLeft(plans.AssertAllowedDbmsActions(RemovePrivilegeAction).asInstanceOf[plans.PrivilegePlan]) {
           case (plan, (role, qualifier, dbScope: DatabaseScope)) =>
-            planRevokes(plan, revokeType, (s, r) => plans.RevokeDatabaseAction(s, action, dbScope, qualifier, role, r))
+            planRevokes(
+              plan,
+              revokeType,
+              (s, r) =>
+                plans.RevokeDatabaseAction(
+                  planRevokes(
+                    s,
+                    revokeType,
+                    (s, r) => plans.AssertDatabasePrivilegeCanBeMutated(s, action, dbScope, qualifier, role, r)
+                  ),
+                  action,
+                  dbScope,
+                  qualifier,
+                  role,
+                  r,
+                  immutableOnly
+                )
+            )
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT _ ON GRAPH foo _ TO role
-      case c @ GrantPrivilege(GraphPrivilege(action, graphScopes), optionalResource, qualifiers, roleNames) =>
+      case c @ GrantPrivilege(
+          GraphPrivilege(action, graphScopes),
+          immutable,
+          optionalResource,
+          qualifiers,
+          roleNames
+        ) =>
         val resources = optionalResource.getOrElse(NoResource()(InputPosition.NONE))
         val plan = (for (
           graphScope <- graphScopes; roleName <- roleNames; qualifier <- qualifiers;
           simpleQualifiers <- qualifier.simplify; resource <- resources.simplify
         ) yield {
           (roleName, simpleQualifiers, resource, graphScope)
-        }).foldLeft(plans.AssertAllowedDbmsActions(AssignPrivilegeAction).asInstanceOf[plans.PrivilegePlan]) {
+        }).foldLeft(
+          plans.AssertAllowedDbmsActions(assignPrivilegeAction(immutable)).asInstanceOf[plans.PrivilegePlan]
+        ) {
           case (source, (roleName, segment, resource, graphScope: GraphScope)) =>
-            plans.GrantGraphAction(source, action, resource, graphScope, segment, roleName)
+            plans.GrantGraphAction(source, action, resource, graphScope, segment, roleName, immutable)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY _ ON GRAPH foo _ TO role
-      case c @ DenyPrivilege(GraphPrivilege(action, graphScopes), optionalResource, qualifiers, roleNames) =>
+      case c @ DenyPrivilege(GraphPrivilege(action, graphScopes), immutable, optionalResource, qualifiers, roleNames) =>
         val resources = optionalResource.getOrElse(NoResource()(InputPosition.NONE))
         val plan = (for (
           graphScope <- graphScopes; roleName <- roleNames; qualifier <- qualifiers;
           simpleQualifiers <- qualifier.simplify; resource <- resources.simplify
         ) yield {
           (roleName, simpleQualifiers, resource, graphScope)
-        }).foldLeft(plans.AssertAllowedDbmsActions(AssignPrivilegeAction).asInstanceOf[plans.PrivilegePlan]) {
+        }).foldLeft(
+          plans.AssertAllowedDbmsActions(assignPrivilegeAction(immutable)).asInstanceOf[plans.PrivilegePlan]
+        ) {
           case (source, (roleName, segment, resource, graphScope: GraphScope)) =>
-            plans.DenyGraphAction(source, action, resource, graphScope, segment, roleName)
+            plans.DenyGraphAction(source, action, resource, graphScope, segment, roleName, immutable)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE _ ON GRAPH foo _ FROM role
       case c @ RevokePrivilege(
           GraphPrivilege(action, graphScopes),
+          immutableOnly,
           optionalResource,
           qualifiers,
           roleNames,
@@ -500,7 +579,22 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             planRevokes(
               source,
               revokeType,
-              (s, r) => plans.RevokeGraphAction(s, action, resource, graphScope, segment, roleName, r)
+              (s, r) =>
+                plans.RevokeGraphAction(
+                  planRevokes(
+                    s,
+                    revokeType,
+                    (s, r) =>
+                      plans.AssertGraphPrivilegeCanBeMutated(s, action, resource, graphScope, segment, roleName, r)
+                  ),
+                  action,
+                  resource,
+                  graphScope,
+                  segment,
+                  roleName,
+                  r,
+                  immutableOnly
+                )
             )
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))

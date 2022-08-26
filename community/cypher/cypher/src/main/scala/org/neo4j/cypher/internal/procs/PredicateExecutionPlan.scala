@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.RuntimeName
 import org.neo4j.cypher.internal.SystemCommandRuntimeName
 import org.neo4j.cypher.internal.plandescription.Argument
+import org.neo4j.cypher.internal.procs.PredicateExecutionPlan.AccessModeChanger
+import org.neo4j.cypher.internal.procs.PredicateExecutionPlan.NoAccessModeChange
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.QueryStatistics
@@ -32,6 +34,8 @@ import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.internal.kernel.api.security.SecurityContext
+import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.api.KernelTransaction.Revertable
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.memory.HeapHighWaterMarkTracker
@@ -59,10 +63,13 @@ case class DatabaseSecurityPredicate(predicateFn: (MapValue, TransactionalContex
   }
 }
 
+import scala.util.Using
+
 class PredicateExecutionPlan(
   predicate: Predicate,
   source: Option[ExecutionPlan] = None,
-  onViolation: (MapValue, TransactionalContext, SecurityContext) => Exception
+  onViolation: (MapValue, TransactionalContext, SecurityContext) => Exception,
+  changeAccessMode: AccessModeChanger = NoAccessModeChange
 ) extends AdministrationChainedExecutionPlan(source) {
 
   override def runSpecific(
@@ -74,12 +81,17 @@ class PredicateExecutionPlan(
     subscriber: QuerySubscriber,
     previousNotifications: Set[InternalNotification]
   ): RuntimeResult = {
+
     val securityContext = originalCtx.transactionalContext.securityContext
-    if (predicate.execute(originalCtx.kernelTransactionalContext, params)) {
-      NoRuntimeResult(subscriber, previousNotifications)
-    } else {
-      throw onViolation(params, originalCtx.kernelTransactionalContext, securityContext)
-    }
+    val transactionalContext = originalCtx.kernelTransactionalContext
+
+    Using(changeAccessMode(transactionalContext, securityContext)) { _ =>
+      if (predicate.execute(transactionalContext, params)) {
+        NoRuntimeResult(subscriber, previousNotifications)
+      } else {
+        throw onViolation(params, transactionalContext, securityContext)
+      }
+    }.get
   }
 
   override def runtimeName: RuntimeName = SystemCommandRuntimeName
@@ -89,12 +101,18 @@ class PredicateExecutionPlan(
 
 object PredicateExecutionPlan {
 
+  type AccessModeChanger = (TransactionalContext, SecurityContext) => KernelTransaction.Revertable
+
+  val NoAccessModeChange: AccessModeChanger = (_, _) =>
+    new Revertable() {
+      override def close(): Unit = {}
+    }
+
   def apply(
     predicate: (MapValue, SecurityContext) => Boolean,
     source: Option[ExecutionPlan] = None,
     onViolation: (MapValue, TransactionalContext, SecurityContext) => Exception
   ) = new PredicateExecutionPlan(SecurityPredicate(predicate), source, onViolation)
-
 }
 
 case class NoRuntimeResult(subscriber: QuerySubscriber, runtimeNotifications: Set[InternalNotification])

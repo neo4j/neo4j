@@ -1017,17 +1017,18 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL databasePrivilege(NULL p, NULL aNull, List<NULL> scope, List<NULL> qualifier) {
+    public NULL databasePrivilege(NULL p, NULL aNull, List<NULL> scope, List<NULL> qualifier, boolean immutable) {
         return null;
     }
 
     @Override
-    public NULL dbmsPrivilege(NULL p, NULL aNull, List<NULL> qualifier) {
+    public NULL dbmsPrivilege(NULL p, NULL aNull, List<NULL> qualifier, boolean immutable) {
         return null;
     }
 
     @Override
-    public NULL graphPrivilege(NULL p, NULL aNull, List<NULL> scope, NULL aNull2, List<NULL> qualifier) {
+    public NULL graphPrivilege(
+            NULL p, NULL aNull, List<NULL> scope, NULL aNull2, List<NULL> qualifier, boolean immutable) {
         return null;
     }
 

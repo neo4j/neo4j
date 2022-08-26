@@ -158,6 +158,11 @@ case class CopyRolePrivileges(
   grantDeny: String
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
+case class AssertAllRolePrivilegesCanBeCopied(
+  source: SecurityAdministrationLogicalPlan,
+  roleName: Either[String, Parameter]
+)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+
 abstract class PrivilegePlan(source: Option[PrivilegePlan] = None)(implicit idGen: IdGen)
     extends SecurityAdministrationLogicalPlan(source)
 
@@ -214,17 +219,28 @@ case class GrantDbmsAction(
   source: PrivilegePlan,
   action: DbmsAction,
   qualifier: PrivilegeQualifier,
-  roleName: Either[String, Parameter]
+  roleName: Either[String, Parameter],
+  immutable: Boolean
 )(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
 case class DenyDbmsAction(
   source: PrivilegePlan,
   action: DbmsAction,
   qualifier: PrivilegeQualifier,
-  roleName: Either[String, Parameter]
+  roleName: Either[String, Parameter],
+  immutable: Boolean
 )(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
 case class RevokeDbmsAction(
+  source: PrivilegePlan,
+  action: DbmsAction,
+  qualifier: PrivilegeQualifier,
+  roleName: Either[String, Parameter],
+  revokeType: String,
+  immutableOnly: Boolean
+)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
+
+case class AssertDbmsPrivilegeCanBeMutated(
   source: PrivilegePlan,
   action: DbmsAction,
   qualifier: PrivilegeQualifier,
@@ -237,7 +253,8 @@ case class GrantDatabaseAction(
   action: DatabaseAction,
   database: DatabaseScope,
   qualifier: PrivilegeQualifier,
-  roleName: Either[String, Parameter]
+  roleName: Either[String, Parameter],
+  immutable: Boolean
 )(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
 case class DenyDatabaseAction(
@@ -245,10 +262,21 @@ case class DenyDatabaseAction(
   action: DatabaseAction,
   database: DatabaseScope,
   qualifier: PrivilegeQualifier,
-  roleName: Either[String, Parameter]
+  roleName: Either[String, Parameter],
+  immutable: Boolean
 )(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
 case class RevokeDatabaseAction(
+  source: PrivilegePlan,
+  action: DatabaseAction,
+  database: DatabaseScope,
+  qualifier: PrivilegeQualifier,
+  roleName: Either[String, Parameter],
+  revokeType: String,
+  immutableOnly: Boolean
+)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
+
+case class AssertDatabasePrivilegeCanBeMutated(
   source: PrivilegePlan,
   action: DatabaseAction,
   database: DatabaseScope,
@@ -263,7 +291,8 @@ case class GrantGraphAction(
   resource: ActionResource,
   graph: GraphScope,
   qualifier: PrivilegeQualifier,
-  roleName: Either[String, Parameter]
+  roleName: Either[String, Parameter],
+  immutable: Boolean
 )(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
 case class DenyGraphAction(
@@ -272,7 +301,8 @@ case class DenyGraphAction(
   resource: ActionResource,
   graph: GraphScope,
   qualifier: PrivilegeQualifier,
-  roleName: Either[String, Parameter]
+  roleName: Either[String, Parameter],
+  immutable: Boolean
 )(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
 case class RevokeGraphAction(
@@ -282,8 +312,24 @@ case class RevokeGraphAction(
   graph: GraphScope,
   qualifier: PrivilegeQualifier,
   roleName: Either[String, Parameter],
+  revokeType: String,
+  immutableOnly: Boolean
+)(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
+
+case class AssertGraphPrivilegeCanBeMutated(
+  source: PrivilegePlan,
+  action: GraphAction,
+  resource: ActionResource,
+  graph: GraphScope,
+  qualifier: PrivilegeQualifier,
+  roleName: Either[String, Parameter],
   revokeType: String
 )(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
+
+case class AssertDbmsActionIsAssignable(
+  source: Option[PrivilegePlan],
+  action: DbmsAction
+)(implicit idGen: IdGen) extends PrivilegePlan(source)
 
 case class ShowPrivileges(
   source: Option[PrivilegePlan],

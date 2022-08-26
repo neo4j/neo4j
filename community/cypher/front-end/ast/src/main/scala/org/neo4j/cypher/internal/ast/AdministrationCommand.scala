@@ -437,7 +437,8 @@ object ShowPrivileges {
       ShowColumn("resource")(position),
       ShowColumn("graph")(position),
       ShowColumn("segment")(position),
-      ShowColumn("role")(position)
+      ShowColumn("role")(position),
+      ShowColumn("immutable", CTBoolean)(position)
     ) ++ (scope match {
       case _: ShowUserPrivileges | _: ShowUsersPrivileges => List(ShowColumn("user")(position))
       case _                                              => List.empty
@@ -469,7 +470,9 @@ object ShowPrivilegeCommands {
     asRevoke: Boolean,
     yieldOrWhere: YieldOrWhere
   )(position: InputPosition): ShowPrivilegeCommands = {
-    val columns = List(ShowColumn("command")(position))
+    val allColumns =
+      List((ShowColumn("command")(position), true), (ShowColumn("immutable", CTBoolean)(position), false))
+    val columns = DefaultOrAllShowColumns(allColumns, yieldOrWhere).columns
     ShowPrivilegeCommands(scope, asRevoke, yieldOrWhere, columns)(position)
   }
 }
@@ -481,8 +484,12 @@ sealed abstract class PrivilegeCommand(
   position: InputPosition
 ) extends WriteAdministrationCommand {
 
+  protected def immutableKeywordOrEmptyString(immutable: Boolean): String = if (immutable) " IMMUTABLE" else ""
+
   override def semanticCheck: SemanticCheck =
     privilege match {
+      case DbmsPrivilege(u: UnassignableAction) =>
+        error(s"`GRANT`, `DENY` and `REVOKE` are not supported for `${u.name}`", position)
       case GraphPrivilege(_, scope) if scope.exists {
           case _: DefaultGraphScope => true
           case _                    => false
@@ -498,48 +505,53 @@ sealed abstract class PrivilegeCommand(
 
 final case class GrantPrivilege(
   privilege: PrivilegeType,
+  immutable: Boolean,
   resource: Option[ActionResource],
   qualifier: List[PrivilegeQualifier],
   roleNames: Seq[Either[String, Parameter]]
 )(val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
-  override def name = s"GRANT ${privilege.name}"
+  override def name = s"GRANT${immutableKeywordOrEmptyString(immutable)} ${privilege.name}"
 }
 
 object GrantPrivilege {
 
   def dbmsAction(
     action: DbmsAction,
+    immutable: Boolean,
     roleNames: Seq[Either[String, Parameter]],
     qualifier: List[PrivilegeQualifier] = List(AllQualifier()(InputPosition.NONE))
   ): InputPosition => GrantPrivilege =
-    GrantPrivilege(DbmsPrivilege(action)(InputPosition.NONE), None, qualifier, roleNames)
+    GrantPrivilege(DbmsPrivilege(action)(InputPosition.NONE), immutable, None, qualifier, roleNames)
 
   def databaseAction(
     action: DatabaseAction,
+    immutable: Boolean,
     scope: List[DatabaseScope],
     roleNames: Seq[Either[String, Parameter]],
     qualifier: List[DatabasePrivilegeQualifier] = List(AllDatabasesQualifier()(InputPosition.NONE))
   ): InputPosition => GrantPrivilege =
-    GrantPrivilege(DatabasePrivilege(action, scope)(InputPosition.NONE), None, qualifier, roleNames)
+    GrantPrivilege(DatabasePrivilege(action, scope)(InputPosition.NONE), immutable, None, qualifier, roleNames)
 
   def graphAction[T <: GraphPrivilegeQualifier](
     action: GraphAction,
+    immutable: Boolean,
     resource: Option[ActionResource],
     scope: List[GraphScope],
     qualifier: List[T],
     roleNames: Seq[Either[String, Parameter]]
   ): InputPosition => GrantPrivilege =
-    GrantPrivilege(GraphPrivilege(action, scope)(InputPosition.NONE), resource, qualifier, roleNames)
+    GrantPrivilege(GraphPrivilege(action, scope)(InputPosition.NONE), immutable, resource, qualifier, roleNames)
 }
 
 final case class DenyPrivilege(
   privilege: PrivilegeType,
+  immutable: Boolean,
   resource: Option[ActionResource],
   qualifier: List[PrivilegeQualifier],
   roleNames: Seq[Either[String, Parameter]]
 )(val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
 
-  override def name = s"DENY ${privilege.name}"
+  override def name = s"DENY${immutableKeywordOrEmptyString(immutable)} ${privilege.name}"
 
   override def semanticCheck: SemanticCheck = {
     privilege match {
@@ -554,31 +566,35 @@ object DenyPrivilege {
 
   def dbmsAction(
     action: DbmsAction,
+    immutable: Boolean,
     roleNames: Seq[Either[String, Parameter]],
     qualifier: List[PrivilegeQualifier] = List(AllQualifier()(InputPosition.NONE))
   ): InputPosition => DenyPrivilege =
-    DenyPrivilege(DbmsPrivilege(action)(InputPosition.NONE), None, qualifier, roleNames)
+    DenyPrivilege(DbmsPrivilege(action)(InputPosition.NONE), immutable, None, qualifier, roleNames)
 
   def databaseAction(
     action: DatabaseAction,
+    immutable: Boolean,
     scope: List[DatabaseScope],
     roleNames: Seq[Either[String, Parameter]],
     qualifier: List[DatabasePrivilegeQualifier] = List(AllDatabasesQualifier()(InputPosition.NONE))
   ): InputPosition => DenyPrivilege =
-    DenyPrivilege(DatabasePrivilege(action, scope)(InputPosition.NONE), None, qualifier, roleNames)
+    DenyPrivilege(DatabasePrivilege(action, scope)(InputPosition.NONE), immutable, None, qualifier, roleNames)
 
   def graphAction[T <: GraphPrivilegeQualifier](
     action: GraphAction,
+    immutable: Boolean,
     resource: Option[ActionResource],
     scope: List[GraphScope],
     qualifier: List[T],
     roleNames: Seq[Either[String, Parameter]]
   ): InputPosition => DenyPrivilege =
-    DenyPrivilege(GraphPrivilege(action, scope)(InputPosition.NONE), resource, qualifier, roleNames)
+    DenyPrivilege(GraphPrivilege(action, scope)(InputPosition.NONE), immutable, resource, qualifier, roleNames)
 }
 
 final case class RevokePrivilege(
   privilege: PrivilegeType,
+  immutableOnly: Boolean,
   resource: Option[ActionResource],
   qualifier: List[PrivilegeQualifier],
   roleNames: Seq[Either[String, Parameter]],
@@ -586,11 +602,8 @@ final case class RevokePrivilege(
 )(val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
 
   override def name: String = {
-    if (revokeType.name.nonEmpty) {
-      s"REVOKE ${revokeType.name} ${privilege.name}"
-    } else {
-      s"REVOKE ${privilege.name}"
-    }
+    val revokeTypeOrEmptyString = if (revokeType.name.nonEmpty) s" ${revokeType.name}" else ""
+    s"REVOKE$revokeTypeOrEmptyString${immutableKeywordOrEmptyString(immutableOnly)} ${privilege.name}"
   }
 
   override def semanticCheck: SemanticCheck = {
@@ -607,30 +620,47 @@ object RevokePrivilege {
 
   def dbmsAction(
     action: DbmsAction,
+    immutable: Boolean,
     roleNames: Seq[Either[String, Parameter]],
     revokeType: RevokeType,
     qualifier: List[PrivilegeQualifier] = List(AllQualifier()(InputPosition.NONE))
   ): InputPosition => RevokePrivilege =
-    RevokePrivilege(DbmsPrivilege(action)(InputPosition.NONE), None, qualifier, roleNames, revokeType)
+    RevokePrivilege(DbmsPrivilege(action)(InputPosition.NONE), immutable, None, qualifier, roleNames, revokeType)
 
   def databaseAction(
     action: DatabaseAction,
+    immutable: Boolean,
     scope: List[DatabaseScope],
     roleNames: Seq[Either[String, Parameter]],
     revokeType: RevokeType,
     qualifier: List[DatabasePrivilegeQualifier] = List(AllDatabasesQualifier()(InputPosition.NONE))
   ): InputPosition => RevokePrivilege =
-    RevokePrivilege(DatabasePrivilege(action, scope)(InputPosition.NONE), None, qualifier, roleNames, revokeType)
+    RevokePrivilege(
+      DatabasePrivilege(action, scope)(InputPosition.NONE),
+      immutable,
+      None,
+      qualifier,
+      roleNames,
+      revokeType
+    )
 
   def graphAction[T <: GraphPrivilegeQualifier](
     action: GraphAction,
+    immutable: Boolean,
     resource: Option[ActionResource],
     scope: List[GraphScope],
     qualifier: List[T],
     roleNames: Seq[Either[String, Parameter]],
     revokeType: RevokeType
   ): InputPosition => RevokePrivilege =
-    RevokePrivilege(GraphPrivilege(action, scope)(InputPosition.NONE), resource, qualifier, roleNames, revokeType)
+    RevokePrivilege(
+      GraphPrivilege(action, scope)(InputPosition.NONE),
+      immutable,
+      resource,
+      qualifier,
+      roleNames,
+      revokeType
+    )
 }
 
 // Server commands
@@ -784,15 +814,8 @@ object ShowDatabase {
       (ShowColumn(REPLICATION_LAG_COL, CTInteger)(position), false),
       (ShowColumn(CONSTITUENTS_COL, CTList(CTString))(position), true)
     )
-    val briefShowColumns = showColumns.filter(_._2).map(_._1)
-    val allShowColumns = showColumns.map(_._1)
 
-    val allColumns = yieldOrWhere match {
-      case Some(Left(_)) => true
-      case _             => false
-    }
-    val columns = DefaultOrAllShowColumns(allColumns, briefShowColumns, allShowColumns)
-    ShowDatabase(scope, yieldOrWhere, columns)(position)
+    ShowDatabase(scope, yieldOrWhere, DefaultOrAllShowColumns(showColumns, yieldOrWhere))(position)
   }
 }
 
@@ -980,14 +1003,7 @@ object ShowAliases {
       (ShowColumn("properties", CTMap)(position), false)
     )
 
-    val briefShowColumns = showColumns.filter(_._2).map(_._1)
-    val allShowColumns = showColumns.map(_._1)
-    val allColumns = yieldOrWhere match {
-      case Some(Left(_)) => true
-      case _             => false
-    }
-    val columns = DefaultOrAllShowColumns(allColumns, briefShowColumns, allShowColumns)
-    ShowAliases(aliasName, yieldOrWhere, columns)(position)
+    ShowAliases(aliasName, yieldOrWhere, DefaultOrAllShowColumns(showColumns, yieldOrWhere))(position)
   }
 }
 
