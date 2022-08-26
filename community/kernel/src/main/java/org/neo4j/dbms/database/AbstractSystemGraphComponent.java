@@ -45,7 +45,7 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
 
     protected void initializeSystemGraphConstraints(Transaction tx) {}
 
-    protected void initializeSystemGraphModel(Transaction tx) throws Exception {}
+    protected void initializeSystemGraphModel(Transaction tx, GraphDatabaseService systemDb) throws Exception {}
 
     protected void verifySystemGraph(GraphDatabaseService system) throws Exception {}
 
@@ -58,7 +58,7 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
 
     protected void initializeSystemGraphModel(GraphDatabaseService system) throws Exception {
         try (Transaction tx = system.beginTx()) {
-            initializeSystemGraphModel(tx);
+            initializeSystemGraphModel(tx, system);
             tx.commit();
         }
     }

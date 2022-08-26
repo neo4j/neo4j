@@ -227,6 +227,7 @@ public interface TopologyGraphDbmsModel {
     String TOPOLOGY_GRAPH_CONFIG_DEFAULT_NUMBER_OF_SECONDARIES_PROPERTY = "default_number_of_secondaries";
     String TOPOLOGY_GRAPH_CONFIG_DEFAULT_DATABASE_PROPERTY = "default_database";
     String TOPOLOGY_GRAPH_CONFIG_DEFAULT_DATABASE_CREATED_FLAG = "default_database_created";
+    String TOPOLOGY_GRAPH_CONFIG_DEFAULT_DATABASE_ALLOCATED_FLAG = "default_database_allocated";
     String TOPOLOGY_GRAPH_CONFIG_INITIAL_INSTANCES_ENABLED_FLAG = "initial_instances_enabled";
 
     Set<NamedDatabaseId> getAllDatabaseIds();

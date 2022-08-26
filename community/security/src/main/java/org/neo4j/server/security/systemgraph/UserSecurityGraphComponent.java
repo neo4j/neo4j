@@ -93,7 +93,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent {
     }
 
     @Override
-    public void initializeSystemGraphModel(Transaction tx) throws Exception {
+    public void initializeSystemGraphModel(Transaction tx, GraphDatabaseService systemDb) throws Exception {
         KnownCommunitySecurityComponentVersion componentBeforeInit =
                 knownUserSecurityComponentVersions.detectCurrentComponentVersion(tx);
         debugLog.info(String.format(

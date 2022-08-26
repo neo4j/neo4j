@@ -68,7 +68,7 @@ public class CommunityTopologyGraphComponent extends AbstractSystemGraphComponen
     }
 
     @Override
-    protected void initializeSystemGraphModel(Transaction tx) {
+    protected void initializeSystemGraphModel(Transaction tx, GraphDatabaseService systemDb) {
         KnownCommunityTopologyComponentVersion latest =
                 knownCommunityTopologyComponentVersions.latestComponentVersion();
         latest.setVersionProperty(tx, latest.version);
@@ -85,7 +85,7 @@ public class CommunityTopologyGraphComponent extends AbstractSystemGraphComponen
                     COMMUNITY_TOPOLOGY_GRAPH_COMPONENT, currentVersion.version, currentVersion.getStatus()));
             if (currentVersion.version == UNKNOWN_VERSION) {
                 log.debug("The current version does not have a community topology graph, doing a full initialization");
-                initializeSystemGraphModel(tx);
+                initializeSystemGraphModel(tx, system);
             } else {
                 if (currentVersion.migrationSupported()) {
                     log.info(String.format(

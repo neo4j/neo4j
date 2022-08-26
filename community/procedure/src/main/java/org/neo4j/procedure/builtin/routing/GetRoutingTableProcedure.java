@@ -180,14 +180,9 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
         } else {
             throw new IllegalArgumentException("Illegal database name argument " + arg);
         }
-
-        // On dbms creation, the start of the default database might be slightly delayed. This is a trick to
-        // make sure driver retries, even though the database is not found at the moment.
         return databaseReferenceRepo
                 .getByAlias(databaseName)
-                .orElseThrow(() -> databaseName.equals(defaultDbFromConfig)
-                        ? BaseRoutingTableProcedureValidator.databaseNotAvailableException(databaseName)
-                        : BaseRoutingTableProcedureValidator.databaseNotFoundException(databaseName));
+                .orElseThrow(() -> BaseRoutingTableProcedureValidator.databaseNotFoundException(databaseName));
     }
 
     private static void assertRoutingResultNotEmpty(RoutingResult result, DatabaseReference databaseReference)
