@@ -28,9 +28,9 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
 class RemoteUrlValidatorTest extends CypherFunSuite {
 
   val url = "://localhost"
-  val unsecureSchemes = Seq("neo4j", "bolt")
-  val secureSchemes = Seq("neo4j+s", "neo4j+ssc", "bolt+s", "bolt+ssc")
-  val validSchemes = Seq("neo4j", "neo4j+s", "neo4j+ssc", "bolt", "bolt+s", "bolt+ssc")
+  val unsecureSchemes = Seq("neo4j")
+  val secureSchemes = Seq("neo4j+s", "neo4j+ssc")
+  val validSchemes = Seq("neo4j", "neo4j+s", "neo4j+ssc")
   val secureUrls: Seq[String] = secureSchemes.map(_ + url)
   val insecureUrls: Seq[String] = unsecureSchemes.map(_ + url)
   val noSchemeUrl = "localhost"

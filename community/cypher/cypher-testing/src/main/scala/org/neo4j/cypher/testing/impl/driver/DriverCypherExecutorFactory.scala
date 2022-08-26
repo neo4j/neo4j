@@ -27,6 +27,7 @@ import org.neo4j.configuration.connectors.ConnectorType
 import org.neo4j.cypher.testing.api.CypherExecutor
 import org.neo4j.cypher.testing.api.CypherExecutorFactory
 import org.neo4j.dbms.api.DatabaseManagementService
+import org.neo4j.driver.AuthToken
 import org.neo4j.driver.Driver
 import org.neo4j.driver.GraphDatabase
 import org.neo4j.driver.SessionConfig
@@ -36,7 +37,8 @@ import java.net.URI
 
 case class DriverCypherExecutorFactory(
   private val databaseManagementService: DatabaseManagementService,
-  private val config: Config
+  private val config: Config,
+  token: Option[AuthToken] = None
 ) extends CypherExecutorFactory {
 
   private val driver: Driver = {
@@ -51,7 +53,7 @@ case class DriverCypherExecutorFactory(
         URI.create(s"bolt://${connectorPortRegister.getLocalAddress(ConnectorType.BOLT)}/")
       else throw new IllegalStateException("Bolt connector is not configured")
 
-    GraphDatabase.driver(boltURI)
+    token.map(t => GraphDatabase.driver(boltURI, t)).getOrElse(GraphDatabase.driver(boltURI))
   }
 
   override def executor(): CypherExecutor = DriverCypherExecutor(driver.session())
