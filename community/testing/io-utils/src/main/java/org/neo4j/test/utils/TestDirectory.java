@@ -212,7 +212,6 @@ public class TestDirectory {
                             && files.length == 1
                             && files[0].getFileName().toString().equals(REGISTER_FILE_NAME)) {
                         fileSystem.deleteRecursively(testClassBaseFolder);
-                        System.out.println("Deleted the base folder too");
                     }
                 } catch (IOException e) {
                     // Couldn't list files, move on
