@@ -158,8 +158,8 @@ public class NotificationTestSupport {
         }
     }
 
-    Matcher<Notification> cartesianProductWarning = notification(
-            "Neo.ClientNotification.Statement.CartesianProductWarning",
+    Matcher<Notification> cartesianProductNotification = notification(
+            "Neo.ClientNotification.Statement.CartesianProduct",
             containsString(
                     "If a part of a query contains multiple disconnected patterns, this will build a "
                             + "cartesian product between all those parts. This may produce a large amount of data and slow down"
@@ -168,18 +168,18 @@ public class NotificationTestSupport {
                             + "use of this cross "
                             + "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH"),
             any(InputPosition.class),
-            SeverityLevel.WARNING);
+            SeverityLevel.INFORMATION);
 
-    Matcher<Notification> largeLabelCSVWarning = notification(
-            "Neo.ClientNotification.Statement.NoApplicableIndexWarning",
+    Matcher<Notification> largeLabelCSVNotification = notification(
+            "Neo.ClientNotification.Statement.NoApplicableIndex",
             containsString("Using LOAD CSV with a large data set in a query where the execution plan contains the "
                     + "Using LOAD CSV followed by a MATCH or MERGE that matches a non-indexed label will most likely "
                     + "not perform well on large data sets. Please consider using a schema index."),
             any(InputPosition.class),
-            SeverityLevel.WARNING);
+            SeverityLevel.INFORMATION);
 
-    Matcher<Notification> eagerOperatorWarning = notification(
-            "Neo.ClientNotification.Statement.EagerOperatorWarning",
+    Matcher<Notification> eagerOperatorNotification = notification(
+            "Neo.ClientNotification.Statement.EagerOperator",
             containsString("Using LOAD CSV with a large data set in a query where the execution plan contains the "
                     + "Eager operator could potentially consume a lot of memory and is likely to not perform well. "
                     + "See the Neo4j Manual entry on the Eager operator for more information and hints on "
@@ -187,29 +187,29 @@ public class NotificationTestSupport {
             any(InputPosition.class),
             SeverityLevel.WARNING);
 
-    Matcher<Notification> unknownPropertyKeyWarning = notification(
+    Matcher<Notification> unknownPropertyKeyNotification = notification(
             "Neo.ClientNotification.Statement.UnknownPropertyKeyWarning",
             containsString("the missing property name is"),
             any(InputPosition.class),
             SeverityLevel.WARNING);
 
-    Matcher<Notification> unknownRelationshipWarning = notification(
+    Matcher<Notification> unknownRelationshipNotification = notification(
             "Neo.ClientNotification.Statement.UnknownRelationshipTypeWarning",
             containsString("the missing relationship type is"),
             any(InputPosition.class),
             SeverityLevel.WARNING);
 
-    Matcher<Notification> unknownLabelWarning = notification(
+    Matcher<Notification> unknownLabelNotification = notification(
             "Neo.ClientNotification.Statement.UnknownLabelWarning",
             containsString("the missing label name is"),
             any(InputPosition.class),
             SeverityLevel.WARNING);
 
-    Matcher<Notification> dynamicPropertyWarning = notification(
-            "Neo.ClientNotification.Statement.DynamicPropertyWarning",
+    Matcher<Notification> dynamicPropertyNotification = notification(
+            "Neo.ClientNotification.Statement.DynamicProperty",
             containsString("Using a dynamic property makes it impossible to use an index lookup for this query"),
             any(InputPosition.class),
-            SeverityLevel.WARNING);
+            SeverityLevel.INFORMATION);
 
     public static class ChangedResults {
         @Deprecated

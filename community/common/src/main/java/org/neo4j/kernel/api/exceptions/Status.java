@@ -222,22 +222,21 @@ public interface Status {
         ExecutionTimeout(TransientError, "The database was unable to execute the statement in a timely fashion."),
 
         // client notifications (performance)
-        CartesianProductWarning(
-                ClientNotification, "This query builds a cartesian product between disconnected patterns."),
-        DynamicPropertyWarning(
+        CartesianProduct(ClientNotification, "This query builds a cartesian product between disconnected patterns."),
+        DynamicProperty(
                 ClientNotification,
                 "Queries using dynamic properties will use neither index seeks nor index scans for those properties"),
-        EagerOperatorWarning(
+        EagerOperator(
                 ClientNotification,
                 "The execution plan for this query contains the Eager operator, which forces all dependent data to "
                         + "be materialized in main memory before proceeding"),
         JoinHintUnfulfillableWarning(ClientNotification, "The database was unable to plan a hinted join."),
-        NoApplicableIndexWarning(ClientNotification, "Adding a schema index may speed up this query."),
+        NoApplicableIndex(ClientNotification, "Adding a schema index may speed up this query."),
         SuboptimalIndexForWildcardQuery(ClientNotification, "Index cannot execute wildcard query efficiently"),
-        UnboundedVariableLengthPatternWarning(
+        UnboundedVariableLengthPattern(
                 ClientNotification,
                 "The provided pattern is unbounded, consider adding an upper limit to the number of node hops."),
-        ExhaustiveShortestPathWarning(
+        ExhaustiveShortestPath(
                 ClientNotification,
                 "Exhaustive shortest path has been planned for your query that means that shortest path graph "
                         + "algorithm might not be used to find the shortest path. Hence an exhaustive enumeration of all paths "
@@ -247,7 +246,7 @@ public interface Status {
         RuntimeUnsupportedWarning(ClientNotification, "This query is not supported by the chosen runtime."),
         FeatureDeprecationWarning(
                 ClientNotification, "This feature is deprecated and will be removed in future versions."),
-        ExperimentalFeature(
+        RuntimeExperimental(
                 ClientNotification, "This feature is experimental and should not be used in production systems."),
         UnsupportedAdministrationCommand(ClientError, "This administration command is not supported."),
 
@@ -256,10 +255,9 @@ public interface Status {
         UnknownRelationshipTypeWarning(ClientNotification, "The provided relationship type is not in the database."),
         UnknownPropertyKeyWarning(ClientNotification, "The provided property key is not in the database"),
 
-        SubqueryVariableShadowingWarning(
+        SubqueryVariableShadowing(
                 ClientNotification,
-                "Variable in subquery is shadowing a variable with the same name from the outer scope."),
-        MissingAlias(ClientNotification, "Missing alias in a RETURN clause in a CALL subquery.");
+                "Variable in subquery is shadowing a variable with the same name from the outer scope.");
 
         private final Code code;
 
@@ -461,6 +459,7 @@ public interface Status {
                 "The database is not currently available to serve your request, refer to the database logs for more "
                         + "details. Retrying your request at a later time may succeed."),
         DatabaseNotFound(ClientError, "The request referred to a database that does not exist."),
+        HomeDatabaseNotFound(ClientNotification, "The request referred to a home database that does not exist."),
         ExistingAliasFound(ClientError, "The request referred to a database with an alias."),
         ExistingDatabaseFound(ClientError, "The request referred to a database that already exists."),
         DatabaseLimitReached(DatabaseError, "The limit to number of databases has been reached."),

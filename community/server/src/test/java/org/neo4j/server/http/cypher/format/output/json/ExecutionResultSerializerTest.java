@@ -965,7 +965,7 @@ class ExecutionResultSerializerTest {
         assertEquals(
                 "{\"results\":[{\"columns\":[\"column1\",\"column2\"],"
                         + "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}],\"notifications\":[{\"code\":\"Neo"
-                        + ".ClientNotification.Statement.CartesianProductWarning\",\"severity\":\"WARNING\",\"title\":\"This "
+                        + ".ClientNotification.Statement.CartesianProduct\",\"severity\":\"INFORMATION\",\"title\":\"This "
                         + "query builds a cartesian product between disconnected patterns.\",\"description\":\"If a "
                         + "part of a query contains multiple disconnected patterns, this will build a cartesian product"
                         + " between all those parts. This may produce a large amount of data and slow down query "
@@ -1021,7 +1021,7 @@ class ExecutionResultSerializerTest {
         assertEquals(
                 "{\"results\":[{\"columns\":[\"column1\",\"column2\"],"
                         + "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}],\"notifications\":[{\"code\":\"Neo"
-                        + ".ClientNotification.Statement.CartesianProductWarning\",\"severity\":\"WARNING\",\"title\":\"This "
+                        + ".ClientNotification.Statement.CartesianProduct\",\"severity\":\"INFORMATION\",\"title\":\"This "
                         + "query builds a cartesian product between disconnected patterns.\",\"description\":\"If a "
                         + "part of a query contains multiple disconnected patterns, this will build a cartesian product"
                         + " between all those parts. This may produce a large amount of data and slow down query "

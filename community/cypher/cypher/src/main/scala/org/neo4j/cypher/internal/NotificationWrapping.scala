@@ -160,7 +160,7 @@ object NotificationWrapping {
         NotificationDetail.Factory.procedureWarning(name, warning)
       )
     case ExperimentalFeatureNotification(msg) =>
-      NotificationCode.EXPERIMENTAL_FEATURE.notification(
+      NotificationCode.RUNTIME_EXPERIMENTAL.notification(
         graphdb.InputPosition.empty,
         NotificationDetail.Factory.message("PARALLEL", msg)
       )

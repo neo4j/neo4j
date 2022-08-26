@@ -135,8 +135,8 @@ class NotificationCodeTest {
 
         assertThat(notification.getTitle())
                 .isEqualTo("This query builds a cartesian product between disconnected patterns.");
-        assertThat(notification.getSeverity()).isEqualTo(SeverityLevel.WARNING);
-        assertThat(notification.getCode()).isEqualTo("Neo.ClientNotification.Statement.CartesianProductWarning");
+        assertThat(notification.getSeverity()).isEqualTo(SeverityLevel.INFORMATION);
+        assertThat(notification.getCode()).isEqualTo("Neo.ClientNotification.Statement.CartesianProduct");
         assertThat(notification.getPosition()).isEqualTo(InputPosition.empty);
         assertThat(notification.getDescription())
                 .isEqualTo(

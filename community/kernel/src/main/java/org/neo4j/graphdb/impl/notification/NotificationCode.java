@@ -29,8 +29,8 @@ import org.neo4j.kernel.api.exceptions.Status;
  */
 public enum NotificationCode {
     CARTESIAN_PRODUCT(
-            SeverityLevel.WARNING,
-            Status.Statement.CartesianProductWarning,
+            SeverityLevel.INFORMATION,
+            Status.Statement.CartesianProduct,
             "If a part of a query contains multiple disconnected patterns, this will build a "
                     + "cartesian product between all those parts. This may produce a large amount of data and slow down"
                     + " query processing. "
@@ -51,8 +51,8 @@ public enum NotificationCode {
             "The hinted join was not planned. This could happen because no generated plan contained the join key, "
                     + "please try using a different join key or restructure your query."),
     INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY(
-            SeverityLevel.WARNING,
-            Status.Statement.DynamicPropertyWarning,
+            SeverityLevel.INFORMATION,
+            Status.Statement.DynamicProperty,
             "Using a dynamic property makes it impossible to use an index lookup for this query"),
     DEPRECATED_FUNCTION(
             SeverityLevel.WARNING, Status.Statement.FeatureDeprecationWarning, "The query used a deprecated function."),
@@ -83,8 +83,8 @@ public enum NotificationCode {
             "The use of shortestPath and allShortestPaths with fixed length relationships is deprecated and will be removed in a future version. "
                     + "Please use a path with a length of 1 [r*1..1] instead or a Match with a limit."),
     EAGER_LOAD_CSV(
-            SeverityLevel.WARNING,
-            Status.Statement.EagerOperatorWarning,
+            SeverityLevel.INFORMATION,
+            Status.Statement.EagerOperator,
             "Using LOAD CSV with a large data set in a query where the execution plan contains the "
                     + "Eager operator could potentially consume a lot of memory and is likely to not perform well. "
                     + "See the Neo4j Manual entry on the Eager operator for more information and hints on "
@@ -92,8 +92,8 @@ public enum NotificationCode {
     DEPRECATED_FORMAT(
             SeverityLevel.WARNING, Status.Request.DeprecatedFormat, "The requested format has been deprecated."),
     LARGE_LABEL_LOAD_CSV(
-            SeverityLevel.WARNING,
-            Status.Statement.NoApplicableIndexWarning,
+            SeverityLevel.INFORMATION,
+            Status.Statement.NoApplicableIndex,
             "Using LOAD CSV followed by a MATCH or MERGE that matches a non-indexed label will most likely "
                     + "not perform well on large data sets. Please consider using a schema index."),
     MISSING_LABEL(
@@ -112,18 +112,18 @@ public enum NotificationCode {
             "One of the property names in your query is not available in the database, make sure you didn't "
                     + "misspell it or that the label is available when you run this statement in your application"),
     UNBOUNDED_SHORTEST_PATH(
-            SeverityLevel.WARNING,
-            Status.Statement.UnboundedVariableLengthPatternWarning,
+            SeverityLevel.INFORMATION,
+            Status.Statement.UnboundedVariableLengthPattern,
             "Using shortest path with an unbounded pattern will likely result in long execution times. "
                     + "It is recommended to use an upper limit to the number of node hops in your pattern."),
     EXHAUSTIVE_SHORTEST_PATH(
-            SeverityLevel.WARNING,
-            Status.Statement.ExhaustiveShortestPathWarning,
+            SeverityLevel.INFORMATION,
+            Status.Statement.ExhaustiveShortestPath,
             "Using shortest path with an exhaustive search fallback might cause query slow down since shortest path "
                     + "graph algorithms might not work for this use case. It is recommended to introduce a WITH to separate the "
                     + "MATCH containing the shortest path from the existential predicates on that path."),
-    EXPERIMENTAL_FEATURE(
-            SeverityLevel.WARNING, Status.Statement.ExperimentalFeature, "You are using an experimental feature"),
+    RUNTIME_EXPERIMENTAL(
+            SeverityLevel.WARNING, Status.Statement.RuntimeExperimental, "You are using an experimental feature"),
     MISSING_PARAMETERS_FOR_EXPLAIN(
             SeverityLevel.WARNING,
             Status.Statement.ParameterMissing,
@@ -139,17 +139,17 @@ public enum NotificationCode {
             "If the performance of this statement using `ENDS WITH` doesn't meet your expectations check out the alternative index-providers, see "
                     + "documentation on index configuration."),
     CODE_GENERATION_FAILED(
-            SeverityLevel.WARNING,
+            SeverityLevel.INFORMATION,
             Status.Statement.CodeGenerationFailed,
             "The database was unable to generate code for the query. A stacktrace can be found in the debug.log."),
     SUBQUERY_VARIABLE_SHADOWING(
-            SeverityLevel.WARNING,
-            Status.Statement.SubqueryVariableShadowingWarning,
+            SeverityLevel.INFORMATION,
+            Status.Statement.SubqueryVariableShadowing,
             "Variable in subquery is shadowing a variable with the same name from the outer scope. "
                     + "If you want to use that variable instead, it must be imported into the subquery using importing WITH clause."),
     HOME_DATABASE_NOT_PRESENT(
-            SeverityLevel.WARNING,
-            Status.Database.DatabaseNotFound,
+            SeverityLevel.INFORMATION,
+            Status.Database.HomeDatabaseNotFound,
             "The home database provided does not currently exist in the DBMS. This command will not take effect until this database is created."),
     DEPRECATED_DATABASE_NAME(
             SeverityLevel.WARNING,
