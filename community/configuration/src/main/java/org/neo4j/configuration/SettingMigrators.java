@@ -187,11 +187,11 @@ public final class SettingMigrators {
                 "unsupported.dbms.reserved.page.header.bytes",
                 "cypher.default_language_version",
                 "dbms.logs.query.allocation_logging_enabled",
-                "dbms.logs.query.track_query_allocation",
+                "dbms.track_query_allocation",
                 "dbms.logs.query.page_logging_enabled",
                 "dbms.logs.query.runtime_logging_enabled",
                 "dbms.logs.query.time_logging_enabled",
-                "dbms.logs.query.transaction_id.enabled ",
+                "dbms.logs.query.transaction_id.enabled",
                 "dbms.logs.query.parameter_full_entities");
         private static final Collection<Mapping> LEGACY_UNSUPPORTED_SETTINGS_MAPPING = List.of(
                 new Mapping("dbms.capabilities.blocked", "internal.dbms.capabilities.blocked"),

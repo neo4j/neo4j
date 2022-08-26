@@ -757,12 +757,12 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         transaction.initialize(
                 0, KernelTransaction.Type.IMPLICIT, mock(SecurityContext.class), 0, 1L, EMBEDDED_CONNECTION);
 
-        verify(config, times(4)).addListener(any(), any());
+        verify(config, times(3)).addListener(any(), any());
 
         // when / then
         transaction.dispose();
 
-        verify(config, times(4)).removeListener(any(), any());
+        verify(config, times(3)).removeListener(any(), any());
     }
 
     @Test
