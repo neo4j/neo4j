@@ -385,7 +385,7 @@ public class AbstractCypherAdapterStreamTest {
                 "severity",
                 stringValue("WARNING"),
                 "code",
-                stringValue("Neo.ClientError.Schema.IndexNotFound"),
+                stringValue("Neo.ClientNotification.Schema.HintedIndexNotFound"),
                 "title",
                 stringValue("The request (directly or indirectly) referred to an index that does not exist."),
                 "description",

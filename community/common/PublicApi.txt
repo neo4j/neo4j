@@ -89,6 +89,7 @@ org.neo4j.kernel.api.exceptions.Status.Schema::ConstraintViolation org.neo4j.ker
 org.neo4j.kernel.api.exceptions.Status.Schema::ConstraintWithNameAlreadyExists org.neo4j.kernel.api.exceptions.Status.Schema public static final
 org.neo4j.kernel.api.exceptions.Status.Schema::EquivalentSchemaRuleAlreadyExists org.neo4j.kernel.api.exceptions.Status.Schema public static final
 org.neo4j.kernel.api.exceptions.Status.Schema::ForbiddenOnConstraintIndex org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::HintedIndexNotFound org.neo4j.kernel.api.exceptions.Status.Schema public static final
 org.neo4j.kernel.api.exceptions.Status.Schema::IndexAlreadyExists org.neo4j.kernel.api.exceptions.Status.Schema public static final
 org.neo4j.kernel.api.exceptions.Status.Schema::IndexCreationFailed org.neo4j.kernel.api.exceptions.Status.Schema public static final
 org.neo4j.kernel.api.exceptions.Status.Schema::IndexDropFailed org.neo4j.kernel.api.exceptions.Status.Schema public static final
@@ -141,6 +142,7 @@ org.neo4j.kernel.api.exceptions.Status.Statement::JoinHintUnfulfillableWarning o
 org.neo4j.kernel.api.exceptions.Status.Statement::NoApplicableIndex org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::NotSystemDatabaseError org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::ParameterMissing org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::ParameterNotProvided org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::PropertyNotFound org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::RemoteExecutionFailed org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::RuntimeExperimental org.neo4j.kernel.api.exceptions.Status.Statement public static final

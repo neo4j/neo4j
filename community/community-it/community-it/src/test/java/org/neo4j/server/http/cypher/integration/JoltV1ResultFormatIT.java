@@ -149,7 +149,7 @@ class JoltV1ResultFormatIT extends AbstractRestFunctionalTestBase {
     }
 
     private static String seqDeprecationNotification() {
-        return "\"notifications\":[{\"code\":\"Neo.ClientError.Request.DeprecatedFormat\","
+        return "\"notifications\":[{\"code\":\"Neo.ClientNotification.Request.DeprecatedFormat\","
                 + "\"severity\":\"WARNING\",\"title\":\"The client made a request for a format "
                 + "which has been deprecated.\",\"description\":\"The requested format has been deprecated. "
                 + "('application/vnd.neo4j.jolt+json-seq' and 'application/vnd.neo4j.jolt-v1+json-seq' have been deprecated and will be removed in a "
@@ -157,7 +157,7 @@ class JoltV1ResultFormatIT extends AbstractRestFunctionalTestBase {
     }
 
     private static String lineDeprecationNotification() {
-        return "\"notifications\":[{\"code\":\"Neo.ClientError.Request.DeprecatedFormat\","
+        return "\"notifications\":[{\"code\":\"Neo.ClientNotification.Request.DeprecatedFormat\","
                 + "\"severity\":\"WARNING\",\"title\":\"The client made a request for a format "
                 + "which has been deprecated.\",\"description\":\"The requested format has been deprecated. "
                 + "('application/vnd.neo4j.jolt' and 'application/vnd.neo4j.jolt-v1' have been deprecated and will be removed in a "

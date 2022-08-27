@@ -118,7 +118,7 @@ public class SequentialEventSourceJoltSerializerTest extends AbstractEventSource
                 "\u001E{\"header\":{\"fields\":[\"column1\",\"column2\"]}}\n"
                         + "\u001E{\"data\":[{\"U\":\"value1\"},{\"U\":\"value2\"}]}\n"
                         + "\u001E{\"summary\":{}}\n"
-                        + "\u001E{\"info\":{\"notifications\":[{\"code\":\"Neo.ClientError.Request.DeprecatedFormat\","
+                        + "\u001E{\"info\":{\"notifications\":[{\"code\":\"Neo.ClientNotification.Request.DeprecatedFormat\","
                         + "\"severity\":\"WARNING\",\"title\":\"The client made a request for a format which "
                         + "has been deprecated.\","
                         + "\"description\":\"The requested format has been deprecated. "

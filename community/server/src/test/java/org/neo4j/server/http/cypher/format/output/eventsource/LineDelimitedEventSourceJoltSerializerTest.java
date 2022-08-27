@@ -775,7 +775,7 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
                 "{\"header\":{\"fields\":[\"column1\",\"column2\"]}}\n"
                         + "{\"data\":[{\"U\":\"value1\"},{\"U\":\"value2\"}]}\n"
                         + "{\"summary\":{}}\n"
-                        + "{\"info\":{\"notifications\":[{\"code\":\"Neo.ClientError.Request.DeprecatedFormat\","
+                        + "{\"info\":{\"notifications\":[{\"code\":\"Neo.ClientNotification.Request.DeprecatedFormat\","
                         + "\"severity\":\"WARNING\",\"title\":\"The client made a request for a format which has "
                         + "been deprecated.\","
                         + "\"description\":\"The requested format has been deprecated. ('application/vnd.neo4j.jolt' "

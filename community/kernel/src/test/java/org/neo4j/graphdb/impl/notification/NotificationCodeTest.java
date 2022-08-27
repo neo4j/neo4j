@@ -26,6 +26,7 @@ import static org.neo4j.graphdb.impl.notification.NotificationCode.INDEX_HINT_UN
 import static org.neo4j.graphdb.impl.notification.NotificationCode.JOIN_HINT_UNFULFILLABLE;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -43,7 +44,7 @@ class NotificationCodeTest {
         assertThat(notification.getTitle())
                 .isEqualTo("The request (directly or indirectly) referred to an index that does not exist.");
         assertThat(notification.getSeverity()).isEqualTo(SeverityLevel.WARNING);
-        assertThat(notification.getCode()).isEqualTo("Neo.ClientError.Schema.IndexNotFound");
+        assertThat(notification.getCode()).isEqualTo("Neo.ClientNotification.Schema.HintedIndexNotFound");
         assertThat(notification.getPosition()).isEqualTo(InputPosition.empty);
         assertThat(notification.getDescription())
                 .isEqualTo(
@@ -58,7 +59,7 @@ class NotificationCodeTest {
         assertThat(notification.getTitle())
                 .isEqualTo("The request (directly or indirectly) referred to an index that does not exist.");
         assertThat(notification.getSeverity()).isEqualTo(SeverityLevel.WARNING);
-        assertThat(notification.getCode()).isEqualTo("Neo.ClientError.Schema.IndexNotFound");
+        assertThat(notification.getCode()).isEqualTo("Neo.ClientNotification.Schema.HintedIndexNotFound");
         assertThat(notification.getPosition()).isEqualTo(InputPosition.empty);
         assertThat(notification.getDescription())
                 .isEqualTo(
@@ -73,7 +74,7 @@ class NotificationCodeTest {
         assertThat(notification.getTitle())
                 .isEqualTo("The request (directly or indirectly) referred to an index that does not exist.");
         assertThat(notification.getSeverity()).isEqualTo(SeverityLevel.WARNING);
-        assertThat(notification.getCode()).isEqualTo("Neo.ClientError.Schema.IndexNotFound");
+        assertThat(notification.getCode()).isEqualTo("Neo.ClientNotification.Schema.HintedIndexNotFound");
         assertThat(notification.getPosition()).isEqualTo(InputPosition.empty);
         assertThat(notification.getDescription())
                 .isEqualTo(
@@ -88,7 +89,7 @@ class NotificationCodeTest {
         assertThat(notification.getTitle())
                 .isEqualTo("The request (directly or indirectly) referred to an index that does not exist.");
         assertThat(notification.getSeverity()).isEqualTo(SeverityLevel.WARNING);
-        assertThat(notification.getCode()).isEqualTo("Neo.ClientError.Schema.IndexNotFound");
+        assertThat(notification.getCode()).isEqualTo("Neo.ClientNotification.Schema.HintedIndexNotFound");
         assertThat(notification.getPosition()).isEqualTo(InputPosition.empty);
         assertThat(notification.getDescription())
                 .isEqualTo(
@@ -103,7 +104,7 @@ class NotificationCodeTest {
         assertThat(notification.getTitle())
                 .isEqualTo("The request (directly or indirectly) referred to an index that does not exist.");
         assertThat(notification.getSeverity()).isEqualTo(SeverityLevel.WARNING);
-        assertThat(notification.getCode()).isEqualTo("Neo.ClientError.Schema.IndexNotFound");
+        assertThat(notification.getCode()).isEqualTo("Neo.ClientNotification.Schema.HintedIndexNotFound");
         assertThat(notification.getPosition()).isEqualTo(InputPosition.empty);
         assertThat(notification.getDescription())
                 .isEqualTo(
@@ -118,7 +119,7 @@ class NotificationCodeTest {
         assertThat(notification.getTitle())
                 .isEqualTo("The request (directly or indirectly) referred to an index that does not exist.");
         assertThat(notification.getSeverity()).isEqualTo(SeverityLevel.WARNING);
-        assertThat(notification.getCode()).isEqualTo("Neo.ClientError.Schema.IndexNotFound");
+        assertThat(notification.getCode()).isEqualTo("Neo.ClientNotification.Schema.HintedIndexNotFound");
         assertThat(notification.getPosition()).isEqualTo(InputPosition.empty);
         assertThat(notification.getDescription())
                 .isEqualTo(
@@ -192,5 +193,13 @@ class NotificationCodeTest {
         assertThat(notification.getPosition()).isEqualTo(InputPosition.empty);
         assertThat(notification.getDescription())
                 .isEqualTo("The query used a deprecated procedure. ('oldName' is no longer supported)");
+    }
+
+    @Test
+    void allNotificationsShouldBeAClientNotification() {
+
+        Arrays.stream(NotificationCode.values()).forEach(notification -> assertThat(
+                        notification.notification(InputPosition.empty).getCode())
+                .contains("ClientNotification"));
     }
 }

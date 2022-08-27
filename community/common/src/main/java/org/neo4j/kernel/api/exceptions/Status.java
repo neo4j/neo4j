@@ -88,7 +88,7 @@ public interface Status {
         InvalidUsage(
                 ClientError, // TODO: see above
                 "The client made a request but did not consume outgoing buffers in a timely fashion."),
-        DeprecatedFormat(ClientError, "The client made a request for a format which has been deprecated."),
+        DeprecatedFormat(ClientNotification, "The client made a request for a format which has been deprecated."),
         NoThreadsAvailable(
                 TransientError, // TODO: see above
                 "There are no available threads to serve this request at the moment. You can retry at a later time "
@@ -192,6 +192,8 @@ public interface Status {
                 ClientError,
                 "The statement is syntactically valid, but expresses something that the database cannot do."),
         ParameterMissing(ClientError, "The statement refers to a parameter that was not provided in the request."),
+        ParameterNotProvided(
+                ClientNotification, "The statement refers to a parameter that was not provided in the request."),
         ConstraintVerificationFailed(
                 ClientError, "A constraint imposed by the statement is violated by the data in the database."),
         EntityNotFound(ClientError, "The statement refers to a non-existent entity."),
@@ -214,7 +216,7 @@ public interface Status {
         // database errors
         ExecutionFailed(DatabaseError, "The database was unable to execute the statement."),
         CodeGenerationFailed(
-                DatabaseError,
+                ClientNotification,
                 "The database was unable to generate code for the query. A stacktrace can be found in the debug.log."),
         RemoteExecutionFailed(DatabaseError, "The database was unable to execute a remote part of the statement."),
 
@@ -289,6 +291,8 @@ public interface Status {
         IndexAlreadyExists(
                 ClientError, "Unable to perform operation because it would clash with a pre-existing index."),
         IndexNotFound(ClientError, "The request (directly or indirectly) referred to an index that does not exist."),
+        HintedIndexNotFound(
+                ClientNotification, "The request (directly or indirectly) referred to an index that does not exist."),
         IndexMultipleFound(
                 ClientError,
                 "The request referenced an index by its schema, and multiple matching indexes were found."),

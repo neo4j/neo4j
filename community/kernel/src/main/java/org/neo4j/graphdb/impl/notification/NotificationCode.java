@@ -43,7 +43,7 @@ public enum NotificationCode {
             "Selected runtime is unsupported for this query, please use a different runtime instead or fallback to default."),
     INDEX_HINT_UNFULFILLABLE(
             SeverityLevel.WARNING,
-            Status.Schema.IndexNotFound,
+            Status.Schema.HintedIndexNotFound,
             "The hinted index does not exist, please check the schema"),
     JOIN_HINT_UNFULFILLABLE(
             SeverityLevel.WARNING,
@@ -126,7 +126,7 @@ public enum NotificationCode {
             SeverityLevel.WARNING, Status.Statement.RuntimeExperimental, "You are using an experimental feature"),
     MISSING_PARAMETERS_FOR_EXPLAIN(
             SeverityLevel.WARNING,
-            Status.Statement.ParameterMissing,
+            Status.Statement.ParameterNotProvided,
             "Did not supply query with enough parameters. The produced query plan will not be cached and is not executable without EXPLAIN."),
     SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY(
             SeverityLevel.INFORMATION,
