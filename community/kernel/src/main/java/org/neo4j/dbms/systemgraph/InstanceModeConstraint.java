@@ -25,8 +25,6 @@ import org.neo4j.annotations.api.PublicApi;
 public enum InstanceModeConstraint {
     PRIMARY(true, false),
     SECONDARY(false, true),
-    // Temporary value, to be removed when mode goes away.
-    SINGLE(true, false),
     NONE(true, true);
 
     private final boolean canBePrimary;
