@@ -448,6 +448,8 @@ TOKEN [IGNORE_CASE] :
     | < IN: "IN" >
     | < INDEX: "INDEX" >
     | < INDEXES: "INDEXES" >
+    | < INF: "INF" >
+    | < INFINITY: "INFINITY" >
     | < IS: "IS" >
     | < JOIN: "JOIN" >
     | < KEY: "KEY" >
@@ -472,6 +474,7 @@ TOKEN [IGNORE_CASE] :
     | < NEQ2: "<>" >
     | < NAME: "NAME" >
     | < NAMES: "NAMES" >
+    | < NAN: "NAN" >
     | < NEW: "NEW" >
     | < NODE: "NODE" >
     | < NODES: "NODES" >
@@ -2758,6 +2761,8 @@ EXPRESSION Expression1() :
         | e=Parameter( ParameterType.ANY )
         | t=<TRUE> { e = astFactory.newTrueLiteral( pos( t ) ); }
         | t=<FALSE> { e = astFactory.newFalseLiteral( pos( t ) ); }
+        | ( t=<INFINITY> | t=<INF> ) { e = astFactory.newInfinityLiteral( pos( t ) ); }
+        | t=<NAN> { e = astFactory.newNaNLiteral( pos( t ) ); }
         | LOOKAHEAD( 2 ) t=<NULL> { e = astFactory.newNullLiteral( pos( t ) ); }
         | LOOKAHEAD( 3 ) e=CaseExpression()
         | LOOKAHEAD( 3 ) t=<COUNT> <LPAREN> <TIMES> <RPAREN> { e = astFactory.newCountStar( pos( t ) ); }
@@ -5852,6 +5857,8 @@ Token UnescapedSymbolicNameString() :
         | t=<IN>
         | t=<INDEX>
         | t=<INDEXES>
+        | t=<INF>
+        | t=<INFINITY>
         | t=<IS>
         | t=<JOIN>
         | t=<KEY>
@@ -5865,6 +5872,7 @@ Token UnescapedSymbolicNameString() :
         | t=<MERGE>
         | t=<NAME>
         | t=<NAMES>
+        | t=<NAN>
         | t=<NEW>
         | t=<NODE>
         | t=<NODES>

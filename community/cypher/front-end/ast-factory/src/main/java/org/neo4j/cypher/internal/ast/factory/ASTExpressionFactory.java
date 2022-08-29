@@ -66,6 +66,10 @@ public interface ASTExpressionFactory<
 
     EXPRESSION newFalseLiteral(POS p);
 
+    EXPRESSION newInfinityLiteral(POS p);
+
+    EXPRESSION newNaNLiteral(POS p);
+
     EXPRESSION newNullLiteral(POS p);
 
     EXPRESSION listLiteral(POS p, List<EXPRESSION> values);

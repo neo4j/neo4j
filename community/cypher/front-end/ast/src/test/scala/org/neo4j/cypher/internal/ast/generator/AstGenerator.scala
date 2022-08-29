@@ -331,6 +331,7 @@ import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.Infinity
 import org.neo4j.cypher.internal.expressions.IntervalQuantifier
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
@@ -345,6 +346,7 @@ import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.ListSlice
+import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.LiteralEntry
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.MapProjection
@@ -352,6 +354,7 @@ import org.neo4j.cypher.internal.expressions.MapProjectionElement
 import org.neo4j.cypher.internal.expressions.Modulo
 import org.neo4j.cypher.internal.expressions.Multiply
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.NaN
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NodePattern
@@ -546,6 +549,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _booleanLit: Gen[BooleanLiteral] =
     oneOf(True()(pos), False()(pos))
+
+  def _infinityLit: Gen[Literal] =
+    const(Infinity()(pos))
+
+  def _nanLit: Gen[Literal] =
+    const(NaN()(pos))
 
   def _unsignedIntString(prefix: String, radix: Int): Gen[String] = for {
     num <- posNum[Int]
@@ -854,7 +863,9 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
         lzy(_signedOctIntLit),
         lzy(_doubleLit),
         lzy(_variable),
-        lzy(_parameter)
+        lzy(_parameter),
+        lzy(_infinityLit),
+        lzy(_nanLit)
       ),
       1 -> oneOf(
         lzy(_predicateComparison),

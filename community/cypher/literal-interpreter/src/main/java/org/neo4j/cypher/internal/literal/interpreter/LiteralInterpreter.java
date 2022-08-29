@@ -1044,6 +1044,16 @@ public class LiteralInterpreter
     }
 
     @Override
+    public Object newInfinityLiteral(NULL p) {
+        return Double.POSITIVE_INFINITY;
+    }
+
+    @Override
+    public Object newNaNLiteral(NULL p) {
+        return Double.NaN;
+    }
+
+    @Override
     public Object newNullLiteral(NULL p) {
         return null;
     }

@@ -55,6 +55,7 @@ import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.HexIntegerLiteral
 import org.neo4j.cypher.internal.expressions.ImplicitProcedureArgument
 import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.Infinity
 import org.neo4j.cypher.internal.expressions.IntegerLiteral
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
@@ -77,6 +78,7 @@ import org.neo4j.cypher.internal.expressions.Modulo
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.Multiply
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.NaN
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.NodePattern
@@ -655,6 +657,12 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
       case x: BooleanLiteral =>
         specifyType(CTBoolean, x)
+
+      case x: Infinity =>
+        specifyType(CTFloat, x)
+
+      case x: NaN =>
+        specifyType(CTFloat, x)
 
       case x: SemanticCheckableExpression =>
         x.semanticCheck(ctx)

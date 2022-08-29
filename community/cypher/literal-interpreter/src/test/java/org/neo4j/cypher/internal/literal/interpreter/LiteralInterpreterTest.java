@@ -97,6 +97,20 @@ public class LiteralInterpreterTest {
     }
 
     @Test
+    void shouldInterpretInfinity() {
+        final var x = new LiteralInterpreter();
+
+        assertEquals(Double.POSITIVE_INFINITY, x.newInfinityLiteral(POS));
+    }
+
+    @Test
+    void shouldInterpretNaN() {
+        final var x = new LiteralInterpreter();
+
+        assertEquals(Double.NaN, x.newNaNLiteral(POS));
+    }
+
+    @Test
     void shouldInterpretList() {
         final var x = new LiteralInterpreter();
 

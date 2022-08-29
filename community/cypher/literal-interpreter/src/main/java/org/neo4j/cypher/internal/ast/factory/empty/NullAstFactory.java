@@ -142,6 +142,16 @@ public class NullAstFactory
     }
 
     @Override
+    public NULL newInfinityLiteral(NULL p) {
+        return null;
+    }
+
+    @Override
+    public NULL newNaNLiteral(NULL p) {
+        return null;
+    }
+
+    @Override
     public NULL newNullLiteral(NULL p) {
         return null;
     }

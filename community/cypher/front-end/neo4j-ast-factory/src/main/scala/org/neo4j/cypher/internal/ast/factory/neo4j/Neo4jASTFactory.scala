@@ -349,6 +349,7 @@ import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.Infinity
 import org.neo4j.cypher.internal.expressions.IntervalQuantifier
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
@@ -370,6 +371,7 @@ import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.MapProjectionElement
 import org.neo4j.cypher.internal.expressions.Modulo
 import org.neo4j.cypher.internal.expressions.Multiply
+import org.neo4j.cypher.internal.expressions.NaN
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NodePattern
@@ -929,6 +931,10 @@ class Neo4jASTFactory(query: String)
   override def newTrueLiteral(p: InputPosition): Expression = True()(p)
 
   override def newFalseLiteral(p: InputPosition): Expression = False()(p)
+
+  override def newInfinityLiteral(p: InputPosition): Expression = Infinity()(p)
+
+  override def newNaNLiteral(p: InputPosition): Expression = NaN()(p)
 
   override def newNullLiteral(p: InputPosition): Expression = Null()(p)
 

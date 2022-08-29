@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.InequalityExpression
+import org.neo4j.cypher.internal.expressions.Infinity
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.LabelExpression
@@ -71,6 +72,7 @@ import org.neo4j.cypher.internal.expressions.Modulo
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.Multiply
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.NaN
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
@@ -284,6 +286,10 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def trueLiteral: True = True()(pos)
 
   def falseLiteral: False = False()(pos)
+
+  def InfinityLiteral: Infinity = Infinity()(pos)
+
+  def NaNLiteral: NaN = NaN()(pos)
 
   def literal(a: Any): Expression = a match {
     case null               => nullLiteral

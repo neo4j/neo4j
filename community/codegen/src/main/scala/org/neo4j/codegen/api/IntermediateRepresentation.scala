@@ -23,6 +23,7 @@ import org.neo4j.codegen
 import org.neo4j.codegen.TypeReference
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.values.storable.BooleanValue
+import org.neo4j.values.storable.DoubleValue
 import org.neo4j.values.storable.FloatingPointValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
@@ -1333,6 +1334,10 @@ object IntermediateRepresentation {
   def trueValue: IntermediateRepresentation = getStatic[Values, BooleanValue]("TRUE")
 
   def falseValue: IntermediateRepresentation = getStatic[Values, BooleanValue]("FALSE")
+
+  def InfinityValue: IntermediateRepresentation = getStatic[Values, DoubleValue]("Infinity")
+
+  def NaNValue: IntermediateRepresentation = getStatic[Values, DoubleValue]("NaN")
 
   def isNaN(value: IntermediateRepresentation): IntermediateRepresentation = and(
     instanceOf[FloatingPointValue](value),

@@ -104,6 +104,8 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.IMPERSONAT
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.IN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.INDEX;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.INDEXES;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.INF;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.INFINITY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.IS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.JOIN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.KEY;
@@ -117,6 +119,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.MATCH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.MERGE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NAME;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NAMES;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NAN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NEW;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NODE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NODES;
@@ -297,6 +300,8 @@ public class IdentifierTokens {
             IN,
             INDEX,
             INDEXES,
+            INF,
+            INFINITY,
             IS,
             JOIN,
             KEY,
@@ -310,6 +315,7 @@ public class IdentifierTokens {
             MERGE,
             NAME,
             NAMES,
+            NAN,
             NEW,
             NODE,
             NODES,

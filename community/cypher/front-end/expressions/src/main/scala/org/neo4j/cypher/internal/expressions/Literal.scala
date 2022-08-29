@@ -218,6 +218,27 @@ object Null {
   val NULL: Null = Null()(InputPosition.NONE)
 }
 
+case class Infinity()(val position: InputPosition) extends Literal {
+  val value: java.lang.Double = Double.PositiveInfinity
+
+  override def writeTo(extractor: LiteralExtractor): Unit = extractor.writeDouble(value)
+  override def asCanonicalStringVal = "Infinity"
+
+  override def asSensitiveLiteral: Literal with SensitiveLiteral = new Infinity()(position) with SensitiveLiteral {
+    override def literalLength: Option[Int] = Some(8)
+  }
+}
+
+case class NaN()(val position: InputPosition) extends Literal {
+  val value: java.lang.Double = Double.NaN
+  override def writeTo(extractor: LiteralExtractor): Unit = extractor.writeDouble(value)
+  override def asCanonicalStringVal = "NaN"
+
+  override def asSensitiveLiteral: Literal with SensitiveLiteral = new NaN()(position) with SensitiveLiteral {
+    override def literalLength: Option[Int] = Some(3)
+  }
+}
+
 sealed trait BooleanLiteral extends Literal
 
 case class True()(val position: InputPosition) extends BooleanLiteral {
