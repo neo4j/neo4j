@@ -123,7 +123,7 @@ class DumpCommandIT {
     @Test
     void shouldDumpTheDatabaseToTheArchive() throws Exception {
         execute("foo");
-        verify(dumper).openForDump(eq(archive));
+        verify(dumper).openForDump(eq(archive), eq(false));
         verify(dumper)
                 .dump(
                         eq(homeDir.resolve("data/databases/foo")),
@@ -190,14 +190,14 @@ class DumpCommandIT {
         Path to = testDirectory.directory("some-dir");
         execute("foo", to);
         Dumper dumper1 = verify(dumper);
-        dumper1.openForDump(eq(to.resolve("foo.dump")));
+        dumper1.openForDump(eq(to.resolve("foo.dump")), eq(false));
     }
 
     @Test
     void shouldNotCalculateTheArchiveNameIfPassedAnExistingFile() throws Exception {
         Files.createFile(archive);
         execute("foo");
-        verify(dumper).openForDump(eq(archive));
+        verify(dumper).openForDump(eq(archive), eq(false));
     }
 
     @Test

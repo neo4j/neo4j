@@ -93,6 +93,12 @@ public class DumpCommand extends AbstractAdminCommand {
         private boolean toStdout;
     }
 
+    @Option(
+            names = "--overwrite-destination",
+            arity = "0",
+            description = "Overwrite any existing dump file in the destination folder.")
+    private boolean overwriteDestination;
+
     private final Dumper dumper;
 
     public DumpCommand(ExecutionContext ctx, Dumper dumper) {
@@ -245,7 +251,7 @@ public class DumpCommand extends AbstractAdminCommand {
             return ctx.out();
         }
         var archive = buildArchivePath(databaseName, Path.of(destination.toDir).toAbsolutePath());
-        return dumper.openForDump(archive);
+        return dumper.openForDump(archive, overwriteDestination);
     }
 
     private void dump(DatabaseLayout databaseLayout, String databaseName) {

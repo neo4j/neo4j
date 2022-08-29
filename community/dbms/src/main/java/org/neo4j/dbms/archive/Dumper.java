@@ -77,7 +77,16 @@ public class Dumper {
     }
 
     public OutputStream openForDump(Path archive) throws IOException {
+        return openForDump(archive, false);
+    }
+
+    public OutputStream openForDump(Path archive, boolean overwriteDestination) throws IOException {
         checkWritableDirectory(archive.getParent());
+
+        if (overwriteDestination) {
+            return Files.newOutputStream(archive);
+        }
+
         // StandardOpenOption.CREATE_NEW is important here because it atomically asserts that the file doesn't
         // exist as it is opened, avoiding a TOCTOU race condition which results in a security vulnerability. I
         // can't see a way to write a test to verify that we are using this option rather than just implementing

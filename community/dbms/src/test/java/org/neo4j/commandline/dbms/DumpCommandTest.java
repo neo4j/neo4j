@@ -45,8 +45,8 @@ class DumpCommandTest {
 
                 USAGE
 
-                dump [-h] [--expand-commands] [--verbose] [--additional-config=<path>]
-                     [--to-path=<path> | --to-stdout] <database>
+                dump [-h] [--expand-commands] [--overwrite-destination] [--verbose]
+                     [--additional-config=<path>] [--to-path=<path> | --to-stdout] <database>
 
                 DESCRIPTION
 
@@ -68,6 +68,9 @@ class DumpCommandTest {
                                           Configuration file with additional configuration.
                       --expand-commands   Allow command expansion in config value evaluation.
                   -h, --help              Show this help message and exit.
+                      --overwrite-destination
+                                          Overwrite any existing dump file in the destination
+                                            folder.
                       --to-path=<path>    Destination folder of database dump.
                       --to-stdout         Use standard output as destination for database dump.
                       --verbose           Enable verbose output.""");
