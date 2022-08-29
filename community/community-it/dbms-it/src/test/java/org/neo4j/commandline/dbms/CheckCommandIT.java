@@ -42,6 +42,7 @@ import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.CheckCommand;
+import org.neo4j.consistency.CheckNativeDatabase;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
@@ -159,7 +160,7 @@ class CheckCommandIT {
         final var checkDatabases = CheckDatabase.all().stream()
                 .map(CheckDatabase::getClass)
                 .collect(Collectors.<Class<? extends CheckDatabase>>toUnmodifiableSet());
-        assertThat(checkDatabases).containsExactlyInAnyOrder(CheckDump.class);
+        assertThat(checkDatabases).containsExactlyInAnyOrder(CheckNativeDatabase.class, CheckDump.class);
     }
 
     @Test
@@ -342,6 +343,45 @@ class CheckCommandIT {
     }
 
     @Test
+    void canRunOnOtherNativeDatabase() throws Exception {
+        final var consistencyCheckService =
+                new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
+
+        final var other = testDirectory.directory("other");
+        final var layout = Neo4jLayout.of(other).databaseLayout("other");
+        final var dataPath = layout.getNeo4jLayout().databasesDirectory();
+        final var txnPath = layout.getNeo4jLayout().transactionLogsRootDirectory();
+        removeAndReprepareDatabase(layout);
+
+        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CommandLine.populateCommand(
+                checkCommand, "--from-path-data=" + dataPath, "--from-path-txn=" + txnPath, layout.getDatabaseName());
+        checkCommand.execute();
+
+        verifyCheckableLayout(consistencyCheckService, layout);
+    }
+
+    @Test
+    void checkThisNativeDatabase() {
+        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath));
+        CommandLine.populateCommand(checkCommand, dbName);
+        assertThatCode(checkCommand::execute).doesNotThrowAnyException();
+    }
+
+    @Test
+    void checkOtherNativeDatabase() throws IOException {
+        final var other = testDirectory.directory("other");
+        final var layout = Neo4jLayout.of(other).databaseLayout(dbName);
+        final var dataPath = layout.getNeo4jLayout().databasesDirectory();
+        final var txnPath = layout.getNeo4jLayout().transactionLogsRootDirectory();
+        removeAndReprepareDatabase(layout);
+
+        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath));
+        CommandLine.populateCommand(checkCommand, "--from-path-data=" + dataPath, "--from-path-txn=" + txnPath, dbName);
+        assertThatCode(checkCommand::execute).doesNotThrowAnyException();
+    }
+
+    @Test
     void checkDump() {
         final var dump = testDirectory.directory("dump");
         final var ctx = new ExecutionContext(homeDir, confPath);
@@ -354,9 +394,9 @@ class CheckCommandIT {
         assertThatCode(checkCommand::execute).doesNotThrowAnyException();
     }
 
-    private void prepareBackupDatabase(DatabaseLayout backupLayout) throws IOException {
+    private void removeAndReprepareDatabase(DatabaseLayout databaseLayout) throws IOException {
         filesytem.deleteRecursively(homeDir);
-        prepareDatabase(backupLayout);
+        prepareDatabase(databaseLayout);
     }
 
     private static void prepareDatabase(DatabaseLayout databaseLayout) {

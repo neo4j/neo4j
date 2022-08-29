@@ -26,7 +26,6 @@ import static picocli.CommandLine.Help.Visibility.NEVER;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
-import org.apache.commons.lang3.NotImplementedException;
 import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters.DatabaseNameConverter;
@@ -47,12 +46,10 @@ import org.neo4j.dbms.archive.CheckDatabase.Source.PathSource;
 import org.neo4j.io.IOUtils.AutoCloseables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.locker.FileLockException;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.util.VisibleForTesting;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Mixin;
@@ -91,6 +88,7 @@ public class CheckCommand extends AbstractAdminCommand {
 
     protected Config config;
     private ConsistencyFlags flags;
+    private Source source;
 
     private static final class SourceOptions {
         @ArgGroup(exclusive = false)
@@ -160,6 +158,7 @@ public class CheckCommand extends AbstractAdminCommand {
     protected void validateAndConstructArgs() {
         config = configBuilder().build();
         flags = options.toFlags();
+        source = sourceOptions != null ? sourceOptions.toSource() : new DataTxnSource(config);
     }
 
     protected Config.Builder configBuilder() {
@@ -170,23 +169,7 @@ public class CheckCommand extends AbstractAdminCommand {
         try (var autoClosables = new AutoCloseables()) {
             final DatabaseLayout layout;
             try {
-                if (sourceOptions != null) {
-                    if (sourceOptions.sourceOptions != null) {
-                        throw new NotImplementedException("new source options have yet to be implemented");
-                    }
-
-                    // assumes path is to directory containing dump; checking backup artifacts not implemented yet
-                    layout = CheckDatabase.selectAndExtract(
-                            ctx.fs(), sourceOptions.toSource(), database, ctx.out(), force, autoClosables);
-                } else {
-                    final var neo4jLayout = Neo4jLayout.of(config);
-                    final var storageEngineFactory = StorageEngineFactory.selectStorageEngine(
-                                    ctx.fs(), neo4jLayout, database.name())
-                            .orElseThrow(() -> new IllegalArgumentException(
-                                    "No storage engine found for '%s' with database name '%s'"
-                                            .formatted(neo4jLayout, database.name())));
-                    layout = storageEngineFactory.databaseLayout(neo4jLayout, database.name());
-                }
+                layout = CheckDatabase.selectAndExtract(ctx.fs(), source, database, ctx.out(), force, autoClosables);
             } catch (IOException e) {
                 throw new CommandFailedException(
                         "Failed to prepare for consistency check: " + e.getMessage(), e, ExitCode.IOERR);
