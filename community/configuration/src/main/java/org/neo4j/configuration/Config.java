@@ -88,8 +88,8 @@ public class Config implements Configuration {
             "server.",
             "internal.",
             "client.",
+            "initial.",
             // temporary namespaces
-            "cluster.",
             "fabric.",
             "gds.",
             "apoc.");
