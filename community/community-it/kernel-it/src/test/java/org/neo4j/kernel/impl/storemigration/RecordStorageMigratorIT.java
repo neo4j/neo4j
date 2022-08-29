@@ -28,6 +28,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.IndexImporterFactory.EMPTY;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -36,10 +37,12 @@ import static org.neo4j.storageengine.api.StoreVersionCheck.MigrationOutcome.MIG
 import static org.neo4j.storageengine.migration.MigrationProgressMonitor.SILENT;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,14 +52,16 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
+import org.neo4j.internal.counts.CountsBuilder;
+import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
 import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
-import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -66,6 +71,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -107,7 +113,6 @@ import org.neo4j.test.utils.TestDirectory;
 class RecordStorageMigratorIT {
     private static final String MIGRATION_DIRECTORY = StoreMigrator.MIGRATION_DIRECTORY;
     private static final Config CONFIG = Config.defaults(GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes(8));
-    private static final long TX_ID = 51;
 
     @Inject
     private TestDirectory testDirectory;
@@ -431,62 +436,65 @@ class RecordStorageMigratorIT {
         // WHEN migrating
         var engineFactory = StorageEngineFactory.defaultStorageEngine();
         var logTailMetadata = loadLogTail(databaseLayout, CONFIG, engineFactory);
+        var txIdBeforeMigration = logTailMetadata.getLastCommittedTransaction().transactionId();
+        var versionToMigrateTo = getVersionToMigrateTo();
         migrator.migrate(
                 databaseLayout,
                 migrationLayout,
                 progressMonitor.startSection("section"),
                 versionToMigrateFrom,
-                getVersionToMigrateTo(),
+                versionToMigrateTo,
                 EMPTY,
                 logTailMetadata);
-        migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, getVersionToMigrateTo());
+        migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo);
+        var txIdAfterMigration = txIdBeforeMigration + 1;
+        migrator.postMigration(databaseLayout, versionToMigrateTo, txIdBeforeMigration, txIdAfterMigration);
 
         // THEN starting the new store should be successful
         assertThat(testDirectory.getFileSystem().fileExists(databaseLayout.relationshipGroupDegreesStore()))
                 .isTrue();
-        GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder noRebuildAssertion =
-                new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder() {
-                    @Override
-                    public void rebuild(
-                            RelationshipGroupDegreesStore.Updater updater,
-                            CursorContext cursorContext,
-                            MemoryTracker memoryTracker) {
-                        throw new IllegalStateException("Rebuild should not be required");
-                    }
-
-                    @Override
-                    public long lastCommittedTxId() {
-                        try {
-                            return new RecordStorageEngineFactory()
-                                    .readOnlyTransactionIdStore(logTailMetadata)
-                                    .getLastCommittedTransactionId();
-                        } catch (IOException e) {
-                            throw new UncheckedIOException(e);
-                        }
-                    }
-                };
         var migratedStoreOpenOptions = engineFactory.getStoreOpenOptions(fs, pageCache, databaseLayout, contextFactory);
-        try (var groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore(
-                pageCache,
-                databaseLayout.relationshipGroupDegreesStore(),
-                testDirectory.getFileSystem(),
-                immediate(),
-                noRebuildAssertion,
-                writable(),
-                GBPTreeGenericCountsStore.NO_MONITOR,
-                databaseLayout.getDatabaseName(),
-                counts_store_max_cached_entries.defaultValue(),
-                NullLogProvider.getInstance(),
-                contextFactory,
-                cacheTracer,
-                migratedStoreOpenOptions)) {
+        var noCountsRebuildAssertion = new CountsBuilder() {
+            @Override
+            public void initialize(
+                    CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+                throw new IllegalStateException("Rebuild should not be required");
+            }
+
+            @Override
+            public long lastCommittedTxId() {
+                return txIdAfterMigration;
+            }
+        };
+        try (var countsStore =
+                openCountsStore(cacheTracer, contextFactory, migratedStoreOpenOptions, noCountsRebuildAssertion)) {
+            // The rebuild would happen here in start and will throw exception (above) if invoked
+            countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+
+            // The counts store should now have been updated to be at the txIdAfterMigration
+            assertEquals(txIdAfterMigration, countsStore.txId());
+        }
+        var noGroupsRebuildAssertion = new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder() {
+            @Override
+            public void rebuild(
+                    RelationshipGroupDegreesStore.Updater updater,
+                    CursorContext cursorContext,
+                    MemoryTracker memoryTracker) {
+                throw new IllegalStateException("Rebuild should not be required");
+            }
+
+            @Override
+            public long lastCommittedTxId() {
+                return txIdAfterMigration;
+            }
+        };
+        try (var groupDegreesStore = openGroupDegreesStore(
+                cacheTracer, contextFactory, migratedStoreOpenOptions, noGroupsRebuildAssertion)) {
             // The rebuild would happen here in start and will throw exception (above) if invoked
             groupDegreesStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
 
-            // The store keeps track of committed transactions.
-            // It is essential that it starts with the transaction
-            // that is the last committed one at the upgrade time.
-            assertEquals(TX_ID, groupDegreesStore.txId());
+            // The group degrees store should now have been updated to be at the txIdAfterMigration
+            assertEquals(txIdAfterMigration, groupDegreesStore.txId());
         }
 
         StoreFactory storeFactory = new StoreFactory(
@@ -502,6 +510,99 @@ class RecordStorageMigratorIT {
                 loadLogTail(databaseLayout, CONFIG, engineFactory));
         storeFactory.openAllNeoStores().close();
         assertThat(logProvider).forLevel(ERROR).doesNotHaveAnyLogs();
+    }
+
+    @ParameterizedTest
+    @MethodSource("versions")
+    void shouldSkipUpdatingCountsStoreThatIsNotUpToDate(RecordFormats format) throws Exception {
+        // GIVEN a legacy database
+        Path prepare = testDirectory.directory("prepare");
+        var fs = testDirectory.getFileSystem();
+        MigrationTestUtils.prepareSampleLegacyDatabase(format, fs, databaseLayout, prepare);
+
+        AssertableLogProvider logProvider = new AssertableLogProvider(true);
+        LogService logService = new SimpleLogService(logProvider, logProvider);
+
+        RecordStoreVersionCheck check = getVersionCheck(pageCache, databaseLayout);
+
+        StoreVersion versionToMigrateFrom = getVersionToMigrateFrom(check);
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
+        CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
+        RecordStorageMigrator migrator = new RecordStorageMigrator(
+                fs,
+                pageCache,
+                cacheTracer,
+                CONFIG,
+                logService,
+                jobScheduler,
+                contextFactory,
+                batchImporterFactory,
+                INSTANCE,
+                false);
+        var engineFactory = StorageEngineFactory.defaultStorageEngine();
+        var logTailMetadata = loadLogTail(databaseLayout, CONFIG, engineFactory);
+        var txIdBeforeMigration = logTailMetadata.getLastCommittedTransaction().transactionId();
+        var versionToMigrateTo = getVersionToMigrateTo();
+        var migratedStoreOpenOptions = engineFactory.getStoreOpenOptions(fs, pageCache, databaseLayout, contextFactory);
+        migrator.migrate(
+                databaseLayout,
+                migrationLayout,
+                progressMonitor.startSection("section"),
+                versionToMigrateFrom,
+                versionToMigrateTo,
+                EMPTY,
+                logTailMetadata);
+        migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo);
+
+        // WHEN doing post-migration
+        artificiallyMakeCountsStoresHaveAnotherLastTxId(
+                txIdBeforeMigration, txIdBeforeMigration + 2, migratedStoreOpenOptions);
+        var txIdAfterMigration = txIdBeforeMigration + 1;
+        migrator.postMigration(databaseLayout, versionToMigrateTo, txIdBeforeMigration, txIdAfterMigration);
+
+        // THEN starting the new store should be successful
+        assertThat(testDirectory.getFileSystem().fileExists(databaseLayout.relationshipGroupDegreesStore()))
+                .isTrue();
+        var countsStoreNeedsRebuild = new MutableBoolean();
+        var countsRebuildAssertion = new CountsBuilder() {
+            @Override
+            public void initialize(
+                    CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+                countsStoreNeedsRebuild.setTrue();
+            }
+
+            @Override
+            public long lastCommittedTxId() {
+                return txIdAfterMigration;
+            }
+        };
+        try (var countsStore =
+                openCountsStore(cacheTracer, contextFactory, migratedStoreOpenOptions, countsRebuildAssertion)) {
+            countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+        }
+        var groupDegreesStoreNeedsRebuild = new MutableBoolean();
+        var groupsRebuildAssertion = new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder() {
+            @Override
+            public void rebuild(
+                    RelationshipGroupDegreesStore.Updater updater,
+                    CursorContext cursorContext,
+                    MemoryTracker memoryTracker) {
+                groupDegreesStoreNeedsRebuild.setTrue();
+            }
+
+            @Override
+            public long lastCommittedTxId() {
+                return txIdAfterMigration;
+            }
+        };
+        try (var groupDegreesStore =
+                openGroupDegreesStore(cacheTracer, contextFactory, migratedStoreOpenOptions, groupsRebuildAssertion)) {
+            groupDegreesStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+        }
+
+        // THEN
+        assertThat(countsStoreNeedsRebuild.isTrue()).isTrue();
+        assertThat(groupDegreesStoreNeedsRebuild.isTrue()).isTrue();
     }
 
     @ParameterizedTest
@@ -634,5 +735,95 @@ class RecordStorageMigratorIT {
             throws IOException {
         return new LogTailExtractor(fileSystem, pageCache, config, engineFactory, DatabaseTracers.EMPTY)
                 .getTailMetadata(layout, INSTANCE);
+    }
+
+    private void artificiallyMakeCountsStoresHaveAnotherLastTxId(
+            long fromTxId, long toTxId, ImmutableSet<OpenOption> openOptions) throws IOException {
+        try (var store = openCountsStore(PageCacheTracer.NULL, NULL_CONTEXT_FACTORY, openOptions, new CountsBuilder() {
+            @Override
+            public void initialize(
+                    CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+                // Do nothing
+            }
+
+            @Override
+            public long lastCommittedTxId() {
+                return fromTxId;
+            }
+        })) {
+            store.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+            for (long txId = fromTxId + 1; txId <= toTxId; txId++) {
+                store.apply(txId, NULL_CONTEXT).close();
+            }
+            store.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
+        }
+        try (var store = openGroupDegreesStore(
+                PageCacheTracer.NULL,
+                NULL_CONTEXT_FACTORY,
+                openOptions,
+                new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder() {
+                    @Override
+                    public void rebuild(
+                            RelationshipGroupDegreesStore.Updater updater,
+                            CursorContext cursorContext,
+                            MemoryTracker memoryTracker) {
+                        // Do nothing
+                    }
+
+                    @Override
+                    public long lastCommittedTxId() {
+                        return fromTxId;
+                    }
+                })) {
+            store.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+            for (long txId = fromTxId + 1; txId <= toTxId; txId++) {
+                store.apply(txId, NULL_CONTEXT).close();
+            }
+            store.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
+        }
+    }
+
+    private GBPTreeRelationshipGroupDegreesStore openGroupDegreesStore(
+            PageCacheTracer cacheTracer,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> migratedStoreOpenOptions,
+            GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder groupsRebuildAssertion)
+            throws IOException {
+        return new GBPTreeRelationshipGroupDegreesStore(
+                pageCache,
+                databaseLayout.relationshipGroupDegreesStore(),
+                testDirectory.getFileSystem(),
+                immediate(),
+                groupsRebuildAssertion,
+                writable(),
+                GBPTreeGenericCountsStore.NO_MONITOR,
+                databaseLayout.getDatabaseName(),
+                counts_store_max_cached_entries.defaultValue(),
+                NullLogProvider.getInstance(),
+                contextFactory,
+                cacheTracer,
+                migratedStoreOpenOptions);
+    }
+
+    private GBPTreeCountsStore openCountsStore(
+            PageCacheTracer cacheTracer,
+            CursorContextFactory contextFactory,
+            ImmutableSet<OpenOption> migratedStoreOpenOptions,
+            CountsBuilder rebuilder)
+            throws IOException {
+        return new GBPTreeCountsStore(
+                pageCache,
+                databaseLayout.countStore(),
+                testDirectory.getFileSystem(),
+                immediate(),
+                rebuilder,
+                writable(),
+                GBPTreeGenericCountsStore.NO_MONITOR,
+                databaseLayout.getDatabaseName(),
+                counts_store_max_cached_entries.defaultValue(),
+                NullLogProvider.getInstance(),
+                contextFactory,
+                cacheTracer,
+                migratedStoreOpenOptions);
     }
 }

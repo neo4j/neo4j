@@ -62,6 +62,13 @@ public class NameOverridingStoreMigrationParticipant implements StoreMigrationPa
     }
 
     @Override
+    public void postMigration(
+            DatabaseLayout databaseLayout, StoreVersion toVersion, long txIdBeforeMigration, long txIdAfterMigration)
+            throws IOException {
+        delegate.postMigration(databaseLayout, toVersion, txIdBeforeMigration, txIdAfterMigration);
+    }
+
+    @Override
     public void cleanup(DatabaseLayout migrationLayout) throws IOException {
         delegate.cleanup(migrationLayout);
     }

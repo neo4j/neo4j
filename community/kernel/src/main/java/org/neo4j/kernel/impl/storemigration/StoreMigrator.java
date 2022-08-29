@@ -281,8 +281,10 @@ public class StoreMigrator {
         }
 
         progressMonitor.startTransactionLogsMigration();
-        logsAction.handleLogs(logsCheckResult);
+        var txIds = logsAction.handleLogs(logsCheckResult);
         progressMonitor.completeTransactionLogsMigration();
+
+        postMigration(participants, toVersion, txIds.txIdBeforeMigration(), txIds.txIdAfterMigration());
 
         cleanup(participants, migrationStructures.migrationLayout);
 
@@ -473,6 +475,21 @@ public class StoreMigrator {
         }
     }
 
+    private void postMigration(
+            Iterable<StoreMigrationParticipant> participants,
+            StoreVersion toVersion,
+            long txIdBeforeMigration,
+            long txIdAfterMigration) {
+        try {
+            for (var participant : participants) {
+                participant.postMigration(databaseLayout, toVersion, txIdBeforeMigration, txIdAfterMigration);
+            }
+        } catch (IOException e) {
+            throw new UnableToMigrateException(
+                    "A critical failure during migration has occurred. Unable to do post-migration step", e);
+        }
+    }
+
     private void cleanup(Iterable<StoreMigrationParticipant> participants, DatabaseLayout migrationStructure) {
         try {
             for (StoreMigrationParticipant participant : participants) {
@@ -529,7 +546,6 @@ public class StoreMigrator {
             StoreVersionIdentifier versionToMigrateTo) {}
 
     private interface LogsAction {
-
-        void handleLogs(LogsMigrator.CheckResult checkResult);
+        LogsMigrator.MigrationTransactionIds handleLogs(LogsMigrator.CheckResult checkResult);
     }
 }

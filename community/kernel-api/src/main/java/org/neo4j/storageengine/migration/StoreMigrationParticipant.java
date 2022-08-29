@@ -62,7 +62,6 @@ public interface StoreMigrationParticipant {
 
     /**
      * Performs migration of data this participant is responsible for if necessary.
-     *
      * Data to migrate sits in {@code sourceDirectory} and must not be modified.
      * Migrated data should go into {@code targetStoreDir}, where source and target dirs are
      * the highest level database store dirs.
@@ -90,6 +89,7 @@ public interface StoreMigrationParticipant {
     /**
      * After a successful migration, move all affected files from {@code upgradeDirectory} over to
      * the {@code workingDirectory}, effectively activating the migration changes.
+     *
      * @param migrationLayout directory where the {@link #migrate(DatabaseLayout, DatabaseLayout, ProgressReporter, StoreVersion,
      * StoreVersion, IndexImporterFactory, LogTailMetadata) migration} put its files.
      * @param directoryLayout directory the store directory of the to move the migrated files to.
@@ -102,6 +102,21 @@ public interface StoreMigrationParticipant {
             DatabaseLayout directoryLayout,
             StoreVersion versionToMigrateFrom,
             StoreVersion versionToMigrateTo)
+            throws IOException;
+
+    /**
+     * Called after migration and before {@link #cleanup(DatabaseLayout)} and includes transaction IDs before and after
+     * migration (there may have been an "upgrade" transaction added after the call to migrate).
+     *
+     * @param databaseLayout layout of the migrated database.
+     * @param toVersion version the store migrated to.
+     * @param txIdBeforeMigration last transaction ID before migration started.
+     * @param txIdAfterMigration last transaction ID after migration completed (could be higher than before the
+     * migration started).
+     * @throws IOException on I/o error.
+     */
+    void postMigration(
+            DatabaseLayout databaseLayout, StoreVersion toVersion, long txIdBeforeMigration, long txIdAfterMigration)
             throws IOException;
 
     /**

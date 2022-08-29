@@ -19,6 +19,10 @@
  */
 package org.neo4j.storageengine.migration;
 
+import java.io.IOException;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.storageengine.api.StoreVersion;
+
 /**
  * Default empty implementation of StoreMigrationParticipant.
  * Base class for all StoreMigrationParticipant implementations.
@@ -28,6 +32,13 @@ public abstract class AbstractStoreMigrationParticipant implements StoreMigratio
 
     protected AbstractStoreMigrationParticipant(String name) {
         this.name = name;
+    }
+
+    @Override
+    public void postMigration(
+            DatabaseLayout databaseLayout, StoreVersion toVersion, long txIdBeforeMigration, long txIdAfterMigration)
+            throws IOException {
+        // no-op
     }
 
     @Override

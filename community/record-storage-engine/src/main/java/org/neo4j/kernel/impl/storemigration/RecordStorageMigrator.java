@@ -22,13 +22,16 @@ package org.neo4j.kernel.impl.storemigration;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.Configuration.defaultConfiguration;
+import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.NO_MONITOR;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess;
 import static org.neo4j.internal.recordstorage.StoreTokens.allTokens;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
@@ -42,9 +45,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.UUID;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.eclipse.collections.api.factory.Sets;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
+import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.BatchImporter;
@@ -63,6 +68,10 @@ import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.internal.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
+import org.neo4j.internal.counts.CountsBuilder;
+import org.neo4j.internal.counts.GBPTreeCountsStore;
+import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -91,6 +100,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.kernel.impl.store.format.PageCacheOptionsSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.storemigration.SchemaStoreMigration.SchemaStoreMigrator;
@@ -98,6 +108,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.LogFilesInitializer;
@@ -323,7 +334,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             AdditionalInitialIds additionalInitialIds = readAdditionalIds(
                     lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset, lastCheckpointLogVersion);
 
-            try (var storeCursors = new CachedStoreCursors(legacyStore, CursorContext.NULL_CONTEXT)) {
+            try (var storeCursors = new CachedStoreCursors(legacyStore, NULL_CONTEXT)) {
                 // We have to make sure to keep the token ids if we're migrating properties/labels
                 BatchImporter importer = batchImporterFactory.instantiate(
                         migrationDirectoryStructure,
@@ -689,6 +700,107 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                 StoreTokens.createReadOnlyTokenHolder(TokenHolder.TYPE_RELATIONSHIP_TYPE));
         tokenHolders.setInitialTokens(allTokens(stores), cursors);
         return tokenHolders;
+    }
+
+    @Override
+    public void postMigration(
+            DatabaseLayout databaseLayout, StoreVersion toVersion, long txIdBeforeMigration, long txIdAfterMigration)
+            throws IOException {
+        if (txIdBeforeMigration == txIdAfterMigration) {
+            return;
+        }
+
+        var recordLayout = RecordDatabaseLayout.convert(databaseLayout);
+        var format = ((RecordStoreVersion) toVersion).getFormat();
+        var openOptions = PageCacheOptionsSelector.select(format);
+
+        // Generally this method tries basically to update the lastTxId for the counts stores with the
+        // added "upgrade transaction", so that these stores doesn't notice this discrepancy in the next
+        // db startup and does a full rebuild, which would end up with the same contents anyway.
+        // For each counts store it will:
+        // - start it
+        // - check that it indeed is in the correct state as the db was before migration
+        // - fast-forward its internal txId to that of after the migration
+        // Now, if any of the checks turns out to be false it won't check-point the counts store, i.e.
+        // leaving it as-is and let it be rebuilt on next db start, but this is an edge case.
+
+        var countsUpToDate = new MutableBoolean(true);
+        var countsBuilder = new CountsBuilder() {
+            @Override
+            public void initialize(
+                    CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+                countsUpToDate.setFalse();
+            }
+
+            @Override
+            public long lastCommittedTxId() {
+                return txIdBeforeMigration;
+            }
+        };
+        try (var countsStore = new GBPTreeCountsStore(
+                        pageCache,
+                        recordLayout.countStore(),
+                        fileSystem,
+                        immediate(),
+                        countsBuilder,
+                        writable(),
+                        NO_MONITOR,
+                        databaseLayout.getDatabaseName(),
+                        counts_store_max_cached_entries.defaultValue(),
+                        logService.getInternalLogProvider(),
+                        contextFactory,
+                        pageCacheTracer,
+                        openOptions);
+                var context = contextFactory.create("update counts store");
+                var flushEvent = pageCacheTracer.beginFileFlush()) {
+            countsStore.start(context, StoreCursors.NULL, memoryTracker);
+            if (countsUpToDate.isTrue()) {
+                for (long txId = txIdBeforeMigration + 1; txId <= txIdAfterMigration; txId++) {
+                    countsStore.apply(txId, context).close();
+                }
+                countsStore.checkpoint(flushEvent, context);
+            }
+        }
+
+        var degreesUpToDate = new MutableBoolean(true);
+        var degreesBuilder = new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder() {
+            @Override
+            public void rebuild(
+                    RelationshipGroupDegreesStore.Updater updater,
+                    CursorContext cursorContext,
+                    MemoryTracker memoryTracker) {
+                degreesUpToDate.setFalse();
+            }
+
+            @Override
+            public long lastCommittedTxId() {
+                return txIdBeforeMigration;
+            }
+        };
+        try (var degreesStore = new GBPTreeRelationshipGroupDegreesStore(
+                        pageCache,
+                        recordLayout.relationshipGroupDegreesStore(),
+                        fileSystem,
+                        immediate(),
+                        degreesBuilder,
+                        writable(),
+                        NO_MONITOR,
+                        databaseLayout.getDatabaseName(),
+                        counts_store_max_cached_entries.defaultValue(),
+                        logService.getInternalLogProvider(),
+                        contextFactory,
+                        pageCacheTracer,
+                        openOptions);
+                var context = contextFactory.create("update group degrees store");
+                var flushEvent = pageCacheTracer.beginFileFlush()) {
+            degreesStore.start(context, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE);
+            if (degreesUpToDate.isTrue()) {
+                for (long txId = txIdBeforeMigration + 1; txId <= txIdAfterMigration; txId++) {
+                    degreesStore.apply(txId, context).close();
+                }
+                degreesStore.checkpoint(flushEvent, context);
+            }
+        }
     }
 
     @Override

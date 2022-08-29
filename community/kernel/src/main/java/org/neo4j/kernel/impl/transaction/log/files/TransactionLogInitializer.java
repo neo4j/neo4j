@@ -82,15 +82,15 @@ public class TransactionLogInitializer {
     /**
      * Create new empty log files in the given transaction logs directory, for a database that doesn't have any already.
      */
-    public void initializeEmptyLogFile(DatabaseLayout layout, Path transactionLogsDirectory, String checkpointReason)
+    public long initializeEmptyLogFile(DatabaseLayout layout, Path transactionLogsDirectory, String checkpointReason)
             throws IOException {
         try (LogFilesSpan span = buildLogFiles(layout, transactionLogsDirectory)) {
             LogFiles logFiles = span.getLogFiles();
-            appendEmptyTransactionAndCheckPoint(logFiles, checkpointReason);
+            return appendEmptyTransactionAndCheckPoint(logFiles, checkpointReason);
         }
     }
 
-    public void migrateExistingLogFiles(DatabaseLayout layout, Path transactionLogsDirectory, String checkpointReason)
+    public long migrateExistingLogFiles(DatabaseLayout layout, Path transactionLogsDirectory, String checkpointReason)
             throws Exception {
         try (LogFilesSpan span = buildLogFiles(layout, transactionLogsDirectory)) {
             LogFiles logFiles = span.getLogFiles();
@@ -106,7 +106,7 @@ public class TransactionLogInitializer {
             }
             logFile.rotate();
             checkpointFile.rotate();
-            appendEmptyTransactionAndCheckPoint(logFiles, checkpointReason);
+            return appendEmptyTransactionAndCheckPoint(logFiles, checkpointReason);
         }
     }
 
@@ -122,7 +122,7 @@ public class TransactionLogInitializer {
         return new LogFilesSpan(new Lifespan(logFiles), logFiles);
     }
 
-    private void appendEmptyTransactionAndCheckPoint(LogFiles logFiles, String reason) throws IOException {
+    private long appendEmptyTransactionAndCheckPoint(LogFiles logFiles, String reason) throws IOException {
         TransactionId committedTx = store.getLastCommittedTransaction();
         long timestamp = committedTx.commitTimestamp();
         long upgradeTransactionId = store.nextCommittingTransactionId();
@@ -134,6 +134,7 @@ public class TransactionLogInitializer {
         LogPosition position = transactionLogWriter.getCurrentPosition();
         appendCheckpoint(logFiles, reason, position, new TransactionId(upgradeTransactionId, checksum, timestamp));
         store.transactionCommitted(upgradeTransactionId, checksum, timestamp);
+        return upgradeTransactionId;
     }
 
     private static PhysicalTransactionRepresentation emptyTransaction(long timestamp, long txId) {

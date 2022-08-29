@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.TransactionIdStore;
 
 class LogsMigrator {
     private static final String MIGRATION_CHECKPOINT = "Migration checkpoint.";
@@ -84,7 +85,7 @@ class LogsMigrator {
                 // recovered state or not.
                 throw new UnableToMigrateException("Transaction logs not found");
             }
-            return new CheckResult(true);
+            return new CheckResult(true, TransactionIdStore.BASE_TX_ID);
         }
         if (logTail.isRecoveryRequired()) {
             throw new UnableToMigrateException(
@@ -92,7 +93,7 @@ class LogsMigrator {
                             + "please run the version of the DBMS you are migrating from on this store.");
         }
         // all good
-        return new CheckResult(false);
+        return new CheckResult(false, logTail.getLastCommittedTransaction().transactionId());
     }
 
     /**
@@ -100,12 +101,14 @@ class LogsMigrator {
      */
     class CheckResult {
         private final boolean logsMissing;
+        private final long lastTxId;
 
-        private CheckResult(boolean logsMissing) {
+        private CheckResult(boolean logsMissing, long lastTxId) {
             this.logsMissing = logsMissing;
+            this.lastTxId = lastTxId;
         }
 
-        void migrate() {
+        MigrationTransactionIds migrate() {
             try (MetadataProvider store = getMetaDataStore()) {
                 TransactionLogInitializer logInitializer =
                         new TransactionLogInitializer(fs, store, storageEngineFactory);
@@ -115,11 +118,15 @@ class LogsMigrator {
                     // The log files are missing entirely, but since we made it through the check,
                     // we were told to not think of this as an error condition,
                     // so we instead initialize an empty log file.
-                    logInitializer.initializeEmptyLogFile(
-                            databaseLayout, transactionLogsDirectory, MIGRATION_CHECKPOINT);
+                    return new MigrationTransactionIds(
+                            TransactionIdStore.BASE_TX_ID,
+                            logInitializer.initializeEmptyLogFile(
+                                    databaseLayout, transactionLogsDirectory, MIGRATION_CHECKPOINT));
                 } else {
-                    logInitializer.migrateExistingLogFiles(
-                            databaseLayout, transactionLogsDirectory, MIGRATION_CHECKPOINT);
+                    return new MigrationTransactionIds(
+                            lastTxId,
+                            logInitializer.migrateExistingLogFiles(
+                                    databaseLayout, transactionLogsDirectory, MIGRATION_CHECKPOINT));
                 }
             } catch (Exception exception) {
                 throw new UnableToMigrateException(
@@ -127,9 +134,9 @@ class LogsMigrator {
             }
         }
 
-        void upgrade() {
+        MigrationTransactionIds upgrade() {
             if (!logsMissing) {
-                return;
+                return new MigrationTransactionIds(lastTxId, lastTxId);
             }
 
             // The log files are missing entirely, but since we made it through the check,
@@ -139,7 +146,10 @@ class LogsMigrator {
                 TransactionLogInitializer logInitializer =
                         new TransactionLogInitializer(fs, store, storageEngineFactory);
                 Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
-                logInitializer.initializeEmptyLogFile(databaseLayout, transactionLogsDirectory, MIGRATION_CHECKPOINT);
+                return new MigrationTransactionIds(
+                        TransactionIdStore.BASE_TX_ID,
+                        logInitializer.initializeEmptyLogFile(
+                                databaseLayout, transactionLogsDirectory, MIGRATION_CHECKPOINT));
             } catch (Exception exception) {
                 throw new UnableToMigrateException(
                         "Failure on attempt to upgrade transaction logs to new version.", exception);
@@ -158,4 +168,6 @@ class LogsMigrator {
                 logTailSupplier.get(),
                 pageCacheTracer);
     }
+
+    record MigrationTransactionIds(long txIdBeforeMigration, long txIdAfterMigration) {}
 }

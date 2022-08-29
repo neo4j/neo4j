@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -66,6 +67,7 @@ import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.logging.AssertableLogProvider;
@@ -410,6 +412,28 @@ class StoreMigratorTest {
                         "40% completed",
                         "70% completed",
                         "Successfully finished migration of database");
+    }
+
+    @Test
+    void shouldCallPostMigrationWithMigrationTx() throws Exception {
+        // given
+        var logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fs)
+                .withStorageEngineFactory(new RecordStorageEngineFactory())
+                .build();
+        var txIdBeforeMigration =
+                logFiles.getTailMetadata().getLastCommittedTransaction().transactionId();
+        var storeMigrator = createMigrator();
+        var participant = mock(StoreMigrationParticipant.class);
+        when(participant.getName()).thenReturn("Me");
+        mockParticipantAddition(participant);
+
+        // when
+        storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false);
+
+        // then
+        verify(participant).postMigration(any(), any(), eq(txIdBeforeMigration), eq(txIdBeforeMigration + 1));
+        verifyDbStartAndFormat(PageAligned.LATEST_RECORD_FORMATS);
+        assertFalse(migrationDirPresent());
     }
 
     private boolean migrationDirPresent() {
