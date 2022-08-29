@@ -23,6 +23,7 @@ import static org.neo4j.shell.ShellRunner.shouldBeInteractive;
 import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilder;
 import static org.neo4j.shell.util.Versions.isPasswordChangeRequiredException;
 
+import java.io.Closeable;
 import java.io.PrintStream;
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.Neo4jException;
@@ -45,7 +46,7 @@ import org.neo4j.shell.state.BoltStateHandler;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 import org.neo4j.util.VisibleForTesting;
 
-public class Main {
+public class Main implements Closeable {
     private static final Logger log = Logger.create();
     public static final int EXIT_FAILURE = 1;
     public static final int EXIT_SUCCESS = 0;
@@ -117,7 +118,11 @@ public class Main {
 
         Logger.setupLogging(cliArgs);
 
-        System.exit(new Main(cliArgs).startShell());
+        int exitCode;
+        try (var main = new Main(cliArgs)) {
+            exitCode = main.startShell();
+        }
+        System.exit(exitCode);
     }
 
     public int startShell() {
@@ -306,5 +311,14 @@ public class Main {
             throw new CommandException("No text could be read, exiting...");
         }
         return read;
+    }
+
+    @Override
+    public void close() {
+        try {
+            shell.disconnect();
+        } catch (Exception e) {
+            log.warn("Failed to disconnect on exit", e);
+        }
     }
 }

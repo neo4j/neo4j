@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.exceptions.AuthenticationException;
@@ -278,6 +279,22 @@ class MainTest {
                 "advice", List.of("talk", "less", "smile", "more"),
                 "when", LocalDate.of(2021, 1, 12));
         assertThat(parameters.parameterValues(), is(expectedParams));
+    }
+
+    @Test
+    void disconnectOnClose1() throws CommandException, ArgumentParserException, IOException {
+        testWithMockUser("mr", "close").args("-u mr -p close").run(false).assertSuccess();
+
+        verify(mockShell, times(1)).connect(any());
+        verify(mockShell, times(0)).disconnect();
+    }
+
+    @Test
+    void disconnectOnClose2() throws CommandException, ArgumentParserException, IOException {
+        testWithMockUser("mr", "close").args("-u mr -p close").run(true).assertSuccess();
+
+        verify(mockShell, times(1)).connect(any());
+        verify(mockShell, times(1)).disconnect();
     }
 
     private AssertableMain.AssertableMainBuilder testWithMocks() {
