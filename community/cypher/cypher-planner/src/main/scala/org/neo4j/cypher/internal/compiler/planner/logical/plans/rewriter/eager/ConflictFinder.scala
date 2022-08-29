@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.ir.helpers.LabelExpressionEvaluator
 import org.neo4j.cypher.internal.ir.helpers.LabelExpressionEvaluator.NodesToCheckOverlap
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
+import org.neo4j.cypher.internal.util.Ref
 
 import scala.collection.mutable
 
@@ -45,8 +46,8 @@ object ConflictFinder {
    * @param reasons the reasons of the conflict.
    */
   private[eager] case class ConflictingPlanPair(
-    first: LogicalPlan,
-    second: LogicalPlan,
+    first: Ref[LogicalPlan],
+    second: Ref[LogicalPlan],
     reasons: Set[EagernessReason.Reason]
   )
 
@@ -59,10 +60,13 @@ object ConflictFinder {
     readsAndWrites: ReadsAndWrites,
     wholePlan: LogicalPlan
   ): Seq[ConflictingPlanPair] = {
-    val map = mutable.Map[Set[LogicalPlan], Set[EagernessReason.Reason]]()
+    val map = mutable.Map[Set[Ref[LogicalPlan]], Set[EagernessReason.Reason]]()
 
     def addConflict(plan1: LogicalPlan, plan2: LogicalPlan, reasons: Set[EagernessReason.Reason]): Unit =
-      map(Set(plan1, plan2)) = map.getOrElse(Set(plan1, plan2), Set.empty[EagernessReason.Reason]) ++ reasons
+      map(Set(Ref(plan1), Ref(plan2))) = map.getOrElse(
+        Set(Ref(plan1), Ref(plan2)),
+        Set.empty[EagernessReason.Reason]
+      ) ++ reasons
 
     // Conflict between a property read and a property write
     for {

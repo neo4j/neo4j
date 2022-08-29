@@ -2185,6 +2185,60 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
+  test("inserts Eager if there are two conflict in a Union plan: LHS vs Top and RHS vs Top.") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("foo")
+      .setNodeProperty("n", "prop", "5")
+      .union()
+      .|.projection("n.prop AS foo2")
+      .|.allNodeScan("n")
+      .projection("n.prop AS foo")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("foo")
+        .setNodeProperty("n", "prop", "5")
+        .eager(ListSet(EagernessReason.PropertyReadSetConflict(propName("prop"))))
+        .union()
+        .|.projection("n.prop AS foo2")
+        .|.allNodeScan("n")
+        .projection("n.prop AS foo")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test(
+    "inserts Eager if there are two conflict in a Union plan: LHS vs Top and RHS vs Top (LHS and RHS are identical plans)."
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("foo")
+      .setNodeProperty("n", "prop", "5")
+      .union()
+      .|.projection("n.prop AS foo")
+      .|.allNodeScan("n")
+      .projection("n.prop AS foo")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("foo")
+        .setNodeProperty("n", "prop", "5")
+        .eager(ListSet(EagernessReason.PropertyReadSetConflict(propName("prop"))))
+        .union()
+        .|.projection("n.prop AS foo")
+        .|.allNodeScan("n")
+        .projection("n.prop AS foo")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
   // Ignored tests
 
   // No analysis for possible overlaps of node variables based on predicates yet.

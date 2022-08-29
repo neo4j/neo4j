@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.C
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.attribution.Id
 
 import scala.collection.immutable.ListSet
@@ -39,8 +40,8 @@ object BestPositionFinder {
    * @param reasons    all reasons that contributed to this candidateSet
    */
   private case class CandidateSetWithMinimum(
-    candidates: Set[LogicalPlan],
-    minimum: LogicalPlan,
+    candidates: Set[Ref[LogicalPlan]],
+    minimum: Ref[LogicalPlan],
     reasons: Set[EagernessReason.Reason]
   )
 
@@ -57,7 +58,7 @@ object BestPositionFinder {
     val csWithMinima = candidateLists.map(cl =>
       CandidateSetWithMinimum(
         cl.candidates.toSet,
-        cl.candidates.minBy(plan => cardinalities.get(plan.id)),
+        cl.candidates.minBy(plan => cardinalities.get(plan.value.id)),
         cl.reasons
       )
     )
@@ -85,8 +86,11 @@ object BestPositionFinder {
             Some(CandidateSetWithMinimum(intersection, a.minimum, a.reasons ++ b.reasons))
           } else {
             // Both sets have their own minima, and neither lies in the intersection.
-            val minimumInIntersection = intersection.minBy(plan => cardinalities.get(plan.id))
-            if (cardinalities(minimumInIntersection.id) < cardinalities(a.minimum.id) + cardinalities(b.minimum.id)) {
+            val minimumInIntersection = intersection.minBy(plan => cardinalities.get(plan.value.id))
+            if (
+              cardinalities(minimumInIntersection.value.id) <
+                cardinalities(a.minimum.value.id) + cardinalities(b.minimum.value.id)
+            ) {
               // Doing one Eager in the intersection is cheaper.
               Some(CandidateSetWithMinimum(intersection, minimumInIntersection, a.reasons ++ b.reasons))
             } else {
@@ -128,7 +132,7 @@ object BestPositionFinder {
 
     results
       .map(cl => cl.minimum -> cl.reasons)
-      .groupBy(_._1.id)
+      .groupBy(_._1.value.id)
       .view
       .mapValues(_.view.flatMap(_._2).to(ListSet))
       .toMap
