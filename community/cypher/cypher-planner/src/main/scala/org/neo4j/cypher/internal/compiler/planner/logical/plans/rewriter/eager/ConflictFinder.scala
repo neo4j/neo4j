@@ -90,7 +90,8 @@ object ConflictFinder {
       (writePlan, labels) <- readsAndWrites.writes.creates.writtenLabels
       labelSet = labels.toSet
       (variable, FilterExpressions(readPlans, expression)) <-
-        // If a variable exists in the snapshot, let's take it from there, but include other filterExpressions that are not in the snapshot
+        // If a variable exists in the snapshot, let's take it from there. This is when we have a read-write conflict.
+        // But we have to include other filterExpressions that are not in the snapshot, to also cover write-read conflicts.
         readsAndWrites.writes.creates.filterExpressionsSnapshots(writePlan).fuse(
           readsAndWrites.reads.filterExpressions
         )((x, _) => x)

@@ -154,9 +154,7 @@ object ReadsAndWritesFinder {
     def withAddedExpression(newExp: Expression): FilterExpressions = {
       val compositeExpression = expression match {
         case Ands(SetExtractor()) => newExp
-        case Ors(SetExtractor())  => newExp
         case Ands(exprs)          => Ands(exprs + newExp)(InputPosition.NONE)
-        case Ors(exprs)           => Ors(exprs + newExp)(InputPosition.NONE)
         case _                    => Ands(Seq(expression, newExp))(InputPosition.NONE)
       }
       copy(expression = compositeExpression)

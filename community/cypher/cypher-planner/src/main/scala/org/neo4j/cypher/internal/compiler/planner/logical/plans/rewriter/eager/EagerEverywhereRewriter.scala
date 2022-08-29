@@ -48,15 +48,15 @@ case class EagerEverywhereRewriter(attributes: Attributes[LogicalPlan]) extends 
    */
   private def eagerizeBinaryPlan(lp: LogicalBinaryPlan): LogicalBinaryPlan = {
     var res = lp
-    res = lp.left match {
+    lp.left match {
       case up: UpdatingPlan =>
-        res.withLhs(eager(up))(SameId(lp.id))
-      case _ => res
+        res = res.withLhs(eager(up))(SameId(lp.id))
+      case _ =>
     }
-    res = lp.right match {
+    lp.right match {
       case up: UpdatingPlan =>
-        res.withRhs(eager(up))(SameId(lp.id))
-      case _ => res
+        res = res.withRhs(eager(up))(SameId(lp.id))
+      case _ =>
     }
     res
   }
