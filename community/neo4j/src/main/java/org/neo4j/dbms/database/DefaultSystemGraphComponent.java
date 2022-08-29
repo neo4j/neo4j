@@ -27,6 +27,7 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_LA
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STARTED_AT_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STATUS_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STORE_RANDOM_ID_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DELETED_DATABASE_LABEL;
@@ -39,6 +40,7 @@ import static org.neo4j.kernel.database.DatabaseId.SYSTEM_DATABASE_ID;
 import java.time.Clock;
 import java.time.ZonedDateTime;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -204,6 +206,8 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent {
         databaseNode.setProperty(DATABASE_DEFAULT_PROPERTY, defaultDb);
         databaseNode.setProperty(DATABASE_CREATED_AT_PROPERTY, now);
         databaseNode.setProperty(DATABASE_STARTED_AT_PROPERTY, now);
+        var randomId = ThreadLocalRandom.current().nextLong();
+        databaseNode.setProperty(DATABASE_STORE_RANDOM_ID_PROPERTY, randomId);
 
         Node nameNode = tx.createNode(DATABASE_NAME_LABEL);
         nameNode.setProperty(NAME_PROPERTY, databaseName);
