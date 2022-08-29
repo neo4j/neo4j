@@ -303,7 +303,7 @@ class BuiltInProceduresTest {
                         .build(),
                 "");
         settings.put(
-                SettingImpl.newBuilder("dbms.default_database", SettingValueParsers.STRING, "")
+                SettingImpl.newBuilder("initial.dbms.default_database", SettingValueParsers.STRING, "")
                         .build(),
                 "");
         settings.put(
@@ -384,8 +384,8 @@ class BuiltInProceduresTest {
                                 false,
                                 "a string"),
                         record(
-                                "dbms.default_database",
-                                "dbms.default_database, a string",
+                                "initial.dbms.default_database",
+                                "initial.dbms.default_database, a string",
                                 "No Value",
                                 false,
                                 "No Value",

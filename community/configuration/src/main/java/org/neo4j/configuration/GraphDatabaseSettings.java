@@ -107,7 +107,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     @Description("Name of the default database (aliases are not supported).")
     public static final Setting<String> default_database = newBuilder(
-                    "dbms.default_database", DATABASENAME, DEFAULT_DATABASE_NAME)
+                    "initial.dbms.default_database", DATABASENAME, DEFAULT_DATABASE_NAME)
             .build();
 
     @Description("Path of the data directory. You must not configure more than one Neo4j installation to use the "

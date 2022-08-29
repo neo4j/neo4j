@@ -85,7 +85,7 @@ class NeoBootstrapperTest {
         neoBootstrapper = new CommunityBootstrapper();
 
         // when
-        assertThatThrownBy(() -> neoBootstrapper.start(dir, Map.of("dbms.default_database", "$%^&*#)@!")))
+        assertThatThrownBy(() -> neoBootstrapper.start(dir, Map.of("initial.dbms.default_database", "$%^&*#)@!")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasNoSuppressedExceptions()
                 .getRootCause()

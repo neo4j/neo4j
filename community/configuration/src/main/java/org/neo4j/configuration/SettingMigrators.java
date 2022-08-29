@@ -47,6 +47,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.cypher_render_plan_d
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.database_dumps_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
@@ -568,6 +569,7 @@ public final class SettingMigrators {
             migrateCheckpointSettings(values, defaultValues, log);
             migrateKeepAliveSetting(values, defaultValues, log);
             migrateReadOnlySetting(values, defaultValues, log);
+            migrateDefaultDatabaseSetting(values, defaultValues, log);
             migrateDatabaseMaxSize(values, defaultValues, log);
             migrateCypherNamespace(values, defaultValues, log);
             migrateTxStateAndLogsSettings(values, defaultValues, log);
@@ -863,6 +865,11 @@ public final class SettingMigrators {
         private static void migrateReadOnlySetting(
                 Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
             migrateSettingNameChange(values, log, "dbms.read_only", read_only_database_default);
+        }
+
+        private static void migrateDefaultDatabaseSetting(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "dbms.default_database", default_database);
         }
 
         private static void migrateDatabaseMaxSize(
