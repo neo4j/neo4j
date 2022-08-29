@@ -154,7 +154,7 @@ case class ResolvedCall(
   def mapCallArguments(f: Expression => Expression): ResolvedCall =
     copy(callArguments = callArguments.map(f))(this.position)
 
-  override def semanticCheck: SemanticCheck =
+  override def clauseSpecificSemanticCheck: SemanticCheck =
     argumentCheck chain resultCheck
 
   private def argumentCheck: SemanticCheck = {

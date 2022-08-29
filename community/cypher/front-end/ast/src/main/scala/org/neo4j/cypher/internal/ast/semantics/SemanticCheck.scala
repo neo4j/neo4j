@@ -103,8 +103,11 @@ object SemanticCheck {
   /** Check which doesn't change state and does not produce any errors. */
   val success: SemanticCheck = fromFunction(SemanticCheckResult.success)
 
-  /** Creates a check which doesn't change state but produces an error `error`. */
-  def error(error: SemanticErrorDef): SemanticCheck = fromFunction(SemanticCheckResult.error(_, error))
+  /** Creates a check which doesn't change state but produces errors `errors`. */
+  def error(errors: SemanticErrorDef*): SemanticCheck = fromFunction(SemanticCheckResult.error(_, errors))
+
+  /** Creates a check which doesn't change state but produces errors `errors`. */
+  def error(errors: IterableOnce[SemanticErrorDef]): SemanticCheck = fromFunction(SemanticCheckResult.error(_, errors))
 
   /** Creates a check from function. */
   def fromFunction(f: SemanticState => SemanticCheckResult): SemanticCheck = Leaf(f)
@@ -168,6 +171,9 @@ object SemanticCheckResult {
 
   def error(state: SemanticState, error: Option[SemanticErrorDef]): SemanticCheckResult =
     SemanticCheckResult(state, error.toVector)
+
+  def error(state: SemanticState, error: IterableOnce[SemanticErrorDef]): SemanticCheckResult =
+    SemanticCheckResult(state, error.iterator.toSeq)
 }
 
 trait SemanticCheckContext {

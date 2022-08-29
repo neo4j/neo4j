@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.fromFunction
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.success
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
@@ -32,6 +33,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck.FilteringExpressions
+import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck.stringifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
@@ -54,6 +56,7 @@ import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.LabelExpression
+import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
@@ -102,6 +105,81 @@ sealed trait Clause extends ASTNode with SemanticCheckable {
   def name: String
 
   def returnColumns: List[LogicalVariable] = List.empty
+
+  case class LabelExpressionsPartition(
+    legacy: Set[LabelExpression] = Set.empty,
+    gpm: Set[LabelExpression] = Set.empty
+  )
+
+  final override def semanticCheck: SemanticCheck =
+    clauseSpecificSemanticCheck chain
+      fromFunction(checkIfMixingLabelExpressionWithOldSyntax)
+
+  private val stringifier = ExpressionStringifier()
+
+  object SetExtractor {
+    def unapplySeq[T](s: Set[T]): Option[Seq[T]] = Some(s.toSeq)
+  }
+
+  def checkIfMixingLabelExpressionWithOldSyntax(state: SemanticState): SemanticCheckResult = {
+    val partition = this.folder.treeFold(LabelExpressionsPartition()) {
+      case NodePattern(_, Some(le), _, _) => acc =>
+          TraverseChildren(sortLabelExpressionIntoPartition(
+            le,
+            isNode = true,
+            acc
+          ))
+      case LabelExpressionPredicate(entity, le) => acc =>
+          SkipChildren(sortLabelExpressionIntoPartition(
+            le,
+            isNode = state.expressionType(entity).specified == CTNode.invariant,
+            acc
+          ))
+      case RelationshipPattern(_, Some(le), _, _, _, _) => acc =>
+          TraverseChildren(sortLabelExpressionIntoPartition(
+            le,
+            isNode = false,
+            acc
+          ))
+      case LabelExpression => throw new IllegalStateException("Missing a case for label expression location")
+    }
+
+    when(partition.gpm.nonEmpty) {
+      // we prefer the new way, so we will only error on the "legacy" expressions
+      val maybeExplanation = partition.legacy.map { le =>
+        (stringifier.stringifyLabelExpression(le.replaceColonSyntax), le.position)
+      } match {
+        case SetExtractor() => None
+        case SetExtractor((singleExpression, pos)) =>
+          Some((s"This expression could be expressed as :$singleExpression.", pos))
+        // we report all error on the first position as we will later on throw away everything but the first error.
+        case set => Some(s"These expressions could be expressed as :${set.map(_._1).mkString(", :")}.", set.head._2)
+      }
+      maybeExplanation match {
+        case Some((explanation, pos)) => SemanticError(
+            s"Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. $explanation",
+            pos
+          )
+        case None => SemanticCheck.success
+      }
+    }(state)
+  }
+
+  private def sortLabelExpressionIntoPartition(
+    labelExpression: LabelExpression,
+    isNode: Boolean,
+    partition: LabelExpressionsPartition
+  ): LabelExpressionsPartition = {
+    labelExpression match {
+      case _: Leaf                                                                    => partition
+      case Disjunctions(children) if !isNode && children.forall(_.isInstanceOf[Leaf]) => partition
+      case x if isNode && x.containsGpmSpecificLabelExpression    => partition.copy(gpm = partition.gpm + x)
+      case x if !isNode && x.containsGpmSpecificRelTypeExpression => partition.copy(gpm = partition.gpm + x)
+      case x                                                      => partition.copy(legacy = partition.legacy + x)
+    }
+  }
+
+  def clauseSpecificSemanticCheck: SemanticCheck
 }
 
 sealed trait UpdateClause extends Clause with SemanticAnalysisTooling {
@@ -116,7 +194,7 @@ case class LoadCSV(
 )(val position: InputPosition) extends Clause with SemanticAnalysisTooling {
   override def name: String = "LOAD CSV"
 
-  override def semanticCheck: SemanticCheck =
+  override def clauseSpecificSemanticCheck: SemanticCheck =
     SemanticExpressionCheck.simple(urlString) chain
       expectType(CTString.covariant, urlString) chain
       checkFieldTerminator chain
@@ -146,7 +224,7 @@ case class InputDataStream(variables: Seq[Variable])(val position: InputPosition
 
   override def name: String = "INPUT DATA STREAM"
 
-  override def semanticCheck: SemanticCheck =
+  override def clauseSpecificSemanticCheck: SemanticCheck =
     variables.foldSemanticCheck(v => declareVariable(v, types(v)))
 }
 
@@ -154,7 +232,7 @@ sealed trait GraphSelection extends Clause with SemanticAnalysisTooling {
 
   def expression: Expression
 
-  override def semanticCheck: SemanticCheck =
+  override def clauseSpecificSemanticCheck: SemanticCheck =
     checkGraphReference chain
       whenState(_.features(SemanticFeature.ExpressionsInViewInvocations))(
         thenBranch = checkGraphReferenceExpressions,
@@ -188,9 +266,9 @@ sealed trait GraphSelection extends Clause with SemanticAnalysisTooling {
 final case class UseGraph(expression: Expression)(val position: InputPosition) extends GraphSelection {
   override def name = "USE GRAPH"
 
-  override def semanticCheck: SemanticCheck =
+  override def clauseSpecificSemanticCheck: SemanticCheck =
     requireFeatureSupport(s"The `$name` clause", SemanticFeature.UseGraphSelector, position) chain
-      super.semanticCheck
+      super.clauseSpecificSemanticCheck
 }
 
 object GraphReference extends SemanticAnalysisTooling {
@@ -287,7 +365,7 @@ case class Match(
 )(val position: InputPosition) extends Clause with SemanticAnalysisTooling {
   override def name = "MATCH"
 
-  override def semanticCheck: SemanticCheck =
+  override def clauseSpecificSemanticCheck: SemanticCheck =
     SemanticPatternCheck.check(Pattern.SemanticContext.Match, pattern) chain
       hints.semanticCheck chain
       uniqueHints chain
@@ -571,7 +649,7 @@ case class Match(
 sealed trait CommandClause extends Clause with SemanticAnalysisTooling {
   def unfilteredColumns: DefaultOrAllShowColumns
 
-  override def semanticCheck: SemanticCheck =
+  override def clauseSpecificSemanticCheck: SemanticCheck =
     semanticCheckFold(unfilteredColumns.columns)(sc => declareVariable(sc.variable, sc.cypherType))
 
   def where: Option[Where]
@@ -603,7 +681,7 @@ case class ShowIndexesClause(
 
   override def moveWhereToYield: CommandClause = copy(where = None, hasYield = true)(position)
 
-  override def semanticCheck: SemanticCheck =
+  override def clauseSpecificSemanticCheck: SemanticCheck =
     if (brief || verbose)
       error(
         """`SHOW INDEXES` no longer allows the `BRIEF` and `VERBOSE` keywords,
@@ -611,7 +689,7 @@ case class ShowIndexesClause(
         position
       )
     else if (indexType == BtreeIndexes) error("Invalid index type b-tree, please omit the `BTREE` filter.", position)
-    else super.semanticCheck
+    else super.clauseSpecificSemanticCheck
 }
 
 object ShowIndexesClause {
@@ -667,7 +745,7 @@ case class ShowConstraintsClause(
   val existsErrorMessage =
     "`SHOW CONSTRAINTS` no longer allows the `EXISTS` keyword, please use `EXIST` or `PROPERTY EXISTENCE` instead."
 
-  override def semanticCheck: SemanticCheck = constraintType match {
+  override def clauseSpecificSemanticCheck: SemanticCheck = constraintType match {
     case ExistsConstraints(RemovedSyntax)     => error(existsErrorMessage, position)
     case NodeExistsConstraints(RemovedSyntax) => error(existsErrorMessage, position)
     case RelExistsConstraints(RemovedSyntax)  => error(existsErrorMessage, position)
@@ -677,7 +755,7 @@ case class ShowConstraintsClause(
           |please omit `BRIEF` and use `YIELD *` instead of `VERBOSE`.""".stripMargin,
         position
       )
-    case _ => super.semanticCheck
+    case _ => super.clauseSpecificSemanticCheck
   }
 }
 
@@ -822,9 +900,9 @@ trait TransactionsCommandClause extends CommandClause with CommandClauseAllowedO
 
   private def checkYieldItems: SemanticCheck =
     if (yieldItems.nonEmpty) yieldItems.foldSemanticCheck(_.semanticCheck(columnsMap))
-    else super.semanticCheck
+    else super.clauseSpecificSemanticCheck
 
-  override def semanticCheck: SemanticCheck = ids match {
+  override def clauseSpecificSemanticCheck: SemanticCheck = ids match {
     case Right(e) => SemanticExpressionCheck.simple(e) chain checkYieldItems
     case _        => checkYieldItems
   }
@@ -948,7 +1026,7 @@ case class TerminateTransactionsClause(
   val unfilteredColumns: DefaultOrAllShowColumns =
     DefaultOrAllShowColumns(useAllColumns = yieldItems.nonEmpty || yieldAll, columns, columns)
 
-  override def semanticCheck: SemanticCheck = when(ids match {
+  override def clauseSpecificSemanticCheck: SemanticCheck = when(ids match {
     case Left(ls) => ls.size < 1
     case Right(_) => false // expression list length needs to be checked at runtime
   }) {
@@ -958,7 +1036,7 @@ case class TerminateTransactionsClause(
       "`WHERE` is not allowed by itself, please use `TERMINATE TRANSACTION ... YIELD ... WHERE ...` instead",
       wherePos.get
     )
-  } chain super.semanticCheck
+  } chain super.clauseSpecificSemanticCheck
 
   override def where: Option[Where] = None
   override def moveWhereToYield: CommandClause = this
@@ -995,7 +1073,7 @@ case class Merge(pattern: PatternPart, actions: Seq[MergeAction], where: Option[
 
   override def name = "MERGE"
 
-  override def semanticCheck: SemanticCheck =
+  override def clauseSpecificSemanticCheck: SemanticCheck =
     SemanticPatternCheck.check(Pattern.SemanticContext.Merge, Pattern(Seq(pattern))(pattern.position)) chain
       actions.semanticCheck chain
       checkRelTypes(pattern)
@@ -1004,7 +1082,7 @@ case class Merge(pattern: PatternPart, actions: Seq[MergeAction], where: Option[
 case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateClause with SingleRelTypeCheck {
   override def name = "CREATE"
 
-  override def semanticCheck: SemanticCheck =
+  override def clauseSpecificSemanticCheck: SemanticCheck =
     SemanticPatternCheck.check(Pattern.SemanticContext.Create, pattern) chain
       checkRelTypes(pattern) chain
       SemanticState.recordCurrentScope(pattern)
@@ -1013,7 +1091,7 @@ case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateC
 case class CreateUnique(pattern: Pattern)(val position: InputPosition) extends UpdateClause {
   override def name = "CREATE UNIQUE"
 
-  override def semanticCheck: SemanticCheck =
+  override def clauseSpecificSemanticCheck: SemanticCheck =
     SemanticError("CREATE UNIQUE is no longer supported. Please use MERGE instead", position)
 
 }
@@ -1021,13 +1099,13 @@ case class CreateUnique(pattern: Pattern)(val position: InputPosition) extends U
 case class SetClause(items: Seq[SetItem])(val position: InputPosition) extends UpdateClause {
   override def name = "SET"
 
-  override def semanticCheck: SemanticCheck = items.semanticCheck
+  override def clauseSpecificSemanticCheck: SemanticCheck = items.semanticCheck
 }
 
 case class Delete(expressions: Seq[Expression], forced: Boolean)(val position: InputPosition) extends UpdateClause {
   override def name = "DELETE"
 
-  override def semanticCheck: SemanticCheck =
+  override def clauseSpecificSemanticCheck: SemanticCheck =
     SemanticExpressionCheck.simple(expressions) chain
       warnAboutDeletingLabels chain
       expectType(CTNode.covariant | CTRelationship.covariant | CTPath.covariant, expressions)
@@ -1041,7 +1119,7 @@ case class Delete(expressions: Seq[Expression], forced: Boolean)(val position: I
 case class Remove(items: Seq[RemoveItem])(val position: InputPosition) extends UpdateClause {
   override def name = "REMOVE"
 
-  override def semanticCheck: SemanticCheck = items.semanticCheck
+  override def clauseSpecificSemanticCheck: SemanticCheck = items.semanticCheck
 }
 
 case class Foreach(
@@ -1051,7 +1129,7 @@ case class Foreach(
 )(val position: InputPosition) extends UpdateClause {
   override def name = "FOREACH"
 
-  override def semanticCheck: SemanticCheck =
+  override def clauseSpecificSemanticCheck: SemanticCheck =
     SemanticExpressionCheck.simple(expression) chain
       expectType(CTList(CTAny).covariant, expression) chain
       updates.filter(!_.isInstanceOf[UpdateClause]).map(c =>
@@ -1069,7 +1147,7 @@ case class Unwind(
 )(val position: InputPosition) extends Clause with SemanticAnalysisTooling {
   override def name = "UNWIND"
 
-  override def semanticCheck: SemanticCheck =
+  override def clauseSpecificSemanticCheck: SemanticCheck =
     SemanticExpressionCheck.check(SemanticContext.Results, expression) chain
       expectType(CTList(CTAny).covariant | CTAny.covariant, expression) ifOkChain
       FilteringExpressions.failIfAggregating(expression) chain {
@@ -1102,7 +1180,7 @@ case class UnresolvedCall(
   override def returnColumns: List[LogicalVariable] =
     declaredResult.map(_.items.map(_.variable).toList).getOrElse(List.empty)
 
-  override def semanticCheck: SemanticCheck = {
+  override def clauseSpecificSemanticCheck: SemanticCheck = {
     val argumentCheck = declaredArguments.map(
       SemanticExpressionCheck.check(SemanticContext.Results, _)
     ).getOrElse(success)
@@ -1129,7 +1207,7 @@ case class UnresolvedCall(
 }
 
 sealed trait HorizonClause extends Clause with SemanticAnalysisTooling {
-  override def semanticCheck: SemanticCheck = SemanticState.recordCurrentScope(this)
+  override def clauseSpecificSemanticCheck: SemanticCheck = SemanticState.recordCurrentScope(this)
 
   def semanticCheckContinuation(previousScope: Scope, outerScope: Option[Scope] = None): SemanticCheck
 }
@@ -1195,7 +1273,7 @@ sealed trait ProjectionClause extends HorizonClause {
    */
   def withReturnItems(items: Seq[ReturnItem]): ProjectionClause
 
-  override def semanticCheck: SemanticCheck =
+  override def clauseSpecificSemanticCheck: SemanticCheck =
     returnItems.semanticCheck
 
   override def semanticCheckContinuation(previousScope: Scope, outerScope: Option[Scope] = None): SemanticCheck =
@@ -1364,8 +1442,8 @@ case class With(
 
   override def name = "WITH"
 
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
+  override def clauseSpecificSemanticCheck: SemanticCheck =
+    super.clauseSpecificSemanticCheck chain
       ProjectionClause.checkAliasedReturnItems(returnItems, name) chain
       SemanticPatternCheck.checkValidPropertyKeyNamesInReturnItems(returnItems)
 
@@ -1397,8 +1475,8 @@ case class Return(
 
   override def returnColumns: List[LogicalVariable] = returnItems.explicitReturnVariables.toList
 
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
+  override def clauseSpecificSemanticCheck: SemanticCheck =
+    super.clauseSpecificSemanticCheck chain
       checkVariableScope chain
       ProjectionClause.checkAliasedReturnItems(returnItems, "CALL { RETURN ... }") chain
       SemanticPatternCheck.checkValidPropertyKeyNamesInReturnItems(returnItems)
@@ -1462,7 +1540,7 @@ case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[Subque
 
   override def name: String = "CALL"
 
-  override def semanticCheck: SemanticCheck = {
+  override def clauseSpecificSemanticCheck: SemanticCheck = {
     checkSubquery chain
       inTransactionsParameters.foldSemanticCheck {
         _.semanticCheck chain

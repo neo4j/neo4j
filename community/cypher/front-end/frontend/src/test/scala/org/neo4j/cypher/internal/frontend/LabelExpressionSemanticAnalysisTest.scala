@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
@@ -124,6 +126,79 @@ class OtherLabelExpressionSemanticAnalysisTest
     runSemanticAnalysis().errorMessages shouldEqual Seq(
       "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B&C."
     )
+  }
+
+  test("MATCH (n:A), (m:A&B) RETURN *") {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
+  test("MATCH (n:A), (m:A:B) RETURN *") {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
+  test("MATCH (n:A)-[r:R|T]-(m:B) RETURN *") {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
+  test("MATCH (n:A:B)-[r:R|T]-(m:B) RETURN *") {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
+  test("MATCH (n:A&B)-[r:R|T]-(m:B) RETURN *") {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
+  test("MATCH (n:A)-[r:!R&!T]-(m:B) RETURN *") {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
+  test("MATCH (n:A&B)-[r]-(m:B:C) RETURN *") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :B&C."
+    )
+  }
+
+  test("MATCH (n:A:B)-[r:!R&!T]-(m:B) RETURN *") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B."
+    )
+  }
+
+  test("MATCH (n:A:B), (m:A&B) RETURN *") {
+    // should not allow mixing colon as label conjunction symbol with GPM label expression symbols in label expression
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B."
+    )
+  }
+
+  test("MATCH (n:A:B)-[]-(m) WHERE m:(A&B)|C RETURN *") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B."
+    )
+  }
+
+  test("MATCH (n:A:B)-[]-(m) WHERE (m:(A&B)|C)--() RETURN *") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B."
+    )
+  }
+
+  test("MATCH (n:A&B)-[]-(m) WHERE (m:A:B)--() RETURN *") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B."
+    )
+  }
+
+  test("MATCH (n:A:B) MATCH (m:(A&B)|C) RETURN *") {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
+  test("MATCH (n:A:B) WITH n WHERE n:(A&B)|C RETURN *") {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
+  test("MATCH (n:A:B WHERE true)-[]-(m) RETURN *") {
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   // Relationship Pattern
@@ -241,6 +316,14 @@ class OtherLabelExpressionSemanticAnalysisTest
     runSemanticAnalysis().errors shouldBe empty
   }
 
+  test("MATCH (n)-[r]->() WHERE n:A|B&C RETURN count(*)") {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
+  test("MATCH (n:A:B)-[r]->() WITH [r, n] AS list UNWIND list as x RETURN x:A|B") {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
   test("MATCH ()-[r]->() WHERE r:A:B RETURN count(*)") {
     // this was allowed before, so we must continue to accept it
     runSemanticAnalysis().errorMessages shouldBe empty
@@ -278,6 +361,11 @@ class OtherLabelExpressionSemanticAnalysisTest
     runSemanticAnalysis().errors shouldBe empty
   }
 
+  test("RETURN $param:A|B") {
+    // should allow disjunction on unknown type
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
   test("RETURN $param:A|:B") {
     runSemanticAnalysis().errorMessages shouldEqual Seq(
       """The semantics of using colon in the separation of alternative relationship types in conjunction with
@@ -298,20 +386,241 @@ class OtherLabelExpressionSemanticAnalysisTest
     )
   }
 
+  test("MATCH (n:A:B WHERE $param:C|D) RETURN count(*)") {
+    // should allow disjunction on unknown type
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
   // Both Node and predicate
 
   test("MATCH (n:A:B) WHERE n:C&D|E RETURN n") {
-    // should allow mixing colon as label conjunction symbols on node pattern with GPM label expression predicate
-    runSemanticAnalysis().errors shouldBe empty
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B."
+    )
+  }
+
+  test("MATCH (n:A:B) WHERE n:C|D|E RETURN n") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B."
+    )
   }
 
   test("MATCH (n:A:B WHERE n:C&D|E) RETURN n") {
-    // should allow mixing colon as label conjunction symbols on node pattern with GPM label expression predicate
-    runSemanticAnalysis().errors shouldBe empty
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B."
+    )
+  }
+
+  test("MATCH (n:A:B)-[:R|(T&S)]-(m) RETURN n") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B."
+    )
+  }
+
+  test("MATCH (n:A&B)-[:R|T|:S]-(m) RETURN n") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :R|T|S."
+    )
+  }
+
+  test("MATCH (n:A:B WHERE n:C|D|E) RETURN n") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B."
+    )
   }
 
   test("MATCH (n:C&D|E) WHERE n:A:B RETURN n") {
-    // should allow mixing GPM label expression predicate with colon as label conjunction symbols on node pattern
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B."
+    )
+  }
+
+  test("MATCH (n:C&D|E)-[]-(m:A:F) WHERE n:A:B RETURN n") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. These expressions could be expressed as :A&F, :A&B."
+    )
+  }
+
+  // CIP-40 test cases
+  // all non-GPM
+  test("MATCH (n:A:B:C)-[*]->() RETURN n") {
     runSemanticAnalysis().errors shouldBe empty
+  }
+
+  test("MATCH (n:A:B)-[r:S|T|U]-() RETURN n, r") {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
+  test("MATCH p = shortestPath(()-[*1..5]-()) RETURN p") {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
+  // All GPM
+  test("MATCH ()-[r:A&B]->*() RETURN r") {
+    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
+    the[SyntaxException].thrownBy(
+      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
+    ).getMessage should include("Invalid input '*': expected \"(\"")
+    // runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+  }
+
+  test("MATCH (n:(A&B)|C)-[]->+() RETURN n") {
+    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
+    the[SyntaxException].thrownBy(
+      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
+    ).getMessage should include("Invalid input '+': expected \"(\"")
+    // runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+  }
+
+  test("MATCH p = SHORTEST 2 PATHS ()-[]-{1,5}() RETURN p") {
+    // Shortest paths by keywords are not implemented yet. Once this is the case, please change to the test below
+    the[SyntaxException].thrownBy(runSemanticAnalysis()).getMessage should include(
+      "Invalid input 'SHORTEST': expected \"allShortestPaths\" or \"shortestPath\""
+    )
+    // runSemanticAnalysis().errors shouldBe empty
+  }
+
+  // GPM and non-GPM in separate statements
+  test("MATCH (m:A:B:C)-[]->() MATCH (n:(A&B)|C)-[]->(m) RETURN m,n") {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
+  test("MATCH (n)-[r*]-(m) MATCH (n)-[]->+() RETURN m,n,r") {
+    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
+    the[SyntaxException].thrownBy(
+      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
+    ).getMessage should include("Invalid input '+': expected \"(\"")
+    // runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+  }
+
+  test("MATCH p = shortestPath(()-[*1..5]-()) MATCH q = SHORTEST 2 PATHS ()-[]-{1,5}() RETURN nodes(p), nodes(q)") {
+    // Shortest paths by keywords are not implemented yet. Once this is the case, please change to the test below
+    the[SyntaxException].thrownBy(runSemanticAnalysis()).getMessage should include(
+      "Invalid input 'SHORTEST': expected \"allShortestPaths\" or \"shortestPath\""
+    )
+    // runSemanticAnalysis().errors shouldBe empty
+  }
+
+  test("""MATCH (m:A:B:C)-[]->()
+         |RETURN
+         |  CASE
+         |    WHEN m:D|E THEN m.p
+         |    ELSE null
+         |  END
+         |""".stripMargin) {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
+  // GPM and non-GPM in unrelated features
+  test("MATCH p = shortestPath((n)-[]->+({s: 1})) RETURN p") {
+    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
+    the[SyntaxException].thrownBy(
+      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
+    ).getMessage should include("Invalid input '+': expected \"(\"")
+    // runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+  }
+
+  test("MATCH (m)-[]->+(n:R) RETURN m, n") {
+    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
+    the[SyntaxException].thrownBy(
+      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
+    ).getMessage should include("Invalid input '+': expected \"(\"")
+    // runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+  }
+
+  test("MATCH p=((:A:B)-[]->(b) WHERE a.p < b.p)+ RETURN p") {
+    // quantified path pattern predicates are not implemented yet. Once this is the case, please change to the test below
+    the[SyntaxException].thrownBy(
+      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
+    ).getMessage should include("Invalid input 'WHERE': expected \"(\" or \")\"")
+    // runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+  }
+
+  test("MATCH p = SHORTEST 2 PATHS (m)-[*0..5]-(n) RETURN p") {
+    // Shortest paths by keywords are not implemented yet. Once this is the case, please change to the test below
+    the[SyntaxException].thrownBy(runSemanticAnalysis()).getMessage should include(
+      "Invalid input 'SHORTEST': expected \"allShortestPaths\" or \"shortestPath\""
+    )
+    // runSemanticAnalysis().errors shouldBe empty
+  }
+
+  // Mixed label expression in same statement
+  test("MATCH (n:A:B)-[]-(m) WHERE m:(A&B)|C RETURN m, n") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B."
+    )
+  }
+
+  test("MATCH ((n:A:B:C)-[]->()) RETURN n:A&B, n:A:B") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B."
+    )
+  }
+
+  // ... graph pattern
+  test("MATCH (n:A:B)--(:C), (n)-->(m:(A&B)|C) RETURN m, n") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B."
+    )
+  }
+
+  // ... path pattern
+  test("MATCH (n:A:B)-[]-(m:(A&B)|C) RETURN m, n") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B."
+    )
+  }
+
+  // ... node pattern
+  test("MATCH (n:A|B:C) RETURN n") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A|(B&C)."
+    )
+  }
+
+  // Mixed quantifier in same statement
+  test("MATCH (n) RETURN [(n)-->+(m) | m], [(n)-[*3]-(m) | m]") {
+    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
+    the[SyntaxException].thrownBy(
+      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
+    ).getMessage should include("Invalid input '+': expected \"(\"")
+    // runSemanticAnalysis().errorMessages shouldEqual Seq(
+    //   "Mixing defining the length of a relationship on the inside or the outside of a relationship is not allowed. This relationship can be expressed as '--{3}'"
+    // )
+  }
+
+  // ... on same element pattern
+  test("MATCH ()-[r:A*]->*() RETURN r") {
+    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
+    the[SyntaxException].thrownBy(
+      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
+    ).getMessage should include("Invalid input '*': expected \"(\"")
+    // runSemanticAnalysis().errorMessages shouldEqual Seq(
+    //   "Defining the length of a relationship on the inside or the outside of a relationship is not allowed."
+    // )
+  }
+
+  test("MATCH ()-[r:A*1..2]->{1,2}() RETURN r") {
+    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
+    the[SyntaxException].thrownBy(
+      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
+    ).getMessage should include("Invalid input '{': expected \"(\"")
+    // runSemanticAnalysis().errorMessages shouldEqual Seq(
+    //   "Defining the length of a relationship on the inside or the outside of a relationship is not allowed. This relationship can be expressed as '-[r:A]->{1,2}'"
+    // )
+  }
+
+  // ... in different statements
+  test("MATCH (s)-[:A*2..2]->(n) MATCH (n)-[:B]->{2}(t) RETURN s.p AS sp, t.p AS tp") {
+    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
+    the[SyntaxException].thrownBy(
+      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
+    ).getMessage should include("Invalid input '{': expected \"(\"")
+    // runSemanticAnalysis().errors shouldBe empty
+  }
+
+  // Mixing pre-GPM label expression with QPP does not raise SyntaxError
+  test("MATCH ({p: 1})-->() ((:R:T)--()){1,2} ()-->(m) RETURN m.p as mp") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
   }
 }
