@@ -90,9 +90,10 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException> {
     }
 
     @Override
-    public void writeNode(long nodeId, TextArray labels, MapValue properties, boolean ignored) {
-        append("(id=");
-        append(String.valueOf(nodeId));
+    public void writeNode(String elementId, long nodeId, TextArray labels, MapValue properties, boolean isDeleted)
+            throws RuntimeException {
+        append("(elementId=");
+        append(elementId);
         String sep = " ";
         for (int i = 0; i < labels.length(); i++) {
             append(sep);
@@ -117,9 +118,18 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException> {
 
     @Override
     public void writeRelationship(
-            long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean ignored) {
-        append("-[id=");
-        append(String.valueOf(relId));
+            String elementId,
+            long relId,
+            String startNodeElementId,
+            long startNodeId,
+            String endNodeElementId,
+            long endNodeId,
+            TextValue type,
+            MapValue properties,
+            boolean isDeleted)
+            throws RuntimeException {
+        append("-[elementId=");
+        append(elementId);
         append(" :");
         append(type.stringValue());
         if (properties.size() > 0) {

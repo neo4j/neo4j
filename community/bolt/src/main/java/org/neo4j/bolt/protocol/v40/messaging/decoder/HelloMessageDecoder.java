@@ -131,7 +131,17 @@ public class HelloMessageDecoder implements StructReader<Connection, HelloMessag
         }
 
         @Override
+        protected Node newNodeEntityByElementId(String elementId) {
+            throw new UnsupportedOperationException("Authentication tokens should not contain nodes");
+        }
+
+        @Override
         protected Relationship newRelationshipEntityById(long id) {
+            throw new UnsupportedOperationException("Authentication tokens should not contain relationships");
+        }
+
+        @Override
+        protected Relationship newRelationshipEntityByElementId(String elementId) {
             throw new UnsupportedOperationException("Authentication tokens should not contain relationships");
         }
 

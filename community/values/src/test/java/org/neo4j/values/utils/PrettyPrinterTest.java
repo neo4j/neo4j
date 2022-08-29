@@ -90,7 +90,7 @@ class PrettyPrinterTest {
         node.writeTo(printer);
 
         // Then
-        assertThat(printer.value()).isEqualTo("(id=42 :L1:L2:L3 {bar: [1337, \"baz\"], foo: 42})");
+        assertThat(printer.value()).isEqualTo("(elementId=42 :L1:L2:L3 {bar: [1337, \"baz\"], foo: 42})");
     }
 
     @Test
@@ -120,7 +120,7 @@ class PrettyPrinterTest {
         node.writeTo(printer);
 
         // Then
-        assertThat(printer.value()).isEqualTo("(id=42 {bar: [1337, \"baz\"], foo: 42})");
+        assertThat(printer.value()).isEqualTo("(elementId=42 {bar: [1337, \"baz\"], foo: 42})");
     }
 
     @Test
@@ -133,7 +133,7 @@ class PrettyPrinterTest {
         node.writeTo(printer);
 
         // Then
-        assertThat(printer.value()).isEqualTo("(id=42 :L1:L2:L3)");
+        assertThat(printer.value()).isEqualTo("(elementId=42 :L1:L2:L3)");
     }
 
     @Test
@@ -146,7 +146,7 @@ class PrettyPrinterTest {
         node.writeTo(printer);
 
         // Then
-        assertThat(printer.value()).isEqualTo("(id=42)");
+        assertThat(printer.value()).isEqualTo("(elementId=42)");
     }
 
     @Test
@@ -179,7 +179,7 @@ class PrettyPrinterTest {
         rel.writeTo(printer);
 
         // Then
-        assertThat(printer.value()).isEqualTo("-[id=42 :R {bar: [1337, \"baz\"], foo: 42}]-");
+        assertThat(printer.value()).isEqualTo("-[elementId=42 :R {bar: [1337, \"baz\"], foo: 42}]-");
     }
 
     @Test
@@ -213,7 +213,7 @@ class PrettyPrinterTest {
         rel.writeTo(printer);
 
         // Then
-        assertThat(printer.value()).isEqualTo("-[id=42 :R]-");
+        assertThat(printer.value()).isEqualTo("-[elementId=42 :R]-");
     }
 
     @Test
@@ -226,7 +226,7 @@ class PrettyPrinterTest {
         node.writeTo(printer);
 
         // Then
-        assertThat(printer.value()).isEqualTo("(id=42)");
+        assertThat(printer.value()).isEqualTo("(elementId=42)");
     }
 
     @Test
@@ -242,7 +242,7 @@ class PrettyPrinterTest {
         path.writeTo(printer);
 
         // Then
-        assertThat(printer.value()).isEqualTo("(id=1 :L)-[id=42 :R]->(id=2 :L)");
+        assertThat(printer.value()).isEqualTo("(elementId=1 :L)-[elementId=42 :R]->(elementId=2 :L)");
     }
 
     @Test

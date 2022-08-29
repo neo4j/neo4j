@@ -69,7 +69,11 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
 
     protected abstract Node newNodeEntityById(long id);
 
+    protected abstract Node newNodeEntityByElementId(String elementId);
+
     protected abstract Relationship newRelationshipEntityById(long id);
+
+    protected abstract Relationship newRelationshipEntityByElementId(String elementId);
 
     protected abstract Point newPoint(CoordinateReferenceSystem crs, double[] coordinate);
 
@@ -95,9 +99,10 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
-    public void writeNode(long nodeId, TextArray ignore, MapValue properties, boolean ignored) {
+    public void writeNode(String elementId, long nodeId, TextArray labels, MapValue properties, boolean isDeleted)
+            throws E {
         if (nodeId >= 0) {
-            writeValue(newNodeEntityById(nodeId));
+            writeValue(newNodeEntityByElementId(elementId));
         }
     }
 
@@ -113,9 +118,18 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
 
     @Override
     public void writeRelationship(
-            long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean ignored) {
+            String elementId,
+            long relId,
+            String startNodeElementId,
+            long startNodeId,
+            String endNodeElementId,
+            long endNodeId,
+            TextValue type,
+            MapValue properties,
+            boolean isDeleted)
+            throws E {
         if (relId >= 0) {
-            writeValue(newRelationshipEntityById(relId));
+            writeValue(newRelationshipEntityByElementId(elementId));
         }
     }
 

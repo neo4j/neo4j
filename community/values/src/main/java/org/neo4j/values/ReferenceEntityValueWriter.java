@@ -33,13 +33,22 @@ public abstract class ReferenceEntityValueWriter<E extends Exception> implements
     }
 
     @Override
-    public final void writeNode(long nodeId, TextArray labels, MapValue properties, boolean isDeleted) throws E {
+    public void writeNode(String elementId, long nodeId, TextArray labels, MapValue properties, boolean isDeleted)
+            throws E {
         throw new IllegalStateException("Cannot write full node to ReferenceEntityValueWriter");
     }
 
     @Override
-    public final void writeRelationship(
-            long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean isDeleted)
+    public void writeRelationship(
+            String elementId,
+            long relId,
+            String startNodeElementId,
+            long startNodeId,
+            String endNodeElementId,
+            long endNodeId,
+            TextValue type,
+            MapValue properties,
+            boolean isDeleted)
             throws E {
         throw new IllegalStateException("Cannot write full node to ReferenceEntityValueWriter");
     }

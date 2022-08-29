@@ -757,6 +757,11 @@ public class TransactionImpl extends EntityValidationTransactionImpl {
     }
 
     @Override
+    public Relationship newRelationshipEntity(String elementId) {
+        return new RelationshipEntity(this, elementIdMapper.relationshipId(elementId));
+    }
+
+    @Override
     public RelationshipEntity newRelationshipEntity(long id, long startNodeId, int typeId, long endNodeId) {
         return new RelationshipEntity(this, id, startNodeId, typeId, endNodeId);
     }
@@ -769,6 +774,11 @@ public class TransactionImpl extends EntityValidationTransactionImpl {
     @Override
     public NodeEntity newNodeEntity(long nodeId) {
         return new NodeEntity(this, nodeId);
+    }
+
+    @Override
+    public Node newNodeEntity(String elementId) {
+        return new NodeEntity(this, elementIdMapper.nodeId(elementId));
     }
 
     @Override

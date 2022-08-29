@@ -170,6 +170,8 @@ object QueryStateHelper extends MockitoSugar {
       override protected def newNodeEntityById(id: Long): Node = ???
       override protected def newRelationshipEntityById(id: Long): Relationship = ???
       override protected def newPoint(crs: CoordinateReferenceSystem, coordinate: Array[Double]): Point = ???
+      override protected def newNodeEntityByElementId(elementId: String): Node = ???
+      override protected def newRelationshipEntityByElementId(elementId: String): Relationship = ???
     }
     any.writeTo(writer)
     writer.value()

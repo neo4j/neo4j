@@ -158,8 +158,18 @@ public class QueryStatusResult {
         }
 
         @Override
+        protected Node newNodeEntityByElementId(String elementId) {
+            return entityFactory.newNodeEntity(elementId);
+        }
+
+        @Override
         protected Relationship newRelationshipEntityById(long id) {
             return entityFactory.newRelationshipEntity(id);
+        }
+
+        @Override
+        protected Relationship newRelationshipEntityByElementId(String elementId) {
+            return entityFactory.newRelationshipEntity(elementId);
         }
 
         @Override

@@ -352,6 +352,11 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context, T
         }
 
         @Override
+        public Relationship newRelationshipEntity(String elementId) {
+            return transaction.newRelationshipEntity(elementId);
+        }
+
+        @Override
         public Relationship newRelationshipEntity(long id, long startNodeId, int typeId, long endNodeId) {
             return transaction.newRelationshipEntity(id, startNodeId, typeId, endNodeId);
         }
@@ -364,6 +369,11 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context, T
         @Override
         public Node newNodeEntity(long nodeId) {
             return transaction.newNodeEntity(nodeId);
+        }
+
+        @Override
+        public Node newNodeEntity(String elementId) {
+            return transaction.newNodeEntity(elementId);
         }
 
         @Override

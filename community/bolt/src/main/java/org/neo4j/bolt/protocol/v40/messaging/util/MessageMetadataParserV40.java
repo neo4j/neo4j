@@ -179,7 +179,17 @@ public final class MessageMetadataParserV40 {
         }
 
         @Override
+        protected Node newNodeEntityByElementId(String elementId) {
+            throw new UnsupportedOperationException("Transaction metadata should not contain nodes");
+        }
+
+        @Override
         protected Relationship newRelationshipEntityById(long id) {
+            throw new UnsupportedOperationException("Transaction metadata should not contain relationships");
+        }
+
+        @Override
+        protected Relationship newRelationshipEntityByElementId(String elementId) {
             throw new UnsupportedOperationException("Transaction metadata should not contain relationships");
         }
 

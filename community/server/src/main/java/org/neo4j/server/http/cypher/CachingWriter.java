@@ -105,7 +105,17 @@ public class CachingWriter extends BaseToObjectValueWriter<IOException> {
     }
 
     @Override
+    protected Node newNodeEntityByElementId(String elementId) {
+        throw new UnsupportedOperationException("Only can write existing nodes");
+    }
+
+    @Override
     protected Relationship newRelationshipEntityById(long id) {
+        throw new UnsupportedOperationException("Only can write existing relationships");
+    }
+
+    @Override
+    protected Relationship newRelationshipEntityByElementId(String elementId) {
         throw new UnsupportedOperationException("Only can write existing relationships");
     }
 

@@ -27,11 +27,15 @@ import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 public interface TransactionalEntityFactory {
     Relationship newRelationshipEntity(long id);
 
+    Relationship newRelationshipEntity(String elementId);
+
     Relationship newRelationshipEntity(long id, long startNodeId, int typeId, long endNodeId);
 
     Relationship newRelationshipEntity(RelationshipDataAccessor cursor);
 
     Node newNodeEntity(long nodeId);
+
+    Node newNodeEntity(String elementId);
 
     RelationshipType getRelationshipTypeById(int type);
 }

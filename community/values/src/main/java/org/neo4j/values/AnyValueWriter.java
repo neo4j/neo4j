@@ -43,26 +43,20 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E> {
      *
      * A returned {@link EntityMode#FULL} signals to all entity-values that they can callback using either
      *      {@link #writeNodeReference(long)},
-     *      {@link #writeNode(long, TextArray, MapValue, boolean)},
+     *      {@link #writeNode(String, long, TextArray, MapValue, boolean)},
      *      {@link #writeRelationshipReference(long)}
-     *   or {@link #writeRelationship(long, long, long, TextValue, MapValue, boolean)}
+     *   or {@link #writeRelationship(String, long, String, long, String, long, TextValue, MapValue, boolean)}
      * depending on how much information is available to the value instance.
      */
     EntityMode entityMode();
 
     void writeNodeReference(long nodeId) throws E;
 
-    default void writeNode(String elementId, long nodeId, TextArray labels, MapValue properties, boolean isDeleted)
-            throws E {
-        this.writeNode(nodeId, labels, properties, isDeleted);
-    }
-
-    @Deprecated
-    default void writeNode(long nodeId, TextArray labels, MapValue properties, boolean isDeleted) throws E {}
+    void writeNode(String elementId, long nodeId, TextArray labels, MapValue properties, boolean isDeleted) throws E;
 
     void writeRelationshipReference(long relId) throws E;
 
-    default void writeRelationship(
+    void writeRelationship(
             String elementId,
             long relId,
             String startNodeElementId,
@@ -72,14 +66,7 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E> {
             TextValue type,
             MapValue properties,
             boolean isDeleted)
-            throws E {
-        this.writeRelationship(relId, startNodeId, endNodeId, type, properties, isDeleted);
-    }
-
-    @Deprecated
-    default void writeRelationship(
-            long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean isDeleted)
-            throws E {}
+            throws E;
 
     void beginMap(int size) throws E;
 
