@@ -707,6 +707,8 @@ object ShowServers {
       (ShowColumn("serverId")(position), false),
       (ShowColumn("name")(position), true),
       (ShowColumn("address")(position), true),
+      (ShowColumn("httpAddress")(position), false),
+      (ShowColumn("httpsAddress")(position), false),
       (ShowColumn("state")(position), true),
       (ShowColumn("health")(position), true),
       (ShowColumn("hosting", CTList(CTString))(position), true),
