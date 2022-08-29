@@ -741,4 +741,25 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
 
     lowCost should be < highCost
   }
+
+  test("shouldn't round LHS of Apply cardinality to one when calculating costs") {
+    def costWithLhsCardinality(lhsCardinality: Double): Cost = {
+      val builder = new LogicalPlanBuilder(wholePlan = false)
+      val plan = builder
+        .apply()
+        .|.allNodeScan("b", "a").withCardinality(100)
+        .filter("a.prop1 = 42").withCardinality(lhsCardinality)
+        .allNodeScan("a").withCardinality(100)
+        .build()
+      costFor(
+        plan,
+        QueryGraphSolverInput.empty,
+        builder.getSemanticTable,
+        builder.cardinalities,
+        builder.providedOrders
+      )
+    }
+
+    costWithLhsCardinality(0.5) should be < costWithLhsCardinality(1.0)
+  }
 }
