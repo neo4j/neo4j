@@ -423,8 +423,6 @@ class SettingTest
                 "\"value 4\" \"value 5\"",  // "value 4" "value 5"
                 "\"value  6\"",             // "value  6"
                 "value\"quoted\"",          // value"quoted"
-                "\"value \"\"\"",           // "value """
-                "\"\"quote",                // ""quote          Escaped start quote
                 " valuewithspace  ",        // valuewithspace
                 "strwithctrl\u000b\u0002",  // some control characters
                 " values  with   spaces ",  // values  with  spaces
@@ -441,8 +439,6 @@ class SettingTest
                 "value 5",                  // value 5
                 "value  6",                 // value  6
                 "value\"quoted\"",          // value"quoted"
-                "value \"",                 // value "
-                "\"quote",                  // "quote
                 "valuewithspace",           // valuewithspace
                 "strwithctrl",              // some control characters
                 "values",                   // values
@@ -458,6 +454,14 @@ class SettingTest
         var actualSettings = setting.parse( String.join( System.lineSeparator(), inputs ) );
         var expectedSettings = String.join( System.lineSeparator(), outputs );
         assertEquals( expectedSettings, actualSettings );
+    }
+
+    @Test
+    void testJvmAdditionalWithProperty()
+    {
+        var setting = (SettingImpl<String>) setting( "setting", JVM_ADDITIONAL );
+        // A JVM setting should not split on whitespace inside quotes
+        assertThat( setting.parse( "-Da=\"string with space\"" ) ).isEqualTo( "-Da=\"string with space\"" );
     }
 
     @Test

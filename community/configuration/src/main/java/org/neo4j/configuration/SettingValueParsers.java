@@ -28,6 +28,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -264,81 +265,60 @@ public final class SettingValueParsers
     {
         private String parseLine( String line )
         {
-            var builder = new StringBuilder();
+            List<String> tokens = new ArrayList<>();
+            StringBuilder sb = new StringBuilder();
 
-            var quoting = false;
-            var pendingQuote = false;
-            var atBoundary = true;
-            for ( int i = 0; i < line.length(); i++ )
+            char inQuote = 0;
+            for ( char c : line.toCharArray() )
             {
-                char c = line.charAt( i );
-                switch ( c )
+                if ( c == '"' || c == '\'' )
                 {
-                    case '"':
-                        if ( atBoundary )
-                        {
-                            pendingQuote = true;
-                            atBoundary = false;
-                        }
-                        else
-                        {
-                            if ( quoting )
-                            {
-                                if ( pendingQuote )
-                                {
-                                    builder.append( '"' );
-                                    pendingQuote = false;
-                                }
-                                else
-                                {
-                                    pendingQuote = true;
-                                }
-                            }
-                            else
-                            {
-                                pendingQuote = false;
-                                builder.append( '"' );
-                            }
-                        }
-                        break;
-                    case ' ':
-                        if ( pendingQuote )
-                        {
-                            quoting = false;
-                            pendingQuote = false;
-                        }
-                        if ( quoting )
-                        {
-                            builder.append( ' ' );
-                        }
-                        else if ( !atBoundary )
-                        {
-                            // Start interpreting the rest as a new setting
-                            builder.append( System.lineSeparator() );
-                            atBoundary = true;
-                        }
-                        break;
-                    default:
-                        if ( pendingQuote )
-                        {
-                            quoting = true;
-                            pendingQuote = false;
-                        }
-                        atBoundary = false;
-                        builder.append( c );
-                        break;
+                    if ( inQuote == 0 )
+                    {
+                        inQuote = c; // Starting new quote
+                    }
+                    else if ( c == inQuote )
+                    {
+                        inQuote = 0; // End of current quote
+                    }
                 }
+                if ( inQuote == 0 && Character.isWhitespace( c ) )
+                {
+                    addToken( tokens, sb );
+                    continue;
+                }
+                sb.append( c );
             }
-            if ( pendingQuote )
+            addToken( tokens, sb );
+
+            if ( inQuote != 0 )
             {
-                quoting = false;
-                pendingQuote = false;
+                throw new IllegalArgumentException( "Missing end quote: " + inQuote );
             }
-            if ( quoting )
+
+            return tokens.stream().map( this::peelQuotes ).collect( Collectors.joining( System.lineSeparator() ) );
+        }
+
+        private void addToken( List<String> tokens, StringBuilder sb )
+        {
+            if ( sb.length() > 0 )
             {
-                throw new IllegalArgumentException( "Missing end quote" );
+                tokens.add( sb.toString() );
+                sb.setLength( 0 );
             }
-            return builder.toString();
+        }
+
+        /**
+         * Remove matching surrounding double and single quotes, ignoring white space characters.
+         */
+        private String peelQuotes( String s )
+        {
+            s = s.strip();
+            while ( s.length() > 2 && (s.startsWith( "'" ) && s.endsWith( "'" ) || s.startsWith( "\"" ) && s.endsWith( "\"" )) )
+            {
+                s = s.substring( 1, s.length() - 1 ).trim();
+            }
+            return s;
         }
 
         @Override

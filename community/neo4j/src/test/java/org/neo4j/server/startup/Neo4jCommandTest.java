@@ -380,17 +380,17 @@ class Neo4jCommandTest
         void shouldQuoteArgsCorrectlyOnDryRun()
         {
             addConf( BootloaderSettings.additional_jvm, "\"-Dbaz=/path/with spaces/and double qoutes\"" );
-            addConf( BootloaderSettings.additional_jvm, "\"-Dqux=/path/with spaces/and unmatched \"\" qoute\"" );
             addConf( BootloaderSettings.additional_jvm, "-Dcorge=/path/with/no/spaces" );
             addConf( BootloaderSettings.additional_jvm, "-Dgrault=/path/with/part/'quoted'" );
             addConf( BootloaderSettings.additional_jvm, "-Dgarply=\"/path/with/part/quoted\"" );
+            addConf( BootloaderSettings.additional_jvm, "-Dgarply=\"/path/with/part/quoted\" -Ddaz=\"test with space\"" );
             assertThat( execute( "console", "--dry-run" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).contains(
                     "\"-Dbaz=/path/with spaces/and double qoutes\"",
-                    "'-Dqux=/path/with spaces/and unmatched \" qoute'",
                     "-Dcorge=/path/with/no/spaces",
                     "-Dgrault=/path/with/part/'quoted'",
-                    "'-Dgarply=\"/path/with/part/quoted\"'"
+                    "'-Dgarply=\"/path/with/part/quoted\"'",
+                    "'-Ddaz=\"test with space\"'"
             );
 
             assertThat( out.toString() ).doesNotContain( "\"-Dcorge=/path/with/no/spaces\"" );
@@ -402,6 +402,21 @@ class Neo4jCommandTest
             addConf( BootloaderSettings.additional_jvm, "-Dfoo=some\"partly'quoted'\"data" );
             assertThat( execute( "console", "--dry-run" ) ).isEqualTo( ExitCode.SOFTWARE );
             assertThat( err.toString() ).contains( "contains both single and double quotes" );
+        }
+
+        @Test
+        void shouldHandleMultipleValuesInJvmAdditional()
+        {
+            addConf(
+                    BootloaderSettings.additional_jvm,
+                    "\"-XX:+HeapDumpOnOutOfMemoryError\" \"-XX:OnOutOfMemoryError=echo %p\" -Da=\"foo bar\"" );
+            assertThat( execute( "console", "--dry-run" ) ).isEqualTo( EXIT_CODE_OK );
+            assertThat( out.toString() )
+                    .contains(
+                            "-XX:+HeapDumpOnOutOfMemoryError " // no quotes are needed
+                            + "\"-XX:OnOutOfMemoryError=echo %p\" " // quotes are preserved due to space
+                            + "'-Da=\"foo bar\"'" // single quotes are used since the arg contains double quotes
+                    );
         }
 
         @Test
