@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.javacompat;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_RUNTIME_OPTION;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.EAGER_LOAD_CSV;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.INDEX_HINT_UNFULFILLABLE;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.RUNTIME_UNSUPPORTED;
@@ -455,5 +456,15 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     @Test
     void shouldWarnOnExecute() {
         assertNotifications("MATCH (a {NO_SUCH_THING: 1337}) RETURN a", containsItem(unknownPropertyKeyNotification));
+    }
+
+    @Test
+    void shouldWarnOnRuntimeInterpreted() {
+        shouldNotifyInStreamWithDetail(
+                "EXPLAIN CYPHER runtime=interpreted RETURN 1",
+                InputPosition.empty,
+                DEPRECATED_RUNTIME_OPTION,
+                NotificationDetail.Factory.message(
+                        "The query used a deprecated runtime option.", "Option: interpreted"));
     }
 }

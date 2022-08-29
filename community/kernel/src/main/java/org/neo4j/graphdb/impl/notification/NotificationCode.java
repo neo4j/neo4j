@@ -60,6 +60,11 @@ public enum NotificationCode {
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
             "The query used a deprecated procedure."),
+
+    DEPRECATED_RUNTIME_OPTION(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The query used a deprecated runtime option."),
     PROCEDURE_WARNING(
             SeverityLevel.WARNING,
             Status.Procedure.ProcedureWarning,

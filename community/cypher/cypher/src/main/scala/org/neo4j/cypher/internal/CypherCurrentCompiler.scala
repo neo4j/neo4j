@@ -152,7 +152,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       logicalPlanResult.plannerContext.debugOptions.rawCardinalitiesEnabled,
       attributes.providedOrders,
       executionPlan,
-      logicalPlanResult.notifications.toIndexedSeq,
+      logicalPlanResult.notifications ++ query.notifications,
       logicalPlanResult.reusability,
       logicalPlanResult.paramNames.toArray,
       logicalPlanResult.extractedParams,
