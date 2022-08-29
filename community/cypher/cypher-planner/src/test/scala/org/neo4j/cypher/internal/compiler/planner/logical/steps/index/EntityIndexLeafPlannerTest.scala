@@ -77,57 +77,69 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
   testFindIndexCompatiblePredicate(
     "equals",
     equals(property, integerLiteral),
-    isExact = true,
-    indexQueryType = IndexQueryType.EXACT,
     propertyTypes = Map(integerLiteral -> CTInteger.invariant),
-    cypherType = CTInteger
+    expectedPredicatesOrArgs = Right(Args(
+      indexQueryType = IndexQueryType.EXACT,
+      cypherType = CTInteger,
+      isExact = true
+    ))
   )
 
   testFindIndexCompatiblePredicate(
     "equals with unknown variable",
     equals(property, varFor("m")),
-    Some(PartialPredicateWrapper(isNotNull(property), _)),
-    indexQueryType = IndexQueryType.EXISTS,
-    cypherType = CTAny
+    expectedPredicatesOrArgs = Right(Args(
+      indexQueryType = IndexQueryType.EXISTS,
+      cypherType = CTAny,
+      solvedPredicate = Some(PartialPredicateWrapper(isNotNull(property), _))
+    ))
   )
 
   testFindIndexCompatiblePredicate(
     "equals with known variable",
     equals(property, varFor("m")),
-    isExact = true,
     argumentIds = Set("m"),
-    dependencies = Set("m"),
-    indexQueryType = IndexQueryType.EXACT,
-    cypherType = CTAny
+    expectedPredicatesOrArgs = Right(Args(
+      indexQueryType = IndexQueryType.EXACT,
+      cypherType = CTAny,
+      dependencies = Set("m"),
+      isExact = true
+    ))
   )
 
   testFindIndexCompatiblePredicate(
     "equals reverse",
     equals(integerLiteral, property),
-    isExact = true,
     propertyTypes = Map(integerLiteral -> CTInteger.invariant),
-    indexQueryType = IndexQueryType.EXACT,
-    cypherType = CTInteger
+    expectedPredicatesOrArgs = Right(Args(
+      indexQueryType = IndexQueryType.EXACT,
+      cypherType = CTInteger,
+      isExact = true
+    ))
   )
 
   testFindIndexCompatiblePredicate(
     "in",
     in(property, integerListLiteral),
-    isExact = true,
-    indexQueryType = IndexQueryType.EXACT,
     propertyTypes = Map(
       integerListLiteral -> CTList(CTInteger),
       integerListLiteral.expressions(0) -> CTInteger,
       integerListLiteral.expressions(1) -> CTInteger
     ),
-    cypherType = CTInteger
+    expectedPredicatesOrArgs = Right(Args(
+      indexQueryType = IndexQueryType.EXACT,
+      cypherType = CTInteger,
+      isExact = true
+    ))
   )
 
   testFindIndexCompatiblePredicate(
     "startsWith",
     startsWith(property, literalString("test")),
-    indexQueryType = IndexQueryType.STRING_PREFIX,
-    cypherType = CTString
+    expectedPredicatesOrArgs = Right(Args(
+      indexQueryType = IndexQueryType.STRING_PREFIX,
+      cypherType = CTString
+    ))
   )
 
   testFindIndexPredicateOnStringPredicate(
@@ -142,78 +154,59 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
     contains(property, literalString("test"))
   )
 
-  private def testFindIndexPredicateOnStringPredicate(
-    predicateName: String,
-    indexQueryType: IndexQueryType,
-    stringPredicate: BooleanExpression
-  ): Unit = {
-    val explicitPredicate = IndexCompatiblePredicate(
-      variable = varFor("n"),
-      property = property,
-      predicate = stringPredicate,
-      queryExpression = ExistenceQueryExpression(),
-      predicateExactness = NonSeekablePredicate,
-      solvedPredicate = Some(stringPredicate),
-      dependencies = Set.empty,
-      indexQueryType = indexQueryType,
-      cypherType = CTString
-    )
-    val implicitExistencePredicate = makeImplicitExistencePredicate(stringPredicate)
-    testFindIndexCompatiblePredicate(
-      predicateName,
-      stringPredicate,
-      indexQueryType = indexQueryType,
-      cypherType = CTString,
-      expectedPredicates = Seq(explicitPredicate, implicitExistencePredicate)
-    )
-  }
-
   testFindIndexCompatiblePredicate(
     "lessThan with literal",
     lessThan(property, integerLiteral),
     propertyTypes = Map(integerLiteral -> CTInteger.invariant),
-    indexQueryType = IndexQueryType.RANGE,
-    cypherType = CTInteger
+    expectedPredicatesOrArgs = Right(Args(
+      indexQueryType = IndexQueryType.RANGE,
+      cypherType = CTInteger
+    ))
   )
 
   testFindIndexCompatiblePredicate(
     "lessThan with other property",
     lessThan(property, property2),
-    solvedPredicate = Some(PartialPredicateWrapper(isNotNull(property), _)),
-    indexQueryType = IndexQueryType.EXISTS,
-    cypherType = CTAny
+    expectedPredicatesOrArgs = Right(Args(
+      indexQueryType = IndexQueryType.EXISTS,
+      cypherType = CTAny,
+      solvedPredicate = Some(PartialPredicateWrapper(isNotNull(property), _))
+    ))
   )
 
   testFindIndexCompatiblePredicate(
     "lessThan with unknown variable",
     lessThan(property, varFor("m")),
-    solvedPredicate = Some(PartialPredicateWrapper(isNotNull(property), _)),
-    indexQueryType = IndexQueryType.EXISTS,
-    cypherType = CTAny
+    expectedPredicatesOrArgs = Right(Args(
+      indexQueryType = IndexQueryType.EXISTS,
+      cypherType = CTAny,
+      solvedPredicate = Some(PartialPredicateWrapper(isNotNull(property), _))
+    ))
   )
 
   testFindIndexCompatiblePredicate(
     "lessThan with known variable",
     lessThan(property, varFor("m")),
     argumentIds = Set("m"),
-    dependencies = Set("m"),
     propertyTypes = Map(varFor("m") -> CTInteger.invariant),
-    indexQueryType = IndexQueryType.RANGE,
-    cypherType = CTInteger
+    expectedPredicatesOrArgs = Right(Args(
+      dependencies = Set("m"),
+      indexQueryType = IndexQueryType.RANGE,
+      cypherType = CTInteger
+    ))
   )
 
   testFindIndexCompatiblePredicate(
     "isNotNull",
     isNotNull(property),
-    indexQueryType = IndexQueryType.EXISTS,
-    cypherType = CTAny
+    expectedPredicatesOrArgs = Right(Args(indexQueryType = IndexQueryType.EXISTS, cypherType = CTAny))
   )
 
   // this should only work for NodeIndexLeafPlanner
   testFindIndexCompatiblePredicate(
     "hasLabel in generic leaf planner",
     hasLabels("n", "ConstraintLabel"),
-    expectToExist = false
+    expectedPredicatesOrArgs = Right(Args(expectToExist = false))
   )
 
   testFindIndexPredicateOnPointPredicate(
@@ -226,108 +219,6 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
     lessThan(pointDistance(property, point(1.0, 2.0)), literal(1.0)),
     solvedPredicate = Some(PartialDistanceSeekWrapper(_))
   )
-
-  private def testFindIndexPredicateOnPointPredicate(
-    predicateName: String,
-    pointPredicate: Expression,
-    solvedPredicate: Option[Expression => PartialPredicate[Expression]] = None
-  ): Unit = {
-    val explicitPredicate = IndexCompatiblePredicate(
-      variable = varFor("n"),
-      property = property,
-      predicate = pointPredicate,
-      queryExpression = pointPredicate match {
-        case AsBoundingBoxSeekable(seekable) => seekable.asQueryExpression
-        case AsDistanceSeekable(seekable)    => seekable.asQueryExpression
-      },
-      predicateExactness = NotExactPredicate,
-      solvedPredicate = solvedPredicate.map(_.apply(pointPredicate)).orElse(Some(pointPredicate)),
-      dependencies = Set.empty,
-      indexQueryType = IndexQueryType.BOUNDING_BOX,
-      cypherType = CTPoint
-    )
-    val implicitExistencePredicate = makeImplicitExistencePredicate(pointPredicate)
-    testFindIndexCompatiblePredicate(
-      predicateName,
-      pointPredicate,
-      expectedPredicates = Seq(explicitPredicate, implicitExistencePredicate)
-    )
-  }
-
-  private def makeImplicitExistencePredicate(predicate: Expression): IndexCompatiblePredicate = {
-    IndexCompatiblePredicate(
-      variable = varFor("n"),
-      property = property,
-      predicate = predicate,
-      queryExpression = ExistenceQueryExpression(),
-      predicateExactness = NotExactPredicate,
-      solvedPredicate = Some(PartialPredicate(isNotNull(property), predicate)),
-      dependencies = Set.empty,
-      indexQueryType = IndexQueryType.EXISTS,
-      cypherType = CTAny
-    )
-  }
-
-  private def testFindIndexCompatiblePredicate(
-    name: String,
-    predicate: Expression,
-    solvedPredicate: Option[Expression => PartialPredicate[Expression]] = None,
-    isExact: Boolean = false,
-    argumentIds: Set[String] = Set.empty,
-    dependencies: Set[String] = Set.empty,
-    propertyTypes: Map[Expression, TypeSpec] = Map.empty,
-    indexQueryType: IndexQueryType = IndexQueryType.RANGE,
-    cypherType: CypherType = CTAny,
-    expectToExist: Boolean = true,
-    expectedPredicates: Seq[IndexCompatiblePredicate] = Seq.empty
-  ): Unit = {
-    val predicates = Set(predicate)
-    test(s"findIndexCompatiblePredicates ($name)") {
-      new given {
-        qg = queryGraph(predicates)
-        propertyTypes.foreach(key => addTypeToSemanticTable(key._1, key._2))
-        nodeConstraints = Set(("ConstraintLabel", Set("prop1")))
-      }.withLogicalPlanningContext { (_, context) =>
-        val compatiblePredicates = leafPlanner.findIndexCompatiblePredicates(
-          predicates,
-          argumentIds,
-          context.semanticTable,
-          context.planContext,
-          context.indexCompatiblePredicatesProviderContext
-        )
-        if (expectedPredicates.nonEmpty) {
-          compatiblePredicates should contain theSameElementsAs expectedPredicates
-        } else {
-          if (expectToExist) {
-            withClue(s"$name should be recognized as index compatible predicate with the right parameters") {
-              compatiblePredicates.size shouldBe 1
-              compatiblePredicates.foreach { compatiblePredicate =>
-                compatiblePredicate.predicate should equal(predicate)
-                withClue("including solved predicate") {
-                  val expectedSolvedPredicate = solvedPredicate.map(_.apply(predicate)).getOrElse(predicate)
-                  compatiblePredicate.solvedPredicate.get should equal(expectedSolvedPredicate)
-                }
-                withClue("including exactness") {
-                  compatiblePredicate.predicateExactness.isExact shouldBe isExact
-                }
-                withClue("including dependencies") {
-                  compatiblePredicate.dependencies.map(_.name) should equal(dependencies)
-                }
-                withClue("including indexQueryType") {
-                  compatiblePredicate.indexQueryType shouldBe indexQueryType
-                }
-                withClue("including cypherType") {
-                  compatiblePredicate.cypherType shouldBe cypherType
-                }
-              }
-            }
-          } else {
-            compatiblePredicates shouldBe empty
-          }
-        }
-      }
-    }
-  }
 
   test("implicit IS NOT NULL predicates simple case") {
     new given {
@@ -362,6 +253,139 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
           Set.empty
         )
         implicitPredicates.size should be(0)
+    }
+  }
+
+  private def testFindIndexPredicateOnStringPredicate(
+    predicateName: String,
+    indexQueryType: IndexQueryType,
+    stringPredicate: BooleanExpression
+  ): Unit = {
+    val explicitPredicate = IndexCompatiblePredicate(
+      variable = varFor("n"),
+      property = property,
+      predicate = stringPredicate,
+      queryExpression = ExistenceQueryExpression(),
+      predicateExactness = NonSeekablePredicate,
+      solvedPredicate = Some(stringPredicate),
+      dependencies = Set.empty,
+      indexQueryType = indexQueryType,
+      cypherType = CTString
+    )
+    val implicitExistencePredicate = makeImplicitExistencePredicate(stringPredicate)
+    testFindIndexCompatiblePredicate(
+      predicateName,
+      stringPredicate,
+      expectedPredicatesOrArgs = Left(Seq(explicitPredicate, implicitExistencePredicate))
+    )
+  }
+
+  private def testFindIndexPredicateOnPointPredicate(
+    predicateName: String,
+    pointPredicate: Expression,
+    solvedPredicate: Option[Expression => PartialPredicate[Expression]] = None
+  ): Unit = {
+    val explicitPredicate = IndexCompatiblePredicate(
+      variable = varFor("n"),
+      property = property,
+      predicate = pointPredicate,
+      queryExpression = pointPredicate match {
+        case AsBoundingBoxSeekable(seekable) => seekable.asQueryExpression
+        case AsDistanceSeekable(seekable)    => seekable.asQueryExpression
+      },
+      predicateExactness = NotExactPredicate,
+      solvedPredicate = solvedPredicate.map(_.apply(pointPredicate)).orElse(Some(pointPredicate)),
+      dependencies = Set.empty,
+      indexQueryType = IndexQueryType.BOUNDING_BOX,
+      cypherType = CTPoint
+    )
+    val implicitExistencePredicate = makeImplicitExistencePredicate(pointPredicate)
+    testFindIndexCompatiblePredicate(
+      predicateName,
+      pointPredicate,
+      expectedPredicatesOrArgs = Left(Seq(explicitPredicate, implicitExistencePredicate))
+    )
+  }
+
+  private def makeImplicitExistencePredicate(
+    predicate: Expression,
+    dependencies: Set[String] = Set.empty
+  ): IndexCompatiblePredicate = {
+    IndexCompatiblePredicate(
+      variable = varFor("n"),
+      property = property,
+      predicate = predicate,
+      queryExpression = ExistenceQueryExpression(),
+      predicateExactness = NotExactPredicate,
+      solvedPredicate = Some(PartialPredicate(isNotNull(property), predicate)),
+      dependencies = dependencies.map(varFor(_)),
+      indexQueryType = IndexQueryType.EXISTS,
+      cypherType = CTAny
+    )
+  }
+
+  case class Args(
+    solvedPredicate: Option[Expression => PartialPredicate[Expression]] = None,
+    isExact: Boolean = false,
+    dependencies: Set[String] = Set.empty,
+    indexQueryType: IndexQueryType = IndexQueryType.RANGE,
+    cypherType: CypherType = CTAny,
+    expectToExist: Boolean = true
+  )
+
+  private def testFindIndexCompatiblePredicate(
+    name: String,
+    predicate: Expression,
+    argumentIds: Set[String] = Set.empty,
+    propertyTypes: Map[Expression, TypeSpec] = Map.empty,
+    expectedPredicatesOrArgs: Either[Seq[IndexCompatiblePredicate], Args]
+  ): Unit = {
+    val predicates = Set(predicate)
+    test(s"findIndexCompatiblePredicates ($name)") {
+      new given {
+        qg = queryGraph(predicates)
+        propertyTypes.foreach(key => addTypeToSemanticTable(key._1, key._2))
+        nodeConstraints = Set(("ConstraintLabel", Set("prop1")))
+      }.withLogicalPlanningContext { (_, context) =>
+        val compatiblePredicates = leafPlanner.findIndexCompatiblePredicates(
+          predicates,
+          argumentIds,
+          context.semanticTable,
+          context.planContext,
+          context.indexCompatiblePredicatesProviderContext
+        )
+        expectedPredicatesOrArgs match {
+          case Left(expectedPredicates) =>
+            compatiblePredicates should contain theSameElementsAs expectedPredicates
+          case Right(Args(solvedPredicate, isExact, dependencies, indexQueryType, cypherType, expectToExist)) =>
+            if (expectToExist) {
+              withClue(s"$name should be recognized as index compatible predicate with the right parameters") {
+                compatiblePredicates.size shouldBe 1
+                compatiblePredicates.foreach { compatiblePredicate =>
+                  compatiblePredicate.predicate should equal(predicate)
+                  withClue("including solved predicate") {
+                    val expectedSolvedPredicate = solvedPredicate.map(_.apply(predicate)).getOrElse(predicate)
+                    compatiblePredicate.solvedPredicate.get should equal(expectedSolvedPredicate)
+                  }
+                  withClue("including exactness") {
+                    compatiblePredicate.predicateExactness.isExact shouldBe isExact
+                  }
+                  withClue("including dependencies") {
+                    compatiblePredicate.dependencies.map(_.name) should equal(dependencies)
+                  }
+                  withClue("including indexQueryType") {
+                    compatiblePredicate.indexQueryType shouldBe indexQueryType
+                  }
+                  withClue("including cypherType") {
+                    compatiblePredicate.cypherType shouldBe cypherType
+                  }
+                }
+              }
+            } else {
+              compatiblePredicates shouldBe empty
+            }
+        }
+      }
     }
   }
 }

@@ -176,8 +176,15 @@ case class CompositeExpressionSelectivityCalculator(
       .groupBy(_.indexDescriptor)
       .values
       .flatMap { indexMatches =>
-        // If we have multiple index matches for the same index, let's pick the match solving the most predicates.
-        val indexMatch = indexMatches.maxBy(_.propertyPredicates.flatMap(_.solvedPredicate).size)
+        // If we have multiple index matches for the same index,
+        // let's pick the match solving the most predicates,
+        // excluding partially solved predicates.
+        val indexMatch = indexMatches.maxBy(
+          _.propertyPredicates
+            .flatMap(_.solvedPredicate)
+            .filterNot(_.isInstanceOf[PartialPredicate[_]])
+            .size
+        )
         val predicates = indexMatch.propertyPredicates.flatMap(_.solvedPredicate)
         val maybeExistsSelectivity =
           planContext.statistics.indexPropertyIsNotNullSelectivity(indexMatch.indexDescriptor)

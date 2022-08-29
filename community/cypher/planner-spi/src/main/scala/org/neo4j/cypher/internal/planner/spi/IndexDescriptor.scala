@@ -122,7 +122,7 @@ object IndexDescriptor {
       case _                            => ValueCategory.UNKNOWN
     }
 
-  private def toValueCategory(cypherType: CypherType): ValueCategory = {
+  def toValueCategory(cypherType: CypherType): ValueCategory = {
     cypherType match {
       case _: symbols.AnyType           => ValueCategory.ANYTHING
       case _: symbols.DateType          => ValueCategory.TEMPORAL

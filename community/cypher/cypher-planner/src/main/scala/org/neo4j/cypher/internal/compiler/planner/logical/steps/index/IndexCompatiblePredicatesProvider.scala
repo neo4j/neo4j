@@ -47,10 +47,13 @@ import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.toValueCategory
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.internal.schema.IndexCapability
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType
+import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
 
 trait IndexCompatiblePredicatesProvider {
 
@@ -84,15 +87,14 @@ trait IndexCompatiblePredicatesProvider {
       valid
     )
 
+    val rangeIndexCapability: IndexCapability = RangeIndexProvider.CAPABILITY
+
     val partialCompatiblePredicates = explicitCompatiblePredicates.collect {
       case predicate
-        // TODO this is not nice. We need to only create a partialCompatiblePredicate if the
-        //  original predicate cannot be solved by a RANGE index, but now we are hardcoding that here.
-        if Set[IndexQueryType](
-          IndexQueryType.STRING_SUFFIX,
-          IndexQueryType.STRING_CONTAINS,
-          IndexQueryType.BOUNDING_BOX
-        ).contains(predicate.indexQueryType) =>
+        if !rangeIndexCapability.isQuerySupported(
+          predicate.indexQueryType,
+          toValueCategory(predicate.cypherType)
+        ) =>
         predicate.convertToScannable
     }
 
