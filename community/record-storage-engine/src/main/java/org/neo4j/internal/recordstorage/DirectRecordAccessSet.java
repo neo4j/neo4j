@@ -145,10 +145,21 @@ public class DirectRecordAccessSet implements RecordAccessSet, AutoCloseable {
     }
 
     public void commit() {
+        commit(true);
+    }
+
+    /**
+     * Commits all the changes made in this access set.
+     * @param markHighId also marks {@link IdGenerator#markHighestWrittenAtHighId()} for the highest created IDs
+     *                   for each record type.
+     */
+    public void commit(boolean markHighId) {
         for (DirectRecordAccess access : all) {
             access.commit();
         }
-        idGeneratorFactory.visit(IdGenerator::markHighestWrittenAtHighId);
+        if (markHighId) {
+            idGeneratorFactory.visit(IdGenerator::markHighestWrittenAtHighId);
+        }
     }
 
     @Override
