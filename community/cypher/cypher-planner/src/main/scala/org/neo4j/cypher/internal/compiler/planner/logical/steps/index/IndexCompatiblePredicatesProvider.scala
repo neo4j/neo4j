@@ -184,7 +184,6 @@ object IndexCompatiblePredicatesProvider {
       // n.prop < |<=| >| >= value
       case predicate @ AsValueRangeSeekable(seekable) if valid(seekable.ident, seekable.dependencies) =>
         val queryExpression = seekable.asQueryExpression
-        val rangeCapableIndexTypes = Set[IndexType](IndexType.Text, IndexType.Range)
         IndexCompatiblePredicate(
           seekable.ident,
           seekable.property,

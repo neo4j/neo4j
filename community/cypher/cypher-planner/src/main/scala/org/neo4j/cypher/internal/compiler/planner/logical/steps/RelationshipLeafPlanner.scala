@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
  */
 object RelationshipLeafPlanner {
 
+  @FunctionalInterface
   trait RelationshipLeafPlanProvider {
 
     /**
