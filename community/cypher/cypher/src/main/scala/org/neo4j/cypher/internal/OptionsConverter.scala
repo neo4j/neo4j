@@ -210,7 +210,7 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
                 s"Could not create database with specified $EXISTING_SEED_INSTANCE '$value'. Expected instance uuid string."
               )
           }
-          // numberOfPrimaries
+          // primariesCount
         } else if (key.equalsIgnoreCase(NUM_PRIMARIES)) {
           value match {
             case number: IntegralValue if number.longValue() >= 1 =>
@@ -220,7 +220,7 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
                 s"Could not create database with specified $NUM_PRIMARIES '$value'. Expected positive integer number of primaries."
               )
           }
-          // numberOfSecondaries
+          // secondariesCount
         } else if (key.equalsIgnoreCase(NUM_SECONDARIES)) {
           value match {
             case number: IntegralValue if number.longValue() >= 0 =>

@@ -2210,7 +2210,7 @@
     "option": {
       "deprecated": false
     },
-    "signature": "dbms.showTopologyGraphConfig() :: (allocator :: STRING?, defaultNumberOfPrimaries :: INTEGER?, defaultNumberOfSecondaries :: INTEGER?, defaultDatabase :: STRING?)",
+    "signature": "dbms.showTopologyGraphConfig() :: (allocator :: STRING?, defaultPrimariesCount :: INTEGER?, defaultSecondariesCount :: INTEGER?, defaultDatabase :: STRING?)",
     "rolesBoostedExecution": [
       "admin"
     ],
@@ -2222,13 +2222,13 @@
         "type": "STRING?"
       },
       {
-        "name": "defaultNumberOfPrimaries",
-        "description": "defaultNumberOfPrimaries :: INTEGER?",
+        "name": "defaultPrimariesCount",
+        "description": "defaultPrimariesCount :: INTEGER?",
         "type": "INTEGER?"
       },
       {
-        "name": "defaultNumberOfSecondaries",
-        "description": "defaultNumberOfSecondaries :: INTEGER?",
+        "name": "defaultSecondariesCount",
+        "description": "defaultSecondariesCount :: INTEGER?",
         "type": "INTEGER?"
       },
       {
