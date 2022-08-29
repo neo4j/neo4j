@@ -19,22 +19,16 @@
  */
 package org.neo4j.io.layout;
 
-import static org.neo4j.io.layout.DatabaseFile.ID_FILE_SUFFIX;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Path;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.database.NormalizedDatabaseName;
+
+import java.nio.file.Path;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /**
  * File layout representation of the particular database. Facade for any kind of file lookup for a particular database storage implementation.
@@ -45,167 +39,60 @@ import org.neo4j.kernel.database.NormalizedDatabaseName;
  * @see Neo4jLayout
  * @see DatabaseFile
  */
-public class DatabaseLayout {
-    private static final String DATABASE_LOCK_FILENAME = "database_lock";
-    private static final String BACKUP_TOOLS_FOLDER = "tools";
-    private static final String QUARANTINE_MARKER_FILENAME = "quarantine_marker";
-
-    private final Path databaseDirectory;
-    private final Neo4jLayout neo4jLayout;
-    private final String databaseName;
-
-    public static DatabaseLayout ofFlat(Path databaseDirectory) {
+public interface DatabaseLayout {
+    static DatabaseLayout ofFlat(Path databaseDirectory) {
         Path canonical = FileUtils.getCanonicalFile(databaseDirectory);
         Path home = canonical.getParent();
         String dbName = canonical.getFileName().toString();
         return Neo4jLayout.ofFlat(home).databaseLayout(dbName);
     }
 
-    public static DatabaseLayout of(Config config) {
+    static DatabaseLayout of(Config config) {
         return Neo4jLayout.of(config).databaseLayout(config.get(GraphDatabaseSettings.default_database));
     }
 
     static DatabaseLayout of(Neo4jLayout neo4jLayout, String databaseName) {
-        return new DatabaseLayout(neo4jLayout, databaseName);
+        return new PlainDatabaseLayout(neo4jLayout, databaseName);
     }
 
-    protected DatabaseLayout(Neo4jLayout neo4jLayout, String databaseName) {
-        var normalizedName = new NormalizedDatabaseName(databaseName).name();
-        this.neo4jLayout = neo4jLayout;
-        this.databaseDirectory =
-                FileUtils.getCanonicalFile(neo4jLayout.databasesDirectory().resolve(normalizedName));
-        this.databaseName = normalizedName;
-    }
+    Path getTransactionLogsDirectory();
 
-    public Path getTransactionLogsDirectory() {
-        return neo4jLayout.transactionLogsRootDirectory().resolve(getDatabaseName());
-    }
+    Path getScriptDirectory();
 
-    public Path getScriptDirectory() {
-        return neo4jLayout.scriptRootDirectory().resolve(getDatabaseName());
-    }
+    Path databaseLockFile();
 
-    public Path databaseLockFile() {
-        return databaseDirectory().resolve(DATABASE_LOCK_FILENAME);
-    }
+    Path quarantineMarkerFile();
 
-    public Path quarantineMarkerFile() {
-        return databaseDirectory().resolve(QUARANTINE_MARKER_FILENAME);
-    }
+    String getDatabaseName();
 
-    public String getDatabaseName() {
-        return databaseName;
-    }
+    Neo4jLayout getNeo4jLayout();
 
-    public Neo4jLayout getNeo4jLayout() {
-        return neo4jLayout;
-    }
+    Path databaseDirectory();
 
-    public Path databaseDirectory() {
-        return databaseDirectory;
-    }
+    Path backupToolsFolder();
 
-    public Path backupToolsFolder() {
-        return databaseDirectory().resolve(BACKUP_TOOLS_FOLDER);
-    }
+    Path metadataStore();
 
-    public Path metadataStore() {
-        throw new IllegalStateException("Can not get the metadata store for a plain DatabaseLayout.");
-    }
+    Path pathForExistsMarker();
 
-    public Path pathForExistsMarker() {
-        throw new IllegalStateException("Can not get the exists marker path for a plain DatabaseLayout.");
-    }
+    Path pathForStore(CommonDatabaseStores store);
 
-    public Path pathForStore(CommonDatabaseStores store) {
-        throw new IllegalStateException(
-                "Can not get the path for the %s store from a plain DatabaseLayout.".formatted(store.name()));
-    }
+    Set<Path> idFiles();
 
-    public Set<Path> idFiles() {
-        return databaseFiles()
-                .filter(DatabaseFile::hasIdFile)
-                .flatMap(value -> idFile(value).stream())
-                .collect(Collectors.toUnmodifiableSet());
-    }
-
-    public Set<Path> storeFiles() {
-        return databaseFiles().map(this::file).collect(Collectors.toUnmodifiableSet());
-    }
+    Set<Path> storeFiles();
 
     /**
      * @return the store files required to be present for a database to be able to be recovered
      */
-    public Set<Path> mandatoryStoreFiles() {
-        return databaseFiles()
-                .filter(Predicate.not(this::isRecoverableStore))
-                .map(this::file)
-                .collect(Collectors.toUnmodifiableSet());
-    }
+    Set<Path> mandatoryStoreFiles();
 
-    protected Stream<? extends DatabaseFile> databaseFiles() {
-        throw new IllegalStateException("Can not access the database files from a plain DatabaseLayout.");
-    }
+    Optional<Path> idFile(DatabaseFile file);
 
-    public Optional<Path> idFile(DatabaseFile file) {
-        return file.hasIdFile() ? Optional.of(idFile(file.getName())) : Optional.empty();
-    }
+    Path file(String fileName);
 
-    public Path file(String fileName) {
-        return databaseDirectory.resolve(fileName);
-    }
+    Path file(DatabaseFile databaseFile);
 
-    public Path file(DatabaseFile databaseFile) {
-        return file(databaseFile.getName());
-    }
+    Stream<Path> allFiles(DatabaseFile databaseFile);
 
-    public Stream<Path> allFiles(DatabaseFile databaseFile) {
-        return Stream.concat(idFile(databaseFile).stream(), Stream.of(file(databaseFile)));
-    }
-
-    public Path[] listDatabaseFiles(FileSystemAbstraction fs, Predicate<? super Path> filter) {
-        try {
-            return fs.listFiles(databaseDirectory, filter::test);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    protected Path idFile(String name) {
-        return file(idFileName(name));
-    }
-
-    protected boolean isRecoverableStore(DatabaseFile file) {
-        throw new IllegalStateException(
-                "Can not determine whether the store '%s' is recoverable in a plain layout".formatted(file.getName()));
-    }
-
-    private static String idFileName(String storeName) {
-        return storeName + ID_FILE_SUFFIX;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(databaseDirectory, neo4jLayout);
-    }
-
-    @Override
-    public String toString() {
-        return "DatabaseLayout{" + "databaseDirectory=" + databaseDirectory + ", transactionLogsDirectory="
-                + getTransactionLogsDirectory() + '}';
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        DatabaseLayout that = (DatabaseLayout) o;
-        return Objects.equals(databaseDirectory, that.databaseDirectory)
-                && Objects.equals(neo4jLayout, that.neo4jLayout)
-                && getTransactionLogsDirectory().equals(that.getTransactionLogsDirectory());
-    }
+    Path[] listDatabaseFiles(FileSystemAbstraction fs, Predicate<? super Path> filter);
 }

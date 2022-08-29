@@ -28,8 +28,9 @@ import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.layout.PlainDatabaseLayout;
 
-public class RecordDatabaseLayout extends DatabaseLayout {
+public class RecordDatabaseLayout extends PlainDatabaseLayout {
     private RecordDatabaseLayout(Neo4jLayout neo4jLayout, String databaseName) {
         super(neo4jLayout, databaseName);
     }
