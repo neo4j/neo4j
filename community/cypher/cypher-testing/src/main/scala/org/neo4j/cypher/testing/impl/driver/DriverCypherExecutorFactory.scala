@@ -43,7 +43,7 @@ case class DriverCypherExecutorFactory(
 
   private val driver: Driver = {
     val connectorPortRegister =
-      databaseManagementService.database(config.get(GraphDatabaseSettings.default_database)).asInstanceOf[
+      databaseManagementService.database(config.get(GraphDatabaseSettings.initial_default_database)).asInstanceOf[
         GraphDatabaseAPI
       ]
         .getDependencyResolver.resolveDependency(classOf[ConnectorPortRegister])

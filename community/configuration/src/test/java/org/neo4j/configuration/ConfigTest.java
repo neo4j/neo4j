@@ -712,11 +712,13 @@ class ConfigTest {
     @Test
     void canReadConfigFile() throws IOException {
         Path confFile = testDirectory.file("test.conf");
-        Files.write(confFile, Collections.singletonList(GraphDatabaseSettings.default_database.name() + "=foo"));
+        Files.write(
+                confFile, Collections.singletonList(GraphDatabaseSettings.initial_default_database.name() + "=foo"));
 
         Config config1 = buildWithoutErrorsOrWarnings(Config.newBuilder().fromFile(confFile)::build);
         Config config2 = buildWithoutErrorsOrWarnings(Config.newBuilder().fromFileNoThrow(confFile)::build);
-        Stream.of(config1, config2).forEach(c -> assertEquals("foo", c.get(GraphDatabaseSettings.default_database)));
+        Stream.of(config1, config2)
+                .forEach(c -> assertEquals("foo", c.get(GraphDatabaseSettings.initial_default_database)));
     }
 
     @Test
@@ -733,12 +735,13 @@ class ConfigTest {
     @Test
     void canReadConfigDir() throws IOException {
         Path confDir = testDirectory.directory("test.conf");
-        Path defaultDatabase = confDir.resolve(GraphDatabaseSettings.default_database.name());
+        Path defaultDatabase = confDir.resolve(GraphDatabaseSettings.initial_default_database.name());
         Files.write(defaultDatabase, "foo".getBytes());
 
         Config config1 = buildWithoutErrorsOrWarnings(Config.newBuilder().fromFile(confDir)::build);
         Config config2 = buildWithoutErrorsOrWarnings(Config.newBuilder().fromFileNoThrow(confDir)::build);
-        Stream.of(config1, config2).forEach(c -> assertEquals("foo", c.get(GraphDatabaseSettings.default_database)));
+        Stream.of(config1, config2)
+                .forEach(c -> assertEquals("foo", c.get(GraphDatabaseSettings.initial_default_database)));
     }
 
     @Test
@@ -746,7 +749,7 @@ class ConfigTest {
         Path confDir = testDirectory.directory("test.conf");
         Path subDir = Files.createDirectory(confDir.resolve("more"));
 
-        Path defaultDatabase = subDir.resolve(GraphDatabaseSettings.default_database.name());
+        Path defaultDatabase = subDir.resolve(GraphDatabaseSettings.initial_default_database.name());
         Files.write(defaultDatabase, "foo".getBytes());
 
         Config config1 = Config.newBuilder().fromFile(confDir).build();
@@ -760,7 +763,7 @@ class ConfigTest {
                     .containsMessages("Ignoring subdirectory in config directory [" + subDir + "].");
             assertThat(logProvider).forLevel(AssertableLogProvider.Level.ERROR).doesNotHaveAnyLogs();
 
-            assertThat(c.get(GraphDatabaseSettings.default_database)).isNotEqualTo("foo");
+            assertThat(c.get(GraphDatabaseSettings.initial_default_database)).isNotEqualTo("foo");
         });
     }
 
@@ -776,7 +779,7 @@ class ConfigTest {
         Config config2 = buildWithoutErrorsOrWarnings(Config.newBuilder().fromFileNoThrow(confDir)::build);
 
         Stream.of(config, config2).forEach(c -> {
-            assertEquals("foo", c.get(GraphDatabaseSettings.default_database));
+            assertEquals("foo", c.get(GraphDatabaseSettings.initial_default_database));
             assertEquals(true, c.get(GraphDatabaseSettings.auth_enabled));
             assertEquals(4, c.get(GraphDatabaseSettings.auth_max_failed_attempts));
         });
@@ -798,7 +801,7 @@ class ConfigTest {
         Path dotFile = Files.createFile(targetDir.resolve("..data"));
         Path dotDir = Files.createDirectory(targetDir.resolve("..metadata"));
 
-        Path defaultDatabase = targetDir.resolve(GraphDatabaseSettings.default_database.name());
+        Path defaultDatabase = targetDir.resolve(GraphDatabaseSettings.initial_default_database.name());
         Files.createFile(defaultDatabase);
         Files.write(defaultDatabase, "foo".getBytes());
 
@@ -976,8 +979,8 @@ class ConfigTest {
         Files.write(
                 confFile,
                 List.of(
-                        GraphDatabaseSettings.default_database.name() + "=foo",
-                        GraphDatabaseSettings.default_database.name() + "=bar"));
+                        GraphDatabaseSettings.initial_default_database.name() + "=foo",
+                        GraphDatabaseSettings.initial_default_database.name() + "=bar"));
         Config.Builder builder = Config.newBuilder().fromFile(confFile);
         builder.set(GraphDatabaseSettings.strict_config_validation, true);
         assertThrows(IllegalArgumentException.class, builder::build);

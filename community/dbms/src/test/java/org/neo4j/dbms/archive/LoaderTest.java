@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.dbms.archive.TestUtils.withPermissions;
@@ -157,7 +157,7 @@ class LoaderTest {
         Config config = Config.newBuilder()
                 .set(neo4j_home, testDirectory.homePath())
                 .set(transaction_logs_root_path, txLogsDestination.toAbsolutePath())
-                .set(default_database, "destination")
+                .set(initial_default_database, "destination")
                 .build();
         DatabaseLayout databaseLayout = DatabaseLayout.of(config);
         fileSystem.deleteRecursively(txLogsDestination);
@@ -207,7 +207,7 @@ class LoaderTest {
         Config config = Config.newBuilder()
                 .set(neo4j_home, testDirectory.homePath())
                 .set(transaction_logs_root_path, txLogsDirectory.toAbsolutePath())
-                .set(default_database, "destination")
+                .set(initial_default_database, "destination")
                 .build();
         DatabaseLayout databaseLayout = DatabaseLayout.of(config);
 

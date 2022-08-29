@@ -28,7 +28,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 import static org.neo4j.internal.helpers.collection.Iterators.array;
 
 import java.io.IOException;
@@ -89,7 +89,7 @@ class UploadCommandTest {
     private void createDbAndDump(Path dumpDir) {
         Config config = Config.newBuilder()
                 .set(GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath())
-                .set(default_database, DBNAME)
+                .set(initial_default_database, DBNAME)
                 .build();
         DatabaseLayout databaseLayout = DatabaseLayout.of(config);
 

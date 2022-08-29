@@ -179,7 +179,7 @@ class CapabilitiesServiceTest {
 
     @Test
     void shouldProcessProvidersWithContext() {
-        var config = Config.defaults(GraphDatabaseSettings.default_database, "my-db");
+        var config = Config.defaults(GraphDatabaseSettings.initial_default_database, "my-db");
         var capabilities = new CapabilitiesService(
                 List.of(TestProviderCapabilities.class),
                 List.of(new TestProviderBFromConfig()),
@@ -375,7 +375,7 @@ class CapabilitiesServiceTest {
         public void register(CapabilityProviderContext ctx, CapabilitiesRegistry registry) {
             registry.set(
                     TestProviderCapabilities.component_b_db_name,
-                    ctx.config().get(GraphDatabaseSettings.default_database));
+                    ctx.config().get(GraphDatabaseSettings.initial_default_database));
         }
     }
 

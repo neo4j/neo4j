@@ -28,7 +28,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -77,7 +77,7 @@ class LoadCommandTest {
     private void prepareFooDatabaseDirectory() throws IOException {
         Config config = Config.newBuilder()
                 .set(GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath())
-                .set(default_database, "foo")
+                .set(initial_default_database, "foo")
                 .build();
         Path databaseDirectory = DatabaseLayout.of(config).databaseDirectory();
         testDirectory.getFileSystem().mkdirs(databaseDirectory);

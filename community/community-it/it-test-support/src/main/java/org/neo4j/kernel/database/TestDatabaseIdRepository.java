@@ -43,7 +43,7 @@ public class TestDatabaseIdRepository implements DatabaseIdRepository {
     }
 
     public TestDatabaseIdRepository(Config config) {
-        this(config.get(GraphDatabaseSettings.default_database));
+        this(config.get(GraphDatabaseSettings.initial_default_database));
     }
 
     public TestDatabaseIdRepository(String defaultDbName) {

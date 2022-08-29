@@ -22,7 +22,7 @@ package org.neo4j.test.extension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 
 import java.nio.file.Files;
@@ -69,7 +69,8 @@ class Neo4jLayoutSupportExtensionTest {
     void shouldUseDefaultConfig() {
         Config defaultConfig = Config.defaults(neo4j_home, testDirectory.homePath());
         Neo4jLayout defaultNeo4jLayout = Neo4jLayout.of(defaultConfig);
-        DatabaseLayout defaultDatabaseLayout = defaultNeo4jLayout.databaseLayout(defaultConfig.get(default_database));
+        DatabaseLayout defaultDatabaseLayout =
+                defaultNeo4jLayout.databaseLayout(defaultConfig.get(initial_default_database));
 
         assertEquals(defaultNeo4jLayout.homeDirectory(), neo4jLayout.homeDirectory());
         assertEquals(defaultNeo4jLayout.databasesDirectory(), neo4jLayout.databasesDirectory());

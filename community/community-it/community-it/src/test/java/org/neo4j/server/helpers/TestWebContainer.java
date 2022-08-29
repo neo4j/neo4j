@@ -21,7 +21,7 @@ package org.neo4j.server.helpers;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 
 import java.net.URI;
 import java.util.Optional;
@@ -65,7 +65,7 @@ public class TestWebContainer {
 
     public GraphDatabaseFacade getDefaultDatabase() {
         var config = getDependencyResolver(managementService).resolveDependency(Config.class);
-        var defaultDatabase = config.get(default_database);
+        var defaultDatabase = config.get(initial_default_database);
         return (GraphDatabaseFacade) managementService.database(defaultDatabase);
     }
 

@@ -60,7 +60,7 @@ public class RecordDatabaseLayout extends PlainDatabaseLayout {
     }
 
     public static RecordDatabaseLayout of(Config config) {
-        return of(Neo4jLayout.of(config), config.get(GraphDatabaseSettings.default_database));
+        return of(Neo4jLayout.of(config), config.get(GraphDatabaseSettings.initial_default_database));
     }
 
     @Override

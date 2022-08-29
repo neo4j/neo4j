@@ -74,7 +74,6 @@ org.neo4j.configuration.GraphDatabaseSettings::db_temporal_timezone org.neo4j.gr
 org.neo4j.configuration.GraphDatabaseSettings::db_timezone org.neo4j.graphdb.config.Setting<org.neo4j.logging.LogTimeZone> public static final
 org.neo4j.configuration.GraphDatabaseSettings::debug_log_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::default_advertised_address org.neo4j.graphdb.config.Setting<org.neo4j.configuration.helpers.SocketAddress> public static final
-org.neo4j.configuration.GraphDatabaseSettings::default_database org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.configuration.GraphDatabaseSettings::default_listen_address org.neo4j.graphdb.config.Setting<org.neo4j.configuration.helpers.SocketAddress> public static final
 org.neo4j.configuration.GraphDatabaseSettings::dense_node_threshold org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::fail_on_missing_files org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
@@ -84,6 +83,7 @@ org.neo4j.configuration.GraphDatabaseSettings::forbid_shortestpath_common_nodes 
 org.neo4j.configuration.GraphDatabaseSettings::index_background_sampling_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::index_sample_size_limit org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::index_sampling_update_percentage org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
+org.neo4j.configuration.GraphDatabaseSettings::initial_default_database org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.configuration.GraphDatabaseSettings::keep_logical_logs org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.configuration.GraphDatabaseSettings::licenses_directory org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::load_csv_file_url_root org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final

@@ -66,7 +66,7 @@ class Neo4jAdminCommandTest {
             super.setUp();
             fork = new TestInFork(out, err);
             addConf(
-                    GraphDatabaseSettings.default_database,
+                    GraphDatabaseSettings.initial_default_database,
                     GraphDatabaseSettings.DEFAULT_DATABASE_NAME); // just make sure the file exists
         }
 
@@ -110,7 +110,7 @@ class Neo4jAdminCommandTest {
         @Test
         @DisabledOnOs(OS.WINDOWS)
         void shouldPassThroughAndAcceptVerboseAndExpandCommands() throws Exception {
-            addConf(GraphDatabaseSettings.default_database, "$(echo foo)");
+            addConf(GraphDatabaseSettings.initial_default_database, "$(echo foo)");
             if (fork.run(() -> assertThat(
                             execute("server", "report", "--to-path", home.toString(), "--verbose", "--expand-commands"))
                     .isEqualTo(EXIT_CODE_OK))) {
@@ -247,7 +247,7 @@ class Neo4jAdminCommandTest {
                 assumeThat(isCurrentlyRunningAsWindowsAdmin()).isFalse();
             }
             String cmd = String.format("$(%secho foo)", IS_OS_WINDOWS ? "cmd.exe /c " : "");
-            addConf(GraphDatabaseSettings.default_database, cmd);
+            addConf(GraphDatabaseSettings.initial_default_database, cmd);
             assertThat(execute("dbms", "test-command", "--expand-commands")).isEqualTo(EXIT_CODE_OK);
             assertThat(out.toString()).containsSubsequence("test-command", "--expand-commands");
         }

@@ -118,7 +118,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
         this.defaultRouterSupplier = () -> config.get(GraphDatabaseSettings.routing_default_router);
         this.instanceClusterView = instanceClusterView;
         this.defaultDatabaseResolver = defaultDatabaseResolver;
-        this.defaultDbFromConfig = config.get(GraphDatabaseSettings.default_database);
+        this.defaultDbFromConfig = config.get(GraphDatabaseSettings.initial_default_database);
         this.boltEnabled = () -> config.get(BoltConnector.enabled);
     }
 

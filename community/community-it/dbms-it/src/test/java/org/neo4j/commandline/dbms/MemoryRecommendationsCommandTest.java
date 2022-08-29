@@ -38,7 +38,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation.OFF_HEAP;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_memory_allocation;
@@ -444,7 +444,7 @@ class MemoryRecommendationsCommandTest {
                 .filter(type -> type != IndexType.LOOKUP)
                 .toList()) {
             DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(homeDirectory)
-                    .setConfig(default_database, databaseName)
+                    .setConfig(initial_default_database, databaseName)
                     .build();
             GraphDatabaseService db = managementService.database(databaseName);
             String key = "key-" + indexType.name();

@@ -175,7 +175,7 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
         Path storeDirectory = config.get(databases_root_path);
 
         reporter.registerAllOfflineProviders(
-                config, storeDirectory, ctx.fs(), config.get(GraphDatabaseSettings.default_database));
+                config, storeDirectory, ctx.fs(), config.get(GraphDatabaseSettings.initial_default_database));
 
         // Register sources provided by this tool
         reporter.registerSource(

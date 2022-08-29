@@ -47,7 +47,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.cypher_render_plan_d
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.database_dumps_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
@@ -57,6 +56,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.forbid_shortestpath_
 import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.index_sample_size_limit;
 import static org.neo4j.configuration.GraphDatabaseSettings.index_sampling_update_percentage;
+import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.licenses_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.load_csv_file_url_root;
@@ -869,7 +869,7 @@ public final class SettingMigrators {
 
         private static void migrateDefaultDatabaseSetting(
                 Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migrateSettingNameChange(values, log, "dbms.default_database", default_database);
+            migrateSettingNameChange(values, log, "dbms.default_database", initial_default_database);
         }
 
         private static void migrateDatabaseMaxSize(

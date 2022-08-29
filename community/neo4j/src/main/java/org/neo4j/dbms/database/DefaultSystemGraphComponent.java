@@ -67,7 +67,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent {
 
     public DefaultSystemGraphComponent(Config config, Clock clock) {
         super(config);
-        this.defaultDbName = new NormalizedDatabaseName(config.get(GraphDatabaseSettings.default_database));
+        this.defaultDbName = new NormalizedDatabaseName(config.get(GraphDatabaseSettings.initial_default_database));
         this.clock = clock;
     }
 

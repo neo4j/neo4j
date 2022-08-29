@@ -20,7 +20,7 @@
 package org.neo4j.dbms.archive;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.function.Predicates.alwaysFalse;
@@ -228,7 +228,7 @@ class ArchiveTest {
         Config config = Config.newBuilder()
                 .set(neo4j_home, testDirectory.homePath())
                 .set(transaction_logs_root_path, txLogsRoot.toAbsolutePath())
-                .set(default_database, databaseName)
+                .set(initial_default_database, databaseName)
                 .build();
         return DatabaseLayout.of(config);
     }

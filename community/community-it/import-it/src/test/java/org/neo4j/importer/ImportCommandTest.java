@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
@@ -2503,7 +2503,7 @@ class ImportCommandTest {
     private GraphDatabaseAPI getDatabaseApi(String defaultDatabaseName) {
         if (managementService == null) {
             managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
-                    .setConfig(default_database, defaultDatabaseName)
+                    .setConfig(initial_default_database, defaultDatabaseName)
                     .build();
         }
         return (GraphDatabaseAPI) managementService.database(defaultDatabaseName);
@@ -2519,7 +2519,7 @@ class ImportCommandTest {
 
     private DatabaseManagementService dbmsService() {
         return new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
-                .setConfig(default_database, DEFAULT_DATABASE_NAME)
+                .setConfig(initial_default_database, DEFAULT_DATABASE_NAME)
                 .build();
     }
 

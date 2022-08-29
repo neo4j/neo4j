@@ -19,7 +19,7 @@
  */
 package org.neo4j.test.extension;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -33,12 +33,12 @@ class DbmsExtensionConfigurationTest {
 
     @ExtensionCallback
     static void configureGlobal(TestDatabaseManagementServiceBuilder builder) {
-        builder.setConfig(default_database, "global");
+        builder.setConfig(initial_default_database, "global");
     }
 
     @ExtensionCallback
     static void configureLocal(TestDatabaseManagementServiceBuilder builder) {
-        builder.setConfig(default_database, "local");
+        builder.setConfig(initial_default_database, "local");
     }
 
     @Test

@@ -35,7 +35,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
@@ -410,7 +410,7 @@ class DumpCommandIT {
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(
                         databaseDirectory.getParent().getParent().getParent())
                 .setConfig(config)
-                .setConfig(default_database, databaseName)
+                .setConfig(initial_default_database, databaseName)
                 .build();
         databaseLayout = ((GraphDatabaseAPI) managementService.database(databaseName)).databaseLayout();
         managementService.shutdown();

@@ -82,7 +82,7 @@ public class CommunityDefaultDatabaseResolver extends TransactionEventListenerAd
     }
 
     public String getDefaultDatabase() {
-        return config.get(GraphDatabaseSettings.default_database);
+        return config.get(GraphDatabaseSettings.initial_default_database);
     }
 
     @Override

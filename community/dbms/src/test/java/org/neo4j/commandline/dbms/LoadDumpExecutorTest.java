@@ -34,7 +34,7 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 
@@ -87,7 +87,7 @@ public class LoadDumpExecutorTest {
     private void prepareFooDatabaseDirectory() throws IOException {
         Config config = Config.newBuilder()
                 .set(GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath())
-                .set(default_database, "foo")
+                .set(initial_default_database, "foo")
                 .build();
         Path databaseDirectory = DatabaseLayout.of(config).databaseDirectory();
         testDirectory.getFileSystem().mkdirs(databaseDirectory);

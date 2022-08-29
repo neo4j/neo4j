@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
-import org.neo4j.configuration.GraphDatabaseSettings.default_database
+import org.neo4j.configuration.GraphDatabaseSettings.initial_default_database
 import org.neo4j.cypher.internal.DatabaseStatus
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.dbms.database.DatabaseContext
@@ -62,35 +62,35 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     // Empty name
     the[IllegalArgumentException] thrownBy {
       // WHEN
-      Config.defaults(default_database, "")
+      Config.defaults(initial_default_database, "")
       // THEN
     } should have message startOfError + "Failed to validate '' for 'initial.dbms.default_database': The provided database name is empty."
 
     // Starting on invalid character
     the[IllegalArgumentException] thrownBy {
       // WHEN
-      Config.defaults(default_database, "_default")
+      Config.defaults(initial_default_database, "_default")
       // THEN
     } should have message startOfError + "Failed to validate '_default' for 'initial.dbms.default_database': Database name '_default' is not starting with an ASCII alphabetic character."
 
     // Has prefix 'system'
     the[IllegalArgumentException] thrownBy {
       // WHEN
-      Config.defaults(default_database, "system-mine")
+      Config.defaults(initial_default_database, "system-mine")
       // THEN
     } should have message startOfError + "Failed to validate 'system-mine' for 'initial.dbms.default_database': Database name 'system-mine' is invalid, due to the prefix 'system'."
 
     // Contains invalid characters
     the[IllegalArgumentException] thrownBy {
       // WHEN
-      Config.defaults(default_database, "mydbwith_and%")
+      Config.defaults(initial_default_database, "mydbwith_and%")
       // THEN
     } should have message startOfError + "Failed to validate 'mydbwith_and%' for 'initial.dbms.default_database': Database name 'mydbwith_and%' contains illegal characters. Use simple ascii characters, numbers, dots and dashes."
 
     // Too short name
     the[IllegalArgumentException] thrownBy {
       // WHEN
-      Config.defaults(default_database, "me")
+      Config.defaults(initial_default_database, "me")
       // THEN
     } should have message startOfError + "Failed to validate 'me' for 'initial.dbms.default_database': The provided database name must have a length between 3 and 63 characters."
 
@@ -98,7 +98,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val name = "ihaveallooootoflettersclearlymorethanishould-ihaveallooootoflettersclearlymorethanishould"
     the[IllegalArgumentException] thrownBy {
       // WHEN
-      Config.defaults(default_database, name)
+      Config.defaults(initial_default_database, name)
       // THEN
     } should have message startOfError + "Failed to validate '" + name + "' for 'initial.dbms.default_database': The provided database name must have a length between 3 and 63 characters."
   }
@@ -189,7 +189,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
   test("should show custom default database using show default database command") {
     // GIVEN
     val config = Config.defaults()
-    config.set(default_database, "foo")
+    config.set(initial_default_database, "foo")
     setup(config)
 
     // WHEN
@@ -211,7 +211,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     result.toSet should be(Set(homeOrDefaultDb(DEFAULT_DATABASE_NAME)))
 
     // GIVEN
-    config.set(default_database, "foo")
+    config.set(initial_default_database, "foo")
     initSystemGraph(config)
 
     // WHEN

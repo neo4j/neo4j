@@ -106,7 +106,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .build();
 
     @Description("Name of the default database (aliases are not supported).")
-    public static final Setting<String> default_database = newBuilder(
+    public static final Setting<String> initial_default_database = newBuilder(
                     "initial.dbms.default_database", DATABASENAME, DEFAULT_DATABASE_NAME)
             .build();
 

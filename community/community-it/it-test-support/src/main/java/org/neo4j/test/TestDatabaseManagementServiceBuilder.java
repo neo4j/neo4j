@@ -88,7 +88,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
 
     public TestDatabaseManagementServiceBuilder(DatabaseLayout layout) {
         this(layout.getNeo4jLayout());
-        setConfig(GraphDatabaseSettings.default_database, layout.getDatabaseName());
+        setConfig(GraphDatabaseSettings.initial_default_database, layout.getDatabaseName());
     }
 
     @Override

@@ -20,7 +20,7 @@
 package org.neo4j.graphdb.factory.module.edition;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 import static org.neo4j.dbms.database.DatabaseContextProviderDelegate.delegate;
 
 import java.util.function.Supplier;
@@ -162,7 +162,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                 databaseReferenceRepo);
         var databaseLifecycles = new DatabaseLifecycles(
                 databaseRepository,
-                globalModule.getGlobalConfig().get(default_database),
+                globalModule.getGlobalConfig().get(initial_default_database),
                 databaseContextFactory,
                 globalModule.getLogService().getInternalLogProvider());
         databaseStateService = new CommunityDatabaseStateService(databaseRepository);

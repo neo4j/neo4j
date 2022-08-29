@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.diagnostics.providers;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_transactions;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -35,7 +35,7 @@ class ConfigDiagnosticsTest {
     @Test
     void dumpConfigValues() {
         Config config = Config.newBuilder()
-                .set(default_database, "testDb")
+                .set(initial_default_database, "testDb")
                 .set(max_concurrent_transactions, 400)
                 .build();
 
@@ -46,7 +46,7 @@ class ConfigDiagnosticsTest {
                 .containsMessages(
                         "DBMS provided settings:",
                         max_concurrent_transactions.name() + "=400",
-                        default_database.name() + "=testDb")
+                        initial_default_database.name() + "=testDb")
                 .doesNotContainMessage("No provided DBMS settings.");
     }
 

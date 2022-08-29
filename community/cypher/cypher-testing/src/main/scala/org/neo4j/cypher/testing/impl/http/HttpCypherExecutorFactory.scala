@@ -39,7 +39,7 @@ case class HttpCypherExecutorFactory(
 
   private val http: HTTP.Builder = {
     val connectorPortRegister =
-      databaseManagementService.database(config.get(GraphDatabaseSettings.default_database)).asInstanceOf[
+      databaseManagementService.database(config.get(GraphDatabaseSettings.initial_default_database)).asInstanceOf[
         GraphDatabaseAPI
       ]
         .getDependencyResolver.resolveDependency(classOf[ConnectorPortRegister])

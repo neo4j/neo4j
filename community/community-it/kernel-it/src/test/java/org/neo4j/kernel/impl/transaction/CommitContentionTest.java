@@ -122,7 +122,7 @@ class CommitContentionTest {
                             }
                         })
                 .build(cfg, GraphDatabaseDependencies.newDependencies().dependencies(noOpSystemGraphInitializer(cfg)));
-        return managementService.database(cfg.get(GraphDatabaseSettings.default_database));
+        return managementService.database(cfg.get(GraphDatabaseSettings.initial_default_database));
     }
 
     private void waitForFirstTransactionToStartPushing() throws InterruptedException {

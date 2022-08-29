@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 import java.util.Collections;
@@ -76,12 +76,12 @@ class DatabaseConfigTest {
     @Test
     void shouldBeAbleToBuildConfigFromDatabaseConfig() {
         // Given
-        Config globalConfig = Config.defaults(default_database, "foo");
+        Config globalConfig = Config.defaults(initial_default_database, "foo");
         Config dbConfig = new DatabaseConfig(Map.of(), globalConfig, from(DEFAULT_DATABASE_NAME, UUID.randomUUID()));
         // When
         Config newConfig = Config.newBuilder().fromConfig(dbConfig).build();
         // Then
-        assertThat(newConfig.get(default_database)).isEqualTo("foo");
+        assertThat(newConfig.get(initial_default_database)).isEqualTo("foo");
     }
 
     @Test

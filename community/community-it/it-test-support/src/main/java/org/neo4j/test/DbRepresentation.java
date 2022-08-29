@@ -20,7 +20,7 @@
 package org.neo4j.test;
 
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 
 import java.lang.reflect.Array;
@@ -100,7 +100,7 @@ public class DbRepresentation {
     }
 
     public static DbRepresentation of(Path databaseDirectory, Config config) {
-        return of(databaseDirectory.getParent(), config.get(default_database), config);
+        return of(databaseDirectory.getParent(), config.get(initial_default_database), config);
     }
 
     public static DbRepresentation of(Path storeDirectory, String databaseName) {
@@ -130,7 +130,7 @@ public class DbRepresentation {
                                 transaction_logs_root_path,
                                 layout.transactionLogsRootDirectory().toAbsolutePath())
                         .set(databases_root_path, layout.databasesDirectory().toAbsolutePath())
-                        .set(default_database, databaseLayout.getDatabaseName())
+                        .set(initial_default_database, databaseLayout.getDatabaseName())
                         .build());
     }
 
@@ -142,7 +142,7 @@ public class DbRepresentation {
                         transaction_logs_root_path,
                         layout.transactionLogsRootDirectory().toAbsolutePath())
                 .setDefault(databases_root_path, layout.databasesDirectory().toAbsolutePath())
-                .setDefault(default_database, databaseLayout.getDatabaseName())
+                .setDefault(initial_default_database, databaseLayout.getDatabaseName())
                 .build();
         return of(databaseLayout.databaseDirectory(), cfg);
     }

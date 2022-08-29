@@ -144,7 +144,7 @@ public class InProcessNeo4j implements Neo4j {
 
     @Override
     public GraphDatabaseService defaultDatabaseService() {
-        return managementService.database(config.get(GraphDatabaseSettings.default_database));
+        return managementService.database(config.get(GraphDatabaseSettings.initial_default_database));
     }
 
     @Override

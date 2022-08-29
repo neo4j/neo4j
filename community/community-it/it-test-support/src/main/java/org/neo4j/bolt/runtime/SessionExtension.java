@@ -167,7 +167,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback {
         assertTestStarted();
         DependencyResolver resolver = gdb.getDependencyResolver();
         Config config = resolver.resolveDependency(Config.class);
-        return config.get(GraphDatabaseSettings.default_database);
+        return config.get(GraphDatabaseSettings.initial_default_database);
     }
 
     public DatabaseIdRepository databaseIdRepository() {

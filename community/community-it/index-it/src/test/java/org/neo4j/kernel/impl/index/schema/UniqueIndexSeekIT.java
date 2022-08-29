@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.index.schema.tracking.TrackingReadersIndexAccessor.numberOfClosedReaders;
 import static org.neo4j.kernel.impl.index.schema.tracking.TrackingReadersIndexAccessor.numberOfOpenReaders;
@@ -76,7 +76,7 @@ class UniqueIndexSeekIT {
 
             generateRandomData(database, label, nameProperty);
 
-            assertNotNull(indexExtensionFactory.getIndexProvider(config.get(default_database)));
+            assertNotNull(indexExtensionFactory.getIndexProvider(config.get(initial_default_database)));
             assertThat(numberOfClosedReaders()).isGreaterThan(0L);
             assertThat(numberOfOpenReaders()).isGreaterThan(0L);
             assertThat(numberOfClosedReaders()).isCloseTo(numberOfOpenReaders(), within(1L));
