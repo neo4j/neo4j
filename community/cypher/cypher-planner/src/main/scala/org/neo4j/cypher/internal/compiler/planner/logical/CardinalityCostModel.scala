@@ -173,7 +173,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
       lhsCost + rhsExecutions * rhsCost
 
     case _: ApplyPlan =>
-      val lhsCardinality = Cardinality.max(Cardinality.SINGLE, effectiveCardinalities.lhs)
+      val lhsCardinality = effectiveCardinalities.lhs
       // The RHS is executed for each LHS row
       lhsCost + lhsCardinality * rhsCost
 
