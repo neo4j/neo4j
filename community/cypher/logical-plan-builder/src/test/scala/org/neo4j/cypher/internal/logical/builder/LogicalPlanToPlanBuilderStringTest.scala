@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
@@ -1845,7 +1846,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     "trail",
     new TestPlanBuilder()
       .produceResults("me", "you", "a", "b", "r")
-      .trail(
+      .trail(TrailParameters(
         min = 0,
         max = Limited(2),
         start = "me",
@@ -1856,7 +1857,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
         groupRelationships = Set(("r_inner", "r")),
         allRelationships = Set("r_inner"),
         allRelationshipGroups = Set("r_group")
-      )
+      ))
       .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
       .|.argument("me", "a_inner")
       .nodeByLabelScan("me", "START", IndexOrderNone)
@@ -1900,6 +1901,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setPropertyFromMap
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
+            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
             |import org.neo4j.cypher.internal.expressions.SemanticDirection.{INCOMING, OUTGOING, BOTH}
             |import org.neo4j.cypher.internal.expressions.LabelName
             |import org.neo4j.cypher.internal.logical.plans._

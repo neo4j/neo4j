@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -2377,7 +2378,7 @@ trait TrailProfileRowsTestBase[CONTEXT <: RuntimeContext] {
 
     val query = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "a", "b", "r")
-      .trail(
+      .trail(TrailParameters(
         min = 0,
         max = Limited(2),
         start = "me",
@@ -2388,7 +2389,7 @@ trait TrailProfileRowsTestBase[CONTEXT <: RuntimeContext] {
         groupRelationships = Set(("r_inner", "r")),
         allRelationships = Set("r_inner"),
         allRelationshipGroups = Set()
-      )
+      ))
       .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
       .|.argument("me", "a_inner")
       .allNodeScan("me")

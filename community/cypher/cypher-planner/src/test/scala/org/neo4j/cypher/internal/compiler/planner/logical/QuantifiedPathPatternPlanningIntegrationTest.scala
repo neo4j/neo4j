@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.AssertIsNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -43,23 +44,23 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       s"""
          |MATCH (u:User)((n)-[]->(m))* RETURN n, m
          |""".stripMargin
-
     val plan = planner.plan(query).stripProduceResults
+    val `(u)((n)-[]-(m))*` = TrailParameters(
+      0,
+      Unlimited,
+      "u",
+      Some("anon_1"),
+      "anon_2",
+      "anon_4",
+      Set(("anon_2", "n"), ("anon_4", "m")),
+      Set(("anon_3", "anon_0")),
+      Set("anon_3"),
+      Set()
+    )
 
     plan should equal(
       planner.subPlanBuilder()
-        .trail(
-          0,
-          Unlimited,
-          "u",
-          Some("anon_1"),
-          "anon_2",
-          "anon_4",
-          Set(("anon_2", "n"), ("anon_4", "m")),
-          Set(("anon_3", "anon_0")),
-          Set("anon_3"),
-          Set()
-        )
+        .trail(`(u)((n)-[]-(m))*`)
         .|.expand("(anon_2)-[anon_3]->(anon_4)")
         .|.argument("anon_2")
         .nodeByLabelScan("u", "User")
@@ -74,21 +75,22 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
          |""".stripMargin
 
     val plan = planner.plan(query).stripProduceResults
+    val `((n)-[]->(m))*(u)` = TrailParameters(
+      0,
+      Unlimited,
+      "u",
+      Some("anon_0"),
+      "anon_4",
+      "anon_2",
+      Set(("anon_2", "n"), ("anon_4", "m")),
+      Set(("anon_3", "anon_1")),
+      Set("anon_3"),
+      Set()
+    )
 
     plan should equal(
       planner.subPlanBuilder()
-        .trail(
-          0,
-          Unlimited,
-          "u",
-          Some("anon_0"),
-          "anon_4",
-          "anon_2",
-          Set(("anon_2", "n"), ("anon_4", "m")),
-          Set(("anon_3", "anon_1")),
-          Set("anon_3"),
-          Set()
-        )
+        .trail(`((n)-[]->(m))*(u)`)
         .|.expand("(anon_4)<-[anon_3]-(anon_2)")
         .|.argument("anon_4")
         .nodeByLabelScan("u", "User")
@@ -103,21 +105,22 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
          |""".stripMargin
 
     val plan = planner.plan(query).stripProduceResults
+    val `((n)-[]->(m))+` = TrailParameters(
+      1,
+      Unlimited,
+      "anon_0",
+      Some("anon_2"),
+      "anon_3",
+      "anon_5",
+      Set(("anon_3", "n"), ("anon_5", "m")),
+      Set(("anon_4", "anon_1")),
+      Set("anon_4"),
+      Set()
+    )
 
     plan should equal(
       planner.subPlanBuilder()
-        .trail(
-          1,
-          Unlimited,
-          "anon_0",
-          Some("anon_2"),
-          "anon_3",
-          "anon_5",
-          Set(("anon_3", "n"), ("anon_5", "m")),
-          Set(("anon_4", "anon_1")),
-          Set("anon_4"),
-          Set()
-        )
+        .trail(`((n)-[]->(m))+`)
         .|.expand("(anon_3)-[anon_4]->(anon_5)")
         .|.argument("anon_3")
         .allNodeScan("anon_0")
@@ -133,20 +136,21 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
 
     val plan = planner.plan(query).stripProduceResults
 
+    val `((n)-[]->(m)){1,}` = TrailParameters(
+      1,
+      Unlimited,
+      "anon_0",
+      Some("anon_2"),
+      "anon_3",
+      "anon_5",
+      Set(("anon_3", "n"), ("anon_5", "m")),
+      Set(("anon_4", "anon_1")),
+      Set("anon_4"),
+      Set()
+    )
     plan should equal(
       planner.subPlanBuilder()
-        .trail(
-          1,
-          Unlimited,
-          "anon_0",
-          Some("anon_2"),
-          "anon_3",
-          "anon_5",
-          Set(("anon_3", "n"), ("anon_5", "m")),
-          Set(("anon_4", "anon_1")),
-          Set("anon_4"),
-          Set()
-        )
+        .trail(`((n)-[]->(m)){1,}`)
         .|.expand("(anon_3)-[anon_4]->(anon_5)")
         .|.argument("anon_3")
         .allNodeScan("anon_0")
@@ -161,21 +165,22 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
          |""".stripMargin
 
     val plan = planner.plan(query).stripProduceResults
+    val `()((n)-[]->(m)){,5}` = TrailParameters(
+      0,
+      UpperBound.Limited(5),
+      "anon_0",
+      Some("anon_2"),
+      "anon_3",
+      "anon_5",
+      Set(("anon_3", "n"), ("anon_5", "m")),
+      Set(("anon_4", "anon_1")),
+      Set("anon_4"),
+      Set()
+    )
 
     plan should equal(
       planner.subPlanBuilder()
-        .trail(
-          0,
-          UpperBound.Limited(5),
-          "anon_0",
-          Some("anon_2"),
-          "anon_3",
-          "anon_5",
-          Set(("anon_3", "n"), ("anon_5", "m")),
-          Set(("anon_4", "anon_1")),
-          Set("anon_4"),
-          Set()
-        )
+        .trail(`()((n)-[]->(m)){,5}`)
         .|.expand("(anon_3)-[anon_4]->(anon_5)")
         .|.argument("anon_3")
         .allNodeScan("anon_0")
@@ -190,21 +195,22 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
          |""".stripMargin
 
     val plan = planner.plan(query).stripProduceResults
+    val `((n)-[]->(m)){1,5}` = TrailParameters(
+      1,
+      UpperBound.Limited(5),
+      "anon_0",
+      Some("anon_2"),
+      "anon_3",
+      "anon_5",
+      Set(("anon_3", "n"), ("anon_5", "m")),
+      Set(("anon_4", "anon_1")),
+      Set("anon_4"),
+      Set()
+    )
 
     plan should equal(
       planner.subPlanBuilder()
-        .trail(
-          1,
-          UpperBound.Limited(5),
-          "anon_0",
-          Some("anon_2"),
-          "anon_3",
-          "anon_5",
-          Set(("anon_3", "n"), ("anon_5", "m")),
-          Set(("anon_4", "anon_1")),
-          Set("anon_4"),
-          Set()
-        )
+        .trail(`((n)-[]->(m)){1,5}`)
         .|.expand("(anon_3)-[anon_4]->(anon_5)")
         .|.argument("anon_3")
         .allNodeScan("anon_0")
@@ -219,21 +225,22 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
          |""".stripMargin
 
     val plan = planner.plan(query).stripProduceResults
+    val `((n)-[]->(m))+(a)` = TrailParameters(
+      1,
+      Unlimited,
+      "a",
+      Some("anon_0"),
+      "anon_5",
+      "anon_3",
+      Set(("anon_3", "n"), ("anon_5", "m")),
+      Set(("anon_4", "anon_1")),
+      Set("anon_4"),
+      Set()
+    )
 
     plan should equal(
       planner.subPlanBuilder()
-        .trail(
-          1,
-          Unlimited,
-          "a",
-          Some("anon_0"),
-          "anon_5",
-          "anon_3",
-          Set(("anon_3", "n"), ("anon_5", "m")),
-          Set(("anon_4", "anon_1")),
-          Set("anon_4"),
-          Set()
-        )
+        .trail(`((n)-[]->(m))+(a)`)
         .|.expandAll("(anon_5)<-[anon_4]-(anon_3)")
         .|.argument("anon_5")
         .allRelationshipsScan("(a)-[anon_2]-(b)")
@@ -251,22 +258,23 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
          |""".stripMargin
 
     val plan = planner.plan(query).stripProduceResults
+    val `(n)((n_inner)-[r_inner]->(m_inner))+ (m)` = TrailParameters(
+      1,
+      Unlimited,
+      "n",
+      Some("anon_5"),
+      "anon_0",
+      "anon_2",
+      Set(("anon_0", "n_inner"), ("anon_2", "m_inner")),
+      Set(("anon_1", "r_inner")),
+      Set("anon_1"),
+      Set()
+    )
 
     plan should equal(
       planner.subPlanBuilder()
         .filter("anon_5 = m")
-        .trail(
-          1,
-          Unlimited,
-          "n",
-          Some("anon_5"),
-          "anon_0",
-          "anon_2",
-          Set(("anon_0", "n_inner"), ("anon_2", "m_inner")),
-          Set(("anon_1", "r_inner")),
-          Set("anon_1"),
-          Set()
-        )
+        .trail(`(n)((n_inner)-[r_inner]->(m_inner))+ (m)`)
         .|.expandAll("(anon_0)-[anon_1]->(anon_2)")
         .|.argument("anon_0")
         .skip(1)

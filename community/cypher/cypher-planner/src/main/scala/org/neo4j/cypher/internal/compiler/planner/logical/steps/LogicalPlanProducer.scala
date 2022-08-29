@@ -950,7 +950,7 @@ case class LogicalPlanProducer(
         }.toSet,
         allRelationships = pattern.pattern.patternRelationships.map(_.name),
         allRelationshipGroups = Set.empty
-      )(idGen),
+      ),
       solved,
       providedOrder,
       context
@@ -958,7 +958,7 @@ case class LogicalPlanProducer(
 
     maybeHiddenFilter match {
       case Some(hiddenFilter) => annotate(
-          Selection(Seq(hiddenFilter), trailPlan)(idGen),
+          Selection(Seq(hiddenFilter), trailPlan),
           solved,
           providedOrder,
           context

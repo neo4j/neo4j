@@ -76,6 +76,7 @@ import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.pos
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
@@ -1855,30 +1856,21 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => TransactionApply(lhs, rhs, literalInt(batchSize))(_)))
 
   def trail(
-    min: Int,
-    max: UpperBound,
-    start: String,
-    end: Option[String],
-    innerStart: String,
-    innerEnd: String,
-    groupNodes: Set[(String, String)],
-    groupRelationships: Set[(String, String)],
-    allRelationships: Set[String],
-    allRelationshipGroups: Set[String]
+    trailParameters: TrailParameters
   ): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
       Trail(
         lhs,
         rhs,
-        Repetition(min, max),
-        start,
-        end,
-        innerStart,
-        innerEnd,
-        groupNodes.map { case (inner, outer) => GroupEntity(inner, outer) },
-        groupRelationships.map { case (inner, outer) => GroupEntity(inner, outer) },
-        allRelationships,
-        allRelationshipGroups
+        Repetition(trailParameters.min, trailParameters.max),
+        trailParameters.start,
+        trailParameters.end,
+        trailParameters.innerStart,
+        trailParameters.innerEnd,
+        trailParameters.groupNodes.map { case (inner, outer) => GroupEntity(inner, outer) },
+        trailParameters.groupRelationships.map { case (inner, outer) => GroupEntity(inner, outer) },
+        trailParameters.allRelationships,
+        trailParameters.allRelationshipGroups
       )(_)
     ))
 
@@ -2016,6 +2008,19 @@ object AbstractLogicalPlanBuilder {
     def asVariablePredicate: VariablePredicate =
       VariablePredicate(Variable(entity)(pos), Parser.parseExpression(predicate))
   }
+
+  case class TrailParameters(
+    min: Int,
+    max: UpperBound,
+    start: String,
+    end: Option[String],
+    innerStart: String,
+    innerEnd: String,
+    groupNodes: Set[(String, String)],
+    groupRelationships: Set[(String, String)],
+    allRelationships: Set[String],
+    allRelationshipGroups: Set[String]
+  )
 
   def createPattern(
     nodes: Seq[CreateNode] = Seq.empty,
