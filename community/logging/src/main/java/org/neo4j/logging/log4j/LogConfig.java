@@ -343,7 +343,7 @@ public final class LogConfig {
         }
     }
 
-    static String getFormatPattern(boolean includeCategory, LogTimeZone timezone) {
+    public static String getFormatPattern(boolean includeCategory, LogTimeZone timezone) {
         String date = "%d{yyyy-MM-dd HH:mm:ss.SSSZ}" + (timezone == LogTimeZone.UTC ? "{GMT+0}" : "");
         return includeCategory ? date + " %-5p [%c{1.}] %m%n" : date + " %-5p %m%n";
     }

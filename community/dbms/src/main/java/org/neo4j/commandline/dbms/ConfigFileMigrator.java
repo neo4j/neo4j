@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.dbms;
 
+import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.defaultIfBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.join;
@@ -106,6 +107,9 @@ class ConfigFileMigrator {
     void migrate(Path sourceConfigFile, Path destinationConfigFile) throws IOException {
         try {
             PropertiesConfiguration config = readIntoConfig(sourceConfigFile);
+            LoggingSettingsMigrator loggingSettingsMigrator =
+                    new LoggingSettingsMigrator(sourceConfigFile, out, destinationConfigFile);
+            loggingSettingsMigrator.migrate();
             migrateSettings(config);
             writeToFile(config, destinationConfigFile);
             validate(destinationConfigFile);
@@ -218,7 +222,7 @@ class ConfigFileMigrator {
     }
 
     private void appendCommentedOutSetting(StringBuilder commentBuilder, String key, String value, String reason) {
-        commentBuilder.append(COMMENT_LINE_SEPARATOR).append(String.format("%s=%s %s SETTING", key, value, reason));
+        commentBuilder.append(COMMENT_LINE_SEPARATOR).append(format("%s=%s %s SETTING", key, value, reason));
     }
 
     private Optional<MigratedSetting> migrate(

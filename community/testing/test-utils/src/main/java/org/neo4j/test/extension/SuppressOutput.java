@@ -197,6 +197,10 @@ public final class SuppressOutput {
             return asList(toString().split(lineSeparator()));
         }
 
+        public boolean isEmpty() {
+            return replacementBuffer.size() == 0;
+        }
+
         @Override
         public String toString() {
             try {
