@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.physicalplanning.ast
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LiteralEntry
+import org.neo4j.cypher.internal.physicalplanning.ast.IsNodeProjectionFromStore.equalOffset
+import org.neo4j.cypher.internal.runtime.ast.RuntimeProperty
 import org.neo4j.cypher.internal.util.InputPosition
 
 /**
@@ -31,46 +33,53 @@ import org.neo4j.cypher.internal.util.InputPosition
  */
 trait MapProjectionFromStore extends Expression
 
-case class NodeProjectionFromStore(entityOffset: Int, properties: Seq[NodePropertyFromStore])(
+case class PropertyMapEntry(mapKey: String, property: PropertyFromStore)
+
+case class NodeProjectionFromStore(entityOffset: Int, entries: Seq[PropertyMapEntry])(
   val position: InputPosition
 ) extends MapProjectionFromStore
 
-case class RelationshipProjectionFromStore(entityOffset: Int, properties: Seq[RelationshipPropertyFromStore])(
+case class RelationshipProjectionFromStore(entityOffset: Int, entries: Seq[PropertyMapEntry])(
   val position: InputPosition
 ) extends MapProjectionFromStore
 
 object MapProjectionFromStore {
 
   def unapply(projection: DesugaredMapProjection): Option[MapProjectionFromStore] = projection match {
-    case m @ DesugaredMapProjection(_, PropertiesFromStore(offset, properties), false) =>
-      if (properties.forall(_.isInstanceOf[NodePropertyFromStore])) {
-        Some(NodeProjectionFromStore(
-          offset,
-          properties.map(_.asInstanceOf[NodePropertyFromStore])
-        )(m.position))
-      } else if (properties.forall(_.isInstanceOf[RelationshipPropertyFromStore])) {
-        Some(RelationshipProjectionFromStore(
-          offset,
-          properties.map(_.asInstanceOf[RelationshipPropertyFromStore])
-        )(m.position))
-      } else {
-        None
-      }
+
+    case m @ DesugaredMapProjection(_, IsNodeProjectionFromStore(offset, properties), false) =>
+      Some(NodeProjectionFromStore(offset, properties)(m.position))
+    case m @ DesugaredMapProjection(_, IsRelationshipProjectionFromStore(offset, properties), false) =>
+      Some(RelationshipProjectionFromStore(offset, properties)(m.position))
     case _ => None
   }
 }
 
-object PropertiesFromStore {
+object IsNodeProjectionFromStore {
 
-  def unapply(items: Seq[LiteralEntry]): Option[(Int, Seq[PropertyFromStore])] = {
-    val expressions = items.map(_.exp)
-    expressions.headOption match {
-      case Some(PropertyFromStore(p)) =>
-        expressions.tail.foldLeft(Option((p.offset, Seq(p)))) {
-          case (Some((offset, ps)), PropertyFromStore(p)) if p.offset == offset => Some((offset, ps :+ p))
-          case _                                                                => None
-        }
-      case _ => None
+  def unapply(items: Seq[LiteralEntry]): Option[(Int, Seq[PropertyMapEntry])] = {
+    val entries = items.collect { case LiteralEntry(key, IsNodePropertyFromStore(p)) => PropertyMapEntry(key.name, p) }
+    equalOffset(items, entries)
+  }
+
+  def equalOffset(items: Seq[LiteralEntry], entries: Seq[PropertyMapEntry]): Option[(Int, Seq[PropertyMapEntry])] = {
+    if (items.size == entries.size) {
+      entries.headOption.collect {
+        case headEntry if entries.forall(_.property.offset == headEntry.property.offset) =>
+          (headEntry.property.offset, entries)
+      }
+    } else {
+      None
     }
+  }
+}
+
+object IsRelationshipProjectionFromStore {
+
+  def unapply(items: Seq[LiteralEntry]): Option[(Int, Seq[PropertyMapEntry])] = {
+    val entries = items.collect { case LiteralEntry(key, IsRelationshipPropertyFromStore(p)) =>
+      PropertyMapEntry(key.name, p)
+    }
+    equalOffset(items, entries)
   }
 }

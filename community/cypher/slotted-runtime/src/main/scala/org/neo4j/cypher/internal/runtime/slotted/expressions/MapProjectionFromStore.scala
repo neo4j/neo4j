@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.expressions
 
-import org.neo4j.cypher.internal.physicalplanning.ast.PropertyFromStore
+import org.neo4j.cypher.internal.physicalplanning.ast.PropertyMapEntry
 import org.neo4j.cypher.internal.runtime.PropertyTokensResolver
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
@@ -35,12 +35,12 @@ import org.neo4j.values.virtual.MapValueBuilder
 
 abstract class MapProjectionFromStore extends Expression with SlottedExpression {
 
-  final private[this] val tokens: PropertyTokensResolver = {
-    val (names, tokens) = properties
-      .sortBy(_.name)
-      .map(p => p.name -> p.token.getOrElse(TokenRead.NO_TOKEN))
-      .unzip
-    PropertyTokensResolver.property(names.toArray, tokens.toArray)
+  final private[this] val (tokens: PropertyTokensResolver, nameAliases: Array[String]) = {
+    val (mapKeys, propKeys, propTokens) = entries
+      .sortBy(_.mapKey)
+      .map(e => (e.mapKey, e.property.name, e.property.token.getOrElse(TokenRead.NO_TOKEN)))
+      .unzip3
+    (PropertyTokensResolver.property(propKeys.toArray, propTokens.toArray), mapKeys.toArray)
   }
 
   override def children: Seq[AstNode[_]] = Seq.empty
@@ -55,17 +55,17 @@ abstract class MapProjectionFromStore extends Expression with SlottedExpression 
       val cursor = entityCursor(id, state)
       val values = entityGetProperties(cursor, state.cursors.propertyCursor, tokens.tokens())
       val result = new MapValueBuilder(values.length)
-      values.indices.foreach(i => result.add(tokens.names()(i), values(i)))
+      values.indices.foreach(i => result.add(nameAliases(i), values(i)))
       result.build()
     }
   }
 
   protected def entityOffset: Int
-  protected def properties: Seq[PropertyFromStore]
+  protected def entries: Seq[PropertyMapEntry]
   protected def entityCursor(id: Long, state: QueryState): EntityCursor
 }
 
-case class NodeProjectionFromStore(entityOffset: Int, properties: Seq[PropertyFromStore])
+case class NodeProjectionFromStore(entityOffset: Int, entries: Seq[PropertyMapEntry])
     extends MapProjectionFromStore {
 
   override protected def entityCursor(id: Long, state: QueryState): EntityCursor = {
@@ -75,7 +75,7 @@ case class NodeProjectionFromStore(entityOffset: Int, properties: Seq[PropertyFr
   }
 }
 
-case class RelationshipProjectionFromStore(entityOffset: Int, properties: Seq[PropertyFromStore])
+case class RelationshipProjectionFromStore(entityOffset: Int, entries: Seq[PropertyMapEntry])
     extends MapProjectionFromStore {
 
   override protected def entityCursor(id: Long, state: QueryState): EntityCursor = {

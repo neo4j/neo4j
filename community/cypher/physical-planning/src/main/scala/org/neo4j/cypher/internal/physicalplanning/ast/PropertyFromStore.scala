@@ -35,16 +35,27 @@ sealed trait PropertyFromStore {
 case class NodePropertyFromStore(offset: Int, name: String, token: Option[Int]) extends PropertyFromStore
 case class RelationshipPropertyFromStore(offset: Int, name: String, token: Option[Int]) extends PropertyFromStore
 
-object PropertyFromStore {
+object IsNodePropertyFromStore {
 
-  def unapply(property: RuntimeProperty): Option[PropertyFromStore] = property match {
+  // Erases null checks!
+  def unapply(property: RuntimeProperty): Option[NodePropertyFromStore] = property match {
     case p @ NodeProperty(offset, token, _)   => Some(NodePropertyFromStore(offset, p.propertyKey.name, Some(token)))
     case NodePropertyLate(offset, propKey, _) => Some(NodePropertyFromStore(offset, propKey, None))
+    // Null checks are erased here, meaning that uses of PropertyFromStore needs null checking
+    case NullCheckProperty(_, IsNodePropertyFromStore(p)) => Some(p)
+    case _                                                => None
+  }
+}
+
+object IsRelationshipPropertyFromStore {
+
+  // Erases null checks!
+  def unapply(property: RuntimeProperty): Option[RelationshipPropertyFromStore] = property match {
     case p @ RelationshipProperty(offset, token, _) =>
       Some(RelationshipPropertyFromStore(offset, p.propertyKey.name, Some(token)))
     case RelationshipPropertyLate(offset, propKey, _) => Some(RelationshipPropertyFromStore(offset, propKey, None))
     // Null checks are erased here, meaning that uses of PropertyFromStore needs null checking
-    case NullCheckProperty(_, PropertyFromStore(p)) => Some(p)
-    case _                                          => None
+    case NullCheckProperty(_, IsRelationshipPropertyFromStore(p)) => Some(p)
+    case _                                                        => None
   }
 }
