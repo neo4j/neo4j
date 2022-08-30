@@ -40,6 +40,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
         unmapSnapshot();
         lockStamp = 0; // make sure not to accidentally keep a lock state around
         clearPageCursorState();
+        storeCurrentPageId(UNBOUND_PAGE_ID);
     }
 
     @Override

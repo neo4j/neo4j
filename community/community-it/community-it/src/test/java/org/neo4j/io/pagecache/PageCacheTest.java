@@ -1101,6 +1101,78 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
+    void currentPageIdIsUnboundAfterUnpinForReadCursor() {
+        assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
+            configureStandardPageCache();
+
+            try (PagedFile pagedFile = map(file("a"), filePageSize)) {
+                try (PageCursor writeCursor = pagedFile.io(0L, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                    assertTrue(writeCursor.next());
+                }
+                try (PageCursor cursor = pagedFile.io(0L, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                    assertTrue(cursor.next());
+                    assertThat(cursor.getCurrentPageId()).isEqualTo(0L);
+                    cursor.unpin();
+                    assertThat(cursor.getCurrentPageId()).isEqualTo(PageCursor.UNBOUND_PAGE_ID);
+                }
+            }
+        });
+    }
+
+    @Test
+    void shouldPinPageAfterUnpinWriteCursor() {
+        assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
+            configureStandardPageCache();
+
+            try (var pagedFile = map(file("a"), filePageSize)) {
+                int offset;
+                var pageId = 0;
+                try (var cursor = pagedFile.io(pageId, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                    assertTrue(cursor.next());
+                    cursor.putInt(5);
+                    offset = cursor.getOffset();
+                    cursor.putInt(10);
+                    cursor.unpin();
+
+                    assertTrue(cursor.next(pageId));
+                    cursor.setOffset(offset);
+                    int read = cursor.getInt();
+                    assertThat(read).isEqualTo(10);
+                }
+            }
+        });
+    }
+
+    @Test
+    void shouldPinPageAfterUnpinReadCursor() {
+        assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
+            configureStandardPageCache();
+
+            try (var pagedFile = map(file("a"), filePageSize)) {
+                int offset;
+                var pageId = 0;
+                try (var cursor = pagedFile.io(pageId, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                    assertTrue(cursor.next());
+                    cursor.putInt(5);
+                    offset = cursor.getOffset();
+                    cursor.putInt(10);
+                }
+                try (var readCursor = pagedFile.io(pageId, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                    assertTrue(readCursor.next());
+                    readCursor.unpin();
+                    assertTrue(readCursor.next(pageId));
+                    int read;
+                    do {
+                        readCursor.setOffset(offset);
+                        read = readCursor.getInt();
+                    } while (readCursor.shouldRetry());
+                    assertThat(read).isEqualTo(10);
+                }
+            }
+        });
+    }
+
+    @Test
     void pageCursorMustKnowCurrentFilePageSize() {
         assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
             configureStandardPageCache();
