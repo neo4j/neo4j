@@ -1698,14 +1698,14 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   }
 
   test(
-    "inserts eager between conflicting plans at the cardinality minima of two separate conflicts (overlapping candidate lists, different minima, two Eagers cheaper)"
+    "inserts eager between conflicting plans at the cardinality minima of two separate conflicts (overlapping candidate lists, different minima, none in intersection)"
   ) {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("foo").withCardinality(100)
       .projection("n.foo AS foo").withCardinality(100)
       .expand("(n)-->(p)").withCardinality(5) // Minimum  of foo conflict
       .projection("n.prop AS prop").withCardinality(100)
-      .expand("(n)-->(o)").withCardinality(50) // Minimum of intersection
+      .expand("(n)-->(o)").withCardinality(8) // Minimum of intersection
       .setNodeProperty("n", "foo", "5").withCardinality(100)
       .expand("(n)-->(m)").withCardinality(5) // Minimum  of prop conflict
       .setNodeProperty("n", "prop", "5").withCardinality(100)
@@ -1723,41 +1723,6 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .expand("(n)-->(o)")
         .setNodeProperty("n", "foo", "5")
         .eager(ListSet(EagernessReason.PropertyReadSetConflict(propName("prop"))))
-        .expand("(n)-->(m)")
-        .setNodeProperty("n", "prop", "5")
-        .allNodeScan("n")
-        .build()
-    )
-  }
-
-  test(
-    "inserts eager between conflicting plans at the cardinality minima of two separate conflicts (overlapping candidate lists, different minima, one Eager cheaper)"
-  ) {
-    val planBuilder = new LogicalPlanBuilder()
-      .produceResults("foo").withCardinality(100)
-      .projection("n.foo AS foo").withCardinality(100)
-      .expand("(n)-->(p)").withCardinality(5) // Minimum  of foo conflict
-      .projection("n.prop AS prop").withCardinality(100)
-      .expand("(n)-->(o)").withCardinality(2) // Minimum of intersection
-      .setNodeProperty("n", "foo", "5").withCardinality(100)
-      .expand("(n)-->(m)").withCardinality(5) // Minimum  of prop conflict
-      .setNodeProperty("n", "prop", "5").withCardinality(100)
-      .allNodeScan("n").withCardinality(100)
-    val plan = planBuilder.build()
-
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
-    result should equal(
-      new LogicalPlanBuilder()
-        .produceResults("foo")
-        .projection("n.foo AS foo")
-        .expand("(n)-->(p)")
-        .projection("n.prop AS prop")
-        .eager(ListSet(
-          EagernessReason.PropertyReadSetConflict(propName("prop")),
-          EagernessReason.PropertyReadSetConflict(propName("foo"))
-        ))
-        .expand("(n)-->(o)")
-        .setNodeProperty("n", "foo", "5")
         .expand("(n)-->(m)")
         .setNodeProperty("n", "prop", "5")
         .allNodeScan("n")
@@ -2259,11 +2224,11 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("foo")
       .setNodeProperty("n", "prop", "5")
-      .union()
-      .|.projection("n.prop AS foo2")
-      .|.allNodeScan("n")
-      .projection("n.prop AS foo")
-      .allNodeScan("n")
+      .union().withCardinality(10)
+      .|.projection("n.prop AS foo2").withCardinality(5)
+      .|.allNodeScan("n").withCardinality(5)
+      .projection("n.prop AS foo").withCardinality(5)
+      .allNodeScan("n").withCardinality(5)
     val plan = planBuilder.build()
 
     val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
@@ -2271,10 +2236,11 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("foo")
         .setNodeProperty("n", "prop", "5")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(propName("prop"))))
         .union()
+        .|.eager(ListSet(EagernessReason.PropertyReadSetConflict(propName("prop"))))
         .|.projection("n.prop AS foo2")
         .|.allNodeScan("n")
+        .eager(ListSet(EagernessReason.PropertyReadSetConflict(propName("prop"))))
         .projection("n.prop AS foo")
         .allNodeScan("n")
         .build()
@@ -2287,11 +2253,11 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("foo")
       .setNodeProperty("n", "prop", "5")
-      .union()
-      .|.projection("n.prop AS foo")
-      .|.allNodeScan("n")
-      .projection("n.prop AS foo")
-      .allNodeScan("n")
+      .union().withCardinality(10)
+      .|.projection("n.prop AS foo").withCardinality(5)
+      .|.allNodeScan("n").withCardinality(5)
+      .projection("n.prop AS foo").withCardinality(5)
+      .allNodeScan("n").withCardinality(5)
     val plan = planBuilder.build()
 
     val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
@@ -2299,10 +2265,11 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("foo")
         .setNodeProperty("n", "prop", "5")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(propName("prop"))))
         .union()
+        .|.eager(ListSet(EagernessReason.PropertyReadSetConflict(propName("prop"))))
         .|.projection("n.prop AS foo")
         .|.allNodeScan("n")
+        .eager(ListSet(EagernessReason.PropertyReadSetConflict(propName("prop"))))
         .projection("n.prop AS foo")
         .allNodeScan("n")
         .build()

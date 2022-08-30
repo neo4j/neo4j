@@ -90,17 +90,7 @@ object BestPositionFinder {
         Some(CandidateSetWithMinimum(intersection, b.minimum, a.reasons ++ b.reasons))
       } else {
         // Both sets have their own minima, and neither lies in the intersection.
-        val minimumInIntersection = intersection.minBy(plan => cardinalities.get(plan.value.id))
-        if (
-          cardinalities(minimumInIntersection.value.id) <
-            cardinalities(a.minimum.value.id) + cardinalities(b.minimum.value.id)
-        ) {
-          // Doing one Eager in the intersection is cheaper.
-          Some(CandidateSetWithMinimum(intersection, minimumInIntersection, a.reasons ++ b.reasons))
-        } else {
-          // Doing two Eagers outside of the intersection is cheaper.
-          None
-        }
+        None
       }
     }
 
