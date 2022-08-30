@@ -30,7 +30,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
@@ -180,7 +179,8 @@ public class PlainDatabaseLayout implements DatabaseLayout {
 
     protected boolean isRecoverableStore(DatabaseFile file) {
         throw new IllegalStateException(
-                "Can not determine whether the store '%s' is recoverable in a PlainDatabaseLayout".formatted(file.getName()));
+                "Can not determine whether the store '%s' is recoverable in a PlainDatabaseLayout"
+                        .formatted(file.getName()));
     }
 
     private static String idFileName(String storeName) {
