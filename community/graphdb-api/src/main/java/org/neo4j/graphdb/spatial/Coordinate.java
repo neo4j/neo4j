@@ -19,11 +19,7 @@
  */
 package org.neo4j.graphdb.spatial;
 
-import static java.util.Arrays.stream;
-
 import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.neo4j.annotations.api.PublicApi;
 
 /**
@@ -51,13 +47,12 @@ public final class Coordinate {
         this.coordinate = coordinate;
     }
 
-    /**
-     * Returns the current coordinate.
-     *
-     * @return A list of numbers describing the coordinate.
-     */
-    public List<Double> getCoordinate() {
-        return stream(coordinate).boxed().collect(Collectors.toList());
+    public double[] getCoordinate() {
+        return coordinate;
+    }
+
+    public double[] getCoordinateCopy() {
+        return Arrays.copyOf(coordinate, coordinate.length);
     }
 
     @Override

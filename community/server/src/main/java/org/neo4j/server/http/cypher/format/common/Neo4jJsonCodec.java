@@ -100,7 +100,7 @@ public class Neo4jJsonCodec extends ObjectMapper {
                             "crs",
                             geom.getCRS()));
         } else if (value instanceof Coordinate coordinate) {
-            writeIterator(out, coordinate.getCoordinate().iterator());
+            writeDoubleArray(out, coordinate.getCoordinate());
         } else if (value instanceof CRS crs) {
             writeMap(
                     out,
@@ -155,6 +155,17 @@ public class Neo4jJsonCodec extends ObjectMapper {
             }
         } finally {
             out.writeEndObject();
+        }
+    }
+
+    private void writeDoubleArray(JsonGenerator out, double[] values) throws IOException {
+        out.writeStartArray();
+        try {
+            for (double value : values) {
+                writeValue(out, value);
+            }
+        } finally {
+            out.writeEndArray();
         }
     }
 

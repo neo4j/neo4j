@@ -163,17 +163,8 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
         if (!other.getCRS().getHref().equals(this.getCRS().getHref())) {
             return false;
         }
-        // TODO: This can be an assert
-        List<Double> otherCoordinate = other.getCoordinate().getCoordinate();
-        if (otherCoordinate.size() != this.coordinate.length) {
-            return false;
-        }
-        for (int i = 0; i < this.coordinate.length; i++) {
-            if (otherCoordinate.get(i) != this.coordinate[i]) {
-                return false;
-            }
-        }
-        return true;
+        double[] otherCoordinates = other.getCoordinate().getCoordinate();
+        return Arrays.equals(coordinate, otherCoordinates);
     }
 
     @Override

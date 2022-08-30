@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.http.cypher.format.jolt;
 
+import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.joining;
 
 import java.util.function.Function;
@@ -28,14 +29,11 @@ final class PointToWKT implements Function<Point, String> {
     @Override
     public String apply(Point point) {
         var coordinates = point.getCoordinate().getCoordinate();
-        var wkt = new StringBuilder()
-                .append("SRID=")
-                .append(point.getCRS().getCode())
-                .append(";POINT")
-                .append(coordinates.size() == 3 ? " Z " : "")
-                .append("(")
-                .append(coordinates.stream().map(String::valueOf).collect(joining(" ")))
-                .append(")");
-        return wkt.toString();
+        return "SRID=" + point.getCRS().getCode()
+                + ";POINT"
+                + (coordinates.length == 3 ? " Z " : "")
+                + "("
+                + stream(coordinates).mapToObj(String::valueOf).collect(joining(" "))
+                + ")";
     }
 }

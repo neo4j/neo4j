@@ -41,7 +41,6 @@ import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.graphdb.spatial.CRS;
@@ -287,11 +286,7 @@ public final class Values {
     public static PointValue point(Point point) {
         // An optimization could be to do an instanceof PointValue check here
         // and in that case just return the casted argument.
-        List<Double> coordinate = point.getCoordinate().getCoordinate();
-        double[] coords = new double[coordinate.size()];
-        for (int i = 0; i < coords.length; i++) {
-            coords[i] = coordinate.get(i);
-        }
+        double[] coords = point.getCoordinate().getCoordinateCopy();
         return new PointValue(crs(point.getCRS()), coords);
     }
 

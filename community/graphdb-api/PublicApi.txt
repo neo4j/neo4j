@@ -473,7 +473,8 @@ org.neo4j.graphdb.spatial.CRS::getType() java.lang.String public abstract
 org.neo4j.graphdb.spatial.Coordinate public final class extends java.lang.Object
 org.neo4j.graphdb.spatial.Coordinate::Coordinate(double...) void public
 org.neo4j.graphdb.spatial.Coordinate::equals(java.lang.Object) boolean public
-org.neo4j.graphdb.spatial.Coordinate::getCoordinate() java.util.List<java.lang.Double> public
+org.neo4j.graphdb.spatial.Coordinate::getCoordinate() double[] public
+org.neo4j.graphdb.spatial.Coordinate::getCoordinateCopy() double[] public
 org.neo4j.graphdb.spatial.Coordinate::hashCode() int public
 org.neo4j.graphdb.spatial.Geometry public abstract interface
 org.neo4j.graphdb.spatial.Geometry::getCRS() org.neo4j.graphdb.spatial.CRS public abstract

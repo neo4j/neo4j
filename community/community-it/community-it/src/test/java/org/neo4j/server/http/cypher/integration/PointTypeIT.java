@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.http.cypher.integration;
 
-import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
@@ -300,8 +299,8 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase {
         assertEquals(crs.getName(), element.get("crs").get("name").asText());
     }
 
-    private static void verifyPoint(Point point, CRS expectedCRS, Double... expectedCoordinate) {
+    private static void verifyPoint(Point point, CRS expectedCRS, double... expectedCoordinate) {
         assertEquals(expectedCRS.getCode(), point.getCRS().getCode());
-        assertEquals(asList(expectedCoordinate), point.getCoordinate().getCoordinate());
+        assertArrayEquals(expectedCoordinate, point.getCoordinate().getCoordinate());
     }
 }

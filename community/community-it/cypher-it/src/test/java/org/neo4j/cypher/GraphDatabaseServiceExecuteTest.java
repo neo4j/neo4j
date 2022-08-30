@@ -87,8 +87,8 @@ public class GraphDatabaseServiceExecuteTest {
             assertThat(obj, Matchers.instanceOf(Point.class));
 
             Point point = (Point) obj;
-            assertThat(point.getCoordinate().getCoordinate().get(0), equalTo(144.317718));
-            assertThat(point.getCoordinate().getCoordinate().get(1), equalTo(-37.031738));
+            assertThat(point.getCoordinate().getCoordinate()[0], equalTo(144.317718));
+            assertThat(point.getCoordinate().getCoordinate()[1], equalTo(-37.031738));
 
             CRS crs = point.getCRS();
             assertThat(crs.getCode(), equalTo(4326));

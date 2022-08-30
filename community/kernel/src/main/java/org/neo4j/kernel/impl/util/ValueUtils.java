@@ -152,13 +152,8 @@ public final class ValueUtils {
     }
 
     private static PointValue toPoint(Geometry geometry) {
-        List<Double> coordinate = geometry.getCoordinates().get(0).getCoordinate();
-        double[] primitiveCoordinate = new double[coordinate.size()];
-        for (int i = 0; i < coordinate.size(); i++) {
-            primitiveCoordinate[i] = coordinate.get(i);
-        }
-
-        return Values.pointValue(CoordinateReferenceSystem.get(geometry.getCRS()), primitiveCoordinate);
+        double[] coordinatesCopy = geometry.getCoordinates().get(0).getCoordinateCopy();
+        return Values.pointValue(CoordinateReferenceSystem.get(geometry.getCRS()), coordinatesCopy);
     }
 
     public static ListValue asListValue(List<?> collection) {

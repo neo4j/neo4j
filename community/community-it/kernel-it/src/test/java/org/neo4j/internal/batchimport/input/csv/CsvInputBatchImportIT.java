@@ -549,7 +549,7 @@ class CsvInputBatchImportIT {
             Consumer verifyPointA = actualValue -> {
                 // The y-coordinate should match the node number modulo 90 (so we don't break wgs boundaries)
                 PointValue v = (PointValue) actualValue;
-                double actualY = v.getCoordinates().get(0).getCoordinate().get(1);
+                double actualY = v.getCoordinates().get(0).getCoordinate()[1];
                 double expectedY = indexOf(node) % 90;
                 String message = actualValue + " does not have y=" + expectedY;
                 assertEquals(expectedY, actualY, 0.1, message);
@@ -565,7 +565,7 @@ class CsvInputBatchImportIT {
             Consumer verifyPointB = actualValue -> {
                 // The y-coordinate should match the node number
                 PointValue v = (PointValue) actualValue;
-                double actualY = v.getCoordinates().get(0).getCoordinate().get(1);
+                double actualY = v.getCoordinates().get(0).getCoordinate()[1];
                 double expectedY = indexOf(node);
                 String message = actualValue + " does not have y=" + expectedY;
                 assertEquals(expectedY, actualY, 0.1, message);

@@ -233,8 +233,9 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
-      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
-      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+      val coordinate = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate
+      val longitude = coordinate(0)
+      val latitude = coordinate(1)
 
       (longitude >= 50 && longitude <= 60) && (latitude >= 50 && latitude <= 60)
     })
@@ -272,8 +273,9 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
-      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
-      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+      val coordinate = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate
+      val longitude = coordinate(0)
+      val latitude = coordinate(1)
 
       (longitude >= -60 && longitude <= -50) && (latitude >= 50 && latitude <= 60)
     })
@@ -311,8 +313,9 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
-      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
-      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+      val coordinate = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate
+      val longitude = coordinate(0)
+      val latitude = coordinate(1)
 
       (longitude >= 50 && longitude <= 60) && (latitude >= -60 && latitude <= -50)
     })
@@ -350,8 +353,9 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
-      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
-      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+      val coordinate = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate
+      val longitude = coordinate(0)
+      val latitude = coordinate(1)
 
       (longitude >= -60 && longitude <= -50) && (latitude >= -60 && latitude <= -50)
     })
@@ -389,8 +393,9 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
-      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
-      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+      val coordinate = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate
+      val longitude = coordinate(0)
+      val latitude = coordinate(1)
       (longitude >= 170 || longitude <= -170) && (latitude >= 50 && latitude <= 60)
     })
     runtimeResult should beColumns("n").withRows(singleColumn(expected))
@@ -427,8 +432,9 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
-      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
-      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+      val coordinate = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate
+      val longitude = coordinate(0)
+      val latitude = coordinate(1)
       (latitude >= -10 && latitude <= 10) && (longitude >= 5 && longitude <= 10)
     })
     runtimeResult should beColumns("n").withRows(singleColumn(expected))
@@ -465,8 +471,9 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
-      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
-      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+      val coordinate = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate
+      val longitude = coordinate(0)
+      val latitude = coordinate(1)
       (longitude >= 170 || longitude <= -170) && (latitude >= -10 && latitude <= 10)
     })
     runtimeResult should beColumns("n").withRows(singleColumn(expected))
@@ -503,8 +510,9 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
-      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
-      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+      val coordinate = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate
+      val longitude = coordinate(0)
+      val latitude = coordinate(1)
       (longitude >= 20 || longitude <= 10) && (latitude >= 50 && latitude <= 60)
     })
     runtimeResult should beColumns("n").withRows(singleColumn(expected))
@@ -541,8 +549,9 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
-      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
-      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+      val coordinate = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate
+      val longitude = coordinate(0)
+      val latitude = coordinate(1)
       (longitude <= -20 || longitude >= -10) && (latitude >= 50 && latitude <= 60)
     })
     runtimeResult should beColumns("n").withRows(singleColumn(expected))
@@ -579,8 +588,9 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
-      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
-      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+      val coordinate = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate
+      val longitude = coordinate(0)
+      val latitude = coordinate(1)
       (longitude >= 20 || longitude <= 10) && (latitude >= -60 && latitude <= -50)
     })
     runtimeResult should beColumns("n").withRows(singleColumn(expected))
@@ -617,8 +627,9 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
-      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
-      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+      val coordinate = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate
+      val longitude = coordinate(0)
+      val latitude = coordinate(1)
       (longitude <= -20 || longitude >= -10) && (latitude >= -60 && latitude <= -50)
     })
     runtimeResult should beColumns("n").withRows(singleColumn(expected))
@@ -655,8 +666,9 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
-      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
-      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+      val coordinate = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate
+      val longitude = coordinate(0)
+      val latitude = coordinate(1)
       (longitude <= 170 && longitude >= -170) && (latitude >= 50 && latitude <= 60)
     })
     runtimeResult should beColumns("n").withRows(singleColumn(expected))
@@ -727,9 +739,10 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     val expected = nodes.filter(n => {
-      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
-      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
-      val height = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(2)
+      val coordinate = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate
+      val longitude = coordinate(0)
+      val latitude = coordinate(1)
+      val height = coordinate(2)
 
       (longitude >= 50 && longitude <= 60) &&
       (latitude >= 50 && latitude <= 60) &&
