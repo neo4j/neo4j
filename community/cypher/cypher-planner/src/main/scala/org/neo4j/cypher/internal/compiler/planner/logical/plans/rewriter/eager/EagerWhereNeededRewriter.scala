@@ -38,18 +38,12 @@ case class EagerWhereNeededRewriter(cardinalities: Cardinalities, attributes: At
   override def eagerize(plan: LogicalPlan): LogicalPlan = {
     // Step 1: Find reads and writes
     val readsAndWrites = collectReadsAndWrites(plan)
-    println()
-    println(readsAndWrites)
 
     // Step 2: Find conflicting plans
     val conflicts = findConflictingPlans(readsAndWrites, plan)
-    println()
-    println(conflicts)
 
     // Step 3: Find candidate lists where Eager can be planned
     val candidateLists = findCandidateLists(plan, conflicts)
-    println()
-    println(candidateLists)
 
     // Step 4: Pick the best candidate in each sequence.
     val plansToEagerize = pickPlansToEagerize(cardinalities, candidateLists)
