@@ -255,6 +255,18 @@ public class KernelTransactions extends LifecycleAdapter
                 .collect(toSet());
     }
 
+    public long oldestVisibleTransactionNumber() {
+        long oldestVisibleTransactionNumber = Long.MAX_VALUE;
+        for (KernelTransactionImplementation transaction : allTransactions) {
+            if (transaction.isOpen() && !transaction.isTerminated()) {
+                oldestVisibleTransactionNumber = Math.min(
+                        oldestVisibleTransactionNumber,
+                        transaction.cursorContext().getVersionContext().lastClosedTransactionId());
+            }
+        }
+        return oldestVisibleTransactionNumber;
+    }
+
     public long oldestActiveTransactionSequenceNumber() {
         long oldestTransactionSequenceNumber = Long.MAX_VALUE;
         for (KernelTransactionImplementation transaction : allTransactions) {

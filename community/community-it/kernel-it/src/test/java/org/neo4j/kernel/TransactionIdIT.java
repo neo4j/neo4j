@@ -72,10 +72,10 @@ class TransactionIdIT {
     }
 
     @Test
-    void oldestTransactionLookup() {
+    void oldestActiveTransactionLookup() {
         var dependencyResolver = databaseAPI.getDependencyResolver();
         var kernelTransactions = dependencyResolver.resolveDependency(KernelTransactions.class);
-        long sequenceNumber = Long.MAX_VALUE;
+        long sequenceNumber;
         try (TransactionImpl oldTransaction = (TransactionImpl) databaseAPI.beginTx()) {
             sequenceNumber = oldTransaction.kernelTransaction().getTransactionSequenceNumber();
             for (int i = 0; i < 100; i++) {
