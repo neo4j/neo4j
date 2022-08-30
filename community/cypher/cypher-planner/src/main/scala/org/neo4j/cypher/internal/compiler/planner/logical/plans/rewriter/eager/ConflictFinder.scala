@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.R
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.ReadsAndWrites
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
 import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
 import org.neo4j.cypher.internal.ir.EagernessReason.UnknownPropertyReadSetConflict
 import org.neo4j.cypher.internal.ir.helpers.LabelExpressionEvaluator
 import org.neo4j.cypher.internal.ir.helpers.LabelExpressionEvaluator.NodesToCheckOverlap
@@ -75,11 +76,15 @@ object ConflictFinder {
       readPlan <- readsAndWrites.reads.plansReadingProperty(prop)
       writePlan <- writePlans
       if isValidConflict(readPlan, writePlan, wholePlan)
-    } addConflict(
-      writePlan,
-      readPlan,
-      Set(prop.map(EagernessReason.PropertyReadSetConflict).getOrElse(UnknownPropertyReadSetConflict))
-    )
+    } {
+      val conflict = Some(Conflict(writePlan.id, readPlan.id))
+      addConflict(
+        writePlan,
+        readPlan,
+        Set(prop.map(EagernessReason.PropertyReadSetConflict(_, conflict))
+          .getOrElse(UnknownPropertyReadSetConflict(conflict)))
+      )
+    }
 
     // Conflicts between a label read and a label SET
     for {
@@ -87,7 +92,10 @@ object ConflictFinder {
       readPlan <- readsAndWrites.reads.plansReadingLabel(label)
       writePlan <- writePlans
       if isValidConflict(readPlan, writePlan, wholePlan)
-    } addConflict(writePlan, readPlan, Set(EagernessReason.LabelReadSetConflict(label)))
+    } {
+      val conflict = Some(Conflict(writePlan.id, readPlan.id))
+      addConflict(writePlan, readPlan, Set(EagernessReason.LabelReadSetConflict(label, conflict)))
+    }
 
     // Conflicts between a label read (determined by a snapshot filterExpressions) and a label CREATE
     for {
@@ -106,14 +114,20 @@ object ConflictFinder {
       ).getOrElse(true)
       readPlan <- readPlans
       if isValidConflict(readPlan, writePlan, wholePlan)
-    } addConflict(writePlan, readPlan, labelSet.map(EagernessReason.LabelReadSetConflict))
+    } {
+      val conflict = Some(Conflict(writePlan.id, readPlan.id))
+      addConflict(writePlan, readPlan, labelSet.map(EagernessReason.LabelReadSetConflict(_, conflict)))
+    }
 
     // Conflicts between plans that create nodes and AllNodeScans
     for {
       writePlan <- readsAndWrites.writes.creates.plansThatCreateNodes
       readPlan <- readsAndWrites.reads.allNodeReadPlans
       if isValidConflict(readPlan, writePlan, wholePlan)
-    } addConflict(writePlan, readPlan, Set(EagernessReason.ReadCreateConflict))
+    } {
+      val conflict = Some(Conflict(writePlan.id, readPlan.id))
+      addConflict(writePlan, readPlan, Set(EagernessReason.ReadCreateConflict(conflict)))
+    }
 
     map.map {
       case (SetExtractor(plan1, plan2), reasons) => ConflictingPlanPair(plan1, plan2, reasons)

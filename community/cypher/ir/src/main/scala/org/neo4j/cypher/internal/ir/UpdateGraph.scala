@@ -405,11 +405,11 @@ trait UpdateGraph {
     }
 
     if (overlapWithKnownLabels.nonEmpty)
-      overlapWithKnownLabels.toSeq.map(EagernessReason.LabelReadSetConflict)
+      overlapWithKnownLabels.toSeq.map(EagernessReason.LabelReadSetConflict(_))
     else if (labelsToSet.nonEmpty && overlapWithLabelsFunction)
-      labelsToSet.toSeq.map(EagernessReason.LabelReadSetConflict)
+      labelsToSet.toSeq.map(EagernessReason.LabelReadSetConflict(_))
     else if (labelsToSet.nonEmpty && overlapWithWildcard)
-      labelsToSet.toSeq.map(EagernessReason.LabelReadSetConflict)
+      labelsToSet.toSeq.map(EagernessReason.LabelReadSetConflict(_))
     else
       Seq.empty
   }
@@ -467,7 +467,7 @@ trait UpdateGraph {
       ) ++ qgWithInfo.queryGraph.argumentIds
     val overlaps = (identifiersToRead intersect identifiersToDelete).toSeq
     if (overlaps.nonEmpty) {
-      overlaps.map(EagernessReason.ReadDeleteConflict)
+      overlaps.map(EagernessReason.ReadDeleteConflict(_))
     } else {
       deleteLabelExpressionOverlap(qgWithInfo)
     }
@@ -498,9 +498,9 @@ trait UpdateGraph {
       .flatMap { case (unstableNode, deletedNode) => Set(unstableNode.name, deletedNode.name) }
 
     if (unstableNodesToDelete.nonEmpty) {
-      unstableNodesToDelete.map(EagernessReason.ReadDeleteConflict)
+      unstableNodesToDelete.map(EagernessReason.ReadDeleteConflict(_))
     } else if (nodesWithLabelOverlap.nonEmpty) {
-      nodesWithLabelOverlap.map(EagernessReason.ReadDeleteConflict).toSeq
+      nodesWithLabelOverlap.map(EagernessReason.ReadDeleteConflict(_)).toSeq
     } else {
       Seq.empty
     }
@@ -567,7 +567,7 @@ trait UpdateGraph {
     }.flatten
 
     if (overlappingLabels.nonEmpty) {
-      overlappingLabels.map(EagernessReason.LabelReadRemoveConflict)
+      overlappingLabels.map(EagernessReason.LabelReadRemoveConflict(_))
     } else {
       Seq.empty
     }

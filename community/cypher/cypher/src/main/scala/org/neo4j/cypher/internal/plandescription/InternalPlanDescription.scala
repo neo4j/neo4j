@@ -105,6 +105,17 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
     allMaybeDbHits.reduce(_ + _)
   }
 
+  def findPlanByPredicate(predicate: InternalPlanDescription => Boolean): Option[InternalPlanDescription] =
+    folder.treeFind[InternalPlanDescription] {
+      case plan: InternalPlanDescription if predicate(plan) => true
+    }
+
+  def containsDetail(infoString: String): Boolean =
+    arguments.exists {
+      case Details(info) => info.contains(asPrettyString.raw(infoString))
+      case _             => false
+    }
+
   // Implement public Java API here=
   override def getName: String = name
 

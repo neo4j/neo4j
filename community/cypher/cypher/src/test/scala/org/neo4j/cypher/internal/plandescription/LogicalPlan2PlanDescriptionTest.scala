@@ -121,6 +121,7 @@ import org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
@@ -3530,6 +3531,20 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       )
     )
 
+    {
+      val reason = EagernessReason.LabelReadRemoveConflict(label("Foo"), maybeConflict = Some(Conflict(Id(1), Id(2))))
+      assertGood(
+        attach(Eager(lhsLP, ListSet(reason)), 34.5),
+        planDescription(
+          id,
+          "Eager",
+          SingleChild(lhsPD),
+          Seq(details(Seq("read/remove conflict for label: Foo (Operator: 1 vs 2)"))),
+          Set("a")
+        )
+      )
+    }
+
     assertGood(
       attach(Eager(lhsLP, ListSet(EagernessReason.LabelReadSetConflict(label("Foo")))), 34.5),
       planDescription(id, "Eager", SingleChild(lhsPD), Seq(details(Seq("read/set conflict for label: Foo"))), Set("a"))
@@ -3562,6 +3577,30 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         Set("a")
       )
     )
+
+    {
+      val reason1 = EagernessReason.ReadDeleteConflict("b", maybeConflict = Some(Conflict(Id(1), Id(2))))
+      val reason2 = EagernessReason.LabelReadSetConflict(label("Foo"), maybeConflict = Some(Conflict(Id(3), Id(4))))
+      assertGood(
+        attach(
+          Eager(
+            lhsLP,
+            ListSet(reason1, reason2)
+          ),
+          34.5
+        ),
+        planDescription(
+          id,
+          "Eager",
+          SingleChild(lhsPD),
+          Seq(details(Seq(
+            "read/delete conflict for variable: b (Operator: 1 vs 2)",
+            "read/set conflict for label: Foo (Operator: 3 vs 4)"
+          ))),
+          Set("a")
+        )
+      )
+    }
   }
 
   test("EmptyResult") {

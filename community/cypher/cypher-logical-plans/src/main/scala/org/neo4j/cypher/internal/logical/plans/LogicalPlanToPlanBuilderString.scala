@@ -1278,21 +1278,29 @@ object LogicalPlanToPlanBuilderString {
 
   private def sortItemStr(si: ColumnOrder): String = s""" ${si.getClass.getSimpleName}("${si.id}") """.trim
 
+  def conflictStr(maybeConflict: Option[EagernessReason.Conflict]): String =
+    maybeConflict match {
+      case Some(conflict) => s"Some(EagernessReason.Conflict(${conflict.first}, ${conflict.second}))"
+      case None           => "None"
+    }
+
   private def eagernessReasonStr(reason: Reason): String = {
     val prefix = objectName(EagernessReason)
     val suffix = reason match {
       case EagernessReason.Unknown             => objectName(EagernessReason.Unknown)
       case EagernessReason.UpdateStrategyEager => objectName(EagernessReason.UpdateStrategyEager)
-      case EagernessReason.LabelReadSetConflict(label) =>
-        s"${objectName(EagernessReason.LabelReadSetConflict)}(LabelName(${wrapInQuotations(label.name)})(InputPosition.NONE))"
-      case EagernessReason.LabelReadRemoveConflict(label) =>
-        s"${objectName(EagernessReason.LabelReadRemoveConflict)}(LabelName(${wrapInQuotations(label.name)})(InputPosition.NONE))"
-      case EagernessReason.ReadDeleteConflict(identifier) =>
-        s"${objectName(EagernessReason.ReadDeleteConflict)}(${wrapInQuotations(identifier)})"
-      case EagernessReason.ReadCreateConflict => objectName(EagernessReason.ReadCreateConflict)
-      case EagernessReason.PropertyReadSetConflict(property) =>
-        s"${objectName(EagernessReason.PropertyReadSetConflict)}(PropertyKeyName(${wrapInQuotations(property.name)})(InputPosition.NONE))"
-      case EagernessReason.UnknownPropertyReadSetConflict => objectName(EagernessReason.UnknownPropertyReadSetConflict)
+      case EagernessReason.LabelReadSetConflict(label, maybeConflict) =>
+        s"${objectName(EagernessReason.LabelReadSetConflict)}(LabelName(${wrapInQuotations(label.name)})(InputPosition.NONE), ${conflictStr(maybeConflict)})"
+      case EagernessReason.LabelReadRemoveConflict(label, maybeConflict) =>
+        s"${objectName(EagernessReason.LabelReadRemoveConflict)}(LabelName(${wrapInQuotations(label.name)})(InputPosition.NONE), ${conflictStr(maybeConflict)})"
+      case EagernessReason.ReadDeleteConflict(identifier, maybeConflict) =>
+        s"${objectName(EagernessReason.ReadDeleteConflict)}(${wrapInQuotations(identifier)}, ${conflictStr(maybeConflict)})"
+      case EagernessReason.ReadCreateConflict(maybeConflict) =>
+        s"${objectName(EagernessReason.ReadCreateConflict)}(${conflictStr(maybeConflict)})"
+      case EagernessReason.PropertyReadSetConflict(property, maybeConflict) =>
+        s"${objectName(EagernessReason.PropertyReadSetConflict)}(PropertyKeyName(${wrapInQuotations(property.name)})(InputPosition.NONE), ${conflictStr(maybeConflict)})"
+      case EagernessReason.UnknownPropertyReadSetConflict(maybeConflict) =>
+        s"${objectName(EagernessReason.UnknownPropertyReadSetConflict)}(${conflictStr(maybeConflict)})"
     }
     s"$prefix.$suffix"
   }

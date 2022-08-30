@@ -56,6 +56,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.UpperBound.Limited
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.neo4j.graphdb.schema.IndexType
@@ -744,9 +745,24 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
         EagernessReason.LabelReadSetConflict(LabelName("X")(InputPosition.NONE)),
         EagernessReason.LabelReadRemoveConflict(LabelName("Bar")(InputPosition.NONE)),
         EagernessReason.ReadDeleteConflict("n"),
-        EagernessReason.ReadCreateConflict,
+        EagernessReason.ReadCreateConflict(),
         EagernessReason.PropertyReadSetConflict(PropertyKeyName("Foo")(InputPosition.NONE)),
-        EagernessReason.UnknownPropertyReadSetConflict
+        EagernessReason.UnknownPropertyReadSetConflict(),
+        EagernessReason.LabelReadSetConflict(
+          LabelName("X")(InputPosition.NONE),
+          Some(EagernessReason.Conflict(Id(1), Id(2)))
+        ),
+        EagernessReason.LabelReadRemoveConflict(
+          LabelName("Bar")(InputPosition.NONE),
+          Some(EagernessReason.Conflict(Id(1), Id(2)))
+        ),
+        EagernessReason.ReadDeleteConflict("n", Some(EagernessReason.Conflict(Id(1), Id(2)))),
+        EagernessReason.ReadCreateConflict(Some(EagernessReason.Conflict(Id(1), Id(2)))),
+        EagernessReason.PropertyReadSetConflict(
+          PropertyKeyName("Foo")(InputPosition.NONE),
+          Some(EagernessReason.Conflict(Id(1), Id(2)))
+        ),
+        EagernessReason.UnknownPropertyReadSetConflict(Some(EagernessReason.Conflict(Id(1), Id(2))))
       ))
       .argument()
       .build()
@@ -1915,6 +1931,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
             |import org.neo4j.cypher.internal.ir.HasHeaders
             |import org.neo4j.cypher.internal.ir.NoHeaders
             |import org.neo4j.cypher.internal.ir.EagernessReason
+            |import org.neo4j.cypher.internal.util.attribution.Id
             |import org.neo4j.cypher.internal.util.InputPosition
             |import org.neo4j.cypher.internal.util.UpperBound.Limited
             |import org.neo4j.cypher.internal.util.Repetition

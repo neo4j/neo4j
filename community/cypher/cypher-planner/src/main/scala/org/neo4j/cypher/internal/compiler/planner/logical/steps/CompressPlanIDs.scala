@@ -57,11 +57,15 @@ case object CompressPlanIDs extends Phase[PlannerContext, LogicalPlanState, Logi
     val oldAttributes = from.planningAttributes
     val newAttributes = PlanningAttributes.newAttributes
 
+    val oldToNewIds: mutable.Map[Id, Id] = mutable.Map()
+
     val newIdGen = new SequentialIdGen()
     val newPlan = from.logicalPlan.endoRewrite(topDown(
       rewriter = Rewriter.lift {
         case lp: LogicalPlan =>
           val newLP = lp.copyPlanWithIdGen(newIdGen)
+          oldToNewIds.addOne(lp.id -> newLP.id)
+
           oldAttributes.solveds.getOption(lp.id).foreach {
             newAttributes.solveds.set(newLP.id, _)
           }
@@ -83,8 +87,16 @@ case object CompressPlanIDs extends Phase[PlannerContext, LogicalPlanState, Logi
       cancellation = context.cancellationChecker
     ))
 
+    val newPlanWithUpdatedIDRefs = newPlan.endoRewrite(topDown(
+      Rewriter.lift {
+        case EagernessReason.Conflict(first, second) =>
+          EagernessReason.Conflict(oldToNewIds(first), oldToNewIds(second))
+      },
+      cancellation = context.cancellationChecker
+    ))
+
     from
-      .withMaybeLogicalPlan(Some(newPlan))
+      .withMaybeLogicalPlan(Some(newPlanWithUpdatedIDRefs))
       .withNewPlanningAttributes(newAttributes)
   }
 

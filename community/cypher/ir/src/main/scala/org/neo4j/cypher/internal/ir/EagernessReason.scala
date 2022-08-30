@@ -21,23 +21,44 @@ package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.util.Rewritable
+import org.neo4j.cypher.internal.util.attribution.Id
 
 object EagernessReason {
 
-  sealed trait Reason
+  case class Conflict(first: Id, second: Id) extends Rewritable {
 
-  case object Unknown extends Reason
+    override def dup(children: Seq[AnyRef]): this.type =
+      Conflict(children(0).asInstanceOf[Id], children(1).asInstanceOf[Id]).asInstanceOf[this.type]
+  }
 
-  case object UpdateStrategyEager extends Reason
+  sealed trait Reason {
+    def maybeConflict: Option[Conflict]
+  }
 
-  case class LabelReadSetConflict(label: LabelName) extends Reason
-  case class LabelReadRemoveConflict(label: LabelName) extends Reason
+  case object Unknown extends Reason {
+    override def maybeConflict: Option[Conflict] = None
+  }
 
-  case class ReadDeleteConflict(identifier: String) extends Reason
+  case object UpdateStrategyEager extends Reason {
+    override def maybeConflict: Option[Conflict] = None
+  }
 
-  case object ReadCreateConflict extends Reason
+  case class LabelReadSetConflict(label: LabelName, override val maybeConflict: Option[Conflict] = None)
+      extends Reason
 
-  case class PropertyReadSetConflict(property: PropertyKeyName) extends Reason
+  case class LabelReadRemoveConflict(label: LabelName, override val maybeConflict: Option[Conflict] = None)
+      extends Reason
 
-  case object UnknownPropertyReadSetConflict extends Reason
+  case class ReadDeleteConflict(identifier: String, override val maybeConflict: Option[Conflict] = None)
+      extends Reason
+
+  case class ReadCreateConflict(override val maybeConflict: Option[Conflict] = None) extends Reason
+
+  case class PropertyReadSetConflict(
+    property: PropertyKeyName,
+    override val maybeConflict: Option[Conflict] = None
+  ) extends Reason
+
+  case class UnknownPropertyReadSetConflict(override val maybeConflict: Option[Conflict] = None) extends Reason
 }
