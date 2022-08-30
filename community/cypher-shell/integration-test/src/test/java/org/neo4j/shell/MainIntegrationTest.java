@@ -25,6 +25,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.endsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
@@ -535,7 +536,7 @@ class MainIntegrationTest {
                 .addArgs("-u", USER, "-p", PASSWORD)
                 .run()
                 .assertFailure()
-                .assertThatErrorOutput(containsString("database is unavailable"))
+                .assertThatErrorOutput(containsDatabaseIsUnavailable(DEFAULT_DEFAULT_DB_NAME))
                 .assertOutputLines());
     }
 
@@ -561,7 +562,7 @@ class MainIntegrationTest {
                 .userInputLines(":use " + DEFAULT_DEFAULT_DB_NAME, ":exit")
                 .run()
                 .assertSuccessAndConnected(false)
-                .assertThatErrorOutput(containsString("database is unavailable"))
+                .assertThatErrorOutput(containsDatabaseIsUnavailable(DEFAULT_DEFAULT_DB_NAME))
                 .assertThatOutput(endsWithInteractiveExit));
     }
 
@@ -575,7 +576,7 @@ class MainIntegrationTest {
                 .userInputLines(":use", ":exit")
                 .run()
                 .assertSuccessAndConnected(false)
-                .assertThatErrorOutput(containsString("database is unavailable"))
+                .assertThatErrorOutput(containsDatabaseIsUnavailable(DEFAULT_DEFAULT_DB_NAME))
                 .assertThatOutput(endsWithInteractiveExit));
     }
 
@@ -1171,5 +1172,10 @@ class MainIntegrationTest {
             }
         }
         fail("Could not find '" + find + "' in file " + file);
+    }
+
+    private Matcher<String> containsDatabaseIsUnavailable(String name) {
+        return anyOf(
+                containsString("database is unavailable"), containsString("Database '" + name + "' is unavailable"));
     }
 }
