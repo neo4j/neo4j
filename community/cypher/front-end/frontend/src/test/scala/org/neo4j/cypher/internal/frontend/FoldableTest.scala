@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenNewAccForSiblings
 import org.neo4j.cypher.internal.util.Foldable.TreeAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
+import scala.collection.immutable.ListSet
 import scala.jdk.CollectionConverters.ListHasAsScala
 
 object FoldableTest {
@@ -138,49 +139,49 @@ class FoldableTest extends CypherFunSuite {
   test("should get children") {
     val ast = Add(Val(1), Add(Val(2), Val(3)))
 
-    ast.treeChildren.toList shouldEqual (Seq(Val(1), Add(Val(2), Val(3))))
+    ast.treeChildren.toList shouldEqual Seq(Val(1), Add(Val(2), Val(3)))
   }
 
   test("should get children in reverse") {
     val ast = Add(Val(1), Add(Val(2), Val(3)))
 
-    ast.reverseTreeChildren.toList shouldEqual (Seq(Add(Val(2), Val(3)), Val(1)))
+    ast.reverseTreeChildren.toList shouldEqual Seq(Add(Val(2), Val(3)), Val(1))
   }
 
   test("should get children in list") {
     val ast = Seq(Val(1), Add(Val(2), Val(3)))
 
-    ast.treeChildren.toList shouldEqual (Seq(Val(1), Add(Val(2), Val(3))))
+    ast.treeChildren.toList shouldEqual Seq(Val(1), Add(Val(2), Val(3)))
   }
 
   test("should get children in list in reverse") {
     val ast = Seq(Val(1), Add(Val(2), Val(3)))
 
-    ast.reverseTreeChildren.toList shouldEqual (Seq(Add(Val(2), Val(3)), Val(1)))
+    ast.reverseTreeChildren.toList shouldEqual Seq(Add(Val(2), Val(3)), Val(1))
   }
 
   test("should get children in wrapping list") {
     val ast = java.util.List.of(Val(1), Add(Val(2), Val(3))).asScala
 
-    ast.treeChildren.toList shouldEqual (Seq(Val(1), Add(Val(2), Val(3))))
+    ast.treeChildren.toList shouldEqual Seq(Val(1), Add(Val(2), Val(3)))
   }
 
   test("should get children in wrapping list in reverse") {
     val ast = java.util.List.of(Val(1), Add(Val(2), Val(3))).asScala
 
-    ast.reverseTreeChildren.toList shouldEqual (Seq(Add(Val(2), Val(3)), Val(1)))
+    ast.reverseTreeChildren.toList shouldEqual Seq(Add(Val(2), Val(3)), Val(1))
   }
 
   test("should get children in Vector") {
     val ast = Vector(Val(1), Add(Val(2), Val(3)))
 
-    ast.treeChildren.toList shouldEqual (Seq(Val(1), Add(Val(2), Val(3))))
+    ast.treeChildren.toList shouldEqual Seq(Val(1), Add(Val(2), Val(3)))
   }
 
   test("should get children in Vector in reverse") {
     val ast = Vector(Val(1), Add(Val(2), Val(3)))
 
-    ast.reverseTreeChildren.toList shouldEqual (Seq(Add(Val(2), Val(3)), Val(1)))
+    ast.reverseTreeChildren.toList shouldEqual Seq(Add(Val(2), Val(3)), Val(1))
   }
 
   test("should get children in colon list") {
@@ -192,19 +193,55 @@ class FoldableTest extends CypherFunSuite {
   test("should get children in colon in reverse") {
     val list = List(Val(1), Add(Val(2), Val(3)))
 
-    list.reverseTreeChildren.toList shouldEqual (List(Add(Val(2), Val(3)), Val(1)))
+    list.reverseTreeChildren.toList shouldEqual List(Add(Val(2), Val(3)), Val(1))
+  }
+
+  test("should get children in ListSet") {
+    val list = ListSet(Val(1), Add(Val(2), Val(3)))
+
+    list.treeChildren.toList shouldEqual List(Val(1), Add(Val(2), Val(3)))
+  }
+
+  test("should get children in ListSet in reverse") {
+    val list = ListSet(Val(1), Add(Val(2), Val(3)))
+
+    list.reverseTreeChildren.toList shouldEqual List(Add(Val(2), Val(3)), Val(1))
+  }
+
+  test("should get children in Set") {
+    val list = Set(Val(1), Add(Val(2), Val(3)))
+
+    list.treeChildren.toList shouldEqual List(Val(1), Add(Val(2), Val(3)))
+  }
+
+  test("should get children in Set in reverse") {
+    val list = Set(Val(1), Add(Val(2), Val(3)))
+
+    list.reverseTreeChildren.toList shouldEqual List(Add(Val(2), Val(3)), Val(1))
+  }
+
+  test("should get children in Map") {
+    val list = Map(Val(1) -> Add(Val(2), Val(3)), Val(2) -> Val(10))
+
+    list.treeChildren.toList shouldEqual List(Val(1) -> Add(Val(2), Val(3)), Val(2) -> Val(10))
+  }
+
+  test("should get children in Map in reverse") {
+    val list = Map(Val(1) -> Add(Val(2), Val(3)), Val(2) -> Val(10))
+
+    list.reverseTreeChildren.toList shouldEqual List(Val(2) -> Val(10), Val(1) -> Add(Val(2), Val(3)))
   }
 
   test("should get children in Option") {
     val ast = Some(Val(1))
 
-    ast.treeChildren.toList shouldEqual (Seq(Val(1)))
+    ast.treeChildren.toList shouldEqual Seq(Val(1))
   }
 
   test("should get children in Option in reverse") {
     val ast = Some(Val(1))
 
-    ast.reverseTreeChildren.toList shouldEqual (Seq(Val(1)))
+    ast.reverseTreeChildren.toList shouldEqual Seq(Val(1))
   }
 
   test("should not get any children in empty lists") {

@@ -37,16 +37,21 @@ object Foldable {
 
     def reverseTreeChildren: Iterator[AnyRef] = that match {
       case s: collection.Seq[_] => s.reverseIterator.asInstanceOf[Iterator[AnyRef]]
-      // For list sets, the order matters. However, they are otherwise matched as Sets and therefore not reversed.
-      // Therefore, we need to handle them separately.
+      // For list sets, the order matters.
       case s: ListSet[_] => reverseListSetIterator(s).asInstanceOf[Iterator[AnyRef]]
-      case s: Set[_]     => s.iterator.asInstanceOf[Iterator[AnyRef]]
-      case m: Map[_, _]  => m.iterator.asInstanceOf[Iterator[AnyRef]]
-      case p: Product    => reverseProductIterator(p)
-      case _             => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
+      // For Sets and Maps, order doesn't really matter, but if the order is swapped around that often breaks expectations anyhow.
+      case s: Set[_]    => s.toSeq.reverseIterator.asInstanceOf[Iterator[AnyRef]]
+      case m: Map[_, _] => m.toSeq.reverseIterator.asInstanceOf[Iterator[AnyRef]]
+      case p: Product   => reverseProductIterator(p)
+      case _            => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
     }
 
-    def reverseListSetIterator[A](listSet: ListSet[A]): Iterator[A] = {
+    /**
+     * This method is more performant than `.toSeq.reverseIterator` (traverses the Set twice).
+     * while this method only traverses the Set once.
+     * This is possible because `last` and `init` are O(1) for ListSets.
+     */
+    private def reverseListSetIterator[A](listSet: ListSet[A]): Iterator[A] = {
       var values = listSet
       val reversed = List.newBuilder[A]
       while (values.nonEmpty) {

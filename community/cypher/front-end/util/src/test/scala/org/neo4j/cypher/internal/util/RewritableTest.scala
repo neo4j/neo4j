@@ -25,7 +25,10 @@ import org.neo4j.cypher.internal.util.RewritableTest.Options
 import org.neo4j.cypher.internal.util.RewritableTest.Pos
 import org.neo4j.cypher.internal.util.RewritableTest.Sum
 import org.neo4j.cypher.internal.util.RewritableTest.Val
+import org.neo4j.cypher.internal.util.RewritableTest.Wrap
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+
+import scala.collection.immutable.ListSet
 
 object RewritableTest {
   trait Exp extends Product with Rewritable
@@ -65,85 +68,203 @@ object RewritableTest {
     def dup(children: Seq[AnyRef]): this.type =
       ExpList(children.head.asInstanceOf[List[Exp]]).asInstanceOf[this.type]
   }
+
+  case class Wrap(anyRef: AnyRef) extends Exp {
+
+    def dup(children: Seq[AnyRef]): this.type =
+      Wrap(children.head).asInstanceOf[this.type]
+  }
 }
 
 class RewritableTest extends CypherFunSuite {
 
   // ---------
-  // topDown
+  // topDown variants
   // ---------
-  test("topDown should be identical when no rule matches") {
-    val ast = Add(Val(1), Add(Val(2), Val(3)))
+  List(
+    "topDown" -> ((ast: Rewritable, rewritePf: PartialFunction[AnyRef, AnyRef]) =>
+      ast.rewrite(topDown(Rewriter.lift(rewritePf)))
+    ),
+    "topDown rightToLeft" -> ((ast: Rewritable, rewritePf: PartialFunction[AnyRef, AnyRef]) =>
+      ast.rewrite(topDown(Rewriter.lift(rewritePf), leftToRight = false))
+    ),
+    "topDownWithParent" -> ((ast: Rewritable, rewritePf: PartialFunction[AnyRef, AnyRef]) => {
+      val liftedPf = Rewriter.lift(rewritePf)
+      val f: RewriterWithParent = {
+        case (value, _) => liftedPf(value)
+      }
+      ast.rewrite(topDownWithParent(f))
+    })
+  ) foreach { case (name, rewrite) =>
+    test(s"$name should be identical when no rule matches") {
+      val ast = Add(Val(1), Add(Val(2), Val(3)))
 
-    val result = ast.rewrite(topDown(Rewriter.lift {
-      case None => ???
-    }))
+      val result = rewrite(
+        ast,
+        {
+          case None => ???
+        }
+      )
 
-    assert(result === ast)
+      assert(result === ast)
+    }
+
+    test(s"$name should be identical when using identity") {
+      val ast = Add(Val(1), Add(Val(2), Val(3)))
+
+      val result = rewrite(
+        ast,
+        {
+          case a => a
+        }
+      )
+
+      assert(result === ast)
+    }
+
+    test(s"$name should match and replace primitives") {
+      val ast = Add(Val(1), Add(Val(2), Val(3)))
+
+      val result = rewrite(
+        ast,
+        {
+          case _: java.lang.Integer => 99: java.lang.Integer
+        }
+      )
+
+      assert(result === Add(Val(99), Add(Val(99), Val(99))))
+    }
+
+    test(s"$name should match and replace trees") {
+      val ast = Add(Val(1), Add(Val(2), Val(3)))
+
+      val result = rewrite(
+        ast,
+        {
+          case Add(Val(x), Val(y)) =>
+            Val(x + y)
+        }
+      )
+
+      assert(result === Add(Val(1), Val(5)))
+    }
+
+    test(s"$name should match and replace primitives and trees") {
+      val ast = Add(Val(8), Add(Val(2), Val(3)))
+
+      val result = rewrite(
+        ast,
+        {
+          case Val(_) =>
+            Val(1)
+          case Add(Val(x), Val(y)) =>
+            Val(x + y)
+        }
+      )
+
+      assert(result === Add(Val(1), Val(5)))
+    }
+
+    test(s"$name should duplicate terms with pair parameters") {
+      val ast = Add(Val(1), RewritableTest.Pos((Val(2), Val(3))))
+
+      val result = rewrite(
+        ast,
+        {
+          case Val(_) => Val(99)
+        }
+      )
+
+      assert(result === Add(Val(99), Pos((Val(99), Val(99)))))
+    }
+
+    test(s"$name should duplicate terms with sequence of pairs") {
+      val ast = Add(Val(1), Options(Seq((Val(2), Val(3)), (Val(4), Val(5)))))
+
+      val result = rewrite(
+        ast,
+        {
+          case Val(_) => Val(99)
+        }
+      )
+
+      assert(result === Add(Val(99), Options(Seq((Val(99), Val(99)), (Val(99), Val(99))))))
+    }
+
+    test(s"$name should duplicate terms with list of pairs") {
+      val ast = Add(Val(1), ExpList(List(Val(2), Val(3))))
+
+      val result = rewrite(
+        ast,
+        {
+          case Val(_) => Val(99)
+        }
+      )
+
+      assert(result === Add(Val(99), ExpList(List(Val(99), Val(99)))))
+    }
+
+    test(s"$name should not change order of Sets of primitives") {
+      val ast = Wrap(Set("a", "b", "c"))
+
+      val result = rewrite(
+        ast,
+        {
+          case "a" => "A"
+        }
+      ).asInstanceOf[Wrap]
+
+      // Turn the Set into a Seq to assert on the order
+      assert(result.anyRef.asInstanceOf[Set[String]].toSeq === Seq("A", "b", "c"))
+    }
+
+    test(s"$name should not change order of ListSets of primitives") {
+      val ast = Wrap(ListSet("a", "b", "c"))
+
+      val result = rewrite(
+        ast,
+        {
+          case "a" => "A"
+        }
+      ).asInstanceOf[Wrap]
+
+      // Turn the Set into a Seq to assert on the order
+      assert(result.anyRef.asInstanceOf[Set[String]].toSeq === Seq("A", "b", "c"))
+    }
+
+    test(s"$name should not change order of Maps of primitives") {
+      val ast = Wrap(Map("a" -> 10, "b" -> 20))
+
+      val result = rewrite(
+        ast,
+        {
+          case "a" => "A"
+        }
+      ).asInstanceOf[Wrap]
+
+      // Turn the Map into a Seq to assert on the order
+      assert(result.anyRef.asInstanceOf[Map[String, Int]].toSeq === Seq("A" -> 10, "b" -> 20))
+    }
   }
 
-  test("topDown should be identical when using identity") {
-    val ast = Add(Val(1), Add(Val(2), Val(3)))
+  // -------------------
+  // topDown rightToLeft
+  // -------------------
+  test("topDown rightToLeft should visit children right to left") {
+    val ast = Wrap(Seq("a", "b", "c"))
 
-    val result = ast.rewrite(topDown(Rewriter.lift {
-      case a => a
-    }))
+    val seqBuilder = Seq.newBuilder[String]
 
-    assert(result === ast)
-  }
+    ast.rewrite(topDown(
+      Rewriter.lift {
+        case x: String =>
+          seqBuilder.addOne(x)
+          x
+      },
+      leftToRight = false
+    ))
 
-  test("topDown should match and replace primitives") {
-    val ast = Add(Val(1), Add(Val(2), Val(3)))
-
-    val result = ast.rewrite(topDown(Rewriter.lift {
-      case _: java.lang.Integer => 99: java.lang.Integer
-    }))
-
-    assert(result === Add(Val(99), Add(Val(99), Val(99))))
-  }
-
-  test("topDown should match and replace trees") {
-    val ast = Add(Val(1), Add(Val(2), Val(3)))
-
-    val result = ast.rewrite(topDown(Rewriter.lift {
-      case Add(Val(x), Val(y)) =>
-        Val(x + y)
-    }))
-
-    assert(result === Add(Val(1), Val(5)))
-  }
-
-  test("topDown should match and replace primitives and trees") {
-    val ast = Add(Val(8), Add(Val(2), Val(3)))
-
-    val result = ast.rewrite(topDown(Rewriter.lift {
-      case Val(_) =>
-        Val(1)
-      case Add(Val(x), Val(y)) =>
-        Val(x + y)
-    }))
-
-    assert(result === Add(Val(1), Val(5)))
-  }
-
-  test("topDown should duplicate terms with pair parameters") {
-    val ast = Add(Val(1), RewritableTest.Pos((Val(2), Val(3))))
-
-    val result = ast.rewrite(topDown(Rewriter.lift {
-      case Val(_) => Val(99)
-    }))
-
-    assert(result === Add(Val(99), Pos((Val(99), Val(99)))))
-  }
-
-  test("topDown should duplicate terms with sequence of pairs") {
-    val ast = Add(Val(1), Options(Seq((Val(2), Val(3)), (Val(4), Val(5)))))
-
-    val result = ast.rewrite(topDown(Rewriter.lift {
-      case Val(_) => Val(99)
-    }))
-
-    assert(result === Add(Val(99), Options(Seq((Val(99), Val(99)), (Val(99), Val(99))))))
+    assert(seqBuilder.result() === Seq("c", "b", "a"))
   }
 
   // -------------------
@@ -171,80 +292,6 @@ class RewritableTest extends CypherFunSuite {
     }))
 
     assert(result === grandParent)
-  }
-
-  test("topDownWithParent should be identical when no rule matches") {
-    val ast = Add(Val(1), Add(Val(2), Val(3)))
-
-    val result = ast.rewrite(topDownWithParent(RewriterWithParent.lift {
-      case (None, _) => ???
-    }))
-
-    assert(result === ast)
-  }
-
-  test("topDownWithParent should be identical when using identity") {
-    val ast = Add(Val(1), Add(Val(2), Val(3)))
-
-    val result = ast.rewrite(topDownWithParent(RewriterWithParent.lift {
-      case (a, _) => a
-    }))
-
-    assert(result === ast)
-  }
-
-  test("topDownWithParent should match and replace primitives") {
-    val ast = Add(Val(1), Add(Val(2), Val(3)))
-
-    val result = ast.rewrite(topDownWithParent(RewriterWithParent.lift {
-      case (_: java.lang.Integer, _) => 99: java.lang.Integer
-    }))
-
-    assert(result === Add(Val(99), Add(Val(99), Val(99))))
-  }
-
-  test("topDownWithParent should match and replace trees") {
-    val ast = Add(Val(1), Add(Val(2), Val(3)))
-
-    val result = ast.rewrite(topDownWithParent(RewriterWithParent.lift {
-      case (Add(Val(x), Val(y)), _) =>
-        Val(x + y)
-    }))
-
-    assert(result === Add(Val(1), Val(5)))
-  }
-
-  test("topDownWithParent should match and replace primitives and trees") {
-    val ast = Add(Val(8), Add(Val(2), Val(3)))
-
-    val result = ast.rewrite(topDownWithParent(RewriterWithParent.lift {
-      case (Val(_), _) =>
-        Val(1)
-      case (Add(Val(x), Val(y)), _) =>
-        Val(x + y)
-    }))
-
-    assert(result === Add(Val(1), Val(5)))
-  }
-
-  test("topDownWithParent should duplicate terms with pair parameters") {
-    val ast = Add(Val(1), RewritableTest.Pos((Val(2), Val(3))))
-
-    val result = ast.rewrite(topDownWithParent(RewriterWithParent.lift {
-      case (Val(_), _) => Val(99)
-    }))
-
-    assert(result === Add(Val(99), Pos((Val(99), Val(99)))))
-  }
-
-  test("topDownWithParent should duplicate terms with sequence of pairs") {
-    val ast = Add(Val(1), Options(Seq((Val(2), Val(3)), (Val(4), Val(5)))))
-
-    val result = ast.rewrite(topDownWithParent(RewriterWithParent.lift {
-      case (Val(_), _) => Val(99)
-    }))
-
-    assert(result === Add(Val(99), Options(Seq((Val(99), Val(99)), (Val(99), Val(99))))))
   }
 
   // --------------------------------

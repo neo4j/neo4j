@@ -28,12 +28,16 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
+import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.topDown
+
+import scala.collection.mutable
 
 case object PlanIDsAreCompressed extends StepSequencer.Condition
 
@@ -75,6 +79,7 @@ case object CompressPlanIDs extends Phase[PlannerContext, LogicalPlanState, Logi
           }
           newLP
       },
+      leftToRight = false,
       cancellation = context.cancellationChecker
     ))
 

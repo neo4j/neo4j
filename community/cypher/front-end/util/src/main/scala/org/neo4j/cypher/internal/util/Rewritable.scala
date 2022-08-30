@@ -184,8 +184,12 @@ object inSequence {
 
 object topDown {
 
-  private class TopDownRewriter(rewriter: Rewriter, stopper: AnyRef => Boolean, cancellation: CancellationChecker)
-      extends Rewriter {
+  private class TopDownRewriter(
+    rewriter: Rewriter,
+    stopper: AnyRef => Boolean,
+    leftToRight: Boolean,
+    cancellation: CancellationChecker
+  ) extends Rewriter {
 
     override def apply(that: AnyRef): AnyRef = {
       val initialStack = mutable.Stack((List(that), new mutable.ListBuffer[AnyRef]()))
@@ -205,7 +209,8 @@ object topDown {
         } else {
           stack.pop() match {
             case (job :: jobs, doneJobs) =>
-              val doneJob = Rewritable.dupAny(job, newChildren.toSeq)
+              val args = if (leftToRight) newChildren.toSeq else newChildren.reverse.toSeq
+              val doneJob = Rewritable.dupAny(job, args)
               stack.push((jobs, doneJobs += doneJob))
               rec(stack)
             case _ => throw new IllegalStateException("Empty job")
@@ -219,7 +224,9 @@ object topDown {
             } else {
               val rewrittenJob = newJob.rewrite(rewriter)
               stack.push((rewrittenJob :: jobs, doneJobs))
-              stack.push((rewrittenJob.treeChildren.toList, new mutable.ListBuffer()))
+              val newJobs =
+                if (leftToRight) rewrittenJob.treeChildren.toList else rewrittenJob.reverseTreeChildren.toList
+              stack.push((newJobs, new mutable.ListBuffer()))
             }
             rec(stack)
           case _ => throw new IllegalStateException("Empty job")
@@ -231,9 +238,10 @@ object topDown {
   def apply(
     rewriter: Rewriter,
     stopper: AnyRef => Boolean = _ => false,
+    leftToRight: Boolean = true,
     cancellation: CancellationChecker = CancellationChecker.NeverCancelled
   ): Rewriter =
-    new TopDownRewriter(rewriter, stopper, cancellation)
+    new TopDownRewriter(rewriter, stopper, leftToRight, cancellation)
 }
 
 /**
