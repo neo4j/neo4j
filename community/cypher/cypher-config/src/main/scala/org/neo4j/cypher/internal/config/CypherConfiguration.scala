@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 
 import java.io.File
+
 import scala.jdk.CollectionConverters.SetHasAsScala
 
 /**
