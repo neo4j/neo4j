@@ -25,6 +25,7 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.upgrade_proc
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.util.FeatureToggles.getInteger;
+import static org.neo4j.util.Preconditions.requireBetween;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.os.OsBeanUtil;
@@ -262,16 +263,18 @@ public interface Configuration {
     }
 
     static long calculateMaxMemoryFromPercent(int percent) {
-        if (percent < 1) {
-            throw new IllegalArgumentException("Expected percentage to be > 0, was " + percent);
-        }
-        if (percent > 100) {
-            throw new IllegalArgumentException("Expected percentage to be < 100, was " + percent);
-        }
-        long freePhysicalMemory = OsBeanUtil.getFreePhysicalMemory();
+        return calculateMaxMemoryFromPercent(
+                percent,
+                OsBeanUtil.getFreePhysicalMemory(),
+                Runtime.getRuntime().maxMemory());
+    }
+
+    static long calculateMaxMemoryFromPercent(int percent, long freePhysicalMemory, long maxRuntimeMemory) {
+        requireBetween(percent, 1, 100);
+
         if (freePhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE) {
             // Unable to detect amount of free memory, so rather max memory should be explicitly set
-            // in order to get best performance. However let's just go with a default of 2G in this case.
+            // in order to get the best performance. However, let's just go with a default of 2G in this case.
             return gibiBytes(2);
         }
 
@@ -280,7 +283,7 @@ public interface Configuration {
         // then it's not reasonable for running this tool, at the very least not desirable since the majority of
         // memory lives off-heap. So if this is the case then assume only half the memory is assigned to the JVM,
         // otherwise the importer performance could be massively crippled.
-        long jvmMaxMemory = Math.min(Runtime.getRuntime().maxMemory(), freePhysicalMemory / 2);
+        long jvmMaxMemory = Math.min(maxRuntimeMemory, freePhysicalMemory / 2);
         long availableMemory = freePhysicalMemory - jvmMaxMemory;
         return round(availableMemory * factor);
     }
