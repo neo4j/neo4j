@@ -33,6 +33,7 @@ org.neo4j.configuration.GraphDatabaseSettings.TransactionTracingLevel::DISABLED 
 org.neo4j.configuration.GraphDatabaseSettings.TransactionTracingLevel::SAMPLE org.neo4j.configuration.GraphDatabaseSettings.TransactionTracingLevel public static final
 org.neo4j.configuration.GraphDatabaseSettings.TransactionTracingLevel::valueOf(java.lang.String) org.neo4j.configuration.GraphDatabaseSettings.TransactionTracingLevel public static
 org.neo4j.configuration.GraphDatabaseSettings.TransactionTracingLevel::values() org.neo4j.configuration.GraphDatabaseSettings.TransactionTracingLevel[] public static
+org.neo4j.configuration.GraphDatabaseSettings::DATA_DIRECTORY_SETTING_NAME java.lang.String public static final = server.directories.data
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_BLOCK_SIZE int public static final = 128
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_DATABASES_ROOT_DIR_NAME java.lang.String public static final = databases
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_DATABASE_NAME java.lang.String public static final = neo4j
@@ -47,6 +48,7 @@ org.neo4j.configuration.GraphDatabaseSettings::GraphDatabaseSettings() void publ
 org.neo4j.configuration.GraphDatabaseSettings::MINIMAL_BLOCK_SIZE int public static final = 16
 org.neo4j.configuration.GraphDatabaseSettings::SERVER_DEFAULTS java.util.Map<org.neo4j.graphdb.config.Setting<?>,java.lang.Object> public static final
 org.neo4j.configuration.GraphDatabaseSettings::SYSTEM_DATABASE_NAME java.lang.String public static final = system
+org.neo4j.configuration.GraphDatabaseSettings::TRANSACTION_LOGS_ROOT_PATH_SETTING_NAME java.lang.String public static final = server.directories.transaction.logs.root
 org.neo4j.configuration.GraphDatabaseSettings::UNSPECIFIED_TIMEOUT long public static final = 0
 org.neo4j.configuration.GraphDatabaseSettings::allow_file_urls org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::auth_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final

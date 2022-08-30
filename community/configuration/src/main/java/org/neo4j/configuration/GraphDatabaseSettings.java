@@ -110,17 +110,21 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
                     "initial.dbms.default_database", DATABASENAME, DEFAULT_DATABASE_NAME)
             .build();
 
+    public static final String DATA_DIRECTORY_SETTING_NAME = "server.directories.data";
+
     @Description("Path of the data directory. You must not configure more than one Neo4j installation to use the "
             + "same data directory.")
     public static final Setting<Path> data_directory = newBuilder(
-                    "server.directories.data", PATH, Path.of(DEFAULT_DATA_DIR_NAME))
+                    DATA_DIRECTORY_SETTING_NAME, PATH, Path.of(DEFAULT_DATA_DIR_NAME))
             .setDependency(neo4j_home)
             .immutable()
             .build();
 
+    public static final String TRANSACTION_LOGS_ROOT_PATH_SETTING_NAME = "server.directories.transaction.logs.root";
+
     @Description("Root location where Neo4j will store transaction logs for configured databases.")
     public static final Setting<Path> transaction_logs_root_path = newBuilder(
-                    "server.directories.transaction.logs.root", PATH, Path.of(DEFAULT_TX_LOGS_ROOT_DIR_NAME))
+                    TRANSACTION_LOGS_ROOT_PATH_SETTING_NAME, PATH, Path.of(DEFAULT_TX_LOGS_ROOT_DIR_NAME))
             .setDependency(data_directory)
             .immutable()
             .build();
