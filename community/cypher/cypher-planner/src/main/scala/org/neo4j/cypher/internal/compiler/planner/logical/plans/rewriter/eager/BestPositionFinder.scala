@@ -69,35 +69,37 @@ object BestPositionFinder {
     def tryMerge(a: CandidateSetWithMinimum, b: CandidateSetWithMinimum): Option[CandidateSetWithMinimum] = {
       val aSet = a.candidates
       val bSet = b.candidates
-
       val intersection = aSet intersect bSet
+
       if (intersection.isEmpty) {
         // We cannot merge non-intersecting sets
         None
+      } else if (aSet subsetOf bSet) {
+        // If a is a subset of b, we can return that a, with merged reasons.
+        Some(a.copy(reasons = a.reasons ++ b.reasons))
+      } else if (bSet subsetOf aSet) {
+        // If b is a subset of a, we can return that b, with merged reasons.
+        Some(b.copy(reasons = a.reasons ++ b.reasons))
+      } else if (a.minimum == b.minimum || intersection.contains(a.minimum)) {
+        // If they have the same minimum, or a's minimum lies in the intersection,
+        // return the intersection of both sets with a's minimum and merged reasons.
+        Some(CandidateSetWithMinimum(intersection, a.minimum, a.reasons ++ b.reasons))
+      } else if (intersection.contains(b.minimum)) {
+        // If b's minimum lies in the intersection,
+        // return the intersection of both sets with b's minimum and merged reasons.
+        Some(CandidateSetWithMinimum(intersection, b.minimum, a.reasons ++ b.reasons))
       } else {
-        // If one set is a subset of the other, we can return that subset, with merged reasons.
-        if (aSet subsetOf bSet) {
-          Some(a.copy(reasons = a.reasons ++ b.reasons))
-        } else if (bSet subsetOf aSet) {
-          Some(b.copy(reasons = a.reasons ++ b.reasons))
+        // Both sets have their own minima, and neither lies in the intersection.
+        val minimumInIntersection = intersection.minBy(plan => cardinalities.get(plan.value.id))
+        if (
+          cardinalities(minimumInIntersection.value.id) <
+            cardinalities(a.minimum.value.id) + cardinalities(b.minimum.value.id)
+        ) {
+          // Doing one Eager in the intersection is cheaper.
+          Some(CandidateSetWithMinimum(intersection, minimumInIntersection, a.reasons ++ b.reasons))
         } else {
-          if (a.minimum == b.minimum || intersection.contains(a.minimum) || intersection.contains(b.minimum)) {
-            // Return the intersection of both sets with merged reasons.
-            Some(CandidateSetWithMinimum(intersection, a.minimum, a.reasons ++ b.reasons))
-          } else {
-            // Both sets have their own minima, and neither lies in the intersection.
-            val minimumInIntersection = intersection.minBy(plan => cardinalities.get(plan.value.id))
-            if (
-              cardinalities(minimumInIntersection.value.id) <
-                cardinalities(a.minimum.value.id) + cardinalities(b.minimum.value.id)
-            ) {
-              // Doing one Eager in the intersection is cheaper.
-              Some(CandidateSetWithMinimum(intersection, minimumInIntersection, a.reasons ++ b.reasons))
-            } else {
-              // Doing two Eagers outside of the intersection is cheaper.
-              None
-            }
-          }
+          // Doing two Eagers outside of the intersection is cheaper.
+          None
         }
       }
     }
