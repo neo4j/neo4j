@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.attribution.Default
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.Identifiable
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
@@ -43,7 +44,7 @@ import scala.language.implicitConversions
 trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
   self: AstConstructionTestSupport =>
 
-  implicit val idGen: SequentialIdGen = new SequentialIdGen()
+  implicit val idGen: IdGen = new SequentialIdGen()
 
   implicit protected def idSymbol(name: Symbol): String = name.name
 

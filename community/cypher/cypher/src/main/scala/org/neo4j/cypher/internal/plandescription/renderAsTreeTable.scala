@@ -162,6 +162,7 @@ object renderAsTreeTable {
 
 private object Header {
   val OPERATOR = "Operator"
+  val ID = "Id"
   val DETAILS = "Details"
   val ESTIMATED_ROWS = "Estimated Rows"
   val ROWS = "Rows"
@@ -171,7 +172,7 @@ private object Header {
   val TIME = "Time (ms)"
   val ORDER = "Ordered by"
   val PIPELINE = "Pipeline"
-  val ALL = Seq(OPERATOR, DETAILS, ESTIMATED_ROWS, ROWS, HITS, MEMORY, PAGE_CACHE, TIME, ORDER, PIPELINE)
+  val ALL = Seq(OPERATOR, ID, DETAILS, ESTIMATED_ROWS, ROWS, HITS, MEMORY, PAGE_CACHE, TIME, ORDER, PIPELINE)
 }
 
 /**
@@ -381,9 +382,11 @@ private class TreeTableBuilder private (private val withRawCardinalities: Boolea
       case pipeline: PipelineInfo => Header.PIPELINE -> Cell.left(serialize(pipeline).toString)
     }
 
+    val idColumn = Header.ID -> Cell.right(plan.id.x.toString)
+
     val operatorColumn = Header.OPERATOR -> Cell.left(levelledPlan.level.line + "+" + levelledPlan.plan.name)
 
-    BuildingRow(levelledPlan, (argumentColumns :+ operatorColumn).toMap)
+    BuildingRow(levelledPlan, (argumentColumns :+ operatorColumn :+ idColumn).toMap)
   }
 
   private def format(effectiveCardinality: Double, cardinality: Option[Double]): String =

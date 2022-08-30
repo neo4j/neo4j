@@ -50,6 +50,8 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardina
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 import org.scalatest.BeforeAndAfterAll
@@ -73,19 +75,20 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
   }
 
   private val id: Id = Id.INVALID_ID
+  implicit override val idGen: IdGen = SameId(Id(1))
 
   test("node feeding from other node") {
     val leaf = planDescription(id, "LEAF", NoChildren, Seq.empty, Set())
     val plan = planDescription(id, "ROOT", SingleChild(leaf), Seq.empty, Set())
 
     renderAsTreeTable(plan) should equal(
-      """+----------+
-        || Operator |
-        |+----------+
-        || +ROOT    |
-        || |        |
-        || +LEAF    |
-        |+----------+
+      """+----------+----+
+        || Operator | Id |
+        |+----------+----+
+        || +ROOT    | -1 |
+        || |        +----+
+        || +LEAF    | -1 |
+        |+----------+----+
         |""".stripMargin
     )
   }
@@ -96,15 +99,15 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val plan = planDescription(id, "ROOT", TwoChildren(leaf1, leaf2), Seq.empty, Set())
 
     renderAsTreeTable(plan) should equal(
-      """+----------+
-        || Operator |
-        |+----------+
-        || +ROOT    |
-        || |\       |
-        || | +LEAF2 |
-        || |        |
-        || +LEAF1   |
-        |+----------+
+      """+----------+----+
+        || Operator | Id |
+        |+----------+----+
+        || +ROOT    | -1 |
+        || |\       +----+
+        || | +LEAF2 | -1 |
+        || |        +----+
+        || +LEAF1   | -1 |
+        |+----------+----+
         |""".stripMargin
     )
   }
@@ -115,15 +118,15 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val plan = planDescription(id, "ROOT", SingleChild(intermediate), Seq.empty, Set())
 
     renderAsTreeTable(plan) should equal(
-      """+---------------+
-        || Operator      |
-        |+---------------+
-        || +ROOT         |
-        || |             |
-        || +INTERMEDIATE |
-        || |             |
-        || +LEAF         |
-        |+---------------+
+      """+---------------+----+
+        || Operator      | Id |
+        |+---------------+----+
+        || +ROOT         | -1 |
+        || |             +----+
+        || +INTERMEDIATE | -1 |
+        || |             +----+
+        || +LEAF         | -1 |
+        |+---------------+----+
         |""".stripMargin
     )
   }
@@ -136,19 +139,19 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val plan = planDescription(id, "ROOT", TwoChildren(leaf3, intermediate), Seq.empty, Set())
 
     renderAsTreeTable(plan) should equal(
-      """+-----------------+
-        || Operator        |
-        |+-----------------+
-        || +ROOT           |
-        || |\              |
-        || | +INTERMEDIATE |
-        || | |\            |
-        || | | +LEAF2      |
-        || | |             |
-        || | +LEAF1        |
-        || |               |
-        || +LEAF3          |
-        |+-----------------+
+      """+-----------------+----+
+        || Operator        | Id |
+        |+-----------------+----+
+        || +ROOT           | -1 |
+        || |\              +----+
+        || | +INTERMEDIATE | -1 |
+        || | |\            +----+
+        || | | +LEAF2      | -1 |
+        || | |             +----+
+        || | +LEAF1        | -1 |
+        || |               +----+
+        || +LEAF3          | -1 |
+        |+-----------------+----+
         |""".stripMargin
     )
   }
@@ -163,23 +166,23 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val plan = planDescription(id, "ROOT", TwoChildren(intermediate1, intermediate2), Seq.empty, Set())
 
     renderAsTreeTable(plan) should equal(
-      """+-----------------+
-        || Operator        |
-        |+-----------------+
-        || +ROOT           |
-        || |\              |
-        || | +INTERMEDIATE |
-        || | |\            |
-        || | | +LEAF       |
-        || | |             |
-        || | +LEAF         |
-        || |               |
-        || +INTERMEDIATE   |
-        || |\              |
-        || | +LEAF         |
-        || |               |
-        || +LEAF           |
-        |+-----------------+
+      """+-----------------+----+
+        || Operator        | Id |
+        |+-----------------+----+
+        || +ROOT           | -1 |
+        || |\              +----+
+        || | +INTERMEDIATE | -1 |
+        || | |\            +----+
+        || | | +LEAF       | -1 |
+        || | |             +----+
+        || | +LEAF         | -1 |
+        || |               +----+
+        || +INTERMEDIATE   | -1 |
+        || |\              +----+
+        || | +LEAF         | -1 |
+        || |               +----+
+        || +LEAF           | -1 |
+        |+-----------------+----+
         |""".stripMargin
     )
   }
@@ -266,23 +269,23 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val parent = planDescription(id, "PARENT", SingleChild(plan), Seq(), Set())
 
     renderAsTreeTable(parent) should equal(
-      """+------------+----------------+------+---------+------------------------+
-        || Operator   | Estimated Rows | Rows | DB Hits | Page Cache Hits/Misses |
-        |+------------+----------------+------+---------+------------------------+
-        || +PARENT    |                |      |         |                        |
-        || |          +----------------+------+---------+------------------------+
-        || +ROOT      |              1 |    3 |       0 |                   7/10 |
-        || |\         +----------------+------+---------+------------------------+
-        || | +INNER   |              6 |    7 |      42 |                    5/2 |
-        || | |\       +----------------+------+---------+------------------------+
-        || | | +PASS  |              4 |    4 |       0 |                    4/1 |
-        || | | |      +----------------+------+---------+------------------------+
-        || | | +LEAF2 |              1 |    9 |       2 |                    2/3 |
-        || | |        +----------------+------+---------+------------------------+
-        || | +LEAF1   |              1 |   42 |      33 |                    1/2 |
-        || |          +----------------+------+---------+------------------------+
-        || +LEAF3     |              1 |    9 |       2 |                    3/4 |
-        |+------------+----------------+------+---------+------------------------+
+      """+------------+----+----------------+------+---------+------------------------+
+        || Operator   | Id | Estimated Rows | Rows | DB Hits | Page Cache Hits/Misses |
+        |+------------+----+----------------+------+---------+------------------------+
+        || +PARENT    | -1 |                |      |         |                        |
+        || |          +----+----------------+------+---------+------------------------+
+        || +ROOT      | -1 |              1 |    3 |       0 |                   7/10 |
+        || |\         +----+----------------+------+---------+------------------------+
+        || | +INNER   | -1 |              6 |    7 |      42 |                    5/2 |
+        || | |\       +----+----------------+------+---------+------------------------+
+        || | | +PASS  | -1 |              4 |    4 |       0 |                    4/1 |
+        || | | |      +----+----------------+------+---------+------------------------+
+        || | | +LEAF2 | -1 |              1 |    9 |       2 |                    2/3 |
+        || | |        +----+----------------+------+---------+------------------------+
+        || | +LEAF1   | -1 |              1 |   42 |      33 |                    1/2 |
+        || |          +----+----------------+------+---------+------------------------+
+        || +LEAF3     | -1 |              1 |    9 |       2 |                    3/4 |
+        |+------------+----+----------------+------+---------+------------------------+
         |""".stripMargin
     )
   }
@@ -300,11 +303,11 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val plan = planDescription(id, "NAME", NoChildren, arguments, Set("n"))
 
     renderAsTreeTable(plan) should equal(
-      """+----------+---------+----------------+------+---------+
-        || Operator | Details | Estimated Rows | Rows | DB Hits |
-        |+----------+---------+----------------+------+---------+
-        || +NAME    | details |              1 |   42 |      33 |
-        |+----------+---------+----------------+------+---------+
+      """+----------+----+---------+----------------+------+---------+
+        || Operator | Id | Details | Estimated Rows | Rows | DB Hits |
+        |+----------+----+---------+----------------+------+---------+
+        || +NAME    | -1 | details |              1 |   42 |      33 |
+        |+----------+----+---------+----------------+------+---------+
         |""".stripMargin
     )
   }
@@ -320,11 +323,11 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val plan = planDescription(id, "NAME", NoChildren, arguments, Set("a", "b", "c"))
 
     renderAsTreeTable(plan) should equal(
-      """+----------+---------+----------------+------+---------+
-        || Operator | Details | Estimated Rows | Rows | DB Hits |
-        |+----------+---------+----------------+------+---------+
-        || +NAME    | a, b    |              1 |   42 |      33 |
-        |+----------+---------+----------------+------+---------+
+      """+----------+----+---------+----------------+------+---------+
+        || Operator | Id | Details | Estimated Rows | Rows | DB Hits |
+        |+----------+----+---------+----------------+------+---------+
+        || +NAME    | -1 | a, b    |              1 |   42 |      33 |
+        |+----------+----+---------+----------------+------+---------+
         |""".stripMargin
     )
   }
@@ -340,11 +343,11 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val plan = planDescription(id, "NAME", NoChildren, arguments, Set("a", "b", "c", "d", "e", "f"))
 
     renderAsTreeTable(plan) should equal(
-      """+----------+------------------------------------------+----------------+------+---------+
-        || Operator | Details                                  | Estimated Rows | Rows | DB Hits |
-        |+----------+------------------------------------------+----------------+------+---------+
-        || +NAME    | aaaaa, bbbbb, ccccc, ddddd, eeeee, fffff |              1 |   42 |      33 |
-        |+----------+------------------------------------------+----------------+------+---------+
+      """+----------+----+------------------------------------------+----------------+------+---------+
+        || Operator | Id | Details                                  | Estimated Rows | Rows | DB Hits |
+        |+----------+----+------------------------------------------+----------------+------+---------+
+        || +NAME    | -1 | aaaaa, bbbbb, ccccc, ddddd, eeeee, fffff |              1 |   42 |      33 |
+        |+----------+----+------------------------------------------+----------------+------+---------+
         |""".stripMargin
     )
   }
@@ -355,11 +358,11 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val plan = planDescription(id, "NAME", NoChildren, arguments, Set("n"))
 
     renderAsTreeTable(plan) should equal(
-      """+----------+----------------+
-        || Operator | Estimated Rows |
-        |+----------+----------------+
-        || +NAME    |              1 |
-        |+----------+----------------+
+      """+----------+----+----------------+
+        || Operator | Id | Estimated Rows |
+        |+----------+----+----------------+
+        || +NAME    | -1 |              1 |
+        |+----------+----+----------------+
         |""".stripMargin
     )
   }
@@ -372,13 +375,13 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val plan2 = planDescription(id, "NAME", SingleChild(plan1), args2, Set("b"))
 
     renderAsTreeTable(plan2) should equal(
-      """+----------+-------------+----------------+------+---------+----------------+----------------------+
-        || Operator | Details     | Estimated Rows | Rows | DB Hits | Memory (Bytes) | Pipeline             |
-        |+----------+-------------+----------------+------+---------+----------------+----------------------+
-        || +NAME    | Index stuff |              1 |    2 |     633 |                | Fused in Pipeline 52 |
-        || |        +-------------+----------------+------+---------+----------------+----------------------+
-        || +NAME    |             |              1 |   42 |      33 |              5 |                      |
-        |+----------+-------------+----------------+------+---------+----------------+----------------------+
+      """+----------+----+-------------+----------------+------+---------+----------------+----------------------+
+        || Operator | Id | Details     | Estimated Rows | Rows | DB Hits | Memory (Bytes) | Pipeline             |
+        |+----------+----+-------------+----------------+------+---------+----------------+----------------------+
+        || +NAME    | -1 | Index stuff |              1 |    2 |     633 |                | Fused in Pipeline 52 |
+        || |        +----+-------------+----------------+------+---------+----------------+----------------------+
+        || +NAME    | -1 |             |              1 |   42 |      33 |              5 |                      |
+        |+----------+----+-------------+----------------+------+---------+----------------+----------------------+
         |""".stripMargin
     )
   }
@@ -393,15 +396,15 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
 
     println(renderAsTreeTable(plan3))
     renderAsTreeTable(plan3) should equal(
-      """+----------+-------------+----------------+------+---------+----------------+----------------------+
-        || Operator | Details     | Estimated Rows | Rows | DB Hits | Memory (Bytes) | Pipeline             |
-        |+----------+-------------+----------------+------+---------+----------------+----------------------+
-        || +NAME3   | Index stuff |              1 |    2 |     633 |                | Fused in Pipeline 52 |
-        || |        +-------------+----------------+------+---------+----------------+----------------------+
-        || +NAME2   |             |              1 |   42 |      33 |              5 |                      |
-        || |        +-------------+----------------+------+---------+----------------+----------------------+
-        || +NAME1   |             |              1 |   42 |      33 |              5 |                      |
-        |+----------+-------------+----------------+------+---------+----------------+----------------------+
+      """+----------+----+-------------+----------------+------+---------+----------------+----------------------+
+        || Operator | Id | Details     | Estimated Rows | Rows | DB Hits | Memory (Bytes) | Pipeline             |
+        |+----------+----+-------------+----------------+------+---------+----------------+----------------------+
+        || +NAME3   | -1 | Index stuff |              1 |    2 |     633 |                | Fused in Pipeline 52 |
+        || |        +----+-------------+----------------+------+---------+----------------+----------------------+
+        || +NAME2   | -1 |             |              1 |   42 |      33 |              5 |                      |
+        || |        +----+-------------+----------------+------+---------+----------------+----------------------+
+        || +NAME1   | -1 |             |              1 |   42 |      33 |              5 |                      |
+        |+----------+----+-------------+----------------+------+---------+----------------+----------------------+
         |""".stripMargin
     )
   }
@@ -414,13 +417,13 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val plan2 = planDescription(id, "NAME", SingleChild(plan1), args2, Set("b"))
 
     renderAsTreeTable(plan2) should equal(
-      """+----------+-------------+----------------+------+---------+----------------+
-        || Operator | Details     | Estimated Rows | Rows | DB Hits | Memory (Bytes) |
-        |+----------+-------------+----------------+------+---------+----------------+
-        || +NAME    | Index stuff |              1 |    2 |     633 |                |
-        || |        +-------------+----------------+------+---------+----------------+
-        || +NAME    |             |              1 |   42 |      33 |              5 |
-        |+----------+-------------+----------------+------+---------+----------------+
+      """+----------+----+-------------+----------------+------+---------+----------------+
+        || Operator | Id | Details     | Estimated Rows | Rows | DB Hits | Memory (Bytes) |
+        |+----------+----+-------------+----------------+------+---------+----------------+
+        || +NAME    | -1 | Index stuff |              1 |    2 |     633 |                |
+        || |        +----+-------------+----------------+------+---------+----------------+
+        || +NAME    | -1 |             |              1 |   42 |      33 |              5 |
+        |+----------+----+-------------+----------------+------+---------+----------------+
         |""".stripMargin
     )
   }
@@ -438,11 +441,11 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     )
 
     renderAsTreeTable(description.create(expandPlan)) should equal(
-      """+--------------+--------------------+-------------+
-        || Operator     | Details            | Ordered by  |
-        |+--------------+--------------------+-------------+
-        || +Expand(All) | (from)<-[rel]-(to) | anon_42 ASC |
-        |+--------------+--------------------+-------------+
+      """+--------------+----+--------------------+-------------+
+        || Operator     | Id | Details            | Ordered by  |
+        |+--------------+----+--------------------+-------------+
+        || +Expand(All) |  1 | (from)<-[rel]-(to) | anon_42 ASC |
+        |+--------------+----+--------------------+-------------+
         |""".stripMargin
     )
   }
@@ -462,11 +465,11 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
 
     val plan = planDescription(id, "NAME", NoChildren, arguments, Set("n"))
     renderAsTreeTable(plan) should equal(
-      """+----------+---------+----------------+------+---------+
-        || Operator | Details | Estimated Rows | Rows | DB Hits |
-        |+----------+---------+----------------+------+---------+
-        || +NAME    | `id`    |              1 |   42 |      33 |
-        |+----------+---------+----------------+------+---------+
+      """+----------+----+---------+----------------+------+---------+
+        || Operator | Id | Details | Estimated Rows | Rows | DB Hits |
+        |+----------+----+---------+----------------+------+---------+
+        || +NAME    | -1 | `id`    |              1 |   42 |      33 |
+        |+----------+----+---------+----------------+------+---------+
         |""".stripMargin
     )
   }
@@ -494,20 +497,20 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     )
 
     renderAsTreeTable(planDescr1) should equal(
-      """+------------------+---------+----------------+
-        || Operator         | Details | Estimated Rows |
-        |+------------------+---------+----------------+
-        || +NodeByLabelScan | n:Foo   |              0 |
-        |+------------------+---------+----------------+
+      """+------------------+----+---------+----------------+
+        || Operator         | Id | Details | Estimated Rows |
+        |+------------------+----+---------+----------------+
+        || +NodeByLabelScan | -1 | n:Foo   |              0 |
+        |+------------------+----+---------+----------------+
         |""".stripMargin
     )
 
     renderAsTreeTable(planDescr2) should equal(
-      """+------------------+---------+----------------+
-        || Operator         | Details | Estimated Rows |
-        |+------------------+---------+----------------+
-        || +NodeByLabelScan | n:Foo   |              1 |
-        |+------------------+---------+----------------+
+      """+------------------+----+---------+----------------+
+        || Operator         | Id | Details | Estimated Rows |
+        |+------------------+----+---------+----------------+
+        || +NodeByLabelScan | -1 | n:Foo   |              1 |
+        |+------------------+----+---------+----------------+
         |""".stripMargin
     )
   }
@@ -535,20 +538,20 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     )
 
     renderAsTreeTable(planDescr1, withRawCardinalities = true) should equal(
-      """+------------------+---------+---------------------+
-        || Operator         | Details | Estimated Rows      |
-        |+------------------+---------+---------------------+
-        || +NodeByLabelScan | n:Foo   | 1.0 (0.00123456789) |
-        |+------------------+---------+---------------------+
+      """+------------------+----+---------+---------------------+
+        || Operator         | Id | Details | Estimated Rows      |
+        |+------------------+----+---------+---------------------+
+        || +NodeByLabelScan | -1 | n:Foo   | 1.0 (0.00123456789) |
+        |+------------------+----+---------+---------------------+
         |""".stripMargin
     )
 
     renderAsTreeTable(planDescr2, withRawCardinalities = true) should equal(
-      """+------------------+---------+------------------+
-        || Operator         | Details | Estimated Rows   |
-        |+------------------+---------+------------------+
-        || +NodeByLabelScan | n:Foo   | 1.0 (1.23456789) |
-        |+------------------+---------+------------------+
+      """+------------------+----+---------+------------------+
+        || Operator         | Id | Details | Estimated Rows   |
+        |+------------------+----+---------+------------------+
+        || +NodeByLabelScan | -1 | n:Foo   | 1.0 (1.23456789) |
+        |+------------------+----+---------+------------------+
         |""".stripMargin
     )
   }
@@ -576,20 +579,20 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     )
 
     renderAsTreeTable(planDescr1, withRawCardinalities = true) should equal(
-      """+------------------+---------+-------------------------+
-        || Operator         | Details | Estimated Rows          |
-        |+------------------+---------+-------------------------+
-        || +NodeByLabelScan | n:Foo   | Unknown (0.00123456789) |
-        |+------------------+---------+-------------------------+
+      """+------------------+----+---------+-------------------------+
+        || Operator         | Id | Details | Estimated Rows          |
+        |+------------------+----+---------+-------------------------+
+        || +NodeByLabelScan | -1 | n:Foo   | Unknown (0.00123456789) |
+        |+------------------+----+---------+-------------------------+
         |""".stripMargin
     )
 
     renderAsTreeTable(planDescr2, withRawCardinalities = true) should equal(
-      """+------------------+---------+----------------------+
-        || Operator         | Details | Estimated Rows       |
-        |+------------------+---------+----------------------+
-        || +NodeByLabelScan | n:Foo   | Unknown (1.23456789) |
-        |+------------------+---------+----------------------+
+      """+------------------+----+---------+----------------------+
+        || Operator         | Id | Details | Estimated Rows       |
+        |+------------------+----+---------+----------------------+
+        || +NodeByLabelScan | -1 | n:Foo   | Unknown (1.23456789) |
+        |+------------------+----+---------+----------------------+
         |""".stripMargin
     )
   }
@@ -615,11 +618,11 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val plan = planDescription(id, "NODE", SingleChild(leaf), Seq.empty, Set())
 
     renderAsTreeTable(plan) should equal(
-      """+----------+
-        || Operator |
-        |+----------+
-        || +NODE(2) |
-        |+----------+
+      """+----------+----+
+        || Operator | Id |
+        |+----------+----+
+        || +NODE(2) | -1 |
+        |+----------+----+
         |""".stripMargin
     )
   }
@@ -629,11 +632,11 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val plan = planDescription(id, "NODE", SingleChild(leaf), Seq.empty, Set("b"))
 
     renderAsTreeTable(plan) should equal(
-      """+----------+
-        || Operator |
-        |+----------+
-        || +NODE(2) |
-        |+----------+
+      """+----------+----+
+        || Operator | Id |
+        |+----------+----+
+        || +NODE(2) | -1 |
+        |+----------+----+
         |""".stripMargin
     )
   }
@@ -645,13 +648,13 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val p3 = planDescription(id, "OPERATOR", SingleChild(p2), Seq.empty, Set("d"))
 
     renderAsTreeTable(p3) should equal(
-      """+--------------+
-        || Operator     |
-        |+--------------+
-        || +OPERATOR(2) |
-        || |            |
-        || +NODE(2)     |
-        |+--------------+
+      """+--------------+----+
+        || Operator     | Id |
+        |+--------------+----+
+        || +OPERATOR(2) | -1 |
+        || |            +----+
+        || +NODE(2)     | -1 |
+        |+--------------+----+
         |""".stripMargin
     )
   }
@@ -663,13 +666,13 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val p3 = planDescription(id, "OPERATOR", SingleChild(p2), Seq.empty, Set("b"))
 
     renderAsTreeTable(p3) should equal(
-      """+--------------+
-        || Operator     |
-        |+--------------+
-        || +OPERATOR(2) |
-        || |            |
-        || +NODE(2)     |
-        |+--------------+
+      """+--------------+----+
+        || Operator     | Id |
+        |+--------------+----+
+        || +OPERATOR(2) | -1 |
+        || |            +----+
+        || +NODE(2)     | -1 |
+        |+--------------+----+
         |""".stripMargin
     )
   }
@@ -681,13 +684,13 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val p3 = planDescription(id, "OPERATOR", SingleChild(p2), Seq.empty, Set("b", "c"))
 
     renderAsTreeTable(p3) should equal(
-      """+--------------+
-        || Operator     |
-        |+--------------+
-        || +OPERATOR(2) |
-        || |            |
-        || +NODE(2)     |
-        |+--------------+
+      """+--------------+----+
+        || Operator     | Id |
+        |+--------------+----+
+        || +OPERATOR(2) | -1 |
+        || |            +----+
+        || +NODE(2)     | -1 |
+        |+--------------+----+
         |""".stripMargin
     )
   }
@@ -701,13 +704,13 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val p3 = planDescription(id, "OPERATOR", SingleChild(p2), Seq.empty, repeating + "var_A" + "var_B")
 
     renderAsTreeTable(p3) should equal(
-      """+--------------+
-        || Operator     |
-        |+--------------+
-        || +OPERATOR(2) |
-        || |            |
-        || +NODE(2)     |
-        |+--------------+
+      """+--------------+----+
+        || Operator     | Id |
+        |+--------------+----+
+        || +OPERATOR(2) | -1 |
+        || |            +----+
+        || +NODE(2)     | -1 |
+        |+--------------+----+
         |""".stripMargin
     )
   }
@@ -721,15 +724,15 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val p3 = planDescription(id, "OPERATOR", SingleChild(p2), Seq.empty, Set("var_a"))
 
     renderAsTreeTable(p3) should equal(
-      """+--------------+-----------+
-        || Operator     | Details   |
-        |+--------------+-----------+
-        || +OPERATOR(2) |           |
-        || |            +-----------+
-        || +NODE        |           |
-        || |            +-----------+
-        || +NODE        | var_a:123 |
-        |+--------------+-----------+
+      """+--------------+----+-----------+
+        || Operator     | Id | Details   |
+        |+--------------+----+-----------+
+        || +OPERATOR(2) | -1 |           |
+        || |            +----+-----------+
+        || +NODE        | -1 |           |
+        || |            +----+-----------+
+        || +NODE        | -1 | var_a:123 |
+        |+--------------+----+-----------+
         |""".stripMargin
     )
   }
@@ -755,15 +758,15 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     )
 
     renderAsTreeTable(p3) should equal(
-      """+--------------+-----------+------+---------+-----------+
-        || Operator     | Details   | Rows | DB Hits | Time (ms) |
-        |+--------------+-----------+------+---------+-----------+
-        || +OPERATOR(2) |           |    2 |       4 |    24.691 |
-        || |            +-----------+------+---------+-----------+
-        || +NODE        |           |    2 |       2 |    12.346 |
-        || |            +-----------+------+---------+-----------+
-        || +NODE        | var_a:123 |    2 |       2 |    12.346 |
-        |+--------------+-----------+------+---------+-----------+
+      """+--------------+----+-----------+------+---------+-----------+
+        || Operator     | Id | Details   | Rows | DB Hits | Time (ms) |
+        |+--------------+----+-----------+------+---------+-----------+
+        || +OPERATOR(2) | -1 |           |    2 |       4 |    24.691 |
+        || |            +----+-----------+------+---------+-----------+
+        || +NODE        | -1 |           |    2 |       2 |    12.346 |
+        || |            +----+-----------+------+---------+-----------+
+        || +NODE        | -1 | var_a:123 |    2 |       2 |    12.346 |
+        |+--------------+----+-----------+------+---------+-----------+
         |""".stripMargin
     )
   }
@@ -782,17 +785,17 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val p3 = planDescription(id, "OPERATOR", SingleChild(p2), Seq(l, t, r, d), repeating + "var_A" + "var_B")
 
     renderAsTreeTable(p3) should equal(
-      """+-----------+-----------+------+---------+-----------+
-        || Operator  | Details   | Rows | DB Hits | Time (ms) |
-        |+-----------+-----------+------+---------+-----------+
-        || +OPERATOR | var_a:123 |    2 |       2 |    12.346 |
-        || |         +-----------+------+---------+-----------+
-        || +OPERATOR | var_a:123 |    2 |       2 |    12.346 |
-        || |         +-----------+------+---------+-----------+
-        || +NODE     | var_a:123 |    2 |       2 |    12.346 |
-        || |         +-----------+------+---------+-----------+
-        || +NODE     | var_a:123 |    2 |       2 |    12.346 |
-        |+-----------+-----------+------+---------+-----------+
+      """+-----------+----+-----------+------+---------+-----------+
+        || Operator  | Id | Details   | Rows | DB Hits | Time (ms) |
+        |+-----------+----+-----------+------+---------+-----------+
+        || +OPERATOR | -1 | var_a:123 |    2 |       2 |    12.346 |
+        || |         +----+-----------+------+---------+-----------+
+        || +OPERATOR | -1 | var_a:123 |    2 |       2 |    12.346 |
+        || |         +----+-----------+------+---------+-----------+
+        || +NODE     | -1 | var_a:123 |    2 |       2 |    12.346 |
+        || |         +----+-----------+------+---------+-----------+
+        || +NODE     | -1 | var_a:123 |    2 |       2 |    12.346 |
+        |+-----------+----+-----------+------+---------+-----------+
         |""".stripMargin
     )
   }
@@ -811,31 +814,31 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val plan = planDescription(id, "ROOT", TwoChildren(intermediate1, intermediate2), Seq.empty, Set())
 
     renderAsTreeTable(plan) should equal(
-      """+-----------------+
-        || Operator        |
-        |+-----------------+
-        || +ROOT           |
-        || |\              |
-        || | +INTERMEDIATE |
-        || | |\            |
-        || | | +BRANCH     |
-        || | | |           |
-        || | | +LEAF       |
-        || | |             |
-        || | +BRANCH       |
-        || | |             |
-        || | +LEAF         |
-        || |               |
-        || +INTERMEDIATE   |
-        || |\              |
-        || | +BRANCH       |
-        || | |             |
-        || | +LEAF         |
-        || |               |
-        || +BRANCH         |
-        || |               |
-        || +LEAF           |
-        |+-----------------+
+      """+-----------------+----+
+        || Operator        | Id |
+        |+-----------------+----+
+        || +ROOT           | -1 |
+        || |\              +----+
+        || | +INTERMEDIATE | -1 |
+        || | |\            +----+
+        || | | +BRANCH     | -1 |
+        || | | |           +----+
+        || | | +LEAF       | -1 |
+        || | |             +----+
+        || | +BRANCH       | -1 |
+        || | |             +----+
+        || | +LEAF         | -1 |
+        || |               +----+
+        || +INTERMEDIATE   | -1 |
+        || |\              +----+
+        || | +BRANCH       | -1 |
+        || | |             +----+
+        || | +LEAF         | -1 |
+        || |               +----+
+        || +BRANCH         | -1 |
+        || |               +----+
+        || +LEAF           | -1 |
+        |+-----------------+----+
         |""".stripMargin
     )
   }
@@ -854,23 +857,23 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val plan = planDescription(id, "NODE", TwoChildren(intermediate1, intermediate2), Seq.empty, Set())
 
     renderAsTreeTable(plan) should equal(
-      """+--------------+
-        || Operator     |
-        |+--------------+
-        || +NODE        |
-        || |\           |
-        || | +NODE      |
-        || | |\         |
-        || | | +NODE(2) |
-        || | |          |
-        || | +NODE(2)   |
-        || |            |
-        || +NODE        |
-        || |\           |
-        || | +NODE(2)   |
-        || |            |
-        || +NODE(2)     |
-        |+--------------+
+      """+--------------+----+
+        || Operator     | Id |
+        |+--------------+----+
+        || +NODE        | -1 |
+        || |\           +----+
+        || | +NODE      | -1 |
+        || | |\         +----+
+        || | | +NODE(2) | -1 |
+        || | |          +----+
+        || | +NODE(2)   | -1 |
+        || |            +----+
+        || +NODE        | -1 |
+        || |\           +----+
+        || | +NODE(2)   | -1 |
+        || |            +----+
+        || +NODE(2)     | -1 |
+        |+--------------+----+
         |""".stripMargin
     )
   }
@@ -880,14 +883,14 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val root = planDescription(id, "NODE", SingleChild(leaf), Seq(details((0 until 5).map(_.toString))), Set())
 
     renderAsTreeTable(root) should equal(
-      """+----------+---------------------------------------------------------------------------------------------------+
-        || Operator | Details                                                                                           |
-        |+----------+---------------------------------------------------------------------------------------------------+
-        || +NODE    | 0, 1, 2, 3, 4                                                                                     |
-        || |        +---------------------------------------------------------------------------------------------------+
-        || +NODE    | 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, |
-        ||          | 27, 28, 29, 30, 31, 32, 33, 34                                                                    |
-        |+----------+---------------------------------------------------------------------------------------------------+
+      """+----------+----+---------------------------------------------------------------------------------------------------+
+        || Operator | Id | Details                                                                                           |
+        |+----------+----+---------------------------------------------------------------------------------------------------+
+        || +NODE    | -1 | 0, 1, 2, 3, 4                                                                                     |
+        || |        +----+---------------------------------------------------------------------------------------------------+
+        || +NODE    | -1 | 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, |
+        ||          |    | 27, 28, 29, 30, 31, 32, 33, 34                                                                    |
+        |+----------+----+---------------------------------------------------------------------------------------------------+
         |""".stripMargin
     )
   }
@@ -903,14 +906,14 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val root = PlanDescriptionImpl(id, "NODE", SingleChild(leaf), Seq(details((0 until 5).map(_.toString))), Set())
 
     renderAsTreeTable(root) should equal(
-      """+----------+------------------------------------------------------------------------------------------------------+
-        || Operator | Details                                                                                              |
-        |+----------+------------------------------------------------------------------------------------------------------+
-        || +NODE    | 0, 1, 2, 3, 4                                                                                        |
-        || |        +------------------------------------------------------------------------------------------------------+
-        || +NODE    | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |
-        ||          | a, b                                                                                                 |
-        |+----------+------------------------------------------------------------------------------------------------------+
+      """+----------+----+------------------------------------------------------------------------------------------------------+
+        || Operator | Id | Details                                                                                              |
+        |+----------+----+------------------------------------------------------------------------------------------------------+
+        || +NODE    | -1 | 0, 1, 2, 3, 4                                                                                        |
+        || |        +----+------------------------------------------------------------------------------------------------------+
+        || +NODE    | -1 | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |
+        ||          |    | a, b                                                                                                 |
+        |+----------+----+------------------------------------------------------------------------------------------------------+
         |""".stripMargin
     )
   }
@@ -926,14 +929,14 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val root = PlanDescriptionImpl(id, "NODE", SingleChild(leaf), Seq(details((0 until 5).map(_.toString))), Set())
 
     renderAsTreeTable(root) should equal(
-      """+----------+------------------------------------------------------------------------------------------------------+
-        || Operator | Details                                                                                              |
-        |+----------+------------------------------------------------------------------------------------------------------+
-        || +NODE    | 0, 1, 2, 3, 4                                                                                        |
-        || |        +------------------------------------------------------------------------------------------------------+
-        || +NODE    | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |
-        ||          | , b                                                                                                  |
-        |+----------+------------------------------------------------------------------------------------------------------+
+      """+----------+----+------------------------------------------------------------------------------------------------------+
+        || Operator | Id | Details                                                                                              |
+        |+----------+----+------------------------------------------------------------------------------------------------------+
+        || +NODE    | -1 | 0, 1, 2, 3, 4                                                                                        |
+        || |        +----+------------------------------------------------------------------------------------------------------+
+        || +NODE    | -1 | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |
+        ||          |    | , b                                                                                                  |
+        |+----------+----+------------------------------------------------------------------------------------------------------+
         |""".stripMargin
     )
   }
@@ -947,23 +950,23 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val plan = PlanDescriptionImpl(id, "ROOT", TwoChildren(leaf3, intermediate), Seq(details("a" * 101)), Set())
 
     renderAsTreeTable(plan) should equal(
-      """+-----------------+------------------------------------------------------------------------------------------------------+
-        || Operator        | Details                                                                                              |
-        |+-----------------+------------------------------------------------------------------------------------------------------+
-        || +ROOT           | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |
-        || |               | a                                                                                                    |
-        || |\              +------------------------------------------------------------------------------------------------------+
-        || | +INTERMEDIATE | cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc |
-        || | |             | c                                                                                                    |
-        || | |\            +------------------------------------------------------------------------------------------------------+
-        || | | +LEAF2      | bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb |
-        || | |             | b                                                                                                    |
-        || | |             +------------------------------------------------------------------------------------------------------+
-        || | +LEAF1        |                                                                                                      |
-        || |               +------------------------------------------------------------------------------------------------------+
-        || +LEAF3          | cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc |
-        ||                 | c                                                                                                    |
-        |+-----------------+------------------------------------------------------------------------------------------------------+
+      """+-----------------+----+------------------------------------------------------------------------------------------------------+
+        || Operator        | Id | Details                                                                                              |
+        |+-----------------+----+------------------------------------------------------------------------------------------------------+
+        || +ROOT           | -1 | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |
+        || |               |    | a                                                                                                    |
+        || |\              +----+------------------------------------------------------------------------------------------------------+
+        || | +INTERMEDIATE | -1 | cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc |
+        || | |             |    | c                                                                                                    |
+        || | |\            +----+------------------------------------------------------------------------------------------------------+
+        || | | +LEAF2      | -1 | bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb |
+        || | |             |    | b                                                                                                    |
+        || | |             +----+------------------------------------------------------------------------------------------------------+
+        || | +LEAF1        | -1 |                                                                                                      |
+        || |               +----+------------------------------------------------------------------------------------------------------+
+        || +LEAF3          | -1 | cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc |
+        ||                 |    | c                                                                                                    |
+        |+-----------------+----+------------------------------------------------------------------------------------------------------+
         |""".stripMargin
     )
   }
@@ -1048,13 +1051,13 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     )
     println(renderAsTreeTable(plan))
     renderAsTreeTable(plan) should equal(
-      """+---------------------+------------------------------------------------------------------------------------------------------+----------------+
-        || Operator            | Details                                                                                              | Estimated Rows |
-        |+---------------------+------------------------------------------------------------------------------------------------------+----------------+
-        || +MultiNodeIndexSeek | UNIQUE x:Label(Prop, Foo, Distance, Name) WHERE Prop = 10 AND Foo = 1 AND Distance = 6 AND Name = "K |              2 |
-        ||                     | aroline Getinge", RANGE INDEX y:Label(Prop, Name) WHERE Prop = 12 AND Name = "Foo",                  |                |
-        ||                     | RANGE INDEX z:Label(Prop, Name) WHERE Prop > 100 AND Name IS NOT NULL                                |                |
-        |+---------------------+------------------------------------------------------------------------------------------------------+----------------+
+      """+---------------------+----+------------------------------------------------------------------------------------------------------+----------------+
+        || Operator            | Id | Details                                                                                              | Estimated Rows |
+        |+---------------------+----+------------------------------------------------------------------------------------------------------+----------------+
+        || +MultiNodeIndexSeek |  1 | UNIQUE x:Label(Prop, Foo, Distance, Name) WHERE Prop = 10 AND Foo = 1 AND Distance = 6 AND Name = "K |              2 |
+        ||                     |    | aroline Getinge", RANGE INDEX y:Label(Prop, Name) WHERE Prop = 12 AND Name = "Foo",                  |                |
+        ||                     |    | RANGE INDEX z:Label(Prop, Name) WHERE Prop > 100 AND Name IS NOT NULL                                |                |
+        |+---------------------+----+------------------------------------------------------------------------------------------------------+----------------+
         |""".stripMargin
     )
   }
@@ -1091,19 +1094,19 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val plan5 = planDescription(id, "NAME1", SingleChild(plan4), args5, Set.empty)
 
     renderAsTreeTable(plan5) should equal(
-      """+----------+-----------------+----------------+------+---------+----------------+------------------------+-----------+----------------------+
-        || Operator | Details         | Estimated Rows | Rows | DB Hits | Memory (Bytes) | Page Cache Hits/Misses | Time (ms) | Pipeline             |
-        |+----------+-----------------+----------------+------+---------+----------------+------------------------+-----------+----------------------+
-        || +NAME1   | Final stuff     |              1 |    2 |     633 |                |                        |           |                      |
-        || |        +-----------------+----------------+------+---------+----------------+                        |           |                      |
-        || +NAME2   | Even more stuff |              1 |    2 |     633 |                |                    1/2 |     1.000 | Fused in Pipeline 60 |
-        || |        +-----------------+----------------+------+---------+----------------+------------------------+-----------+----------------------+
-        || +NAME3   | Do other stuff  |              1 |    2 |     633 |                |                        |           |                      |
-        || |        +-----------------+----------------+------+---------+----------------+                        |           |                      |
-        || +NAME4   | Index stuff     |              1 |    2 |     633 |                |                        |           |                      |
-        || |        +-----------------+----------------+------+---------+----------------+                        |           |                      |
-        || +NAME5   |                 |              1 |   42 |      33 |              5 |                    5/1 |     0.200 | Fused in Pipeline 52 |
-        |+----------+-----------------+----------------+------+---------+----------------+------------------------+-----------+----------------------+
+      """+----------+----+-----------------+----------------+------+---------+----------------+------------------------+-----------+----------------------+
+        || Operator | Id | Details         | Estimated Rows | Rows | DB Hits | Memory (Bytes) | Page Cache Hits/Misses | Time (ms) | Pipeline             |
+        |+----------+----+-----------------+----------------+------+---------+----------------+------------------------+-----------+----------------------+
+        || +NAME1   | -1 | Final stuff     |              1 |    2 |     633 |                |                        |           |                      |
+        || |        +----+-----------------+----------------+------+---------+----------------+                        |           |                      |
+        || +NAME2   | -1 | Even more stuff |              1 |    2 |     633 |                |                    1/2 |     1.000 | Fused in Pipeline 60 |
+        || |        +----+-----------------+----------------+------+---------+----------------+------------------------+-----------+----------------------+
+        || +NAME3   | -1 | Do other stuff  |              1 |    2 |     633 |                |                        |           |                      |
+        || |        +----+-----------------+----------------+------+---------+----------------+                        |           |                      |
+        || +NAME4   | -1 | Index stuff     |              1 |    2 |     633 |                |                        |           |                      |
+        || |        +----+-----------------+----------------+------+---------+----------------+                        |           |                      |
+        || +NAME5   | -1 |                 |              1 |   42 |      33 |              5 |                    5/1 |     0.200 | Fused in Pipeline 52 |
+        |+----------+----+-----------------+----------------+------+---------+----------------+------------------------+-----------+----------------------+
         |""".stripMargin
     )
   }
@@ -1118,15 +1121,15 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val produceResults = planDescription(id, "PRODUCERESULTS", SingleChild(project), produceResultsArgs, Set.empty)
 
     renderAsTreeTable(produceResults) should equal(
-      """+-----------------+------------------------+-----------+---------------------+
-        || Operator        | Page Cache Hits/Misses | Time (ms) | Pipeline            |
-        |+-----------------+------------------------+-----------+---------------------+
-        || +PRODUCERESULTS |                    5/1 |     0.200 | In Pipeline 1       |
-        || |               +------------------------+-----------+---------------------+
-        || +PROJECT        |                        |           |                     |
-        || |               +------------------------+-----------+---------------------+
-        || +ALLNODESSCAN   |                    1/2 |     1.000 | Fused in Pipeline 1 |
-        |+-----------------+------------------------+-----------+---------------------+
+      """+-----------------+----+------------------------+-----------+---------------------+
+        || Operator        | Id | Page Cache Hits/Misses | Time (ms) | Pipeline            |
+        |+-----------------+----+------------------------+-----------+---------------------+
+        || +PRODUCERESULTS | -1 |                    5/1 |     0.200 | In Pipeline 1       |
+        || |               +----+------------------------+-----------+---------------------+
+        || +PROJECT        | -1 |                        |           |                     |
+        || |               +----+------------------------+-----------+---------------------+
+        || +ALLNODESSCAN   | -1 |                    1/2 |     1.000 | Fused in Pipeline 1 |
+        |+-----------------+----+------------------------+-----------+---------------------+
         |""".stripMargin
     )
   }
@@ -1149,15 +1152,15 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val plan = planDescription(id, "ROOT", TwoChildren(leaf1, leaf2), planArgs, Set())
 
     renderAsTreeTable(plan) should equal(
-      """+----------+----------------+------+---------+------------------------+-----------+---------------------+
-        || Operator | Estimated Rows | Rows | DB Hits | Page Cache Hits/Misses | Time (ms) | Pipeline            |
-        |+----------+----------------+------+---------+------------------------+-----------+---------------------+
-        || +ROOT    |              9 |   10 |       0 |                        |           |                     |
-        || |\       +----------------+------+---------+                        |           |                     |
-        || | +LEAF2 |              2 |    2 |       2 |                        |           |                     |
-        || |        +----------------+------+---------+                        |           |                     |
-        || +LEAF1   |              4 |    5 |       1 |                   5/10 |     0.200 | Fused in Pipeline 1 |
-        |+----------+----------------+------+---------+------------------------+-----------+---------------------+
+      """+----------+----+----------------+------+---------+------------------------+-----------+---------------------+
+        || Operator | Id | Estimated Rows | Rows | DB Hits | Page Cache Hits/Misses | Time (ms) | Pipeline            |
+        |+----------+----+----------------+------+---------+------------------------+-----------+---------------------+
+        || +ROOT    | -1 |              9 |   10 |       0 |                        |           |                     |
+        || |\       +----+----------------+------+---------+                        |           |                     |
+        || | +LEAF2 | -1 |              2 |    2 |       2 |                        |           |                     |
+        || |        +----+----------------+------+---------+                        |           |                     |
+        || +LEAF1   | -1 |              4 |    5 |       1 |                   5/10 |     0.200 | Fused in Pipeline 1 |
+        |+----------+----+----------------+------+---------+------------------------+-----------+---------------------+
         |""".stripMargin
     )
   }
@@ -1204,23 +1207,23 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val produceResults = planDescription(id, "PRODUCERESULT", SingleChild(aggregation), produceResultArgs, Set())
 
     renderAsTreeTable(produceResults) should equal(
-      """+----------------+----------------+------+---------+------------------------+-----------+---------------------+
-        || Operator       | Estimated Rows | Rows | DB Hits | Page Cache Hits/Misses | Time (ms) | Pipeline            |
-        |+----------------+----------------+------+---------+------------------------+-----------+---------------------+
-        || +PRODUCERESULT |              4 |    5 |       1 |                   5/10 |     0.200 | In Pipeline 2       |
-        || |              +----------------+------+---------+------------------------+-----------+---------------------+
-        || +AGGREGATION   |              4 |    5 |       1 |                        |           |                     |
-        || |              +----------------+------+---------+                        |           |                     |
-        || +APPLY         |              4 |    5 |       1 |                        |           |                     |
-        || |\             +----------------+------+---------+                        |           |                     |
-        || | +FILTER      |              4 |    5 |       1 |                        |           |                     |
-        || | |            +----------------+------+---------+                        |           |                     |
-        || | +INDEXSEEK   |              4 |    5 |       1 |                   5/10 |     0.200 | Fused in Pipeline 1 |
-        || |              +----------------+------+---------+------------------------+-----------+---------------------+
-        || +PROJECT       |              4 |    5 |       1 |                        |           |                     |
-        || |              +----------------+------+---------+                        |           |                     |
-        || +ALLNODESCAN   |              4 |    5 |       1 |                   5/10 |     0.200 | Fused in Pipeline 0 |
-        |+----------------+----------------+------+---------+------------------------+-----------+---------------------+
+      """+----------------+----+----------------+------+---------+------------------------+-----------+---------------------+
+        || Operator       | Id | Estimated Rows | Rows | DB Hits | Page Cache Hits/Misses | Time (ms) | Pipeline            |
+        |+----------------+----+----------------+------+---------+------------------------+-----------+---------------------+
+        || +PRODUCERESULT | -1 |              4 |    5 |       1 |                   5/10 |     0.200 | In Pipeline 2       |
+        || |              +----+----------------+------+---------+------------------------+-----------+---------------------+
+        || +AGGREGATION   | -1 |              4 |    5 |       1 |                        |           |                     |
+        || |              +----+----------------+------+---------+                        |           |                     |
+        || +APPLY         | -1 |              4 |    5 |       1 |                        |           |                     |
+        || |\             +----+----------------+------+---------+                        |           |                     |
+        || | +FILTER      | -1 |              4 |    5 |       1 |                        |           |                     |
+        || | |            +----+----------------+------+---------+                        |           |                     |
+        || | +INDEXSEEK   | -1 |              4 |    5 |       1 |                   5/10 |     0.200 | Fused in Pipeline 1 |
+        || |              +----+----------------+------+---------+------------------------+-----------+---------------------+
+        || +PROJECT       | -1 |              4 |    5 |       1 |                        |           |                     |
+        || |              +----+----------------+------+---------+                        |           |                     |
+        || +ALLNODESCAN   | -1 |              4 |    5 |       1 |                   5/10 |     0.200 | Fused in Pipeline 0 |
+        |+----------------+----+----------------+------+---------+------------------------+-----------+---------------------+
         |""".stripMargin
     )
   }
@@ -1233,19 +1236,19 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val node5 = planDescription(id, "Node5", SingleChild(node4), Seq(PipelineInfo(4, fused = true), Time(1000000)))
 
     renderAsTreeTable(node5) should equal(
-      """+----------+-----------+---------------------+
-        || Operator | Time (ms) | Pipeline            |
-        |+----------+-----------+---------------------+
-        || +Node5   |     1.000 | Fused in Pipeline 4 |
-        || |        +-----------+---------------------+
-        || +Node4   |     1.000 |                     |
-        || |        +-----------+---------------------+
-        || +Node3   |     1.000 | Fused in Pipeline 3 |
-        || |        +-----------+---------------------+
-        || +Node2   |     1.000 | Fused in Pipeline 2 |
-        || |        +-----------+---------------------+
-        || +Node1   |     1.000 | Fused in Pipeline 1 |
-        |+----------+-----------+---------------------+
+      """+----------+----+-----------+---------------------+
+        || Operator | Id | Time (ms) | Pipeline            |
+        |+----------+----+-----------+---------------------+
+        || +Node5   | -1 |     1.000 | Fused in Pipeline 4 |
+        || |        +----+-----------+---------------------+
+        || +Node4   | -1 |     1.000 |                     |
+        || |        +----+-----------+---------------------+
+        || +Node3   | -1 |     1.000 | Fused in Pipeline 3 |
+        || |        +----+-----------+---------------------+
+        || +Node2   | -1 |     1.000 | Fused in Pipeline 2 |
+        || |        +----+-----------+---------------------+
+        || +Node1   | -1 |     1.000 | Fused in Pipeline 1 |
+        |+----------+----+-----------+---------------------+
         |""".stripMargin
     )
   }
@@ -1290,23 +1293,23 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     )
 
     renderAsTreeTable(plan) should equal(
-      """+------------------+------------------------+---------------+
-        || Operator         | Page Cache Hits/Misses | Pipeline      |
-        |+------------------+------------------------+---------------+
-        || +Root            |                    1/0 | In Pipeline 1 |
-        || |\               +------------------------+---------------+
-        || | +Intermediate2 |                    2/1 |               |
-        || | |\             +------------------------+---------------+
-        || | | +Leaf4       |                    3/2 | In Pipeline 2 |
-        || | |              +------------------------+---------------+
-        || | +Leaf3         |                    4/3 | In Pipeline 3 |
-        || |                +------------------------+---------------+
-        || +Intermediate1   |                    5/4 |               |
-        || |\               +------------------------+---------------+
-        || | +Leaf2         |                    6/5 | In Pipeline 4 |
-        || |                +------------------------+---------------+
-        || +Leaf1           |                    7/6 | In Pipeline 5 |
-        |+------------------+------------------------+---------------+
+      """+------------------+----+------------------------+---------------+
+        || Operator         | Id | Page Cache Hits/Misses | Pipeline      |
+        |+------------------+----+------------------------+---------------+
+        || +Root            | -1 |                    1/0 | In Pipeline 1 |
+        || |\               +----+------------------------+---------------+
+        || | +Intermediate2 | -1 |                    2/1 |               |
+        || | |\             +----+------------------------+---------------+
+        || | | +Leaf4       | -1 |                    3/2 | In Pipeline 2 |
+        || | |              +----+------------------------+---------------+
+        || | +Leaf3         | -1 |                    4/3 | In Pipeline 3 |
+        || |                +----+------------------------+---------------+
+        || +Intermediate1   | -1 |                    5/4 |               |
+        || |\               +----+------------------------+---------------+
+        || | +Leaf2         | -1 |                    6/5 | In Pipeline 4 |
+        || |                +----+------------------------+---------------+
+        || +Leaf1           | -1 |                    7/6 | In Pipeline 5 |
+        |+------------------+----+------------------------+---------------+
         |""".stripMargin
     )
   }
@@ -1389,47 +1392,47 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
 
     println(renderAsTreeTable(produceResult))
     renderAsTreeTable(produceResult) should equal(
-      """+-------------------------+------------------------+-----------+---------------------+
-        || Operator                | Page Cache Hits/Misses | Time (ms) | Pipeline            |
-        |+-------------------------+------------------------+-----------+---------------------+
-        || +ProduceResults         |                    0/0 |     1.143 |                     |
-        || |                       +------------------------+-----------+                     |
-        || +Top                    |                    0/0 |     1.726 | In Pipeline 6       |
-        || |                       +------------------------+-----------+---------------------+
-        || +Projection             |                   29/0 |     1.492 | In Pipeline 5       |
-        || |                       +------------------------+-----------+---------------------+
-        || +EagerAggregation       |                        |           |                     |
-        || |                       |                        |           |                     |
-        || +Filter                 |                        |           |                     |
-        || |                       |                        |           |                     |
-        || +Expand(All)            |                        |           |                     |
-        || |                       |                        |           |                     |
-        || +Apply                  |                        |           |                     |
-        || |\                      |                        |           |                     |
-        || | +Apply                |                        |           |                     |
-        || | |\                    |                        |           |                     |
-        || | | +Limit              |                        |           |                     |
-        || | | |                   |                        |           |                     |
-        || | | +Expand(Into)       |                        |           |                     |
-        || | | |                   |                        |           |                     |
-        || | | +Argument           |              1211031/0 |   577.688 | Fused in Pipeline 4 |
-        || | |                     +------------------------+-----------+---------------------+
-        || | +Expand(All)          |                        |           |                     |
-        || | |                     |                        |           |                     |
-        || | +Argument             |                10957/0 |    65.466 | Fused in Pipeline 3 |
-        || |                       +------------------------+-----------+---------------------+
-        || +Distinct               |                    0/0 |    15.565 |                     |
-        || |                       +------------------------+-----------+                     |
-        || +CartesianProduct       |                        |     5.483 | In Pipeline 2       |
-        || |\                      +------------------------+-----------+---------------------+
-        || | +Filter               |                        |           |                     |
-        || | |                     |                        |           |                     |
-        || | +VarLengthExpand(All) |                        |           |                     |
-        || | |                     |                        |           |                     |
-        || | +NodeUniqueIndexSeek  |                 1537/0 |    21.756 | Fused in Pipeline 1 |
-        || |                       +------------------------+-----------+---------------------+
-        || +NodeUniqueIndexSeek    |                    2/0 |     8.850 | In Pipeline 0       |
-        |+-------------------------+------------------------+-----------+---------------------+
+      """+-------------------------+----+------------------------+-----------+---------------------+
+        || Operator                | Id | Page Cache Hits/Misses | Time (ms) | Pipeline            |
+        |+-------------------------+----+------------------------+-----------+---------------------+
+        || +ProduceResults         | -1 |                    0/0 |     1.143 |                     |
+        || |                       +----+------------------------+-----------+                     |
+        || +Top                    | -1 |                    0/0 |     1.726 | In Pipeline 6       |
+        || |                       +----+------------------------+-----------+---------------------+
+        || +Projection             | -1 |                   29/0 |     1.492 | In Pipeline 5       |
+        || |                       +----+------------------------+-----------+---------------------+
+        || +EagerAggregation       | -1 |                        |           |                     |
+        || |                       +----+                        |           |                     |
+        || +Filter                 | -1 |                        |           |                     |
+        || |                       +----+                        |           |                     |
+        || +Expand(All)            | -1 |                        |           |                     |
+        || |                       +----+                        |           |                     |
+        || +Apply                  | -1 |                        |           |                     |
+        || |\                      +----+                        |           |                     |
+        || | +Apply                | -1 |                        |           |                     |
+        || | |\                    +----+                        |           |                     |
+        || | | +Limit              | -1 |                        |           |                     |
+        || | | |                   +----+                        |           |                     |
+        || | | +Expand(Into)       | -1 |                        |           |                     |
+        || | | |                   +----+                        |           |                     |
+        || | | +Argument           | -1 |              1211031/0 |   577.688 | Fused in Pipeline 4 |
+        || | |                     +----+------------------------+-----------+---------------------+
+        || | +Expand(All)          | -1 |                        |           |                     |
+        || | |                     +----+                        |           |                     |
+        || | +Argument             | -1 |                10957/0 |    65.466 | Fused in Pipeline 3 |
+        || |                       +----+------------------------+-----------+---------------------+
+        || +Distinct               | -1 |                    0/0 |    15.565 |                     |
+        || |                       +----+------------------------+-----------+                     |
+        || +CartesianProduct       | -1 |                        |     5.483 | In Pipeline 2       |
+        || |\                      +----+------------------------+-----------+---------------------+
+        || | +Filter               | -1 |                        |           |                     |
+        || | |                     +----+                        |           |                     |
+        || | +VarLengthExpand(All) | -1 |                        |           |                     |
+        || | |                     +----+                        |           |                     |
+        || | +NodeUniqueIndexSeek  | -1 |                 1537/0 |    21.756 | Fused in Pipeline 1 |
+        || |                       +----+------------------------+-----------+---------------------+
+        || +NodeUniqueIndexSeek    | -1 |                    2/0 |     8.850 | In Pipeline 0       |
+        |+-------------------------+----+------------------------+-----------+---------------------+
         |""".stripMargin
     )
   }
@@ -1488,25 +1491,25 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     )
 
     renderAsTreeTable(root) should equal(
-      """+----------+---------+------------+---------------+
-        || Operator | Details | Ordered by | Pipeline      |
-        |+----------+---------+------------+---------------+
-        || +NODE    | ...     | b          |               |
-        || |        +---------+------------+               |
-        || +NODE    | ...     |            |               |
-        || |        +---------+            |               |
-        || +NODE    | ...     |            | In Pipeline 2 |
-        || |        +---------+            +---------------+
-        || +NODE    | ...     | a          |               |
-        || |        +---------+------------+               |
-        || +NODE    | ...     | A          |               |
-        || |        +---------+------------+               |
-        || +NODE    | ...     |            |               |
-        || |        +---------+------------+               |
-        || +NODE    | ...     |            |               |
-        || |        +---------+            |               |
-        || +NODE    | ...     | a          | In Pipeline 1 |
-        |+----------+---------+------------+---------------+
+      """+----------+----+---------+------------+---------------+
+        || Operator | Id | Details | Ordered by | Pipeline      |
+        |+----------+----+---------+------------+---------------+
+        || +NODE    | -1 | ...     | b          |               |
+        || |        +----+---------+------------+               |
+        || +NODE    | -1 | ...     |            |               |
+        || |        +----+---------+            |               |
+        || +NODE    | -1 | ...     |            | In Pipeline 2 |
+        || |        +----+---------+            +---------------+
+        || +NODE    | -1 | ...     | a          |               |
+        || |        +----+---------+------------+               |
+        || +NODE    | -1 | ...     | A          |               |
+        || |        +----+---------+------------+               |
+        || +NODE    | -1 | ...     |            |               |
+        || |        +----+---------+------------+               |
+        || +NODE    | -1 | ...     |            |               |
+        || |        +----+---------+            |               |
+        || +NODE    | -1 | ...     | a          | In Pipeline 1 |
+        |+----------+----+---------+------------+---------------+
         |""".stripMargin
     )
   }
@@ -1553,25 +1556,25 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     )
 
     renderAsTreeTable(root) should equal(
-      """+----------+---------+------------+---------------------+
-        || Operator | Details | Ordered by | Pipeline            |
-        |+----------+---------+------------+---------------------+
-        || +NODE    | ...     |            |                     |
-        || |        +---------+            |                     |
-        || +NODE    | ...     |            | In Pipeline 3       |
-        || |        +---------+            +---------------------+
-        || +NODE    | ...     | a          |                     |
-        || |        +---------+------------+                     |
-        || +NODE    | ...     |            |                     |
-        || |        +---------+            |                     |
-        || +NODE    | ...     | b          | Fused in Pipeline 2 |
-        || |        +---------+------------+---------------------+
-        || +NODE    | ...     |            | In Pipeline 1       |
-        || |        +---------+------------+---------------------+
-        || +NODE    | ...     | b          |                     |
-        || |        +---------+------------+---------------------+
-        || +NODE    | ...     | a          | In Pipeline 1       |
-        |+----------+---------+------------+---------------------+
+      """+----------+----+---------+------------+---------------------+
+        || Operator | Id | Details | Ordered by | Pipeline            |
+        |+----------+----+---------+------------+---------------------+
+        || +NODE    | -1 | ...     |            |                     |
+        || |        +----+---------+            |                     |
+        || +NODE    | -1 | ...     |            | In Pipeline 3       |
+        || |        +----+---------+            +---------------------+
+        || +NODE    | -1 | ...     | a          |                     |
+        || |        +----+---------+------------+                     |
+        || +NODE    | -1 | ...     |            |                     |
+        || |        +----+---------+            |                     |
+        || +NODE    | -1 | ...     | b          | Fused in Pipeline 2 |
+        || |        +----+---------+------------+---------------------+
+        || +NODE    | -1 | ...     |            | In Pipeline 1       |
+        || |        +----+---------+------------+---------------------+
+        || +NODE    | -1 | ...     | b          |                     |
+        || |        +----+---------+------------+---------------------+
+        || +NODE    | -1 | ...     | a          | In Pipeline 1       |
+        |+----------+----+---------+------------+---------------------+
         |""".stripMargin
     )
   }

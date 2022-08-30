@@ -112,8 +112,12 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
     childPlans.asJava
   }
 
-  override def getArguments: util.Map[String, AnyRef] =
-    arguments.map { arg => arg.name -> PlanDescriptionArgumentSerializer.serialize(arg) }.toMap.asJava
+  override def getArguments: util.Map[String, AnyRef] = {
+    val args = arguments.map { arg => arg.name -> PlanDescriptionArgumentSerializer.serialize(arg) }.toMap
+    val idTuple = Header.ID -> Int.box(id.x)
+    val map = args + idTuple
+    map.asJava
+  }
 
   override def getIdentifiers: util.Set[String] = variables.map(_.prettifiedString).asJava
 
@@ -325,8 +329,10 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
   override def addArgument(argument: Argument): InternalPlanDescription = ???
 
   override def map(f: InternalPlanDescription => InternalPlanDescription): InternalPlanDescription =
-    f(copy(similar = similar
-      .map(f)))
+    f(copy(similar =
+      similar
+        .map(f)
+    ))
 
   override def dup(children: Seq[AnyRef]): CompactedPlanDescription.this.type = {
     if (children.iterator eqElements this.treeChildren) {

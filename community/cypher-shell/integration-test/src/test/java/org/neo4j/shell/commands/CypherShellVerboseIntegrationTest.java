@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.commands;
 
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -199,15 +200,14 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest {
 
         // then
         String actual = linePrinter.output();
+        // First table
         assertThat(
                 actual.replace(" ", ""),
-                containsString(
-                        "|Plan|Statement|Version|Planner|Runtime|Time|DbHits|Rows|Memory(Bytes)|")); // First table
-        assertThat(
-                actual.replace(" ", ""),
-                containsString(
-                        "|Operator|Details|EstimatedRows|Rows|DBHits|Memory(Bytes)|PageCacheHits/Misses|")); // Second
-        // table
+                containsString("|Plan|Statement|Version|Planner|Runtime|Time|DbHits|Rows|Memory(Bytes)|"));
+        // Second table
+        String upTo5_0 = "|Operator|Details|EstimatedRows|Rows|DBHits|Memory(Bytes)|PageCacheHits/Misses|";
+        String from5_1 = "|Operator|Id|Details|EstimatedRows|Rows|DBHits|Memory(Bytes)|PageCacheHits/Misses|";
+        assertThat(actual.replace(" ", ""), anyOf(containsString(upTo5_0), containsString(from5_1)));
     }
 
     @Test

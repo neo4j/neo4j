@@ -113,11 +113,11 @@ class InternalPlanDescriptionTest extends CypherFunSuite {
                            |
                            |Batch size 128
                            |
-                           |+----------+
-                           || Operator |
-                           |+----------+
-                           || +Leaf    |
-                           |+----------+
+                           |+----------+----+
+                           || Operator | Id |
+                           |+----------+----+
+                           || +Leaf    | -1 |
+                           |+----------+----+
                            |
                            |Total database accesses: ?
                            |""".stripMargin)
