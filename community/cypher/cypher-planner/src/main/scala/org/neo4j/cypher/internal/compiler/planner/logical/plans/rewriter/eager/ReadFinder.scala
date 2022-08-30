@@ -90,82 +90,73 @@ object ReadFinder {
 
     def withAllNodesRead: PlanReads =
       copy(readsAllNodes = true)
-
-    /**
-     * @return A `Seq` of all read properties.
-     *         For a known `PropertyKeyName` (`Some`) and for an unknown `PropertyKeyName` (`None`).
-     */
-    def readPropertiesIncludingUnknown: Seq[Option[PropertyKeyName]] = {
-      val concrete = readProperties.map(Some(_))
-      if (readsUnknownProperties) concrete :+ None else concrete
-    }
   }
 
   /**
    * Collect the reads of a single plan, not traversing into child plans.
    */
-  private[eager] def collectReads(plan: LogicalPlan): PlanReads = plan.folder.treeFold(PlanReads()) {
-    case otherPlan: LogicalPlan if otherPlan.id != plan.id =>
-      acc => SkipChildren(acc) // Do not traverse the logical plan tree! We are only looking at the given plan
-
+  private[eager] def collectReads(plan: LogicalPlan): PlanReads = {
     // Match on plans
-    case p: LogicalLeafPlan =>
-      // This extra match is not strictly necessary, but allows us to detect a missing case for new leaf plans easier because it will fail hard.
-      p match {
-        case _: AllNodesScan =>
-          acc => SkipChildren(acc.withAllNodesRead)
+    val planReads = plan match {
+      case p: LogicalLeafPlan =>
+        // This extra match is not strictly necessary, but allows us to detect a missing case for new leaf plans easier because it will fail hard.
+        p match {
+          case _: AllNodesScan =>
+            PlanReads().withAllNodesRead
 
-        case NodeByLabelScan(varName, labelName, _, _) =>
-          acc =>
+          case NodeByLabelScan(varName, labelName, _, _) =>
             val variable = Variable(varName)(InputPosition.NONE)
             val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
-            val newAcc = acc
+            PlanReads()
               .withLabelRead(labelName)
               .withAddedFilterExpression(variable, hasLabels)
-            SkipChildren(newAcc)
 
-        case NodeIndexScan(varName, LabelToken(labelName, _), properties, _, _, _) =>
-          acc =>
+          case NodeIndexScan(varName, LabelToken(labelName, _), properties, _, _, _) =>
             val variable = Variable(varName)(InputPosition.NONE)
             val lN = LabelName(labelName)(InputPosition.NONE)
             val hasLabels = HasLabels(variable, Seq(lN))(InputPosition.NONE)
 
-            val newAcc = Option(acc)
-              .map(acc => acc.withLabelRead(lN))
-              .map(acc => acc.withAddedFilterExpression(variable, hasLabels))
-              .map(acc =>
-                properties.foldLeft(acc) {
-                  case (acc, IndexedProperty(PropertyKeyToken(property, _), _, _)) =>
-                    acc.withPropertyRead(PropertyKeyName(property)(InputPosition.NONE))
-                }
-              )
-              .get
-            SkipChildren(newAcc)
+            val r = PlanReads()
+              .withLabelRead(lN)
+              .withAddedFilterExpression(variable, hasLabels)
 
-        case _: Argument =>
-          acc => SkipChildren(acc)
+            properties.foldLeft(r) {
+              case (acc, IndexedProperty(PropertyKeyToken(property, _), _, _)) =>
+                acc.withPropertyRead(PropertyKeyName(property)(InputPosition.NONE))
+            }
 
-        case x => throw new IllegalStateException(s"Leaf operator ${x.getClass.getSimpleName} not implemented yet.")
-      }
+          case _: Argument =>
+            PlanReads()
 
-    case Selection(Ands(expressions), _) => acc =>
-        val newAcc = expressions.foldLeft(acc) {
+          case x => throw new IllegalStateException(s"Leaf operator ${x.getClass.getSimpleName} not implemented yet.")
+        }
+
+      case Selection(Ands(expressions), _) =>
+        expressions.foldLeft(PlanReads()) {
           case (acc, expression) => expression.dependencies.foldLeft(acc)(_.withAddedFilterExpression(_, expression))
         }
-        TraverseChildren(newAcc)
+
+      case _ => PlanReads()
+    }
 
     // Match on expressions
-    case Property(_, propertyName) =>
-      acc => SkipChildren(acc.withPropertyRead(propertyName))
+    plan.folder.treeFold(planReads) {
+      case otherPlan: LogicalPlan if otherPlan.id != plan.id =>
+        // Do not traverse the logical plan tree! We are only looking at expressions of the given plan
+        acc => SkipChildren(acc)
 
-    case f: FunctionInvocation if f.function == Labels =>
-      acc => TraverseChildren(acc.withUnknownLabelsRead())
+      case Property(_, propertyName) =>
+        acc => SkipChildren(acc.withPropertyRead(propertyName))
 
-    case f: FunctionInvocation if f.function == Properties =>
-      acc => TraverseChildren(acc.withUnknownPropertiesRead())
+      case f: FunctionInvocation if f.function == Labels =>
+        acc => TraverseChildren(acc.withUnknownLabelsRead())
 
-    case HasLabels(_, labels) =>
-      acc => TraverseChildren(labels.foldLeft(acc)((acc, label) => acc.withLabelRead(label)))
+      case f: FunctionInvocation if f.function == Properties =>
+        acc => TraverseChildren(acc.withUnknownPropertiesRead())
+
+      case HasLabels(_, labels) =>
+        acc => TraverseChildren(labels.foldLeft(acc)((acc, label) => acc.withLabelRead(label)))
+    }
   }
 
 }
