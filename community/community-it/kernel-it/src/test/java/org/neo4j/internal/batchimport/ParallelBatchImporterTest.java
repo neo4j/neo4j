@@ -40,6 +40,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,6 +51,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Stream;
+import org.assertj.core.description.Description;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
@@ -293,9 +295,23 @@ public class ParallelBatchImporterTest {
         Result result = new ConsistencyCheckService(databaseLayout)
                 .with(Config.defaults(GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes(8)))
                 .runFullConsistencyCheck();
-        assertTrue(
-                result.isSuccessful(),
-                "Database contains inconsistencies, there should be a report in " + databaseLayout.databaseDirectory());
+        assertThat(result.isSuccessful())
+                .as(new Description() {
+                    @Override
+                    public String value() {
+                        var builder = new StringBuilder("Database contains inconsistencies. " + result);
+                        if (result.reportFile() != null) {
+                            builder.append(format("%nInconsistencies:"));
+                            try {
+                                Files.lines(result.reportFile()).forEach(line -> builder.append(format("%n%s", line)));
+                            } catch (IOException e) {
+                                throw new UncheckedIOException(e);
+                            }
+                        }
+                        return builder.toString();
+                    }
+                })
+                .isTrue();
     }
 
     protected void augmentConfig(Config config) {}
