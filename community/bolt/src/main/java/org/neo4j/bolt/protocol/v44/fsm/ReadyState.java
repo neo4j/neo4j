@@ -29,7 +29,6 @@ import org.neo4j.bolt.protocol.v44.message.request.BeginMessage;
 import org.neo4j.bolt.protocol.v44.message.request.RouteMessage;
 import org.neo4j.bolt.protocol.v44.message.request.RunMessage;
 import org.neo4j.bolt.security.error.AuthenticationException;
-import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 
@@ -52,12 +51,12 @@ public class ReadyState extends org.neo4j.bolt.protocol.v43.fsm.ReadyState {
             org.neo4j.bolt.protocol.v43.message.request.RouteMessage message, StateMachineContext context)
             throws Exception {
         var routeMessage = (RouteMessage) message;
-        context.impersonateUser(this.authenticateImpersonation(context, routeMessage.impersonatedUser()));
+        context.connection().impersonate(routeMessage.impersonatedUser());
 
         try {
             return super.processRouteMessage(message, context);
         } finally {
-            context.impersonateUser(null);
+            context.connection().impersonate(null);
         }
     }
 
@@ -68,7 +67,10 @@ public class ReadyState extends org.neo4j.bolt.protocol.v43.fsm.ReadyState {
             MapValue routingTable) {
         var databaseName = message.getDatabaseName();
         if (databaseName == null || ABSENT_DB_NAME.equals(message.getDatabaseName())) {
-            databaseName = context.defaultDatabase();
+            // TODO: we need to resolve default database here to handle the case where it has changed during connection
+            // lifetime. Ideally we are returned this as part of the routing table lookup.
+            context.connection().resolveDefaultDatabase();
+            databaseName = context.connection().selectedDefaultDatabase();
         }
 
         super.onRoutingTableReceived(
@@ -81,12 +83,12 @@ public class ReadyState extends org.neo4j.bolt.protocol.v43.fsm.ReadyState {
             throws Exception {
         var runMessage = (RunMessage) message;
 
-        context.impersonateUser(this.authenticateImpersonation(context, runMessage.impersonatedUser()));
+        this.authenticateImpersonation(context, runMessage.impersonatedUser());
 
         try {
             return super.processRunMessage(message, context);
         } finally {
-            context.impersonateUser(null);
+            context.connection().impersonate(null);
         }
     }
 
@@ -96,7 +98,7 @@ public class ReadyState extends org.neo4j.bolt.protocol.v43.fsm.ReadyState {
             throws Exception {
         var beginMessage = (BeginMessage) message;
 
-        context.impersonateUser(this.authenticateImpersonation(context, beginMessage.impersonatedUser()));
+        this.authenticateImpersonation(context, beginMessage.impersonatedUser());
 
         return super.processBeginMessage(message, context);
     }
@@ -108,12 +110,8 @@ public class ReadyState extends org.neo4j.bolt.protocol.v43.fsm.ReadyState {
      * @param username the desired target user.
      * @return a substitute login context.
      */
-    private LoginContext authenticateImpersonation(StateMachineContext context, String username)
+    private void authenticateImpersonation(StateMachineContext context, String username)
             throws AuthenticationException {
-        if (username != null) {
-            return context.boltSpi().impersonate(context.getLoginContext(), username);
-        }
-
-        return null;
+        context.connection().impersonate(username);
     }
 }

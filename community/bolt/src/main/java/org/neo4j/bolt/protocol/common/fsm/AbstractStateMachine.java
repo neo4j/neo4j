@@ -21,8 +21,8 @@ package org.neo4j.bolt.protocol.common.fsm;
 
 import java.time.Clock;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.protocol.common.MutableConnectionState;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.connection.MutableConnectionState;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.request.Signal;
@@ -55,8 +55,7 @@ import org.neo4j.memory.MemoryTracker;
  * response and a closed connection.
  */
 public abstract class AbstractStateMachine implements StateMachine {
-    private final String id;
-    private final BoltChannel boltChannel;
+    private final Connection connection;
     private final StateMachineSPI spi;
     protected DefaultDatabaseResolver defaultDatabaseResolver;
     protected final MutableConnectionState connectionState;
@@ -67,23 +66,26 @@ public abstract class AbstractStateMachine implements StateMachine {
 
     public AbstractStateMachine(
             StateMachineSPI spi,
-            BoltChannel channel,
+            Connection connection,
             Clock clock,
             DefaultDatabaseResolver defaultDatabaseResolver,
             TransactionManager transactionManager) {
-        channel.memoryTracker().allocateHeap(StateMachineContextImpl.SHALLOW_SIZE);
+        connection.memoryTracker().allocateHeap(StateMachineContextImpl.SHALLOW_SIZE);
 
-        this.id = channel.id();
-        this.boltChannel = channel;
+        this.connection = connection;
         this.spi = spi;
         this.defaultDatabaseResolver = defaultDatabaseResolver;
         this.connectionState = new MutableConnectionState();
-        this.context = new StateMachineContextImpl(
-                this, channel, spi, connectionState, clock, defaultDatabaseResolver, transactionManager);
+        this.context = new StateMachineContextImpl(connection, this, spi, connectionState, clock, transactionManager);
 
-        var states = buildStates(channel.memoryTracker());
+        var states = buildStates(connection.memoryTracker());
         this.state = states.initial;
         this.failedState = states.failed;
+    }
+
+    @Override
+    public Connection connection() {
+        return this.connection;
     }
 
     @Override
@@ -101,7 +103,7 @@ public abstract class AbstractStateMachine implements StateMachine {
     private void before(ResponseHandler handler) throws BoltConnectionFatality {
         if (connectionState.isTerminated()) {
             close();
-        } else if (connectionState.isInterrupted()) {
+        } else if (connection.isInterrupted()) {
             nextState(Signal.INTERRUPT, context);
         }
 
@@ -162,9 +164,9 @@ public abstract class AbstractStateMachine implements StateMachine {
      */
     @Override
     public void interrupt() {
-        connectionState.incrementInterruptCounter();
-        if (connectionState.getCurrentTransactionId() != null) {
-            transactionManager().interrupt(connectionState.getCurrentTransactionId());
+        var currentTransactionId = connectionState.getCurrentTransactionId();
+        if (currentTransactionId != null) {
+            transactionManager().interrupt(currentTransactionId);
         }
     }
 
@@ -210,18 +212,10 @@ public abstract class AbstractStateMachine implements StateMachine {
 
     @Override
     public void close() {
-        try {
-            boltChannel.close();
-        } finally {
-            connectionState.markClosed();
-            // However a new transaction may have been created so we must always to reset
-            resetTransactionState();
-        }
-    }
+        connectionState.markClosed();
 
-    @Override
-    public String id() {
-        return id;
+        // However a new transaction may have been created so we must always to reset
+        resetTransactionState();
     }
 
     @Override
@@ -245,23 +239,27 @@ public abstract class AbstractStateMachine implements StateMachine {
         // We should not switch threads when there's an active statement (executing/streaming)
         // Also, we're currently sticking to the thread when there's an open transaction due to
         // cursor errors we receive when a transaction is picked up by another thread linearly.
-        if (connectionState.getCurrentTransactionId() == null) {
+        var txId = connectionState.getCurrentTransactionId();
+        if (txId == null) {
             return false;
-        } else {
-            var transactionState = transactionManager().transactionStatus(connectionState.getCurrentTransactionId());
-            return transactionState.value().equals(TransactionStatus.Value.IN_TRANSACTION_OPEN_STATEMENT)
-                    || transactionState.value().equals(TransactionStatus.Value.IN_TRANSACTION_NO_OPEN_STATEMENTS);
         }
+
+        var transactionState = transactionManager().transactionStatus(txId);
+
+        return transactionState.value().equals(TransactionStatus.Value.IN_TRANSACTION_OPEN_STATEMENT)
+                || transactionState.value().equals(TransactionStatus.Value.IN_TRANSACTION_NO_OPEN_STATEMENTS);
     }
 
     @Override
     public boolean hasOpenStatement() {
-        if (connectionState.getCurrentTransactionId() == null) {
+        var txId = connectionState.getCurrentTransactionId();
+        if (txId == null) {
             return false;
-        } else {
-            var transactionState = transactionManager().transactionStatus(connectionState.getCurrentTransactionId());
-            return transactionState.value().equals(TransactionStatus.Value.IN_TRANSACTION_OPEN_STATEMENT);
         }
+
+        var transactionState = transactionManager().transactionStatus(txId);
+
+        return transactionState.value().equals(TransactionStatus.Value.IN_TRANSACTION_OPEN_STATEMENT);
     }
 
     @Override

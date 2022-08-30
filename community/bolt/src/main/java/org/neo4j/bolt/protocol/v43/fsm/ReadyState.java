@@ -59,7 +59,7 @@ public class ReadyState extends org.neo4j.bolt.protocol.v40.fsm.ReadyState {
             routingTableGetter
                     .get(
                             programId,
-                            context.getLoginContext(),
+                            context.connection().loginContext(),
                             context.transactionManager(),
                             message.getRequestContext(),
                             message.getBookmarks(),

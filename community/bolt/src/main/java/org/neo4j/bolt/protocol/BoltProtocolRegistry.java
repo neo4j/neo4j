@@ -20,7 +20,6 @@
 package org.neo4j.bolt.protocol;
 
 import java.util.Optional;
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 
@@ -51,10 +50,9 @@ public interface BoltProtocolRegistry {
      * When no protocol definition for the desired version is registered, {@code null} is returned instead.
      *
      * @param protocolVersion the version as negotiated by the initial handshake.
-     * @param channel         the channel representing network connection from the client.
      * @return new protocol handler when given protocol version is known and valid, {@code null} otherwise.
      */
-    Optional<BoltProtocol> get(ProtocolVersion protocolVersion, BoltChannel channel);
+    Optional<BoltProtocol> get(ProtocolVersion protocolVersion);
 
     interface Builder {
 

@@ -52,7 +52,7 @@ class JettyHttpConnectionTest {
     void shouldHaveConnector() {
         JettyHttpConnection connection = newConnection(connectorMock("http+routing"));
 
-        assertEquals("http+routing", connection.connector());
+        assertEquals("http+routing", connection.connectorId());
     }
 
     @Test

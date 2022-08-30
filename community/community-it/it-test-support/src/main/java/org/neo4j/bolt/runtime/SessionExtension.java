@@ -20,28 +20,34 @@
 package org.neo4j.bolt.runtime;
 
 import static java.time.Duration.ofSeconds;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import io.netty.channel.embedded.EmbeddedChannel;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.SocketAddress;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
-import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.connection.authentication.AuthenticationFlag;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.common.protector.ChannelProtector;
 import org.neo4j.bolt.protocol.v40.BoltProtocolV40;
 import org.neo4j.bolt.protocol.v40.bookmark.BookmarksParserV40;
 import org.neo4j.bolt.protocol.v41.BoltProtocolV41;
@@ -49,18 +55,20 @@ import org.neo4j.bolt.protocol.v43.BoltProtocolV43;
 import org.neo4j.bolt.protocol.v44.BoltProtocolV44;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.security.basic.BasicAuthentication;
+import org.neo4j.bolt.security.error.AuthenticationException;
 import org.neo4j.bolt.transaction.StatementProcessorTxManager;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContextProvider;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.server.security.systemgraph.CommunityDefaultDatabaseResolver;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -73,6 +81,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback {
     private GraphDatabaseAPI gdb;
     private BoltProtocolRegistry protocolRegistry;
     private DatabaseManagementService managementService;
+    private Authentication authentication;
 
     private final List<StateMachine> runningMachines = new ArrayList<>();
     private boolean authEnabled;
@@ -85,16 +94,68 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback {
         this.builderFactory = builderFactory;
     }
 
-    public StateMachine newMachine(ProtocolVersion version, BoltChannel channel) {
+    public StateMachine newMachine(ProtocolVersion version) {
         assertTestStarted();
 
         var protocol = protocolRegistry
-                .get(version, channel)
+                .get(version)
                 .orElseThrow(() -> new IllegalArgumentException("Unsupported protocol version: " + version));
 
-        var stateMachine = protocol.createStateMachine(channel);
+        var connection = this.createConnection();
+
+        var stateMachine = protocol.createStateMachine(connection);
         runningMachines.add(stateMachine);
         return stateMachine;
+    }
+
+    private Connection createConnection() {
+        var connection = mock(Connection.class, RETURNS_MOCKS);
+        when(connection.id()).thenReturn("bolt-test");
+        when(connection.selectedDefaultDatabase()).thenAnswer(invocation -> this.defaultDatabaseName());
+
+        var interruptCounter = new AtomicInteger();
+        doAnswer(invocation -> {
+                    interruptCounter.incrementAndGet();
+                    return null; // void function
+                })
+                .when(connection)
+                .interrupt();
+        doAnswer(invocation -> {
+                    int counter;
+                    do {
+                        counter = interruptCounter.get();
+                        if (counter == 0) {
+                            return true;
+                        }
+                    } while (interruptCounter.compareAndSet(counter, counter - 1));
+
+                    return counter <= 1;
+                })
+                .when(connection)
+                .reset();
+        when(connection.isInterrupted()).thenAnswer(invocation -> interruptCounter.get() != 0);
+
+        // TODO: Migrate this functionality to ConnectionMockFactory
+        var loginContext = new AtomicReference<LoginContext>();
+        when(connection.loginContext()).thenAnswer(invocation -> loginContext.get());
+        try {
+            when(connection.authenticate(any(), any())).thenAnswer(invocation -> {
+                var result = authentication.authenticate(
+                        invocation.getArgument(0),
+                        new BoltConnectionInfo(
+                                "bolt-test", "bolt-test", mock(SocketAddress.class), mock(SocketAddress.class)));
+                loginContext.set(result.getLoginContext());
+
+                if (result.credentialsExpired()) {
+                    return AuthenticationFlag.CREDENTIALS_EXPIRED;
+                }
+
+                return null;
+            });
+        } catch (AuthenticationException ignore) {
+        }
+
+        return connection;
     }
 
     public DatabaseManagementService managementService() {
@@ -114,22 +175,6 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback {
         var resolver = gdb.getDependencyResolver();
         var databaseManager = resolver.resolveDependency(DatabaseContextProvider.class);
         return databaseManager.databaseIdRepository();
-    }
-
-    public BoltChannel channel() {
-        assertTestStarted();
-        var resolver = gdb.getDependencyResolver();
-
-        var authentication = authentication(resolver.resolveDependency(AuthManager.class));
-
-        return new BoltChannel(
-                "bolt-test",
-                "bolt",
-                new EmbeddedChannel(),
-                authentication,
-                ChannelProtector.NULL,
-                ConnectionHintProvider.noop(),
-                EmptyMemoryTracker.INSTANCE);
     }
 
     @Override
@@ -186,6 +231,9 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback {
                         txManager,
                         clock))
                 .build();
+
+        var authManager = resolver.resolveDependency(AuthManager.class);
+        authentication = new BasicAuthentication(authManager);
     }
 
     @Override

@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactory;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.AbstractStateMachine;
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
@@ -145,9 +146,11 @@ public final class StateMachineAssertions extends AbstractAssert<StateMachineAss
         return this;
     }
 
-    public StateMachineAssertions canReset() {
+    public StateMachineAssertions canReset(Connection connection) {
         try {
             var recorder = new ResponseRecorder();
+
+            connection.interrupt();
 
             this.actual.interrupt();
             this.actual.process(ResetMessage.INSTANCE, recorder);

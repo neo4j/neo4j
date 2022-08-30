@@ -20,35 +20,33 @@
 package org.neo4j.bolt.protocol.common.handler.messages;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.protocol.common.connection.BoltConnection;
 import org.neo4j.bolt.protocol.v40.messaging.request.GoodbyeMessage;
 import org.neo4j.bolt.protocol.v40.messaging.request.ResetMessage;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.Level;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.NullLogProvider;
 
 class GoodbyeMessageHandlerTest {
 
     @Test
     void shouldStopConnection() {
-        var connection = mock(BoltConnection.class);
         var log = new AssertableLogProvider(true);
 
-        var channel =
-                new EmbeddedChannel(new GoodbyeMessageHandler(connection, log.getLog(GoodbyeMessageHandler.class)));
+        var channel = new EmbeddedChannel();
+        var connection = ConnectionMockFactory.newFactory().attachTo(channel, new GoodbyeMessageHandler(log));
 
         channel.writeInbound(GoodbyeMessage.INSTANCE);
 
         assertThat(channel.<Object>readInbound()).isNull();
 
-        verify(connection).stop();
+        verify(connection).close();
 
         assertThat(log)
                 .forLevel(Level.DEBUG)
@@ -58,15 +56,17 @@ class GoodbyeMessageHandlerTest {
 
     @Test
     void shouldIgnoreOtherMessageTypes() {
-        var connection = mock(BoltConnection.class);
-        var log = mock(Log.class);
+        var log = new AssertableLogProvider();
+        var channel = new EmbeddedChannel();
 
-        var channel = new EmbeddedChannel(new GoodbyeMessageHandler(connection, log));
+        var connection = ConnectionMockFactory.newFactory()
+                .attachTo(channel, new GoodbyeMessageHandler(NullLogProvider.getInstance()));
 
         channel.writeInbound(ResetMessage.INSTANCE);
 
         assertThat(channel.<Object>readInbound()).isSameAs(ResetMessage.INSTANCE);
 
-        verifyNoInteractions(connection, log);
+        verifyNoInteractions(connection);
+        assertThat(log).doesNotHaveAnyLogs();
     }
 }

@@ -33,7 +33,7 @@ class ResetMessageDecoderTest {
 
     @Test
     void shouldReadMessage() throws PackstreamReaderException {
-        var decoder = new ResetMessageDecoder();
+        var decoder = ResetMessageDecoder.getInstance();
 
         var msg1 = decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(0, (short) 0x42));
         var msg2 = decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(0, (short) 0x42));
@@ -43,7 +43,7 @@ class ResetMessageDecoderTest {
 
     @Test
     void shouldFailWithIllegalStructSizeWhenNonEmptyStructIsGiven() {
-        var decoder = new ResetMessageDecoder();
+        var decoder = ResetMessageDecoder.getInstance();
 
         assertThatExceptionOfType(IllegalStructSizeException.class)
                 .isThrownBy(() -> decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(1, (short) 0x42)))

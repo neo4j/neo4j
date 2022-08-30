@@ -20,12 +20,11 @@
 package org.neo4j.bolt.protocol.v40;
 
 import java.util.function.Predicate;
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.common.bookmark.BookmarksParser;
-import org.neo4j.bolt.protocol.common.connection.BoltConnection;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineSPIImpl;
 import org.neo4j.bolt.protocol.common.message.encoder.FailureMessageEncoder;
@@ -96,21 +95,22 @@ public class BoltProtocolV40 implements BoltProtocol {
     }
 
     @Override
-    public StateMachine createStateMachine(BoltChannel channel) {
-        channel.memoryTracker()
+    public StateMachine createStateMachine(Connection connection) {
+        connection
+                .memoryTracker()
                 .allocateHeap(TransactionStateMachineSPIProviderV4.SHALLOW_SIZE
                         + StateMachineSPIImpl.SHALLOW_SIZE
                         + StateMachineV40.SHALLOW_SIZE);
 
         var transactionSpiProvider =
-                new TransactionStateMachineSPIProviderV4(boltGraphDatabaseManagementServiceSPI, channel, clock);
-        var boltSPI = new StateMachineSPIImpl(logging, transactionSpiProvider, channel);
+                new TransactionStateMachineSPIProviderV4(boltGraphDatabaseManagementServiceSPI, connection, clock);
+        var boltSPI = new StateMachineSPIImpl(logging, transactionSpiProvider);
 
-        return new StateMachineV40(boltSPI, channel, clock, defaultDatabaseResolver, transactionManager);
+        return new StateMachineV40(boltSPI, connection, clock, defaultDatabaseResolver, transactionManager);
     }
 
     @Override
-    public StructRegistry<RequestMessage> requestMessageRegistry(BoltConnection connection) {
+    public StructRegistry<RequestMessage> requestMessageRegistry() {
         return StructRegistry.<RequestMessage>builder()
                 .register(HelloMessageDecoder.getInstance()) // since 3.x
                 .register(new RunMessageDecoder(bookmarksParser))
@@ -119,17 +119,22 @@ public class BoltProtocolV40 implements BoltProtocol {
                 .register(new BeginMessageDecoder(bookmarksParser))
                 .register(CommitMessageDecoder.getInstance()) // since 3.x
                 .register(RollbackMessageDecoder.getInstance()) // since 3.x
-                .register(new ResetMessageDecoder()) // since 3.x
-                .register(new GoodbyeMessageDecoder(connection))
-                .build(); // since 3.x
+                .register(ResetMessageDecoder.getInstance()) // since 3.x
+                .register(GoodbyeMessageDecoder.getInstance()) // since 3.x
+                .build();
     }
 
     @Override
-    public StructRegistry<ResponseMessage> responseMessageRegistry(BoltConnection connection) {
+    public StructRegistry<ResponseMessage> responseMessageRegistry() {
         return StructRegistry.<ResponseMessage>builder()
                 .register(FailureMessageEncoder.getInstance())
                 .register(IgnoredMessageEncoder.getInstance())
                 .register(SuccessMessageEncoder.getInstance())
                 .build();
+    }
+
+    @Override
+    public String toString() {
+        return this.version().toString();
     }
 }

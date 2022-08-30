@@ -26,7 +26,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.protocol.v40.messaging.util.MessageMetadataParserV40.STREAM_LIMIT_UNLIMITED;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -36,16 +35,15 @@ import io.netty.channel.ChannelFuture;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.protocol.common.connection.BoltConnection;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.response.SuccessMessage;
 import org.neo4j.bolt.protocol.common.message.result.BoltResult;
 import org.neo4j.bolt.protocol.io.DefaultBoltValueWriter;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.NullLog;
+import org.neo4j.logging.NullLogProvider;
 
 public class ResultHandlerTest {
     @Test
@@ -56,16 +54,15 @@ public class ResultHandlerTest {
                 .when(ch)
                 .writeAndFlush(any(SuccessMessage.class));
 
-        var connection = mock(BoltConnection.class);
-        when(connection.channel()).thenReturn(ch);
+        var connection = ConnectionMockFactory.newFactory().withChannel(ch).build();
 
-        var handler = new ResultHandler(connection, mock(Log.class), DefaultBoltValueWriter::new);
+        var handler = new ResultHandler(connection, DefaultBoltValueWriter::new, NullLogProvider.getInstance());
 
         // When
         handler.onFinish();
 
         // Then
-        verify(connection).stop();
+        verify(connection).close();
     }
 
     @Test
@@ -116,28 +113,28 @@ public class ResultHandlerTest {
 
     @Test
     void shouldPullTheResult() throws Throwable {
-        var channel = mock(Channel.class);
-        var connection = mock(BoltConnection.class);
-        when(connection.channel()).thenReturn(channel);
-        var handler = new ResultHandler(connection, NullLog.getInstance(), DefaultBoltValueWriter::new);
+        var ch = mock(Channel.class);
+        var connection = ConnectionMockFactory.newFactory().withChannel(ch).build();
 
-        BoltResult result = mock(BoltResult.class);
+        var handler = new ResultHandler(connection, DefaultBoltValueWriter::new, NullLogProvider.getInstance());
+
+        var result = mock(BoltResult.class);
 
         handler.onPullRecords(result, STREAM_LIMIT_UNLIMITED);
         handler.onFinish();
 
         verify(result).handleRecords(any(BoltResult.RecordConsumer.class), eq(STREAM_LIMIT_UNLIMITED));
-        verify(channel).writeAndFlush(any(SuccessMessage.class));
+        verify(ch).writeAndFlush(any(SuccessMessage.class));
     }
 
     @Test
     void shouldDiscardTheResult() throws Throwable {
         var channel = mock(Channel.class);
-        var connection = mock(BoltConnection.class);
-        when(connection.channel()).thenReturn(channel);
-        var handler = new ResultHandler(connection, NullLog.getInstance(), DefaultBoltValueWriter::new);
+        var connection = ConnectionMockFactory.newFactory().withChannel(channel).build();
 
-        BoltResult result = mock(BoltResult.class);
+        var handler = new ResultHandler(connection, DefaultBoltValueWriter::new, NullLogProvider.getInstance());
+
+        var result = mock(BoltResult.class);
 
         handler.onDiscardRecords(result, STREAM_LIMIT_UNLIMITED);
         handler.onFinish();
@@ -165,18 +162,15 @@ public class ResultHandlerTest {
                 .when(future)
                 .addListener(any());
 
-        var channel = mock(Channel.class);
+        var ch = mock(Channel.class);
 
-        doReturn(null).when(channel).remoteAddress();
+        doReturn(null).when(ch).remoteAddress();
 
-        doReturn(future).when(channel).writeAndFlush(any());
+        doReturn(future).when(ch).writeAndFlush(any());
 
-        var connection = mock(BoltConnection.class);
+        var connection = ConnectionMockFactory.newFactory().withChannel(ch).build();
 
-        doReturn(channel).when(connection).channel();
-
-        var handler =
-                new ResultHandler(connection, logProvider.getLog(ResultHandler.class), DefaultBoltValueWriter::new);
+        var handler = new ResultHandler(connection, DefaultBoltValueWriter::new, logProvider);
 
         handler.markFailed(error);
         handler.onFinish();

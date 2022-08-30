@@ -23,12 +23,12 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.BoltQueryExecution;
 import org.neo4j.bolt.dbapi.BoltQueryExecutor;
 import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
+import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.result.BoltResult;
 import org.neo4j.bolt.protocol.common.message.result.BoltResultHandle;
@@ -47,18 +47,18 @@ import org.neo4j.values.virtual.MapValue;
 public abstract class AbstractTransactionStateMachineSPI implements TransactionStateMachineSPI {
     private final BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI;
     private final Clock clock;
-    private final BoltChannel boltChannel;
+    private final TransactionOwner owner;
     private final StatementProcessorReleaseManager resourceReleaseManager;
     private final String transactionId;
 
     public AbstractTransactionStateMachineSPI(
             BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI,
-            BoltChannel boltChannel,
+            TransactionOwner owner,
             SystemNanoClock clock,
             StatementProcessorReleaseManager resourceReleaseManager,
             String transactionId) {
         this.boltGraphDatabaseServiceSPI = boltGraphDatabaseServiceSPI;
-        this.boltChannel = boltChannel;
+        this.owner = owner;
         this.clock = clock;
         this.resourceReleaseManager = resourceReleaseManager;
         this.transactionId = transactionId;
@@ -82,7 +82,7 @@ public abstract class AbstractTransactionStateMachineSPI implements TransactionS
         return boltGraphDatabaseServiceSPI.beginTransaction(
                 transactionType,
                 loginContext,
-                boltChannel.info(),
+                owner.info(),
                 bookmarks,
                 txTimeout,
                 accessMode,

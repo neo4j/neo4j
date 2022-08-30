@@ -22,7 +22,7 @@ package org.neo4j.bolt.protocol.common.transaction.result;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import org.neo4j.bolt.protocol.common.connection.BoltConnection;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.encoder.DiscardingRecordMessageWriter;
 import org.neo4j.bolt.protocol.common.message.encoder.RecordMessageWriter;
@@ -33,6 +33,7 @@ import org.neo4j.bolt.protocol.common.message.result.BoltResult;
 import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
 import org.neo4j.bolt.protocol.io.LegacyBoltValueWriter;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
@@ -46,7 +47,7 @@ public class ResultHandler implements ResponseHandler {
     private final MapValueBuilder metadata = new MapValueBuilder();
 
     protected final Log log;
-    protected final BoltConnection connection;
+    protected final Connection connection;
 
     @SuppressWarnings("removal")
     protected final LegacyBoltValueWriter.Factory valueWriterFactory;
@@ -55,9 +56,10 @@ public class ResultHandler implements ResponseHandler {
     private boolean ignored;
 
     @SuppressWarnings("removal")
-    public ResultHandler(BoltConnection connection, Log logger, LegacyBoltValueWriter.Factory valueWriterFactory) {
+    public ResultHandler(
+            Connection connection, LegacyBoltValueWriter.Factory valueWriterFactory, InternalLogProvider logging) {
         this.connection = connection;
-        this.log = logger;
+        this.log = logging.getLog(ResultHandler.class);
         this.valueWriterFactory = valueWriterFactory;
     }
 
@@ -101,7 +103,7 @@ public class ResultHandler implements ResponseHandler {
                         .sync();
             }
         } catch (Throwable e) {
-            connection.stop();
+            connection.close();
             log.error("Failed to write response to driver", e);
         } finally {
             clearState();

@@ -33,11 +33,10 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 import java.util.List;
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.negotiation.codec.ProtocolNegotiationRequestDecoder;
 import org.neo4j.bolt.negotiation.codec.ProtocolNegotiationResponseEncoder;
-import org.neo4j.bolt.protocol.BoltProtocolRegistry;
-import org.neo4j.bolt.protocol.common.connection.BoltConnectionFactory;
+import org.neo4j.bolt.protocol.common.connector.Connector;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.logging.InternalLog;
@@ -45,6 +44,7 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.packstream.codec.transport.WebSocketFramePackingEncoder;
 import org.neo4j.packstream.codec.transport.WebSocketFrameUnpackingDecoder;
+import org.neo4j.util.VisibleForTesting;
 
 public class TransportSelectionHandler extends ByteToMessageDecoder {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(TransportSelectionHandler.class);
@@ -61,37 +61,38 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
     private static final int MAX_WEBSOCKET_HANDSHAKE_SIZE = 65536;
     private static final int MAX_WEBSOCKET_FRAME_SIZE = 65536;
 
-    private final BoltChannel boltChannel;
-    private final SslContext sslCtx;
-    private final boolean encryptionRequired;
-    private final boolean isEncrypted;
-    private final InternalLogProvider logging;
-    private final BoltConnectionFactory boltConnectionFactory;
-    private final BoltProtocolRegistry boltProtocolRegistry;
-    private final InternalLog log;
-    private final DiscoveryResponseHandler discoveryResponseHandler;
     private final Config config;
+    private final SslContext sslContext;
+    private final InternalLogProvider logging;
+    private final InternalLog log;
+    private final boolean isEncrypted;
 
-    public TransportSelectionHandler(
-            BoltChannel boltChannel,
-            SslContext sslCtx,
-            boolean encryptionRequired,
-            boolean isEncrypted,
-            InternalLogProvider logging,
-            BoltConnectionFactory boltConnectionFactory,
-            BoltProtocolRegistry boltProtocolRegistry,
-            DiscoveryResponseHandler discoveryResponseHandler,
-            Config config) {
-        this.boltChannel = boltChannel;
-        this.sslCtx = sslCtx;
-        this.encryptionRequired = encryptionRequired;
-        this.isEncrypted = isEncrypted;
-        this.logging = logging;
-        this.boltConnectionFactory = boltConnectionFactory;
-        this.boltProtocolRegistry = boltProtocolRegistry;
-        this.log = logging.getLog(TransportSelectionHandler.class);
-        this.discoveryResponseHandler = discoveryResponseHandler;
+    private Connector connector;
+    private Connection connection;
+
+    @VisibleForTesting
+    TransportSelectionHandler(Config config, SslContext sslContext, InternalLogProvider logging, boolean isEncrypted) {
         this.config = config;
+        this.sslContext = sslContext;
+        this.logging = logging;
+        this.isEncrypted = isEncrypted;
+
+        this.log = logging.getLog(TransportSelectionHandler.class);
+    }
+
+    public TransportSelectionHandler(Config config, SslContext sslContext, InternalLogProvider logging) {
+        this(config, sslContext, logging, false);
+    }
+
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) {
+        this.connection = Connection.getConnection(ctx.channel());
+        this.connector = this.connection.connector();
+    }
+
+    @Override
+    protected void handlerRemoved0(ChannelHandlerContext ctx) {
+        this.connection.memoryTracker().releaseHeap(SHALLOW_SIZE);
     }
 
     @Override
@@ -102,7 +103,15 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
         }
 
         if (detectSsl(in)) {
-            assertSslNotAlreadyConfigured(ctx);
+            if (this.isEncrypted) {
+                log.error(
+                        "Fatal error: multiple levels of SSL encryption detected." + " Terminating connection: %s",
+                        ctx.channel());
+                ctx.close();
+
+                return;
+            }
+
             enableSsl(ctx);
         } else if (isHttp(in)) {
             switchToWebsocket(ctx);
@@ -113,21 +122,6 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
             in.clear();
             ctx.close();
         }
-    }
-
-    private void assertSslNotAlreadyConfigured(ChannelHandlerContext ctx) {
-        ChannelPipeline p = ctx.pipeline();
-        if (p.get(SslHandler.class) != null) {
-            log.error(
-                    "Fatal error: multiple levels of SSL encryption detected." + " Terminating connection: %s",
-                    ctx.channel());
-            ctx.close();
-        }
-    }
-
-    @Override
-    protected void handlerRemoved0(ChannelHandlerContext ctx) {
-        boltChannel.memoryTracker().releaseHeap(SHALLOW_SIZE);
     }
 
     @Override
@@ -154,7 +148,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
     }
 
     private boolean detectSsl(ByteBuf buf) {
-        return sslCtx != null && SslHandler.isEncrypted(buf);
+        return this.sslContext != null && SslHandler.isEncrypted(buf);
     }
 
     private static boolean isHttp(ByteBuf buf) {
@@ -169,25 +163,16 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
     private void enableSsl(ChannelHandlerContext ctx) {
         // allocate sufficient space for another transport selection handlers as this instance will be freed upon
         // pipeline removal
-        boltChannel.memoryTracker().allocateHeap(SSL_HANDLER_SHALLOW_SIZE + SHALLOW_SIZE);
+        connection.memoryTracker().allocateHeap(SSL_HANDLER_SHALLOW_SIZE + SHALLOW_SIZE);
 
         ctx.pipeline()
-                .addLast(sslCtx.newHandler(ctx.alloc()))
-                .addLast(new TransportSelectionHandler(
-                        boltChannel,
-                        null,
-                        encryptionRequired,
-                        true,
-                        logging,
-                        boltConnectionFactory,
-                        boltProtocolRegistry,
-                        discoveryResponseHandler,
-                        config))
-                .remove(this);
+                .addLast(this.sslContext.newHandler(ctx.alloc()))
+                .remove(this)
+                .addLast(new TransportSelectionHandler(config, this.sslContext, logging, true));
     }
 
     private void switchToSocket(ChannelHandlerContext ctx) {
-        if (encryptionRequired && !isEncrypted) {
+        if (this.connector.isEncryptionRequired() && !isEncrypted) {
             throw new SecurityException("An unencrypted connection attempt was made where encryption is required.");
         }
 
@@ -197,10 +182,11 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
     private void switchToWebsocket(ChannelHandlerContext ctx) {
         ChannelPipeline p = ctx.pipeline();
 
-        boltChannel
+        connection
                 .memoryTracker()
                 .allocateHeap(HTTP_SERVER_CODEC_SHALLOW_SIZE
                         + HTTP_OBJECT_AGGREGATOR_SHALLOW_SIZE
+                        + DiscoveryResponseHandler.SHALLOW_SIZE
                         + WEB_SOCKET_SERVER_PROTOCOL_HANDLER_SHALLOW_SIZE
                         + WEB_SOCKET_FRAME_AGGREGATOR_SHALLOW_SIZE
                         + WebSocketFramePackingEncoder.SHALLOW_SIZE
@@ -209,7 +195,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
         p.addLast(
                 new HttpServerCodec(),
                 new HttpObjectAggregator(MAX_WEBSOCKET_HANDSHAKE_SIZE),
-                discoveryResponseHandler,
+                new DiscoveryResponseHandler(this.connector.authConfigProvider()),
                 new WebSocketServerProtocolHandler("/", null, false, MAX_WEBSOCKET_FRAME_SIZE),
                 new WebSocketFrameAggregator(MAX_WEBSOCKET_FRAME_SIZE),
                 new WebSocketFramePackingEncoder(),
@@ -219,7 +205,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
     }
 
     private void switchToHandshake(ChannelHandlerContext ctx) {
-        boltChannel
+        connection
                 .memoryTracker()
                 .allocateHeap(ProtocolNegotiationResponseEncoder.SHALLOW_SIZE
                         + ProtocolNegotiationRequestDecoder.SHALLOW_SIZE
@@ -231,11 +217,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
 
         ProtocolLoggingHandler.shiftToEndIfPresent(ctx);
 
-        ctx.pipeline()
-                .addLast(
-                        "protocolHandshakeHandler",
-                        new ProtocolHandshakeHandler(
-                                boltProtocolRegistry, boltConnectionFactory, boltChannel, logging, config));
+        ctx.pipeline().addLast("protocolHandshakeHandler", new ProtocolHandshakeHandler(config, logging));
 
         ctx.pipeline().remove(this);
     }

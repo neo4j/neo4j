@@ -70,7 +70,9 @@ Apache Software License, Version 2.0
   Netty/Resolver
   Netty/Transport
   Netty/Transport/Classes/Epoll
+  Netty/Transport/Classes/KQueue
   Netty/Transport/Native/Epoll
+  Netty/Transport/Native/KQueue
   Netty/Transport/Native/Unix/Common
   Non-Blocking Reactive Foundation for the JVM
   picocli

@@ -43,7 +43,7 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
-import org.neo4j.bolt.runtime.scheduling.ExecutorBoltScheduler;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.testing.messages.BoltV44Wire;
@@ -78,8 +78,7 @@ public class ResetFuzzIT {
     private final int seed = new Random().nextInt();
     private final Random rand = new Random(seed);
 
-    private final AssertableLogProvider internalLogProvider =
-            new SpiedAssertableLogProvider(ExecutorBoltScheduler.class);
+    private final AssertableLogProvider internalLogProvider = new SpiedAssertableLogProvider(Connection.class);
     private final AssertableLogProvider userLogProvider = new AssertableLogProvider();
 
     @Inject

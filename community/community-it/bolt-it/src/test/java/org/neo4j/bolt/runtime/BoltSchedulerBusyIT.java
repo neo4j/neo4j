@@ -29,7 +29,6 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +36,6 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.bolt.AbstractBoltTransportsTest;
-import org.neo4j.bolt.protocol.common.connection.DefaultBoltConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
@@ -120,14 +118,13 @@ class BoltSchedulerBusyIT extends AbstractBoltTransportsTest {
                             "There are no available threads to serve this request at the moment");
 
             assertThat(userLogProvider)
+                    .forLevel(ERROR)
                     .containsMessages(
                             "since there are no available threads to serve it at the moment. You can retry at a later time");
             assertThat(internalLogProvider)
-                    .forClass(DefaultBoltConnection.class)
                     .forLevel(ERROR)
-                    .assertExceptionForLogMessage(
-                            "since there are no available threads to serve it at the moment. You can retry at a later time")
-                    .isInstanceOf(RejectedExecutionException.class);
+                    .containsMessages(
+                            "since there are no available threads to serve it at the moment. You can retry at a later time");
         } finally {
             exitStreaming(connection1);
             exitStreaming(connection2);

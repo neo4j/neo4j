@@ -26,6 +26,7 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.memory.HeapEstimator;
@@ -39,11 +40,26 @@ public class AuthenticationTimeoutHandler extends IdleStateHandler {
 
     private final Duration timeout;
 
+    private Connection connection;
     private volatile boolean requestReceived;
 
     public AuthenticationTimeoutHandler(Duration timeout) {
         super(timeout.toMillis(), 0, 0, TimeUnit.MILLISECONDS);
         this.timeout = timeout;
+    }
+
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+        this.connection = Connection.getConnection(ctx.channel());
+
+        super.handlerAdded(ctx);
+    }
+
+    @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+        super.handlerRemoved(ctx);
+
+        this.connection.memoryTracker().releaseHeap(SHALLOW_SIZE);
     }
 
     @Override
@@ -59,15 +75,15 @@ public class AuthenticationTimeoutHandler extends IdleStateHandler {
         if (requestReceived) {
             throw new BoltConnectionFatality(
                     format(
-                            "Terminated connection '%s' as the server failed to handle an authentication request within %d ms.",
-                            ctx.channel(), timeout.toMillis()),
+                            "Terminated connection '%s' (%s) as the server failed to handle an authentication request within %d ms.",
+                            this.connection.id(), ctx.channel(), timeout.toMillis()),
                     null);
         }
 
         throw new BoltConnectionFatality(
                 format(
-                        "Terminated connection '%s' as the client failed to authenticate within %d ms.",
-                        ctx.channel(), timeout.toMillis()),
+                        "Terminated connection '%s' (%s) as the client failed to authenticate within %d ms.",
+                        this.connection.id(), ctx.channel(), timeout.toMillis()),
                 null);
     }
 

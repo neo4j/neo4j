@@ -21,23 +21,29 @@ package org.neo4j.bolt.protocol.common.handler.messages;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.neo4j.bolt.protocol.common.connection.BoltConnection;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.v40.messaging.request.GoodbyeMessage;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.Log;
 
 public class GoodbyeMessageHandler extends SimpleChannelInboundHandler<GoodbyeMessage> {
-    private final BoltConnection connection;
     private final Log log;
 
-    public GoodbyeMessageHandler(BoltConnection connection, Log log) {
-        this.connection = connection;
-        this.log = log;
+    private Connection connection;
+
+    public GoodbyeMessageHandler(InternalLogProvider logging) {
+        this.log = logging.getLog(GoodbyeMessageHandler.class);
+    }
+
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) {
+        this.connection = Connection.getConnection(ctx.channel());
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, GoodbyeMessage msg) throws Exception {
         this.log.debug(
                 "Stopping connection %s due to client request", ctx.channel().remoteAddress());
-        this.connection.stop();
+        this.connection.close();
     }
 }

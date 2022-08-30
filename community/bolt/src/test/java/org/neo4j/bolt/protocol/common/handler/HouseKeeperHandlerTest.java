@@ -35,7 +35,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -43,74 +42,45 @@ import io.netty.handler.timeout.ReadTimeoutException;
 import io.netty.util.concurrent.EventExecutor;
 import java.io.IOException;
 import java.net.ServerSocket;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.protocol.common.connection.BoltConnection;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.NullLog;
+import org.neo4j.logging.NullLogProvider;
 
 public class HouseKeeperHandlerTest {
-    private EmbeddedChannel channel;
-
-    @AfterEach
-    public void cleanup() {
-        if (channel != null) {
-            channel.finishAndReleaseAll();
-        }
-    }
 
     @Test
-    void shouldStopConnectionOnChannelInactive() {
-        BoltConnection connection = mock(BoltConnection.class);
-        channel = new EmbeddedChannel(new HouseKeeperHandler(connection, NullLog.getInstance()));
-
-        channel.pipeline().fireChannelInactive();
-
-        verify(connection).stop();
-    }
-
-    @Test
-    void shouldNotPropagateChannelInactive() throws Exception {
-        ChannelInboundHandler next = mock(ChannelInboundHandler.class);
-        BoltConnection connection = mock(BoltConnection.class);
-        channel = new EmbeddedChannel(new HouseKeeperHandler(connection, NullLog.getInstance()), next);
-
-        channel.pipeline().fireChannelInactive();
-
-        verify(next, never()).channelInactive(any());
-    }
-
-    @Test
-    void shouldStopConnectionOnExceptionCaught() {
-        BoltConnection connection = mock(BoltConnection.class);
-        channel = new EmbeddedChannel(new HouseKeeperHandler(connection, NullLog.getInstance()));
+    void shouldCloseChannelOnExceptionCaught() {
+        var channel =
+                ConnectionMockFactory.newFactory().createChannel(new HouseKeeperHandler(NullLogProvider.getInstance()));
 
         channel.pipeline().fireExceptionCaught(new RuntimeException("some exception"));
 
-        verify(connection).stop();
+        assertThat(channel.isOpen()).isFalse();
     }
 
     @Test
     void shouldLogExceptionOnExceptionCaught() {
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        BoltConnection connection = mock(BoltConnection.class);
-        channel = new EmbeddedChannel(new HouseKeeperHandler(connection, logProvider.getLog(HouseKeeperHandler.class)));
+        var logProvider = new AssertableLogProvider();
 
-        RuntimeException exception = new RuntimeException("some exception");
-        channel.pipeline().fireExceptionCaught(exception);
+        var channel = ConnectionMockFactory.newFactory().createChannel(new HouseKeeperHandler(logProvider));
 
-        verify(connection).stop();
+        var ex = new RuntimeException("some exception");
+        channel.pipeline().fireExceptionCaught(ex);
+
         assertThat(logProvider)
                 .forClass(HouseKeeperHandler.class)
                 .forLevel(ERROR)
-                .containsMessageWithException("Fatal error occurred when handling a client connection", exception);
+                .containsMessageWithException("Fatal error occurred when handling a client connection", ex);
     }
 
     @Test
     void shouldNotPropagateExceptionCaught() throws Exception {
-        ChannelInboundHandler next = mock(ChannelInboundHandler.class);
-        BoltConnection connection = mock(BoltConnection.class);
-        channel = new EmbeddedChannel(new HouseKeeperHandler(connection, NullLog.getInstance()), next);
+        var next = mock(ChannelInboundHandler.class);
+
+        var channel = ConnectionMockFactory.newFactory()
+                .createChannel(new HouseKeeperHandler(NullLogProvider.getInstance()), next);
 
         channel.pipeline().fireExceptionCaught(new RuntimeException("some exception"));
 
@@ -119,16 +89,16 @@ public class HouseKeeperHandlerTest {
 
     @Test
     void shouldNotLogExceptionsWhenEvenLoopIsShuttingDown() throws Exception {
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        BoltConnection connection = mock(BoltConnection.class);
-        HouseKeeperHandler houseKeeperHandler =
-                new HouseKeeperHandler(connection, logProvider.getLog(HouseKeeperHandler.class));
-        Bootstrap bootstrap = newBootstrap(houseKeeperHandler);
+        var logProvider = new AssertableLogProvider();
+        var connection = mock(Connection.class);
+        var houseKeeperHandler = new HouseKeeperHandler(logProvider);
+
+        var bootstrap = newBootstrap(connection, houseKeeperHandler);
 
         try (ServerSocket serverSocket = new ServerSocket(0)) {
-            ChannelFuture future =
+            var future =
                     bootstrap.connect("localhost", serverSocket.getLocalPort()).sync();
-            Channel channel = future.channel();
+            var channel = future.channel();
 
             // write some messages without flushing
             for (int i = 0; i < 100; i++) {
@@ -150,15 +120,15 @@ public class HouseKeeperHandlerTest {
 
     @Test
     void shouldLogOnlyTheFirstCaughtException() throws Exception {
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        BoltConnection connection = mock(BoltConnection.class);
-        HouseKeeperHandler houseKeeperHandler =
-                new HouseKeeperHandler(connection, logProvider.getLog(HouseKeeperHandler.class));
-        Bootstrap bootstrap = newBootstrap(houseKeeperHandler);
+        var logProvider = new AssertableLogProvider();
+        var connection = mock(Connection.class);
+        var houseKeeperHandler = new HouseKeeperHandler(logProvider);
 
-        RuntimeException error1 = new RuntimeException("error #1");
-        RuntimeException error2 = new RuntimeException("error #2");
-        RuntimeException error3 = new RuntimeException("error #3");
+        var bootstrap = newBootstrap(connection, houseKeeperHandler);
+
+        var error1 = new RuntimeException("error #1");
+        var error2 = new RuntimeException("error #2");
+        var error3 = new RuntimeException("error #3");
 
         try (ServerSocket serverSocket = new ServerSocket(0)) {
             ChannelFuture future =
@@ -186,14 +156,17 @@ public class HouseKeeperHandlerTest {
     @Test
     void shouldNotLogConnectionResetErrors() {
         // Given
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        HouseKeeperHandler keeper = new HouseKeeperHandler(null, logProvider.getLog(HouseKeeperHandler.class));
-        Channel channel = mock(Channel.class);
+        var logProvider = new AssertableLogProvider();
+        var keeper = new HouseKeeperHandler(logProvider);
+
+        var channel = mock(Channel.class);
         when(channel.toString()).thenReturn("[some channel info]");
-        ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
+
+        var ctx = mock(ChannelHandlerContext.class);
         when(ctx.channel()).thenReturn(channel);
         when(ctx.executor()).thenReturn(mock(EventExecutor.class));
-        IOException connResetError = new IOException("Connection reset by peer");
+
+        var connResetError = new IOException("Connection reset by peer");
 
         // When
         keeper.exceptionCaught(ctx, connResetError);
@@ -211,11 +184,13 @@ public class HouseKeeperHandlerTest {
     @Test
     void shouldHandleExceptionsWithNullMessages() {
         // Given
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        HouseKeeperHandler keeper = new HouseKeeperHandler(null, logProvider.getLog(HouseKeeperHandler.class));
-        Channel channel = mock(Channel.class);
+        var logProvider = new AssertableLogProvider();
+        var keeper = new HouseKeeperHandler(logProvider);
+
+        var channel = mock(Channel.class);
         when(channel.toString()).thenReturn("[some channel info]");
-        ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
+
+        var ctx = mock(ChannelHandlerContext.class);
         when(ctx.channel()).thenReturn(channel);
         when(ctx.executor()).thenReturn(mock(EventExecutor.class));
 
@@ -231,13 +206,15 @@ public class HouseKeeperHandlerTest {
                         ReadTimeoutException.INSTANCE);
     }
 
-    private static Bootstrap newBootstrap(HouseKeeperHandler houseKeeperHandler) {
+    private static Bootstrap newBootstrap(Connection connection, HouseKeeperHandler houseKeeperHandler) {
         return new Bootstrap()
                 .group(new NioEventLoopGroup(1))
                 .channel(NioSocketChannel.class)
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
+                        Connection.setAttribute(ch, connection);
+
                         ch.pipeline().addLast(houseKeeperHandler);
                     }
                 });

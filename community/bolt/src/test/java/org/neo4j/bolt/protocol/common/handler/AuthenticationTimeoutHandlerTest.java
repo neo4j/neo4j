@@ -31,6 +31,7 @@ import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 
 class AuthenticationTimeoutHandlerTest {
     private static final Duration TIMEOUT_DURATION = Duration.ofSeconds(1);
@@ -43,38 +44,44 @@ class AuthenticationTimeoutHandlerTest {
     }
 
     @Test
-    void shouldCloseChannelWhenTimeoutIsExceededByClient() {
+    void shouldCloseChannelWhenTimeoutIsExceededByClient() throws Exception {
         var ctx = mock(ChannelHandlerContext.class);
         var channel = mock(Channel.class);
 
+        ConnectionMockFactory.newFactory().attachToMock(channel);
+
         when(ctx.channel()).thenReturn(channel);
         when(channel.toString()).thenReturn("test");
+
+        timeoutHandler.handlerAdded(ctx);
 
         var ex = assertThrows(
                 BoltConnectionFatality.class,
                 () -> timeoutHandler.channelIdle(ctx, IdleStateEvent.READER_IDLE_STATE_EVENT));
         assertEquals(
-                "Terminated connection 'test' as the client failed to authenticate within "
+                "Terminated connection 'bolt-test-connection' (test) as the client failed to authenticate within "
                         + TIMEOUT_DURATION.toMillis() + " ms.",
                 ex.getMessage());
     }
 
     @Test
-    void shouldCloseChannelWhenTimeoutIsExceededByServer() {
+    void shouldCloseChannelWhenTimeoutIsExceededByServer() throws Exception {
         var ctx = mock(ChannelHandlerContext.class);
         var channel = mock(Channel.class);
+
+        ConnectionMockFactory.newFactory().attachToMock(channel);
 
         when(ctx.channel()).thenReturn(channel);
         when(channel.toString()).thenReturn("test");
 
+        timeoutHandler.handlerAdded(ctx);
         timeoutHandler.setRequestReceived(true);
 
         var ex = assertThrows(
                 BoltConnectionFatality.class,
                 () -> timeoutHandler.channelIdle(ctx, IdleStateEvent.FIRST_READER_IDLE_STATE_EVENT));
         assertEquals(
-                "Terminated connection '" + channel
-                        + "' as the server failed to handle an authentication request within "
+                "Terminated connection 'bolt-test-connection' (test) as the server failed to handle an authentication request within "
                         + TIMEOUT_DURATION.toMillis() + " ms.",
                 ex.getMessage());
     }

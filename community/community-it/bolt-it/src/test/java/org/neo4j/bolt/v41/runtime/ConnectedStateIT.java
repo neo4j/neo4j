@@ -43,7 +43,7 @@ class ConnectedStateIT extends BoltStateMachineV41StateTestBase {
         // Then
         assertThat(recorder).hasSuccessResponse(meta -> assertThat(meta)
                 .containsEntry("server", stringValue(BOLT_SERVER_VERSION_PREFIX + Version.getNeo4jVersion()))
-                .containsEntry("connection_id", stringValue("conn-v41-test-boltchannel-id")));
+                .containsEntry("connection_id", stringValue("bolt-test")));
 
         assertThat(machine).isInState(ReadyState.class);
     }

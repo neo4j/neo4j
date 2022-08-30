@@ -25,6 +25,7 @@ import static org.neo4j.bolt.testing.messages.BoltDefaultWire.discard;
 import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
 import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
+import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -33,12 +34,12 @@ import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.neo4j.bolt.runtime.scheduling.BoltConnectionReadLimiter;
+import org.neo4j.bolt.runtime.throttle.ChannelReadThrottleHandler;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.collection.RawIterator;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -89,8 +90,8 @@ class BoltChannelAutoReadLimiterIT {
     protected static Consumer<Map<Setting<?>, Object>> getSettingsFunction() {
         return settings -> {
             settings.put(GraphDatabaseSettings.auth_enabled, false);
-            settings.put(GraphDatabaseInternalSettings.bolt_inbound_message_throttle_high_water_mark, 8);
-            settings.put(GraphDatabaseInternalSettings.bolt_inbound_message_throttle_low_water_mark, 3);
+            settings.put(BoltConnectorInternalSettings.bolt_inbound_message_throttle_high_water_mark, 8);
+            settings.put(BoltConnectorInternalSettings.bolt_inbound_message_throttle_low_water_mark, 3);
         };
     }
 
@@ -117,9 +118,13 @@ class BoltChannelAutoReadLimiterIT {
         }
 
         assertThat(logProvider)
-                .forClass(BoltConnectionReadLimiter.class)
+                .forClass(ChannelReadThrottleHandler.class)
                 .forLevel(WARN)
-                .containsMessages("disabled", "enabled");
+                .containsMessages("Disabling message processing");
+        assertThat(logProvider)
+                .forClass(ChannelReadThrottleHandler.class)
+                .forLevel(INFO)
+                .containsMessages("Enabling message processing");
     }
 
     private static void installSleepProcedure(GraphDatabaseService db) throws ProcedureException {

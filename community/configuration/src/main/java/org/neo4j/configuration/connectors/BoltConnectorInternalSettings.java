@@ -46,12 +46,17 @@ import org.neo4j.io.ByteUnit;
 public final class BoltConnectorInternalSettings implements SettingsDeclaration {
 
     public static final String LOOPBACK_NAME = "bolt-loopback";
-    public static final int DEFAULT_LOOPBACK_CONNECTOR_PORT = 7689;
 
     @Internal
     @Description("Enable protocol level logging for incoming connections on the Bolt connector")
     public static final Setting<Boolean> protocol_logging =
             newBuilder("internal.server.bolt.protocol_logging", BOOL, false).build();
+
+    @Internal
+    @Description("Enable/disable the use of native transports for netty")
+    public static final Setting<Boolean> use_native_transport = newBuilder(
+                    "internal.dbms.bolt.netty_server_use_native_transport", BOOL, true)
+            .build();
 
     @Internal
     @Description(
@@ -137,5 +142,23 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration 
     public static final Setting<Duration> bolt_outbound_buffer_throttle_max_duration = newBuilder(
                     "internal.dbms.bolt.outbound_buffer_throttle.max_duration", DURATION, ofMinutes(15))
             .addConstraint(any(min(ofSeconds(30)), is(Duration.ZERO)))
+            .build();
+
+    @Internal
+    @Description("When the number of queued inbound messages grows beyond this value, reading from underlying "
+            + "channel will be paused (no more inbound messages will be available) until queued number of "
+            + "messages drops below the configured low watermark value.")
+    public static final Setting<Integer> bolt_inbound_message_throttle_high_water_mark = newBuilder(
+                    "internal.dbms.bolt.inbound_message_throttle.high_watermark", INT, 300)
+            .addConstraint(range(1, Integer.MAX_VALUE))
+            .build();
+
+    @Internal
+    @Description("When the number of queued inbound messages, previously reached configured high watermark value, "
+            + "drops below this value, reading from underlying channel will be enabled and any pending messages "
+            + "will start queuing again.")
+    public static final Setting<Integer> bolt_inbound_message_throttle_low_water_mark = newBuilder(
+                    "internal.dbms.bolt.inbound_message_throttle.low_watermark", INT, 100)
+            .addConstraint(range(1, Integer.MAX_VALUE))
             .build();
 }

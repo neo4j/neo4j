@@ -24,32 +24,22 @@ import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.netty.channel.Channel;
+import java.net.SocketAddress;
 import java.time.ZoneId;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
-import org.neo4j.bolt.protocol.common.protector.ChannelProtector;
-import org.neo4j.bolt.security.basic.BasicAuthentication;
-import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 
 class ListConnectionResultTest {
     @Test
     void buildResultOnConnectionWithoutClientAddress() {
-        Channel channel = mock(Channel.class, RETURNS_MOCKS);
-        when(channel.remoteAddress()).thenReturn(null);
-        BoltChannel boltChannel = new BoltChannel(
-                "id",
-                BoltConnector.NAME,
-                channel,
-                new BasicAuthentication(AuthManager.NO_AUTH),
-                ChannelProtector.NULL,
-                ConnectionHintProvider.noop(),
-                EmptyMemoryTracker.INSTANCE);
-        var result = new ListConnectionResult(boltChannel, ZoneId.systemDefault());
+        var clientAddress = mock(SocketAddress.class);
+        when(clientAddress.toString()).thenReturn(StringUtils.EMPTY);
+
+        var connection = mock(Connection.class, RETURNS_MOCKS);
+        when(connection.clientAddress()).thenReturn(clientAddress);
+
+        var result = new ListConnectionResult(connection, ZoneId.systemDefault());
         assertEquals(StringUtils.EMPTY, result.clientAddress);
     }
 }

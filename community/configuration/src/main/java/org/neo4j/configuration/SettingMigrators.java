@@ -345,7 +345,8 @@ public final class SettingMigrators {
                         "unsupported.dbms.bolt.netty_server_shutdown_timeout",
                         "internal.dbms.bolt.netty_server_shutdown_timeout"),
                 new Mapping(
-                        "unsupported.dbms.bolt.netty_server_use_epoll", "internal.dbms.bolt.netty_server_use_epoll"),
+                        "unsupported.dbms.bolt.netty_server_use_epoll",
+                        "internal.dbms.bolt.netty_server_use_native_transport"),
                 new Mapping(
                         "unsupported.dbms.bolt.outbound_buffer_throttle",
                         "internal.dbms.bolt.outbound_buffer_throttle"),

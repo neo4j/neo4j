@@ -20,10 +20,9 @@
 package org.neo4j.bolt.protocol.common;
 
 import java.util.function.Predicate;
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
-import org.neo4j.bolt.protocol.common.connection.BoltConnection;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.response.ResponseMessage;
@@ -58,7 +57,7 @@ public interface BoltProtocol {
         return signal -> false;
     }
 
-    StateMachine createStateMachine(BoltChannel boltChannel);
+    StateMachine createStateMachine(Connection connection);
 
     /**
      * Retrieves a factory capable of creating a protocol specific value writer for a given buffer.
@@ -78,12 +77,12 @@ public interface BoltProtocol {
      *
      * @return a struct registry.
      */
-    StructRegistry<RequestMessage> requestMessageRegistry(BoltConnection connection);
+    StructRegistry<RequestMessage> requestMessageRegistry();
 
     /**
      * Retrieves the struct registry which provides write capabilities for response messages.
      *
      * @return a struct registry.
      */
-    StructRegistry<ResponseMessage> responseMessageRegistry(BoltConnection connection);
+    StructRegistry<ResponseMessage> responseMessageRegistry();
 }

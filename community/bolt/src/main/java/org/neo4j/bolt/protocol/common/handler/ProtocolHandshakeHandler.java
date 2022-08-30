@@ -24,21 +24,22 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.WriteBufferWaterMark;
 import java.util.Arrays;
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.negotiation.codec.ProtocolNegotiationRequestDecoder;
 import org.neo4j.bolt.negotiation.codec.ProtocolNegotiationResponseEncoder;
 import org.neo4j.bolt.negotiation.message.ProtocolNegotiationRequest;
 import org.neo4j.bolt.negotiation.message.ProtocolNegotiationResponse;
-import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.common.codec.BoltStructEncoder;
-import org.neo4j.bolt.protocol.common.connection.BoltConnectionFactory;
+import org.neo4j.bolt.protocol.common.connector.Connector;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.connection.listener.ReadLimitConnectionListener;
 import org.neo4j.bolt.protocol.common.handler.messages.GoodbyeMessageHandler;
 import org.neo4j.bolt.protocol.common.handler.messages.ResetMessageHandler;
 import org.neo4j.bolt.protocol.common.message.response.ResponseMessage;
 import org.neo4j.bolt.protocol.common.transaction.result.ResultHandler;
-import org.neo4j.bolt.runtime.throttle.ChannelThrottleHandler;
+import org.neo4j.bolt.runtime.throttle.ChannelReadThrottleHandler;
+import org.neo4j.bolt.runtime.throttle.ChannelWriteThrottleHandler;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.logging.InternalLog;
@@ -55,31 +56,29 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
 
     public static final int BOLT_MAGIC_PREAMBLE = 0x6060B017;
 
-    private final BoltChannel channel;
-    private final BoltProtocolRegistry protocolRegistry;
-    private final BoltConnectionFactory connectionFactory;
-
     private final InternalLogProvider logging;
     private final InternalLog log;
     private final Config config;
 
-    public ProtocolHandshakeHandler(
-            BoltProtocolRegistry protocolRegistry,
-            BoltConnectionFactory connectionFactory,
-            BoltChannel channel,
-            InternalLogProvider logging,
-            Config config) {
-        this.protocolRegistry = protocolRegistry;
-        this.connectionFactory = connectionFactory;
-        this.channel = channel;
-        this.logging = logging;
-        this.log = logging.getLog(getClass());
+    private Connector connector;
+    private Connection connection;
+
+    public ProtocolHandshakeHandler(Config config, InternalLogProvider logging) {
         this.config = config;
+        this.logging = logging;
+
+        this.log = logging.getLog(getClass());
+    }
+
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) {
+        this.connection = Connection.getConnection(ctx.channel());
+        this.connector = this.connection.connector();
     }
 
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) {
-        channel.memoryTracker().releaseHeap(SHALLOW_SIZE);
+        this.connection.memoryTracker().releaseHeap(SHALLOW_SIZE);
     }
 
     @Override
@@ -97,7 +96,8 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
 
         // go through every suggested protocol revision (in order of occurrence) and check whether we are able to
         // satisfy it (if so - move on)
-        BoltProtocol protocol = null;
+        BoltProtocol selectedProtocol = null;
+        var protocolRegistry = this.connector.protocolRegistry();
         var it = request.proposedVersions().iterator();
         do {
             // if the list has been exhausted, then none of the suggested protocol versions is supported by the
@@ -121,50 +121,72 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
                 continue;
             }
 
-            protocol = protocolRegistry.get(proposal, channel).orElse(null);
-        } while (protocol == null);
+            selectedProtocol = protocolRegistry.get(proposal).orElse(null);
+        } while (selectedProtocol == null);
 
-        var stateMachine = protocol.createStateMachine(channel);
-        var connection = connectionFactory.newConnection(channel, stateMachine);
+        // copy the final value to a separate variable as the compiler is otherwise incapable of identifying the value
+        // as effectively final within this context
+        var protocol = selectedProtocol;
 
-        // complete handshake by notifying the client about the selected protocol revision
+        // complete handshake by notifying the connection about its new protocol revision and notify the peer about the
+        // selected revision
+        this.connection.selectProtocol(protocol);
         ctx.writeAndFlush(new ProtocolNegotiationResponse(protocol.version()));
 
         // KeepAliveHandler needs the FrameSignalEncoder to send outbound NOOPs
-        if (ctx.pipeline().get(KeepAliveHandler.class) != null) {
-            ctx.pipeline().addBefore(KeepAliveHandler.NAME, "frameSignalEncoder", new FrameSignalEncoder());
-        } else {
-            ctx.pipeline().addLast(new FrameSignalEncoder());
+        ctx.pipeline().addLast(new FrameSignalEncoder());
+
+        if (this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle)) {
+            ctx.channel()
+                    .config()
+                    .setWriteBufferWaterMark(new WriteBufferWaterMark(
+                            config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_low_water_mark),
+                            config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_high_water_mark)));
         }
 
-        ctx.channel()
-                .config()
-                .setWriteBufferWaterMark(new WriteBufferWaterMark(
-                        config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_low_water_mark),
-                        config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_high_water_mark)));
+        var readLimit = config.get(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes);
+        if (readLimit != 0) {
+            this.log.debug(
+                    "Imposing %d byte read-limit on connection '%s' until authentication is completed",
+                    readLimit, this.connection.id());
+
+            ctx.pipeline().addLast(new ChunkFrameDecoder(readLimit, this.logging));
+
+            this.connection.registerListener(new ReadLimitConnectionListener(this.connection, this.logging));
+        } else {
+            ctx.pipeline().addLast(new ChunkFrameDecoder(this.logging));
+        }
 
         ctx.pipeline()
-                .addLast(
-                        ChunkFrameDecoder.NAME,
-                        new ChunkFrameDecoder(
-                                config.get(
-                                        BoltConnectorInternalSettings
-                                                .unsupported_bolt_unauth_connection_max_inbound_bytes),
-                                log))
                 .addLast("chunkFrameEncoder", new ChunkFrameEncoder())
-                .addLast("structDecoder", new PackstreamStructDecoder(protocol.requestMessageRegistry(connection), log))
+                .addLast("structDecoder", new PackstreamStructDecoder(protocol.requestMessageRegistry(), logging))
                 .addLast(
                         "structEncoder",
-                        new PackstreamStructEncoder<>(
-                                ResponseMessage.class, protocol.responseMessageRegistry(connection)))
-                .addLast("goodbyeMessageHandler", new GoodbyeMessageHandler(connection, log))
-                .addLast("resetMessageHandler", new ResetMessageHandler(connection, log))
+                        new PackstreamStructEncoder<>(ResponseMessage.class, protocol.responseMessageRegistry()));
+
+        var inboundMessageThrottleHighWatermark =
+                config.get(BoltConnectorInternalSettings.bolt_inbound_message_throttle_high_water_mark);
+        if (inboundMessageThrottleHighWatermark != 0) {
+            ctx.pipeline()
+                    .addLast(
+                            "readThrottleHandler",
+                            new ChannelReadThrottleHandler(
+                                    config.get(
+                                            BoltConnectorInternalSettings.bolt_inbound_message_throttle_low_water_mark),
+                                    inboundMessageThrottleHighWatermark,
+                                    logging));
+        }
+
+        ctx.pipeline()
+                .addLast("goodbyeMessageHandler", new GoodbyeMessageHandler(logging))
+                .addLast("resetMessageHandler", new ResetMessageHandler(logging))
                 .addLast("boltStructEncoder", new BoltStructEncoder());
 
-        var writeTimeoutMill = config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_max_duration)
+        var writeThrottleEnabled = this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle);
+        var writeTimeoutMillis = config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_max_duration)
                 .toMillis();
-        if (writeTimeoutMill != 0) {
-            ctx.pipeline().addLast("channelThrottleHandler", new ChannelThrottleHandler(writeTimeoutMill));
+        if (writeThrottleEnabled && writeTimeoutMillis != 0) {
+            ctx.pipeline().addLast("channelThrottleHandler", new ChannelWriteThrottleHandler(writeTimeoutMillis));
         }
 
         ProtocolLoggingHandler.shiftToEndIfPresent(ctx);
@@ -174,12 +196,14 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
                 .addLast(
                         "requestHandler",
                         new RequestHandler(
-                                connection, new ResultHandler(connection, log, protocol.valueWriterFactory())))
-                .addLast("housekeeper", new HouseKeeperHandler(connection, logging.getLog(HouseKeeperHandler.class)))
+                                new ResultHandler(connection, protocol.valueWriterFactory(), logging), logging))
+                .addLast("housekeeper", new HouseKeeperHandler(logging))
                 .remove(this);
 
         ctx.pipeline().remove(ProtocolNegotiationResponseEncoder.class);
         ctx.pipeline().remove(ProtocolNegotiationRequestDecoder.class);
+
+        this.connection.notifyListeners(listener -> listener.onProtocolSelected(protocol));
     }
 
     @Override

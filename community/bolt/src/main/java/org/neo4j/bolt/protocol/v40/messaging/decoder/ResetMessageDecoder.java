@@ -26,7 +26,14 @@ import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.packstream.struct.StructReader;
 
-public class ResetMessageDecoder implements StructReader<ResetMessage> {
+public final class ResetMessageDecoder implements StructReader<ResetMessage> {
+    private static final ResetMessageDecoder INSTANCE = new ResetMessageDecoder();
+
+    private ResetMessageDecoder() {}
+
+    public static ResetMessageDecoder getInstance() {
+        return INSTANCE;
+    }
 
     @Override
     public short getTag() {

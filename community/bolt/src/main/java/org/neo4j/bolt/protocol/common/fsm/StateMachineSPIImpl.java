@@ -22,13 +22,8 @@ package org.neo4j.bolt.protocol.common.fsm;
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.exceptions.Status.Classification.DatabaseError;
 
-import java.util.Map;
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.transaction.TransactionStateMachineSPIProvider;
-import org.neo4j.bolt.security.AuthenticationResult;
-import org.neo4j.bolt.security.error.AuthenticationException;
-import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.DuplicatingLogProvider;
 import org.neo4j.logging.Log;
@@ -41,15 +36,12 @@ public class StateMachineSPIImpl implements StateMachineSPI {
 
     private final String version;
     private final TransactionStateMachineSPIProvider transactionSpiProvider;
-    private final BoltChannel boltChannel;
 
     private final Log userLog;
     private final Log debugLog;
 
-    public StateMachineSPIImpl(
-            LogService logging, TransactionStateMachineSPIProvider transactionSpiProvider, BoltChannel boltChannel) {
+    public StateMachineSPIImpl(LogService logging, TransactionStateMachineSPIProvider transactionSpiProvider) {
         this.transactionSpiProvider = transactionSpiProvider;
-        this.boltChannel = boltChannel;
         this.version = BOLT_SERVER_VERSION_PREFIX + Version.getNeo4jVersion();
 
         this.userLog = logging.getUserLog(StateMachineSPIImpl.class);
@@ -90,16 +82,6 @@ public class StateMachineSPIImpl implements StateMachineSPI {
                 debugLog.error(message, error.cause());
             }
         }
-    }
-
-    @Override
-    public AuthenticationResult authenticate(Map<String, Object> authToken) throws AuthenticationException {
-        return boltChannel.authentication().authenticate(authToken, boltChannel.info());
-    }
-
-    @Override
-    public LoginContext impersonate(LoginContext context, String userToImpersonate) throws AuthenticationException {
-        return boltChannel.authentication().impersonate(context, userToImpersonate);
     }
 
     @Override

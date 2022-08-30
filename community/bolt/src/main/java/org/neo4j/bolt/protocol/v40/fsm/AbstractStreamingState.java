@@ -59,7 +59,7 @@ public abstract class AbstractStreamingState extends FailSafeState {
 
         // TODO: Remove along with EXIT_STREAMING
         if (nextState != this) {
-            context.channel().rawChannel().write(StateSignal.EXIT_STREAMING);
+            context.connection().write(StateSignal.EXIT_STREAMING);
         }
 
         return nextState;

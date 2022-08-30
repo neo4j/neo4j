@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -35,14 +34,18 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineSPI;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.routing.RoutingTableGetter;
+import org.neo4j.bolt.protocol.common.signal.StateSignal;
 import org.neo4j.bolt.protocol.v44.message.request.BeginMessage;
 import org.neo4j.bolt.protocol.v44.message.request.RouteMessage;
 import org.neo4j.bolt.protocol.v44.message.request.RunMessage;
+import org.neo4j.bolt.security.error.AuthenticationException;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -52,6 +55,7 @@ class ReadyStateTest {
     private State inTransactionState;
     private State streamingState;
 
+    private Connection connection;
     private StateMachineSPI spi;
     private TransactionManager transactionManager;
     private RoutingTableGetter routingTableGetter;
@@ -88,14 +92,24 @@ class ReadyStateTest {
         when(this.context.transactionManager()).thenReturn(this.transactionManager);
 
         var impersonatedContext = new AtomicReference<LoginContext>();
-        when(this.context.getLoginContext()).then(invocation -> Optional.ofNullable(impersonatedContext.get())
-                .orElseGet(() -> this.originalContext));
-        doAnswer(invocation -> {
-                    impersonatedContext.set(invocation.getArgument(0));
-                    return null;
-                })
-                .when(this.context)
-                .impersonateUser(any());
+        this.connection = ConnectionMockFactory.newFactory()
+                .withAnswer(Connection::loginContext, invocation -> Optional.ofNullable(impersonatedContext.get())
+                        .orElseGet(() -> this.originalContext))
+                .withAnswer(
+                        mock -> {
+                            try {
+                                mock.impersonate("bob");
+                            } catch (AuthenticationException ignore) {
+                                // never happens
+                            }
+                        },
+                        invocation -> {
+                            impersonatedContext.set(impersonationContext);
+                            return null; // void function
+                        })
+                .build();
+
+        when(context.connection()).thenReturn(this.connection);
 
         this.state = new ReadyState(this.routingTableGetter);
         this.state.setTransactionReadyState(this.inTransactionState);
@@ -104,8 +118,6 @@ class ReadyStateTest {
 
     @Test
     void shouldAuthenticateImpersonationInBeginMessage() throws Exception {
-        when(this.spi.impersonate(this.originalContext, "bob")).thenReturn(this.impersonationContext);
-
         var message = new BeginMessage(
                 MapValue.EMPTY,
                 Collections.emptyList(),
@@ -118,57 +130,54 @@ class ReadyStateTest {
 
         assertSame(this.inTransactionState, nextState);
 
-        var inOrder = Mockito.inOrder(this.context, this.spi, this.transactionManager);
+        var inOrder = Mockito.inOrder(this.connection, this.context, this.spi, this.transactionManager);
 
-        inOrder.verify(this.context).boltSpi();
-        inOrder.verify(this.context).getLoginContext();
-        inOrder.verify(this.spi).impersonate(this.originalContext, "bob");
-        inOrder.verify(this.context).impersonateUser(this.impersonationContext);
+        inOrder.verify(this.context).connection();
+        inOrder.verify(this.connection).impersonate("bob");
 
         // in 4.3 implementation
         inOrder.verify(this.context).transactionManager();
-        inOrder.verify(this.context).getLoginContext();
+        inOrder.verify(this.context).connection();
+        inOrder.verify(this.connection).loginContext();
         inOrder.verify(this.context).connectionId();
         inOrder.verify(this.transactionManager)
                 .begin(eq(this.impersonationContext), eq("neo4j"), any(), eq(false), any(), any(), any());
         inOrder.verify(this.context).connectionState();
 
+        inOrder.verify(this.context).connection();
+        inOrder.verify(this.connection).write(StateSignal.ENTER_STREAMING);
+
         // impersonation is cleared when leaving transaction state
-        inOrder.verify(this.context, never()).impersonateUser(null);
+        inOrder.verify(this.connection, never()).impersonate(null);
     }
 
     @Test
     void shouldAuthenticateImpersonationInRouteMessage() throws Exception {
-        when(this.spi.impersonate(this.originalContext, "bob")).thenReturn(this.impersonationContext);
-
         var message = new RouteMessage(MapValue.EMPTY, Collections.emptyList(), "neo4j", "bob");
         var nextState = this.state.processRouteMessage(message, this.context);
 
         assertSame(this.state, nextState);
 
-        var inOrder = Mockito.inOrder(this.context, this.spi, this.routingTableGetter);
+        var inOrder = Mockito.inOrder(this.connection, this.context, this.spi, this.routingTableGetter);
 
-        inOrder.verify(this.context).boltSpi();
-        inOrder.verify(this.context).getLoginContext();
-        inOrder.verify(this.spi).impersonate(this.originalContext, "bob");
-        inOrder.verify(this.context).impersonateUser(this.impersonationContext);
+        inOrder.verify(this.context).connection();
+        inOrder.verify(this.connection).impersonate("bob");
 
         // in 4.3 implementation
         inOrder.verify(this.context).connectionState();
-        inOrder.verify(this.context).getLoginContext();
+        inOrder.verify(this.context).connection();
+        inOrder.verify(this.connection).loginContext();
         inOrder.verify(this.context).transactionManager();
         inOrder.verify(this.context).connectionId();
 
         inOrder.verify(this.routingTableGetter)
                 .get(any(), eq(this.impersonationContext), any(), any(), any(), eq("neo4j"), any());
 
-        inOrder.verify(this.context).impersonateUser(null);
+        inOrder.verify(this.connection).impersonate(null);
     }
 
     @Test
     void shouldAuthenticateImpersonationInRunMessage() throws Exception {
-        when(this.spi.impersonate(this.originalContext, "bob")).thenReturn(this.impersonationContext);
-
         var message = new RunMessage(
                 "RUN FANCY QUERY",
                 MapValue.EMPTY,
@@ -183,18 +192,17 @@ class ReadyStateTest {
 
         assertSame(this.streamingState, nextState);
 
-        var inOrder = Mockito.inOrder(this.context, this.spi, this.transactionManager);
+        var inOrder = Mockito.inOrder(this.connection, this.context, this.spi, this.transactionManager);
 
-        inOrder.verify(this.context).boltSpi();
-        inOrder.verify(this.context).getLoginContext();
-        inOrder.verify(this.spi).impersonate(this.originalContext, "bob");
-        inOrder.verify(this.context).impersonateUser(this.impersonationContext);
+        inOrder.verify(this.context).connection();
+        inOrder.verify(this.connection).impersonate("bob");
 
         // in 4.3 implementation
         inOrder.verify(this.context).clock();
         inOrder.verify(this.context).connectionState();
         inOrder.verify(this.context).transactionManager();
-        inOrder.verify(this.context).getLoginContext();
+        inOrder.verify(this.context).connection();
+        inOrder.verify(this.connection).loginContext();
         inOrder.verify(this.context).connectionId();
         inOrder.verify(this.transactionManager)
                 .runProgram(
@@ -211,6 +219,9 @@ class ReadyStateTest {
         inOrder.verify(this.context).clock();
         inOrder.verify(this.context, times(2)).connectionState();
 
-        inOrder.verify(this.context).impersonateUser(null);
+        inOrder.verify(this.context).connection();
+        inOrder.verify(this.connection).write(StateSignal.ENTER_STREAMING);
+
+        inOrder.verify(this.connection).impersonate(null);
     }
 }

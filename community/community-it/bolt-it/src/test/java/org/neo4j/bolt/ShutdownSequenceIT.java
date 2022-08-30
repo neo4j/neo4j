@@ -30,7 +30,7 @@ import static org.neo4j.bolt.testing.messages.BoltV44Wire.hello;
 import static org.neo4j.bolt.testing.messages.BoltV44Wire.pull;
 import static org.neo4j.bolt.testing.messages.BoltV44Wire.run;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
-import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
+import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -47,10 +47,9 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
-import org.neo4j.bolt.runtime.scheduling.ExecutorBoltScheduler;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
-import org.neo4j.bolt.testing.messages.BoltV44Wire;
+import org.neo4j.bolt.testing.messages.BoltDefaultWire;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -81,8 +80,7 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 public class ShutdownSequenceIT {
     private static final Duration THREAD_POOL_SHUTDOWN_WAIT_TIME = Duration.ofSeconds(10);
 
-    private final AssertableLogProvider internalLogProvider =
-            new SpiedAssertableLogProvider(ExecutorBoltScheduler.class);
+    private final AssertableLogProvider internalLogProvider = new SpiedAssertableLogProvider(BoltServer.class);
     private final AssertableLogProvider userLogProvider = new AssertableLogProvider();
 
     @Inject
@@ -118,20 +116,20 @@ public class ShutdownSequenceIT {
     public void shutdownShouldResultInFailureMessageForTransactionAwareConnections() throws Exception {
         var connection = connectAndAuthenticate();
 
-        connection.send(run("CALL test.stream.nodes()")).send(BoltV44Wire.pull());
+        connection.send(run("CALL test.stream.nodes()")).send(BoltDefaultWire.pull());
 
         // Wait for a transaction to start on the server side
         assertTrue(txStarted.await(1, MINUTES));
 
         // Register a callback when the bolt worker thread pool is shut down.
-        var schedulerLog = internalLogProvider.getLog(ExecutorBoltScheduler.class);
+        var boltLog = internalLogProvider.getLog(BoltServer.class);
         doAnswer(invocation -> {
                     invocation.callRealMethod();
                     boltWorkerThreadPoolShuttingDown.countDown();
                     return null;
                 })
-                .when(schedulerLog)
-                .debug("Shutting down thread pool");
+                .when(boltLog)
+                .info("Shutting down Bolt server");
 
         // Shutdown the server
         server.getManagementService().shutdown();
@@ -154,9 +152,9 @@ public class ShutdownSequenceIT {
                 .isEventuallyTerminated();
 
         assertThat(internalLogProvider)
-                .forClass(ExecutorBoltScheduler.class)
-                .forLevel(DEBUG)
-                .containsMessages("Thread pool shut down");
+                .forClass(BoltServer.class)
+                .forLevel(INFO)
+                .containsMessages("Bolt server has been shut down");
     }
 
     @Test
@@ -171,9 +169,9 @@ public class ShutdownSequenceIT {
         assertThat(connection).isEventuallyTerminated();
 
         assertThat(internalLogProvider)
-                .forClass(ExecutorBoltScheduler.class)
-                .forLevel(DEBUG)
-                .containsMessages("Thread pool shut down");
+                .forClass(BoltServer.class)
+                .forLevel(INFO)
+                .containsMessages("Bolt server has been shut down");
     }
 
     @Test
@@ -186,14 +184,14 @@ public class ShutdownSequenceIT {
         assertTrue(txStarted.await(1, MINUTES));
 
         // Register a callback when the bolt worker thread pool is shut down.
-        var schedulerLog = internalLogProvider.getLog(ExecutorBoltScheduler.class);
+        var boltLog = internalLogProvider.getLog(BoltServer.class);
         doAnswer(invocation -> {
                     invocation.callRealMethod();
                     boltWorkerThreadPoolShuttingDown.countDown();
                     return null;
                 })
-                .when(schedulerLog)
-                .debug("Shutting down thread pool");
+                .when(boltLog)
+                .info("Shutting down Bolt server");
 
         // Initiate the shutdown
         server.getManagementService().shutdown();
@@ -217,9 +215,9 @@ public class ShutdownSequenceIT {
                 .isEventuallyTerminated();
 
         assertThat(internalLogProvider)
-                .forClass(ExecutorBoltScheduler.class)
-                .forLevel(DEBUG)
-                .containsMessages("Thread pool shut down");
+                .forClass(BoltServer.class)
+                .forLevel(INFO)
+                .containsMessages("Bolt server has been shut down");
     }
 
     private TransportConnection connectAndAuthenticate() throws Exception {

@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.protocol.v40.messaging.decoder;
 
-import org.neo4j.bolt.protocol.common.connection.BoltConnection;
 import org.neo4j.bolt.protocol.v40.messaging.request.GoodbyeMessage;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.struct.IllegalStructSizeException;
@@ -27,11 +26,13 @@ import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.packstream.struct.StructReader;
 
-public class GoodbyeMessageDecoder implements StructReader<GoodbyeMessage> {
-    private final BoltConnection connection;
+public final class GoodbyeMessageDecoder implements StructReader<GoodbyeMessage> {
+    private static final GoodbyeMessageDecoder INSTANCE = new GoodbyeMessageDecoder();
 
-    public GoodbyeMessageDecoder(BoltConnection connection) {
-        this.connection = connection;
+    private GoodbyeMessageDecoder() {}
+
+    public static GoodbyeMessageDecoder getInstance() {
+        return INSTANCE;
     }
 
     @Override
@@ -45,7 +46,6 @@ public class GoodbyeMessageDecoder implements StructReader<GoodbyeMessage> {
             throw new IllegalStructSizeException(0, header.length());
         }
 
-        connection.stop();
         return GoodbyeMessage.INSTANCE;
     }
 }

@@ -32,11 +32,10 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.protocol.v40.fsm.BoltV40MachineRoom.init;
+import static org.neo4j.bolt.protocol.v40.fsm.BoltV40MachineRoom.initTransaction;
 import static org.neo4j.bolt.protocol.v40.fsm.BoltV40MachineRoom.newMachine;
 import static org.neo4j.bolt.protocol.v40.fsm.BoltV40MachineRoom.newMachineWithMockedTxManager;
-import static org.neo4j.bolt.protocol.v40.fsm.BoltV40MachineRoom.newMachineWithTransaction;
 import static org.neo4j.bolt.protocol.v40.fsm.BoltV40MachineRoom.newMachineWithTransactionSPI;
 import static org.neo4j.bolt.protocol.v40.fsm.BoltV40MachineRoom.reset;
 import static org.neo4j.bolt.protocol.v40.messaging.util.MessageMetadataParserV40.STREAM_LIMIT_UNLIMITED;
@@ -45,8 +44,9 @@ import static org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions.asser
 import static org.neo4j.bolt.testing.assertions.StateMachineAssertions.assertThat;
 
 import java.time.Clock;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.protocol.common.fsm.AbstractStateMachine;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineSPIImpl;
@@ -58,6 +58,7 @@ import org.neo4j.bolt.runtime.BoltConnectionAuthFatality;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.testing.messages.BoltV40Messages;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.bolt.testing.response.ResponseRecorder;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.function.ThrowingBiConsumer;
@@ -77,20 +78,29 @@ class StateMachineV40Test {
     @Test
     void shouldRollbackOpenTransactionOnReset() throws Throwable {
         // Given a FAILED machine with an open transaction
-        var machine = newMachineWithTransaction();
+        var interruptCounter = new AtomicInteger();
+
+        var connection = ConnectionMockFactory.newFactory()
+                .withInterruptedCaptor(interruptCounter)
+                .build();
+        var machine = newMachine(connection);
+        initTransaction(machine);
         machine.markFailed(Error.from(new RuntimeException()));
 
         // When RESET occurs
-        reset(machine, nullResponseHandler());
+        reset(connection, machine, nullResponseHandler());
 
         // Then ...
         assertThat(machine).doesNotHaveTransaction().isInState(ReadyState.class);
+
+        Assertions.assertThat(interruptCounter).hasValue(0);
     }
 
     @Test
     void shouldRollbackOpenTransactionOnClose() throws Throwable {
         // Given a ready machine with an open transaction
-        var machine = newMachineWithTransaction();
+        var machine = newMachine();
+        initTransaction(machine);
 
         // When the machine is shut down
         machine.close();
@@ -101,40 +111,71 @@ class StateMachineV40Test {
 
     @Test
     void shouldBeAbleToResetWhenInReadyState() throws Throwable {
-        var machine = init(newMachine());
+        var interruptCounter = new AtomicInteger();
 
-        assertThat(machine).canReset().doesNotHaveTransaction();
+        var connection = ConnectionMockFactory.newFactory()
+                .withInterruptedCaptor(interruptCounter)
+                .build();
+        var machine = init(newMachine(connection));
+
+        assertThat(machine).canReset(connection).doesNotHaveTransaction();
+
+        Assertions.assertThat(interruptCounter).hasValue(0);
     }
 
     @Test
     void shouldResetWithOpenTransaction() throws Throwable {
-        var machine = newMachineWithTransaction();
+        var interruptCounter = new AtomicInteger();
 
-        assertThat(machine).canReset().doesNotHaveTransaction();
+        var connection = ConnectionMockFactory.newFactory()
+                .withInterruptedCaptor(interruptCounter)
+                .build();
+        var machine = newMachine(connection);
+        initTransaction(machine);
+
+        assertThat(machine).canReset(connection).doesNotHaveTransaction();
+
+        Assertions.assertThat(interruptCounter).hasValue(0);
     }
 
     @Test
     void shouldResetWithOpenTransactionAndOpenResult() throws Throwable {
         // Given a ready machine with an open transaction...
-        var machine = newMachineWithTransaction();
+        var interruptCounter = new AtomicInteger();
+
+        var connection = ConnectionMockFactory.newFactory()
+                .withInterruptedCaptor(interruptCounter)
+                .build();
+        var machine = newMachine(connection);
+        initTransaction(machine);
 
         // ...and an open result
         machine.process(BoltV40Messages.run(), nullResponseHandler());
 
         // Then
-        assertThat(machine).canReset().doesNotHaveTransaction();
+        assertThat(machine).canReset(connection).doesNotHaveTransaction();
+
+        Assertions.assertThat(interruptCounter).hasValue(0);
     }
 
     @Test
     void shouldResetWithOpenResult() throws Throwable {
         // Given a ready machine...
-        var machine = init(newMachine());
+        var interruptCounter = new AtomicInteger();
+
+        var connection = ConnectionMockFactory.newFactory()
+                .withInterruptedCaptor(interruptCounter)
+                .build();
+
+        var machine = init(newMachine(connection));
 
         // ...and an open result
         machine.process(BoltV40Messages.run(), nullResponseHandler());
 
         // Then
-        assertThat(machine).canReset().doesNotHaveTransaction();
+        assertThat(machine).canReset(connection).doesNotHaveTransaction();
+
+        Assertions.assertThat(interruptCounter).hasValue(0);
     }
 
     @Test
@@ -153,7 +194,8 @@ class StateMachineV40Test {
     @Test
     void shouldRemainStoppedAfterInterrupted() throws Throwable {
         // Given a ready machine
-        var machine = init(newMachine());
+        var connection = ConnectionMockFactory.newInstance();
+        var machine = init(newMachine(connection));
 
         // ...which is subsequently closed
         machine.close();
@@ -162,7 +204,7 @@ class StateMachineV40Test {
         assertThat(machine).isClosed();
 
         // When and interrupt and reset occurs
-        reset(machine, nullResponseHandler());
+        reset(connection, machine, nullResponseHandler());
 
         // ...then the machine should remain closed
         assertThat(machine).isClosed();
@@ -171,32 +213,46 @@ class StateMachineV40Test {
     @Test
     void shouldBeAbleToKillMessagesAheadInLineWithAnInterrupt() throws Throwable {
         // Given
-        var machine = init(newMachine());
+        var interruptCounter = new AtomicInteger(0);
+
+        var connection = ConnectionMockFactory.newFactory()
+                .withInterruptedCaptor(interruptCounter)
+                .build();
+        var machine = init(newMachine(connection));
 
         // When
+        interruptCounter.set(1);
         machine.interrupt();
 
         // ...and
-        ResponseRecorder recorder = new ResponseRecorder();
+        var recorder = new ResponseRecorder();
         machine.process(BoltV40Messages.run(), recorder);
         machine.process(BoltV40Messages.reset(), recorder);
         machine.process(BoltV40Messages.run(), recorder);
 
         // Then
         assertThat(recorder).hasIgnoredResponse().hasSuccessResponse(2);
+
+        Assertions.assertThat(interruptCounter).hasValue(0);
     }
 
     @Test
     void multipleInterruptsShouldBeMatchedWithMultipleResets() throws Throwable {
         // Given
-        var machine = init(newMachine());
+        var interruptCounter = new AtomicInteger();
+
+        var connection = ConnectionMockFactory.newFactory()
+                .withInterruptedCaptor(interruptCounter)
+                .build();
+        var machine = init(newMachine(connection));
 
         // When
+        interruptCounter.set(2);
         machine.interrupt();
         machine.interrupt();
 
         // ...and
-        ResponseRecorder recorder = new ResponseRecorder();
+        var recorder = new ResponseRecorder();
         machine.process(BoltV40Messages.run(), recorder);
         machine.process(BoltV40Messages.reset(), recorder);
         machine.process(BoltV40Messages.run(), recorder);
@@ -211,6 +267,8 @@ class StateMachineV40Test {
 
         // Then
         assertThat(recorder).hasSuccessResponse(2);
+
+        Assertions.assertThat(interruptCounter).hasValue(0);
     }
 
     @Test
@@ -304,11 +362,16 @@ class StateMachineV40Test {
         var recorder = new ResponseRecorder();
 
         // Given a FAILED machine
-        var machine = init(newMachine());
+        var interruptCounter = new AtomicInteger();
+
+        var connection = ConnectionMockFactory.newFactory()
+                .withInterruptedCaptor(interruptCounter)
+                .build();
+        var machine = init(newMachine(connection));
         machine.markFailed(Error.from(new RuntimeException()));
 
         // When I RESET...
-        reset(machine, recorder);
+        reset(connection, machine, recorder);
 
         // ...successfully
         assertThat(recorder).hasSuccessResponse();
@@ -399,30 +462,13 @@ class StateMachineV40Test {
     }
 
     @Test
-    void shouldCloseBoltChannelWhenClosed() {
+    void shouldSetPendingErrorOnMarkFailedIfNoHandler() {
         var spi = mock(StateMachineSPIImpl.class);
-        var boltChannel = mock(BoltChannel.class, RETURNS_MOCKS);
+        var connection = ConnectionMockFactory.newInstance();
 
         var machine = new StateMachineV40(
                 spi,
-                boltChannel,
-                Clock.systemUTC(),
-                mock(DefaultDatabaseResolver.class),
-                mock(TransactionManager.class));
-
-        machine.close();
-
-        verify(boltChannel).close();
-    }
-
-    @Test
-    void shouldSetPendingErrorOnMarkFailedIfNoHandler() {
-        var spi = mock(StateMachineSPIImpl.class);
-        var boltChannel = mock(BoltChannel.class, RETURNS_MOCKS);
-
-        StateMachine machine = new StateMachineV40(
-                spi,
-                boltChannel,
+                connection,
                 Clock.systemUTC(),
                 mock(DefaultDatabaseResolver.class),
                 mock(TransactionManager.class));
@@ -458,7 +504,29 @@ class StateMachineV40Test {
 
     @Test
     void shouldInvokeResponseHandlerOnNextResetMessageOnMarkFailedIfNoHandler() throws Exception {
-        testReadyStateAfterMarkFailedOnNextMessage(BoltV40MachineRoom::reset);
+        // Given
+        var interruptCounter = new AtomicInteger();
+
+        var connection = ConnectionMockFactory.newFactory()
+                .withInterruptedCaptor(interruptCounter)
+                .build();
+        var machine = init(newMachine(connection));
+        var responseHandler = mock(ResponseHandler.class);
+
+        var error = Error.from(Status.Request.NoThreadsAvailable, "no threads");
+        machine.markFailed(error);
+
+        // When
+        reset(connection, machine, responseHandler);
+
+        // Expect
+        assertNull(pendingError(machine));
+        assertFalse(pendingIgnore(machine));
+
+        assertThat(machine).isInState(ReadyState.class);
+
+        verify(responseHandler, never()).markFailed(any());
+        verify(responseHandler, never()).markIgnored();
     }
 
     @Test
@@ -509,7 +577,31 @@ class StateMachineV40Test {
 
     @Test
     void shouldInvokeResponseHandlerOnNextResetMessageOnMarkFailedIfAlreadyFailedAndNoHandler() throws Exception {
-        testMarkFailedShouldYieldSuccessIfAlreadyFailed(BoltV40MachineRoom::reset);
+        // Given
+        var interruptCounter = new AtomicInteger();
+
+        var connection = ConnectionMockFactory.newFactory()
+                .withInterruptedCaptor(interruptCounter)
+                .build();
+        var machine = init(newMachine(connection));
+        machine.markFailed(Error.from(new RuntimeException()));
+
+        var responseHandler = mock(ResponseHandler.class);
+
+        var error = Error.from(Status.Request.NoThreadsAvailable, "no threads");
+        machine.markFailed(error);
+
+        // When
+        reset(connection, machine, responseHandler);
+
+        // Expect
+        assertNull(pendingError(machine));
+        assertFalse(pendingIgnore(machine));
+
+        assertThat(machine).isInState(ReadyState.class);
+
+        verify(responseHandler, never()).markIgnored();
+        verify(responseHandler, never()).markFailed(any());
     }
 
     @Test
@@ -559,19 +651,28 @@ class StateMachineV40Test {
         var recorder = new ResponseRecorder();
 
         // Given a FAILED machine
-        var machine = init(newMachine());
+        var interruptCounter = new AtomicInteger(0);
+
+        var connection = ConnectionMockFactory.newFactory()
+                .withInterruptedCaptor(interruptCounter)
+                .build();
+        var machine = init(newMachine(connection));
 
         machine.markFailed(Error.from(Status.Request.NoThreadsAvailable, "No Threads Available"));
         machine.process(BoltV40Messages.pull(), recorder);
 
         // When I RESET...
+        interruptCounter.incrementAndGet();
         machine.interrupt();
+
         machine.markFailed(Error.from(Status.Request.NoThreadsAvailable, "No Threads Available"));
         machine.process(BoltV40Messages.reset(), recorder);
 
         assertThat(recorder)
                 .hasFailureResponse(Status.Request.NoThreadsAvailable)
                 .hasSuccessResponse();
+
+        Assertions.assertThat(interruptCounter).hasValue(0);
     }
 
     @Test
@@ -580,14 +681,19 @@ class StateMachineV40Test {
         var recorder = new ResponseRecorder();
 
         // Given a FAILED machine
-        var machine = init(newMachine());
+        var captor = new AtomicInteger(0);
+        var connection =
+                ConnectionMockFactory.newFactory().withInterruptedCaptor(captor).build();
+        var machine = init(newMachine(connection));
 
         machine.markFailed(Error.from(Status.Request.NoThreadsAvailable, "No Threads Available"));
         machine.process(BoltV40Messages.pull(), recorder);
 
         // When I RESET...
+        captor.addAndGet(2);
         machine.interrupt();
         machine.interrupt();
+
         machine.markFailed(Error.from(Status.Request.NoThreadsAvailable, "No Threads Available"));
         machine.process(BoltV40Messages.reset(), recorder);
         machine.markFailed(Error.from(Status.Request.NoThreadsAvailable, "No Threads Available"));
@@ -604,14 +710,14 @@ class StateMachineV40Test {
         var spi = mock(StateMachineSPIImpl.class);
         var memoryTracker = mock(MemoryTracker.class);
 
-        var boltChannel = mock(BoltChannel.class);
-
-        when(boltChannel.memoryTracker()).thenReturn(memoryTracker);
+        var connection = ConnectionMockFactory.newFactory()
+                .withMemoryTracker(memoryTracker)
+                .build();
 
         // state allocation is a side effect of construction
         new StateMachineV40(
                 spi,
-                boltChannel,
+                connection,
                 Clock.systemUTC(),
                 mock(DefaultDatabaseResolver.class),
                 mock(TransactionManager.class));
@@ -647,26 +753,7 @@ class StateMachineV40Test {
     }
 
     private static void testReadyStateAfterMarkFailedOnNextMessage(
-            ThrowingBiConsumer<StateMachine, ResponseHandler, BoltConnectionFatality> action) throws Exception {
-        // Given
-        var machine = init(newMachine());
-        var responseHandler = mock(ResponseHandler.class);
-
-        var error = Error.from(Status.Request.NoThreadsAvailable, "no threads");
-        machine.markFailed(error);
-
-        // When
-        action.accept(machine, responseHandler);
-
-        // Expect
-        assertNull(pendingError(machine));
-        assertFalse(pendingIgnore(machine));
-
-        assertThat(machine).isInState(ReadyState.class);
-
-        verify(responseHandler, never()).markFailed(any());
-        verify(responseHandler, never()).markIgnored();
-    }
+            ThrowingBiConsumer<StateMachine, ResponseHandler, BoltConnectionFatality> action) throws Exception {}
 
     private static void testMarkFailedShouldYieldIgnoredIfAlreadyFailed(
             ThrowingBiConsumer<StateMachine, ResponseHandler, BoltConnectionFatality> action) throws Exception {
@@ -692,28 +779,7 @@ class StateMachineV40Test {
     }
 
     private static void testMarkFailedShouldYieldSuccessIfAlreadyFailed(
-            ThrowingBiConsumer<StateMachine, ResponseHandler, BoltConnectionFatality> action) throws Exception {
-        // Given
-        var machine = init(newMachine());
-        machine.markFailed(Error.from(new RuntimeException()));
-
-        var responseHandler = mock(ResponseHandler.class);
-
-        var error = Error.from(Status.Request.NoThreadsAvailable, "no threads");
-        machine.markFailed(error);
-
-        // When
-        action.accept(machine, responseHandler);
-
-        // Expect
-        assertNull(pendingError(machine));
-        assertFalse(pendingIgnore(machine));
-
-        assertThat(machine).isInState(ReadyState.class);
-
-        verify(responseHandler, never()).markIgnored();
-        verify(responseHandler, never()).markFailed(any());
-    }
+            ThrowingBiConsumer<StateMachine, ResponseHandler, BoltConnectionFatality> action) throws Exception {}
 
     private static Error pendingError(StateMachine machine) {
         return ((AbstractStateMachine) machine).connectionState().getPendingError();

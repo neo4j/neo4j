@@ -28,8 +28,8 @@ import static org.neo4j.bolt.testing.assertions.StateMachineAssertions.assertTha
 
 import java.time.Clock;
 import org.mockito.Mockito;
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineSPI;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineSPIImpl;
@@ -38,8 +38,8 @@ import org.neo4j.bolt.protocol.common.transaction.TransactionStateMachineSPI;
 import org.neo4j.bolt.protocol.common.transaction.TransactionStateMachineSPIProvider;
 import org.neo4j.bolt.protocol.common.transaction.statement.StatementProcessorReleaseManager;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.testing.BoltChannelFactory;
 import org.neo4j.bolt.testing.messages.BoltV40Messages;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.bolt.transaction.StatementProcessorTxManager;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 
@@ -53,35 +53,39 @@ public class BoltV40MachineRoom {
         return newMachine(Mockito.mock(StateMachineSPIImpl.class, RETURNS_MOCKS));
     }
 
-    public static StateMachine newMachineWithMockedTxManager() {
-        return newMachineWithMockedTxManager(Mockito.mock(StateMachineSPIImpl.class, RETURNS_MOCKS));
-    }
-
-    public static StateMachine newMachine(StateMachineSPIImpl spi) {
-        var boltChannel = BoltChannelFactory.newTestBoltChannel();
+    public static StateMachine newMachine(Connection connection, StateMachineSPIImpl spi) {
         return new StateMachineV40(
                 spi,
-                boltChannel,
+                connection,
                 Clock.systemUTC(),
                 mock(DefaultDatabaseResolver.class),
                 new StatementProcessorTxManager());
     }
 
+    public static StateMachine newMachine(Connection connection) {
+        return newMachine(connection, mock(StateMachineSPIImpl.class, RETURNS_MOCKS));
+    }
+
+    public static StateMachine newMachine(StateMachineSPIImpl spi) {
+        return newMachine(ConnectionMockFactory.newInstance(), spi);
+    }
+
+    public static StateMachine newMachineWithMockedTxManager() {
+        return newMachineWithMockedTxManager(Mockito.mock(StateMachineSPIImpl.class, RETURNS_MOCKS));
+    }
+
     public static StateMachine newMachineWithMockedTxManager(StateMachineSPIImpl spi) {
-        BoltChannel boltChannel = BoltChannelFactory.newTestBoltChannel();
         return new StateMachineV40(
                 spi,
-                boltChannel,
+                ConnectionMockFactory.newInstance(),
                 Clock.systemUTC(),
                 mock(DefaultDatabaseResolver.class),
                 mock(StatementProcessorTxManager.class));
     }
 
-    public static StateMachine newMachineWithTransaction() throws BoltConnectionFatality, BoltIOException {
-        StateMachine machine = newMachine();
-        init(machine);
-        runBegin(machine);
-        return machine;
+    public static void initTransaction(StateMachine fsm) throws BoltConnectionFatality, BoltIOException {
+        init(fsm);
+        runBegin(fsm);
     }
 
     public static StateMachine newMachineWithTransactionSPI(TransactionStateMachineSPI transactionSPI)
@@ -94,10 +98,9 @@ public class BoltV40MachineRoom {
                 .thenReturn(transactionSPI);
         when(spi.transactionStateMachineSPIProvider()).thenReturn(transactionSPIProvider);
 
-        var boltChannel = BoltChannelFactory.newTestBoltChannel();
         var machine = new StateMachineV40(
                 spi,
-                boltChannel,
+                ConnectionMockFactory.newInstance(),
                 Clock.systemUTC(),
                 mock(DefaultDatabaseResolver.class),
                 new StatementProcessorTxManager());
@@ -110,9 +113,14 @@ public class BoltV40MachineRoom {
         return machine;
     }
 
-    public static void reset(StateMachine machine, ResponseHandler handler) throws BoltConnectionFatality {
+    public static void reset(Connection connection, StateMachine machine, ResponseHandler handler)
+            throws BoltConnectionFatality {
+        when(connection.isInterrupted()).thenReturn(true);
+
         machine.interrupt();
         machine.process(BoltV40Messages.reset(), handler);
+
+        when(connection.isInterrupted()).thenReturn(false);
     }
 
     private static void runBegin(StateMachine machine) throws BoltConnectionFatality {

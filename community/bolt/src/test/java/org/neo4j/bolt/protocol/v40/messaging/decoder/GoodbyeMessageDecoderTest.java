@@ -22,12 +22,10 @@ package org.neo4j.bolt.protocol.v40.messaging.decoder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.protocol.common.connection.BoltConnection;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.v40.messaging.request.GoodbyeMessage;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.struct.IllegalStructSizeException;
@@ -38,21 +36,20 @@ class GoodbyeMessageDecoderTest {
 
     @Test
     void shouldReadMessage() throws PackstreamReaderException {
-        var connection = mock(BoltConnection.class);
-        var decoder = new GoodbyeMessageDecoder(connection);
+        var connection = mock(Connection.class);
+        var decoder = GoodbyeMessageDecoder.getInstance();
 
         var msg1 = decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(0, (short) 0x42));
         var msg2 = decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(0, (short) 0x42));
 
         assertThat(msg1).isNotNull().isSameAs(GoodbyeMessage.INSTANCE).isSameAs(msg2);
 
-        verify(connection, times(2)).stop();
         verifyNoMoreInteractions(connection);
     }
 
     @Test
     void shouldFailWithIllegalStructSizeWhenNonEmptyStructIsGiven() {
-        var decoder = new GoodbyeMessageDecoder(mock(BoltConnection.class));
+        var decoder = GoodbyeMessageDecoder.getInstance();
 
         assertThatExceptionOfType(IllegalStructSizeException.class)
                 .isThrownBy(() -> decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(1, (short) 0x42)))

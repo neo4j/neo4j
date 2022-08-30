@@ -24,7 +24,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import java.util.ArrayList;
 import java.util.List;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
+import org.neo4j.memory.HeapEstimator;
 import org.neo4j.packstream.error.reader.LimitExceededException;
 import org.neo4j.packstream.io.PackstreamBuf;
 
@@ -36,21 +38,29 @@ import org.neo4j.packstream.io.PackstreamBuf;
  * This implementation does not impose any lower bound on chunk sizes. As such, peers may choose to flush their buffers at any point they deem sufficient.
  */
 public class ChunkFrameDecoder extends ByteToMessageDecoder {
-    public static final String NAME = "chunkFrameDecoder";
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(ChunkFrameDecoder.class);
 
     private final long limit;
-    private final Log log;
+    private final InternalLog log;
 
-    public ChunkFrameDecoder(long limit, Log log) {
+    private ChunkFrameDecoder(long limit, InternalLog log) {
         this.limit = limit;
         this.log = log;
     }
 
-    public ChunkFrameDecoder(Log log) {
-        this(-1, log);
+    public ChunkFrameDecoder(long limit, InternalLogProvider logging) {
+        this(limit, logging.getLog(ChunkFrameDecoder.class));
+    }
+
+    public ChunkFrameDecoder(InternalLogProvider logging) {
+        this(-1, logging);
     }
 
     public ChunkFrameDecoder unlimited() {
+        if (this.limit == -1) {
+            return this;
+        }
+
         return new ChunkFrameDecoder(-1, this.log);
     }
 

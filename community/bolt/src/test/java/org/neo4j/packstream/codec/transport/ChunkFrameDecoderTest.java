@@ -34,8 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
-import org.mockito.Mockito;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.packstream.io.PackstreamBuf;
 
 class ChunkFrameDecoderTest {
@@ -44,7 +43,7 @@ class ChunkFrameDecoderTest {
 
     @BeforeEach
     void prepareChannel() {
-        this.channel = new EmbeddedChannel(new ChunkFrameDecoder(128, Mockito.mock(Log.class)));
+        this.channel = new EmbeddedChannel(new ChunkFrameDecoder(128, NullLogProvider.getInstance()));
     }
 
     /**

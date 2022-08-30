@@ -19,14 +19,13 @@
  */
 package org.neo4j.bolt.protocol.v44.transaction;
 
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
+import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
 import org.neo4j.bolt.protocol.common.transaction.TransactionStateMachineSPI;
 import org.neo4j.bolt.protocol.common.transaction.statement.StatementProcessorReleaseManager;
 import org.neo4j.bolt.protocol.v40.transaction.TransactionStateMachineSPIProviderV4;
 import org.neo4j.memory.HeapEstimator;
-import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.SystemNanoClock;
 
 public class TransactionStateMachineSPIProviderV44 extends TransactionStateMachineSPIProviderV4 {
@@ -34,10 +33,9 @@ public class TransactionStateMachineSPIProviderV44 extends TransactionStateMachi
 
     public TransactionStateMachineSPIProviderV44(
             BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
-            BoltChannel boltChannel,
-            SystemNanoClock clock,
-            MemoryTracker memoryTracker) {
-        super(boltGraphDatabaseManagementServiceSPI, boltChannel, clock);
+            TransactionOwner owner,
+            SystemNanoClock clock) {
+        super(boltGraphDatabaseManagementServiceSPI, owner, clock);
     }
 
     @Override
@@ -47,6 +45,6 @@ public class TransactionStateMachineSPIProviderV44 extends TransactionStateMachi
             String transactionId) {
         memoryTracker.allocateHeap(TransactionStateMachineV44SPI.SHALLOW_SIZE);
         return new TransactionStateMachineV44SPI(
-                activeBoltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManager, transactionId);
+                activeBoltGraphDatabaseServiceSPI, owner, clock, resourceReleaseManager, transactionId);
     }
 }

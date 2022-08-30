@@ -22,26 +22,20 @@ package org.neo4j.bolt.protocol.common.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.EventExecutorGroup;
-import org.neo4j.bolt.protocol.common.connection.BoltConnection;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.HeapEstimator;
 
 public class HouseKeeperHandler extends ChannelInboundHandlerAdapter {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(HouseKeeperHandler.class);
 
-    private final BoltConnection connection;
     private final InternalLog log;
+
     private boolean failed;
 
-    public HouseKeeperHandler(BoltConnection connection, InternalLog log) {
-        this.connection = connection;
-        this.log = log;
-    }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
-        connection.stop();
+    public HouseKeeperHandler(InternalLogProvider logging) {
+        this.log = logging.getLog(HouseKeeperHandler.class);
     }
 
     @Override

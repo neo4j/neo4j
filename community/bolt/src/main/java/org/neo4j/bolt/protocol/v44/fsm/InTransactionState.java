@@ -21,6 +21,7 @@ package org.neo4j.bolt.protocol.v44.fsm;
 
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
+import org.neo4j.bolt.security.error.AuthenticationException;
 import org.neo4j.bolt.transaction.TransactionNotFoundException;
 import org.neo4j.exceptions.KernelException;
 
@@ -28,21 +29,21 @@ public class InTransactionState extends org.neo4j.bolt.protocol.v40.fsm.InTransa
 
     @Override
     protected State processCommitMessage(StateMachineContext context)
-            throws KernelException, TransactionNotFoundException {
+            throws KernelException, TransactionNotFoundException, AuthenticationException {
         try {
             return super.processCommitMessage(context);
         } finally {
-            context.impersonateUser(null);
+            context.connection().impersonate(null);
         }
     }
 
     @Override
     protected State processRollbackMessage(StateMachineContext context)
-            throws KernelException, TransactionNotFoundException {
+            throws KernelException, TransactionNotFoundException, AuthenticationException {
         try {
             return super.processRollbackMessage(context);
         } finally {
-            context.impersonateUser(null);
+            context.connection().impersonate(null);
         }
     }
 }

@@ -32,6 +32,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.util.AsciiString;
 import java.util.Date;
+import org.neo4j.memory.HeapEstimator;
 import org.neo4j.server.config.AuthConfigProvider;
 
 /**
@@ -39,6 +40,8 @@ import org.neo4j.server.config.AuthConfigProvider;
  * it passes the request to the next handler and removes itself.
  */
 public class DiscoveryResponseHandler extends ChannelInboundHandlerAdapter {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(DiscoveryResponseHandler.class);
+
     private final AuthConfigProvider authConfigProvider;
 
     public DiscoveryResponseHandler(AuthConfigProvider authConfigProvider) {

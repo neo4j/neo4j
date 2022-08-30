@@ -22,14 +22,12 @@ package org.neo4j.bolt.protocol.common.transaction.statement;
 import static java.lang.String.format;
 import static org.neo4j.bolt.protocol.v40.messaging.util.MessageMetadataParserV40.ABSENT_DB_NAME;
 
-import java.util.Objects;
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
 import org.neo4j.bolt.protocol.common.transaction.TransactionStateMachineSPI;
 import org.neo4j.bolt.protocol.common.transaction.TransactionStateMachineSPIProvider;
-import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.UnavailableException;
@@ -38,18 +36,18 @@ import org.neo4j.time.SystemNanoClock;
 
 public abstract class AbstractTransactionStatementSPIProvider implements TransactionStateMachineSPIProvider {
     protected final SystemNanoClock clock;
-    protected final BoltChannel boltChannel;
+    protected final TransactionOwner owner;
     protected final BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI;
     protected final MemoryTracker memoryTracker;
 
     public AbstractTransactionStatementSPIProvider(
             BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
-            BoltChannel boltChannel,
+            TransactionOwner owner,
             SystemNanoClock clock) {
         this.boltGraphDatabaseManagementServiceSPI = boltGraphDatabaseManagementServiceSPI;
         this.clock = clock;
-        this.boltChannel = boltChannel;
-        this.memoryTracker = boltChannel.memoryTracker().getScopedMemoryTracker();
+        this.owner = owner;
+        this.memoryTracker = owner.memoryTracker().getScopedMemoryTracker();
     }
 
     protected abstract TransactionStateMachineSPI newTransactionStateMachineSPI(
@@ -61,7 +59,7 @@ public abstract class AbstractTransactionStatementSPIProvider implements Transac
     @Override
     public TransactionStateMachineSPI getTransactionStateMachineSPI(
             String databaseName, StatementProcessorReleaseManager resourceReleaseManager, String transactionId)
-            throws BoltProtocolBreachFatality, BoltIOException {
+            throws BoltIOException {
         String selectedDatabaseName = selectDatabaseName(databaseName);
 
         try {
@@ -78,16 +76,12 @@ public abstract class AbstractTransactionStatementSPIProvider implements Transac
         }
     }
 
-    protected String selectDatabaseName(String databaseName) throws BoltProtocolBreachFatality {
-        // old versions of protocol does not support passing database name and any name that
-        if (!Objects.equals(databaseName, ABSENT_DB_NAME)) {
-            // This bolt version shall NOT provide us a db name.
-            throw new BoltProtocolBreachFatality(format(
-                    "Database selection by name not supported by Bolt protocol version lower than BoltV4. "
-                            + "Please contact your Bolt client author to report this bug in the client code. Requested database name: '%s'.",
-                    databaseName));
+    protected String selectDatabaseName(String databaseName) {
+        if (ABSENT_DB_NAME.equals(databaseName)) {
+            return this.owner.selectedDefaultDatabase();
         }
-        return boltChannel.defaultDatabase();
+
+        return databaseName;
     }
 
     @Override

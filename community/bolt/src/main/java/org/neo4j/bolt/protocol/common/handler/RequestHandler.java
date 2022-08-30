@@ -22,11 +22,13 @@ package org.neo4j.bolt.protocol.common.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.DecoderException;
-import org.neo4j.bolt.protocol.common.connection.BoltConnection;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 
 /**
@@ -36,17 +38,25 @@ import org.neo4j.packstream.error.reader.PackstreamReaderException;
  * handlers as-is and will thus be considered protocol errors which require connection termination.
  */
 public class RequestHandler extends SimpleChannelInboundHandler<RequestMessage> {
-    private final BoltConnection connection;
     private final ResponseHandler responseHandler;
+    private final InternalLog log;
 
-    public RequestHandler(BoltConnection connection, ResponseHandler responseHandler) {
-        this.connection = connection;
+    private Connection connection;
+
+    public RequestHandler(ResponseHandler responseHandler, InternalLogProvider logging) {
         this.responseHandler = responseHandler;
+        this.log = logging.getLog(RequestHandler.class);
+    }
+
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) {
+        this.connection = Connection.getConnection(ctx.channel());
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, RequestMessage msg) throws Exception {
-        connection.enqueue(fsm -> fsm.process(msg, responseHandler));
+        log.debug("Submitting job for message %s", msg);
+        connection.submit(msg, this.responseHandler);
     }
 
     @Override
@@ -76,6 +86,6 @@ public class RequestHandler extends SimpleChannelInboundHandler<RequestMessage> 
 
         // all status bearing errors are enqueued on the state machine for reporting (e.g. as a FAILURE message)
         var error = Error.from(cause);
-        connection.enqueue(fsm -> fsm.handleExternalFailure(error, responseHandler));
+        connection.submit(fsm -> fsm.handleExternalFailure(error, responseHandler));
     }
 }

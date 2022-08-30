@@ -35,7 +35,7 @@ public class ListConnectionResult {
     ListConnectionResult(TrackedNetworkConnection connection, ZoneId timeZone) {
         connectionId = connection.id();
         connectTime = ProceduresTimeFormatHelper.formatTime(connection.connectTime(), timeZone);
-        connector = connection.connector();
+        connector = connection.connectorId();
         username = connection.username();
         userAgent = connection.userAgent();
         serverAddress = SocketAddress.format(connection.serverAddress());

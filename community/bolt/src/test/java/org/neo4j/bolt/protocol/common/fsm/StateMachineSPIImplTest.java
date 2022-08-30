@@ -25,7 +25,6 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.transaction.TransactionStateMachineSPIProvider;
 import org.neo4j.exceptions.SecurityAdministrationException;
@@ -40,8 +39,7 @@ class StateMachineSPIImplTest {
         var internalLog = new AssertableLogProvider();
         var logService = new SimpleLogService(userLog, internalLog);
 
-        var spi = new StateMachineSPIImpl(
-                logService, mock(TransactionStateMachineSPIProvider.class), mock(BoltChannel.class));
+        var spi = new StateMachineSPIImpl(logService, mock(TransactionStateMachineSPIProvider.class));
 
         for (Status.Classification classification : Status.Classification.values()) {
             if (classification != Status.Classification.DatabaseError) {
@@ -62,8 +60,7 @@ class StateMachineSPIImplTest {
         var internalLog = new AssertableLogProvider();
         var logService = new SimpleLogService(userLog, internalLog);
 
-        var spi = new StateMachineSPIImpl(
-                logService, mock(TransactionStateMachineSPIProvider.class), mock(BoltChannel.class));
+        var spi = new StateMachineSPIImpl(logService, mock(TransactionStateMachineSPIProvider.class));
 
         Error error = Error.fatalFrom(new TestDatabaseError());
         UUID reference = error.reference();
@@ -85,8 +82,7 @@ class StateMachineSPIImplTest {
         var internalLog = new AssertableLogProvider();
         var logService = new SimpleLogService(userLog, internalLog);
 
-        var spi = new StateMachineSPIImpl(
-                logService, mock(TransactionStateMachineSPIProvider.class), mock(BoltChannel.class));
+        var spi = new StateMachineSPIImpl(logService, mock(TransactionStateMachineSPIProvider.class));
 
         Error error = Error.from(
                 new SecurityAdministrationException("Unsupported administration command: CREATE DATABASE foo"));

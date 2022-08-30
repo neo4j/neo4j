@@ -43,7 +43,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.bolt.AbstractBoltTransportsTest;
-import org.neo4j.bolt.protocol.common.connection.DefaultBoltConnection;
+import org.neo4j.bolt.protocol.common.connector.connection.AtomicSchedulingConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.config.Setting;
@@ -137,7 +137,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
     private boolean authFailureLoggedToUserLog() {
         try {
             assertThat(logProvider)
-                    .forClass(DefaultBoltConnection.class)
+                    .forClass(AtomicSchedulingConnection.class)
                     .forLevel(WARN)
                     .containsMessages("The client is unauthorized due to authentication failure.");
             return true;

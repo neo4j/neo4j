@@ -26,7 +26,7 @@ public interface TrackedNetworkConnection extends AutoCloseable {
 
     long connectTime();
 
-    String connector();
+    String connectorId();
 
     SocketAddress serverAddress();
 

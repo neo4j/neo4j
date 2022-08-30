@@ -616,29 +616,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
-    @Description("When the number of queued inbound messages grows beyond this value, reading from underlying "
-            + "channel will be paused (no more inbound messages will be available) until queued number of "
-            + "messages drops below the configured low watermark value.")
-    public static final Setting<Integer> bolt_inbound_message_throttle_high_water_mark = newBuilder(
-                    "internal.dbms.bolt.inbound_message_throttle.high_watermark", INT, 300)
-            .addConstraint(range(1, Integer.MAX_VALUE))
-            .build();
-
-    @Internal
-    @Description("When the number of queued inbound messages, previously reached configured high watermark value, "
-            + "drops below this value, reading from underlying channel will be enabled and any pending messages "
-            + "will start queuing again.")
-    public static final Setting<Integer> bolt_inbound_message_throttle_low_water_mark = newBuilder(
-                    "internal.dbms.bolt.inbound_message_throttle.low_watermark", INT, 100)
-            .addConstraint(range(1, Integer.MAX_VALUE))
-            .build();
-
-    @Internal
-    @Description("Enable/disable the use of Epoll for netty")
-    public static final Setting<Boolean> netty_server_use_epoll =
-            newBuilder("internal.dbms.bolt.netty_server_use_epoll", BOOL, true).build();
-
-    @Internal
     @Description("Quiet period for netty shutdown")
     public static final Setting<Integer> netty_server_shutdown_quiet_period = newBuilder(
                     "internal.dbms.bolt.netty_server_shutdown_quiet_period", INT, 5)

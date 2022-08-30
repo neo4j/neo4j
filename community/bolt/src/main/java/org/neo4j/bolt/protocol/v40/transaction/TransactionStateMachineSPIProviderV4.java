@@ -19,12 +19,9 @@
  */
 package org.neo4j.bolt.protocol.v40.transaction;
 
-import static org.neo4j.bolt.protocol.v40.messaging.util.MessageMetadataParserV40.ABSENT_DB_NAME;
-
-import java.util.Objects;
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
+import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
 import org.neo4j.bolt.protocol.common.transaction.TransactionStateMachineSPI;
 import org.neo4j.bolt.protocol.common.transaction.statement.AbstractTransactionStatementSPIProvider;
 import org.neo4j.bolt.protocol.common.transaction.statement.StatementProcessorReleaseManager;
@@ -37,14 +34,9 @@ public class TransactionStateMachineSPIProviderV4 extends AbstractTransactionSta
 
     public TransactionStateMachineSPIProviderV4(
             BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
-            BoltChannel boltChannel,
+            TransactionOwner owner,
             SystemNanoClock clock) {
-        super(boltGraphDatabaseManagementServiceSPI, boltChannel, clock);
-    }
-
-    @Override
-    protected String selectDatabaseName(String databaseName) {
-        return Objects.equals(databaseName, ABSENT_DB_NAME) ? boltChannel.defaultDatabase() : databaseName;
+        super(boltGraphDatabaseManagementServiceSPI, owner, clock);
     }
 
     @Override
@@ -54,6 +46,6 @@ public class TransactionStateMachineSPIProviderV4 extends AbstractTransactionSta
             String transactionId) {
         memoryTracker.allocateHeap(TransactionStateMachineV4SPI.SHALLOW_SIZE);
         return new TransactionStateMachineV4SPI(
-                activeBoltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManager, transactionId);
+                activeBoltGraphDatabaseServiceSPI, owner, clock, resourceReleaseManager, transactionId);
     }
 }

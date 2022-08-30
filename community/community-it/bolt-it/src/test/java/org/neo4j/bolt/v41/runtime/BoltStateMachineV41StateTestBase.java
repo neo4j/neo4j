@@ -23,37 +23,27 @@ import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.parallel.ResourceLock;
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.v41.BoltProtocolV41;
 import org.neo4j.bolt.protocol.v41.fsm.StateMachineV41;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.SessionExtension;
-import org.neo4j.bolt.testing.BoltChannelFactory;
 import org.neo4j.bolt.testing.messages.BoltV40Messages;
 import org.neo4j.bolt.testing.messages.BoltV41Messages;
-import org.neo4j.memory.EmptyMemoryTracker;
-import org.neo4j.memory.MemoryTracker;
-import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.VirtualValues;
 
 @ResourceLock("boltStateMachineV41")
 public class BoltStateMachineV41StateTestBase {
-    protected static final MapValue EMPTY_PARAMS = VirtualValues.EMPTY_MAP;
-    protected static final BoltChannel BOLT_CHANNEL =
-            BoltChannelFactory.newTestBoltChannel("conn-v41-test-boltchannel-id");
-    protected static final MemoryTracker MEMORY_TRACKER = EmptyMemoryTracker.INSTANCE;
 
     @RegisterExtension
     static final SessionExtension env = new SessionExtension();
 
     protected StateMachineV41 newStateMachine() {
-        return (StateMachineV41) env.newMachine(BoltProtocolV41.VERSION, BOLT_CHANNEL);
+        return (StateMachineV41) env.newMachine(BoltProtocolV41.VERSION);
     }
 
     protected StateMachineV41 newStateMachineAfterAuth() throws BoltConnectionFatality {
-        var machine = (StateMachineV41) env.newMachine(BoltProtocolV41.VERSION, BOLT_CHANNEL);
+        var machine = (StateMachineV41) env.newMachine(BoltProtocolV41.VERSION);
         machine.process(BoltV40Messages.hello(), nullResponseHandler());
         return machine;
     }

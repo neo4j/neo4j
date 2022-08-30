@@ -21,23 +21,30 @@ package org.neo4j.bolt.protocol.common.handler.messages;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.neo4j.bolt.protocol.common.connection.BoltConnection;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.v40.messaging.request.ResetMessage;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.Log;
 
 public class ResetMessageHandler extends SimpleChannelInboundHandler<ResetMessage> {
-    private final BoltConnection connection;
     private final Log log;
 
-    public ResetMessageHandler(BoltConnection connection, Log log) {
-        this.connection = connection;
-        this.log = log;
+    private Connection connection;
+
+    public ResetMessageHandler(InternalLogProvider logging) {
+        this.log = logging.getLog(ResetMessageHandler.class);
+    }
+
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) {
+        this.connection = Connection.getConnection(ctx.channel());
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ResetMessage msg) throws Exception {
         log.debug("Interrupted state machine");
         this.connection.interrupt();
+
         ctx.fireChannelRead(msg);
     }
 }

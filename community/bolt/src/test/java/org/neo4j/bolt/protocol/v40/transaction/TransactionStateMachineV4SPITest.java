@@ -30,13 +30,13 @@ import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.bolt.dbapi.BookmarkMetadata;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.transaction.statement.StatementProcessorReleaseManager;
 import org.neo4j.bolt.protocol.v40.bookmark.BookmarkWithDatabaseId;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.time.SystemNanoClock;
@@ -49,14 +49,13 @@ class TransactionStateMachineV4SPITest {
         var databaseName = new NormalizedDatabaseName("morty");
         var databaseId = from(databaseName.name(), UUID.randomUUID());
         var databaseRef = new DatabaseReference.Internal(databaseName, databaseId);
+
+        var connection = ConnectionMockFactory.newInstance();
+
         when(dbSpi.getDatabaseReference()).thenReturn(databaseRef);
 
         var spi = new TransactionStateMachineV4SPI(
-                dbSpi,
-                mock(BoltChannel.class),
-                mock(SystemNanoClock.class),
-                mock(StatementProcessorReleaseManager.class),
-                "123");
+                dbSpi, connection, mock(SystemNanoClock.class), mock(StatementProcessorReleaseManager.class), "123");
 
         var bookmarks = List.<Bookmark>of(new BookmarkWithDatabaseId(42, databaseId));
 
@@ -79,12 +78,10 @@ class TransactionStateMachineV4SPITest {
         when(tx.getBookmarkMetadata()).thenReturn(new BookmarkMetadata(42L, databaseId));
         when(dbSpi.getDatabaseReference()).thenReturn(databaseRef);
 
+        var connection = ConnectionMockFactory.newInstance();
+
         var spi = new TransactionStateMachineV4SPI(
-                dbSpi,
-                mock(BoltChannel.class),
-                mock(SystemNanoClock.class),
-                mock(StatementProcessorReleaseManager.class),
-                "123");
+                dbSpi, connection, mock(SystemNanoClock.class), mock(StatementProcessorReleaseManager.class), "123");
 
         // When
         var bookmark = spi.newestBookmark(tx);

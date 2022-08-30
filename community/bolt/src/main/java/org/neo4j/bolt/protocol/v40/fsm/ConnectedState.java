@@ -59,10 +59,9 @@ public class ConnectedState implements State {
                 context.connectionState().onMetadata(CONNECTION_ID_KEY, Values.utf8Value(context.connectionId()));
 
                 var connectionHints = new MapValueBuilder();
-                context.channel().connectionHintProvider().append(connectionHints);
+                context.connection().connector().connectionHintProvider().append(connectionHints);
                 context.connectionState().onMetadata("hints", connectionHints.build());
 
-                // TODO: Post Authentication metadata
                 return readyState;
             } else {
                 return null;
@@ -82,13 +81,13 @@ public class ConnectedState implements State {
         try {
             var boltSpi = context.boltSpi();
 
-            var authResult = boltSpi.authenticate(authToken);
-            context.authenticatedAsUser(authResult.getLoginContext(), userAgent);
+            var connectionState = context.connectionState();
+            connectionState.onMetadata("server", Values.utf8Value(boltSpi.version()));
 
-            if (authResult.credentialsExpired()) {
-                context.connectionState().onMetadata("credentials_expired", Values.TRUE);
+            var flags = context.connection().authenticate(authToken, userAgent);
+            if (flags != null) {
+                connectionState.onMetadata(flags.name().toLowerCase(), Values.TRUE);
             }
-            context.connectionState().onMetadata("server", Values.utf8Value(boltSpi.version()));
 
             return true;
         } catch (Throwable t) {

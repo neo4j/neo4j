@@ -31,6 +31,7 @@ import org.neo4j.bolt.protocol.common.message.result.ResultConsumer;
 import org.neo4j.bolt.protocol.v40.messaging.request.CommitMessage;
 import org.neo4j.bolt.protocol.v40.messaging.request.RollbackMessage;
 import org.neo4j.bolt.protocol.v40.messaging.request.RunMessage;
+import org.neo4j.bolt.security.error.AuthenticationException;
 import org.neo4j.bolt.transaction.TransactionNotFoundException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.memory.HeapEstimator;
@@ -99,7 +100,7 @@ public class InTransactionState extends AbstractStreamingState {
     }
 
     protected State processCommitMessage(StateMachineContext context)
-            throws KernelException, TransactionNotFoundException {
+            throws KernelException, TransactionNotFoundException, AuthenticationException {
         Bookmark bookmark =
                 context.transactionManager().commit(context.connectionState().getCurrentTransactionId());
         context.connectionState().clearCurrentTransactionId();
@@ -108,7 +109,7 @@ public class InTransactionState extends AbstractStreamingState {
     }
 
     protected State processRollbackMessage(StateMachineContext context)
-            throws KernelException, TransactionNotFoundException {
+            throws KernelException, TransactionNotFoundException, AuthenticationException {
         context.transactionManager().rollback(context.connectionState().getCurrentTransactionId());
         context.connectionState().clearCurrentTransactionId();
         return readyState;

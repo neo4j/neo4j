@@ -19,41 +19,30 @@
  */
 package org.neo4j.bolt.protocol.common.handler;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.bolt.testing.BoltChannelFactory.newTestBoltChannel;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.util.List;
 import java.util.Optional;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.negotiation.codec.ProtocolNegotiationRequestDecoder;
+import org.neo4j.bolt.negotiation.codec.ProtocolNegotiationResponseEncoder;
 import org.neo4j.bolt.negotiation.message.ProtocolNegotiationRequest;
 import org.neo4j.bolt.negotiation.message.ProtocolNegotiationResponse;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
-import org.neo4j.bolt.protocol.common.connection.BoltConnectionFactory;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.memory.MemoryTracker;
 
 class ProtocolHandshakeHandlerTest {
-    private final BoltChannel boltChannel = newTestBoltChannel();
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     private static BoltProtocol newBoltProtocol(ProtocolVersion version) {
@@ -72,48 +61,81 @@ class ProtocolHandshakeHandlerTest {
     private static BoltProtocolRegistry newProtocolFactory(ProtocolVersion version, BoltProtocol protocol) {
         var registry = mock(BoltProtocolRegistry.class);
 
-        when(registry.get(eq(version), any(BoltChannel.class))).thenReturn(Optional.of(protocol));
+        when(registry.get(eq(version))).thenReturn(Optional.of(protocol));
 
         return registry;
     }
 
-    @AfterEach
-    void tearDown() {
-        boltChannel.close();
+    @Test
+    void shouldNegotiateProtocol() throws Exception {
+        // Given
+        var version = new ProtocolVersion(2, 0);
+        var protocol = newBoltProtocol(version);
+        var protocolRegistry = newProtocolFactory(version, protocol);
+
+        when(protocolRegistry.get(eq(new ProtocolVersion(2, 0)))).thenReturn(Optional.of(protocol));
+
+        var channel = new EmbeddedChannel();
+        var connection = ConnectionMockFactory.newFactory()
+                .withConnector(factory -> factory.withProtocolRegistry(protocolRegistry))
+                .attachTo(channel, new ProtocolHandshakeHandler(Config.defaults(), logProvider));
+
+        // When
+        channel.writeInbound(new ProtocolNegotiationRequest(
+                0x6060B017,
+                List.of(
+                        new ProtocolVersion(1, 0),
+                        new ProtocolVersion(2, 0),
+                        version,
+                        new ProtocolVersion(3, 0),
+                        ProtocolVersion.INVALID)));
+
+        // Then
+        var msg = channel.<ProtocolNegotiationResponse>readOutbound();
+
+        verify(connection).selectProtocol(protocol);
+        verify(protocol).requestMessageRegistry();
+        verify(protocol).responseMessageRegistry();
+
+        assertThat(msg).isEqualTo(new ProtocolNegotiationResponse(version));
     }
 
     @Test
     void shouldChooseFirstAvailableProtocol() throws Exception {
         // Given
-        var ctx = mock(ChannelHandlerContext.class, RETURNS_MOCKS);
-        var pipeline = mock(ChannelPipeline.class, RETURNS_MOCKS);
-
         var version = new ProtocolVersion(3, 0);
         var protocol = newBoltProtocol(version);
         var protocolRegistry = newProtocolFactory(version, protocol);
-        var connectionFactory = mock(BoltConnectionFactory.class);
 
-        var responseCaptor = ArgumentCaptor.forClass(ProtocolNegotiationResponse.class);
+        when(protocolRegistry.get(eq(new ProtocolVersion(3, 0)))).thenReturn(Optional.of(protocol));
 
-        when(protocolRegistry.get(eq(new ProtocolVersion(3, 0)), any())).thenReturn(Optional.of(protocol));
-
-        var channel = new EmbeddedChannel(new ProtocolHandshakeHandler(
-                protocolRegistry, connectionFactory, boltChannel, logProvider, Config.defaults()));
+        var channel = new EmbeddedChannel();
+        var connection = ConnectionMockFactory.newFactory()
+                .withConnector(factory -> factory.withProtocolRegistry(protocolRegistry))
+                // Negotiation en- and decoders included at the end of the pipeline as removal will fail hard if they
+                // are not present within the pipeline
+                .attachTo(
+                        channel,
+                        new ProtocolHandshakeHandler(Config.defaults(), logProvider),
+                        new ProtocolNegotiationRequestDecoder(),
+                        new ProtocolNegotiationResponseEncoder());
 
         // When
         channel.writeInbound(new ProtocolNegotiationRequest(
                 0x6060B017,
-                List.of(new ProtocolVersion(2, 0), version, new ProtocolVersion(3, 0), ProtocolVersion.INVALID)));
+                List.of(new ProtocolVersion(2, 0), version, new ProtocolVersion(4, 0), ProtocolVersion.INVALID)));
 
         // Then
         var msg = channel.<ProtocolNegotiationResponse>readOutbound();
 
-        verify(protocol).createStateMachine(boltChannel);
-
         assertThat(msg).isEqualTo(new ProtocolNegotiationResponse(version));
-        doReturn(pipeline).when(ctx).pipeline();
-        doReturn(mock(ChannelFuture.class)).when(ctx).writeAndFlush(responseCaptor.capture());
-        doReturn(pipeline).when(pipeline).addLast(anyString(), any());
+
+        verify(connection).selectProtocol(protocol);
+        verify(protocol).requestMessageRegistry();
+        verify(protocol).responseMessageRegistry();
+
+        var requestHandler = channel.pipeline().get(RequestHandler.class);
+        assertThat(requestHandler).isNotNull();
     }
 
     @Test
@@ -121,14 +143,15 @@ class ProtocolHandshakeHandlerTest {
         // Given
         var version = new ProtocolVersion(5, 0);
         var protocolRegistry = newProtocolFactory(version);
-        var connectionFactory = mock(BoltConnectionFactory.class);
 
         var memoryTracker = mock(MemoryTracker.class);
         var scopedTracker = mock(MemoryTracker.class);
         when(memoryTracker.getScopedMemoryTracker()).thenReturn(scopedTracker);
 
-        var channel = new EmbeddedChannel(new ProtocolHandshakeHandler(
-                protocolRegistry, connectionFactory, boltChannel, logProvider, Config.defaults()));
+        var channel = ConnectionMockFactory.newFactory()
+                .withConnector(factory -> factory.withProtocolRegistry(protocolRegistry))
+                .withMemoryTracker(memoryTracker)
+                .createChannel(new ProtocolHandshakeHandler(Config.defaults(), logProvider));
 
         // When
         channel.writeInbound(new ProtocolNegotiationRequest(
@@ -151,12 +174,8 @@ class ProtocolHandshakeHandlerTest {
     @Test
     void shouldRejectIfWrongPreamble() {
         // Given
-        var handlerFactory = newProtocolFactory(new ProtocolVersion(5, 0));
-        var connectionFactory = mock(BoltConnectionFactory.class);
-        var memoryTracker = mock(MemoryTracker.class);
-
-        var channel = new EmbeddedChannel(new ProtocolHandshakeHandler(
-                handlerFactory, connectionFactory, boltChannel, logProvider, Config.defaults()));
+        var channel = ConnectionMockFactory.newFactory()
+                .createChannel(new ProtocolHandshakeHandler(Config.defaults(), logProvider));
 
         // When
         channel.writeInbound(new ProtocolNegotiationRequest(
@@ -176,15 +195,11 @@ class ProtocolHandshakeHandlerTest {
 
     @Test
     void shouldFreeMemoryUponRemoval() {
-        var boltChannel = spy(this.boltChannel);
-        var handlerFactory = newProtocolFactory(new ProtocolVersion(1, 0));
         var memoryTracker = mock(MemoryTracker.class);
-        var connectionFactory = mock(BoltConnectionFactory.class);
 
-        doReturn(memoryTracker).when(boltChannel).memoryTracker();
-
-        var channel = new EmbeddedChannel(new ProtocolHandshakeHandler(
-                handlerFactory, connectionFactory, boltChannel, logProvider, Config.defaults()));
+        var channel = ConnectionMockFactory.newFactory()
+                .withMemoryTracker(memoryTracker)
+                .createChannel(new ProtocolHandshakeHandler(Config.defaults(), logProvider));
 
         channel.pipeline().removeFirst();
 

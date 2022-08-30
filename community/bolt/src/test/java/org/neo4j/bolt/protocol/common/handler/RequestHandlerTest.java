@@ -23,22 +23,23 @@ import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.neo4j.bolt.protocol.common.connection.BoltConnection;
+import org.mockito.ArgumentMatchers;
 import org.neo4j.bolt.protocol.common.connection.Job;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.message.Error;
+import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
 import org.neo4j.bolt.protocol.v41.message.request.HelloMessage;
 import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 
 class RequestHandlerTest {
@@ -47,50 +48,41 @@ class RequestHandlerTest {
     void shouldEnqueueRequests() throws BoltConnectionFatality {
         var msg = new HelloMessage(emptyMap(), new RoutingContext(true, emptyMap()), emptyMap());
 
-        var connection = mock(BoltConnection.class);
         var responseHandler = mock(ResponseHandler.class);
         var fsm = mock(StateMachine.class);
 
-        var captor = ArgumentCaptor.forClass(Job.class);
-
-        doNothing().when(connection).enqueue(captor.capture());
-
-        var channel = new EmbeddedChannel(new RequestHandler(connection, responseHandler));
+        var channel = new EmbeddedChannel();
+        var connection = ConnectionMockFactory.newFactory()
+                .attachTo(channel, new RequestHandler(responseHandler, NullLogProvider.getInstance()));
 
         channel.writeInbound(msg);
 
-        verify(connection).enqueue(any(Job.class));
+        var messageCaptor = ArgumentCaptor.forClass(RequestMessage.class);
+        var responseHandlerCaptor = ArgumentCaptor.forClass(ResponseHandler.class);
+        verify(connection).submit(messageCaptor.capture(), responseHandlerCaptor.capture());
 
-        var job = captor.getValue();
+        var actualMsg = messageCaptor.getValue();
+        assertThat(actualMsg).isNotNull().isSameAs(msg);
 
-        assertThat(job).isNotNull();
-
-        job.perform(fsm);
-
-        verify(fsm).process(msg, responseHandler);
+        var actualResponseHandler = responseHandlerCaptor.getValue();
+        assertThat(actualResponseHandler).isNotNull().isSameAs(responseHandler);
     }
 
     @Test
     void shouldEnqueueErrors() throws BoltConnectionFatality {
-        var msg = new HelloMessage(emptyMap(), new RoutingContext(true, emptyMap()), emptyMap());
-
-        var connection = mock(BoltConnection.class);
         var responseHandler = mock(ResponseHandler.class);
         var fsm = mock(StateMachine.class);
 
-        doAnswer(invocation -> {
+        var channel = new EmbeddedChannel();
+        var connection = ConnectionMockFactory.newFactory()
+                .withAnswer(mock -> mock.submit(ArgumentMatchers.any()), invocation -> {
                     var job = invocation.<Job>getArgument(0);
                     job.perform(fsm);
                     return null;
                 })
-                .when(connection)
-                .enqueue(any(Job.class));
-
-        var channel = new EmbeddedChannel(new RequestHandler(connection, responseHandler));
+                .attachTo(channel, new RequestHandler(responseHandler, NullLogProvider.getInstance()));
 
         channel.pipeline().fireExceptionCaught(new IllegalStructArgumentException("foo", "Something went wrong! :("));
-
-        verify(connection).enqueue(any(Job.class));
 
         // invoked through mock
         verify(fsm).handleExternalFailure(any(Error.class), eq(responseHandler));

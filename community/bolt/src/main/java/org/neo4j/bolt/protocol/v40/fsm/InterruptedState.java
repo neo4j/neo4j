@@ -46,7 +46,7 @@ public class InterruptedState implements State {
         }
 
         if (message instanceof ResetMessage) {
-            if (context.connectionState().decrementInterruptCounter() > 0) {
+            if (!context.connection().reset()) {
                 context.connectionState().markIgnored();
                 return this;
             }

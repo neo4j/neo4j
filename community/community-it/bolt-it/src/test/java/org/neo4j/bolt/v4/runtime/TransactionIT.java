@@ -302,6 +302,7 @@ class TransactionIT extends BoltStateMachineV4StateTestBase {
     }
 
     private static void resetReceived(StateMachine machine, ResponseRecorder recorder) throws BoltConnectionFatality {
+        machine.connection().interrupt();
         machine.interrupt();
         machine.process(reset(), recorder);
     }

@@ -22,24 +22,17 @@ package org.neo4j.server.http.cypher;
 import static org.neo4j.configuration.GraphDatabaseSettings.UNSPECIFIED_TIMEOUT;
 import static org.neo4j.kernel.impl.util.ValueUtils.asParameterMapValue;
 
-import io.netty.channel.embedded.EmbeddedChannel;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Collections;
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
-import org.neo4j.bolt.protocol.common.MutableConnectionState;
-import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
-import org.neo4j.bolt.protocol.common.fsm.StateMachineContextImpl;
-import org.neo4j.bolt.protocol.common.fsm.StateMachineSPIImpl;
-import org.neo4j.bolt.protocol.common.protector.ChannelProtector;
+import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
 import org.neo4j.bolt.protocol.common.transaction.statement.StatementProcessorProvider;
+import org.neo4j.bolt.protocol.common.transaction.statement.StatementProcessorReleaseManager;
 import org.neo4j.bolt.protocol.common.transaction.statement.metadata.StatementMetadata;
 import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
-import org.neo4j.bolt.protocol.v43.fsm.StateMachineV43;
 import org.neo4j.bolt.protocol.v44.transaction.TransactionStateMachineSPIProviderV44;
-import org.neo4j.bolt.security.Authentication;
-import org.neo4j.bolt.security.basic.BasicAuthentication;
+import org.neo4j.bolt.transaction.CleanUpConnectionContext;
 import org.neo4j.bolt.transaction.CleanUpTransactionContext;
 import org.neo4j.bolt.transaction.InitializeContext;
 import org.neo4j.bolt.transaction.TransactionManager;
@@ -49,10 +42,8 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.logging.InternalLogProvider;
-import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.server.http.cypher.format.api.Statement;
@@ -78,7 +69,7 @@ import org.neo4j.time.SystemNanoClock;
  * to the registry. If you want to use it again, you'll need to acquire it back from the registry to ensure exclusive
  * use.
  */
-public class TransactionHandle implements TransactionTerminationHandle {
+public class TransactionHandle implements TransactionTerminationHandle, TransactionOwner {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(TransactionHandle.class);
 
     private final String databaseName;
@@ -197,7 +188,7 @@ public class TransactionHandle implements TransactionTerminationHandle {
             // ignore - Transaction already rolled back by release mechanism.
         } finally {
             registry.forget(id);
-            transactionManager.cleanUp(new CleanUpTransactionContext(Long.toString(id)));
+            transactionManager.cleanUp(new CleanUpTransactionContext(txManagerTxId));
         }
     }
 
@@ -209,32 +200,28 @@ public class TransactionHandle implements TransactionTerminationHandle {
         return txManagerTxId != null;
     }
 
+    @Override
+    public MemoryTracker memoryTracker() {
+        return this.memoryTracker;
+    }
+
+    @Override
+    public ClientConnectionInfo info() {
+        return this.clientConnectionInfo;
+    }
+
+    @Override
+    public String selectedDefaultDatabase() {
+        return this.databaseName;
+    }
+
     /*
     This is an ugly temporary measure to enable the HTTP server to use the Bolt Implementation of TransactionManager.
     This will be removed completely when a global transaction aware TransactionManager is implemented.
      */
     private void setUpStatementProcessor() {
-        Authentication authentication = new BasicAuthentication(authManager);
-
-        var boltChannel = new DummyBoltChannel(Long.toString(id), clientConnectionInfo, authentication, memoryTracker);
-
-        var transactionStateMachineSPIProvider =
-                new TransactionStateMachineSPIProviderV44(boltSPI, boltChannel, clock, memoryTracker);
-
-        var boltStateMachineSPI = new StateMachineSPIImpl(
-                new SimpleLogService(userLogProvider), transactionStateMachineSPIProvider, boltChannel);
-
-        var boltStateMachine = new StateMachineV43(
-                boltStateMachineSPI, boltChannel, clock, fixedHttpDatabaseResolver(), transactionManager);
-
-        var statementProcessorReleaseManager = new StateMachineContextImpl(
-                boltStateMachine,
-                boltChannel,
-                boltStateMachineSPI,
-                new MutableConnectionState(),
-                clock,
-                fixedHttpDatabaseResolver(),
-                transactionManager);
+        var transactionStateMachineSPIProvider = new TransactionStateMachineSPIProviderV44(boltSPI, this, clock);
+        var statementProcessorReleaseManager = new HttpStatementProcessorReleaseManager(this.transactionManager);
 
         var statementProcessorProvider = new StatementProcessorProvider(
                 transactionStateMachineSPIProvider,
@@ -244,23 +231,6 @@ public class TransactionHandle implements TransactionTerminationHandle {
                 memoryTracker);
 
         transactionManager.initialize(new InitializeContext(Long.toString(getId()), statementProcessorProvider));
-    }
-
-    /**
-     * Since the selected database comes from the URI we have a custom resolver that simply returns it.
-     */
-    private DefaultDatabaseResolver fixedHttpDatabaseResolver() {
-        return new DefaultDatabaseResolver() {
-            @Override
-            public String defaultDatabase(String ignored) {
-                return databaseName;
-            }
-
-            @Override
-            public void clearCache() {
-                // not needed
-            }
-        };
     }
 
     public void beginTransaction() throws KernelException {
@@ -282,25 +252,17 @@ public class TransactionHandle implements TransactionTerminationHandle {
         return txManagerTxId;
     }
 
-    private static class DummyBoltChannel extends BoltChannel {
-        private final ClientConnectionInfo info;
+    public static class HttpStatementProcessorReleaseManager implements StatementProcessorReleaseManager {
+        private final TransactionManager transactionManager;
 
-        DummyBoltChannel(
-                String id, ClientConnectionInfo info, Authentication authentication, MemoryTracker memoryTracker) {
-            super(
-                    id,
-                    info.protocol(),
-                    new EmbeddedChannel(),
-                    authentication,
-                    ChannelProtector.NULL,
-                    ConnectionHintProvider.noop(),
-                    memoryTracker);
-            this.info = info;
+        public HttpStatementProcessorReleaseManager(TransactionManager transactionManager) {
+            this.transactionManager = transactionManager;
         }
 
         @Override
-        public ClientConnectionInfo info() {
-            return info;
+        public void releaseStatementProcessor(String transactionId) {
+            this.transactionManager.cleanUp(new CleanUpTransactionContext(transactionId));
+            this.transactionManager.cleanUp(new CleanUpConnectionContext(transactionId));
         }
     }
 }

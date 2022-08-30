@@ -20,18 +20,17 @@
 package org.neo4j.bolt.protocol.common.fsm;
 
 import java.time.Clock;
-import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.protocol.common.MutableConnectionState;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.connection.MutableConnectionState;
 import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.transaction.TransactionManager;
-import org.neo4j.internal.kernel.api.security.LoginContext;
 
 public interface StateMachineContext {
 
     String connectionId();
 
-    BoltChannel channel();
+    Connection connection();
 
     Clock clock();
 
@@ -40,14 +39,6 @@ public interface StateMachineContext {
     StateMachineSPI boltSpi();
 
     MutableConnectionState connectionState();
-
-    String defaultDatabase();
-
-    void authenticatedAsUser(LoginContext loginContext, String userAgent);
-
-    void impersonateUser(LoginContext loginContext);
-
-    LoginContext getLoginContext();
 
     void handleFailure(Throwable cause, boolean fatal) throws BoltConnectionFatality;
 

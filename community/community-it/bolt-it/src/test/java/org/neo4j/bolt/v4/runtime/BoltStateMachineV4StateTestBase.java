@@ -23,30 +23,24 @@ import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.parallel.ResourceLock;
-import org.neo4j.bolt.BoltChannel;
+import org.mockito.Mockito;
 import org.neo4j.bolt.protocol.v40.BoltProtocolV40;
 import org.neo4j.bolt.protocol.v40.fsm.StateMachineV40;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.SessionExtension;
-import org.neo4j.bolt.testing.BoltChannelFactory;
 import org.neo4j.bolt.testing.messages.BoltV40Messages;
-import org.neo4j.memory.EmptyMemoryTracker;
-import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 @ResourceLock("boltStateMachineV4")
 public class BoltStateMachineV4StateTestBase {
     protected static final MapValue EMPTY_PARAMS = VirtualValues.EMPTY_MAP;
-    protected static final BoltChannel BOLT_CHANNEL =
-            BoltChannelFactory.newTestBoltChannel("conn-v4-test-boltchannel-id");
-    protected static final MemoryTracker MEMORY_TRACKER = EmptyMemoryTracker.INSTANCE;
 
     @RegisterExtension
     static final SessionExtension env = new SessionExtension();
 
     protected StateMachineV40 newStateMachine() {
-        return (StateMachineV40) env.newMachine(BoltProtocolV40.VERSION, BOLT_CHANNEL);
+        return (StateMachineV40) env.newMachine(BoltProtocolV40.VERSION);
     }
 
     protected StateMachineV40 newStateMachineAfterAuth() throws BoltConnectionFatality {
@@ -54,15 +48,17 @@ public class BoltStateMachineV4StateTestBase {
     }
 
     protected StateMachineV40 newStateMachineAfterAuth(String connectionId) throws BoltConnectionFatality {
-        var machine = (StateMachineV40)
-                env.newMachine(BoltProtocolV40.VERSION, BoltChannelFactory.newTestBoltChannel(connectionId));
+        var machine = (StateMachineV40) env.newMachine(BoltProtocolV40.VERSION);
+
+        Mockito.when(machine.connection().id()).thenReturn(connectionId);
+
         machine.process(BoltV40Messages.hello(), nullResponseHandler());
         return machine;
     }
 
     // TODO: Remove me >:(
     protected static StateMachineV40 newStateMachineAfterAuth(SessionExtension env) throws BoltConnectionFatality {
-        var machine = (StateMachineV40) env.newMachine(BoltProtocolV40.VERSION, BOLT_CHANNEL);
+        var machine = (StateMachineV40) env.newMachine(BoltProtocolV40.VERSION);
         machine.process(BoltV40Messages.hello(), nullResponseHandler());
         return machine;
     }

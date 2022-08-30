@@ -40,7 +40,7 @@ class BoltConnectionAuthIT {
     static final SessionExtension env = new SessionExtension().withAuthEnabled(true);
 
     protected StateMachineV44 newStateMachine() {
-        return (StateMachineV44) env.newMachine(BoltProtocolV44.VERSION, env.channel());
+        return (StateMachineV44) env.newMachine(BoltProtocolV44.VERSION);
     }
 
     @Test

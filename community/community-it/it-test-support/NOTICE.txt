@@ -51,6 +51,8 @@ Apache Software License, Version 2.0
   Apache Shiro :: Event
   Apache Shiro :: Lang
   AssertJ fluent assertions
+  Byte Buddy (without dependencies)
+  Byte Buddy agent
   Caffeine cache
   fastinfoset
   IPAddress
@@ -92,7 +94,9 @@ Apache Software License, Version 2.0
   Netty/Resolver
   Netty/Transport
   Netty/Transport/Classes/Epoll
+  Netty/Transport/Classes/KQueue
   Netty/Transport/Native/Epoll
+  Netty/Transport/Native/KQueue
   Netty/Transport/Native/Unix/Common
   Non-Blocking Reactive Foundation for the JVM
   picocli
@@ -176,6 +180,7 @@ MIT License
   jersey-container-servlet-core
   jersey-core-client
   jersey-inject-hk2
+  mockito-core
   SLF4J API Module
   SLF4J NOP Binding
 

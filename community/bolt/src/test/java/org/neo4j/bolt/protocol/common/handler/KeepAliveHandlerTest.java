@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.protocol.common.signal.StateSignal;
-import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.packstream.signal.FrameSignal;
 
 class KeepAliveHandlerTest {
@@ -37,7 +37,7 @@ class KeepAliveHandlerTest {
 
     @Test
     void shouldSendKeepAliveDuringProcessing() throws InterruptedException {
-        var handler = new KeepAliveHandler(NullLogService.getInstance(), false, KEEP_ALIVE_TIMEOUT_SECONDS);
+        var handler = new KeepAliveHandler(false, KEEP_ALIVE_TIMEOUT_SECONDS, NullLogProvider.getInstance());
         var channel = new EmbeddedChannel(handler);
 
         channel.writeOutbound(StateSignal.BEGIN_JOB_PROCESSING);
@@ -46,14 +46,16 @@ class KeepAliveHandlerTest {
         channel.runPendingTasks();
 
         var msg = channel.readOutbound();
+        assertThat(msg).isEqualTo(StateSignal.BEGIN_JOB_PROCESSING);
 
+        msg = channel.readOutbound();
         assertThat(msg).isEqualTo(FrameSignal.NOOP);
     }
 
     @Test
     @SuppressWarnings("removal")
     void shouldSendKeepAliveDuringInLegacyMode() throws InterruptedException {
-        var handler = new KeepAliveHandler(NullLogService.getInstance(), true, KEEP_ALIVE_TIMEOUT_SECONDS);
+        var handler = new KeepAliveHandler(true, KEEP_ALIVE_TIMEOUT_SECONDS, NullLogProvider.getInstance());
         var channel = new EmbeddedChannel(handler);
 
         channel.writeOutbound(StateSignal.ENTER_STREAMING);
@@ -62,13 +64,15 @@ class KeepAliveHandlerTest {
         channel.runPendingTasks();
 
         var msg = channel.readOutbound();
+        assertThat(msg).isEqualTo(StateSignal.ENTER_STREAMING);
 
+        msg = channel.readOutbound();
         assertThat(msg).isEqualTo(FrameSignal.NOOP);
     }
 
     @Test
     void shouldIgnoreIdleConnectionsWhenInactive() throws InterruptedException {
-        var handler = new KeepAliveHandler(NullLogService.getInstance(), false, KEEP_ALIVE_TIMEOUT_SECONDS);
+        var handler = new KeepAliveHandler(false, KEEP_ALIVE_TIMEOUT_SECONDS, NullLogProvider.getInstance());
         var channel = new EmbeddedChannel(handler);
 
         sleepUntilTimeout();
@@ -81,7 +85,7 @@ class KeepAliveHandlerTest {
 
     @Test
     void shouldIgnoreIdleConnectionsWhenInactiveInLegacyMode() throws InterruptedException {
-        var handler = new KeepAliveHandler(NullLogService.getInstance(), true, KEEP_ALIVE_TIMEOUT_SECONDS);
+        var handler = new KeepAliveHandler(true, KEEP_ALIVE_TIMEOUT_SECONDS, NullLogProvider.getInstance());
         var channel = new EmbeddedChannel(handler);
 
         sleepUntilTimeout();

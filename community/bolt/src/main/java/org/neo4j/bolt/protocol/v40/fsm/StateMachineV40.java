@@ -20,7 +20,7 @@
 package org.neo4j.bolt.protocol.v40.fsm;
 
 import java.time.Clock;
-import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.AbstractStateMachine;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineSPI;
 import org.neo4j.bolt.transaction.TransactionManager;
@@ -33,11 +33,11 @@ public class StateMachineV40 extends AbstractStateMachine {
 
     public StateMachineV40(
             StateMachineSPI boltSPI,
-            BoltChannel boltChannel,
+            Connection connection,
             Clock clock,
             DefaultDatabaseResolver defaultDatabaseResolver,
             TransactionManager transactionManager) {
-        super(boltSPI, boltChannel, clock, defaultDatabaseResolver, transactionManager);
+        super(boltSPI, connection, clock, defaultDatabaseResolver, transactionManager);
     }
 
     @Override

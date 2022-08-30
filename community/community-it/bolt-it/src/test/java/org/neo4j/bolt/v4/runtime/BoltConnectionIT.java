@@ -324,6 +324,7 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase {
             throws BoltConnectionFatality {
         // Reset is two steps now: When parsing reset message we immediately interrupt, and then ignores all other
         // messages until reset is reached.
+        machine.connection().interrupt();
         machine.interrupt();
         machine.process(reset(), recorder);
     }

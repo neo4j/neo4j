@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.protocol.common.handler.messages;
 
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -27,9 +26,9 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.protocol.common.connection.BoltConnection;
 import org.neo4j.bolt.protocol.v40.messaging.request.CommitMessage;
 import org.neo4j.bolt.protocol.v40.messaging.request.ResetMessage;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.Level;
 
@@ -37,10 +36,10 @@ class ResetMessageHandlerTest {
 
     @Test
     void shouldInterruptStateMachine() {
-        var connection = mock(BoltConnection.class);
         var log = new AssertableLogProvider();
 
-        var channel = new EmbeddedChannel(new ResetMessageHandler(connection, log.getLog(ResetMessageHandler.class)));
+        var channel = new EmbeddedChannel();
+        var connection = ConnectionMockFactory.newFactory().attachTo(channel, new ResetMessageHandler(log));
 
         channel.writeInbound(ResetMessage.INSTANCE);
 
@@ -52,10 +51,10 @@ class ResetMessageHandlerTest {
 
     @Test
     void shouldIgnoreUnrelatedMessages() {
-        var connection = mock(BoltConnection.class);
         var log = new AssertableLogProvider();
 
-        var channel = new EmbeddedChannel(new ResetMessageHandler(connection, log.getLog(ResetMessageHandler.class)));
+        var channel = new EmbeddedChannel();
+        var connection = ConnectionMockFactory.newFactory().attachTo(channel, new ResetMessageHandler(log));
 
         channel.writeInbound(CommitMessage.INSTANCE);
 

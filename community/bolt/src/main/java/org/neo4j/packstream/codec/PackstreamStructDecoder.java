@@ -22,18 +22,19 @@ package org.neo4j.packstream.codec;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import java.util.List;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.packstream.error.reader.UnexpectedStructException;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructRegistry;
 
 public class PackstreamStructDecoder extends MessageToMessageDecoder<PackstreamBuf> {
     private final StructRegistry<?> registry;
-    private final Log log;
+    private final InternalLog log;
 
-    public PackstreamStructDecoder(StructRegistry<?> registry, Log log) {
+    public PackstreamStructDecoder(StructRegistry<?> registry, InternalLogProvider logging) {
         this.registry = registry;
-        this.log = log;
+        this.log = logging.getLog(PackstreamStructDecoder.class);
     }
 
     @Override

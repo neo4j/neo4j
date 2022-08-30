@@ -89,7 +89,7 @@ public class ReadyState extends FailSafeState {
         var runResult = context.transactionManager()
                 .runProgram(
                         programId,
-                        context.getLoginContext(),
+                        context.connection().loginContext(),
                         message.databaseName(),
                         message.statement(),
                         message.params(),
@@ -106,7 +106,7 @@ public class ReadyState extends FailSafeState {
         context.connectionState().onMetadata(FIRST_RECORD_AVAILABLE_KEY, Values.longValue(end - start));
 
         // TODO: Remove along with ENTER_STREAMING
-        context.channel().rawChannel().write(StateSignal.ENTER_STREAMING);
+        context.connection().write(StateSignal.ENTER_STREAMING);
 
         return streamingState;
     }
@@ -115,7 +115,7 @@ public class ReadyState extends FailSafeState {
     protected State processBeginMessage(BeginMessage message, StateMachineContext context) throws Exception {
         var transactionId = context.transactionManager()
                 .begin(
-                        context.getLoginContext(),
+                        context.connection().loginContext(),
                         message.databaseName(),
                         message.bookmarks(),
                         message.getAccessMode().equals(AccessMode.READ),
@@ -125,7 +125,7 @@ public class ReadyState extends FailSafeState {
         context.connectionState().setCurrentTransactionId(transactionId);
 
         // TODO: Remove along with ENTER_STREAMING
-        context.channel().rawChannel().write(StateSignal.ENTER_STREAMING);
+        context.connection().write(StateSignal.ENTER_STREAMING);
 
         return txReadyState;
     }

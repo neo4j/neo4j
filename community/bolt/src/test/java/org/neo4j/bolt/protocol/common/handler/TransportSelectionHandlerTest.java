@@ -19,28 +19,23 @@
  */
 package org.neo4j.bolt.protocol.common.handler;
 
-import static org.mockito.Mockito.RETURNS_SELF;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslHandler;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import javax.net.ssl.SSLException;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
+import org.neo4j.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.packstream.codec.transport.WebSocketFramePackingEncoder;
 import org.neo4j.packstream.codec.transport.WebSocketFrameUnpackingDecoder;
@@ -49,40 +44,38 @@ class TransportSelectionHandlerTest {
     @Test
     void shouldLogOnUnexpectedExceptionsAndClosesContext() throws Throwable {
         // Given
-        var context = channelHandlerContextMock();
         var logging = new AssertableLogProvider();
 
-        var handler = new TransportSelectionHandler(null, null, false, false, logging, null, null, null, null);
+        var channel = ConnectionMockFactory.newFactory()
+                .createChannel(new TransportSelectionHandler(Config.defaults(), null, logging));
 
         // When
-        var cause = new Throwable("Oh no!");
-        handler.exceptionCaught(context, cause);
+        var ex = new Throwable("Oh no!");
+        channel.pipeline().fireExceptionCaught(ex);
 
         // Then
-        verify(context).close();
+        assertThat(channel.isOpen()).isFalse();
 
         assertThat(logging)
                 .forClass(TransportSelectionHandler.class)
                 .forLevel(ERROR)
-                .containsMessageWithException(
-                        "Fatal error occurred when initialising pipeline: " + context.channel(), cause);
+                .containsMessageWithException("Fatal error occurred when initialising pipeline: ", ex);
     }
 
     @Test
     void shouldLogConnectionResetErrorsAtWarningLevelAndClosesContext() throws Exception {
         // Given
-        var context = channelHandlerContextMock();
         var logging = new AssertableLogProvider();
 
-        var handler = new TransportSelectionHandler(null, null, false, false, logging, null, null, null, null);
-
-        var connResetError = new IOException("Connection reset by peer");
+        var channel = ConnectionMockFactory.newFactory()
+                .createChannel(new TransportSelectionHandler(Config.defaults(), null, logging));
 
         // When
-        handler.exceptionCaught(context, connResetError);
+        var ex = new IOException("Connection reset by peer");
+        channel.pipeline().fireExceptionCaught(ex);
 
         // Then
-        verify(context).close();
+        assertThat(channel.isOpen()).isFalse();
 
         assertThat(logging)
                 .forClass(TransportSelectionHandler.class)
@@ -90,72 +83,61 @@ class TransportSelectionHandlerTest {
                 .containsMessageWithArguments(
                         "Fatal error occurred when initialising pipeline, "
                                 + "remote peer unexpectedly closed connection: %s",
-                        context.channel());
+                        channel);
     }
 
     @Test
-    void shouldPreventMultipleLevelsOfSslEncryption() throws Exception {
+    void shouldPreventMultipleLevelsOfSslEncryption() throws SSLException {
         // Given
-        var context = channelHandlerContextMockSslAlreadyConfigured();
         var logging = new AssertableLogProvider();
-        var sslCtx = mock(SslContext.class);
-        var memoryTracker = mock(MemoryTracker.class);
+        var sslCtx = SslContextBuilder.forClient()
+                .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                .build();
 
-        var boltChannel = mock(BoltChannel.class);
-
-        doReturn(memoryTracker).when(boltChannel).memoryTracker();
-
-        var handler = new TransportSelectionHandler(boltChannel, sslCtx, false, false, logging, null, null, null, null);
-
-        var payload = Unpooled.wrappedBuffer(new byte[] {22, 3, 1, 0, 5}); // encrypted
+        var channel = ConnectionMockFactory.newFactory()
+                .createChannel(new TransportSelectionHandler(Config.defaults(), sslCtx, logging, true));
 
         // When
-        handler.decode(context, payload, null);
+        channel.writeInbound(Unpooled.wrappedBuffer(new byte[] {22, 3, 1, 0, 5})); // encrypted
 
         // Then
-        verify(context).close();
+        assertThat(channel.isOpen()).isFalse();
 
         assertThat(logging)
                 .forClass(TransportSelectionHandler.class)
                 .forLevel(ERROR)
                 .containsMessageWithArguments(
                         "Fatal error: multiple levels of SSL encryption detected." + " Terminating connection: %s",
-                        context.channel());
+                        channel);
     }
 
     @Test
     void shouldRemoveAllocationUponRemoval() {
-        var ctx = channelHandlerContextMockSslAlreadyConfigured();
-        var logging = new AssertableLogProvider();
-
         var memoryTracker = mock(MemoryTracker.class);
-        var channel = mock(BoltChannel.class);
 
-        doReturn(memoryTracker).when(channel).memoryTracker();
+        var channel = ConnectionMockFactory.newFactory()
+                .withMemoryTracker(memoryTracker)
+                .createChannel(new TransportSelectionHandler(Config.defaults(), null, NullLogProvider.getInstance()));
 
-        var handler = new TransportSelectionHandler(channel, null, false, false, logging, null, null, null, null);
-
-        handler.handlerRemoved0(ctx);
+        channel.pipeline().remove(TransportSelectionHandler.class);
 
         verify(memoryTracker).releaseHeap(TransportSelectionHandler.SHALLOW_SIZE);
     }
 
     @Test
-    void shouldAllocateUponSslHandshake() {
-        var ctx = channelHandlerContextMockSslAlreadyConfigured();
-        var sslCtx = mock(SslContext.class);
-        var logging = new AssertableLogProvider();
+    void shouldAllocateUponSslHandshake() throws SSLException {
+        // since we'll need the fake SSL packet to be consumed, we'll create a client SSL context instead of a server
+        // context as this does not require any certificates to be present - there is no difference to the handler
+        var sslCtx = SslContextBuilder.forClient()
+                .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                .build();
         var memoryTracker = mock(MemoryTracker.class);
 
-        var channel = mock(BoltChannel.class);
+        var channel = ConnectionMockFactory.newFactory()
+                .withMemoryTracker(memoryTracker)
+                .createChannel(new TransportSelectionHandler(Config.defaults(), sslCtx, NullLogProvider.getInstance()));
 
-        doReturn(memoryTracker).when(channel).memoryTracker();
-
-        var payload = Unpooled.wrappedBuffer(new byte[] {22, 3, 1, 0, 5});
-
-        var handler = new TransportSelectionHandler(channel, sslCtx, false, false, logging, null, null, null, null);
-
-        handler.decode(ctx, payload, new ArrayList<>());
+        channel.writeInbound(Unpooled.wrappedBuffer(new byte[] {22, 3, 1, 0, 5}));
 
         verify(memoryTracker)
                 .allocateHeap(
@@ -164,50 +146,23 @@ class TransportSelectionHandlerTest {
 
     @Test
     void shouldAllocateUponWebsocketHandshake() {
-        var ctx = channelHandlerContextMockSslAlreadyConfigured();
-        var sslCtx = mock(SslContext.class);
-        var logging = new AssertableLogProvider();
         var memoryTracker = mock(MemoryTracker.class);
 
-        var boltChannel = mock(BoltChannel.class);
+        var channel = ConnectionMockFactory.newFactory()
+                .withMemoryTracker(memoryTracker)
+                .createChannel(new TransportSelectionHandler(Config.defaults(), null, NullLogProvider.getInstance()));
 
-        doReturn(memoryTracker).when(boltChannel).memoryTracker();
-
-        var payload = Unpooled.wrappedBuffer("GET /\r\n".getBytes(StandardCharsets.UTF_8));
-
-        var channel = new EmbeddedChannel(
-                new TransportSelectionHandler(boltChannel, sslCtx, false, false, logging, null, null, null, null));
-        channel.writeInbound(payload);
+        channel.writeInbound(Unpooled.wrappedBuffer("GET /\r\n".getBytes(StandardCharsets.UTF_8)));
 
         verify(memoryTracker)
                 .allocateHeap(TransportSelectionHandler.HTTP_SERVER_CODEC_SHALLOW_SIZE
                         + TransportSelectionHandler.HTTP_OBJECT_AGGREGATOR_SHALLOW_SIZE
+                        + DiscoveryResponseHandler.SHALLOW_SIZE
                         + TransportSelectionHandler.WEB_SOCKET_SERVER_PROTOCOL_HANDLER_SHALLOW_SIZE
                         + TransportSelectionHandler.WEB_SOCKET_FRAME_AGGREGATOR_SHALLOW_SIZE
                         + WebSocketFramePackingEncoder.SHALLOW_SIZE
                         + WebSocketFrameUnpackingDecoder.SHALLOW_SIZE);
 
         verify(memoryTracker).releaseHeap(TransportSelectionHandler.SHALLOW_SIZE);
-    }
-
-    private static ChannelHandlerContext channelHandlerContextMock() {
-        Channel channel = mock(Channel.class);
-        ChannelHandlerContext context = mock(ChannelHandlerContext.class);
-        when(context.channel()).thenReturn(channel);
-        return context;
-    }
-
-    private static ChannelHandlerContext channelHandlerContextMockSslAlreadyConfigured() {
-        Channel channel = mock(Channel.class);
-        ChannelHandlerContext context = mock(ChannelHandlerContext.class);
-        ChannelPipeline pipeline = mock(ChannelPipeline.class, RETURNS_SELF);
-        SslHandler sslHandler = mock(SslHandler.class);
-
-        doReturn(channel).when(context).channel();
-        doReturn(pipeline).when(context).pipeline();
-
-        doReturn(sslHandler).when(pipeline).get(SslHandler.class);
-
-        return context;
     }
 }

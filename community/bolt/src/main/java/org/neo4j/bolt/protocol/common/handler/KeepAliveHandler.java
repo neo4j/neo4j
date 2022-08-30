@@ -25,12 +25,13 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import java.util.concurrent.TimeUnit;
 import org.neo4j.bolt.protocol.common.signal.StateSignal;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.HeapEstimator;
 import org.neo4j.packstream.signal.FrameSignal;
 
 public class KeepAliveHandler extends IdleStateHandler {
-    public static final String NAME = "keepAliveHandler";
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(KeepAliveHandler.class);
 
     private final Log log;
 
@@ -51,11 +52,11 @@ public class KeepAliveHandler extends IdleStateHandler {
      */
     private boolean streaming;
 
-    public KeepAliveHandler(LogService logging, boolean legacyMode, long writerIdleTimeSeconds) {
+    public KeepAliveHandler(boolean legacyMode, long writerIdleTimeSeconds, InternalLogProvider logging) {
         super(0, writerIdleTimeSeconds, 0, TimeUnit.MILLISECONDS);
 
-        this.log = logging.getInternalLog(KeepAliveHandler.class);
         this.legacyMode = legacyMode;
+        this.log = logging.getLog(KeepAliveHandler.class);
     }
 
     @Override
@@ -111,9 +112,6 @@ public class KeepAliveHandler extends IdleStateHandler {
                     return;
                 }
             }
-
-            promise.setSuccess();
-            return;
         }
 
         super.write(ctx, msg, promise);

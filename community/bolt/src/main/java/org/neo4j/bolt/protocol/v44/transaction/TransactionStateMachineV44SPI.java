@@ -20,9 +20,9 @@
 package org.neo4j.bolt.protocol.v44.transaction;
 
 import java.time.Clock;
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.BoltQueryExecutor;
+import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
 import org.neo4j.bolt.protocol.common.message.result.BoltResult;
 import org.neo4j.bolt.protocol.common.message.result.BoltResultHandle;
 import org.neo4j.bolt.protocol.common.transaction.result.AdaptingBoltQuerySubscriber;
@@ -35,11 +35,11 @@ import org.neo4j.values.virtual.MapValue;
 public class TransactionStateMachineV44SPI extends TransactionStateMachineV4SPI {
     public TransactionStateMachineV44SPI(
             BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI,
-            BoltChannel boltChannel,
+            TransactionOwner owner,
             SystemNanoClock clock,
             StatementProcessorReleaseManager resourceReleaseManager,
             String transactionId) {
-        super(boltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManager, transactionId);
+        super(boltGraphDatabaseServiceSPI, owner, clock, resourceReleaseManager, transactionId);
     }
 
     @Override

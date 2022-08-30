@@ -19,21 +19,13 @@
  */
 package org.neo4j.bolt.protocol.common.fsm;
 
-import java.util.Map;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.transaction.TransactionStateMachineSPIProvider;
-import org.neo4j.bolt.security.AuthenticationResult;
-import org.neo4j.bolt.security.error.AuthenticationException;
-import org.neo4j.internal.kernel.api.security.LoginContext;
 
 public interface StateMachineSPI {
     TransactionStateMachineSPIProvider transactionStateMachineSPIProvider();
 
     void reportError(Error err);
-
-    AuthenticationResult authenticate(Map<String, Object> authToken) throws AuthenticationException;
-
-    LoginContext impersonate(LoginContext context, String userToImpersonate) throws AuthenticationException;
 
     String version();
 }

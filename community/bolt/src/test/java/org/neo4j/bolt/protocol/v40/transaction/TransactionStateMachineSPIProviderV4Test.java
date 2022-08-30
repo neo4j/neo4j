@@ -34,14 +34,15 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
 import org.neo4j.bolt.dbapi.impl.BoltKernelGraphDatabaseServiceProvider;
 import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.transaction.TransactionStateMachineSPI;
 import org.neo4j.bolt.protocol.common.transaction.TransactionStateMachineSPIProvider;
 import org.neo4j.bolt.protocol.common.transaction.statement.StatementProcessorReleaseManager;
 import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
@@ -55,14 +56,16 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.SystemNanoClock;
 
 class TransactionStateMachineSPIProviderV4Test {
-    private final BoltChannel mockBoltChannel = mock(BoltChannel.class, RETURNS_MOCKS);
 
     @Test
     void shouldReturnTransactionStateMachineSPIIfDatabaseExists() throws Throwable {
         String databaseName = "database";
         String txId = "123";
+
+        var connection = ConnectionMockFactory.newInstance();
+
         DatabaseManagementService managementService = managementService(databaseName);
-        TransactionStateMachineSPIProvider spiProvider = newSpiProvider(managementService);
+        TransactionStateMachineSPIProvider spiProvider = newSpiProvider(managementService, connection);
 
         TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI(
                 databaseName, mock(StatementProcessorReleaseManager.class), txId);
@@ -74,9 +77,12 @@ class TransactionStateMachineSPIProviderV4Test {
         String databaseName = "neo4j";
         String txId = "123";
 
+        var connection = ConnectionMockFactory.newFactory()
+                .withSelectedDefaultDatabase("neo4j")
+                .build();
+
         DatabaseManagementService managementService = managementService(databaseName);
-        TransactionStateMachineSPIProvider spiProvider = newSpiProvider(managementService);
-        when(mockBoltChannel.defaultDatabase()).thenReturn("neo4j");
+        TransactionStateMachineSPIProvider spiProvider = newSpiProvider(managementService, connection);
 
         TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI(
                 "", mock(StatementProcessorReleaseManager.class, RETURNS_MOCKS), txId);
@@ -90,8 +96,10 @@ class TransactionStateMachineSPIProviderV4Test {
         var databaseName = "database";
         String txId = "123";
 
+        var connection = ConnectionMockFactory.newInstance();
+
         when(managementService.database(databaseName)).thenThrow(new DatabaseNotFoundException(databaseName));
-        TransactionStateMachineSPIProvider spiProvider = newSpiProvider(managementService);
+        TransactionStateMachineSPIProvider spiProvider = newSpiProvider(managementService, connection);
 
         BoltIOException error = assertThrows(
                 BoltIOException.class,
@@ -105,19 +113,22 @@ class TransactionStateMachineSPIProviderV4Test {
     void shouldAllocateMemoryForTransactionStateMachineSPI() throws BoltProtocolBreachFatality, BoltIOException {
         String databaseName = "neo4j";
         String txId = "123";
+
         var clock = mock(SystemNanoClock.class);
+        var scopedMemoryTracker = mock(MemoryTracker.class, RETURNS_MOCKS);
+        var memoryTracker = mock(MemoryTracker.class);
+        when(memoryTracker.getScopedMemoryTracker()).thenReturn(scopedMemoryTracker);
+
+        var connection = ConnectionMockFactory.newFactory()
+                .withSelectedDefaultDatabase("neo4j")
+                .withMemoryTracker(memoryTracker)
+                .build();
 
         DatabaseManagementService managementService = managementService(databaseName);
-        var memoryTracker = mock(MemoryTracker.class);
-        var scopedMemoryTracker = mock(MemoryTracker.class, RETURNS_MOCKS);
-
-        when(mockBoltChannel.defaultDatabase()).thenReturn("neo4j");
-        when(mockBoltChannel.memoryTracker()).thenReturn(memoryTracker);
-        when(memoryTracker.getScopedMemoryTracker()).thenReturn(scopedMemoryTracker);
 
         var dbProvider = new BoltKernelDatabaseManagementServiceProvider(
                 managementService, new Monitors(), clock, Duration.ZERO);
-        var spiProvider = new TransactionStateMachineSPIProviderV4(dbProvider, mockBoltChannel, clock);
+        var spiProvider = new TransactionStateMachineSPIProviderV4(dbProvider, connection, clock);
 
         spiProvider.getTransactionStateMachineSPI("", mock(StatementProcessorReleaseManager.class), txId);
 
@@ -152,10 +163,11 @@ class TransactionStateMachineSPIProviderV4Test {
         return managementService;
     }
 
-    private TransactionStateMachineSPIProvider newSpiProvider(DatabaseManagementService managementService) {
+    private TransactionStateMachineSPIProvider newSpiProvider(
+            DatabaseManagementService managementService, Connection connection) {
         var clock = mock(SystemNanoClock.class);
         var dbProvider = new BoltKernelDatabaseManagementServiceProvider(
                 managementService, new Monitors(), clock, Duration.ZERO);
-        return new TransactionStateMachineSPIProviderV4(dbProvider, mockBoltChannel, clock);
+        return new TransactionStateMachineSPIProviderV4(dbProvider, connection, clock);
     }
 }

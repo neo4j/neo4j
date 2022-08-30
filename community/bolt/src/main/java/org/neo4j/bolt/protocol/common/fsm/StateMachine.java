@@ -19,13 +19,18 @@
  */
 package org.neo4j.bolt.protocol.common.fsm;
 
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.util.VisibleForTesting;
 
 public interface StateMachine extends AutoCloseable {
+    @VisibleForTesting
+    Connection connection();
+
     void process(RequestMessage message, ResponseHandler handler) throws BoltConnectionFatality;
 
     boolean shouldStickOnThread();
@@ -50,6 +55,4 @@ public interface StateMachine extends AutoCloseable {
 
     @Override
     void close();
-
-    String id();
 }

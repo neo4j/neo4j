@@ -63,7 +63,7 @@ public class JettyHttpConnection extends HttpConnection implements TrackedNetwor
     }
 
     @Override
-    public String connector() {
+    public String connectorId() {
         return getConnector().getName();
     }
 

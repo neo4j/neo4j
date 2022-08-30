@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -32,7 +33,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.protocol.common.MutableConnectionState;
+import org.neo4j.bolt.protocol.common.connector.connection.MutableConnectionState;
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
 import org.neo4j.bolt.protocol.common.routing.RoutingTableGetter;
@@ -69,7 +70,7 @@ class ReadyStateTest {
     @Test
     void shouldProcessTheRoutingMessageAndSetTheRoutingTableOnTheMetadata() throws Exception {
         var routingMessage = new RouteMessage(new MapValueBuilder().build(), List.of(), "databaseName");
-        var context = mock(StateMachineContext.class);
+        var context = mock(StateMachineContext.class, RETURNS_MOCKS);
         var connectionState = mockMutableConnectionState(context);
         var transactionManager = mockTransactionManager(context);
         var routingTable = mockRoutingTable(routingMessage, this.routingTableGetter, transactionManager);
@@ -83,7 +84,7 @@ class ReadyStateTest {
     @Test
     void shouldHandleFatalFailureIfTheRoutingTableFailedToBeGot() throws Exception {
         var routingMessage = new RouteMessage(new MapValueBuilder().build(), List.of(), "databaseName");
-        var context = mock(StateMachineContext.class);
+        var context = mock(StateMachineContext.class, RETURNS_MOCKS);
         var mutableConnectionState = mock(MutableConnectionState.class);
 
         doReturn(mutableConnectionState).when(context).connectionState();
@@ -101,7 +102,7 @@ class ReadyStateTest {
     @Test
     void shouldHandleFatalFailureIfGetRoutingTableThrowsAnException() throws Exception {
         var routingMessage = new RouteMessage(new MapValueBuilder().build(), List.of(), "databaseName");
-        var context = mock(StateMachineContext.class);
+        var context = mock(StateMachineContext.class, RETURNS_MOCKS);
         var mutableConnectionState = mock(MutableConnectionState.class);
 
         doReturn(mutableConnectionState).when(context).connectionState();
