@@ -106,9 +106,10 @@ case class ExpressionSelectivityCalculator(
     if (planningPointIndexesEnabled) Some(IndexType.Point) else None
   ).flatten
 
-  private def indexTypesForPropertyEquality: Seq[IndexType] = Seq(
+  private def indexTypesForPropertyEquality(propertyType: CypherType): Seq[IndexType] = Seq(
     if (planningRangeIndexesEnabled) Some(IndexType.Range) else None,
-    if (planningTextIndexesEnabled) Some(IndexType.Text) else None
+    // We cannot use a text index for cardinality estimation unless we know that the property type is a String
+    if (planningTextIndexesEnabled && propertyType == CTString) Some(IndexType.Text) else None
   ).flatten
 
   private val indexTypesForRangeSeeks: Seq[IndexType] = Seq(
@@ -315,13 +316,7 @@ case class ExpressionSelectivityCalculator(
     relTypeInfo: RelTypeInfo,
     propertyKey: PropertyKeyName
   )(implicit semanticTable: SemanticTable): Selectivity = {
-    val indexTypesToConsider =
-      if (cypherType == CTString) {
-        indexTypesForPropertyEquality
-      } else {
-        // We cannot use a text index for cardinality estimation unless we know that the property type is a String
-        indexTypesForPropertyEquality.filterNot(_ == IndexType.Text)
-      }
+    val indexTypesToConsider = indexTypesForPropertyEquality(cypherType)
     indexSelectivityWithSizeHint(
       sizeHint,
       { size =>

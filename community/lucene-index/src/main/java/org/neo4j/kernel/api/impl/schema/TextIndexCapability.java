@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.EXACT;
-import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.RANGE;
-import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.STRING_CONTAINS;
-import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.STRING_PREFIX;
-import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.STRING_SUFFIX;
-
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
