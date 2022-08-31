@@ -146,26 +146,26 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     @Description(
             "Whether or not any database on this instance are read_only by default. If false, individual databases may be marked as read_only using "
-                    + "dbms.database.read_only. If true, individual databases may be marked as writable using dbms.databases.writable.")
+                    + "server.database.read_only. If true, individual databases may be marked as writable using server.databases.writable.")
     public static final Setting<Boolean> read_only_database_default = newBuilder(
-                    "dbms.databases.default_to_read_only", BOOL, false)
+                    "server.databases.default_to_read_only", BOOL, false)
             .dynamic()
             .build();
 
     @Description(
             "List of databases for which to prevent write queries. Databases not included in this list maybe read_only anyway depending upon the value "
-                    + "of dbms.databases.default_to_read_only.")
+                    + "of server.databases.default_to_read_only.")
     public static final Setting<Set<String>> read_only_databases = newBuilder(
-                    "dbms.databases.read_only", setOf(DATABASENAME), emptySet())
+                    "server.databases.read_only", setOf(DATABASENAME), emptySet())
             .addConstraint(shouldNotContain(SYSTEM_DATABASE_NAME, "read only databases collection"))
             .dynamic()
             .build();
 
     @Description(
             "List of databases for which to allow write queries. Databases not included in this list will allow write queries anyway, unless "
-                    + "dbms.databases.default_to_read_only is set to true.")
+                    + "server.databases.default_to_read_only is set to true.")
     public static final Setting<Set<String>> writable_databases = newBuilder(
-                    "dbms.databases.writable", setOf(DATABASENAME), emptySet())
+                    "server.databases.writable", setOf(DATABASENAME), emptySet())
             .dynamic()
             .build();
 

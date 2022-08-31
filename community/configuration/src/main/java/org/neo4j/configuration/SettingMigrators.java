@@ -93,6 +93,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.query_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.query_log_max_parameter_length;
 import static org.neo4j.configuration.GraphDatabaseSettings.query_statistics_divergence_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
+import static org.neo4j.configuration.GraphDatabaseSettings.read_only_databases;
 import static org.neo4j.configuration.GraphDatabaseSettings.script_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.shutdown_transaction_end_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.track_query_cpu_time;
@@ -106,6 +107,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_hea
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_memory_allocation;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.writable_databases;
 import static org.neo4j.configuration.connectors.BoltConnectorInternalSettings.thread_pool_shutdown_wait_time;
 import static org.neo4j.configuration.connectors.BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes;
 import static org.neo4j.configuration.connectors.BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout;
@@ -593,7 +595,7 @@ public final class SettingMigrators {
             migrateGroupSpatialSettings(values, defaultValues, log);
             migrateCheckpointSettings(values, defaultValues, log);
             migrateKeepAliveSetting(values, defaultValues, log);
-            migrateReadOnlySetting(values, defaultValues, log);
+            migrateReadOnlySettings(values, defaultValues, log);
             migrateDefaultDatabaseSetting(values, defaultValues, log);
             migrateDatabaseMaxSize(values, defaultValues, log);
             migrateCypherNamespace(values, defaultValues, log);
@@ -887,9 +889,12 @@ public final class SettingMigrators {
                     BoltConnector.connection_keep_alive_streaming_scheduling_interval);
         }
 
-        private static void migrateReadOnlySetting(
+        private static void migrateReadOnlySettings(
                 Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
             migrateSettingNameChange(values, log, "dbms.read_only", read_only_database_default);
+            migrateSettingNameChange(values, log, "dbms.databases.default_to_read_only", read_only_database_default);
+            migrateSettingNameChange(values, log, "dbms.databases.read_only", read_only_databases);
+            migrateSettingNameChange(values, log, "dbms.databases.writable", writable_databases);
         }
 
         private static void migrateDefaultDatabaseSetting(

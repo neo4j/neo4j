@@ -398,8 +398,9 @@ class SettingMigratorsTest {
         assertThat(logProvider)
                 .forClass(Config.class)
                 .forLevel(WARN)
-                .containsMessages(
-                        "Use of deprecated setting 'dbms.read_only'. It is replaced by 'dbms.databases.default_to_read_only'");
+                .containsMessages(String.format(
+                        "Use of deprecated setting 'dbms.read_only'. It is replaced by '%s'",
+                        read_only_database_default.name()));
     }
 
     @Test
