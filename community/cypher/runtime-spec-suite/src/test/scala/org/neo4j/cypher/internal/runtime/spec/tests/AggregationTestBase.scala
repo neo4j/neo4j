@@ -56,6 +56,7 @@ import org.neo4j.values.virtual.ListValue
 import java.time.Duration
 import java.time.temporal.ChronoUnit
 import java.util.Collections
+import java.util.concurrent.atomic.AtomicLong
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.util.Random
@@ -1371,6 +1372,10 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
       .out(Neo4jTypes.NTInteger)
       .in("in", Neo4jTypes.NTInteger)
       .build()
+    val oneArgumentThreadSafe = UserFunctionSignature.functionSignature("test", "foo1ThreadSafe")
+      .out(Neo4jTypes.NTInteger)
+      .in("in", Neo4jTypes.NTInteger)
+      .build()
     val twoArguments = UserFunctionSignature.functionSignature("test", "foo2")
       .out(Neo4jTypes.NTInteger)
       .in("in1", Neo4jTypes.NTInteger)
@@ -1397,6 +1402,8 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
 
           override def result(): AnyValue = Values.longValue(count)
         }
+
+        override def threadSafe: Boolean = false
       },
       new BasicUserAggregationFunction(oneArgument) {
         override def create(ctx: Context): UserAggregator = new UserAggregator {
@@ -1408,6 +1415,21 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
 
           override def result(): AnyValue = Values.longValue(count)
         }
+
+        override def threadSafe: Boolean = false
+      },
+      new BasicUserAggregationFunction(oneArgumentThreadSafe) {
+        override def create(ctx: Context): UserAggregator = new UserAggregator {
+          private val count = new AtomicLong(0L)
+
+          override def update(input: Array[AnyValue]): Unit = {
+            count.addAndGet(input(0).asInstanceOf[NumberValue].longValue())
+          }
+
+          override def result(): AnyValue = Values.longValue(count.get())
+        }
+
+        override def threadSafe: Boolean = true
       },
       new BasicUserAggregationFunction(twoArguments) {
         override def create(ctx: Context): UserAggregator = new UserAggregator {
@@ -1419,6 +1441,8 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
 
           override def result(): AnyValue = Values.longValue(count)
         }
+
+        override def threadSafe: Boolean = false
       },
       new BasicUserAggregationFunction(defaultArgumets) {
         override def create(ctx: Context): UserAggregator = new UserAggregator {
@@ -1430,6 +1454,8 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
 
           override def result(): AnyValue = Values.stringValue("yes")
         }
+
+        override def threadSafe: Boolean = false
       }
     )
   }

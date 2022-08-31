@@ -187,7 +187,7 @@ public class ProcedureRegistry {
         if (func == null) {
             return null;
         }
-        return new UserFunctionHandle(func.signature(), aggregationFunctions.idOf(name), false);
+        return new UserFunctionHandle(func.signature(), aggregationFunctions.idOf(name), func.threadSafe());
     }
 
     public RawIterator<AnyValue[], ProcedureException> callProcedure(

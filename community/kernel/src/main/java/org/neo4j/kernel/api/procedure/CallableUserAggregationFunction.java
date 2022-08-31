@@ -28,6 +28,10 @@ public interface CallableUserAggregationFunction {
 
     UserAggregator create(Context ctx) throws ProcedureException;
 
+    default boolean threadSafe() {
+        return false;
+    }
+
     abstract class BasicUserAggregationFunction implements CallableUserAggregationFunction {
         private final UserFunctionSignature signature;
 
