@@ -583,6 +583,9 @@ object IndexSeek {
           case CONTAINS(propStr, _) =>
             valueExprs += ExistenceQueryExpression()
             properties += prop(propStr)
+          case IN(propStr) =>
+            valueExprs += ManyQueryExpression(paramQueue.dequeue())
+            properties += prop(propStr)
           case _ => throw new IllegalArgumentException(s"$predicate is not allowed in composite seeks.")
         }
 
@@ -617,6 +620,9 @@ object IndexSeek {
             properties += prop(propStr)
           case CONTAINS(propStr, _) =>
             valueExprs += ExistenceQueryExpression()
+            properties += prop(propStr)
+          case IN(propStr) =>
+            valueExprs += ManyQueryExpression(paramQueue.dequeue())
             properties += prop(propStr)
           case _ => throw new IllegalArgumentException(s"$predicate is not allowed in composite seeks.")
         }

@@ -19,17 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.exceptions.CypherTypeException
+import org.neo4j.cypher.operations.CypherCoercions.asStorableValue
+import org.neo4j.cypher.operations.CypherCoercions.asStorableValueOrNull
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
 
 object makeValueNeoSafe extends (AnyValue => Value) with ListSupport {
 
-  def apply(a: AnyValue): Value = a match {
-    case value: Value => value
-    case IsList(l)    => l.toStorableArray
-    case _ => throw new CypherTypeException(
-        s"Property values can only be of primitive types or arrays thereof. Encountered: $a."
-      )
-  }
+  def apply(a: AnyValue): Value = asStorableValue(a)
+
+  def safeOrEmpty(a: AnyValue): Option[Value] = Option(asStorableValueOrNull(a))
 }

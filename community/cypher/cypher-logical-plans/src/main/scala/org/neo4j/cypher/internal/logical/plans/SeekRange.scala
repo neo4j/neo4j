@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.logical.plans.MinMaxOrdering.NullOrdering
+import org.neo4j.cypher.internal.util.NonEmptyList
 
 /*
   Seek ranges describe intervals. In practice they are used to summarize all inequalities over the
@@ -57,7 +58,9 @@ object InequalitySeekRange {
 }
 
 sealed trait InequalitySeekRange[+V] extends SeekRange[V] {
+
   def mapBounds[P](f: V => P): InequalitySeekRange[P]
+  def flatMapBounds[P](f: V => Option[P]): Option[InequalitySeekRange[P]]
 
   def groupBy[K](f: Bound[V] => K): Map[K, InequalitySeekRange[V]]
 }
@@ -68,6 +71,7 @@ sealed trait HalfOpenSeekRange[+V] extends InequalitySeekRange[V] {
   override def arguments: Seq[V] = bounds.map(_.endPoint).toIndexedSeq
 
   override def mapBounds[P](f: V => P): HalfOpenSeekRange[P]
+  override def flatMapBounds[P](f: V => Option[P]): Option[HalfOpenSeekRange[P]]
 
   // returns the limit of this half open seek range, i.e.
   // the greatest bound if this is a RangeGreaterThan and
@@ -89,6 +93,13 @@ final case class RangeBetween[+V](greaterThan: RangeGreaterThan[V], lessThan: Ra
   override def mapBounds[P](f: V => P): RangeBetween[P] =
     copy(greaterThan = greaterThan.mapBounds(f), lessThan = lessThan.mapBounds(f))
 
+  def flatMapBounds[P](f: V => Option[P]): Option[RangeBetween[P]] = {
+    for (
+      g <- greaterThan.flatMapBounds(f);
+      l <- lessThan.flatMapBounds(f)
+    ) yield copy(greaterThan = g, lessThan = l)
+  }
+
   override def groupBy[K](f: Bound[V] => K): Map[K, InequalitySeekRange[V]] = {
     val greaterThanBounds = greaterThan.bounds.map(Left(_))
     val lessThanBounds = lessThan.bounds.map(Right(_))
@@ -108,6 +119,16 @@ final case class RangeGreaterThan[+V](bounds: Bounds[V]) extends HalfOpenSeekRan
   override def mapBounds[P](f: V => P): RangeGreaterThan[P] =
     copy(bounds = bounds.map(_.map(f)))
 
+  override def flatMapBounds[P](f: V => Option[P]): Option[RangeGreaterThan[P]] = {
+    val newBounds = bounds.map(_.flatMap(f)).foldLeft[Option[Seq[Bound[P]]]](Some(Seq.empty[Bound[P]]))({
+      case (None, _)                      => None
+      case (_, None)                      => None
+      case (Some(aggregated), Some(item)) => Some(aggregated :+ item)
+    })
+
+    newBounds.map(b => copy(bounds = NonEmptyList.from(b)))
+  }
+
   override def groupBy[K](f: Bound[V] => K): Map[K, RangeGreaterThan[V]] =
     bounds.groupBy(f).view.mapValues(bounds => RangeGreaterThan(bounds)).toMap
 
@@ -124,6 +145,16 @@ final case class RangeLessThan[+V](bounds: Bounds[V]) extends HalfOpenSeekRange[
 
   override def mapBounds[P](f: V => P): RangeLessThan[P] =
     copy(bounds = bounds.map(_.map(f)))
+
+  override def flatMapBounds[P](f: V => Option[P]): Option[RangeLessThan[P]] = {
+    val newBounds = bounds.map(_.flatMap(f)).foldLeft[Option[Seq[Bound[P]]]](Some(Seq.empty[Bound[P]]))({
+      case (None, _)                      => None
+      case (_, None)                      => None
+      case (Some(aggregated), Some(item)) => Some(aggregated :+ item)
+    })
+
+    newBounds.map(b => copy(bounds = NonEmptyList.from(b)))
+  }
 
   override def groupBy[K](f: Bound[V] => K): Map[K, RangeLessThan[V]] =
     bounds.groupBy(f).view.mapValues(bounds => RangeLessThan(bounds)).toMap

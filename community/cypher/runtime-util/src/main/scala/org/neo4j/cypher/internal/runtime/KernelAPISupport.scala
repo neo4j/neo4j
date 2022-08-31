@@ -32,6 +32,7 @@ object KernelAPISupport {
    * Returns true if the specified property index query would never return any results
    */
   def isImpossibleIndexQuery(query: PropertyIndexQuery): Boolean = query match {
+    case null => true
     case p: PropertyIndexQuery.ExactPredicate => p.value() match {
         case Values.NO_VALUE        => true
         case fp: FloatingPointValue => fp.isNaN

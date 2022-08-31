@@ -25,6 +25,8 @@ sealed trait Bound[+V] {
 
   def map[P](f: V => P): Bound[P]
 
+  def flatMap[P](f: V => Option[P]): Option[Bound[P]]
+
   def isInclusive: Boolean
 }
 
@@ -33,6 +35,8 @@ final case class InclusiveBound[+V](endPoint: V) extends Bound[V] {
 
   override def map[P](f: V => P): InclusiveBound[P] = copy(endPoint = f(endPoint))
 
+  override def flatMap[P](f: V => Option[P]): Option[Bound[P]] = f(endPoint).map(e => copy(endPoint = e))
+
   def isInclusive: Boolean = true
 }
 
@@ -40,6 +44,8 @@ final case class ExclusiveBound[+V](endPoint: V) extends Bound[V] {
   val inequalitySignSuffix = ""
 
   override def map[P](f: V => P): ExclusiveBound[P] = copy(endPoint = f(endPoint))
+
+  override def flatMap[P](f: V => Option[P]): Option[Bound[P]] = f(endPoint).map(e => copy(endPoint = e))
 
   def isInclusive: Boolean = false
 }

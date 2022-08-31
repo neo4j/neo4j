@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.logical.plans.InequalitySeekRange
 import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
 import org.neo4j.cypher.internal.logical.plans.MinMaxOrdering
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
@@ -214,48 +213,53 @@ trait EntityIndexSeeker {
         }
 
       case InequalitySeekRangeExpression(innerRange) =>
-        val valueRange: InequalitySeekRange[Value] = innerRange.mapBounds(expr => makeValueNeoSafe(expr(row, state)))
-        val groupedRanges = valueRange.groupBy(bound => bound.endPoint.valueGroup())
-        if (groupedRanges.size > 1) {
-          Nil // predicates of more than one value group mean that no node can ever match
-        } else {
-          val (valueGroup, range) = groupedRanges.head
-          range match {
-            case rangeLessThan: RangeLessThan[Value] =>
-              rangeLessThan.limit(BY_VALUE).map(limit =>
-                PropertyIndexQuery.range(propertyId, null, false, limit.endPoint, limit.isInclusive)
-              ).toSeq
+        innerRange.flatMapBounds(expr => makeValueNeoSafe.safeOrEmpty(expr(row, state))) match {
+          case None => Nil
+          case Some(valueRange) =>
+            val groupedRanges = valueRange.groupBy(bound => bound.endPoint.valueGroup())
+            if (groupedRanges.size > 1) {
+              Nil // predicates of more than one value group mean that no node can ever match
+            } else {
+              val (valueGroup, range) = groupedRanges.head
+              range match {
+                case rangeLessThan: RangeLessThan[Value] =>
+                  rangeLessThan.limit(BY_VALUE).map(limit =>
+                    PropertyIndexQuery.range(propertyId, null, false, limit.endPoint, limit.isInclusive)
+                  ).toSeq
 
-            case rangeGreaterThan: RangeGreaterThan[Value] =>
-              rangeGreaterThan.limit(BY_VALUE).map(limit =>
-                PropertyIndexQuery.range(propertyId, limit.endPoint, limit.isInclusive, null, false)
-              ).toSeq
+                case rangeGreaterThan: RangeGreaterThan[Value] =>
+                  rangeGreaterThan.limit(BY_VALUE).map(limit =>
+                    PropertyIndexQuery.range(propertyId, limit.endPoint, limit.isInclusive, null, false)
+                  ).toSeq
 
-            case RangeBetween(rangeGreaterThan, rangeLessThan) =>
-              val greaterThanLimit = rangeGreaterThan.limit(BY_VALUE).get
-              val lessThanLimit = rangeLessThan.limit(BY_VALUE).get
-              val compare = Values.COMPARATOR.compare(greaterThanLimit.endPoint, lessThanLimit.endPoint)
-              if (compare < 0) {
-                List(PropertyIndexQuery.range(
-                  propertyId,
-                  greaterThanLimit.endPoint,
-                  greaterThanLimit.isInclusive,
-                  lessThanLimit.endPoint,
-                  lessThanLimit.isInclusive
-                ))
+                case RangeBetween(rangeGreaterThan, rangeLessThan) =>
+                  val greaterThanLimit = rangeGreaterThan.limit(BY_VALUE).get
+                  val lessThanLimit = rangeLessThan.limit(BY_VALUE).get
+                  val compare = Values.COMPARATOR.compare(greaterThanLimit.endPoint, lessThanLimit.endPoint)
+                  if (compare < 0) {
+                    List(PropertyIndexQuery.range(
+                      propertyId,
+                      greaterThanLimit.endPoint,
+                      greaterThanLimit.isInclusive,
+                      lessThanLimit.endPoint,
+                      lessThanLimit.isInclusive
+                    ))
 
-              } else if (compare == 0 && greaterThanLimit.isInclusive && lessThanLimit.isInclusive) {
-                List(PropertyIndexQuery.exact(propertyId, lessThanLimit.endPoint))
-              } else {
-                Nil
+                  } else if (compare == 0 && greaterThanLimit.isInclusive && lessThanLimit.isInclusive) {
+                    List(PropertyIndexQuery.exact(propertyId, lessThanLimit.endPoint))
+                  } else {
+                    Nil
+                  }
               }
-          }
+            }
         }
 
       case PointDistanceSeekRangeExpression(range) =>
-        val valueRange = range.map(expr => makeValueNeoSafe(expr(row, state)))
-        (valueRange.distance, valueRange.point) match {
-          case (distance: NumberValue, point: PointValue) =>
+        (
+          makeValueNeoSafe.safeOrEmpty(range.distance(row, state)),
+          makeValueNeoSafe.safeOrEmpty(range.point(row, state))
+        ) match {
+          case (Some(distance: NumberValue), Some(point: PointValue)) =>
             val bboxes =
               point.getCoordinateReferenceSystem.getCalculator.boundingBox(point, distance.doubleValue()).asScala
             // The geographic calculator pads the range to avoid numerical errors, which means we rely more on post-filtering
@@ -266,9 +270,11 @@ trait EntityIndexSeeker {
         }
 
       case PointBoundingBoxSeekRangeExpression(range) =>
-        val valueRange = range.map(expr => makeValueNeoSafe(expr(row, state)))
-        (valueRange.lowerLeft, valueRange.upperRight) match {
-          case (lowerLeft: PointValue, upperRight: PointValue)
+        (
+          makeValueNeoSafe.safeOrEmpty(range.lowerLeft(row, state)),
+          makeValueNeoSafe.safeOrEmpty(range.upperRight(row, state))
+        ) match {
+          case (Some(lowerLeft: PointValue), Some(upperRight: PointValue))
             if lowerLeft.getCoordinateReferenceSystem.equals(upperRight.getCoordinateReferenceSystem) =>
             val calculator = lowerLeft.getCoordinateReferenceSystem.getCalculator
 
@@ -286,20 +292,23 @@ trait EntityIndexSeeker {
     valueExpr match {
       // Index exact value seek on single value
       case SingleQueryExpression(expr) =>
-        val seekValue = makeValueNeoSafe(expr(row, state))
-        Array(List(PropertyIndexQuery.exact(propertyIds.head, seekValue)))
+        makeValueNeoSafe.safeOrEmpty(expr(row, state)) match {
+          case Some(seekValue) => Array(List(PropertyIndexQuery.exact(propertyIds.head, seekValue)))
+          case None            => Seq.empty
+        }
 
       // Index exact value seek on multiple values, by combining the results of multiple index seeks
       case ManyQueryExpression(expr) =>
         expr(row, state) match {
           case IsList(coll) =>
-            coll.asArray().toSet[AnyValue].map(seekAnyValue =>
-              List(PropertyIndexQuery.exact(
-                propertyIds.head,
-                makeValueNeoSafe(seekAnyValue)
-              ))
-            ).toSeq
-
+            coll.asArray().toSet[AnyValue].flatMap(seekAnyValue => {
+              makeValueNeoSafe.safeOrEmpty(seekAnyValue).map { value =>
+                List(PropertyIndexQuery.exact(
+                  propertyIds.head,
+                  value
+                ))
+              }
+            }).toIndexedSeq
           case v if v eq Values.NO_VALUE => Array[Seq[PropertyIndexQuery.ExactPredicate]]()
           case other                     => throw new CypherTypeException(s"Expected list, got $other")
         }
@@ -329,7 +338,10 @@ trait EntityIndexSeeker {
   )(queryExpression: QueryExpression[Expression], propertyId: Int): collection.Seq[PropertyIndexQuery] =
     queryExpression match {
       case SingleQueryExpression(inner) =>
-        Seq(PropertyIndexQuery.exact(propertyId, makeValueNeoSafe(inner(row, state))))
+        makeValueNeoSafe.safeOrEmpty(inner(row, state)) match {
+          case Some(seekValue) => Seq(PropertyIndexQuery.exact(propertyId, seekValue))
+          case None            => Seq.empty
+        }
 
       case ManyQueryExpression(inner) =>
         val expr: Seq[AnyValue] = inner(row, state) match {
@@ -337,7 +349,7 @@ trait EntityIndexSeeker {
           case null         => Seq.empty
           case _ => throw new CypherTypeException(s"Expected the value for $inner to be a collection but it was not.")
         }
-        expr.map(e => PropertyIndexQuery.exact(propertyId, makeValueNeoSafe(e)))
+        expr.flatMap(e => makeValueNeoSafe.safeOrEmpty(e).map(value => PropertyIndexQuery.exact(propertyId, value)))
 
       case CompositeQueryExpression(_) =>
         throw new InternalException("A CompositeQueryExpression can't be nested in a CompositeQueryExpression")

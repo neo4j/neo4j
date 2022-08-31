@@ -412,6 +412,31 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
   }
 
+  testWithIndex(
+    _.supports(EXACT),
+    "should exact seek for value that cannot be indexed"
+  ) { index =>
+    val propertyType = randomAmong(index.querySupport(EXACT))
+    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val lookFor = asValue(randomAmong(relationships).getProperty("prop"))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .relationshipIndexOperator(
+        indexSeekString = "(x)-[r:R(prop)]-(y)",
+        customQueryExpression = Some(ManyQueryExpression(listOf(toExpression(lookFor), mapOfInt(("foo", 42))))),
+        indexType = index.indexType
+      )
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships.filter(propFilter(equalTo(lookFor))).flatMap(nodesAndRelationshipUndirectional)
+    runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
+  }
+
   testWithIndex(_.indexType == IndexType.RANGE, "should support directed seek on composite index with random type") {
     index =>
       val propertyType1 = randomAmong(index.querySupport(EXACT))

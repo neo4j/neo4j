@@ -45,7 +45,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.cypher.internal.runtime.ExpressionCursors;
-import org.neo4j.cypher.internal.runtime.makeValueNeoSafe;
 import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -83,13 +82,28 @@ public final class CypherCoercions {
     }
 
     /**
-     * This indirection is here because it is really inconvenient to generate code for calling object methods in scala
-     * from scala because it hides the generated classes.
-     *
-     * TODO: makeValueNeoSafe is not fast, rewrite it here and use this method instead.
+     * Attempts to create a storable value of else fails with a type exception.
      */
-    public static Value asStorableValue(AnyValue value) {
-        return makeValueNeoSafe.apply(value);
+    public static Value asStorableValue(AnyValue anyValue) {
+        if (anyValue instanceof Value value) {
+            return value;
+        } else if (anyValue instanceof ListValue list) {
+            return list.toStorableArray();
+        } else {
+            throw new CypherTypeException(
+                    "Property values can only be of primitive types or arrays thereof. Encountered: " + anyValue + ".");
+        }
+    }
+
+    public static Value asStorableValueOrNull(AnyValue anyValue) {
+        if (anyValue instanceof Value value) {
+            return value;
+        } else if (anyValue instanceof ListValue list
+                && list.itemValueRepresentation().canCreateArrayOfValueGroup()) {
+            return list.toStorableArray();
+        } else {
+            return null;
+        }
     }
 
     public static TextValue asTextValue(AnyValue value) {

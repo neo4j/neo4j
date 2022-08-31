@@ -163,14 +163,10 @@ public enum ValueRepresentation {
 
         @Override
         public ValueRepresentation coerce(ValueRepresentation other) {
-            switch (other) {
-                case UTF8_TEXT:
-                case UTF16_TEXT:
-                case ANYTHING:
-                    return UTF16_TEXT;
-                default:
-                    return UNKNOWN;
-            }
+            return switch (other) {
+                case UTF8_TEXT, UTF16_TEXT, ANYTHING -> UTF16_TEXT;
+                default -> UNKNOWN;
+            };
         }
     },
     UTF8_TEXT(ValueGroup.TEXT, true) {
@@ -186,15 +182,11 @@ public enum ValueRepresentation {
 
         @Override
         public ValueRepresentation coerce(ValueRepresentation other) {
-            switch (other) {
-                case UTF8_TEXT:
-                case ANYTHING:
-                    return UTF8_TEXT;
-                case UTF16_TEXT:
-                    return UTF16_TEXT;
-                default:
-                    return UNKNOWN;
-            }
+            return switch (other) {
+                case UTF8_TEXT, ANYTHING -> UTF8_TEXT;
+                case UTF16_TEXT -> UTF16_TEXT;
+                default -> UNKNOWN;
+            };
         }
     },
     BOOLEAN(ValueGroup.BOOLEAN, true) {
@@ -221,19 +213,11 @@ public enum ValueRepresentation {
 
         @Override
         public ValueRepresentation coerce(ValueRepresentation other) {
-            switch (other) {
-                case INT8:
-                case INT16:
-                case INT32:
-                case INT64:
-                case ANYTHING:
-                    return this;
-                case FLOAT32:
-                case FLOAT64:
-                    return FLOAT64;
-                default:
-                    return ValueRepresentation.UNKNOWN;
-            }
+            return switch (other) {
+                case INT8, INT16, INT32, INT64, ANYTHING -> this;
+                case FLOAT32, FLOAT64 -> FLOAT64;
+                default -> ValueRepresentation.UNKNOWN;
+            };
         }
     },
     INT32(ValueGroup.NUMBER, true) {
@@ -249,20 +233,12 @@ public enum ValueRepresentation {
 
         @Override
         public ValueRepresentation coerce(ValueRepresentation other) {
-            switch (other) {
-                case INT8:
-                case INT16:
-                case INT32:
-                case ANYTHING:
-                    return this;
-                case INT64:
-                    return INT64;
-                case FLOAT32:
-                case FLOAT64:
-                    return FLOAT64;
-                default:
-                    return ValueRepresentation.UNKNOWN;
-            }
+            return switch (other) {
+                case INT8, INT16, INT32, ANYTHING -> this;
+                case INT64 -> INT64;
+                case FLOAT32, FLOAT64 -> FLOAT64;
+                default -> ValueRepresentation.UNKNOWN;
+            };
         }
     },
     INT16(ValueGroup.NUMBER, true) {
@@ -278,22 +254,14 @@ public enum ValueRepresentation {
 
         @Override
         public ValueRepresentation coerce(ValueRepresentation other) {
-            switch (other) {
-                case INT8:
-                case INT16:
-                case ANYTHING:
-                    return this;
-                case INT32:
-                    return INT32;
-                case INT64:
-                    return INT64;
-                case FLOAT32:
-                    return FLOAT32;
-                case FLOAT64:
-                    return FLOAT64;
-                default:
-                    return ValueRepresentation.UNKNOWN;
-            }
+            return switch (other) {
+                case INT8, INT16, ANYTHING -> this;
+                case INT32 -> INT32;
+                case INT64 -> INT64;
+                case FLOAT32 -> FLOAT32;
+                case FLOAT64 -> FLOAT64;
+                default -> ValueRepresentation.UNKNOWN;
+            };
         }
     },
 
@@ -310,23 +278,15 @@ public enum ValueRepresentation {
 
         @Override
         public ValueRepresentation coerce(ValueRepresentation other) {
-            switch (other) {
-                case INT8:
-                case ANYTHING:
-                    return this;
-                case INT16:
-                    return INT16;
-                case INT32:
-                    return INT32;
-                case INT64:
-                    return INT64;
-                case FLOAT32:
-                    return FLOAT32;
-                case FLOAT64:
-                    return FLOAT64;
-                default:
-                    return ValueRepresentation.UNKNOWN;
-            }
+            return switch (other) {
+                case INT8, ANYTHING -> this;
+                case INT16 -> INT16;
+                case INT32 -> INT32;
+                case INT64 -> INT64;
+                case FLOAT32 -> FLOAT32;
+                case FLOAT64 -> FLOAT64;
+                default -> ValueRepresentation.UNKNOWN;
+            };
         }
     },
     FLOAT64(ValueGroup.NUMBER, true) {
@@ -342,18 +302,10 @@ public enum ValueRepresentation {
 
         @Override
         public ValueRepresentation coerce(ValueRepresentation other) {
-            switch (other) {
-                case INT8:
-                case INT16:
-                case INT32:
-                case INT64:
-                case FLOAT32:
-                case FLOAT64:
-                case ANYTHING:
-                    return this;
-                default:
-                    return ValueRepresentation.UNKNOWN;
-            }
+            return switch (other) {
+                case INT8, INT16, INT32, INT64, FLOAT32, FLOAT64, ANYTHING -> this;
+                default -> ValueRepresentation.UNKNOWN;
+            };
         }
     },
     FLOAT32(ValueGroup.NUMBER, true) {
@@ -375,19 +327,11 @@ public enum ValueRepresentation {
 
         @Override
         public ValueRepresentation coerce(ValueRepresentation other) {
-            switch (other) {
-                case INT8:
-                case INT16:
-                case FLOAT32:
-                case ANYTHING:
-                    return this;
-                case INT32:
-                case INT64:
-                case FLOAT64:
-                    return FLOAT64;
-                default:
-                    return ValueRepresentation.UNKNOWN;
-            }
+            return switch (other) {
+                case INT8, INT16, FLOAT32, ANYTHING -> this;
+                case INT32, INT64, FLOAT64 -> FLOAT64;
+                default -> ValueRepresentation.UNKNOWN;
+            };
         }
     },
     NO_VALUE(ValueGroup.NO_VALUE, false);
