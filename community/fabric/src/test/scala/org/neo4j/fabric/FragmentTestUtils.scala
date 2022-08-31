@@ -20,9 +20,11 @@
 package org.neo4j.fabric
 
 import org.neo4j.configuration.Config
+import org.neo4j.configuration.helpers.NormalizedGraphName
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.SubqueryCall
@@ -41,6 +43,7 @@ import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.AnyType
 import org.neo4j.cypher.internal.util.symbols.IntegerType
+import org.neo4j.fabric.eval.Catalog
 import org.neo4j.fabric.pipeline.FabricFrontEnd
 import org.neo4j.fabric.planning.FabricFragmenter
 import org.neo4j.fabric.planning.Fragment
@@ -52,9 +55,11 @@ import org.neo4j.fabric.planning.Fragment.Leaf
 import org.neo4j.fabric.planning.Fragment.Union
 import org.neo4j.fabric.planning.Use
 import org.neo4j.fabric.util.Rewritten.RewritingOps
+import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
 
+import java.util.UUID
 import java.util.concurrent.Executors
 
 import scala.reflect.ClassTag
@@ -128,6 +133,14 @@ trait FragmentTestUtils {
   val defaultGraphName: String = "default"
   val defaultGraph: UseGraph = use(defaultGraphName)
   val defaultUse: Use.Inherited = Use.Inherited(Use.Default(defaultGraph))(InputPosition.NONE)
+
+  val defaultInternalGraph: Catalog.InternalGraph = Catalog.InternalGraph(
+    0,
+    UUID.randomUUID(),
+    new NormalizedGraphName(defaultGraphName),
+    new NormalizedDatabaseName(defaultGraphName)
+  )
+  val defaultCatalog: Catalog = Catalog.byQualifiedName(Seq(defaultInternalGraph))
   val params: MapValue = MapValue.EMPTY
 
   def signatures: ProcedureSignatureResolver

@@ -55,6 +55,7 @@ import org.neo4j.fabric.FragmentTestUtils
 import org.neo4j.fabric.ProcedureSignatureResolverTestSupport
 import org.neo4j.fabric.cache.FabricQueryCache
 import org.neo4j.fabric.config.FabricConfig
+import org.neo4j.fabric.eval.Catalog
 import org.neo4j.fabric.planning.FabricPlan.DebugOptions
 import org.neo4j.fabric.util.Folded.Descend
 import org.neo4j.fabric.util.Folded.FoldableOps
@@ -97,7 +98,7 @@ class FabricPlannerTest
     params: MapValue = params,
     fabricContext: Boolean = false
   ): planner.PlannerInstance =
-    planner.instance(query, params, defaultGraphName).withForceFabricContext(fabricContext)
+    planner.instance(query, params, defaultGraphName, Catalog(Map())).withForceFabricContext(fabricContext)
 
   private def plan(query: String, params: MapValue = params, fabricContext: Boolean = false) =
     instance(query, params, fabricContext).plan
@@ -525,8 +526,8 @@ class FabricPlannerTest
           |RETURN w, y
           |""".stripMargin
 
-      newPlanner.instance(q, params, defaultGraphName).plan
-      newPlanner.instance(q, params, defaultGraphName).plan
+      newPlanner.instance(q, params, defaultGraphName, Catalog(Map())).plan
+      newPlanner.instance(q, params, defaultGraphName, Catalog(Map())).plan
 
       newPlanner.queryCache.getMisses.shouldEqual(1)
       newPlanner.queryCache.getHits.shouldEqual(1)
@@ -545,8 +546,8 @@ class FabricPlannerTest
           |RETURN x, 2 AS y
           |""".stripMargin
 
-      newPlanner.instance(q1, params, defaultGraphName).plan
-      newPlanner.instance(q2, params, defaultGraphName).plan
+      newPlanner.instance(q1, params, defaultGraphName, Catalog(Map())).plan
+      newPlanner.instance(q2, params, defaultGraphName, Catalog(Map())).plan
 
       newPlanner.queryCache.getMisses.shouldEqual(2)
       newPlanner.queryCache.getHits.shouldEqual(0)
@@ -560,8 +561,8 @@ class FabricPlannerTest
           |RETURN x
           |""".stripMargin
 
-      newPlanner.instance(q, params, "foo").plan
-      newPlanner.instance(q, params, "bar").plan
+      newPlanner.instance(q, params, "foo", Catalog(Map())).plan
+      newPlanner.instance(q, params, "bar", Catalog(Map())).plan
 
       newPlanner.queryCache.getMisses.shouldEqual(2)
       newPlanner.queryCache.getHits.shouldEqual(0)
@@ -581,8 +582,8 @@ class FabricPlannerTest
           |RETURN x
           |""".stripMargin
 
-      newPlanner.instance(q1, params, defaultGraphName).plan
-      newPlanner.instance(q2, params, defaultGraphName).plan
+      newPlanner.instance(q1, params, defaultGraphName, Catalog(Map())).plan
+      newPlanner.instance(q2, params, defaultGraphName, Catalog(Map())).plan
 
       newPlanner.queryCache.getMisses.shouldEqual(2)
       newPlanner.queryCache.getHits.shouldEqual(0)
@@ -596,8 +597,13 @@ class FabricPlannerTest
           |RETURN x
           |""".stripMargin
 
-      newPlanner.instance(q, VirtualValues.map(Array("a"), Array(Values.of("a"))), defaultGraphName).plan
-      newPlanner.instance(q, VirtualValues.map(Array("a"), Array(Values.of(1))), defaultGraphName).plan
+      newPlanner.instance(
+        q,
+        VirtualValues.map(Array("a"), Array(Values.of("a"))),
+        defaultGraphName,
+        Catalog(Map())
+      ).plan
+      newPlanner.instance(q, VirtualValues.map(Array("a"), Array(Values.of(1))), defaultGraphName, Catalog(Map())).plan
 
       newPlanner.queryCache.getMisses.shouldEqual(2)
       newPlanner.queryCache.getHits.shouldEqual(0)
@@ -611,11 +617,17 @@ class FabricPlannerTest
           |RETURN x
           |""".stripMargin
 
-      newPlanner.instance(q, VirtualValues.map(Array("a"), Array(Values.of("a"))), defaultGraphName).plan
+      newPlanner.instance(
+        q,
+        VirtualValues.map(Array("a"), Array(Values.of("a"))),
+        defaultGraphName,
+        Catalog(Map())
+      ).plan
       newPlanner.instance(
         q,
         VirtualValues.map(Array("a", "b"), Array(Values.of("a"), Values.of(1))),
-        defaultGraphName
+        defaultGraphName,
+        Catalog(Map())
       ).plan
 
       newPlanner.queryCache.getMisses.shouldEqual(2)
@@ -630,8 +642,18 @@ class FabricPlannerTest
           |RETURN x
           |""".stripMargin
 
-      newPlanner.instance(q, VirtualValues.map(Array("a"), Array(Values.of("a"))), defaultGraphName).plan
-      newPlanner.instance(q, VirtualValues.map(Array("a"), Array(Values.of("b"))), defaultGraphName).plan
+      newPlanner.instance(
+        q,
+        VirtualValues.map(Array("a"), Array(Values.of("a"))),
+        defaultGraphName,
+        Catalog(Map())
+      ).plan
+      newPlanner.instance(
+        q,
+        VirtualValues.map(Array("a"), Array(Values.of("b"))),
+        defaultGraphName,
+        Catalog(Map())
+      ).plan
 
       newPlanner.queryCache.getMisses.shouldEqual(1)
       newPlanner.queryCache.getHits.shouldEqual(1)
@@ -644,8 +666,8 @@ class FabricPlannerTest
         """CREATE USER foo SET PASSWORD 'secret'
           |""".stripMargin
 
-      newPlanner.instance(q, params, defaultGraphName).plan
-      newPlanner.instance(q, params, defaultGraphName).plan
+      newPlanner.instance(q, params, defaultGraphName, Catalog(Map())).plan
+      newPlanner.instance(q, params, defaultGraphName, Catalog(Map())).plan
 
       newPlanner.queryCache.getMisses.shouldEqual(2)
       newPlanner.queryCache.getHits.shouldEqual(0)
@@ -665,8 +687,8 @@ class FabricPlannerTest
           |RETURN true
           |""".stripMargin
 
-      newPlanner.instance(q1, params, defaultGraphName).plan
-      newPlanner.instance(q2, params, defaultGraphName).plan
+      newPlanner.instance(q1, params, defaultGraphName, Catalog(Map())).plan
+      newPlanner.instance(q2, params, defaultGraphName, Catalog(Map())).plan
 
       newPlanner.queryCache.getMisses.shouldEqual(2)
       newPlanner.queryCache.getHits.shouldEqual(0)
@@ -680,7 +702,7 @@ class FabricPlannerTest
           |RETURN x
           |""".stripMargin
 
-      newPlanner.instance(q, params, defaultGraphName).plan
+      newPlanner.instance(q, params, defaultGraphName, Catalog(Map())).plan
       newPlanner.queryCache.contextSize(defaultGraphName).shouldEqual(1)
       newPlanner.queryCache.clearByContext(defaultGraphName).shouldEqual(1)
       newPlanner.queryCache.contextSize(defaultGraphName).shouldEqual(0)
@@ -700,8 +722,8 @@ class FabricPlannerTest
           |RETURN x
           |""".stripMargin
 
-      newPlanner.instance(q1, params, "foo").plan
-      newPlanner.instance(q2, params, "bar").plan
+      newPlanner.instance(q1, params, "foo", Catalog(Map())).plan
+      newPlanner.instance(q2, params, "bar", Catalog(Map())).plan
       newPlanner.queryCache.contextSize("foo").shouldEqual(1)
       newPlanner.queryCache.contextSize("bar").shouldEqual(1)
       newPlanner.queryCache.clearByContext("foo").shouldEqual(1)
@@ -718,18 +740,18 @@ class FabricPlannerTest
           |""".stripMargin
 
       // plan query (cold miss)
-      newPlanner.instance(q, params, defaultGraphName).plan
+      newPlanner.instance(q, params, defaultGraphName, Catalog(Map())).plan
       newPlanner.queryCache.getHits.shouldEqual(0)
       newPlanner.queryCache.getMisses.shouldEqual(1)
 
       // replan query (hits)
-      newPlanner.instance(q, params, defaultGraphName).plan
+      newPlanner.instance(q, params, defaultGraphName, Catalog(Map())).plan
       newPlanner.queryCache.getHits.shouldEqual(1)
       newPlanner.queryCache.getMisses.shouldEqual(1)
 
       // clear cache and rereplan query (cold miss again)
       newPlanner.queryCache.clearByContext(defaultGraphName)
-      newPlanner.instance(q, params, defaultGraphName).plan
+      newPlanner.instance(q, params, defaultGraphName, Catalog(Map())).plan
       newPlanner.queryCache.getHits.shouldEqual(1)
       newPlanner.queryCache.getMisses.shouldEqual(2)
     }
@@ -747,7 +769,7 @@ class FabricPlannerTest
           |RETURN x
           |""".stripMargin
 
-      newPlanner.instance(q, params, defaultGraphName).plan
+      newPlanner.instance(q, params, defaultGraphName, Catalog(Map())).plan
       newPlanner.queryCache.clearByContext(defaultGraphName).shouldEqual(1)
       newPlanner.queryCache.clearByContext(defaultGraphName).shouldEqual(0)
     }
@@ -1188,7 +1210,7 @@ class FabricPlannerTest
     def planAndStitch(sessionGraphName: String, fabricName: String, query: String, params: MapValue = params) = {
       val planner =
         FabricPlanner(makeConfig(fabricName), cypherConfig, monitors, cacheFactory, signatures)
-          .instance(query, params, sessionGraphName)
+          .instance(query, params, sessionGraphName, Catalog(Map()))
       Try(planner.plan)
     }
 

@@ -25,6 +25,7 @@ import org.neo4j.exceptions.SyntaxException
 import org.neo4j.fabric.FabricTest
 import org.neo4j.fabric.FragmentTestUtils
 import org.neo4j.fabric.ProcedureSignatureResolverTestSupport
+import org.neo4j.fabric.eval.Catalog
 import org.neo4j.fabric.planning.Use.Declared
 import org.neo4j.fabric.planning.Use.Inherited
 import org.scalatest.Inside
@@ -45,7 +46,13 @@ class FabricStitcherTest
   "Single-graph:" - {
 
     def stitching(fragment: Fragment) =
-      FabricStitcher(dummyQuery, allowMultiGraph = false, None, dummyPipeline)
+      FabricStitcher(
+        dummyQuery,
+        allowMultiGraph = false,
+        None,
+        dummyPipeline,
+        new UseHelper(Catalog.empty, defaultGraphName, None)
+      )
         .convert(fragment).withoutLocalAndRemote
 
     "single fragment" in {
@@ -239,7 +246,13 @@ class FabricStitcherTest
   "Multi-graph:" - {
 
     def stitching(fragment: Fragment) =
-      FabricStitcher(dummyQuery, allowMultiGraph = true, Some(defaultGraphName), dummyPipeline)
+      FabricStitcher(
+        dummyQuery,
+        allowMultiGraph = true,
+        Some(defaultGraphName),
+        dummyPipeline,
+        new UseHelper(Catalog.empty, defaultGraphName, Some(defaultGraphName))
+      )
         .convert(fragment).withoutLocalAndRemote
 
     "rewrite" in {
