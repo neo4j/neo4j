@@ -39,7 +39,7 @@ public abstract class NeoStoresDiagnostics extends NamedDiagnosticsProvider {
 
     public static class NeoStoreRecords extends NeoStoresDiagnostics {
         NeoStoreRecords(NeoStores neoStores) {
-            super(neoStores, "Neostore records");
+            super(neoStores, "Metadata");
         }
 
         @Override

@@ -43,7 +43,7 @@ class DiagnosticsLoggingTest {
         try {
             // THEN we should have logged
             assertThat(logProvider).containsMessages("Network information", "Local timezone", "Page cache: 4.00MiB");
-            // neostore records
+            // Metadata records
             assertThat(logProvider)
                     .containsMessages("EXTERNAL_STORE_UUID")
                     .containsMessages("DATABASE_ID")
