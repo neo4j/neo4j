@@ -80,7 +80,7 @@ trait ProcedureSignatureResolverTestSupport {
     }
 
     private val funcSignatures = functions.zipWithIndex.map { case (function, i) =>
-      val handle = new procs.UserFunctionHandle(function.signature(), i, false)
+      val handle = new procs.UserFunctionHandle(function.signature(), i)
       SignatureResolver.toCypherFunction(handle)
     }
 
@@ -108,6 +108,7 @@ trait ProcedureSignatureResolverTestSupport {
         category,
         true,
         false,
+        false,
         false
       )
     ) {
@@ -134,6 +135,7 @@ trait ProcedureSignatureResolverTestSupport {
       null,
       name.last,
       null,
+      false,
       false,
       false,
       false,

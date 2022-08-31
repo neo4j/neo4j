@@ -41,6 +41,7 @@ public final class UserFunctionSignature {
     private final boolean caseInsensitive;
     private final boolean isBuiltIn;
     private final boolean internal;
+    private final boolean threadSafe;
 
     public UserFunctionSignature(
             QualifiedName name,
@@ -51,7 +52,8 @@ public final class UserFunctionSignature {
             String category,
             boolean caseInsensitive,
             boolean isBuiltIn,
-            boolean internal) {
+            boolean internal,
+            boolean threadSafe) {
         this.name = name;
         this.inputSignature = unmodifiableList(inputSignature);
         this.type = type;
@@ -61,6 +63,7 @@ public final class UserFunctionSignature {
         this.caseInsensitive = caseInsensitive;
         this.isBuiltIn = isBuiltIn;
         this.internal = internal;
+        this.threadSafe = threadSafe;
     }
 
     public QualifiedName name() {
@@ -99,6 +102,10 @@ public final class UserFunctionSignature {
         return internal;
     }
 
+    public boolean threadSafe() {
+        return threadSafe;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -131,6 +138,7 @@ public final class UserFunctionSignature {
         private String deprecated;
         private String description;
         private String category;
+        private boolean threadSafe;
 
         public Builder(String[] namespace, String name) {
             this.name = new QualifiedName(namespace, name);
@@ -168,12 +176,26 @@ public final class UserFunctionSignature {
             return this;
         }
 
+        public Builder threadSafe() {
+            this.threadSafe = true;
+            return this;
+        }
+
         public UserFunctionSignature build() {
             if (outputType == null) {
                 throw new IllegalStateException("output type must be set");
             }
             return new UserFunctionSignature(
-                    name, inputSignature, outputType, deprecated, description, category, false, false, false);
+                    name,
+                    inputSignature,
+                    outputType,
+                    deprecated,
+                    description,
+                    category,
+                    false,
+                    false,
+                    false,
+                    threadSafe);
         }
     }
 

@@ -28,10 +28,6 @@ public interface CallableUserFunction {
 
     AnyValue apply(Context ctx, AnyValue[] input) throws ProcedureException;
 
-    default boolean threadSafe() {
-        return false;
-    }
-
     abstract class BasicUserFunction implements CallableUserFunction {
         private final UserFunctionSignature signature;
 

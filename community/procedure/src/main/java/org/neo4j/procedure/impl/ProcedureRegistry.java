@@ -179,7 +179,7 @@ public class ProcedureRegistry {
         if (func == null) {
             return null;
         }
-        return new UserFunctionHandle(func.signature(), functions.idOf(name), func.threadSafe());
+        return new UserFunctionHandle(func.signature(), functions.idOf(name));
     }
 
     public UserFunctionHandle aggregationFunction(QualifiedName name) {
@@ -187,7 +187,7 @@ public class ProcedureRegistry {
         if (func == null) {
             return null;
         }
-        return new UserFunctionHandle(func.signature(), aggregationFunctions.idOf(name), func.threadSafe());
+        return new UserFunctionHandle(func.signature(), aggregationFunctions.idOf(name));
     }
 
     public RawIterator<AnyValue[], ProcedureException> callProcedure(

@@ -57,7 +57,8 @@ class DurationFunction implements CallableUserFunction {
             CATEGORY,
             true,
             true,
-            false);
+            false,
+            true);
 
     static void register(GlobalProcedures globalProcedures) throws ProcedureException {
         globalProcedures.registerBuiltIn(new DurationFunction());
@@ -70,11 +71,6 @@ class DurationFunction implements CallableUserFunction {
     @Override
     public UserFunctionSignature signature() {
         return DURATION;
-    }
-
-    @Override
-    public boolean threadSafe() {
-        return true;
     }
 
     @Override
@@ -135,17 +131,13 @@ class DurationFunction implements CallableUserFunction {
                     CATEGORY,
                     true,
                     true,
-                    false);
+                    false,
+                    true);
         }
 
         @Override
         public UserFunctionSignature signature() {
             return signature;
-        }
-
-        @Override
-        public boolean threadSafe() {
-            return true;
         }
 
         @Override

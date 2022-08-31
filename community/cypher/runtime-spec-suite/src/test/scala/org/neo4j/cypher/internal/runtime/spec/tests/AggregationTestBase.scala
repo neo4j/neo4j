@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.tests.AggregationLargeMorselTestBase.withLargeMorsels
+import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
@@ -1365,21 +1366,23 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
   self: AggregationTestBase[CONTEXT] =>
 
   private val userAggregationFunctions = {
+    val noArgumentNonThreadSafe = UserFunctionSignature.functionSignature("test", "foo0NonThreadSafe")
+      .out(Neo4jTypes.NTInteger)
+      .build()
     val noArgument = UserFunctionSignature.functionSignature("test", "foo0")
       .out(Neo4jTypes.NTInteger)
+      .threadSafe
       .build()
     val oneArgument = UserFunctionSignature.functionSignature("test", "foo1")
       .out(Neo4jTypes.NTInteger)
       .in("in", Neo4jTypes.NTInteger)
-      .build()
-    val oneArgumentThreadSafe = UserFunctionSignature.functionSignature("test", "foo1ThreadSafe")
-      .out(Neo4jTypes.NTInteger)
-      .in("in", Neo4jTypes.NTInteger)
+      .threadSafe
       .build()
     val twoArguments = UserFunctionSignature.functionSignature("test", "foo2")
       .out(Neo4jTypes.NTInteger)
       .in("in1", Neo4jTypes.NTInteger)
       .in("in2", Neo4jTypes.NTInteger)
+      .threadSafe
       .build()
     val defaultArgumets = UserFunctionSignature.functionSignature("test", "defaultValues")
       .out(Neo4jTypes.NTString)
@@ -1389,10 +1392,11 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
       .in("in4", Neo4jTypes.NTMap, ntMap(java.util.Map.of("default", "yes")))
       .in("in5", Neo4jTypes.NTByteArray, ntByteArray(Array[Byte](1, 2, 3)))
       .in("in6", Neo4jTypes.NTString, ntString("hello"))
+      .threadSafe
       .build()
 
     Seq(
-      new BasicUserAggregationFunction(noArgument) {
+      new BasicUserAggregationFunction(noArgumentNonThreadSafe) {
         override def create(ctx: Context): UserAggregator = new UserAggregator {
           private var count = 0L
 
@@ -1402,23 +1406,19 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
 
           override def result(): AnyValue = Values.longValue(count)
         }
-
-        override def threadSafe: Boolean = false
       },
-      new BasicUserAggregationFunction(oneArgument) {
+      new BasicUserAggregationFunction(noArgument) {
         override def create(ctx: Context): UserAggregator = new UserAggregator {
-          private var count = 0L
+          private val count = new AtomicLong(0L)
 
           override def update(input: Array[AnyValue]): Unit = {
-            count += input(0).asInstanceOf[NumberValue].longValue()
+            count.addAndGet(1)
           }
 
-          override def result(): AnyValue = Values.longValue(count)
+          override def result(): AnyValue = Values.longValue(count.get())
         }
-
-        override def threadSafe: Boolean = false
       },
-      new BasicUserAggregationFunction(oneArgumentThreadSafe) {
+      new BasicUserAggregationFunction(oneArgument) {
         override def create(ctx: Context): UserAggregator = new UserAggregator {
           private val count = new AtomicLong(0L)
 
@@ -1428,21 +1428,17 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
 
           override def result(): AnyValue = Values.longValue(count.get())
         }
-
-        override def threadSafe: Boolean = true
       },
       new BasicUserAggregationFunction(twoArguments) {
         override def create(ctx: Context): UserAggregator = new UserAggregator {
-          private var count = 0L
+          private val count = new AtomicLong(0L)
 
           override def update(input: Array[AnyValue]): Unit = {
-            count += input(0).asInstanceOf[NumberValue].times(input(1).asInstanceOf[NumberValue]).longValue()
+            count.addAndGet(input(0).asInstanceOf[NumberValue].times(input(1).asInstanceOf[NumberValue]).longValue())
           }
 
-          override def result(): AnyValue = Values.longValue(count)
+          override def result(): AnyValue = Values.longValue(count.get())
         }
-
-        override def threadSafe: Boolean = false
       },
       new BasicUserAggregationFunction(defaultArgumets) {
         override def create(ctx: Context): UserAggregator = new UserAggregator {
@@ -1454,8 +1450,6 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
 
           override def result(): AnyValue = Values.stringValue("yes")
         }
-
-        override def threadSafe: Boolean = false
       }
     )
   }
@@ -1729,6 +1723,38 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
 
     // then
     runtimeResult should beColumns("p").withSingleRow("yes")
+  }
+
+  test("should handle non-thread-safe user-defined aggregation with no argument") {
+    given {
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> i)
+        },
+        "Honey"
+      )
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .aggregation(Seq.empty, Seq("test.foo0NonThreadSafe() AS p"))
+      .allNodeScan("x")
+      .build()
+
+    if (isParallel) {
+      // Non-thread-safe UDAFs are not allowed in parallel runtime
+      // Should fail at compile-time
+      intercept[CantCompileQueryException] {
+        execute(logicalQuery, runtime)
+      }
+    } else {
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      runtimeResult should beColumns("p").withSingleRow(sizeHint)
+    }
   }
 }
 

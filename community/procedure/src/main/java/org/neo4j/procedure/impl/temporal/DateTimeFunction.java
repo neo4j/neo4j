@@ -104,17 +104,13 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue> {
                     CATEGORY,
                     true,
                     true,
-                    false);
+                    false,
+                    true);
         }
 
         @Override
         public UserFunctionSignature signature() {
             return signature;
-        }
-
-        @Override
-        public boolean threadSafe() {
-            return true;
         }
 
         @Override
@@ -148,17 +144,13 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue> {
                     CATEGORY,
                     true,
                     true,
-                    false);
+                    false,
+                    true);
         }
 
         @Override
         public UserFunctionSignature signature() {
             return signature;
-        }
-
-        @Override
-        public boolean threadSafe() {
-            return true;
         }
 
         @Override

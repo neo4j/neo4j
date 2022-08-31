@@ -108,7 +108,8 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
                 TEMPORAL_CATEGORY,
                 true,
                 true,
-                false);
+                false,
+                true);
         this.defaultZone = defaultZone;
     }
 
@@ -133,11 +134,6 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
     @Override
     public final UserFunctionSignature signature() {
         return signature;
-    }
-
-    @Override
-    public boolean threadSafe() {
-        return true;
     }
 
     @Override
@@ -192,7 +188,8 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
                     TEMPORAL_CATEGORY,
                     true,
                     true,
-                    false);
+                    false,
+                    true);
         }
 
         @Override
@@ -202,11 +199,6 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
 
         @Override
         public abstract AnyValue apply(Context ctx, AnyValue[] input) throws ProcedureException;
-
-        @Override
-        public boolean threadSafe() {
-            return true;
-        }
     }
 
     private static class Now<T extends AnyValue> extends SubFunction<T> {
