@@ -382,15 +382,6 @@ class BuiltInProceduresTest {
                                 "No Value",
                                 "No Value",
                                 false,
-                                "a string"),
-                        record(
-                                "initial.dbms.default_database",
-                                "initial.dbms.default_database, a string",
-                                "No Value",
-                                false,
-                                "No Value",
-                                "No Value",
-                                false,
                                 "a string"));
     }
 

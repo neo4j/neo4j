@@ -152,8 +152,7 @@ public class BuiltInDbmsProcedures {
                         "browser.remote_content_hostname_whitelist",
                         "browser.post_connect_cmd",
                         "client.allow_telemetry",
-                        "server.metrics.prefix",
-                        "initial.dbms.default_database")
+                        "server.metrics.prefix")
                 .collect(Collectors.toCollection(HashSet::new));
 
         Config config = graph.getDependencyResolver().resolveDependency(Config.class);
