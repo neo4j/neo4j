@@ -61,7 +61,6 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -90,9 +89,6 @@ import org.neo4j.values.storable.Values;
 @TestDirectoryExtension
 @ExtendWith(RandomExtension.class)
 class FulltextIndexConsistencyCheckIT {
-    @Inject
-    private FileSystemAbstraction fs;
-
     @Inject
     private TestDirectory testDirectory;
 

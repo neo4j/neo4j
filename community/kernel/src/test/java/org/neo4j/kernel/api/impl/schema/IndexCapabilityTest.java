@@ -290,7 +290,7 @@ class IndexCapabilityTest {
                 Arguments.of(TEXT, new ValueCategory[] {ValueCategory.TEXT}),
                 Arguments.of(TRIGRAM, new ValueCategory[] {ValueCategory.TEXT}),
                 Arguments.of(TOKEN, new ValueCategory[] {}),
-                Arguments.of(FULLTEXT, new ValueCategory[] {ValueCategory.TEXT}));
+                Arguments.of(FULLTEXT, new ValueCategory[] {ValueCategory.TEXT, TEXT_ARRAY}));
     }
 
     private static IndexCapability[] of(IndexCapability... capabilities) {
