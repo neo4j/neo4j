@@ -40,3 +40,6 @@ Feature "TypeConversion1 - To Boolean": Scenario "`toBoolean()` on invalid types
 // Failing with M16 TCK - require investigation
 // TODO: the below case does currently fallback to the parboiled parser, needs to be re-added/fixed when we remove the fallback for START
 // Feature "Literals7 - List": Scenario "Fail on a nested list with non-matching brackets"
+
+// Timezone update 2022b changed the expected result, exclude until all the JVMs have been upgraded
+?Feature "Temporal2 - Create Temporal Values from a String": Scenario "Should parse date time with named time zone from string": Example "4"
