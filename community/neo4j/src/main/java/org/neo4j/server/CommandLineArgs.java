@@ -19,87 +19,46 @@
  */
 package org.neo4j.server;
 
-import static java.lang.Boolean.FALSE;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.internal.helpers.collection.Pair.pair;
-
 import java.nio.file.Path;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
-import org.apache.commons.lang3.StringUtils;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.helpers.Args;
-import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.kernel.impl.util.Converters;
+import picocli.CommandLine;
 
-/**
- * Parses command line arguments for the bootstrappers. Format is as follows:
- * <ul>
- * <li>Configuration file can be specified by <strong>--config=path/to/config.properties</strong> or
- * <strong>-C=path/to/config.properties</strong></li>
- * <li>Specific overridden configuration options, directly specified as arguments can be specified with
- * <strong>-c key=value</strong>, for example <strong>-c dbms.default_database=foo.db</strong>
- * or enabled boolean properties with <strong>-c key</strong>, f.ex <strong>-c dbms.readonly</strong>
- * </ul>
- */
 public class CommandLineArgs {
-    public static final String CONFIG_DIR_ARG = "config-dir";
-    public static final String HOME_DIR_ARG = "home-dir";
-    public static final String EXPAND_COMMAND_ARG = "expand-commands";
-    public static final String ALLOW_CONSOLE_APPENDERS = "allow-console-appenders";
-    private final Args args;
-    private final Map<String, String> configOverrides;
+    @CommandLine.Option(names = "--home-dir", description = "path to NEO4J_HOME")
+    Path homeDir;
 
-    private CommandLineArgs(Args args, Map<String, String> configOverrides) {
-        this.args = args;
-        this.configOverrides = configOverrides;
-    }
+    @CommandLine.Option(
+            names = "--config-dir",
+            description = "path to a directory that contains a neo4j.conf file",
+            converter = ConfigFileConverter.class)
+    Path configFile;
 
-    public static CommandLineArgs parse(String[] argv) {
-        Args args = Args.parse(argv);
-        return new CommandLineArgs(args, parseConfigOverrides(args));
-    }
+    @CommandLine.Option(names = "--expand-commands", description = "allow execution of commands from the config")
+    boolean expandCommands;
 
-    public Map<String, String> configOverrides() {
-        return configOverrides;
-    }
+    @CommandLine.Option(names = "--allow-console-appenders", description = "allow output to stdout")
+    boolean allowConsoleAppenders;
 
-    public Path configFile() {
-        String configDirectory = args.get(CONFIG_DIR_ARG);
-        return configDirectory == null ? null : Path.of(configDirectory, Config.DEFAULT_CONFIG_FILE_NAME);
-    }
+    @CommandLine.Option(
+            names = "-c",
+            mapFallbackValue = "true",
+            description = "override config values with -c key=value")
+    Map<String, String> configOverrides = Collections.emptyMap();
 
-    private static Map<String, String> parseConfigOverrides(Args arguments) {
-        Collection<Pair<String, String>> options = arguments.interpretOptions("c", Converters.optional(), s -> {
-            if (s.contains("=")) {
-                String[] keyVal = s.split("=", 2);
-                return pair(keyVal[0], keyVal[1]);
-            }
-            // Shortcut to specify boolean flags ("-c dbms.enableTheFeature")
-            return StringUtils.isNotBlank(s) ? pair(s, "true") : null;
-        });
+    private CommandLineArgs() {}
 
-        Map<String, String> ret = stringMap();
-        options.removeIf(Objects::isNull);
-        options.forEach(pair -> ret.put(pair.first(), pair.other()));
-
-        return ret;
-    }
-
-    public Path homeDir() {
-        if (args.get(HOME_DIR_ARG) == null) {
-            return null;
+    private static final class ConfigFileConverter implements CommandLine.ITypeConverter<Path> {
+        @Override
+        public Path convert(String value) {
+            return value != null ? Path.of(value, Config.DEFAULT_CONFIG_FILE_NAME) : null;
         }
-
-        return Path.of(args.get(HOME_DIR_ARG));
     }
 
-    public boolean expandCommands() {
-        return args.getBoolean(EXPAND_COMMAND_ARG, FALSE);
-    }
-
-    public boolean allowConsoleAppenders() {
-        return args.getBoolean(ALLOW_CONSOLE_APPENDERS, FALSE);
+    public static CommandLineArgs parse(String... args) {
+        CommandLineArgs commandLineArgs = new CommandLineArgs();
+        new CommandLine(commandLineArgs).parseArgs(args);
+        return commandLineArgs;
     }
 }

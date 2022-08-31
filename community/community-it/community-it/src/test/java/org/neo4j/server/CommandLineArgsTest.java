@@ -25,43 +25,44 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.ArrayUtil.array;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.server.CommandLineArgs.parse;
 
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 
-public class CommandLineArgsTest {
+class CommandLineArgsTest {
     @Test
     void shouldPickUpSpecifiedConfigFile() {
         Path dir = Path.of("/some-dir").toAbsolutePath();
         Path expectedFile = dir.resolve(Config.DEFAULT_CONFIG_FILE_NAME);
-        assertEquals(expectedFile, parse("--config-dir", dir.toString()).configFile());
-        assertEquals(expectedFile, parse("--config-dir=" + dir).configFile());
+        assertEquals(expectedFile, parse("--config-dir", dir.toString()).configFile);
+        assertEquals(expectedFile, parse("--config-dir=" + dir).configFile);
     }
 
     @Test
     void shouldResolveConfigFileRelativeToWorkingDirectory() {
         Path expectedFile = Path.of("some-dir", Config.DEFAULT_CONFIG_FILE_NAME);
-        assertEquals(expectedFile, parse("--config-dir", "some-dir").configFile());
-        assertEquals(expectedFile, parse("--config-dir=some-dir").configFile());
+        assertEquals(expectedFile, parse("--config-dir", "some-dir").configFile);
+        assertEquals(expectedFile, parse("--config-dir=some-dir").configFile);
     }
 
     @Test
     void shouldReturnNullIfConfigDirIsNotSpecified() {
-        assertNull(parse().configFile());
+        assertNull(parse().configFile);
     }
 
     @Test
     void shouldPickUpSpecifiedHomeDir() {
         Path homeDir = Path.of("/some/absolute/homedir").toAbsolutePath();
 
-        assertEquals(homeDir, parse("--home-dir", homeDir.toString()).homeDir());
-        assertEquals(homeDir, parse("--home-dir=" + homeDir).homeDir());
+        assertEquals(homeDir, parse("--home-dir", homeDir.toString()).homeDir);
+        assertEquals(homeDir, parse("--home-dir=" + homeDir).homeDir);
     }
 
     @Test
     void shouldReturnNullIfHomeDirIsNotSpecified() {
-        assertNull(parse().homeDir());
+        assertNull(parse().homeDir);
     }
 
     @Test
@@ -73,7 +74,7 @@ public class CommandLineArgsTest {
         CommandLineArgs parsed = CommandLineArgs.parse(args);
 
         // THEN
-        assertEquals(stringMap("myoption", "myvalue"), parsed.configOverrides());
+        assertEquals(stringMap("myoption", "myvalue"), parsed.configOverrides);
     }
 
     @Test
@@ -85,7 +86,7 @@ public class CommandLineArgsTest {
         CommandLineArgs parsed = CommandLineArgs.parse(args);
 
         // THEN
-        assertEquals(stringMap("myoptionenabled", Boolean.TRUE.toString()), parsed.configOverrides());
+        assertEquals(stringMap("myoptionenabled", Boolean.TRUE.toString()), parsed.configOverrides);
     }
 
     @Test
@@ -108,7 +109,7 @@ public class CommandLineArgsTest {
                         Boolean.TRUE.toString(),
                         "my_second_option",
                         "second"),
-                parsed.configOverrides());
+                parsed.configOverrides);
     }
 
     @Test
@@ -117,37 +118,22 @@ public class CommandLineArgsTest {
         String[] args = array("--expand-commands");
 
         // WHEN
-        CommandLineArgs parsed = CommandLineArgs.parse(args);
+        CommandLineArgs parsed = parse(args);
 
         // THEN
-        assertTrue(parsed.expandCommands());
+        assertTrue(parsed.expandCommands);
     }
 
     @Test
     void expandCommandsShouldBeDisabledByDefault() {
         // GIVEN
-        String[] args = array("foo");
+        String[] args = array("--allow-console-appenders");
 
         // WHEN
-        CommandLineArgs parsed = CommandLineArgs.parse(args);
+        CommandLineArgs parsed = parse(args);
 
         // THEN
-        assertFalse(parsed.expandCommands());
-    }
-
-    @Test
-    void shouldIgnoreEmptyConfigArgs() {
-        // GIVEN
-        String[] args = array("-c", "foo", "-c", "", "-c", "bar=baz");
-
-        // WHEN
-        CommandLineArgs parsed = CommandLineArgs.parse(args);
-
-        // THEN
-        assertEquals(stringMap("foo", "true", "bar", "baz"), parsed.configOverrides());
-    }
-
-    private static CommandLineArgs parse(String... args) {
-        return CommandLineArgs.parse(args);
+        assertFalse(parsed.expandCommands);
+        assertTrue(parsed.allowConsoleAppenders);
     }
 }

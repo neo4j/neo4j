@@ -75,16 +75,12 @@ public abstract class NeoBootstrapper implements Bootstrapper {
     public static int start(Bootstrapper boot, String... argv) {
         CommandLineArgs args = CommandLineArgs.parse(argv);
 
-        if (args.homeDir() == null) {
+        if (args.homeDir == null) {
             throw new ServerStartupException("Argument --home-dir is required and was not provided.");
         }
 
         return boot.start(
-                args.homeDir(),
-                args.configFile(),
-                args.configOverrides(),
-                args.expandCommands(),
-                args.allowConsoleAppenders());
+                args.homeDir, args.configFile, args.configOverrides, args.expandCommands, args.allowConsoleAppenders);
     }
 
     @VisibleForTesting

@@ -34,6 +34,7 @@ import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.io.fs.FileSystemUtils.pathToString;
 import static org.neo4j.server.WebContainerTestUtils.getDefaultRelativeProperties;
 import static org.neo4j.server.WebContainerTestUtils.verifyConnector;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -290,6 +291,10 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
         return setting.name() + "=" + value;
     }
 
+    protected static String configOption(Setting<?> setting, boolean value) {
+        return setting.name() + "=" + (value ? SettingValueParsers.TRUE : FALSE);
+    }
+
     protected static String[] withConnectorsOnRandomPortsConfig(String... otherConfigs) {
         Stream<String> configs = Stream.of(otherConfigs);
 
@@ -309,31 +314,27 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
 
         String[] config = {
             "-c",
-            httpsEnabled ? configOption(httpsPolicy.enabled, SettingValueParsers.TRUE) : "",
+            configOption(httpsPolicy.enabled, httpsEnabled),
             "-c",
-            httpsEnabled
-                    ? configOption(
-                            httpsPolicy.base_directory,
-                            testDirectory.absolutePath().toString())
-                    : "",
+            configOption(httpsPolicy.base_directory, pathToString(testDirectory.absolutePath())),
             "-c",
-            HttpConnector.enabled.name() + "=" + httpEnabled,
+            configOption(HttpConnector.enabled, httpEnabled),
             "-c",
-            HttpConnector.listen_address.name() + "=localhost:0",
+            configOption(HttpConnector.listen_address, "localhost:0"),
             "-c",
-            HttpConnector.advertised_address.name() + "=:0",
+            configOption(HttpConnector.advertised_address, ":0"),
             "-c",
-            HttpsConnector.enabled.name() + "=" + httpsEnabled,
+            configOption(HttpsConnector.enabled, httpsEnabled),
             "-c",
-            HttpsConnector.listen_address.name() + "=localhost:0",
+            configOption(HttpsConnector.listen_address, "localhost:0"),
             "-c",
-            HttpsConnector.advertised_address.name() + "=:0",
+            configOption(HttpsConnector.advertised_address, ":0"),
             "-c",
-            BoltConnector.enabled.name() + "=" + boltEnabled,
+            configOption(BoltConnector.enabled, boltEnabled),
             "-c",
-            BoltConnector.listen_address.name() + "=localhost:0",
+            configOption(BoltConnector.listen_address, "localhost:0"),
             "-c",
-            BoltConnector.advertised_address.name() + "=:0",
+            configOption(BoltConnector.advertised_address, ":0")
         };
         var allConfigOptions = ArrayUtils.addAll(config, getAdditionalArguments());
         int resultCode = NeoBootstrapper.start(bootstrapper, allConfigOptions);
