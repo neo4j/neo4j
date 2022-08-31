@@ -184,5 +184,8 @@ object CompilationPhases {
       AdministrationCommandPlanBuilder andThen
       If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(
         UnsupportedSystemCommand
+      ) andThen
+      If((s: LogicalPlanState) => s.maybeLogicalPlan.isDefined)(
+        CompressPlanIDs
       )
 }
