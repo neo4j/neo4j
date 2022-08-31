@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.neo4j.bolt.packstream.Neo4jPackV1;
 import org.neo4j.bolt.packstream.Neo4jPackV2;
+import org.neo4j.bolt.packstream.Neo4jPackV3;
 
 import static java.util.Collections.unmodifiableMap;
 
@@ -40,7 +41,9 @@ public enum StructType
     LOCAL_TIME( Neo4jPackV2.LOCAL_TIME, "LocalTime" ),
     LOCAL_DATE_TIME( Neo4jPackV2.LOCAL_DATE_TIME, "LocalDateTime" ),
     DATE_TIME_WITH_ZONE_OFFSET( Neo4jPackV2.DATE_TIME_WITH_ZONE_OFFSET, "OffsetDateTime" ),
+    DATE_TIME_WITH_ZONE_OFFSET_UTC( Neo4jPackV3.DATE_TIME_WITH_ZONE_OFFSET_UTC, "OffsetDateTimeUTC" ),
     DATE_TIME_WITH_ZONE_NAME( Neo4jPackV2.DATE_TIME_WITH_ZONE_NAME, "ZonedDateTime" ),
+    DATE_TIME_WITH_ZONE_NAME_UTC( Neo4jPackV3.DATE_TIME_WITH_ZONE_NAME_UTC, "ZonedDateTimeUTC" ),
     DURATION( Neo4jPackV2.DURATION, "Duration" );
 
     private final byte signature;

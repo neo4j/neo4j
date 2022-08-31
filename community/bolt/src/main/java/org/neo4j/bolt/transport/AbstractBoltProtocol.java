@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.transport;
 
+import io.netty.channel.Channel;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
@@ -45,6 +46,11 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.neo4j.bolt.BoltChannel.BOLT_PATCH_LISTENERS;
 
 /**
  * The base of building Bolt protocols.
@@ -107,6 +113,10 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
 
         var connection = connectionFactory.newConnection( channel, stateMachine, messageWriter );
         var messageReader = createMessageReader( connection, messageWriter, bookmarksParser, logging, channelProtector, memoryTracker );
+        var messageDecoder = new MessageDecoder( neo4jPack, messageReader, logging );
+
+        addBoltPatchesListener(channel.rawChannel(), messageWriter);
+        addBoltPatchesListener(channel.rawChannel(), messageDecoder);
 
         memoryTracker.allocateHeap(
                 ChunkDecoder.SHALLOW_SIZE + MessageAccumulator.SHALLOW_SIZE + MessageDecoder.SHALLOW_SIZE + HouseKeeper.SHALLOW_SIZE );
@@ -114,7 +124,7 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
         channel.installBoltProtocol(
                 new ChunkDecoder(),
                 new MessageAccumulator( config ),
-                new MessageDecoder( neo4jPack, messageReader, logging ),
+                messageDecoder,
                 new HouseKeeper( connection, logging.getInternalLog( HouseKeeper.class ) ) );
     }
 
@@ -139,4 +149,16 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
 
     protected abstract BoltResponseMessageWriter createMessageWriter( Neo4jPack neo4jPack,
                                                                       LogService logging, MemoryTracker memoryTracker );
+
+    private void addBoltPatchesListener( Channel channel, BoltPatchListener patchListener )
+    {
+        Set<BoltPatchListener> boltPatchesListeners =
+                channel.attr( BOLT_PATCH_LISTENERS ).get();
+        if ( boltPatchesListeners == null )
+        {
+            boltPatchesListeners = new HashSet<>();
+            channel.attr( BOLT_PATCH_LISTENERS ).set( boltPatchesListeners );
+        }
+        boltPatchesListeners.add( patchListener );
+    }
 }

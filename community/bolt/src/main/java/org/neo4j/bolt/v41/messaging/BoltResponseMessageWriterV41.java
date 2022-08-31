@@ -21,10 +21,12 @@ package org.neo4j.bolt.v41.messaging;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.messaging.ResponseMessage;
 import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.packstream.Neo4jPackV3;
 import org.neo4j.bolt.packstream.PackOutput;
 import org.neo4j.bolt.packstream.PackProvider;
 import org.neo4j.bolt.v3.messaging.BoltResponseMessageWriterV3;
@@ -176,6 +178,15 @@ public class BoltResponseMessageWriterV41 implements BoltResponseMessageWriter
         {
             delegator.log().error( "Failed to write NOOP", e );
             throw e;
+        }
+    }
+
+    @Override
+    public void handle( List<String> patches )
+    {
+        if ( patches.contains( UTC_PATCH ) )
+        {
+            delegator.updatePacker( new Neo4jPackV3() );
         }
     }
 }

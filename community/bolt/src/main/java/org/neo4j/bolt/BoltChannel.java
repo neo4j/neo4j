@@ -23,12 +23,17 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 
 import java.net.SocketAddress;
+import java.util.Set;
 
+import io.netty.util.AttributeKey;
+import org.neo4j.bolt.transport.BoltPatchListener;
 import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
 import org.neo4j.memory.HeapEstimator;
+
+import static io.netty.util.AttributeKey.newInstance;
 
 /**
  * A channel through which Bolt messaging can occur.
@@ -36,6 +41,9 @@ import org.neo4j.memory.HeapEstimator;
 public class BoltChannel implements TrackedNetworkConnection
 {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltChannel.class );
+
+    public static final AttributeKey<Set<BoltPatchListener>> BOLT_PATCH_LISTENERS =
+            AttributeKey.valueOf(BoltChannel.class, "boltPatchesListeners" );
 
     private final String id;
     private final long connectTime;

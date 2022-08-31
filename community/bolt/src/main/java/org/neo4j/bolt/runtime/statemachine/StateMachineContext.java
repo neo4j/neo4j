@@ -21,6 +21,9 @@ package org.neo4j.bolt.runtime.statemachine;
 
 import java.time.Clock;
 
+import io.netty.channel.Channel;
+
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.v41.messaging.RoutingContext;
@@ -51,4 +54,6 @@ public interface StateMachineContext
     TransactionManager getTransactionManager();
 
     String getDefaultDatabase();
+
+    BoltChannel channel();
 }

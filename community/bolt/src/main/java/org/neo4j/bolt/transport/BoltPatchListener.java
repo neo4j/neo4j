@@ -17,38 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.messaging;
+package org.neo4j.bolt.transport;
 
-import org.neo4j.bolt.transport.BoltPatchListener;
-
-import java.io.Closeable;
-import java.io.IOException;
 import java.util.List;
 
 /**
- * Interface defining simple encoders for each defined
- * Bolt response message.
+ * Listeners that are registered to be notified about patch configuration options sent in Hello Message
  */
-public interface BoltResponseMessageWriter extends BoltRecordConsumer, Closeable, BoltPatchListener
+public interface BoltPatchListener
 {
-    void write( ResponseMessage message ) throws IOException;
+    String UTC_PATCH = "utc";
 
-    void flush() throws IOException;
-
-    default void keepAlive() throws IOException
-    {
-    }
-
-    default void flushBufferOrSendKeepAlive() throws IOException
-    {
-    }
-
-    default void initKeepAliveTimer()
-    {
-    }
-
-    @Override
-    default void handle( List<String> patches )
-    {
-    }
+    void handle( List<String> patches );
 }

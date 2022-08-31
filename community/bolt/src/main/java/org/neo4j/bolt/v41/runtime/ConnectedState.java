@@ -19,8 +19,10 @@
  */
 package org.neo4j.bolt.v41.runtime;
 
+import java.util.List;
 import java.util.Map;
 
+import io.netty.channel.Channel;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
@@ -31,7 +33,10 @@ import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 
+import static org.neo4j.bolt.BoltChannel.BOLT_PATCH_LISTENERS;
+import static org.neo4j.bolt.transport.BoltPatchListener.UTC_PATCH;
 import static org.neo4j.bolt.v3.messaging.BoltAuthenticationHelper.processAuthentication;
+import static org.neo4j.bolt.v3.messaging.request.HelloMessage.PATCH_BOLT;
 import static org.neo4j.util.Preconditions.checkState;
 
 /**
@@ -65,6 +70,13 @@ public class ConnectedState implements BoltStateMachineState
             String userAgent = helloMessage.userAgent();
             Map<String,Object> authToken = helloMessage.authToken();
             RoutingContext routingContext = helloMessage.routingContext();
+            List<String> patchSettings = helloMessage.patchSettings();
+            notifyListeners( context.channel().rawChannel(), patchSettings );
+
+            if ( patchSettings.contains( UTC_PATCH ) )
+            {
+                context.connectionState().onMetadata( PATCH_BOLT, Values.stringArray( UTC_PATCH ) );
+            }
 
             if ( processAuthentication( userAgent, authToken, context ) )
             {
@@ -96,5 +108,16 @@ public class ConnectedState implements BoltStateMachineState
     private void assertInitialized()
     {
         checkState( readyState != null, "Ready state not set" );
+    }
+
+    private void notifyListeners( Channel channel, List<String> patchSettings )
+    {
+        if ( !patchSettings.isEmpty() )
+        {
+            var patchListeners = channel
+                    .attr(BOLT_PATCH_LISTENERS)
+                    .get();
+            patchListeners.forEach(l -> l.handle( patchSettings ) );
+        }
     }
 }

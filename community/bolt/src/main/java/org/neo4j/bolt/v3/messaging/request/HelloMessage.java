@@ -19,10 +19,13 @@
  */
 package org.neo4j.bolt.v3.messaging.request;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.bolt.messaging.RequestMessage;
+import org.neo4j.values.virtual.ListValue;
 
 import static java.util.Objects.requireNonNull;
 
@@ -30,6 +33,7 @@ public class HelloMessage implements RequestMessage
 {
     public static final byte SIGNATURE = 0x01;
     private static final String USER_AGENT = "user_agent";
+    public static final String PATCH_BOLT = "patch_bolt";
     private final Map<String,Object> meta;
 
     public HelloMessage( Map<String,Object> meta )
@@ -51,6 +55,19 @@ public class HelloMessage implements RequestMessage
     public Map<String,Object> meta()
     {
         return meta;
+    }
+
+    public List<String> patchSettings()
+    {
+        var patches = meta.get( PATCH_BOLT );
+        if ( patches != null )
+        {
+            return (List<String>) patches;
+        }
+        else
+        {
+            return Collections.emptyList();
+        }
     }
 
     @Override

@@ -56,7 +56,7 @@ public class BoltResponseMessageWriterV3 implements BoltResponseMessageWriter
     private static final int MAX_LOG_COMPONENT_LENGTH = 4096;
 
     private final PackOutput output;
-    private final Neo4jPack.Packer packer;
+    private Neo4jPack.Packer packer;
     private final Log log;
     private final Map<Byte,ResponseMessageEncoder<ResponseMessage>> encoders;
     private RecordMessageEncoder recordMessageEncoder = new RecordMessageEncoder();
@@ -197,5 +197,10 @@ public class BoltResponseMessageWriterV3 implements BoltResponseMessageWriter
     public void close() throws IOException
     {
         output.close();
+    }
+
+    public void updatePacker( Neo4jPack neo4jPack )
+    {
+        packer = neo4jPack.newPacker( output );
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.bolt.runtime.statemachine.impl;
 
 import java.time.Clock;
 
+import io.netty.channel.Channel;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
@@ -168,5 +169,11 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
     {
         transactionManager.cleanUp( new CleanUpTransactionContext( transactionId ) );
         connectionState.clearCurrentTransactionId();
+    }
+
+    @Override
+    public BoltChannel channel()
+    {
+        return boltChannel;
     }
 }
