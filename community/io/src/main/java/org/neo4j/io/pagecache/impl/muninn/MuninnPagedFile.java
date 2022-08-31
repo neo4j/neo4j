@@ -382,22 +382,14 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
 
     private void markAllDirtyPagesAsClean() {
         int[][] tt = this.translationTable;
-        markDirtyPagesAsClean(tt, 0, 0, 0, (chunk, chunkIndex, pageRef) -> unlockExclusive(pageRef));
+        markAllDirtyPagesAsClean(tt);
     }
 
-    private void markDirtyPagesAsClean(
-            int[][] table,
-            int initialChunkIndex,
-            int initialChunkOffset,
-            long initialFilePageId,
-            FreePageAction freePageAction) {
-        // Start at index -1 because we increment at the *start* of the chunk-loop iteration.
-        long filePageId = initialFilePageId - 1;
-        int chunkOffset = initialChunkOffset;
-        for (int j = initialChunkIndex; j < table.length; j++) {
-            int[] chunk = table[j];
+    private void markAllDirtyPagesAsClean(int[][] tt) {
+        long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
+        for (int[] chunk : tt) {
             chunkLoop:
-            for (int i = chunkOffset; i < chunk.length; i++) {
+            for (int i = 0; i < chunk.length; i++) {
                 filePageId++;
                 int chunkIndex = computeChunkIndex(filePageId);
 
@@ -420,7 +412,49 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                             // The page is still bound to the expected file and file page id after we locked it,
                             // so we didn't race with eviction and faulting, and the page is dirty.
                             explicitlyMarkPageUnmodifiedUnderExclusiveLock(pageRef);
-                            freePageAction.freePage(chunk, chunkIndex, pageRef);
+                            unlockExclusive(pageRef);
+                            continue chunkLoop;
+                        }
+                    }
+                    // There was no page at this entry in the table. Continue to the next entry.
+                    continue chunkLoop;
+                }
+            }
+        }
+    }
+
+    private void markPagesAsFree(int[][] table, int initialChunkIndex, int initialChunkOffset, long initialFilePageId) {
+        // Start at index -1 because we increment at the *start* of the chunk-loop iteration.
+        long filePageId = initialFilePageId - 1;
+        int chunkOffset = initialChunkOffset;
+        for (int j = initialChunkIndex; j < table.length; j++) {
+            int[] chunk = table[j];
+            chunkLoop:
+            for (int i = chunkOffset; i < chunk.length; i++) {
+                filePageId++;
+                int chunkIndex = computeChunkIndex(filePageId);
+
+                // We might race with eviction, but we also mustn't miss a dirty page, so we loop until we succeed
+                // in getting a lock on all available pages.
+                for (; ; ) {
+                    int pageId = (int) TRANSLATION_TABLE_ARRAY.getVolatile(chunk, chunkIndex);
+                    if (pageId != UNMAPPED_TTE) {
+                        long pageRef = deref(pageId);
+                        if (!tryExclusiveLock(pageRef)) {
+                            continue;
+                        }
+                        if (isBoundTo(pageRef, swapperId, filePageId)) {
+                            // The page is still bound to the expected file and file page id after we locked it,
+                            // so we didn't race with eviction and faulting, and the page is dirty.
+                            explicitlyMarkPageUnmodifiedUnderExclusiveLock(pageRef);
+                            // here we are doing a shortcut and add truncated pages directly to free list
+                            // by doing mass targeted evictions of affected pages that we know are affected
+                            // and page in a free list. Page should be locked exclusively in the free list.
+                            // see MunningPageCache#grabFreeAndExclusivelyLockedPage
+                            // see MuninnPageCursor#pageFault
+                            TRANSLATION_TABLE_ARRAY.setVolatile(chunk, chunkIndex, UNMAPPED_TTE);
+                            clearBinding(pageRef);
+                            pageCache.addFreePageToFreelist(pageRef, EvictionRunEvent.NULL);
                             continue chunkLoop;
                         }
                     }
@@ -885,21 +919,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
 
         int[][] tt = translationTable;
         if (tt.length > chunkId) {
-            markDirtyPagesAsClean(
-                    tt,
-                    chunkId,
-                    MuninnPagedFile.computeChunkIndex(pagesToKeep),
-                    pagesToKeep,
-                    (chunk, chunkIndex, pageRef) -> {
-                        // here we are doing a shortcut and add truncated pages directly to free list
-                        // by doing mass targeted evictions of affected pages that we know are affected
-                        // and page in a free list. Page should be locked exclusively in the free list.
-                        // see MunningPageCache#grabFreeAndExclusivelyLockedPage
-                        // see MuninnPageCursor#pageFault
-                        TRANSLATION_TABLE_ARRAY.setVolatile(chunk, chunkIndex, UNMAPPED_TTE);
-                        clearBinding(pageRef);
-                        pageCache.addFreePageToFreelist(pageRef, EvictionRunEvent.NULL);
-                    });
+            markPagesAsFree(tt, chunkId, MuninnPagedFile.computeChunkIndex(pagesToKeep), pagesToKeep);
             int newLength = computeNewRootTableLength(chunkId);
             int[][] ntt = new int[newLength][];
             System.arraycopy(tt, 0, ntt, 0, ntt.length);
@@ -932,10 +952,5 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     @Override
     public boolean isMultiVersioned() {
         return multiVersioned;
-    }
-
-    @FunctionalInterface
-    private interface FreePageAction {
-        void freePage(int[] chunk, int chunkIndex, long pageRef);
     }
 }

@@ -102,6 +102,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer.Fault;
+import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
 
@@ -211,6 +212,40 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 for (int i = 0; i < pageFile.payloadSize(); i++) {
                     assertEquals(0, reader.getByte());
                 }
+            }
+        }
+    }
+
+    @Test
+    void reusePagesOverPageListOnFileTruncation() throws IOException {
+        int pageCachePages = 20;
+        int pagesToKeep = 5;
+        try (var pageCache = createPageCache(fs, pageCachePages, new DefaultPageCacheTracer())) {
+            Path file = file("a");
+            try (PagedFile pf = map(pageCache, file, filePageSize)) {
+                for (int i = 0; i < 10; i++) {
+                    try (PageCursor cursor = pf.io(i, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                        assertTrue(cursor.next());
+                        cursor.putLong(i);
+                    }
+                }
+
+                for (int iteration = 0; iteration < 10; iteration++) {
+                    pf.truncate(pagesToKeep, FileTruncateEvent.NULL);
+                    assertEquals(5, pageCache.tryGetNumberOfPagesToEvict(pageCachePages));
+                    for (int i = 0; i < 5; i++) {
+                        try (PageCursor cursor = pf.io(pagesToKeep + i, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                            assertTrue(cursor.next());
+                            cursor.putLong(i);
+                        }
+                        pf.flushAndForce(FileFlushEvent.NULL);
+                    }
+                    assertEquals(10, pageCache.tryGetNumberOfPagesToEvict(pageCachePages));
+                }
+
+                assertEquals(10, pageCache.tryGetNumberOfPagesToEvict(pageCachePages));
+                assertEquals(9, pf.getLastPageId());
+                assertEquals(pageCachePages, pageCache.maxCachedPages());
             }
         }
     }
