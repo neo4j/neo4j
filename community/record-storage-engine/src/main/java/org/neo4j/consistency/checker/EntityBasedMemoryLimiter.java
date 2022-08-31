@@ -24,38 +24,25 @@ import static java.lang.Long.min;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static org.neo4j.io.ByteUnit.bytesToString;
-import static org.neo4j.io.ByteUnit.gibiBytes;
-import static org.neo4j.io.os.OsBeanUtil.VALUE_UNAVAILABLE;
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.consistency.checking.cache.CacheSlots;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
-import org.neo4j.io.os.OsBeanUtil;
 
 /**
  * Even though this memory limiter handles ranges for both nodes and relationships, it bases the range size on the number of nodes
  * to not make relationship heavy stores allocate a lot more memory.
  */
 public class EntityBasedMemoryLimiter extends PrefetchingIterator<EntityBasedMemoryLimiter.CheckRange> {
-    public static final Factory DEFAULT =
-            new DefaultFactory(GraphDatabaseInternalSettings.consistency_check_memory_limit_factor.defaultValue());
-
-    public static Factory defaultWithLeeway(double leewayFactor) {
-        return new DefaultFactory(leewayFactor);
+    public static Factory defaultMemoryLimiter(long maxOffHeapCachingMemory) {
+        return new DefaultFactory(maxOffHeapCachingMemory);
     }
 
     // Original parameters
-    private final long pageCacheMemory;
-    private final long jvmMemory;
-    private final long machineMemory;
+    private final long maxOffHeapCachingMemory;
     private final long requiredMemoryPerEntity;
 
     // Calculated values
-    private final long effectiveJvmMemory;
-    private final long occupiedMemory;
-    private long effectiveMachineMemory;
-
     private final long highNodeId;
     private final long highRelationshipId;
     private final long highEntityId;
@@ -64,37 +51,15 @@ public class EntityBasedMemoryLimiter extends PrefetchingIterator<EntityBasedMem
     private long currentRangeEnd;
 
     public EntityBasedMemoryLimiter(
-            long pageCacheMemory,
-            long jvmMemory,
-            long machineMemory,
-            long requiredMemoryPerEntity,
-            long highNodeId,
-            long highRelationshipId,
-            double leewayFactor) {
-        // Store the original parameters so that they can be printed for reference later
-        this.pageCacheMemory = pageCacheMemory;
-        this.jvmMemory = jvmMemory;
-        this.machineMemory = machineMemory;
+            long maxOffHeapCachingMemory, long requiredMemoryPerEntity, long highNodeId, long highRelationshipId) {
+        assert maxOffHeapCachingMemory > 0 : "Max off-heap caching memory is " + maxOffHeapCachingMemory;
+        assert requiredMemoryPerEntity > 0 : "Required memory per entity is " + requiredMemoryPerEntity;
+        this.maxOffHeapCachingMemory = maxOffHeapCachingMemory;
         this.requiredMemoryPerEntity = requiredMemoryPerEntity;
-
-        // Store calculated values
-        this.effectiveJvmMemory =
-                jvmMemory == Long.MAX_VALUE ? Runtime.getRuntime().totalMemory() : jvmMemory;
-        this.occupiedMemory = pageCacheMemory + effectiveJvmMemory;
-        this.effectiveMachineMemory = machineMemory == VALUE_UNAVAILABLE
-                // When the OS can't provide a number, we assume at least twice page-cache size, and at least 2GiB
-                ? max(pageCacheMemory * 2, gibiBytes(2))
-                : machineMemory;
-        this.effectiveMachineMemory = max((long) (effectiveMachineMemory * leewayFactor), occupiedMemory);
-        long availableMemory = effectiveMachineMemory - occupiedMemory;
-
-        assert availableMemory > 0;
-        assert requiredMemoryPerEntity > 0;
-
         this.highNodeId = highNodeId;
         this.highRelationshipId = highRelationshipId;
         this.highEntityId = max(highNodeId, highRelationshipId);
-        this.entitiesPerRange = max(1, min(highNodeId, availableMemory / requiredMemoryPerEntity));
+        this.entitiesPerRange = max(1, min(highNodeId, maxOffHeapCachingMemory / requiredMemoryPerEntity));
         this.currentRangeStart = 0;
         this.currentRangeEnd = min(this.highEntityId, entitiesPerRange);
     }
@@ -132,19 +97,10 @@ public class EntityBasedMemoryLimiter extends PrefetchingIterator<EntityBasedMem
     public String toString() {
         StringBuilder builder =
                 new StringBuilder().append(getClass().getSimpleName()).append(':');
-        builder.append(format("%n  pageCacheMemory:%s", bytesToString(pageCacheMemory)));
-        builder.append(format("%n  jvmMemory:%s", bytesToString(jvmMemory)));
-        builder.append(format("%n  machineMemory:%s", bytesToString(machineMemory)));
+        builder.append(format("%n  maxOffHeapCachingMemory:%s", bytesToString(maxOffHeapCachingMemory)));
         builder.append(format("%n  perEntityMemory:%s", bytesToString(requiredMemoryPerEntity)));
         builder.append(format("%n  nodeHighId:%s", highNodeId));
         builder.append(format("%n  relationshipHighId:%s", highRelationshipId));
-        if (effectiveJvmMemory != jvmMemory) {
-            builder.append(format("%n  effective jvmMemory:%s", bytesToString(effectiveJvmMemory)));
-        }
-        if (effectiveMachineMemory != machineMemory) {
-            builder.append(format("%n  effective machineMemory:%s", bytesToString(effectiveMachineMemory)));
-        }
-        builder.append(format("%n  occupiedMemory:%s", bytesToString(occupiedMemory)));
         builder.append(format("%n  ==> numberOfRanges:%d", numberOfRanges()));
         builder.append(format("%n  ==> numberOfEntitiesPerRange:%d", entitiesPerRange));
         return builder.toString();
@@ -162,29 +118,21 @@ public class EntityBasedMemoryLimiter extends PrefetchingIterator<EntityBasedMem
     }
 
     public interface Factory {
-        EntityBasedMemoryLimiter create(long pageCacheMemory, long highNodeId, long highRelationshipId);
+        EntityBasedMemoryLimiter create(long highNodeId, long highRelationshipId);
     }
 
     private static class DefaultFactory implements Factory {
-        private final double memoryLeewayFactor;
+        private final long maxOffHeapCachingMemory;
 
-        DefaultFactory(double memoryLeewayFactor) {
-            this.memoryLeewayFactor = memoryLeewayFactor;
+        DefaultFactory(long maxOffHeapCachingMemory) {
+            this.maxOffHeapCachingMemory = maxOffHeapCachingMemory;
         }
 
         @Override
-        public EntityBasedMemoryLimiter create(long pageCacheMemory, long highNodeId, long highRelationshipId) {
-            long jvmMemory = Runtime.getRuntime().maxMemory();
-            long machineMemory = OsBeanUtil.getTotalPhysicalMemory();
+        public EntityBasedMemoryLimiter create(long highNodeId, long highRelationshipId) {
             long perEntityMemory = CacheSlots.CACHE_LINE_SIZE_BYTES;
             return new EntityBasedMemoryLimiter(
-                    pageCacheMemory,
-                    jvmMemory,
-                    machineMemory,
-                    perEntityMemory,
-                    highNodeId,
-                    highRelationshipId,
-                    memoryLeewayFactor);
+                    maxOffHeapCachingMemory, perEntityMemory, highNodeId, highRelationshipId);
         }
     }
 

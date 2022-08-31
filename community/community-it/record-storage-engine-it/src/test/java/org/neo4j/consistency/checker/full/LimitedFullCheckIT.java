@@ -51,14 +51,8 @@ class LimitedFullCheckIT extends FullCheckIntegrationTest {
     @Override
     protected EntityBasedMemoryLimiter.Factory memoryLimit() {
         // Make it so that it will have to do the checking in a couple of node id ranges
-        return (pageCacheMemory, highNodeId, highRelationshipId) -> new EntityBasedMemoryLimiter(
-                pageCacheMemory,
-                0,
-                pageCacheMemory + highNodeId * CACHE_LINE_SIZE_BYTES / 3,
-                CACHE_LINE_SIZE_BYTES,
-                highNodeId,
-                highRelationshipId,
-                1);
+        return EntityBasedMemoryLimiter.defaultMemoryLimiter(
+                fixture.neoStores().getNodeStore().getHighId() * CACHE_LINE_SIZE_BYTES / 3);
     }
 
     @Test
@@ -114,14 +108,7 @@ class LimitedFullCheckIT extends FullCheckIntegrationTest {
 
         // Allow 3 entities in each range
         final EntityBasedMemoryLimiter.Factory factory =
-                (pageCacheMemory, highNodeId, highRelationshipId) -> new EntityBasedMemoryLimiter(
-                        pageCacheMemory,
-                        0,
-                        pageCacheMemory + CACHE_LINE_SIZE_BYTES * 3,
-                        CACHE_LINE_SIZE_BYTES,
-                        highNodeId,
-                        highRelationshipId,
-                        1);
+                EntityBasedMemoryLimiter.defaultMemoryLimiter(CACHE_LINE_SIZE_BYTES * 3);
         ConsistencySummaryStatistics stats = check(factory);
 
         on(stats)

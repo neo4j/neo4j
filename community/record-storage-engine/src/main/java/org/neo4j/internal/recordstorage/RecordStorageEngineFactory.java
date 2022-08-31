@@ -733,7 +733,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
         CursorContextFactory contextFactory = NULL_CONTEXT_FACTORY;
         RecordFormats recordFormats =
                 selectForStore(databaseLayout, fs, pageCache, NullLogProvider.getInstance(), contextFactory);
-        var idGeneratorFactory = new ScanOnOpenReadOnlyIdGeneratorFactory();
+        var idGeneratorFactory =
+                new DefaultIdGeneratorFactory(fs, immediate(), false, PageCacheTracer.NULL, layout.getDatabaseName());
         try (NeoStores neoStores = new StoreFactory(
                         databaseLayout,
                         config,
@@ -763,7 +764,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             InternalLog log,
             ConsistencySummaryStatistics summary,
             int numberOfThreads,
-            double memoryLimitLeewayFactor,
+            long maxOffHeapCachingMemory,
             OutputStream progressOutput,
             boolean verbose,
             ConsistencyFlags flags,
@@ -804,7 +805,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                     log,
                     verbose,
                     flags,
-                    EntityBasedMemoryLimiter.defaultWithLeeway(memoryLimitLeewayFactor),
+                    EntityBasedMemoryLimiter.defaultMemoryLimiter(maxOffHeapCachingMemory),
                     EmptyMemoryTracker.INSTANCE,
                     contextFactory,
                     pageCacheTracer)) {

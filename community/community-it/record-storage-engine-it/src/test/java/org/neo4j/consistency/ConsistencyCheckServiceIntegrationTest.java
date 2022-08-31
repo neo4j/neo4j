@@ -22,7 +22,6 @@ package org.neo4j.consistency;
 import static java.lang.String.format;
 import static java.nio.file.Files.exists;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -61,7 +60,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
-import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -74,8 +72,6 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.LogAssertions;
 import org.neo4j.logging.NullLog;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.scheduler.JobScheduler;
@@ -285,28 +281,6 @@ public class ConsistencyCheckServiceIntegrationTest {
                 .as("Expected to see report about schema index not being online")
                 .contains("schema rule")
                 .contains("not online");
-    }
-
-    @Test
-    void shouldTweakPageCacheMemorySettingForOptimalPerformance() throws ConsistencyCheckIncompleteException {
-        assumeThat(OsBeanUtil.getTotalPhysicalMemory()).isNotEqualTo(OsBeanUtil.VALUE_UNAVAILABLE);
-
-        fixture.apply(tx -> {
-            for (int i = 0; i < 1000; i++) {
-                tx.createNode();
-            }
-        });
-
-        Config configuration = Config.newBuilder()
-                .set(settings())
-                .set(GraphDatabaseSettings.pagecache_memory, OsBeanUtil.getTotalPhysicalMemory())
-                .build();
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        Result result =
-                consistencyCheckService().with(configuration).with(logProvider).runFullConsistencyCheck();
-        assertTrue(result.isSuccessful());
-        LogAssertions.assertThat(logProvider)
-                .containsMessages(GraphDatabaseSettings.pagecache_memory.name() + " setting was tweaked from");
     }
 
     private void createIndex(Label label, String propKey) {

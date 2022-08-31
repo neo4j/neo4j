@@ -58,6 +58,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.locker.FileLockException;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -107,8 +108,8 @@ class CheckCommandIT {
 
                         check [-h] [--expand-commands] [--force] [--verbose] [--check-counts[=true|false]] [--check-graph[=true|false]]
                               [--check-indexes[=true|false]] [--check-property-owners[=true|false]] [--additional-config=<file>]
-                              [--report-path=<path>] [[--from-path-data=<path> --from-path-txn=<path>] | [--from-path=<path>
-                              [--temp-path=<path>]]] <database>
+                              [--max-off-heap-memory=<size>] [--report-path=<path>] [--threads=<number of threads>] [[--from-path-data=<path>
+                              --from-path-txn=<path>] | [--from-path=<path> [--temp-path=<path>]]] <database>
 
                         DESCRIPTION
 
@@ -148,6 +149,14 @@ class CheckCommandIT {
                               --report-path=<path>   Path to where a consistency report will be written. Interpreted as a directory, unless it
                                                        has an extension of '.report'
                                                        Default: .
+                              --max-off-heap-memory=<size>
+                                                     Maximum memory that neo4j-admin can use for page cache and various caching data structures
+                                                       to improve performance. Value can be plain numbers, like 10000000 or e.g. 20G for 20
+                                                       gigabyte, or even e.g. 70% which will amount to 70% of currently free memory on the
+                                                       machine.
+                                                       Default: 90%
+                              --threads=<number of threads>
+                                                     Number of threads used to check consistency. Defaults to number of CPUs on the machine.
                               --from-path-data=<path>
                                                      Path to the databases directory, containing the database directory to source from.
                                                        Default: <config: server.directories.data>/databases
@@ -601,6 +610,27 @@ class CheckCommandIT {
         public ConsistencyCheckService with(MemoryTracker memoryTracker) {
             arguments.put(MemoryTracker.class, memoryTracker);
             super.with(memoryTracker);
+            return new TrackingConsistencyCheckService(this);
+        }
+
+        @Override
+        public ConsistencyCheckService with(CursorContextFactory contextFactory) {
+            arguments.put(CursorContextFactory.class, contextFactory);
+            super.with(contextFactory);
+            return new TrackingConsistencyCheckService(this);
+        }
+
+        @Override
+        public ConsistencyCheckService withMaxOffHeapMemory(long maxOffHeapMemory) {
+            arguments.put(Long.TYPE, maxOffHeapMemory);
+            super.withMaxOffHeapMemory(maxOffHeapMemory);
+            return new TrackingConsistencyCheckService(this);
+        }
+
+        @Override
+        public ConsistencyCheckService withNumberOfThreads(int numberOfThreads) {
+            arguments.put(Integer.TYPE, numberOfThreads);
+            super.withNumberOfThreads(numberOfThreads);
             return new TrackingConsistencyCheckService(this);
         }
 

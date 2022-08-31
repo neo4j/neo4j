@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.consistency_checker_fail_fast_threshold;
+import static org.neo4j.consistency.checking.cache.CacheSlots.CACHE_LINE_SIZE_BYTES;
 import static org.neo4j.consistency.checking.full.SchemaRuleUtil.constraintIndexRule;
 import static org.neo4j.consistency.checking.full.SchemaRuleUtil.indexRule;
 import static org.neo4j.consistency.checking.full.SchemaRuleUtil.nodePropertyExistenceConstraintRule;
@@ -2929,7 +2930,10 @@ public class FullCheckIntegrationTest {
     }
 
     protected EntityBasedMemoryLimiter.Factory memoryLimit() {
-        return EntityBasedMemoryLimiter.DEFAULT;
+        long highId = Long.max(
+                fixture.neoStores().getNodeStore().getHighId(),
+                fixture.neoStores().getRelationshipStore().getHighId());
+        return EntityBasedMemoryLimiter.defaultMemoryLimiter(highId * CACHE_LINE_SIZE_BYTES);
     }
 
     private Config config() {

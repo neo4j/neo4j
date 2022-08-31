@@ -31,7 +31,7 @@ class EntityBasedMemoryLimiterTest {
     @Test
     void shouldReturnTheWholeRangeIfItFits() {
         // given
-        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(100, 100, 250, 1, 40, 40, 1);
+        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(50, 1, 40, 40);
         assertEquals(1, limiter.numberOfRanges());
 
         // when
@@ -45,7 +45,7 @@ class EntityBasedMemoryLimiterTest {
     @Test
     void shouldHandleRangeWithHighNodeLessThanHighRel() {
         // given
-        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(100, 100, 250, 1, 20, 40, 1);
+        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(50, 1, 20, 40);
         // The ranges are based on highNodeId - a range will never be larger than the number of nodes in the db.
         assertEquals(2, limiter.numberOfRanges());
 
@@ -64,7 +64,7 @@ class EntityBasedMemoryLimiterTest {
     @Test
     void shouldHandleRangeWithHighRelLessThanHighNodeForOneWholeRange() {
         // given
-        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(100, 100, 250, 1, 40, 20, 1);
+        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(50, 1, 40, 20);
         assertEquals(1, limiter.numberOfRanges());
 
         // when
@@ -78,7 +78,7 @@ class EntityBasedMemoryLimiterTest {
     @Test
     void shouldReturnMultipleRangesIfWholeRangeDontFit() {
         // given
-        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(100, 100, 1000, 10, 200, 200, 1);
+        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(800, 10, 200, 200);
         assertEquals(3, limiter.numberOfRanges());
 
         // when/then
@@ -91,7 +91,7 @@ class EntityBasedMemoryLimiterTest {
     @Test
     void shouldReturnMultipleRangesIfWholeRangeDontFitHighRelLessThanHighNode() {
         // given
-        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(100, 100, 1000, 10, 200, 100, 1);
+        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(800, 10, 200, 100);
         assertEquals(3, limiter.numberOfRanges());
 
         // when/then
@@ -110,7 +110,7 @@ class EntityBasedMemoryLimiterTest {
     @Test
     void shouldReturnMultipleRangesIfWholeRangeDontFitHighNodeLessThanHighRel() {
         // given
-        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(100, 100, 1000, 10, 100, 200, 1);
+        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(800, 10, 100, 200);
         assertEquals(3, limiter.numberOfRanges());
 
         // when/then
@@ -129,7 +129,7 @@ class EntityBasedMemoryLimiterTest {
     @Test
     void shouldReturnMultipleRangesIfWholeRangeDontFitWithLeeway() {
         // given
-        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(100, 100, 500, 25, 10, 10, 0.8);
+        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(220, 25, 10, 10);
         assertEquals(2, limiter.numberOfRanges());
 
         // when/then
@@ -141,7 +141,7 @@ class EntityBasedMemoryLimiterTest {
     @Test
     void shouldReturnCorrectNumberOfRangesOnExactMatch() {
         // given
-        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(10, 20, 40, 1, 100, 100, 1);
+        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(10, 1, 100, 100);
 
         // then
         assertEquals(10, limiter.numberOfRanges());

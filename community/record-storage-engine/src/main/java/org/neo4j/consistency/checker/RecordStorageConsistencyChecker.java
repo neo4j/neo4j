@@ -371,10 +371,9 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
         // the node store
         // is selected until all the nodes, e.g. all the data have been checked.
 
-        long pageCacheMemory = pageCache.maxCachedPages() * pageCache.pageSize();
         long nodeCount = neoStores.getNodeStore().getHighId();
         long relationshipCount = neoStores.getRelationshipStore().getHighId();
-        return memoryLimit.create(pageCacheMemory, nodeCount, relationshipCount);
+        return memoryLimit.create(nodeCount, relationshipCount);
     }
 
     @Override

@@ -190,6 +190,8 @@ public class CheckCommand extends AbstractAdminCommand {
                             .verbose(verbose)
                             .with(options.reportPath())
                             .with(flags)
+                            .withMaxOffHeapMemory(options.maxOffHeapMemory())
+                            .withNumberOfThreads(options.numberOfThreads())
                             .runFullConsistencyCheck();
                 } catch (ConsistencyCheckIncompleteException e) {
                     throw new CommandFailedException(

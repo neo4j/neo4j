@@ -20,14 +20,14 @@
 package org.neo4j.internal.batchimport;
 
 import static java.lang.Math.min;
-import static java.lang.Math.round;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.upgrade_processors;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.configuration.ToolingMemoryCalculations.NO_MONITOR;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.util.FeatureToggles.getInteger;
-import static org.neo4j.util.Preconditions.requireBetween;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.ToolingMemoryCalculations;
 import org.neo4j.io.os.OsBeanUtil;
 
 /**
@@ -116,7 +116,8 @@ public interface Configuration {
      * @throws UnsupportedOperationException if available memory couldn't be determined.
      */
     default long maxOffHeapMemory() {
-        return calculateMaxMemoryFromPercent(DEFAULT_MAX_MEMORY_PERCENT);
+        return new ToolingMemoryCalculations(NO_MONITOR)
+                .calculateMaxAvailableOffHeapMemoryFromPercent(DEFAULT_MAX_MEMORY_PERCENT);
     }
 
     /**
@@ -256,35 +257,5 @@ public interface Configuration {
                 return batchSize;
             }
         };
-    }
-
-    static boolean canDetectFreeMemory() {
-        return OsBeanUtil.getFreePhysicalMemory() != OsBeanUtil.VALUE_UNAVAILABLE;
-    }
-
-    static long calculateMaxMemoryFromPercent(int percent) {
-        return calculateMaxMemoryFromPercent(
-                percent,
-                OsBeanUtil.getFreePhysicalMemory(),
-                Runtime.getRuntime().maxMemory());
-    }
-
-    static long calculateMaxMemoryFromPercent(int percent, long freePhysicalMemory, long maxRuntimeMemory) {
-        requireBetween(percent, 1, 100);
-
-        if (freePhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE) {
-            // Unable to detect amount of free memory, so rather max memory should be explicitly set
-            // in order to get the best performance. However, let's just go with a default of 2G in this case.
-            return gibiBytes(2);
-        }
-
-        double factor = percent / 100D;
-        // If the JVM max heap size (-Xmx) have been configured to use a significant portion of the machine memory
-        // then it's not reasonable for running this tool, at the very least not desirable since the majority of
-        // memory lives off-heap. So if this is the case then assume only half the memory is assigned to the JVM,
-        // otherwise the importer performance could be massively crippled.
-        long jvmMaxMemory = Math.min(maxRuntimeMemory, freePhysicalMemory / 2);
-        long availableMemory = freePhysicalMemory - jvmMaxMemory;
-        return round(availableMemory * factor);
     }
 }

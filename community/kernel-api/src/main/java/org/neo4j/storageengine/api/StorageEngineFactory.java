@@ -400,7 +400,7 @@ public interface StorageEngineFactory {
      * @param log to log inconsistencies/warnings to.
      * @param summary to update when finding inconsistencies.
      * @param numberOfThreads max number of threads to use.
-     * @param memoryLimitLeewayFactor factor between 0..1 of available machine memory to use.
+     * @param maxOffHeapCachingMemory max amount of off-heap memory that the checker can allocate for caching data.
      * @param progressOutput output where progress of the check is printed, or {@code null} if no progress should be printed.
      * @param verbose whether or not to print verbose progress output.
      * @param flags which parts of the store/indexes to check.
@@ -418,7 +418,7 @@ public interface StorageEngineFactory {
             InternalLog log,
             ConsistencySummaryStatistics summary,
             int numberOfThreads,
-            double memoryLimitLeewayFactor,
+            long maxOffHeapCachingMemory,
             OutputStream progressOutput,
             boolean verbose,
             ConsistencyFlags flags,

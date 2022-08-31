@@ -35,6 +35,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
@@ -256,14 +257,8 @@ class CheckerTestBase {
         monitor = mock(ConsistencyReporter.Monitor.class);
         reporter = new ConsistencyReporter(report, monitor);
         countsState = new CountsState(neoStores, cacheAccess, INSTANCE);
-        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(
-                pageCache.pageSize() * pageCache.maxCachedPages(),
-                Runtime.getRuntime().maxMemory(),
-                Long.MAX_VALUE,
-                CacheSlots.CACHE_LINE_SIZE_BYTES,
-                nodeStore.getHighId(),
-                relationshipStore.getHighId(),
-                1);
+        EntityBasedMemoryLimiter limiter = EntityBasedMemoryLimiter.defaultMemoryLimiter(mebiBytes(80))
+                .create(nodeStore.getHighId(), relationshipStore.getHighId());
         ProgressMonitorFactory.MultiPartBuilder progress = ProgressMonitorFactory.NONE.multipleParts("Test");
         ParallelExecution execution = new ParallelExecution(numberOfThreads, NOOP_EXCEPTION_HANDLER, IDS_PER_CHUNK);
         context = new CheckerContext(

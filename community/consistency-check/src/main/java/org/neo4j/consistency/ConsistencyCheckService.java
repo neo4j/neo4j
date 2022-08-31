@@ -27,7 +27,6 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.factory.DbmsInfo.TOOL;
 import static org.neo4j.kernel.impl.index.schema.SchemaIndexExtensionLoader.instantiateExtensions;
-import static org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory;
 import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 import static org.neo4j.logging.log4j.LogConfig.createLoggerFromXmlConfig;
@@ -37,6 +36,7 @@ import static org.neo4j.logging.log4j.LoggerTarget.ROOT_LOGGER;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -44,7 +44,6 @@ import java.util.Objects;
 import java.util.Optional;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.ConsistencyFlags;
@@ -56,7 +55,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -77,7 +75,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
-import org.neo4j.memory.MachineMemory;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
@@ -85,6 +82,9 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.Clocks;
 
 public class ConsistencyCheckService {
+    private static final long DEFAULT_SMALL_MAX_OFF_HEAP_MEMORY = mebiBytes(80);
+    private static final long MIN_OFF_HEAP_CACHING_MEMORY = mebiBytes(8);
+
     private final Date timestamp;
     private final DatabaseLayout layout;
     private final Config config;
@@ -98,6 +98,8 @@ public class ConsistencyCheckService {
     private final PageCacheTracer pageCacheTracer;
     private final CursorContextFactory contextFactory;
     private final MemoryTracker memoryTracker;
+    private final long maxOffHeapMemory;
+    private final int numberOfThreads;
 
     public ConsistencyCheckService(DatabaseLayout layout) {
         this(
@@ -113,7 +115,9 @@ public class ConsistencyCheckService {
                 ConsistencyFlags.ALL,
                 PageCacheTracer.NULL,
                 new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
-                EmptyMemoryTracker.INSTANCE);
+                EmptyMemoryTracker.INSTANCE,
+                DEFAULT_SMALL_MAX_OFF_HEAP_MEMORY,
+                Runtime.getRuntime().availableProcessors());
     }
 
     private ConsistencyCheckService(
@@ -129,7 +133,9 @@ public class ConsistencyCheckService {
             ConsistencyFlags consistencyFlags,
             PageCacheTracer pageCacheTracer,
             CursorContextFactory contextFactory,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            long maxOffHeapMemory,
+            int numberOfThreads) {
         this.timestamp = timestamp;
         this.layout = layout;
         this.config = config;
@@ -143,6 +149,8 @@ public class ConsistencyCheckService {
         this.pageCacheTracer = pageCacheTracer;
         this.contextFactory = contextFactory;
         this.memoryTracker = memoryTracker;
+        this.maxOffHeapMemory = maxOffHeapMemory;
+        this.numberOfThreads = numberOfThreads;
     }
 
     public ConsistencyCheckService with(CursorContextFactory contextFactory) {
@@ -159,7 +167,9 @@ public class ConsistencyCheckService {
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
-                memoryTracker);
+                memoryTracker,
+                maxOffHeapMemory,
+                numberOfThreads);
     }
 
     public ConsistencyCheckService with(Date timestamp) {
@@ -176,7 +186,9 @@ public class ConsistencyCheckService {
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
-                memoryTracker);
+                memoryTracker,
+                maxOffHeapMemory,
+                numberOfThreads);
     }
 
     public ConsistencyCheckService with(DatabaseLayout layout) {
@@ -193,7 +205,9 @@ public class ConsistencyCheckService {
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
-                memoryTracker);
+                memoryTracker,
+                maxOffHeapMemory,
+                numberOfThreads);
     }
 
     public ConsistencyCheckService with(Config config) {
@@ -210,7 +224,9 @@ public class ConsistencyCheckService {
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
-                memoryTracker);
+                memoryTracker,
+                maxOffHeapMemory,
+                numberOfThreads);
     }
 
     public ConsistencyCheckService with(OutputStream progressOutput) {
@@ -227,7 +243,9 @@ public class ConsistencyCheckService {
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
-                memoryTracker);
+                memoryTracker,
+                maxOffHeapMemory,
+                numberOfThreads);
     }
 
     public ConsistencyCheckService with(InternalLogProvider logProvider) {
@@ -244,7 +262,9 @@ public class ConsistencyCheckService {
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
-                memoryTracker);
+                memoryTracker,
+                maxOffHeapMemory,
+                numberOfThreads);
     }
 
     public ConsistencyCheckService with(FileSystemAbstraction fileSystem) {
@@ -261,7 +281,9 @@ public class ConsistencyCheckService {
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
-                memoryTracker);
+                memoryTracker,
+                maxOffHeapMemory,
+                numberOfThreads);
     }
 
     public ConsistencyCheckService with(PageCache pageCache) {
@@ -278,7 +300,9 @@ public class ConsistencyCheckService {
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
-                memoryTracker);
+                memoryTracker,
+                maxOffHeapMemory,
+                numberOfThreads);
     }
 
     public ConsistencyCheckService verbose(boolean verbose) {
@@ -295,7 +319,9 @@ public class ConsistencyCheckService {
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
-                memoryTracker);
+                memoryTracker,
+                maxOffHeapMemory,
+                numberOfThreads);
     }
 
     public ConsistencyCheckService with(Path reportPath) {
@@ -312,7 +338,9 @@ public class ConsistencyCheckService {
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
-                memoryTracker);
+                memoryTracker,
+                maxOffHeapMemory,
+                numberOfThreads);
     }
 
     public ConsistencyCheckService with(ConsistencyFlags consistencyFlags) {
@@ -329,7 +357,9 @@ public class ConsistencyCheckService {
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
-                memoryTracker);
+                memoryTracker,
+                maxOffHeapMemory,
+                numberOfThreads);
     }
 
     public ConsistencyCheckService with(PageCacheTracer pageCacheTracer) {
@@ -346,7 +376,9 @@ public class ConsistencyCheckService {
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
-                memoryTracker);
+                memoryTracker,
+                maxOffHeapMemory,
+                numberOfThreads);
     }
 
     public ConsistencyCheckService with(MemoryTracker memoryTracker) {
@@ -363,19 +395,81 @@ public class ConsistencyCheckService {
                 consistencyFlags,
                 pageCacheTracer,
                 contextFactory,
-                memoryTracker);
+                memoryTracker,
+                maxOffHeapMemory,
+                numberOfThreads);
+    }
+
+    public ConsistencyCheckService withMaxOffHeapMemory(long maxOffHeapMemory) {
+        return new ConsistencyCheckService(
+                timestamp,
+                layout,
+                config,
+                progressOutput,
+                logProvider,
+                fileSystem,
+                pageCache,
+                verbose,
+                reportPath,
+                consistencyFlags,
+                pageCacheTracer,
+                contextFactory,
+                memoryTracker,
+                maxOffHeapMemory,
+                numberOfThreads);
+    }
+
+    public ConsistencyCheckService withNumberOfThreads(int numberOfThreads) {
+        return new ConsistencyCheckService(
+                timestamp,
+                layout,
+                config,
+                progressOutput,
+                logProvider,
+                fileSystem,
+                pageCache,
+                verbose,
+                reportPath,
+                consistencyFlags,
+                pageCacheTracer,
+                contextFactory,
+                memoryTracker,
+                maxOffHeapMemory,
+                numberOfThreads);
     }
 
     public Result runFullConsistencyCheck() throws ConsistencyCheckIncompleteException {
         try (var life = new Lifespan()) {
-            // copy config to allow for mutation
-            final var config = Config.newBuilder().fromConfig(this.config).build();
-            final var pageCache = this.pageCache != null ? this.pageCache : createPageCache(life, config);
+            var config = this.config;
+            var pageCache = this.pageCache;
+            long pageCacheMemory;
+            long offHeapCachingMemory;
+            var storageEngineFactory =
+                    StorageEngineFactory.selectStorageEngine(fileSystem, layout).orElseThrow();
+            var storeSize = storeSize(storageEngineFactory);
+            if (pageCache == null) {
+                // Now that there's no existing page cache we have the opportunity to allocate one with an optimally
+                // sized given the max amount of memory we've been given.
+                var distribution = ConsistencyCheckMemoryCalculation.calculate(
+                        maxOffHeapMemory, storeSize, calculateOptimalOffHeapMemoryForChecker());
+                pageCacheMemory = distribution.pageCacheMemory();
+                offHeapCachingMemory = distribution.offHeapCachingMemory();
+
+                config = Config.newBuilder()
+                        .fromConfig(config)
+                        .set(GraphDatabaseSettings.pagecache_memory, pageCacheMemory)
+                        .build();
+                pageCache = createPageCache(life, config);
+                printMemoryConfiguration(false, storeSize, pageCacheMemory, offHeapCachingMemory);
+            } else {
+                pageCacheMemory = pageCache.maxCachedPages() * pageCache.pageSize();
+                offHeapCachingMemory = Long.max(maxOffHeapMemory - pageCacheMemory, MIN_OFF_HEAP_CACHING_MEMORY);
+                printMemoryConfiguration(true, storeSize, pageCacheMemory, offHeapCachingMemory);
+            }
+
             config.set(GraphDatabaseSettings.pagecache_warmup_enabled, false);
 
             // assert recovered
-            final var storageEngineFactory =
-                    StorageEngineFactory.selectStorageEngine(fileSystem, layout).orElseThrow();
             final var databaseLayout = storageEngineFactory.formatSpecificDatabaseLayout(layout);
             assertRecovered(databaseLayout, pageCache, config, fileSystem, memoryTracker);
 
@@ -439,9 +533,6 @@ public class ConsistencyCheckService {
 
             // do the consistency check
             life.start();
-            final var numberOfThreads = defaultNumberOfThreads();
-            final var memoryLimitLeewayFactor =
-                    config.get(GraphDatabaseInternalSettings.consistency_check_memory_limit_factor);
             final var summary = new ConsistencySummaryStatistics();
 
             if (consistencyFlags.checkIndexes()
@@ -474,7 +565,7 @@ public class ConsistencyCheckService {
                     log,
                     summary,
                     numberOfThreads,
-                    memoryLimitLeewayFactor,
+                    offHeapCachingMemory,
                     progressOutput,
                     verbose,
                     consistencyFlags,
@@ -494,12 +585,39 @@ public class ConsistencyCheckService {
         }
     }
 
-    private PageCache createPageCache(Lifespan life, Config config) throws Exception {
-        // Now that there's no existing page cache we have the opportunity to change that setting for the
-        // benefit of a faster consistency check ahead of us. Ask the checker what the optimal amount of
-        // available off-heap memory would be and change the page cache memory setting a bit in that direction.
-        calculateAndConfigureMemory(config);
+    private void printMemoryConfiguration(
+            boolean providedPageCache, long storeSize, long pageCacheMemory, long offHeapCachingMemory) {
+        if (progressOutput != null) {
+            new PrintStream(progressOutput, true)
+                    .printf(
+                            "Running consistency check with max off-heap:%s%n  Store size:%s"
+                                    + "%n  %s page cache:%s"
+                                    + "%n  Off-heap memory for caching:%s%n",
+                            bytesToString(maxOffHeapMemory),
+                            bytesToString(storeSize),
+                            providedPageCache ? "Provided" : "Allocated",
+                            bytesToString(pageCacheMemory),
+                            bytesToString(offHeapCachingMemory));
+        }
+    }
 
+    private long storeSize(StorageEngineFactory storageEngineFactory) throws ConsistencyCheckIncompleteException {
+        try {
+            var size = 0L;
+            for (var storageFile : storageEngineFactory.listStorageFiles(fileSystem, layout)) {
+                try {
+                    size += fileSystem.getFileSize(storageFile);
+                } catch (IOException e) {
+                    // Could not get size of this particular store file, missing?
+                }
+            }
+            return size;
+        } catch (IOException e) {
+            throw new ConsistencyCheckIncompleteException(e);
+        }
+    }
+
+    private PageCache createPageCache(Lifespan life, Config config) {
         final var jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
         life.add(onShutdown(jobScheduler::close));
         final var pageCacheFactory = new ConfiguringPageCacheFactory(
@@ -514,41 +632,6 @@ public class ConsistencyCheckService {
         final var pageCache = pageCacheFactory.getOrCreatePageCache();
         life.add(onShutdown(pageCache::close));
         return pageCache;
-    }
-
-    private void calculateAndConfigureMemory(Config config) throws Exception {
-        var availablePhysicalMemory = OsBeanUtil.getFreePhysicalMemory();
-        if (availablePhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE) {
-            return;
-        }
-
-        availablePhysicalMemory *= config.get(GraphDatabaseInternalSettings.consistency_check_memory_limit_factor);
-        final var optimalOffHeapMemory = calculateOptimalOffHeapMemoryForChecker();
-        // Check the configured page cache memory setting and potentially change it a bit to get closer to
-        // the optimal amount of off-heap for the checker
-
-        // [heap|pageCache|                        ]
-        final var heapMemory = Runtime.getRuntime().maxMemory();
-        final var pageCacheMemory = (long) Objects.requireNonNullElse(
-                config.get(GraphDatabaseSettings.pagecache_memory),
-                defaultHeuristicPageCacheMemory(MachineMemory.DEFAULT));
-        final var availableOffHeapMemory = availablePhysicalMemory - heapMemory - pageCacheMemory;
-        if (availableOffHeapMemory < optimalOffHeapMemory) {
-            // current: [heap|        pageCache      |          ]
-            // optimal: [heap|pageCache|                        ]
-            // Reduce the page cache memory setting, although not below 20% of what it was configured to
-            final var newPageCacheMemory = Math.max(
-                    (long) (pageCacheMemory * 0.2D), availablePhysicalMemory - optimalOffHeapMemory - heapMemory);
-            config.set(GraphDatabaseSettings.pagecache_memory, newPageCacheMemory);
-            logProvider
-                    .getLog(ConsistencyCheckService.class)
-                    .info(
-                            "%s setting was tweaked from %s down to %s for better overall performance of "
-                                    + "the consistency checker",
-                            GraphDatabaseSettings.pagecache_memory.name(),
-                            bytesToString(pageCacheMemory),
-                            bytesToString(newPageCacheMemory));
-        }
     }
 
     /**
@@ -568,8 +651,10 @@ public class ConsistencyCheckService {
                         .getOrCreatePageCache()) {
             final var storageEngineFactory =
                     StorageEngineFactory.selectStorageEngine(fileSystem, layout).orElseThrow();
-            return storageEngineFactory.optimalAvailableConsistencyCheckerMemory(
-                    fileSystem, layout, config, tempPageCache);
+            return Long.max(
+                    MIN_OFF_HEAP_CACHING_MEMORY,
+                    storageEngineFactory.optimalAvailableConsistencyCheckerMemory(
+                            fileSystem, layout, config, tempPageCache));
         }
     }
 

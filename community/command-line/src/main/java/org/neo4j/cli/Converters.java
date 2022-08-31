@@ -20,8 +20,10 @@
 package org.neo4j.cli;
 
 import static java.lang.String.format;
+import static org.neo4j.configuration.ToolingMemoryCalculations.NOTIFY_SYS_ERR;
 import static org.neo4j.configuration.helpers.DatabaseNameValidator.validateInternalDatabaseName;
 
+import org.neo4j.configuration.ToolingMemoryCalculations;
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.configuration.helpers.FromPaths;
 import org.neo4j.io.ByteUnit;
@@ -76,6 +78,13 @@ public interface Converters {
             } catch (Exception ex) {
                 throw new TypeConversionException(format("Invalid database name '%s'. (%s)", name, ex));
             }
+        }
+    }
+
+    class MaxOffHeapMemoryConverter implements ITypeConverter<Long> {
+        @Override
+        public Long convert(String value) throws Exception {
+            return new ToolingMemoryCalculations(NOTIFY_SYS_ERR).calculateMaxAvailableOffHeapMemory(value);
         }
     }
 }

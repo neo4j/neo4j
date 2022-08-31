@@ -19,11 +19,14 @@
  */
 package org.neo4j.consistency;
 
+import static org.neo4j.internal.helpers.MathUtil.clamp;
 import static picocli.CommandLine.Help.Visibility.ALWAYS;
 import static picocli.CommandLine.Help.Visibility.NEVER;
 
 import java.nio.file.Path;
+import org.neo4j.cli.Converters.MaxOffHeapMemoryConverter;
 import org.neo4j.consistency.checking.ConsistencyFlags;
+import picocli.CommandLine;
 import picocli.CommandLine.Option;
 
 public class ConsistencyCheckOptions {
@@ -82,6 +85,27 @@ public class ConsistencyCheckOptions {
                     + "Interpreted as a directory, unless it has an extension of '.report'")
     private Path reportPath = Path.of(".");
 
+    @Option(
+            names = "--max-off-heap-memory",
+            paramLabel = "<size>",
+            showDefaultValue = ALWAYS,
+            defaultValue = "90%",
+            converter = MaxOffHeapMemoryConverter.class,
+            description = "Maximum memory that neo4j-admin can use for page cache and various caching data structures "
+                    + "to improve performance. Value can be plain numbers, "
+                    + "like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%% which will amount to 70%%"
+                    + " of currently free memory on the machine.")
+    private long maxOffHeapMemory;
+
+    @Option(
+            names = "--threads",
+            paramLabel = "<number of threads>",
+            defaultValue = "all",
+            showDefaultValue = NEVER,
+            converter = NumberOfThreadsConverter.class,
+            description = "Number of threads used to check consistency. Defaults to number of CPUs on the machine.")
+    private int numberOfThreads;
+
     public Path reportPath() {
         return reportPath.normalize();
     }
@@ -104,6 +128,14 @@ public class ConsistencyCheckOptions {
         return !sb.isEmpty() ? new IllegalArgumentException(sb.toString()) : null;
     }
 
+    public long maxOffHeapMemory() {
+        return maxOffHeapMemory;
+    }
+
+    public int numberOfThreads() {
+        return numberOfThreads;
+    }
+
     public ConsistencyFlags toFlags() {
         return toFlags(false);
     }
@@ -118,5 +150,15 @@ public class ConsistencyCheckOptions {
         final var checkCountsForce = checkGraphForce && checkCounts;
         final var checkPropertyOwnersForce = checkGraphForce && checkPropertyOwners;
         return new ConsistencyFlags(checkIndexes, checkGraphForce, checkCountsForce, checkPropertyOwnersForce);
+    }
+
+    private static class NumberOfThreadsConverter implements CommandLine.ITypeConverter<Integer> {
+        @Override
+        public Integer convert(String value) throws Exception {
+            if ("all".equals(value)) {
+                return Runtime.getRuntime().availableProcessors();
+            }
+            return clamp(Integer.parseInt(value), 1, Runtime.getRuntime().availableProcessors());
+        }
     }
 }

@@ -25,13 +25,9 @@ import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toSet;
 import static org.eclipse.collections.impl.tuple.Tuples.pair;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.SettingValueParsers.parseLongWithUnit;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.importer.CsvImporter.DEFAULT_REPORT_FILE_NAME;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
-import static org.neo4j.internal.batchimport.Configuration.calculateMaxMemoryFromPercent;
-import static org.neo4j.internal.batchimport.Configuration.canDetectFreeMemory;
-import static org.neo4j.io.ByteUnit.bytesToString;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Help.Visibility.ALWAYS;
 import static picocli.CommandLine.Help.Visibility.NEVER;
@@ -51,6 +47,7 @@ import org.eclipse.collections.api.tuple.Pair;
 import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.Converters.ByteUnitConverter;
 import org.neo4j.cli.Converters.DatabaseNameConverter;
+import org.neo4j.cli.Converters.MaxOffHeapMemoryConverter;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -220,7 +217,7 @@ public class ImportCommand {
                 names = "--max-off-heap-memory",
                 paramLabel = "<size>",
                 defaultValue = "90%",
-                converter = MemoryConverter.class,
+                converter = MaxOffHeapMemoryConverter.class,
                 description =
                         "Maximum memory that neo4j-admin can use for various data structures and caching to improve performance. "
                                 + "Values can be plain numbers, like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%%.")
@@ -431,25 +428,6 @@ public class ImportCommand {
                     return IndexConfig.create().withLabelIndex().withRelationshipTypeIndex();
                 }
             };
-        }
-
-        static class MemoryConverter implements ITypeConverter<Long> {
-            @Override
-            public Long convert(String value) {
-                value = value.trim();
-                if (value.endsWith("%")) {
-                    int percent = Integer.parseInt(value.substring(0, value.length() - 1));
-                    long result = calculateMaxMemoryFromPercent(percent);
-                    if (!canDetectFreeMemory()) {
-                        System.err.println("WARNING: amount of free memory couldn't be detected so defaults to "
-                                + bytesToString(result)
-                                + ". For optimal performance instead explicitly specify amount of "
-                                + "memory that importer is allowed to use using --max-off-heap-memory");
-                    }
-                    return result;
-                }
-                return parseLongWithUnit(value);
-            }
         }
 
         static class EscapedCharacterConverter implements ITypeConverter<Character> {
