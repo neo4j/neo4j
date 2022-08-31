@@ -56,6 +56,9 @@ case class FabricPlanner(
     if (name.isPresent) Some(name.get().name()) else None
   }
 
+  /**
+   * Convenience method without cancellation checker. Should be used for tests only.
+   */
   def instance(
     queryString: String,
     queryParams: MapValue,

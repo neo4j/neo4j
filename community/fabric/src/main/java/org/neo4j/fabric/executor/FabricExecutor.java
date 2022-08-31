@@ -124,7 +124,8 @@ public class FabricExecutor {
                     .getSessionDatabaseReference()
                     .alias()
                     .name();
-            var plannerInstance = planner.instance(statement, parameters, defaultGraphName);
+            var plannerInstance =
+                    planner.instance(statement, parameters, defaultGraphName, fabricTransaction.cancellationChecker());
             var plan = plannerInstance.plan();
             var query = plan.query();
 
