@@ -196,9 +196,17 @@ public class SocketNettyConnector extends AbstractNettyConnector {
     @Override
     protected void logStartupMessage() {
         var inetSocketAddress = (InetSocketAddress) bindAddress;
+        String connectorName;
+        if (connectorType == ConnectorType.BOLT) {
+            connectorName = "Bolt";
+        } else if (connectorType == ConnectorType.INTRA_BOLT) {
+            connectorName = "Bolt (Routing)";
+        } else {
+            connectorName = connectorType.name();
+        }
 
         userLog.info(
-                connectorType.name() + " enabled on %s.",
+                connectorName + " enabled on %s.",
                 org.neo4j.configuration.helpers.SocketAddress.format(
                         inetSocketAddress.getHostName(), inetSocketAddress.getPort()));
     }
