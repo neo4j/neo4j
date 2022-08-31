@@ -25,20 +25,24 @@ import io.netty.channel.SimpleChannelInboundHandler;
 
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.packstream.Neo4jPackV3;
 import org.neo4j.bolt.packstream.UnpackerProvider;
 import org.neo4j.bolt.packstream.ByteBufInput;
+import org.neo4j.bolt.transport.BoltPatchListener;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.HeapEstimator;
 
+import java.util.List;
+
 import static io.netty.buffer.ByteBufUtil.hexDump;
 
-public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf>
+public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf> implements BoltPatchListener
 {
     public static long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( MessageDecoder.class );
 
     private final ByteBufInput input;
-    private final Neo4jPack.Unpacker unpacker;
+    private Neo4jPack.Unpacker unpacker;
     private final BoltRequestMessageReader reader;
     private final Log log;
 
@@ -75,5 +79,14 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf>
         // move reader index back to the beginning of the message in order to log its full content
         byteBuf.resetReaderIndex();
         log.error( "Failed to read an inbound message:\n" + hexDump( byteBuf ) + '\n' );
+    }
+
+    @Override
+    public void handle( List<String> patches )
+    {
+        if ( patches.contains( UTC_PATCH ) )
+        {
+            unpacker = new Neo4jPackV3().newUnpacker( input );
+        }
     }
 }

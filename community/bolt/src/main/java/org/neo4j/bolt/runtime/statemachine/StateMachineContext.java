@@ -22,6 +22,9 @@ package org.neo4j.bolt.runtime.statemachine;
 import java.time.Clock;
 
 import org.neo4j.bolt.messaging.BoltIOException;
+import io.netty.channel.Channel;
+
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
@@ -49,4 +52,5 @@ public interface StateMachineContext
 
     StatementProcessor setCurrentStatementProcessorForDatabase( String databaseName ) throws BoltProtocolBreachFatality, BoltIOException;
 
+    BoltChannel channel();
 }

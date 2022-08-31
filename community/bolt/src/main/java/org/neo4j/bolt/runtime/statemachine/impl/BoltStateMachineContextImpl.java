@@ -21,6 +21,7 @@ package org.neo4j.bolt.runtime.statemachine.impl;
 
 import java.time.Clock;
 
+import io.netty.channel.Channel;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
@@ -179,5 +180,11 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
     void setStatementProcessorProvider( StatementProcessorProvider statementProcessorProvider )
     {
         this.statementProcessorProvider = statementProcessorProvider;
+    }
+
+    @Override
+    public BoltChannel channel()
+    {
+        return boltChannel;
     }
 }

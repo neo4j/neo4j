@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.Neo4jPackV1;
 import org.neo4j.bolt.packstream.Neo4jPackV2;
+import org.neo4j.bolt.packstream.Neo4jPackV3;
 import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.SecureSocketConnection;
 import org.neo4j.bolt.testing.client.SecureWebSocketConnection;
@@ -53,7 +54,8 @@ public abstract class AbstractBoltTransportsTest
 
     private static final List<Neo4jPack> NEO4J_PACK_VERSIONS = Arrays.asList(
             new Neo4jPackV1(),
-            new Neo4jPackV2() );
+            new Neo4jPackV2(),
+            new Neo4jPackV3() );
 
     public Class<? extends TransportConnection> connectionClass;
 
