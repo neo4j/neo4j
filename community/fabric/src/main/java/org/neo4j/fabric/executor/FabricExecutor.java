@@ -205,7 +205,7 @@ public class FabricExecutor {
             var dbRef = (DatabaseReference.Internal)
                     fabricTransaction.getTransactionInfo().getSessionDatabaseReference();
             var dbName = dbRef.alias().name();
-            var graph = catalogManager.currentCatalog().resolve(CatalogName.apply(dbName, List$.MODULE$.empty()));
+            var graph = catalogManager.currentCatalog().resolveGraph(CatalogName.apply(dbName, List$.MODULE$.empty()));
             var location = (Location.Local) catalogManager.locationOf(dbRef, graph, false, false);
             var internalTransaction = new CompletableFuture<InternalTransaction>();
             fabricTransaction.execute(ctx -> {

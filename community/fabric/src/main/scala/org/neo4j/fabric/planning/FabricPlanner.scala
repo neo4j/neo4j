@@ -201,7 +201,7 @@ class UseHelper(catalog: Catalog, defaultContextName: String, fabricContextName:
   }
 
   private def isComposite(name: CatalogName): Boolean =
-    catalog.resolveOption(name) match {
+    catalog.resolveGraphOption(name) match {
       case Some(_: Catalog.Composite) => true
       case _                          => false
     }

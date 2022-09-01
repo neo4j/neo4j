@@ -72,13 +72,17 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
 
   // Verbose output
 
-  private val builtInFunctionsVerbose = readAll(funcResourceUrl).map(m =>
-    m.map {
-      case ("rolesExecution", _)        => ("rolesExecution", null)
-      case ("rolesBoostedExecution", _) => ("rolesBoostedExecution", null)
-      case m                            => m
-    }
-  )
+  private val builtInFunctionsVerbose =
+    readAll(funcResourceUrl)
+      .filterNot(m => m.getOrElse("enterpriseOnly", false).asInstanceOf[Boolean])
+      .map(m => m.view.filterKeys(k => !k.equals("enterpriseOnly")).toMap)
+      .map(m =>
+        m.map {
+          case ("rolesExecution", _)        => ("rolesExecution", null)
+          case ("rolesBoostedExecution", _) => ("rolesBoostedExecution", null)
+          case m                            => m
+        }
+      )
 
   private val userDefinedFunctionsVerbose = List(
     Map[String, Any](

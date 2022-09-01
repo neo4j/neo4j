@@ -170,18 +170,18 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: Globa
       new Location.Local(id, uuid, databaseName.name())
     case _ => throw new IllegalArgumentException(s"Unexpected graph type $graph")
   }
+}
 
-  class IdProvider(startingFrom: Long = 0) {
-    private var next: Long = startingFrom
+class IdProvider(startingFrom: Long = 0) {
+  private var next: Long = startingFrom
 
-    private def getAndIncrement(): Long = {
-      val value = next
-      next = next + 1L
-      value
-    }
+  def getAndIncrement(): Long = {
+    val value = next
+    next = next + 1L
+    value
+  }
 
-    def sequence: IterableOnce[Long] = new IterableOnce[Long] {
-      override def iterator: Iterator[Long] = Iterator.continually(getAndIncrement())
-    }
+  def sequence: IterableOnce[Long] = new IterableOnce[Long] {
+    override def iterator: Iterator[Long] = Iterator.continually(getAndIncrement())
   }
 }

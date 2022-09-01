@@ -1135,6 +1135,26 @@
     "rolesBoostedExecution": []
   },
   {
+    "name": "graph.names",
+    "category": "Graph",
+    "description": "Lists the names of graph in the current database",
+    "signature": "graph.names() :: (LIST? OF STRING?)",
+    "isBuiltIn": true,
+    "enterpriseOnly": true,
+    "argumentDescription": [],
+    "returnDescription": "LIST? OF STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
     "name": "haversin",
     "category": "Trigonometric",
     "description": "Returns half the versine of a number.",

@@ -69,17 +69,17 @@ object UseEvaluation {
       graphSelection.graphReference
       graphSelection.expression match {
         case v: Variable =>
-          catalog.resolve(nameFromVar(v))
+          catalog.resolveGraph(nameFromVar(v))
 
         case p: Property =>
-          catalog.resolve(nameFromProp(p))
+          catalog.resolveGraph(nameFromProp(p))
 
         case f: FunctionInvocation =>
           val ctx = CypherRow(context.asScala)
           val argValues = f.args
             .map(resolveFunctions)
             .map(expr => evaluator.evaluate(expr, parameters, ctx))
-          catalog.resolve(nameFromFunc(f), argValues)
+          catalog.resolveView(nameFromFunc(f), argValues)
 
         case x =>
           Errors.openCypherUnexpected("graph or view reference", x)

@@ -83,10 +83,17 @@ public final class TestDatabaseReferenceRepository {
         var normalizedAlias = new NormalizedDatabaseName(localAliasName);
         var normalizedTarget = new NormalizedDatabaseName(targetDatabaseName);
         var addr = SocketAddressParser.socketAddress(
-                URI.create("my.neo4j.com"), BoltConnector.DEFAULT_PORT, SocketAddress::new);
+                URI.create(localAliasName), BoltConnector.DEFAULT_PORT, SocketAddress::new);
         var uri = new RemoteUri("neo4j", List.of(addr), null);
         var uuid = UUID.randomUUID();
         return new DatabaseReference.External(normalizedTarget, normalizedAlias, uri, uuid);
+    }
+
+    public static DatabaseReference.Composite compositeDatabaseReference(
+            String databaseName, Set<DatabaseReference> components) {
+        var name = new NormalizedDatabaseName(databaseName);
+        var dbId = DatabaseIdFactory.from(databaseName, UUID.nameUUIDFromBytes(databaseName.getBytes(UTF_8)));
+        return new DatabaseReference.Composite(name, dbId, components);
     }
 
     public static class Fixed implements DatabaseReferenceRepository {

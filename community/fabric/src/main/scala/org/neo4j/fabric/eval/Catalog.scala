@@ -113,7 +113,7 @@ object Catalog {
     val arity: Int
     val signature: Seq[Arg[_]]
 
-    def eval(args: Seq[AnyValue]): Graph
+    def eval(args: Seq[AnyValue], catalog: Catalog): Graph
 
     def checkArity(args: Seq[AnyValue]): Unit =
       if (args.size != arity) Errors.wrongArity(arity, args.size, InputPosition.NONE)
@@ -129,12 +129,12 @@ object Catalog {
     val arity: Int = 1
     val signature: Seq[Arg[A1]] = Seq(a1)
 
-    def eval(args: Seq[AnyValue]): Graph = {
+    def eval(args: Seq[AnyValue], catalog: Catalog): Graph = {
       checkArity(args)
-      eval(cast(a1, args(0), args))
+      eval(cast(a1, args(0), args), catalog)
     }
 
-    def eval(a1Value: A1): Graph
+    def eval(a1Value: A1, catalog: Catalog): Graph
   }
 
   case class Arg[T <: AnyValue](name: String, tpe: Class[T])
@@ -159,11 +159,10 @@ object Catalog {
       val databasesAndAliases = byQualifiedName(internalGraphs ++ graphAliases)
       val compositesAndAliases = composites.foldLeft(Catalog.empty) { case (catalog, (composite, aliases)) =>
         val byName = byQualifiedName(composite +: aliases)
-        val byNameView = graphByNameView(aliases, composite.databaseName.name())
-        catalog ++ byName ++ byNameView
+        catalog ++ byName
       }
 
-      databasesAndAliases ++ compositesAndAliases
+      databasesAndAliases ++ compositesAndAliases ++ graphByNameView
 
     } else {
 
@@ -180,7 +179,7 @@ object Catalog {
   def empty: Catalog = Catalog(Map())
 
   def byQualifiedName(graphs: Seq[Catalog.Graph]): Catalog =
-    Catalog((for {
+    Catalog(graphs = (for {
       graph <- graphs
       name <- graph.name
       catalogName = graph match {
@@ -190,21 +189,21 @@ object Catalog {
     } yield catalogName -> graph).toMap)
 
   private def byName(graphs: Seq[Catalog.Graph], namespace: String*): Catalog =
-    Catalog((for {
+    Catalog(graphs = (for {
       graph <- graphs
       name <- graph.name
       fqn = namespace :+ name
     } yield CatalogName(fqn.toList) -> graph).toMap)
 
   private def byIdView(graphs: Seq[Catalog.Graph], namespace: String): Catalog = {
-    Catalog(Map(
-      normalizedName(namespace, "graph") -> new ByIdView(graphs)
-    ))
+    Catalog(
+      views = Map(normalizedName(namespace, "graph") -> new ByIdView(graphs))
+    )
   }
 
   class ByIdView(graphs: Seq[Catalog.Graph]) extends View1(Arg("gid", classOf[IntegralValue])) {
 
-    override def eval(gid: IntegralValue): Graph = {
+    override def eval(gid: IntegralValue, catalog: Catalog): Graph = {
       val gidValue = gid.longValue();
       graphs
         .collectFirst { case g: ConcreteGraph if g.id == gidValue => g }
@@ -212,19 +211,20 @@ object Catalog {
     }
   }
 
-  private def graphByNameView(graphs: Seq[Catalog.Graph], namespace: String): Catalog = {
-    Catalog(Map(
-      normalizedName(namespace, "graph") -> new ByNameView(namespace, graphs)
-    ))
+  private val graphByNameView: Catalog = {
+    Catalog(
+      views = Map(normalizedName("graph", "byName") -> new ByNameView())
+    )
   }
 
-  class ByNameView(namespace: String, graphs: Seq[Catalog.Graph]) extends View1(Arg("gid", classOf[StringValue])) {
+  class ByNameView() extends View1(Arg("name", classOf[StringValue])) {
 
-    override def eval(arg: StringValue): Graph = {
+    // TODO: Parse the argument with quoting rules instead, to allow more cases
+    override def eval(arg: StringValue, catalog: Catalog): Graph = {
       val name = normalize(arg.stringValue())
-      graphs
-        .collectFirst { case g if g.name.contains(name) => g }
-        .getOrElse(Errors.entityNotFound("Graph", s"${show(arg)} in $namespace"))
+      catalog.graphs
+        .collectFirst { case (cn, g: Graph) if cn.qualifiedNameString == name => g }
+        .getOrElse(Errors.entityNotFound("Graph", s"${show(arg)}"))
     }
   }
 
@@ -238,36 +238,27 @@ object Catalog {
     normalize(CatalogName(parts: _*))
 }
 
-case class Catalog(entries: Map[CatalogName, Catalog.Entry]) {
+case class Catalog(
+  graphs: Map[CatalogName, Catalog.Graph] = Map(),
+  views: Map[CatalogName, Catalog.View] = Map()
+) {
 
-  def resolve(name: CatalogName): Catalog.Graph =
-    resolve(name, Seq())
+  def resolveGraph(name: CatalogName): Catalog.Graph =
+    resolveGraphOption(name).getOrElse(Errors.entityNotFound("Graph", show(name)))
 
-  def resolve(name: CatalogName, args: Seq[AnyValue]): Catalog.Graph =
-    resolveOption(name, args).getOrElse(Errors.entityNotFound("Catalog entry", show(name)))
+  def resolveGraphOption(name: CatalogName): Option[Catalog.Graph] =
+    graphs.get(normalize(name))
 
-  def resolveOption(name: CatalogName): Option[Catalog.Graph] =
-    resolveOption(name, Seq())
+  def resolveView(name: CatalogName, args: Seq[AnyValue]): Catalog.Graph =
+    resolveViewOption(name, args).getOrElse(Errors.entityNotFound("View", show(name)))
 
-  def resolveOption(name: CatalogName, args: Seq[AnyValue]): Option[Catalog.Graph] = {
-    val normalizedName = normalize(name)
-    entries.get(normalizedName) match {
-      case None =>
-        None
-
-      case Some(g: Catalog.Graph) =>
-        if (args.nonEmpty) Errors.wrongArity(0, args.size, InputPosition.NONE)
-        else Some(g)
-
-      case Some(v: Catalog.View) =>
-        Some(v.eval(args))
-    }
-  }
+  def resolveViewOption(name: CatalogName, args: Seq[AnyValue]): Option[Catalog.Graph] =
+    views.get(normalize(name)).map(v => v.eval(args, this))
 
   def graphNamesIn(namespace: String): Array[String] =
-    entries.collect {
-      case (CatalogName(List(`namespace`, name)), _: Catalog.Graph) => name
+    graphs.collect {
+      case (cn @ CatalogName(List(`namespace`, name)), _: Catalog.Graph) => cn.qualifiedNameString
     }.toArray
 
-  def ++(that: Catalog): Catalog = Catalog(this.entries ++ that.entries)
+  def ++(that: Catalog): Catalog = Catalog(this.graphs ++ that.graphs, this.views ++ that.views)
 }
