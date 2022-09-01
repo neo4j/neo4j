@@ -48,7 +48,6 @@ public class ProcedureSignature {
     private final boolean systemProcedure;
     private final boolean internal;
     private final boolean allowExpiredCredentials;
-    private final boolean threadSafe;
 
     @Deprecated(forRemoval = true)
     @SuppressWarnings("unused")
@@ -80,8 +79,7 @@ public class ProcedureSignature {
                 caseInsensitive,
                 systemProcedure,
                 internal,
-                allowExpiredCredentials,
-                false);
+                allowExpiredCredentials);
     }
 
     public ProcedureSignature(
@@ -97,8 +95,7 @@ public class ProcedureSignature {
             boolean caseInsensitive,
             boolean systemProcedure,
             boolean internal,
-            boolean allowExpiredCredentials,
-            boolean threadSafe) {
+            boolean allowExpiredCredentials) {
         this.name = name;
         this.inputSignature = unmodifiableList(inputSignature);
         this.outputSignature = outputSignature == VOID ? outputSignature : unmodifiableList(outputSignature);
@@ -112,7 +109,6 @@ public class ProcedureSignature {
         this.systemProcedure = systemProcedure;
         this.internal = internal;
         this.allowExpiredCredentials = allowExpiredCredentials;
-        this.threadSafe = threadSafe;
     }
 
     public QualifiedName name() {
@@ -171,10 +167,6 @@ public class ProcedureSignature {
         return allowExpiredCredentials;
     }
 
-    public boolean threadSafe() {
-        return threadSafe;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -220,7 +212,6 @@ public class ProcedureSignature {
         private boolean systemProcedure;
         private boolean internal;
         private boolean allowExpiredCredentials;
-        private boolean threadSafe;
 
         public Builder(String[] namespace, String name) {
             this.name = new QualifiedName(namespace, name);
@@ -293,11 +284,6 @@ public class ProcedureSignature {
             return this;
         }
 
-        public Builder threadSafe() {
-            this.threadSafe = true;
-            return this;
-        }
-
         public ProcedureSignature build() {
             return new ProcedureSignature(
                     name,
@@ -312,8 +298,7 @@ public class ProcedureSignature {
                     false,
                     systemProcedure,
                     internal,
-                    allowExpiredCredentials,
-                    threadSafe);
+                    allowExpiredCredentials);
         }
     }
 

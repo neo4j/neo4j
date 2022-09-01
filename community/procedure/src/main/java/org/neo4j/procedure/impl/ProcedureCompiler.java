@@ -237,7 +237,6 @@ class ProcedureCompiler {
         boolean allowExpiredCredentials =
                 systemProcedure && method.getAnnotation(SystemProcedure.class).allowExpiredCredentials();
         boolean internal = method.isAnnotationPresent(Internal.class);
-        boolean threadSafe = method.isAnnotationPresent(ThreadSafe.class);
         String deprecated = deprecated(
                 method, procedure::deprecatedBy, "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName);
 
@@ -260,8 +259,7 @@ class ProcedureCompiler {
                         false,
                         systemProcedure,
                         internal,
-                        allowExpiredCredentials,
-                        threadSafe);
+                        allowExpiredCredentials);
                 return new FailedLoadProcedure(signature);
             }
         }
@@ -279,8 +277,7 @@ class ProcedureCompiler {
                 false,
                 systemProcedure,
                 internal,
-                allowExpiredCredentials,
-                threadSafe);
+                allowExpiredCredentials);
 
         return ProcedureCompilation.compileProcedure(signature, setters, method);
     }

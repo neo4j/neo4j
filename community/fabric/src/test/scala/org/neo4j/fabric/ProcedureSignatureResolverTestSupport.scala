@@ -139,7 +139,6 @@ trait ProcedureSignatureResolverTestSupport {
       false,
       false,
       false,
-      false,
       false
     )) {
       override def apply(
