@@ -189,35 +189,6 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         this.openOptions = PageCacheOptionsSelector.select(recordFormats);
     }
 
-    private boolean databaseExistsAndContainsData() {
-        TransactionLogFilesHelper logFilesHelper =
-                new TransactionLogFilesHelper(fileSystem, databaseLayout.getTransactionLogsDirectory());
-        TransactionLogFilesHelper checkpointFilesHelper = new TransactionLogFilesHelper(
-                fileSystem, databaseLayout.getTransactionLogsDirectory(), CHECKPOINT_FILE_PREFIX);
-        try {
-            if (logFilesHelper.getMatchedFiles().length > 0 || checkpointFilesHelper.getMatchedFiles().length > 0) {
-                return true;
-            }
-        } catch (IOException e) {
-            // Could not check txlogs (does not exist?) Do nothing
-        }
-
-        Path metaDataFile = databaseLayout.metadataStore();
-        try (PagedFile pagedFile =
-                pageCache.map(metaDataFile, pageCache.pageSize(), databaseName, immutable.of(READ))) {
-            // OK so the db probably exists
-        } catch (IOException e) {
-            // It's OK
-            return false;
-        }
-
-        try (NeoStores stores = newStoreFactory(databaseLayout, idGeneratorFactory, contextFactory, immutable.empty())
-                .openNeoStores(StoreType.NODE, StoreType.RELATIONSHIP)) {
-            return stores.getNodeStore().getHighId() > 0
-                    || stores.getRelationshipStore().getHighId() > 0;
-        }
-    }
-
     /**
      * Called when expecting a clean {@code storeDir} folder and where a new store will be created.
      * This happens on an initial attempt to import.
@@ -250,9 +221,44 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     }
 
     public void assertDatabaseIsNonExistent() throws DirectoryNotEmptyException {
-        if (databaseExistsAndContainsData()) {
+        if (hasExistingDatabaseContents()) {
             throw new DirectoryNotEmptyException(
                     databaseLayout.databaseDirectory() + " already contains data, cannot do import here");
+        }
+
+        if (hasExistingTransactionContents()) {
+            throw new DirectoryNotEmptyException(
+                    databaseLayout.getTransactionLogsDirectory() + " already contains data, cannot do import here");
+        }
+    }
+
+    private boolean hasExistingTransactionContents() {
+        TransactionLogFilesHelper logFilesHelper =
+                new TransactionLogFilesHelper(fileSystem, databaseLayout.getTransactionLogsDirectory());
+        TransactionLogFilesHelper checkpointFilesHelper = new TransactionLogFilesHelper(
+                fileSystem, databaseLayout.getTransactionLogsDirectory(), CHECKPOINT_FILE_PREFIX);
+        try {
+            return logFilesHelper.getMatchedFiles().length > 0 || checkpointFilesHelper.getMatchedFiles().length > 0;
+        } catch (IOException e) {
+            // Could not check txlogs (does not exist?) Do nothing
+            return false;
+        }
+    }
+
+    private boolean hasExistingDatabaseContents() {
+        Path metaDataFile = databaseLayout.metadataStore();
+        try (PagedFile pagedFile =
+                pageCache.map(metaDataFile, pageCache.pageSize(), databaseName, immutable.of(READ))) {
+            // OK so the db probably exists
+        } catch (IOException e) {
+            // It's OK
+            return false;
+        }
+
+        try (NeoStores stores = newStoreFactory(databaseLayout, idGeneratorFactory, contextFactory, immutable.empty())
+                .openNeoStores(StoreType.NODE, StoreType.RELATIONSHIP)) {
+            return stores.getNodeStore().getHighId() > 0
+                    || stores.getRelationshipStore().getHighId() > 0;
         }
     }
 

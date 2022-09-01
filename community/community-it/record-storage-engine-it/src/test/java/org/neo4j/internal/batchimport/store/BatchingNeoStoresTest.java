@@ -89,6 +89,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.LockTracer;
@@ -160,7 +161,43 @@ class BatchingNeoStoresTest {
                 }
             }
         });
-        assertThat(exception.getMessage()).contains("already contains");
+
+        // THEN
+        assertThat(exception.getMessage())
+                .contains(databaseLayout.databaseDirectory().toString())
+                .contains("already contains");
+    }
+
+    @Test
+    void shouldNotOpenStoreWithTransactionLogContentsInIt() throws Throwable {
+        // GIVEN
+        someDataInTheDatabase();
+        fileSystem.deleteRecursively(databaseLayout.databaseDirectory());
+
+        // WHEN
+        DirectoryNotEmptyException exception = assertThrows(DirectoryNotEmptyException.class, () -> {
+            try (JobScheduler jobScheduler = new ThreadPoolJobScheduler()) {
+                try (BatchingNeoStores store = batchingNeoStores(
+                        fileSystem,
+                        databaseLayout,
+                        Configuration.DEFAULT,
+                        NullLogService.getInstance(),
+                        EMPTY,
+                        EMPTY_LOG_TAIL,
+                        Config.defaults(),
+                        jobScheduler,
+                        PageCacheTracer.NULL,
+                        CONTEXT_FACTORY,
+                        INSTANCE)) {
+                    store.createNew();
+                }
+            }
+        });
+
+        // THEN
+        assertThat(exception.getMessage())
+                .contains(databaseLayout.getTransactionLogsDirectory().toString())
+                .contains("already contains");
     }
 
     @Test
@@ -531,6 +568,9 @@ class BatchingNeoStoresTest {
                 apply(txState, commandCreationContext, storageEngine, storeCursors);
                 neoStores.flush(DatabaseFlushEvent.NULL, NULL_CONTEXT);
             }
+
+            TransactionLogInitializer.getLogFilesInitializer()
+                    .initializeLogFiles(databaseLayout, neoStores.getMetaDataStore(), fileSystem, "testing");
         }
     }
 
