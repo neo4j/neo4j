@@ -116,6 +116,10 @@ public class HeapTrackingOrderedAppendMap<K, V> extends DefaultCloseListenable {
         return newValue;
     }
 
+    public int size() {
+        return map.size();
+    }
+
     @CalledFromGeneratedCode
     public V get(K key) {
         return map.get(key);
