@@ -30,13 +30,19 @@ import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter
+import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.All
+import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.Composite
+import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.Standard
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.COMPOSITE_DATABASE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAMESPACE_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAME_PROPERTY
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.kernel.api.exceptions.Status
@@ -88,7 +94,8 @@ case class DoNothingExecutionPlanner(
     name: DatabaseName,
     valueMapper: String => String,
     operation: String,
-    sourcePlan: Option[ExecutionPlan]
+    sourcePlan: Option[ExecutionPlan],
+    databaseTypeFilter: DatabaseTypeFilter
   ): ExecutionPlan = {
     planDoNothingDatabase(
       "DoNothingIfDatabaseNotExists",
@@ -97,14 +104,16 @@ case class DoNothingExecutionPlanner(
       QueryHandler
         .ignoreNoResult()
         .handleError(handleErrorFn(operation, DATABASE, name)),
-      sourcePlan
+      sourcePlan,
+      databaseTypeFilter
     )
   }
 
   def planDoNothingIfDatabaseExists(
     name: DatabaseName,
     valueMapper: String => String,
-    sourcePlan: Option[ExecutionPlan]
+    sourcePlan: Option[ExecutionPlan],
+    databaseTypeFilter: DatabaseTypeFilter
   ): ExecutionPlan =
     planDoNothingDatabase(
       "DoNothingIfDatabaseExists",
@@ -113,7 +122,8 @@ case class DoNothingExecutionPlanner(
       QueryHandler
         .ignoreOnResult()
         .handleError(handleErrorFn("create", DATABASE, name)),
-      sourcePlan
+      sourcePlan,
+      databaseTypeFilter
     )
 
   private def planDoNothing(
@@ -145,7 +155,8 @@ case class DoNothingExecutionPlanner(
     name: DatabaseName,
     valueMapper: String => String,
     queryHandler: QueryHandler,
-    sourcePlan: Option[ExecutionPlan]
+    sourcePlan: Option[ExecutionPlan],
+    databaseTypeFilter: DatabaseTypeFilter
   ): ExecutionPlan = {
     val nameFields = getDatabaseNameFields("name", name, valueMapper = valueMapper)
     UpdatingSystemCommandExecutionPlan(
@@ -154,10 +165,12 @@ case class DoNothingExecutionPlanner(
       securityAuthorizationHandler,
       // Need to be backward compatible to 4.4 here because the upgrade to 5.0 uses CREATE DATABASE IF NOT EXISTS
       s"""
-          MATCH (d:$DATABASE_NAME ${nameFields.asNodeFilter}) RETURN d.$NAME_PROPERTY
-          UNION
-          MATCH (d:$DATABASE_NAME {$NAME_PROPERTY: $$`${nameFields.nameKey}`})
-            WHERE d.$NAMESPACE_PROPERTY IS NULL AND $$`${nameFields.namespaceKey}`='$DEFAULT_NAMESPACE' RETURN d.$NAME_PROPERTY
+          CALL {
+            MATCH (dn:$DATABASE_NAME ${nameFields.asNodeFilter}) RETURN dn
+            UNION
+            MATCH (dn:$DATABASE_NAME {$NAME_PROPERTY: $$`${nameFields.nameKey}`})
+              WHERE dn.$NAMESPACE_PROPERTY IS NULL AND $$`${nameFields.namespaceKey}`='$DEFAULT_NAMESPACE' RETURN dn
+          } WITH dn ${filterByDatabaseType(databaseTypeFilter)} RETURN dn.$NAME_PROPERTY
         """.stripMargin,
       VirtualValues.map(
         nameFields.keys,
@@ -184,5 +197,11 @@ case class DoNothingExecutionPlanner(
         s"Failed to $operation the specified ${labelDescription.toLowerCase} '${show(name, p)}'.",
         error
       ) // should not get here but need a default case
+  }
+
+  private def filterByDatabaseType(databaseTypeFilter: DatabaseTypeFilter) = databaseTypeFilter match {
+    case All       => ""
+    case Composite => s"""WHERE EXISTS { (dn)-[:$TARGETS]->(d:$COMPOSITE_DATABASE) }"""
+    case Standard  => s"""WHERE EXISTS { (dn)-[:$TARGETS]->(d:$DATABASE) WHERE NOT d:$COMPOSITE_DATABASE }"""
   }
 }

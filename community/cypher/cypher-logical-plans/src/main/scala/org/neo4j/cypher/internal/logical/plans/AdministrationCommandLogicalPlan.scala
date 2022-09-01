@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.All
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.exceptions.SecurityAdministrationException
@@ -370,13 +371,15 @@ case class DoNothingIfDatabaseNotExists(
   source: PrivilegePlan,
   name: DatabaseName,
   operation: String,
-  valueMapper: String => String = s => s
+  valueMapper: String => String = s => s,
+  databaseTypeFilter: DatabaseTypeFilter = All
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 case class DoNothingIfDatabaseExists(
   source: PrivilegePlan,
   name: DatabaseName,
-  valueMapper: String => String = s => s
+  valueMapper: String => String = s => s,
+  databaseTypeFilter: DatabaseTypeFilter = All
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 case class EnsureNodeExists(
@@ -535,3 +538,13 @@ case class WaitForCompletion(
   databaseName: DatabaseName,
   waitForCompletion: WaitUntilComplete
 )(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
+
+sealed trait DatabaseTypeFilter
+
+object DatabaseTypeFilter {
+  case object All extends DatabaseTypeFilter
+
+  case object Composite extends DatabaseTypeFilter
+
+  case object Standard extends DatabaseTypeFilter
+}

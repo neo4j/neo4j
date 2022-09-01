@@ -133,6 +133,9 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.logical.plans
+import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.All
+import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.Composite
+import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.Standard
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.planner.spi.AdministrationPlannerName
@@ -729,7 +732,8 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
               assertAllowed,
               dbName,
               "delete",
-              s => new NormalizedDatabaseName(s).name()
+              s => new NormalizedDatabaseName(s).name(),
+              if (composite) Composite else All
             )
           else assertAllowed
         )
@@ -750,7 +754,8 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             assertAllowed,
             dbName,
             "alter",
-            s => new NormalizedDatabaseName(s).name()
+            s => new NormalizedDatabaseName(s).name(),
+            Standard
           )
           else assertAllowed
         val plan = plans.AlterDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "alter"), dbName, access)
