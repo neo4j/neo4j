@@ -103,12 +103,13 @@ public class ImportCommand {
 
         @Option(
                 names = "--id-type",
-                paramLabel = "<STRING|INTEGER|ACTUAL>",
+                paramLabel = "string|integer|actual",
+                defaultValue = "string",
                 description = "Each node must provide a unique id. This is used to find the "
                         + "correct nodes when creating relationships. Possible values are:%n"
-                        + "  STRING: arbitrary strings for identifying nodes,%n"
-                        + "  INTEGER: arbitrary integer values for identifying nodes,%n"
-                        + "  ACTUAL: (advanced) actual node ids.%n"
+                        + "  string: arbitrary strings for identifying nodes,%n"
+                        + "  integer: arbitrary integer values for identifying nodes,%n"
+                        + "  actual: (advanced) actual node ids.%n"
                         + "For more information on id handling, please see the Neo4j Manual: "
                         + "https://neo4j.com/docs/operations-manual/current/tools/import/",
                 converter = IdTypeConverter.class)
@@ -124,7 +125,7 @@ public class ImportCommand {
                 names = "--ignore-extra-columns",
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
-                paramLabel = "<true/false>",
+                paramLabel = "true|false",
                 description = "If un-specified columns should be ignored during the import.")
         private boolean ignoreExtraColumns;
 
@@ -132,7 +133,7 @@ public class ImportCommand {
                 names = "--multiline-fields",
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
-                paramLabel = "<true/false>",
+                paramLabel = "true|false",
                 description =
                         "Whether or not fields from input source can span multiple lines, i.e. contain newline characters.")
         private boolean multilineFields = DEFAULT_CSV_CONFIG.multilineFields();
@@ -141,7 +142,7 @@ public class ImportCommand {
                 names = "--ignore-empty-strings",
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
-                paramLabel = "<true/false>",
+                paramLabel = "true|false",
                 description =
                         "Whether or not empty string fields, i.e. \"\" from input source are ignored, i.e. treated as null.")
         private boolean ignoreEmptyStrings = DEFAULT_CSV_CONFIG.emptyQuotedStringsAsNull();
@@ -150,7 +151,7 @@ public class ImportCommand {
                 names = "--trim-strings",
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
-                paramLabel = "<true/false>",
+                paramLabel = "true|false",
                 description = "Whether or not strings should be trimmed for whitespaces.")
         private boolean trimStrings = DEFAULT_CSV_CONFIG.trimStrings();
 
@@ -158,7 +159,7 @@ public class ImportCommand {
                 names = "--legacy-style-quoting",
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
-                paramLabel = "<true/false>",
+                paramLabel = "true|false",
                 description = "Whether or not backslash-escaped quote e.g. \\\" is interpreted as inner quote.")
         private boolean legacyStyleQuoting = DEFAULT_CSV_CONFIG.legacyStyleQuoting();
 
@@ -210,7 +211,7 @@ public class ImportCommand {
                 names = "--high-parallel-io",
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
-                paramLabel = "<true/false>",
+                paramLabel = "true|false",
                 description =
                         "Ignore environment-based heuristics, and assume that the target storage subsystem can support parallel IO with high throughput.")
         // Intentionally made a Boolean such that if there's no explicit decision from config then the value will be
@@ -239,7 +240,7 @@ public class ImportCommand {
                 names = "--skip-bad-entries-logging",
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
-                paramLabel = "<true/false>",
+                paramLabel = "true|false",
                 description = "Whether or not to skip logging bad entries detected during import.")
         private boolean skipBadEntriesLogging;
 
@@ -247,7 +248,7 @@ public class ImportCommand {
                 names = "--skip-bad-relationships",
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
-                paramLabel = "<true/false>",
+                paramLabel = "true|false",
                 description =
                         "Whether or not to skip importing relationships that refers to missing node ids, i.e. either start or end node id/group referring "
                                 + "to node that wasn't specified by the node input data. Skipped relationships will be logged, containing at most number of entities "
@@ -258,7 +259,7 @@ public class ImportCommand {
                 names = "--skip-duplicate-nodes",
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
-                paramLabel = "<true/false>",
+                paramLabel = "true|false",
                 description =
                         "Whether or not to skip importing nodes that have the same id/group. In the event of multiple nodes within the same group having "
                                 + "the same id, the first encountered will be imported whereas consecutive such nodes will be skipped. Skipped nodes will be logged, "
@@ -269,7 +270,7 @@ public class ImportCommand {
                 names = "--normalize-types",
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
-                paramLabel = "<true/false>",
+                paramLabel = "true|false",
                 description =
                         "Whether or not to normalize property types to Cypher types, e.g. 'int' becomes 'long' and 'float' becomes 'double'")
         private boolean normalizeTypes = true;
@@ -302,7 +303,7 @@ public class ImportCommand {
                 names = "--auto-skip-subsequent-headers",
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
-                paramLabel = "<true/false>",
+                paramLabel = "true|false",
                 description =
                         "Automatically skip accidental header lines in subsequent files in file groups with more than one file")
         private boolean autoSkipHeaders;
@@ -480,7 +481,7 @@ public class ImportCommand {
                 names = "--overwrite-destination",
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
-                paramLabel = "<true/false>",
+                paramLabel = "true|false",
                 description = "Delete any existing database files prior to the import.")
         private boolean overwriteDestination;
 
@@ -498,13 +499,14 @@ public class ImportCommand {
     public static class Incremental extends Base {
         @Option(
                 names = "--stage",
+                paramLabel = "all|prepare|build|merge",
                 description = "Stage of incremental import. "
                         + "For incremental import into an existing database use 'all' (which requires "
                         + "the database to be stopped. For semi-online incremental import run 'prepare' (on "
                         + "stopped database) followed by 'build' (on a potentially running database) and "
                         + "finally 'merge' (on stopped database)",
                 converter = StageConverter.class)
-        CsvImporter.IncrementalStage stage;
+        CsvImporter.IncrementalStage stage = CsvImporter.IncrementalStage.all;
 
         public Incremental(ExecutionContext ctx) {
             super(ctx);
