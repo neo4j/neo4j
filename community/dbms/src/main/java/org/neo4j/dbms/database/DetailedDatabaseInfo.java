@@ -19,6 +19,11 @@
  */
 package org.neo4j.dbms.database;
 
+import static org.neo4j.dbms.database.ExtendedDatabaseInfo.COMMITTED_TX_ID_NOT_AVAILABLE;
+
 import org.neo4j.storageengine.api.StoreId;
 
-public record DetailedDatabaseInfo(long lastCommittedTxId, StoreId storeId) {}
+public record DetailedDatabaseInfo(long lastCommittedTxId, StoreId storeId) {
+    public static final DetailedDatabaseInfo EMPTY =
+            new DetailedDatabaseInfo(COMMITTED_TX_ID_NOT_AVAILABLE, StoreId.UNKNOWN);
+}
