@@ -63,7 +63,7 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
       new MyThread(
         1,
         () => {
-          executeWithRetry(s"MATCH ()-[r:FRIEND]->() WHERE ID(r) = 0 DELETE r").toList
+          executeWithRetry(s"MATCH ()-[r]->() WHERE ID(r) = 0 DELETE r").toList
         }
       )
     }.toList
