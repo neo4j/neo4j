@@ -75,6 +75,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EACH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ELEMENT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ELEMENTS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ELSE;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ENABLE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ENCRYPTED;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.END;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ENDS;
@@ -272,6 +273,7 @@ public class IdentifierTokens {
             ELEMENT,
             ELEMENTS,
             ELSE,
+            ENABLE,
             ENCRYPTED,
             END,
             ENDS,

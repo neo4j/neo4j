@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.evaluator.Evaluator
 import org.neo4j.cypher.internal.evaluator.ExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.dbms.systemgraph.InstanceModeConstraint
 import org.neo4j.graphdb.schema.IndexSettingImpl.FULLTEXT_ANALYZER
 import org.neo4j.graphdb.schema.IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT
 import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_CARTESIAN_3D_MAX
@@ -45,6 +46,7 @@ import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
+import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.storageengine.api.StorageEngineFactory
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
@@ -91,6 +93,79 @@ trait OptionsConverter[T] {
   def operation: String
 
   def convert(options: MapValue): T
+}
+
+case object EnableServerOptionsConverter extends OptionsConverter[EnableServerOptions] {
+  private val ALLOWED_DATABASES = "allowedDatabases"
+  private val DENIED_DATABASES = "deniedDatabases"
+  private val MODE_CONSTRAINT = "modeConstraint"
+
+  val VISIBLE_PERMITTED_OPTIONS = s"'$ALLOWED_DATABASES', '$DENIED_DATABASES', '$MODE_CONSTRAINT'"
+
+  override def operation: String = "enable server"
+
+  override def convert(map: MapValue): EnableServerOptions = {
+    map.foldLeft(EnableServerOptions(None, None, None)) {
+      case (ops, (key, value)) =>
+        if (key.equalsIgnoreCase(ALLOWED_DATABASES)) {
+          value match {
+            case list: ListValue =>
+              val databases: Set[NormalizedDatabaseName] = list.iterator().asScala.map {
+                case t: TextValue => new NormalizedDatabaseName(t.stringValue())
+                case _ => throw new InvalidArgumentsException(
+                    s"$ALLOWED_DATABASES expects a list of database names but got '$list'."
+                  )
+              }.toSet
+              ops.copy(allowed = Some(databases))
+            case t: TextValue =>
+              ops.copy(allowed = Some(Set(new NormalizedDatabaseName(t.stringValue()))))
+            case value: AnyValue =>
+              throw new InvalidArgumentsException(
+                s"$ALLOWED_DATABASES expects a list of database names but got '$value'."
+              )
+          }
+        } else if (key.equalsIgnoreCase(DENIED_DATABASES)) {
+          value match {
+            case list: ListValue =>
+              val databases: Set[NormalizedDatabaseName] = list.iterator().asScala.map {
+                case t: TextValue => new NormalizedDatabaseName(t.stringValue())
+                case _ => throw new InvalidArgumentsException(
+                    s"$DENIED_DATABASES expects a list of database names but got '$list'."
+                  )
+              }.toSet
+              ops.copy(denied = Some(databases))
+            case t: TextValue =>
+              ops.copy(denied = Some(Set(new NormalizedDatabaseName(t.stringValue()))))
+            case value: AnyValue =>
+              throw new InvalidArgumentsException(
+                s"$DENIED_DATABASES expects a list of database names but got '$value'."
+              )
+          }
+        } else if (key.equalsIgnoreCase(MODE_CONSTRAINT)) {
+          value match {
+            case t: TextValue =>
+              val mode =
+                try {
+                  InstanceModeConstraint.valueOf(t.stringValue().toUpperCase)
+                } catch {
+                  case _: Exception =>
+                    throw new InvalidArgumentsException(
+                      s"$MODE_CONSTRAINT expects 'NONE', 'PRIMARY' or 'SECONDARY' but got '$value'."
+                    )
+                }
+              ops.copy(mode = Some(mode))
+            case value: AnyValue =>
+              throw new InvalidArgumentsException(
+                s"$MODE_CONSTRAINT expects 'NONE', 'PRIMARY' or 'SECONDARY' but got '$value'."
+              )
+          }
+        } else {
+          throw new InvalidArgumentsException(
+            s"Unrecognised option '$key', expected $VISIBLE_PERMITTED_OPTIONS."
+          )
+        }
+    }
+  }
 }
 
 case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDatabaseOptions] {
@@ -490,4 +565,10 @@ case class CreateDatabaseOptions(
   seedURI: Option[String],
   seedCredentials: Option[String],
   seedConfig: Option[String]
+)
+
+case class EnableServerOptions(
+  allowed: Option[Set[NormalizedDatabaseName]],
+  denied: Option[Set[NormalizedDatabaseName]],
+  mode: Option[InstanceModeConstraint]
 )

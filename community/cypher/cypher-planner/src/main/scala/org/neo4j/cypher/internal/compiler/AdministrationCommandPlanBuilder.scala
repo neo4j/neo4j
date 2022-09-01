@@ -61,6 +61,7 @@ import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DropServer
 import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DropUserAction
+import org.neo4j.cypher.internal.ast.EnableServer
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
 import org.neo4j.cypher.internal.ast.GraphPrivilege
@@ -941,6 +942,10 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             showAliases.yields,
             showAliases.returns
           ))
+
+      case c @ EnableServer(name, options) =>
+        val assertAllowed = plans.AssertAllowedDbmsActions(ServerManagementAction)
+        Some(plans.LogSystemCommand(plans.EnableServer(assertAllowed, name, options), prettifier.asString(c)))
 
       case c @ DropServer(name) =>
         val assertAllowed = plans.AssertAllowedDbmsActions(ServerManagementAction)

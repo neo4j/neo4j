@@ -512,6 +512,12 @@ case class EnsureNameIsNotAmbiguous(
   isComposite: Boolean
 )(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 
+case class EnableServer(
+  source: AdministrationCommandLogicalPlan,
+  serverName: Either[String, Parameter],
+  options: Options
+)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
+
 case class DropServer(
   source: AdministrationCommandLogicalPlan,
   serverName: Either[String, Parameter]

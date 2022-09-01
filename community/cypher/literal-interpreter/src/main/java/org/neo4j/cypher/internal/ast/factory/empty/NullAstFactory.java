@@ -1148,6 +1148,12 @@ public class NullAstFactory
     }
 
     @Override
+    public NULL enableServer(
+            NULL p, SimpleEither<String, NULL> serverName, SimpleEither<Map<String, NULL>, NULL> options) {
+        return null;
+    }
+
+    @Override
     public NULL dropServer(NULL p, SimpleEither<String, NULL> serverName) {
         return null;
     }

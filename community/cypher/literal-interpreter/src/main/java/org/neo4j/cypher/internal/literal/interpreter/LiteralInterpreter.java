@@ -819,6 +819,12 @@ public class LiteralInterpreter
     // Server commands
 
     @Override
+    public NULL enableServer(
+            NULL p, SimpleEither<String, Object> serverName, SimpleEither<Map<String, Object>, Object> options) {
+        throw new UnsupportedOperationException("enableServer is not a literal");
+    }
+
+    @Override
     public NULL dropServer(NULL p, SimpleEither<String, Object> serverName) {
         throw new UnsupportedOperationException("dropServer is not a literal");
     }

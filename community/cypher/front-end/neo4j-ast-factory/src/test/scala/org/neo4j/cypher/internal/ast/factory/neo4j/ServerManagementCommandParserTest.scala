@@ -20,8 +20,13 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.NoOptions
+import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.Yield
+import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.CTAny
 
 class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
   // SHOW
@@ -80,6 +85,31 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
     )
   }
 
+  // ENABLE
+
+  test("ENABLE SERVER 'name'") {
+    assertAst(ast.EnableServer(literal("name"), NoOptions)(defaultPos))
+  }
+
+  test("ENABLE SERVER $name OPTIONS { tags: ['snake', 'flower'] }") {
+    val listLiteral = ListLiteral(List(literalString("snake"), literalString("flower")))(InputPosition(36, 1, 37))
+    val optionsMap = OptionsMap(Map("tags" -> listLiteral))
+    assertAst(ast.EnableServer(stringParam("name"), optionsMap)(defaultPos))
+  }
+
+  test("ENABLE SERVER 'name' OPTIONS { modeConstraint: $mode }") {
+    val optionsMap = OptionsMap(Map("modeConstraint" -> parameter("mode", CTAny)))
+    assertAst(ast.EnableServer(literal("name"), optionsMap)(defaultPos))
+  }
+
+  test("ENABLE SERVER name") {
+    assertFailsWithMessageStart(testName, """Invalid input 'name': expected "\"", "\'" or a parameter""")
+  }
+
+  test("ENABLE SERVER") {
+    assertFailsWithMessageStart(testName, """Invalid input '': expected "\"", "\'" or a parameter""")
+  }
+
   // DROP
 
   test("DROP SERVER 'name'") {
@@ -97,6 +127,13 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
     )
   }
 
+  test("DROP SERVER") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input '': expected "\"", "\'" or a parameter (line 1, column 12 (offset: 11))"""
+    )
+  }
+
   // DEALLOCATE
 
   test("DEALLOCATE DATABASES FROM SERVER 'badger', 'snake'") {
@@ -109,5 +146,9 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
 
   test("DEALLOCATE DATABASE FROM SERVERS $name, 'foo'") {
     assertAst(ast.DeallocateServers(Seq(stringParam("name"), literal("foo")))(defaultPos))
+  }
+
+  test("DEALLOCATE SERVERS $name, 'foo'") {
+    assertFailsWithMessageStart(testName, "Invalid input 'SERVERS': expected \"DATABASE\" or \"DATABASES\"")
   }
 }

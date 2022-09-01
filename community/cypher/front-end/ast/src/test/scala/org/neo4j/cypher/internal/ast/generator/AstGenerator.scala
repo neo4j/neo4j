@@ -119,6 +119,7 @@ import org.neo4j.cypher.internal.ast.DropUserAction
 import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.ElementQualifier
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
+import org.neo4j.cypher.internal.ast.EnableServer
 import org.neo4j.cypher.internal.ast.ExecuteAdminProcedureAction
 import org.neo4j.cypher.internal.ast.ExecuteBoostedFunctionAction
 import org.neo4j.cypher.internal.ast.ExecuteBoostedProcedureAction
@@ -2249,10 +2250,16 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   // Server commands
 
   def _serverCommand: Gen[AdministrationCommand] = oneOf(
+    _enableServer,
     _dropServer,
     _deallocateServer,
     _showServers
   )
+
+  def _enableServer: Gen[EnableServer] = for {
+    serverName <- _nameAsEither
+    options <- _optionsMapAsEither
+  } yield EnableServer(serverName, options)(pos)
 
   def _showServers: Gen[ShowServers] = for {
     yields <- _eitherYieldOrWhere

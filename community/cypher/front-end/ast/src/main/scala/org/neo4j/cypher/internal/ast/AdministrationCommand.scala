@@ -665,6 +665,16 @@ object RevokePrivilege {
 
 // Server commands
 
+final case class EnableServer(serverName: Either[String, Parameter], optionsMap: Options)(
+  val position: InputPosition
+) extends WriteAdministrationCommand {
+  override def name: String = "ENABLE SERVER"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
 final case class DropServer(serverName: Either[String, Parameter])(
   val position: InputPosition
 ) extends WriteAdministrationCommand {

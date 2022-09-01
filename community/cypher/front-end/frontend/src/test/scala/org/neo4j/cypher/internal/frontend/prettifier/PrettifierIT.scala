@@ -1516,6 +1516,16 @@ class PrettifierIT extends CypherFunSuite {
         |    SKIP 1
         |    LIMIT 1
         |    WHERE name = "neo4j"""".stripMargin,
+    "enable server 'serverName'" ->
+      """ENABLE SERVER "serverName"""".stripMargin,
+    "enable server $param" ->
+      "ENABLE SERVER $param",
+    "enable server 'serverName' options {}" ->
+      """ENABLE SERVER "serverName" OPTIONS {}""".stripMargin,
+    "enable server 'serverName' options { tags:[ 'a' , 'b' ] }" ->
+      """ENABLE SERVER "serverName" OPTIONS {tags: ["a", "b"]}""".stripMargin,
+    "enable server 'serverName' options $optionsParam" ->
+      """ENABLE SERVER "serverName" OPTIONS $optionsParam""".stripMargin,
     "drop server 'abc'" ->
       """DROP SERVER "abc"""",
     "drop server $abc" ->

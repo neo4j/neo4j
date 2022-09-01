@@ -415,6 +415,7 @@ TOKEN [IGNORE_CASE] :
     | < DROP: "DROP" >
     | < DUMP: "DUMP" >
     | < EACH: "EACH" >
+    | < ENABLE: "ENABLE" >
     | < ELEMENT: "ELEMENT" >
     | < ELEMENTS: "ELEMENTS" >
     | < ELSE: "ELSE" >
@@ -3236,6 +3237,7 @@ STATEMENT_WITH_GRAPH CommandWithUseGraph( USE_CLAUSE useClause ) throws Exceptio
         | s=GrantCommand()
         | s=StartDatabase()
         | s=StopDatabase()
+        | s=EnableServerCommand()
         | s=DeallocateDatabaseFromServers()
     )
     {
@@ -4292,6 +4294,20 @@ ADMINISTRATION_COMMAND RevokeCommand() throws Exception:
 }
 
 // Server commands
+
+ADMINISTRATION_COMMAND EnableServerCommand():
+{
+    Token start;
+    SimpleEither<String, PARAMETER> serverName = null;
+    SimpleEither<Map<String, EXPRESSION>, PARAMETER> options = null;
+}
+{
+    start=<ENABLE> <SERVER> serverName=StringOrParameter()
+    (<OPTIONS> options=MapOrParameter())?
+    {
+        return astFactory.enableServer( pos( start ), serverName, options );
+    }
+}
 
 ADMINISTRATION_COMMAND DropServer( Token start ):
 {
@@ -5831,6 +5847,7 @@ Token UnescapedSymbolicNameString() :
         | t=<ELEMENT>
         | t=<ELEMENTS>
         | t=<ELSE>
+        | t=<ENABLE>
         | t=<ENCRYPTED>
         | t=<END>
         | t=<ENDS>

@@ -134,6 +134,7 @@ import org.neo4j.cypher.internal.ast.DropUserAction
 import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.ElementQualifier
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
+import org.neo4j.cypher.internal.ast.EnableServer
 import org.neo4j.cypher.internal.ast.ExecuteAdminProcedureAction
 import org.neo4j.cypher.internal.ast.ExecuteBoostedFunctionAction
 import org.neo4j.cypher.internal.ast.ExecuteBoostedProcedureAction
@@ -2095,6 +2096,13 @@ class Neo4jASTFactory(query: String)
   }
 
   // Server commands
+
+  override def enableServer(
+    p: InputPosition,
+    serverName: SimpleEither[String, Parameter],
+    options: SimpleEither[util.Map[String, Expression], Parameter]
+  ): EnableServer =
+    EnableServer(serverName.asScala, asOptionsAst(options))(p)
 
   override def dropServer(p: InputPosition, serverName: SimpleEither[String, Parameter]): DropServer =
     DropServer(serverName.asScala)(p)
