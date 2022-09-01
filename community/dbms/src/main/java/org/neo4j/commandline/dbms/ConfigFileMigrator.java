@@ -35,10 +35,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
@@ -166,7 +166,7 @@ class ConfigFileMigrator {
             }
 
             // Migrate setting, one at a time, to know exactly what's changing
-            Optional<MigratedSetting> maybeMigratedSetting = migrate(
+            List<MigratedSetting> maybeMigratedSettings = migrate(
                     originalKey,
                     originalValues,
                     removedOriginalValue -> {
@@ -178,9 +178,8 @@ class ConfigFileMigrator {
                         err.printf("%s=%s REMOVED UNKNOWN%n", originalKey, unrecognisedOriginalValue);
                     });
 
-            if (maybeMigratedSetting.isPresent()) {
+            for (var migratedSetting : maybeMigratedSettings) {
                 // What is left now are only valid settings, possibly migrated.
-                MigratedSetting migratedSetting = maybeMigratedSetting.get();
                 List<String> values = migratedSetting.values;
                 String key = migratedSetting.key;
 
@@ -225,38 +224,43 @@ class ConfigFileMigrator {
         commentBuilder.append(COMMENT_LINE_SEPARATOR).append(format("%s=%s %s SETTING", key, value, reason));
     }
 
-    private Optional<MigratedSetting> migrate(
+    private List<MigratedSetting> migrate(
             String originalKey,
             List<String> originalValues,
             Consumer<String> removedValueConsumer,
             Consumer<String> unrecognisedValueConsumer) {
-        List<String> migratedValues = new ArrayList<>(originalValues.size());
-        Map<String, String> originalValueMapping = new HashMap<>(originalValues.size());
+        Set<String> migratedKeys = new HashSet<>();
+        Map<String, List<String>> migratedValues = new HashMap<>(originalValues.size());
+        Map<String, Map<String, String>> originalValueMapping = new HashMap<>(originalValues.size());
 
-        String migratedKey = null;
         for (String originalValue : originalValues) {
             Map<String, String> map = Maps.mutable.of(originalKey, originalValue);
             migrators.forEach(m -> m.migrate(map, Map.of(), NullLog.getInstance()));
             if (!map.isEmpty()) {
-                var entry = map.entrySet().iterator().next();
-                // Remove any unrecognized "garbage"
-                if (isSettingValid(entry.getKey(), entry.getValue())) {
-                    migratedKey = entry.getKey();
-                    migratedValues.add(entry.getValue());
-                    originalValueMapping.put(entry.getValue(), originalValue);
-                } else {
-                    unrecognisedValueConsumer.accept(originalValue);
+                for (var entry : map.entrySet()) {
+                    // Remove any unrecognized "garbage"
+                    if (isSettingValid(entry.getKey(), entry.getValue())) {
+                        var migratedKey = entry.getKey();
+                        migratedKeys.add(migratedKey);
+                        migratedValues
+                                .computeIfAbsent(migratedKey, ignored -> new ArrayList<>(originalValues.size()))
+                                .add(entry.getValue());
+                        originalValueMapping
+                                .computeIfAbsent(migratedKey, ignored -> new HashMap<>(originalValues.size()))
+                                .put(entry.getValue(), originalValue);
+                    } else {
+                        unrecognisedValueConsumer.accept(originalValue);
+                    }
                 }
             } else {
                 removedValueConsumer.accept(originalValue);
             }
         }
 
-        if (migratedKey == null || migratedValues.isEmpty()) {
-            return Optional.empty();
-        }
-
-        return Optional.of(new MigratedSetting(migratedKey, migratedValues, originalValueMapping));
+        return migratedKeys.stream()
+                .map(key -> new MigratedSetting(key, migratedValues.get(key), originalValueMapping.get(key)))
+                .sorted(Comparator.comparing(MigratedSetting::key))
+                .toList();
     }
 
     private boolean isSettingValid(String key, String value) {
