@@ -49,5 +49,5 @@ case class FixedLengthRelationshipInShortestPath(position: InputPosition) extend
 case class DeprecatedDatabaseNameNotification(databaseName: String, position: Option[InputPosition])
     extends InternalNotification
 
-case class DeprecatedRuntimeNotification(runtimeName: String)
+case class DeprecatedRuntimeNotification(msg: String)
     extends InternalNotification

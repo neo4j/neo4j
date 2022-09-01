@@ -211,10 +211,10 @@ object NotificationWrapping {
         NotificationDetail.Factory.message("Deprecated name", s"Name: $name")
       )
 
-    case DeprecatedRuntimeNotification(runtimeName) =>
+    case DeprecatedRuntimeNotification(msg) =>
       NotificationCode.DEPRECATED_RUNTIME_OPTION.notification(
         graphdb.InputPosition.empty,
-        NotificationDetail.Factory.message("Deprecated runtime option", s"Option: $runtimeName")
+        NotificationDetail.Factory.message("Deprecated runtime option", msg)
       )
 
     case _ => throw new IllegalStateException("Missing mapping for notification detail.")

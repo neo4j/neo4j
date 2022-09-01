@@ -44,8 +44,9 @@ sealed trait InputQuery {
   def withReplanOption(replanOption: CypherReplanOption): InputQuery
 
   def notifications: Seq[InternalNotification] = options.queryOptions.runtime match {
-    case CypherRuntimeOption.interpreted => Seq(DeprecatedRuntimeNotification(CypherRuntimeOption.interpreted.name))
-    case _                               => Seq.empty
+    case CypherRuntimeOption.interpreted =>
+      Seq(DeprecatedRuntimeNotification("'runtime=interpreted' is deprecated, please use 'runtime=slotted' instead"))
+    case _ => Seq.empty
   }
 }
 

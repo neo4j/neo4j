@@ -465,6 +465,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
                 InputPosition.empty,
                 DEPRECATED_RUNTIME_OPTION,
                 NotificationDetail.Factory.message(
-                        "The query used a deprecated runtime option.", "Option: interpreted"));
+                        "The query used a deprecated runtime option.",
+                        "'runtime=interpreted' is deprecated, please use 'runtime=slotted' instead"));
     }
 }
