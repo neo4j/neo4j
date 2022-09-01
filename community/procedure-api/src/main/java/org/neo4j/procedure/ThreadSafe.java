@@ -26,11 +26,19 @@ import java.lang.annotation.Target;
 
 /**
  * This annotation marks a {@link Procedure}, {@link UserFunction}, or {@link UserAggregationFunction} as thread-safe,
- * i.e. that it is guaranteed safe to be called concurrently by different worker threads during query execution.
- * This allows it to be used in a query that is executed with the parallel runtime.
- *
- * NOTE: This also entails that it cannot interact with the transaction or the database through the Core API, as
- * this is currently not a thread-safe API.
+ * i.e. that its implementation is guaranteed safe to be called concurrently by different worker threads during query
+ * execution.
+ * Providing this guarantee is a necessary requirement for allowing it to be used in a query that is executed with the
+ * parallel runtime.
+ * <p>
+ * NOTE: The guarantee also entails that it cannot interact with the transaction or the database through the Core
+ * API, as this is currently not a thread-safe API. This holds even when those APIs are populated in fields
+ * annotated with {@link Context}.
+ * Failure to uphold the guarantee by the implementation could result in failures, incorrect results and undefined
+ * behavior during query execution.
+ * <p>
+ * NOTE: Even when this annotation is present, there is currently no guarantee that executing a
+ * procedure or function will actually be supported by the parallel runtime.
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
