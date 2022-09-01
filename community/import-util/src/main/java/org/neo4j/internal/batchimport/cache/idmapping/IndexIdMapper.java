@@ -66,6 +66,7 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -84,6 +85,7 @@ public class IndexIdMapper implements IdMapper {
     private final ImmutableSet<OpenOption> openOptions;
     private final Configuration configuration;
     private final PageCacheTracer pageCacheTracer;
+    private final IndexStatisticsStore indexStatisticsStore;
     private final ThreadLocal<Map<String, Index>> threadLocal;
     private final List<Index> indexes = new CopyOnWriteArrayList<>();
     private final Map<String, Populator> populators = new HashMap<>();
@@ -99,7 +101,8 @@ public class IndexIdMapper implements IdMapper {
             PopulationWorkJobScheduler workScheduler,
             ImmutableSet<OpenOption> openOptions,
             Configuration configuration,
-            PageCacheTracer pageCacheTracer)
+            PageCacheTracer pageCacheTracer,
+            IndexStatisticsStore indexStatisticsStore)
             throws IOException {
         this.accessors = accessors;
         this.tempIndexes = tempIndexes;
@@ -109,6 +112,7 @@ public class IndexIdMapper implements IdMapper {
         this.openOptions = openOptions;
         this.configuration = configuration;
         this.pageCacheTracer = pageCacheTracer;
+        this.indexStatisticsStore = indexStatisticsStore;
         this.threadLocal = ThreadLocal.withInitial(HashMap::new);
         this.bufferFactory = new ByteBufferFactory(
                 UnsafeDirectByteBufferAllocator::new,
@@ -134,6 +138,7 @@ public class IndexIdMapper implements IdMapper {
         var update = IndexEntryUpdate.add(actualId, populator.descriptor, Values.of(inputId));
         try {
             populator.populator.add(Collections.singleton(update), CursorContext.NULL_CONTEXT);
+            populator.populator.includeSample(update);
         } catch (IndexEntryConflictException e) {
             throw new RuntimeException(e);
         }
@@ -167,6 +172,8 @@ public class IndexIdMapper implements IdMapper {
                     var populator = entry.getValue();
                     populator.populator.scanCompleted(
                             PhaseTracker.nullInstance, workScheduler, conflictHandler, CursorContext.NULL_CONTEXT);
+                    indexStatisticsStore.replaceStats(
+                            populator.descriptor.getId(), populator.populator.sample(CursorContext.NULL_CONTEXT));
                     populator.populator.close(true, CursorContext.NULL_CONTEXT);
                 } catch (IndexEntryConflictException e) {
                     // This should not happen since we use DELETE action

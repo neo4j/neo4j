@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.input.Collector.STRICT;
 import static org.neo4j.internal.batchimport.input.Group.GLOBAL;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -59,6 +60,7 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -67,6 +69,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.DefaultIndexProvidersAccess;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -112,9 +115,10 @@ class IndexIdMapperIT {
     private IndexProviderMap indexProviders;
     private IndexProviderMap tempIndexProviders;
     private PopulationWorkJobScheduler workScheduler;
+    private IndexStatisticsStore indexStatisticsStore;
 
     @BeforeEach
-    void init() {
+    void init() throws IOException {
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
         var indexProvidersAccess = life.add(new DefaultIndexProvidersAccess(
                 defaultStorageEngine(),
@@ -133,6 +137,15 @@ class IndexIdMapperIT {
         indexProviders = indexProvidersAccess.access(pageCache, layout, writable(), tokenHolders);
         tempIndexProviders = indexProvidersAccess.access(pageCache, tempLayout, writable(), tokenHolders);
         workScheduler = new PopulationWorkJobScheduler(jobScheduler, layout);
+        fs.mkdirs(layout.databaseDirectory());
+        indexStatisticsStore = life.add(new IndexStatisticsStore(
+                pageCache,
+                RecordDatabaseLayout.convert(layout),
+                immediate(),
+                writable(),
+                NULL_CONTEXT_FACTORY,
+                NULL,
+                openOptions));
         life.start();
     }
 
@@ -150,7 +163,8 @@ class IndexIdMapperIT {
                 workScheduler,
                 openOptions,
                 Configuration.DEFAULT,
-                NULL);
+                NULL,
+                indexStatisticsStore);
     }
 
     @Test
@@ -231,6 +245,27 @@ class IndexIdMapperIT {
 
         // then
         verify(collector).collectDuplicateNode("110", 102, group.name());
+    }
+
+    @Test
+    void shouldStoreIncrementalIndexStatistics() throws Exception {
+        // given
+        var indexId = 1L;
+        buildInitialIndex(GLOBAL, indexId, 0, 0, sequentialNodes(0, 100));
+        start();
+
+        // when
+        var count = 10;
+        for (int i = 0; i < count; i++) {
+            put(1234567 + i, GLOBAL);
+        }
+        prepare(STRICT);
+
+        // then
+        var indexSample = indexStatisticsStore.indexSample(indexId);
+        assertThat(indexSample.indexSize()).isEqualTo(count);
+        assertThat(indexSample.sampleSize()).isEqualTo(count);
+        assertThat(indexSample.uniqueValues()).isEqualTo(count);
     }
 
     private LongSet asLongSet(LongIterator ids) {
