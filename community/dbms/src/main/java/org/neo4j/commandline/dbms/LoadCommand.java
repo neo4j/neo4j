@@ -21,6 +21,7 @@ package org.neo4j.commandline.dbms;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.commandline.Util.wrapIOException;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
 
@@ -92,6 +93,9 @@ public class LoadCommand extends AbstractAdminCommand {
 
     private final Loader loader;
     private static final String DUMP_SUFFIX = ".dump";
+    public static String SYSTEM_ERR_MESSAGE = "WARNING! You are loading a dump of Neo4j's internal system database.%n"
+            + "This system database dump may contain unwanted metadata for the DBMS it was taken from;%n"
+            + "Loading it should only be done after consulting the Neo4j Operations Manual.%n";
 
     public LoadCommand(ExecutionContext ctx, Loader loader) {
         super(ctx);
@@ -172,6 +176,10 @@ public class LoadCommand extends AbstractAdminCommand {
         List<FailedLoad> failedLoads = new ArrayList<>();
         for (DumpInfo dbName : dbNames) {
             try {
+                if (dbName.dbName.equals(SYSTEM_DATABASE_NAME)) {
+                    ctx.err().print(SYSTEM_ERR_MESSAGE);
+                }
+
                 var dumpInputDescription = dbName.dumpPath == null ? "reading from stdin" : dbName.dumpPath.toString();
                 var dumpInputStreamSupplier = getArchiveInputStreamSupplier(dbName.dumpPath);
 

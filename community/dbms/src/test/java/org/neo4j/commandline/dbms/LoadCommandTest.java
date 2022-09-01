@@ -27,6 +27,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 
 import java.io.ByteArrayOutputStream;
@@ -61,6 +62,7 @@ class LoadCommandTest {
     private Path configDir;
     private Path archive;
     private Loader loader;
+    private final ByteArrayOutputStream output = new ByteArrayOutputStream();
 
     @BeforeEach
     void setUp() throws IOException {
@@ -203,6 +205,13 @@ class LoadCommandTest {
         assertThat(output).contains("ZSTD", "42", "1337");
     }
 
+    @Test
+    void shouldPrintWarningIfLoadingSystemDatabase() {
+        execute(SYSTEM_DATABASE_NAME, archive);
+
+        assertThat(LoadCommand.SYSTEM_ERR_MESSAGE).isEqualToIgnoringNewLines(output.toString());
+    }
+
     private void execute(String database, Path archive) {
         var command = buildCommand();
         CommandLine.populateCommand(command, "--from-path=" + archive, database);
@@ -211,7 +220,7 @@ class LoadCommandTest {
 
     private LoadCommand buildCommand() {
         PrintStream out = mock(PrintStream.class);
-        PrintStream err = mock(PrintStream.class);
+        PrintStream err = new PrintStream(output);
         FileSystemAbstraction fileSystem = testDirectory.getFileSystem();
         return new LoadCommand(new ExecutionContext(homeDir, configDir, out, err, fileSystem), loader);
     }
