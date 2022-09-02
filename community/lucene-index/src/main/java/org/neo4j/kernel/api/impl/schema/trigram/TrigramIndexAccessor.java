@@ -31,18 +31,22 @@ import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexAccessor;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.values.storable.Value;
 
 class TrigramIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexReader, DatabaseIndex<ValueIndexReader>> {
+    private final IndexValueValidator validator;
 
     TrigramIndexAccessor(
             DatabaseIndex<ValueIndexReader> luceneIndex,
             IndexDescriptor descriptor,
-            IndexUpdateIgnoreStrategy ignoreStrategy) {
+            IndexUpdateIgnoreStrategy ignoreStrategy,
+            IndexValueValidator validator) {
         super(luceneIndex, descriptor, ignoreStrategy);
+        this.validator = validator;
     }
 
     @Override
@@ -59,6 +63,11 @@ class TrigramIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexReader,
     @Override
     public IndexEntriesReader[] newAllEntriesValueReader(ToLongFunction<Document> entityIdReader, int numPartitions) {
         return super.newAllEntriesValueReader(TrigramDocumentStructure::getNodeId, numPartitions);
+    }
+
+    @Override
+    public void validateBeforeCommit(long entityId, Value[] tuple) {
+        validator.validate(entityId, tuple);
     }
 
     private class Updater extends AbstractLuceneIndexUpdater {

@@ -38,13 +38,13 @@ import org.neo4j.storageengine.api.Reference;
 class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultRelationshipValueIndexCursor>
         implements RelationshipValueIndexCursor {
     private final DefaultRelationshipScanCursor relationshipScanCursor;
-    private final PropertyCursor propertyCursor;
+    private final DefaultPropertyCursor propertyCursor;
     private int[] propertyIds;
 
     DefaultRelationshipValueIndexCursor(
             CursorPool<DefaultRelationshipValueIndexCursor> pool,
             DefaultRelationshipScanCursor relationshipScanCursor,
-            PropertyCursor propertyCursor,
+            DefaultPropertyCursor propertyCursor,
             MemoryTracker memoryTracker) {
         super(pool, memoryTracker);
         this.relationshipScanCursor = relationshipScanCursor;
@@ -194,5 +194,7 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
     public void release() {
         relationshipScanCursor.close();
         relationshipScanCursor.release();
+        propertyCursor.close();
+        propertyCursor.release();
     }
 }

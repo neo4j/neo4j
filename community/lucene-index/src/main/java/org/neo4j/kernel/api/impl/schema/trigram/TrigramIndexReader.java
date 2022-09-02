@@ -28,6 +28,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExactPredicate;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
@@ -55,7 +56,8 @@ public class TrigramIndexReader extends AbstractTextIndexReader {
                 var range = (PropertyIndexQuery.TextRangePredicate) predicate;
                 return TrigramQueryFactory.range(range.from(), range.to());
             case EXACT:
-                return TrigramQueryFactory.exact(((PropertyIndexQuery.ExactPredicate) predicate).value());
+                var value = ((ExactPredicate) predicate).value().asObject().toString();
+                return TrigramQueryFactory.exact(value);
             case STRING_PREFIX:
                 PropertyIndexQuery.StringPrefixPredicate spp = (PropertyIndexQuery.StringPrefixPredicate) predicate;
                 return TrigramQueryFactory.stringPrefix(spp.prefix().stringValue());
@@ -100,7 +102,8 @@ public class TrigramIndexReader extends AbstractTextIndexReader {
         Preconditions.checkState(
                 propertyKeyIds.length == 1,
                 "Text index does not support composite indexing. Tried to query index with multiple property keys.");
-        Query valueQuery = TrigramQueryFactory.exact(propertyValues[0]);
+        var value = propertyValues[0].asObject().toString();
+        Query valueQuery = TrigramQueryFactory.exact(value);
         entityIdAndValueQuery.add(valueQuery, BooleanClause.Occur.MUST);
 
         try {

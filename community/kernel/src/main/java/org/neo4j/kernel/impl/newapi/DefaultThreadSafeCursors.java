@@ -125,7 +125,7 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     }
 
     @Override
-    public PropertyCursor allocatePropertyCursor(CursorContext cursorContext, MemoryTracker memoryTracker) {
+    public DefaultPropertyCursor allocatePropertyCursor(CursorContext cursorContext, MemoryTracker memoryTracker) {
         var storeCursors = storeCursorsFactory.apply(cursorContext);
         return trace(new DefaultPropertyCursor(
                 defaultPropertyCursor -> {

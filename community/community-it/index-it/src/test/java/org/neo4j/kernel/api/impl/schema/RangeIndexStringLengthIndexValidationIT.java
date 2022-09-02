@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import static org.neo4j.graphdb.schema.IndexType.RANGE;
+import static org.neo4j.internal.schema.IndexType.RANGE;
 import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStringResultingInIndexEntrySize;
 
-import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.test.RandomSupport;
 
@@ -44,8 +45,8 @@ public class RangeIndexStringLengthIndexValidationIT extends StringLengthIndexVa
     }
 
     @Override
-    protected String getIndexProviderString() {
-        return RangeIndexProvider.DESCRIPTOR.name();
+    protected IndexProviderDescriptor getIndexProvider() {
+        return RangeIndexProvider.DESCRIPTOR;
     }
 
     @Override

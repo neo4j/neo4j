@@ -24,22 +24,32 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.populator.LuceneIndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 
 class TrigramIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<ValueIndexReader>> {
-    TrigramIndexPopulator(DatabaseIndex<ValueIndexReader> luceneIndex, IndexUpdateIgnoreStrategy ignoreStrategy) {
+    private final IndexValueValidator validator;
+
+    TrigramIndexPopulator(
+            DatabaseIndex<ValueIndexReader> luceneIndex,
+            IndexUpdateIgnoreStrategy ignoreStrategy,
+            IndexValueValidator validator) {
         super(luceneIndex, ignoreStrategy);
+        this.validator = validator;
     }
 
     @Override
     protected Document updateAsDocument(ValueIndexEntryUpdate<?> update) {
-        return TrigramDocumentStructure.createLuceneDocument(update.getEntityId(), update.values()[0]);
+        var entityId = update.getEntityId();
+        var value = update.values()[0];
+        validator.validate(entityId, value);
+        return TrigramDocumentStructure.createLuceneDocument(entityId, value);
     }
 
     @Override
     public IndexUpdater newPopulatingUpdater(CursorContext cursorContext) {
-        return new TrigramIndexPopulatingUpdater(writer, ignoreStrategy);
+        return new TrigramIndexPopulatingUpdater(writer, ignoreStrategy, validator);
     }
 }

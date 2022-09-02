@@ -35,14 +35,18 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
@@ -78,7 +82,7 @@ public abstract class StringLengthIndexValidationIT {
 
     protected abstract IndexType getIndexType();
 
-    protected abstract String getIndexProviderString();
+    protected abstract IndexProviderDescriptor getIndexProvider();
 
     protected abstract String expectedPopulationFailureCauseMessage(long indexId, long entityId);
 
@@ -101,10 +105,16 @@ public abstract class StringLengthIndexValidationIT {
         };
         monitors.addMonitorListener(trappingMonitor);
         builder.setMonitors(monitors);
+        additionalConfig(builder);
+    }
+
+    // To be overridden by subclass
+    protected void additionalConfig(TestDatabaseManagementServiceBuilder builder) {
+        // no-op
     }
 
     @Test
-    void shouldSuccessfullyWriteAndReadWithinIndexKeySizeLimit() {
+    void shouldSuccessfullyWriteAndReadWithinIndexKeySizeLimit() throws KernelException {
         createAndAwaitIndex();
         String propValue = getString(random, singleKeySizeLimit);
         long expectedNodeId;
@@ -117,7 +127,7 @@ public abstract class StringLengthIndexValidationIT {
     }
 
     @Test
-    void shouldSuccessfullyPopulateIndexWithinIndexKeySizeLimit() {
+    void shouldSuccessfullyPopulateIndexWithinIndexKeySizeLimit() throws KernelException {
         String propValue = getString(random, singleKeySizeLimit);
         long expectedNodeId;
 
@@ -132,7 +142,7 @@ public abstract class StringLengthIndexValidationIT {
     }
 
     @Test
-    void txMustFailIfExceedingIndexKeySizeLimit() {
+    void txMustFailIfExceedingIndexKeySizeLimit() throws KernelException {
         long indexId = createAndAwaitIndex();
         long nodeId;
 
@@ -148,12 +158,12 @@ public abstract class StringLengthIndexValidationIT {
                     .contains(String.format(
                             "Property value is too large to index, please see index documentation for limitations. "
                                     + "Index: Index( id=%d, name='coolName', type='%s', schema=(:LABEL_ONE {largeString}), indexProvider='%s' ), entity id: %d",
-                            indexId, getIndexType(), getIndexProviderString(), nodeId));
+                            indexId, getIndexType(), getIndexProvider().name(), nodeId));
         }
     }
 
     @Test
-    void indexPopulationMustFailIfExceedingIndexKeySizeLimit() {
+    void indexPopulationMustFailIfExceedingIndexKeySizeLimit() throws KernelException {
         // Write
         String propValue = getString(random, singleKeySizeLimit + 1);
         long nodeId = createNode(propValue);
@@ -165,7 +175,8 @@ public abstract class StringLengthIndexValidationIT {
     }
 
     @Test
-    public void externalUpdatesMustNotFailIndexPopulationIfWithinIndexKeySizeLimit() throws InterruptedException {
+    public void externalUpdatesMustNotFailIndexPopulationIfWithinIndexKeySizeLimit()
+            throws InterruptedException, KernelException {
         trapPopulation.set(true);
         try (Transaction tx = db.beginTx()) {
             tx.createNode();
@@ -195,7 +206,8 @@ public abstract class StringLengthIndexValidationIT {
     }
 
     @Test
-    public void externalUpdatesMustFailIndexPopulationIfExceedingIndexKeySizeLimit() throws InterruptedException {
+    public void externalUpdatesMustFailIndexPopulationIfExceedingIndexKeySizeLimit()
+            throws InterruptedException, KernelException {
         trapPopulation.set(true);
         try (Transaction tx = db.beginTx()) {
             tx.createNode();
@@ -234,7 +246,7 @@ public abstract class StringLengthIndexValidationIT {
                                 "Index IndexDefinition[label:LABEL_ONE on:largeString] "
                                         + "(Index( id=%d, name='coolName', type='%s', schema=(:LABEL_ONE {largeString}), indexProvider='%s' )) "
                                         + "entered a FAILED state.",
-                                indexId, getIndexType(), getIndexProviderString()),
+                                indexId, getIndexType(), getIndexProvider().name()),
                         expectedPopulationFailureCauseMessage(indexId, entityId));
     }
 
@@ -253,7 +265,7 @@ public abstract class StringLengthIndexValidationIT {
     }
 
     @Test
-    void shouldHandleSizesCloseToTheLimit() {
+    void shouldHandleSizesCloseToTheLimit() throws KernelException {
         // given
         createAndAwaitIndex();
 
@@ -283,7 +295,7 @@ public abstract class StringLengthIndexValidationIT {
         }
     }
 
-    private long createAndAwaitIndex() {
+    private long createAndAwaitIndex() throws KernelException {
         long indexId;
         indexId = createIndex();
         try (Transaction tx = db.beginTx()) {
@@ -293,23 +305,23 @@ public abstract class StringLengthIndexValidationIT {
         return indexId;
     }
 
-    private long createIndex() {
+    private long createIndex() throws KernelException {
         long indexId;
+
         try (Transaction tx = db.beginTx()) {
-            var index = tx.schema()
-                    .indexFor(LABEL_ONE)
-                    .on(propKey)
+            var token = ((TransactionImpl) tx).kernelTransaction().token();
+            var labelId = token.labelGetOrCreateForName(LABEL_ONE.name());
+            var propertyId = token.propertyKeyGetOrCreateForName(propKey);
+            var schemaWrite = ((TransactionImpl) tx).kernelTransaction().schemaWrite();
+            var indexPrototype = IndexPrototype.forSchema(SchemaDescriptors.forLabel(labelId, propertyId))
                     .withIndexType(getIndexType())
                     .withName("coolName")
-                    .create();
-            indexId = getIndexIdFrom(index);
+                    .withIndexProvider(getIndexProvider());
+            var indexDescriptor = schemaWrite.indexCreate(indexPrototype);
+            indexId = indexDescriptor.getId();
             tx.commit();
         }
         return indexId;
-    }
-
-    private static long getIndexIdFrom(IndexDefinition index) {
-        return ((IndexDefinitionImpl) index).getIndexReference().getId();
     }
 
     private long createNode(String propValue) {

@@ -46,7 +46,6 @@ class TrigramDocumentStructure {
         idField.setStringValue(Long.toString(id));
         var idValueField = new NumericDocValuesField(ENTITY_ID_KEY, 0L);
         idValueField.setLongValue(id);
-        document = new Document();
         document.add(idField);
         document.add(idValueField);
         if (value.valueGroup() == ValueGroup.TEXT) {

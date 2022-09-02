@@ -26,6 +26,7 @@ import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
@@ -33,10 +34,13 @@ import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 class TrigramIndexPopulatingUpdater implements IndexUpdater {
     private final LuceneIndexWriter writer;
     private final IndexUpdateIgnoreStrategy ignoreStrategy;
+    private final IndexValueValidator validator;
 
-    TrigramIndexPopulatingUpdater(LuceneIndexWriter writer, IndexUpdateIgnoreStrategy ignoreStrategy) {
+    TrigramIndexPopulatingUpdater(
+            LuceneIndexWriter writer, IndexUpdateIgnoreStrategy ignoreStrategy, IndexValueValidator validator) {
         this.writer = writer;
         this.ignoreStrategy = ignoreStrategy;
+        this.validator = validator;
     }
 
     @Override
@@ -48,15 +52,17 @@ class TrigramIndexPopulatingUpdater implements IndexUpdater {
 
         try {
             final var entityId = valueUpdate.getEntityId();
-            final var values = valueUpdate.values();
+            var values = valueUpdate.values();
+            final var value = values[0];
+            validator.validate(entityId, value);
             final var updateMode = valueUpdate.updateMode();
             switch (updateMode) {
                 case ADDED -> writer.updateDocument(
                         TrigramDocumentStructure.newTermForChangeOrRemove(entityId),
-                        TrigramDocumentStructure.createLuceneDocument(entityId, values[0]));
+                        TrigramDocumentStructure.createLuceneDocument(entityId, value));
                 case CHANGED -> writer.updateOrDeleteDocument(
                         TrigramDocumentStructure.newTermForChangeOrRemove(entityId),
-                        TrigramDocumentStructure.createLuceneDocument(entityId, values[0]));
+                        TrigramDocumentStructure.createLuceneDocument(entityId, value));
                 case REMOVED -> writer.deleteDocuments(TrigramDocumentStructure.newTermForChangeOrRemove(entityId));
                 default -> throw new IllegalStateException(
                         "Unknown update mode " + updateMode + " for values " + Arrays.toString(values));

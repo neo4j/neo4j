@@ -21,12 +21,20 @@ package org.neo4j.kernel.api.impl.schema;
 
 import static org.neo4j.internal.schema.IndexType.TEXT;
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 import org.neo4j.kernel.impl.api.LuceneIndexValueValidator;
 import org.neo4j.test.RandomSupport;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public class TextIndexStringLengthIndexValidationIT extends StringLengthIndexValidationIT {
+public class TrigramIndexStringLengthIndexValidationIT extends StringLengthIndexValidationIT {
+    @Override
+    protected void additionalConfig(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseInternalSettings.trigram_index, true);
+    }
+
     @Override
     protected int getSingleKeySizeLimit(int payloadSize) {
         return LuceneIndexValueValidator.MAX_TERM_LENGTH;
@@ -44,12 +52,15 @@ public class TextIndexStringLengthIndexValidationIT extends StringLengthIndexVal
 
     @Override
     protected IndexProviderDescriptor getIndexProvider() {
-        return TextIndexProvider.DESCRIPTOR;
+        return TrigramIndexProvider.DESCRIPTOR;
     }
 
     @Override
     protected String expectedPopulationFailureCauseMessage(long indexId, long entityId) {
-        return "Document contains at least one immense term in field=\"string\" (whose UTF8 encoding is longer than the max length 32766), "
-                + "all of which were skipped.  Please correct the analyzer to not produce such terms.";
+        return String.format(
+                "Property value is too large to index, please see index documentation for limitations. "
+                        + "Index: Index( id=%d, name='coolName', type='TEXT', "
+                        + "schema=(:LABEL_ONE {largeString}), indexProvider='text-2.0' ), entity id: %d",
+                indexId, entityId);
     }
 }

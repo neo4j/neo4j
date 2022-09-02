@@ -243,6 +243,35 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport> {
     }
 
     @Test
+    void shouldFindForRangesWithNull() throws Exception {
+        // null means open range and doesn't care about inclusion
+        assertThat(indexedNodes(range(token.propertyKey(NAME), (String) null, true, null, true)))
+                .isEqualTo(11);
+        assertThat(indexedNodes(range(token.propertyKey(NAME), (String) null, true, null, false)))
+                .isEqualTo(11);
+        assertThat(indexedNodes(range(token.propertyKey(NAME), (String) null, false, null, true)))
+                .isEqualTo(11);
+        assertThat(indexedNodes(range(token.propertyKey(NAME), (String) null, false, null, false)))
+                .isEqualTo(11);
+        assertThat(indexedNodes(range(token.propertyKey(NAME), null, true, "Noah", true)))
+                .isEqualTo(9);
+        assertThat(indexedNodes(range(token.propertyKey(NAME), null, true, "Noah", false)))
+                .isEqualTo(8);
+        assertThat(indexedNodes(range(token.propertyKey(NAME), null, false, "Noah", true)))
+                .isEqualTo(9);
+        assertThat(indexedNodes(range(token.propertyKey(NAME), null, false, "Noah", false)))
+                .isEqualTo(8);
+        assertThat(indexedNodes(range(token.propertyKey(NAME), "Noah", true, null, true)))
+                .isEqualTo(3);
+        assertThat(indexedNodes(range(token.propertyKey(NAME), "Noah", true, null, false)))
+                .isEqualTo(3);
+        assertThat(indexedNodes(range(token.propertyKey(NAME), "Noah", false, null, true)))
+                .isEqualTo(2);
+        assertThat(indexedNodes(range(token.propertyKey(NAME), "Noah", false, null, false)))
+                .isEqualTo(2);
+    }
+
+    @Test
     void shouldFindRelations() throws Exception {
         assertThat(indexedRelations(allEntries())).isEqualTo(6);
         assertThat(indexedRelations(exact(token.propertyKey(SINCE), "3 years"))).isEqualTo(1);

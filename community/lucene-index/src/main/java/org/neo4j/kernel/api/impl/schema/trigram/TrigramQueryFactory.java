@@ -27,6 +27,7 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -35,7 +36,6 @@ import org.apache.lucene.search.WildcardQuery;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramTokenStream.CodePointBuffer;
-import org.neo4j.values.storable.Value;
 
 class TrigramQueryFactory {
     static Query getById(long entityId) {
@@ -44,8 +44,8 @@ class TrigramQueryFactory {
     }
 
     // Need to filter out false positives
-    static Query exact(Value value) {
-        return trigramSearch(value.asObject().toString());
+    static Query exact(String value) {
+        return trigramSearch(value);
     }
 
     // Need to filter out false positives
@@ -65,8 +65,8 @@ class TrigramQueryFactory {
 
     // Need to filter out false positives
     static Query range(String from, String to) {
-        String lowerNgram = getFirstNgram(from);
-        String upperNgram = getFirstNgram(to);
+        String lowerNgram = from == null ? null : getFirstNgram(from);
+        String upperNgram = to == null ? null : getFirstNgram(to);
         return TermRangeQuery.newStringRange(TRIGRAM_VALUE_KEY, lowerNgram, upperNgram, true, true);
     }
 
@@ -93,7 +93,10 @@ class TrigramQueryFactory {
 
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
 
-        for (int i = 0; i < codePointBuffer.codePointCount() - 2; i++) {
+        // Don't generate more clauses than what is allowed by IndexSearcher.
+        // Default value for IndexSearcher.getMaxClauseCount() is 1024 which is assumed to be enough to not generate too
+        // many false positives. And those false positives will be filtered out later as usual.
+        for (int i = 0; i < codePointBuffer.codePointCount() - 2 && i < IndexSearcher.getMaxClauseCount(); i++) {
             String term = getNgram(codePointBuffer, i, 3);
 
             var termQuery = new ConstantScoreQuery(new TermQuery(new Term(TRIGRAM_VALUE_KEY, term)));

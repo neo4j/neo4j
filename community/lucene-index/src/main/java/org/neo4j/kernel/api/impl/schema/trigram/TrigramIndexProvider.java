@@ -33,9 +33,6 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.AbstractTextIndexProvider;
@@ -43,11 +40,10 @@ import org.neo4j.kernel.api.impl.schema.TextIndexCapability;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.impl.api.LuceneIndexValueValidator;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
 public class TrigramIndexProvider extends AbstractTextIndexProvider {
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("text", "2.0");
@@ -93,7 +89,8 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
         if (luceneIndex.isReadOnly()) {
             throw new UnsupportedOperationException("Can't create populator for read only index");
         }
-        return new TrigramIndexPopulator(luceneIndex, UPDATE_IGNORE_STRATEGY);
+        var validator = valueValidator(descriptor, tokenNameLookup);
+        return new TrigramIndexPopulator(luceneIndex, UPDATE_IGNORE_STRATEGY, validator);
     }
 
     @Override
@@ -108,7 +105,8 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
                 .withIndexStorage(getIndexStorage(descriptor.getId()))
                 .build();
         luceneIndex.open();
-        return new TrigramIndexAccessor(luceneIndex, descriptor, UPDATE_IGNORE_STRATEGY);
+        var validator = valueValidator(descriptor, tokenNameLookup);
+        return new TrigramIndexAccessor(luceneIndex, descriptor, UPDATE_IGNORE_STRATEGY, validator);
     }
 
     @Override
@@ -116,13 +114,7 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
         return IndexType.TEXT;
     }
 
-    @Override
-    public StoreMigrationParticipant storeMigrationParticipant(
-            FileSystemAbstraction fs,
-            PageCache pageCache,
-            PageCacheTracer pageCacheTracer,
-            StorageEngineFactory storageEngineFactory,
-            CursorContextFactory contextFactory) {
-        return null;
+    private LuceneIndexValueValidator valueValidator(IndexDescriptor descriptor, TokenNameLookup tokenNameLookup) {
+        return new LuceneIndexValueValidator(descriptor, tokenNameLookup);
     }
 }
