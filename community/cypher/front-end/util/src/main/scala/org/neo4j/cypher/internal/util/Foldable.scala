@@ -40,8 +40,8 @@ object Foldable {
       // For list sets, the order matters.
       case s: ListSet[_] => reverseListSetIterator(s).asInstanceOf[Iterator[AnyRef]]
       // For Sets and Maps, order doesn't really matter, but if the order is swapped around that often breaks expectations anyhow.
-      case s: Set[_]    => s.toSeq.reverseIterator.asInstanceOf[Iterator[AnyRef]]
-      case m: Map[_, _] => m.toSeq.reverseIterator.asInstanceOf[Iterator[AnyRef]]
+      case s: Set[_]    => s.toVector.reverseIterator.asInstanceOf[Iterator[AnyRef]]
+      case m: Map[_, _] => m.toVector.reverseIterator.asInstanceOf[Iterator[AnyRef]]
       case p: Product   => reverseProductIterator(p)
       case _            => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
     }
