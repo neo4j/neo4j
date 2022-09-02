@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.BatchSize
 import org.neo4j.cypher.internal.plandescription.Arguments.ByteCode
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
+import org.neo4j.cypher.internal.plandescription.Arguments.IdArg
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHits
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheMisses
 import org.neo4j.cypher.internal.plandescription.Arguments.Planner
@@ -113,9 +114,10 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
   }
 
   override def getArguments: util.Map[String, AnyRef] = {
-    val args = arguments.map { arg => arg.name -> PlanDescriptionArgumentSerializer.serialize(arg) }.toMap
-    val idTuple = Header.ID -> Int.box(id.x)
-    val map = args + idTuple
+    // The ID has its own column and is not included in `arguments`, but since we want to sent it to cients with their own rendering logic,
+    // we include it here in `getArguments`.
+    val argsWithId = arguments :+ IdArg(id)
+    val map = argsWithId.map { arg => arg.name -> PlanDescriptionArgumentSerializer.serialize(arg) }.toMap
     map.asJava
   }
 

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.GlobalMemory
+import org.neo4j.cypher.internal.plandescription.Arguments.IdArg
 import org.neo4j.cypher.internal.plandescription.Arguments.Memory
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHits
@@ -42,6 +43,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.StringRepresentation
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.plandescription.Arguments.Version
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringMaker
+import org.neo4j.cypher.internal.util.attribution.Id
 
 object PlanDescriptionArgumentSerializer {
 
@@ -71,6 +73,7 @@ object PlanDescriptionArgumentSerializer {
         val fusion = if (fused) "Fused in" else "In"
         s"$fusion Pipeline $pipelineId"
       case StringRepresentation(rep) => rep
+      case IdArg(Id(id))             => Int.box(id)
 
       // Do not add a fallthrough here - we rely on exhaustive checking to ensure
       // that we don't forget to add new types of arguments here

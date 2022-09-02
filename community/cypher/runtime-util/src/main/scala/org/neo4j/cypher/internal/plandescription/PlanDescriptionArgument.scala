@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
+import org.neo4j.cypher.internal.util.attribution.Id
+
 sealed abstract class Argument extends Product {
 
   def name: String = productPrefix
@@ -120,5 +122,9 @@ object Arguments {
 
   case class StringRepresentation(value: String) extends Argument {
     override def name: String = "string-representation"
+  }
+
+  case class IdArg(id: Id) extends Argument {
+    override def name: String = "Id"
   }
 }
