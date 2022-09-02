@@ -24,11 +24,14 @@ import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.SetLabelPattern
+import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.logical.plans.Create
+import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
@@ -168,6 +171,13 @@ object WriteFinder {
 
       PlanWrites(setPart, createPart)
 
+    case Foreach(_, _, _, mutations) =>
+      val (setMutatingPatterns: Seq[SetMutatingPattern], otherMutatingPatterns) = mutations.toSeq.partition(mutation => mutation.isInstanceOf[SetMutatingPattern])
+      val setPart = processSetMutatingPatterns(PlanSets(), setMutatingPatterns)
+      val createPart = processCreateMutatingPatterns(PlanCreates(), otherMutatingPatterns)
+
+      PlanWrites(setPart, createPart)
+
     case plan: UpdatingPlan =>
       throw new UnsupportedOperationException(
         s"Eagerness support for operator ${plan.productPrefix} not implemented yet."
@@ -226,5 +236,21 @@ object WriteFinder {
         )
     }
     res.asInstanceOf[OP]
+  }
+
+  private def processCreateMutatingPatterns(
+                                                                     acc: PlanCreates,
+                                                                     setMutatingPatterns: Seq[SimpleMutatingPattern]
+                                                                   ): PlanCreates = {
+    val res = setMutatingPatterns.foldLeft[PlanCreates](acc) {
+      case (acc, CreatePattern(nodes, relationships)) =>
+        processCreateNodes(acc, nodes)
+
+      case (_, mutatingPattern) =>
+        throw new UnsupportedOperationException(
+          s"Eagerness support for mutating pattern ${mutatingPattern.productPrefix} not implemented yet."
+        )
+    }
+    res
   }
 }

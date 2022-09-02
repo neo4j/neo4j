@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
@@ -2319,7 +2321,83 @@ test(
     )
   }
 
+  test(
+    "Should only reference the conflicting label when there is an eagerness conflict between a write within a forEach and a read after"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("d")
+      .apply()
+      .|.nodeByLabelScan("d", "Event")
+      .foreach("x", "[1]", Seq(createPattern(Seq(createNode("e", "Event"), createNode("p", "Place")), Seq(createRelationship("i", "e", "IN", "p"))), setNodeProperty("e", "foo", "'e_bar'")))
+      .argument()
+
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("d")
+        .apply()
+        .|.nodeByLabelScan("d", "Event")
+        .eager(ListSet(EagernessReason.LabelReadSetConflict(labelName("Event"))))
+        .foreach("x", "[1]", Seq(createPattern(Seq(createNode("e", "Event"), createNode("p", "Place")), Seq(createRelationship("i", "e", "IN", "p"))), setNodeProperty("e", "foo", "'e_bar'")))
+        .argument()
+        .build()
+    )
+  }
+
+  test(
+    "Should insert an eager when there is a conflict between a write within a forEach and a read after"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("d")
+      .apply()
+      .|.nodeByLabelScan("d", "Event")
+      .foreach("x", "[1]", Seq(createPattern(Seq(createNode("e", "Event")))))
+      .argument()
+
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("d")
+        .apply()
+        .|.nodeByLabelScan("d", "Event")
+        .eager(ListSet(EagernessReason.LabelReadSetConflict(labelName("Event"))))
+        .foreach("x", "[1]", Seq(createPattern(Seq(createNode("e", "Event")))))
+        .argument()
+        .build()
+    )
+  }
+
   // Ignored tests
+
+  //Todo: Update LabelExpressionEvaluator to return a boolean or a set of the conflicting Labels
+  ignore(
+    "Should only reference the conflicting labels when there is a write of multiple labels in the same create pattern"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("d")
+      .apply()
+      .|.nodeByLabelScan("d", "Event")
+      .foreach("x", "[1]", Seq(createPattern(Seq(createNode("e", "Event", "Place")))))
+      .argument()
+
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("d")
+        .apply()
+        .|.nodeByLabelScan("d", "Event")
+        .eager(ListSet(EagernessReason.LabelReadSetConflict(labelName("Event"))))
+        .foreach("x", "[1]", Seq(createPattern(Seq(createNode("e", "Event", "Place")))))
+        .argument()
+        .build()
+    )
+  }
 
   // No analysis for possible overlaps of node variables based on predicates yet.
   ignore(
