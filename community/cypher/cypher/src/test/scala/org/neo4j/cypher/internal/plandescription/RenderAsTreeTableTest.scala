@@ -394,7 +394,6 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val plan2 = planDescription(id, "NAME2", SingleChild(plan1), args1, Set("b"))
     val plan3 = planDescription(id, "NAME3", SingleChild(plan2), args2, Set("c"))
 
-    println(renderAsTreeTable(plan3))
     renderAsTreeTable(plan3) should equal(
       """+----------+----+-------------+----------------+------+---------+----------------+----------------------+
         || Operator | Id | Details     | Estimated Rows | Rows | DB Hits | Memory (Bytes) | Pipeline             |
@@ -1049,7 +1048,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
       new ProvidedOrders,
       StubExecutionPlan().operatorMetadata
     )
-    println(renderAsTreeTable(plan))
+
     renderAsTreeTable(plan) should equal(
       """+---------------------+----+------------------------------------------------------------------------------------------------------+----------------+
         || Operator            | Id | Details                                                                                              | Estimated Rows |
@@ -1390,7 +1389,6 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
       Seq(PipelineInfo(6, fused = false), PageCacheHits(0), PageCacheMisses(0), Time(1143000))
     )
 
-    println(renderAsTreeTable(produceResult))
     renderAsTreeTable(produceResult) should equal(
       """+-------------------------+----+------------------------+-----------+---------------------+
         || Operator                | Id | Page Cache Hits/Misses | Time (ms) | Pipeline            |
