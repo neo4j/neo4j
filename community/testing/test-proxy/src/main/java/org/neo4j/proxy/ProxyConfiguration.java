@@ -23,6 +23,9 @@ import java.net.InetSocketAddress;
 import org.neo4j.test.ports.PortAuthority;
 
 public record ProxyConfiguration(InetSocketAddress listenAddress, InetSocketAddress advertisedAddress) {
+    /**
+     * Construct listenAddress and advertisedAddress by allocating ports
+     * */
     public static ProxyConfiguration buildProxyConfig() {
         return new ProxyConfiguration(
                 new InetSocketAddress("localhost", PortAuthority.allocatePort()),
