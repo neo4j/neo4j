@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.GraphSelection
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.util.symbols
 
@@ -28,130 +29,76 @@ class MultipleGraphClausesParsingTest extends JavaccParserAstTestBase[Clause] {
 
   implicit private val parser: JavaccRule[Clause] = JavaccRule.Clause
 
-  private val fooBarGraph =
-    expressions.Property(expressions.Variable("foo")(pos), expressions.PropertyKeyName("bar")(pos))(pos)
-
   val keywords: Seq[(String, expressions.Expression => ast.GraphSelection)] = Seq(
-    "USE" -> (ast.UseGraph(_)(pos))
+    "USE" -> use,
+    "USE GRAPH" -> use
   )
 
   val graphSelection: Seq[(String, expressions.Expression)] = Seq(
-    "GRAPH foo.bar" ->
-      fooBarGraph,
-    "GRAPH foo()" ->
-      expressions.FunctionInvocation(
-        expressions.Namespace()(pos),
-        expressions.FunctionName("foo")(pos),
-        false,
-        IndexedSeq()
-      )(pos),
-    "GRAPH foo   (    )" ->
-      expressions.FunctionInvocation(
-        expressions.Namespace()(pos),
-        expressions.FunctionName("foo")(pos),
-        false,
-        IndexedSeq()
-      )(pos),
-    "GRAPH foo.bar(baz(grok))" ->
-      expressions.FunctionInvocation(
-        expressions.Namespace(List("foo"))(pos),
-        expressions.FunctionName("bar")(pos),
-        false,
-        IndexedSeq(
-          expressions.FunctionInvocation(
-            expressions.Namespace()(pos),
-            expressions.FunctionName("baz")(pos),
-            false,
-            IndexedSeq(
-              expressions.Variable("grok")(pos)
-            )
-          )(pos)
-        )
-      )(pos),
-    "GRAPH foo. bar   (baz  (grok   )  )" ->
-      expressions.FunctionInvocation(
-        expressions.Namespace(List("foo"))(pos),
-        expressions.FunctionName("bar")(pos),
-        false,
-        IndexedSeq(
-          expressions.FunctionInvocation(
-            expressions.Namespace()(pos),
-            expressions.FunctionName("baz")(pos),
-            false,
-            IndexedSeq(
-              expressions.Variable("grok")(pos)
-            )
-          )(pos)
-        )
-      )(pos),
-    "GRAPH foo.bar(baz(grok), another.name)" ->
-      expressions.FunctionInvocation(
-        expressions.Namespace(List("foo"))(pos),
-        expressions.FunctionName("bar")(pos),
-        false,
-        IndexedSeq(
-          expressions.FunctionInvocation(
-            expressions.Namespace()(pos),
-            expressions.FunctionName("baz")(pos),
-            false,
-            IndexedSeq(
-              expressions.Variable("grok")(pos)
-            )
-          )(pos),
-          expressions.Property(expressions.Variable("another")(pos), expressions.PropertyKeyName("name")(pos))(pos)
-        )
-      )(pos),
+    "foo.bar" ->
+      prop(varFor("foo"), "bar"),
+    "(foo.bar)" ->
+      prop(varFor("foo"), "bar"),
+    "foo()" ->
+      function("foo")(),
+    "foo   (    )" ->
+      function("foo")(),
+    "graph.foo" ->
+      prop(varFor("graph"), "foo"),
+    "graph.foo()" ->
+      function("graph", "foo")(),
+    "foo.bar(baz(grok))" ->
+      function("foo", "bar")(function("baz")(varFor("grok"))),
+    "foo. bar   (baz  (grok   )  )" ->
+      function("foo", "bar")(function("baz")(varFor("grok"))),
     "foo.bar(baz(grok), another.name)" ->
-      expressions.FunctionInvocation(
-        expressions.Namespace(List("foo"))(pos),
-        expressions.FunctionName("bar")(pos),
-        false,
-        IndexedSeq(
-          expressions.FunctionInvocation(
-            expressions.Namespace()(pos),
-            expressions.FunctionName("baz")(pos),
-            false,
-            IndexedSeq(
-              expressions.Variable("grok")(pos)
-            )
-          )(pos),
-          expressions.Property(expressions.Variable("another")(pos), expressions.PropertyKeyName("name")(pos))(pos)
-        )
-      )(pos),
+      function("foo", "bar")(function("baz")(varFor("grok")), prop(varFor("another"), "name")),
     "foo.bar(1, $par)" ->
-      expressions.FunctionInvocation(
-        expressions.Namespace(List("foo"))(pos),
-        expressions.FunctionName("bar")(pos),
-        false,
-        IndexedSeq(
-          expressions.SignedDecimalIntegerLiteral("1")(pos),
-          expressions.Parameter("par", symbols.CTAny)(pos)
-        )
-      )(pos),
+      function("foo", "bar")(
+        literalInt(1),
+        parameter("par", symbols.CTAny)
+      ),
     "a + b" ->
-      expressions.Add(expressions.Variable("a")(pos), expressions.Variable("b")(pos))(pos),
-    "GRAPH graph" ->
-      expressions.Variable("graph")(pos),
+      add(varFor("a"), varFor("b")),
     "`graph`" ->
-      expressions.Variable("graph")(pos),
+      varFor("graph"),
     "graph1" ->
-      expressions.Variable("graph1")(pos),
+      varFor("graph1"),
     "`foo.bar.baz.baz`" ->
-      expressions.Variable("foo.bar.baz.baz")(pos),
-    "GRAPH `foo.bar`.baz" ->
-      expressions.Property(expressions.Variable("foo.bar")(pos), expressions.PropertyKeyName("baz")(pos))(pos),
-    "GRAPH foo.`bar.baz`" ->
-      expressions.Property(expressions.Variable("foo")(pos), expressions.PropertyKeyName("bar.baz")(pos))(pos),
-    "GRAPH `foo.bar`.`baz.baz`" ->
-      expressions.Property(expressions.Variable("foo.bar")(pos), expressions.PropertyKeyName("baz.baz")(pos))(pos)
+      varFor("foo.bar.baz.baz"),
+    "`foo.bar`.baz" ->
+      prop(varFor("foo.bar"), "baz"),
+    "foo.`bar.baz`" ->
+      prop(varFor("foo"), "bar.baz"),
+    "`foo.bar`.`baz.baz`" ->
+      prop(varFor("foo.bar"), "baz.baz")
   )
 
-  for {
+  val fullGraphSelections: Seq[(String, ast.GraphSelection)] = Seq(
+    "USE GRAPH graph()" -> use(function("graph")()),
+    // Interpreted as GRAPH keyword, followed by parenthesized expression
+    "USE graph(x)" -> use(varFor("x"))
+  )
+
+  val combinations: Seq[(String, GraphSelection)] = for {
     (keyword, clause) <- keywords
     (input, expectedExpression) <- graphSelection
+  } yield s"$keyword $input" -> clause(expectedExpression)
+
+  for {
+    (input, expected) <- combinations ++ fullGraphSelections
   } {
-    test(s"$keyword $input") {
-      gives(clause(expectedExpression))
+    test(input) {
+      gives(expected)
     }
   }
+
+  private def function(nameParts: String*)(args: expressions.Expression*) =
+    expressions.FunctionInvocation(
+      expressions.Namespace(nameParts.init.toList)(pos),
+      expressions.FunctionName(nameParts.last)(pos),
+      distinct = false,
+      args.toIndexedSeq
+    )(pos)
+
 }

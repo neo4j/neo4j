@@ -1624,7 +1624,10 @@ USE_CLAUSE UseClause() :
     EXPRESSION e;
 }
 {
-    t=<USE> ( LOOKAHEAD( 2 ) <GRAPH> )? e=Expression()
+    t=<USE> (
+        LOOKAHEAD( 2 ) <GRAPH> e=Expression()
+        | e=Expression()
+        )
     {
         return astFactory.useClause(  pos( t ), e );
     }
