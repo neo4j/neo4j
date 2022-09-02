@@ -106,7 +106,7 @@ class ImportCommandTest {
         final var help = getUsageHelp(command);
         final var options = getOptions(help);
         var expectedOptions = new ArrayList<String>(List.of(sharedOptions));
-        expectedOptions.addAll(List.of("--overwrite-destination"));
+        expectedOptions.addAll(List.of("--overwrite-destination", "--format"));
         final var positionals = getPositionals(help);
         final var expectedPositionals = List.of(sharedPositionals);
 

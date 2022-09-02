@@ -85,10 +85,23 @@ public class ImportCommand {
         private static final org.neo4j.csv.reader.Configuration DEFAULT_CSV_CONFIG = COMMAS;
         private static final Configuration DEFAULT_IMPORTER_CONFIG = DEFAULT;
 
+        private enum OnOffAuto {
+            ON,
+            OFF,
+            AUTO
+        }
+
+        static class OnOffAutoConverter implements ITypeConverter<OnOffAuto> {
+            @Override
+            public OnOffAuto convert(String value) throws Exception {
+                return OnOffAuto.valueOf(value.toUpperCase());
+            }
+        }
+
         @Parameters(
                 index = "0",
                 converter = DatabaseNameConverter.class,
-                defaultValue = DEFAULT_DATABASE_NAME, // TODO: Allow default??
+                defaultValue = DEFAULT_DATABASE_NAME,
                 description = "Name of the database to import.%n"
                         + "  If the database used to import into doesn't exist prior to importing,%n"
                         + "  then it must be created subsequently using CREATE DATABASE.")
@@ -211,13 +224,12 @@ public class ImportCommand {
                 names = "--high-parallel-io",
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
-                paramLabel = "true|false",
+                paramLabel = "on|off|auto",
+                defaultValue = "auto",
+                converter = OnOffAutoConverter.class,
                 description =
-                        "Ignore environment-based heuristics, and assume that the target storage subsystem can support parallel IO with high throughput.")
-        // Intentionally made a Boolean such that if there's no explicit decision from config then the value will be
-        // based
-        // on information from the target device
-        private Boolean highIo;
+                        "Indicate if target storage subsystem can support parallel IO with high throughput or auto detect.")
+        private OnOffAuto highIo;
 
         @Option(
                 names = "--threads",
@@ -396,7 +408,7 @@ public class ImportCommand {
                 @Override
                 public boolean highIO() {
                     // super.highIO will look at the device and make a decision
-                    return highIo != null ? highIo : super.highIO();
+                    return highIo == OnOffAuto.AUTO ? super.highIO() : highIo == OnOffAuto.ON;
                 }
 
                 @Override
@@ -472,8 +484,9 @@ public class ImportCommand {
         @Option(
                 names = "--format",
                 showDefaultValue = NEVER,
-                hidden = true,
-                description = "Name of database format. Imported database will be created of the specified format")
+                required = false,
+                description = "Name of database format. Imported database will be created of the specified format "
+                        + "or use format from configuration if not specifed.")
         private String format;
 
         // Was force

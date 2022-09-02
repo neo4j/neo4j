@@ -362,7 +362,9 @@ class CsvImporter implements Importer {
     private void printOverview() {
         stdOut.println("Neo4j version: " + Version.getNeo4jVersion());
         stdOut.println("Importing the contents of these files into " + databaseLayout.databaseDirectory() + ":");
-        stdOut.println("Import mode: " + incrementalStage);
+        if (incrementalStage != null) {
+            stdOut.println("Import mode: " + incrementalStage);
+        }
         printInputFiles("Nodes", nodeFiles, stdOut);
         printInputFiles("Relationships", relationshipFiles, stdOut);
         stdOut.println();

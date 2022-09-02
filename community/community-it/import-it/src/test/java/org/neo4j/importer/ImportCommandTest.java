@@ -172,7 +172,7 @@ class ImportCommandTest {
                 "--additional-config", dbConfig.toAbsolutePath().toString(),
                 "--nodes",
                         nodeData(true, COMMAS, nodeIds, TRUE).toAbsolutePath().toString(),
-                "--high-parallel-io", "false",
+                "--high-parallel-io", "off",
                 "--relationships",
                         relationshipData(true, COMMAS, nodeIds, TRUE, true)
                                 .toAbsolutePath()
@@ -199,7 +199,7 @@ class ImportCommandTest {
                                 nodeData(true, config, nodeIds, TRUE)
                                         .toAbsolutePath()
                                         .toString(),
-                        "--high-parallel-io", "false",
+                        "--high-parallel-io", "off",
                         "--relationships",
                                 relationshipData(true, config, nodeIds, TRUE, true)
                                         .toAbsolutePath()
