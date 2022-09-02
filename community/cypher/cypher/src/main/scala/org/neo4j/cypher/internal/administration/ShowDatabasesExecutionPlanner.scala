@@ -80,6 +80,7 @@ import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SECONDARIES_PR
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STARTED_AT_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STATUS_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STOPPED_AT_PROPERTY
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_VIRTUAL_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DISPLAY_NAME_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseAccess
@@ -329,7 +330,9 @@ case class ShowDatabasesExecutionPlanner(
       ) { (acc, dbNameNode) =>
         val dbName = dbNameNode.getProperty(DATABASE_NAME_PROPERTY).toString
         val dbNode = Iterables.first(dbNameNode.getRelationships(TARGETS_RELATIONSHIP)).getEndNode
-        val dbType = if (dbNode.hasLabel(COMPOSITE_DATABASE_LABEL)) Composite else Standard
+        val dbType =
+          if (dbNode.hasLabel(COMPOSITE_DATABASE_LABEL) && dbNode.hasProperty(DATABASE_VIRTUAL_PROPERTY)) Composite
+          else Standard
         val isDefault = dbName.equals(defaultDatabaseName)
         if (dbName.equals(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)) {
           acc + (dbName -> System)
