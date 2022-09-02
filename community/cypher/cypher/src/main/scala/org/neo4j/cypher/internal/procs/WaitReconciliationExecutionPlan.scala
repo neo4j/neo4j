@@ -54,7 +54,7 @@ import java.util
 import scala.jdk.CollectionConverters.SetHasAsJava
 
 /**
- * This plan calls the internal procedure dbms.admin.wait which waits for a transaction to replicate across a cluster.
+ * This plan calls the internal procedure internal.dbms.admin.wait which waits for a transaction to replicate across a cluster.
  * It is used to implement the WAIT clause on admin commands, e.g. CREATE DATABASE foo WAIT
  */
 case class WaitReconciliationExecutionPlan(
@@ -103,7 +103,7 @@ case class WaitReconciliationExecutionPlan(
     val query =
       s"""OPTIONAL MATCH (d:$DATABASE_NAME {$DATABASE_NAME_PROPERTY: $$`$databaseNameParamKey`, $NAMESPACE_PROPERTY: $$`$databaseNamespaceParamKey`})-[:$TARGETS]-(db:$DATABASE)
          |WITH coalesce(db.$DATABASE_UUID_PROPERTY,$$`__internal_databaseUuid`) as uuid, coalesce(db.$DATABASE_NAME_PROPERTY,$$`__internal_deletedDatabaseName`) as name
-         |CALL dbms.admin.wait($$`$txIdParam`, uuid, name, $timeoutInSeconds)
+         |CALL internal.dbms.admin.wait($$`$txIdParam`, uuid, name, $timeoutInSeconds)
          |YIELD address, state, message, success RETURN address, state, message, success""".stripMargin
     val tc: TransactionalContext = ctx.kernelTransactionalContext
 
