@@ -144,7 +144,15 @@ object ReadFinder {
                 acc.withPropertyRead(PropertyKeyName(property)(InputPosition.NONE))
             }
 
-          case NodeIndexContainsScan(varName, LabelToken(labelName, _), IndexedProperty(PropertyKeyToken(property, _), _, _), _, _, _, _) =>
+          case NodeIndexContainsScan(
+              varName,
+              LabelToken(labelName, _),
+              IndexedProperty(PropertyKeyToken(property, _), _, _),
+              _,
+              _,
+              _,
+              _
+            ) =>
             val variable = Variable(varName)(InputPosition.NONE)
             val lN = LabelName(labelName)(InputPosition.NONE)
             val hasLabels = HasLabels(variable, Seq(lN))(InputPosition.NONE)
@@ -154,7 +162,15 @@ object ReadFinder {
               .withAddedFilterExpression(variable, hasLabels)
               .withPropertyRead(PropertyKeyName(property)(InputPosition.NONE))
 
-          case NodeIndexEndsWithScan(varName, LabelToken(labelName, _), IndexedProperty(PropertyKeyToken(property, _), _, _), _, _, _, _) =>
+          case NodeIndexEndsWithScan(
+              varName,
+              LabelToken(labelName, _),
+              IndexedProperty(PropertyKeyToken(property, _), _, _),
+              _,
+              _,
+              _,
+              _
+            ) =>
             val variable = Variable(varName)(InputPosition.NONE)
             val lN = LabelName(labelName)(InputPosition.NONE)
             val hasLabels = HasLabels(variable, Seq(lN))(InputPosition.NONE)

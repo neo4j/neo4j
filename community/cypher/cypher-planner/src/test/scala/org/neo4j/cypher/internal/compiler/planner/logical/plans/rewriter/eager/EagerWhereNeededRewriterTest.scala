@@ -2250,7 +2250,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
-test(
+  test(
     "should not insert Eager if two different created nodes in the same operator have together the labels from a NodeByLabelScan"
   ) {
     val planBuilder = new LogicalPlanBuilder()
@@ -2289,8 +2289,7 @@ test(
       .eager(ListSet(EagernessReason.LabelReadSetConflict(labelName("A"))))
       .create(createNode("a", "A"), createNode("b", "B"))
       .argument()
-      .build()
-    )
+      .build())
   }
 
   test(
@@ -2329,7 +2328,17 @@ test(
       .produceResults("d")
       .apply()
       .|.nodeByLabelScan("d", "Event")
-      .foreach("x", "[1]", Seq(createPattern(Seq(createNode("e", "Event"), createNode("p", "Place")), Seq(createRelationship("i", "e", "IN", "p"))), setNodeProperty("e", "foo", "'e_bar'")))
+      .foreach(
+        "x",
+        "[1]",
+        Seq(
+          createPattern(
+            Seq(createNode("e", "Event"), createNode("p", "Place")),
+            Seq(createRelationship("i", "e", "IN", "p"))
+          ),
+          setNodeProperty("e", "foo", "'e_bar'")
+        )
+      )
       .argument()
 
     val plan = planBuilder.build()
@@ -2341,7 +2350,17 @@ test(
         .apply()
         .|.nodeByLabelScan("d", "Event")
         .eager(ListSet(EagernessReason.LabelReadSetConflict(labelName("Event"))))
-        .foreach("x", "[1]", Seq(createPattern(Seq(createNode("e", "Event"), createNode("p", "Place")), Seq(createRelationship("i", "e", "IN", "p"))), setNodeProperty("e", "foo", "'e_bar'")))
+        .foreach(
+          "x",
+          "[1]",
+          Seq(
+            createPattern(
+              Seq(createNode("e", "Event"), createNode("p", "Place")),
+              Seq(createRelationship("i", "e", "IN", "p"))
+            ),
+            setNodeProperty("e", "foo", "'e_bar'")
+          )
+        )
         .argument()
         .build()
     )
@@ -2371,7 +2390,6 @@ test(
         .build()
     )
   }
-
 
   test(
     "inserts eager between property set and property read (NodeIndexSeekByRange) if property read through unstable iterator"
@@ -2469,10 +2487,9 @@ test(
     )
   }
 
-
   // Ignored tests
 
-  //Todo: Update LabelExpressionEvaluator to return a boolean or a set of the conflicting Labels
+  // Todo: Update LabelExpressionEvaluator to return a boolean or a set of the conflicting Labels
   ignore(
     "Should only reference the conflicting labels when there is a write of multiple labels in the same create pattern"
   ) {

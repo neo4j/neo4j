@@ -59,6 +59,7 @@ object LabelExpressionEvaluator {
    * @param labels - the labels evaluated to true, all other labels will be evaluated to false.
    * @return - the evaluated expression value or None if the expression is unknown.
    */
+  // Todo: Add lamda function for returning a boolean or a set conflicting labels
   def labelExpressionEvaluator(
     labelExpression: Expression,
     nodes: NodesToCheckOverlap,

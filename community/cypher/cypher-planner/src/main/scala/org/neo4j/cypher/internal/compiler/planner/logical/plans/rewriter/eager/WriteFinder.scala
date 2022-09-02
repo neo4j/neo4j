@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.ir.CreateNode
-import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.CreatePattern
+import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
@@ -172,7 +172,8 @@ object WriteFinder {
       PlanWrites(setPart, createPart)
 
     case Foreach(_, _, _, mutations) =>
-      val (setMutatingPatterns: Seq[SetMutatingPattern], otherMutatingPatterns) = mutations.toSeq.partition(mutation => mutation.isInstanceOf[SetMutatingPattern])
+      val (setMutatingPatterns: Seq[SetMutatingPattern], otherMutatingPatterns) =
+        mutations.toSeq.partition(mutation => mutation.isInstanceOf[SetMutatingPattern])
       val setPart = processSetMutatingPatterns(PlanSets(), setMutatingPatterns)
       val createPart = processCreateMutatingPatterns(PlanCreates(), otherMutatingPatterns)
 
@@ -228,7 +229,7 @@ object WriteFinder {
         acc.withUnknownPropertiesWritten
 
       case (acc, SetLabelPattern(_, labels)) =>
-            acc.withLabelsWritten(labels.toSet)
+        acc.withLabelsWritten(labels.toSet)
 
       case (_, mutatingPattern) =>
         throw new UnsupportedOperationException(
@@ -239,9 +240,9 @@ object WriteFinder {
   }
 
   private def processCreateMutatingPatterns(
-                                                                     acc: PlanCreates,
-                                                                     setMutatingPatterns: Seq[SimpleMutatingPattern]
-                                                                   ): PlanCreates = {
+    acc: PlanCreates,
+    setMutatingPatterns: Seq[SimpleMutatingPattern]
+  ): PlanCreates = {
     val res = setMutatingPatterns.foldLeft[PlanCreates](acc) {
       case (acc, CreatePattern(nodes, relationships)) =>
         processCreateNodes(acc, nodes)
