@@ -34,11 +34,16 @@ import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Properties
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
+import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -124,6 +129,40 @@ object ReadFinder {
               case (acc, IndexedProperty(PropertyKeyToken(property, _), _, _)) =>
                 acc.withPropertyRead(PropertyKeyName(property)(InputPosition.NONE))
             }
+
+          case NodeIndexSeek(varName, LabelToken(labelName, _), properties, _, _, _, _) =>
+            val variable = Variable(varName)(InputPosition.NONE)
+            val lN = LabelName(labelName)(InputPosition.NONE)
+            val hasLabels = HasLabels(variable, Seq(lN))(InputPosition.NONE)
+
+            val r = PlanReads()
+              .withLabelRead(lN)
+              .withAddedFilterExpression(variable, hasLabels)
+
+            properties.foldLeft(r) {
+              case (acc, IndexedProperty(PropertyKeyToken(property, _), _, _)) =>
+                acc.withPropertyRead(PropertyKeyName(property)(InputPosition.NONE))
+            }
+
+          case NodeIndexContainsScan(varName, LabelToken(labelName, _), IndexedProperty(PropertyKeyToken(property, _), _, _), _, _, _, _) =>
+            val variable = Variable(varName)(InputPosition.NONE)
+            val lN = LabelName(labelName)(InputPosition.NONE)
+            val hasLabels = HasLabels(variable, Seq(lN))(InputPosition.NONE)
+
+            PlanReads()
+              .withLabelRead(lN)
+              .withAddedFilterExpression(variable, hasLabels)
+              .withPropertyRead(PropertyKeyName(property)(InputPosition.NONE))
+
+          case NodeIndexEndsWithScan(varName, LabelToken(labelName, _), IndexedProperty(PropertyKeyToken(property, _), _, _), _, _, _, _) =>
+            val variable = Variable(varName)(InputPosition.NONE)
+            val lN = LabelName(labelName)(InputPosition.NONE)
+            val hasLabels = HasLabels(variable, Seq(lN))(InputPosition.NONE)
+
+            PlanReads()
+              .withLabelRead(lN)
+              .withAddedFilterExpression(variable, hasLabels)
+              .withPropertyRead(PropertyKeyName(property)(InputPosition.NONE))
 
           case _: Argument =>
             PlanReads()

@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setN
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.schema.IndexType
 
 import scala.collection.immutable.ListSet
 
@@ -2370,6 +2371,104 @@ test(
         .build()
     )
   }
+
+
+  test(
+    "inserts eager between property set and property read (NodeIndexSeekByRange) if property read through unstable iterator"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .setNodeProperty("m", "prop", "5")
+      .apply()
+      .|.nodeIndexOperator("n:N(prop>5)")
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("m")
+        .setNodeProperty("m", "prop", "5")
+        .eager(ListSet(EagernessReason.PropertyReadSetConflict(propName("prop"))))
+        .apply()
+        .|.nodeIndexOperator("n:N(prop > 5)")
+        .allNodeScan("m")
+        .build()
+    )
+  }
+
+  test(
+    "inserts eager between property set and property read (NodeIndexSeek) if property read through unstable iterator"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .setNodeProperty("m", "prop", "5")
+      .apply()
+      .|.nodeIndexOperator("n:N(prop=5)")
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("m")
+        .setNodeProperty("m", "prop", "5")
+        .eager(ListSet(EagernessReason.PropertyReadSetConflict(propName("prop"))))
+        .apply()
+        .|.nodeIndexOperator("n:N(prop = 5)")
+        .allNodeScan("m")
+        .build()
+    )
+  }
+
+  test(
+    "inserts eager between property set and property read (NodeIndexContainsScan) if property read through unstable iterator"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .setNodeProperty("m", "prop", "5")
+      .apply()
+      .|.nodeIndexOperator("n:N(prop CONTAINS '1')", indexType = IndexType.TEXT)
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("m")
+        .setNodeProperty("m", "prop", "5")
+        .eager(ListSet(EagernessReason.PropertyReadSetConflict(propName("prop"))))
+        .apply()
+        .|.nodeIndexOperator("n:N(prop CONTAINS '1')", indexType = IndexType.TEXT)
+        .allNodeScan("m")
+        .build()
+    )
+  }
+
+  test(
+    "inserts eager between property set and property read (NodeIndexEndsWithScan) if property read through unstable iterator"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .setNodeProperty("m", "prop", "5")
+      .apply()
+      .|.nodeIndexOperator("n:N(prop ENDS WITH '1')", indexType = IndexType.TEXT)
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("m")
+        .setNodeProperty("m", "prop", "5")
+        .eager(ListSet(EagernessReason.PropertyReadSetConflict(propName("prop"))))
+        .apply()
+        .|.nodeIndexOperator("n:N(prop ENDS WITH '1')", indexType = IndexType.TEXT)
+        .allNodeScan("m")
+        .build()
+    )
+  }
+
 
   // Ignored tests
 
