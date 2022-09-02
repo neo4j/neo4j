@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
@@ -57,14 +58,15 @@ object WriteFinder {
      */
     def writesUnknownProperties: Boolean
 
-    /**
-     * @return all labels written by this plan
-     */
-    def writtenLabels: Seq[LabelName]
-
     def withPropertyWritten(property: PropertyKeyName): PlanWriteOperations
     def withUnknownPropertiesWritten: PlanWriteOperations
-    def withLabelWritten(label: LabelName): PlanWriteOperations
+
+    /**
+     *
+     * @param labels labels written on the same node for each write
+     * @return
+     */
+    def withLabelsWritten(labels: Set[LabelName]): PlanWriteOperations
 
     /**
      * @return A `Seq` of all writtem properties.
@@ -78,11 +80,13 @@ object WriteFinder {
 
   /**
    * Set write operations of a single plan
+   * Labels written on the same node for sets does not need to differentiated
+   * since there can be a situation where another label already exists on the node.
    */
   private[eager] case class PlanSets(
     override val writtenProperties: Seq[PropertyKeyName] = Seq.empty,
     override val writesUnknownProperties: Boolean = false,
-    override val writtenLabels: Seq[LabelName] = Seq.empty
+    writtenLabels: Set[LabelName] = Set.empty
   ) extends PlanWriteOperations {
 
     override def withPropertyWritten(property: PropertyKeyName): PlanSets =
@@ -90,18 +94,20 @@ object WriteFinder {
 
     override def withUnknownPropertiesWritten: PlanSets = copy(writesUnknownProperties = true)
 
-    override def withLabelWritten(label: LabelName): PlanSets = copy(writtenLabels = writtenLabels :+ label)
+    override def withLabelsWritten(labels: Set[LabelName]): PlanSets = copy(writtenLabels = writtenLabels ++ labels)
   }
 
   /**
    * Create write operations of a single plan
+   * Labels needs to be differentiated based on each create
+   * since we can then assume that no other label is on that node since it was just created.
    *
    * @param createsNodes `true` if this plan creates nodes
    */
   private[eager] case class PlanCreates(
     override val writtenProperties: Seq[PropertyKeyName] = Seq.empty,
     override val writesUnknownProperties: Boolean = false,
-    override val writtenLabels: Seq[LabelName] = Seq.empty,
+    writtenLabels: Set[Set[LabelName]] = Set.empty,
     createsNodes: Boolean = false
   ) extends PlanWriteOperations {
 
@@ -112,7 +118,7 @@ object WriteFinder {
 
     override def withUnknownPropertiesWritten: PlanCreates = copy(writesUnknownProperties = true)
 
-    override def withLabelWritten(label: LabelName): PlanCreates = copy(writtenLabels = writtenLabels :+ label)
+    override def withLabelsWritten(labels: Set[LabelName]): PlanCreates = copy(writtenLabels = writtenLabels + labels)
   }
 
   /**
@@ -143,10 +149,10 @@ object WriteFinder {
       PlanWrites(sets = PlanSets(writesUnknownProperties = true))
 
     case SetLabels(_, _, labelNames) =>
-      PlanWrites(sets = PlanSets(writtenLabels = labelNames.toSeq))
+      PlanWrites(sets = PlanSets(writtenLabels = labelNames))
 
     case RemoveLabels(_, _, labelNames) =>
-      PlanWrites(sets = PlanSets(writtenLabels = labelNames.toSeq))
+      PlanWrites(sets = PlanSets(writtenLabels = labelNames))
 
     case Create(_, nodes, relationships) =>
       val creates = processCreateNodes(PlanCreates(), nodes)
@@ -181,11 +187,7 @@ object WriteFinder {
       case (acc, CreateNode(_, labels, maybeProperties)) =>
         Option(acc)
           .map(acc => acc.withCreatesNodes)
-          .map(acc =>
-            labels.foldLeft(acc) {
-              case (acc, labelName) => acc.withLabelWritten(labelName)
-            }
-          )
+          .map(acc => acc.withLabelsWritten(labels))
           .map(acc =>
             maybeProperties match {
               case None                            => acc
@@ -214,6 +216,9 @@ object WriteFinder {
       // Set unknown properties (i.e. not a MapExpression) or delete any other properties
       case (acc, _: SetNodePropertiesFromMapPattern) =>
         acc.withUnknownPropertiesWritten
+
+      case (acc, SetLabelPattern(_, labels)) =>
+            acc.withLabelsWritten(labels.toSet)
 
       case (_, mutatingPattern) =>
         throw new UnsupportedOperationException(

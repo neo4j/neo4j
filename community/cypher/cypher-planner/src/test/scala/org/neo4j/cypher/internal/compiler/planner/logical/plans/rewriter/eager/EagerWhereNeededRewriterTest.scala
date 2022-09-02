@@ -2247,6 +2247,49 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
+test(
+    "should not insert Eager if two different created nodes in the same operator have together the labels from a NodeByLabelScan"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("d")
+      .apply()
+      .|.filter("c:B")
+      .|.nodeByLabelScan("c", "A")
+      .create(createNode("a", "A"), createNode("b", "B"))
+      .argument()
+
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(plan)
+  }
+
+  test(
+    "should insert Eager if two different created nodes in the same operator overlap with a FilterExpression"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("d")
+      .apply()
+      .|.filter("c:!B")
+      .|.nodeByLabelScan("c", "A")
+      .create(createNode("a", "A"), createNode("b", "B"))
+      .argument()
+
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(new LogicalPlanBuilder()
+      .produceResults("d")
+      .apply()
+      .|.filter("c:!B")
+      .|.nodeByLabelScan("c", "A")
+      .eager(ListSet(EagernessReason.LabelReadSetConflict(labelName("A"))))
+      .create(createNode("a", "A"), createNode("b", "B"))
+      .argument()
+      .build()
+    )
+  }
+
   test(
     "inserts Eager if there are two conflict in a Union plan: LHS vs Top and RHS vs Top (LHS and RHS are identical plans)."
   ) {

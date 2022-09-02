@@ -91,14 +91,14 @@ object ConflictFinder {
 
     // Conflicts between a label read (determined by a snapshot filterExpressions) and a label CREATE
     for {
-      (writePlan, labels) <- readsAndWrites.writes.creates.writtenLabels
-      labelSet = labels.toSet
+      (writePlan, labelCombinations) <- readsAndWrites.writes.creates.writtenLabels
       (variable, FilterExpressions(readPlans, expression)) <-
         // If a variable exists in the snapshot, let's take it from there. This is when we have a read-write conflict.
         // But we have to include other filterExpressions that are not in the snapshot, to also cover write-read conflicts.
         readsAndWrites.writes.creates.filterExpressionsSnapshots(writePlan).fuse(
           readsAndWrites.reads.filterExpressions
         )((x, _) => x)
+      labelSet <- labelCombinations
       if LabelExpressionEvaluator.labelExpressionEvaluator(
         expression,
         NodesToCheckOverlap(None, variable.name),

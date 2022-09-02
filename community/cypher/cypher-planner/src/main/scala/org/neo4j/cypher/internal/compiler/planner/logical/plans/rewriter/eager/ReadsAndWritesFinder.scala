@@ -370,7 +370,7 @@ object ReadsAndWritesFinder {
    */
   private[eager] case class Creates(
     writtenProperties: PropertyWritingPlansProvider = PropertyWritingPlansProvider(),
-    writtenLabels: Map[LogicalPlan, Seq[LabelName]] = Map.empty,
+    writtenLabels: Map[LogicalPlan, Set[Set[LabelName]]] = Map.empty,
     plansThatCreateNodes: Seq[LogicalPlan] = Seq.empty,
     filterExpressionsSnapshots: Map[LogicalPlan, Map[LogicalVariable, FilterExpressions]] = Map.empty
   ) {
@@ -387,14 +387,14 @@ object ReadsAndWritesFinder {
      * associated with the CREATE plan. If we were to include all filterExpressions, we might think that Eager is not needed, even though it is.
      * See test "inserts eager between Create and NodeByLabelScan if label overlap, and other label in Filter after create".
      */
-    def withLabelWritten(
-      label: LabelName,
+    def withLabelsWritten(
+      labels: Set[LabelName],
       plan: LogicalPlan,
       filterExpressionsSnapshot: Map[LogicalVariable, FilterExpressions]
     ): Creates = {
-      val prevLabels = writtenLabels.getOrElse(plan, Seq.empty)
+      val prevLabels = writtenLabels.getOrElse(plan, Seq.empty).toSet
       copy(
-        writtenLabels = writtenLabels.updated(plan, prevLabels :+ label),
+        writtenLabels = writtenLabels.updated(plan, prevLabels + labels),
         filterExpressionsSnapshots = filterExpressionsSnapshots + (plan -> filterExpressionsSnapshot)
       )
     }
@@ -410,7 +410,7 @@ object ReadsAndWritesFinder {
       Option(this)
         .map(acc => planCreates.writtenProperties.foldLeft(acc)(_.withPropertyWritten(_, plan)))
         .map(acc => if (planCreates.writesUnknownProperties) acc.withUnknownPropertyWritten(plan) else acc)
-        .map(acc => planCreates.writtenLabels.foldLeft(acc)(_.withLabelWritten(_, plan, filterExpressionsSnapshot)))
+        .map(acc => planCreates.writtenLabels.foldLeft(acc)(_.withLabelsWritten(_, plan, filterExpressionsSnapshot)))
         .map(acc => if (planCreates.createsNodes) acc.withNodesCreated(plan) else acc)
         .get
     }
