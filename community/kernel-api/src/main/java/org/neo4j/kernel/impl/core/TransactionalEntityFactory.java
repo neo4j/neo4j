@@ -35,7 +35,5 @@ public interface TransactionalEntityFactory {
 
     Node newNodeEntity(long nodeId);
 
-    Node newNodeEntity(String elementId);
-
     RelationshipType getRelationshipTypeById(int type);
 }

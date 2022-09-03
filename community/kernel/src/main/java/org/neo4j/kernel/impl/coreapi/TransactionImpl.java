@@ -777,11 +777,6 @@ public class TransactionImpl extends EntityValidationTransactionImpl {
     }
 
     @Override
-    public Node newNodeEntity(String elementId) {
-        return new NodeEntity(this, elementIdMapper.nodeId(elementId));
-    }
-
-    @Override
     public RelationshipType getRelationshipTypeById(int type) {
         try {
             String name =

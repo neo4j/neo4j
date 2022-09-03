@@ -372,11 +372,6 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context, T
         }
 
         @Override
-        public Node newNodeEntity(String elementId) {
-            return transaction.newNodeEntity(elementId);
-        }
-
-        @Override
         public RelationshipType getRelationshipTypeById(int type) {
             return transaction.getRelationshipTypeById(type);
         }
