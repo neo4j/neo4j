@@ -126,8 +126,8 @@ public class FabricExecutor {
                     .name();
 
             var catalog = fabricTransaction.getCatalogSnapshot();
-            var plannerInstance =
-                    planner.instance(statement, parameters, defaultGraphName, catalog, fabricTransaction.cancellationChecker());
+            var plannerInstance = planner.instance(
+                    statement, parameters, defaultGraphName, catalog, fabricTransaction.cancellationChecker());
             var plan = plannerInstance.plan();
             var query = plan.query();
 
