@@ -168,11 +168,6 @@ public class Neo4jPackV3Test
     {
         return Stream.of(
                 Arguments.of(
-                        ZonedDateTime.of( 1978, 12, 16, 12, 35, 59, 128000987, ZoneId.of( "Europe/Istanbul" ) ),
-                        282648959,
-                        128000987,
-                        "Europe/Istanbul" ),
-                Arguments.of(
                         ZonedDateTime.of( 2022, 6, 14, 15, 21, 18, 183_000_000, ZoneId.of( "Europe/Berlin" ) ),
                         1655212878,
                         183_000_000L,
