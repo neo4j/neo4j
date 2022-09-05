@@ -88,7 +88,7 @@ public class IndexIdMapper implements IdMapper {
     private final List<Index> indexes = new CopyOnWriteArrayList<>();
     private final Map<String, Populator> populators = new HashMap<>();
     private final ByteBufferFactory bufferFactory;
-    private final MutableLongSet duplicateNodeIds = LongSets.mutable.empty();
+    private final MutableLongSet duplicateNodeIds = LongSets.mutable.empty().asSynchronized();
 
     // key is groupName, and for some reason accessors doesn't expose which descriptor they're for, so pass that in too
     public IndexIdMapper(
@@ -179,8 +179,7 @@ public class IndexIdMapper implements IdMapper {
     private IndexEntryConflictHandler conflictHandler(Collector collector, Map.Entry<String, Populator> entry) {
         return new IndexEntryConflictHandler() {
             @Override
-            public synchronized IndexEntryConflictAction indexEntryConflict(
-                    long firstEntityId, long otherEntityId, Value[] values) {
+            public IndexEntryConflictAction indexEntryConflict(long firstEntityId, long otherEntityId, Value[] values) {
                 duplicateNodeIds.add(otherEntityId);
                 collector.collectDuplicateNode(values[0].asObjectCopy(), otherEntityId, entry.getKey());
                 return IndexEntryConflictAction.DELETE;
