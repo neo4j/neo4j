@@ -193,13 +193,13 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
     public static final class Composite extends DatabaseReference {
         private final NormalizedDatabaseName alias;
         private final NamedDatabaseId namedDatabaseId;
-        private final List<DatabaseReference> components;
+        private final List<DatabaseReference> constituents;
 
         public Composite(
-                NormalizedDatabaseName alias, NamedDatabaseId namedDatabaseId, Set<DatabaseReference> components) {
+                NormalizedDatabaseName alias, NamedDatabaseId namedDatabaseId, Set<DatabaseReference> constituents) {
             this.alias = alias;
             this.namedDatabaseId = namedDatabaseId;
-            this.components = components.stream().sorted().toList();
+            this.constituents = constituents.stream().sorted().toList();
         }
 
         public NamedDatabaseId databaseId() {
@@ -222,7 +222,7 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
         }
 
         public List<DatabaseReference> components() {
-            return components;
+            return constituents;
         }
 
         @Override
@@ -232,12 +232,12 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
             Composite composite = (Composite) o;
             return Objects.equals(alias, composite.alias)
                     && Objects.equals(namedDatabaseId, composite.namedDatabaseId)
-                    && Objects.equals(components, composite.components);
+                    && Objects.equals(constituents, composite.constituents);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(alias, namedDatabaseId, components);
+            return Objects.hash(alias, namedDatabaseId, constituents);
         }
 
         @Override
@@ -245,7 +245,7 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
             return "DatabaseReference.Composite{" + "alias="
                     + alias + ", namedDatabaseId="
                     + namedDatabaseId + ", components="
-                    + components + '}';
+                    + constituents + '}';
         }
     }
 }

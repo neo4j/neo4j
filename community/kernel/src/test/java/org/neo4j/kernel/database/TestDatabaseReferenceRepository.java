@@ -137,7 +137,7 @@ public final class TestDatabaseReferenceRepository {
 
         @Override
         public Set<DatabaseReference.Composite> getCompositeDatabaseReferences() {
-            return Set.of();
+            return getDatabaseReferences(DatabaseReference.Composite.class);
         }
 
         private <T extends DatabaseReference> Set<T> getDatabaseReferences(Class<T> type) {

@@ -183,7 +183,7 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
     private Stream<DatabaseReference.Composite> getAllCompositeDatabaseReferencesInRoot() {
         return getAliasNodesInNamespace(DATABASE_NAME_LABEL, DEFAULT_NAMESPACE)
                 .flatMap(alias -> getTargetedDatabaseNode(alias)
-                        .filter(db -> db.hasProperty(DATABASE_VIRTUAL_PROPERTY))
+                        .filter(db -> db.hasLabel(COMPOSITE_DATABASE_LABEL))
                         .flatMap(db -> createCompositeReference(alias, db))
                         .stream());
     }
