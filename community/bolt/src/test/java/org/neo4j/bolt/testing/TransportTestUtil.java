@@ -60,7 +60,6 @@ import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.DB_NAME_KEY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValues.fromList;
 
 public class TransportTestUtil
 {
@@ -332,9 +331,9 @@ public class TransportTestUtil
     {
         return transportConnection ->
         {
-            ResponseMessage nextMessage = null;
+            ResponseMessage nextMessage;
 
-            while ( nextMessage instanceof SuccessMessage )
+            do
             {
                 try
                 {
@@ -345,8 +344,8 @@ public class TransportTestUtil
                     throw new RuntimeException( e );
                 }
             }
+            while ( !(nextMessage instanceof SuccessMessage) );
         };
-
     }
 
     public static Condition<TransportConnection> eventuallyDisconnects()
