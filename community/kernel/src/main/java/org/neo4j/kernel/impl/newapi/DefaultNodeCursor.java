@@ -285,18 +285,18 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
     }
 
     private void fillDegrees(RelationshipSelection selection, Degrees.Mutator degrees) {
+        if (hasChanges()) {
+            var nodeTxState = read.txState().getNodeState(nodeReference());
+            if (nodeTxState != null) {
+                nodeTxState.fillDegrees(selection, degrees);
+            }
+        }
         if (currentAddedInTx == NO_ID) {
             if (allowsTraverseAll()) {
                 storeCursor.degrees(selection, degrees);
             } else {
                 readRestrictedDegrees(selection, degrees);
             }
-        }
-        boolean hasChanges = hasChanges();
-        NodeState nodeTxState = hasChanges ? read.txState().getNodeState(nodeReference()) : null;
-        if (nodeTxState != null) {
-            // Then add the remaining types that's only present in the tx-state
-            nodeTxState.fillDegrees(selection, degrees);
         }
     }
 
