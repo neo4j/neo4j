@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ast.CommandClause
+import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.expressions.Expression
 
 case class CommandProjection(clause: CommandClause) extends QueryHorizon {
@@ -28,4 +29,7 @@ case class CommandProjection(clause: CommandClause) extends QueryHorizon {
 
   override def dependingExpressions: Seq[Expression] = Seq()
 
+  override def allHints: Set[Hint] = Set.empty
+
+  override def withoutHints(hintsToIgnore: Set[Hint]): QueryHorizon = this
 }

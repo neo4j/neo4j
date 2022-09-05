@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
@@ -45,6 +46,9 @@ trait QueryHorizon extends Foldable {
   }
 
   def readOnly = true
+
+  def allHints: Set[Hint]
+  def withoutHints(hintsToIgnore: Set[Hint]): QueryHorizon
 
   /**
    * If dependingExpressions is empty, or only contains variables, we can assume that it doesn't contain any reads
@@ -86,18 +90,30 @@ final case class PassthroughAllHorizon() extends QueryHorizon {
   override def dependingExpressions: Seq[Expression] = Seq.empty
 
   override lazy val allQueryGraphs: Seq[QgWithLeafInfo] = Seq.empty
+
+  override def allHints: Set[Hint] = Set.empty
+
+  override def withoutHints(hintsToIgnore: Set[Hint]): QueryHorizon = this
 }
 
 case class UnwindProjection(variable: String, exp: Expression) extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds + variable
 
   override def dependingExpressions: Seq[Expression] = Seq(exp)
+
+  override def allHints: Set[Hint] = Set.empty
+
+  override def withoutHints(hintsToIgnore: Set[Hint]): QueryHorizon = this
 }
 
 case class LoadCSVProjection(variable: String, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral]) extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds + variable
 
   override def dependingExpressions: Seq[Expression] = Seq(url)
+
+  override def allHints: Set[Hint] = Set.empty
+
+  override def withoutHints(hintsToIgnore: Set[Hint]): QueryHorizon = this
 }
 
 case class CallSubqueryHorizon(callSubquery: PlannerQueryPart, correlated: Boolean) extends QueryHorizon {
@@ -106,6 +122,11 @@ case class CallSubqueryHorizon(callSubquery: PlannerQueryPart, correlated: Boole
   override def dependingExpressions: Seq[Expression] = Seq.empty
 
   override def readOnly: Boolean = callSubquery.readOnly
+
+  override def allHints: Set[Hint] = callSubquery.allHints
+
+  override def withoutHints(hintsToIgnore: Set[Hint]): QueryHorizon =
+    copy(callSubquery = callSubquery.withoutHints(hintsToIgnore))
 
   /**
    * We don't analyze the subquery but just assume that it's doing reads.
@@ -132,6 +153,10 @@ sealed abstract class QueryProjection extends QueryHorizon {
     val newSelections = Selections(predicates.flatMap(_.asPredicates).toSet)
     withSelection(selections = selections ++ newSelections)
   }
+
+  override def allHints: Set[Hint] = Set.empty
+
+  override def withoutHints(hintsToIgnore: Set[Hint]): QueryHorizon = this
 }
 
 object QueryProjection {

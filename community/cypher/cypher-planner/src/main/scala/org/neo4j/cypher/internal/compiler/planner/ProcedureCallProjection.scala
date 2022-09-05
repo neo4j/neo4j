@@ -19,13 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
+import org.neo4j.cypher.internal.ast.Hint
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 
 case class ProcedureCallProjection(call: ResolvedCall) extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds ++ call.callResults.map { result => result.variable.name }
 
-  override def dependingExpressions = call.callArguments
+  override def dependingExpressions: Seq[Expression] = call.callArguments
 
-  override def readOnly = call.containsNoUpdates
+  override def readOnly: Boolean = call.containsNoUpdates
+
+  override def allHints: Set[Hint] = Set.empty
+
+  override def withoutHints(hintsToIgnore: Set[Hint]): QueryHorizon = this
 }

@@ -32,7 +32,9 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.VarPatternLength
@@ -180,6 +182,33 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
 
     a [HintException] should be thrownBy {
       verifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithIdxHint(), context)
+    }
+  }
+
+  test("should throw when finding unfulfillable index hint in a subquery") {
+    def plannerQueryWithSubquery(hints: Set[Hint]): PlannerQueryPart = {
+      RegularSinglePlannerQuery(
+        horizon = CallSubqueryHorizon(
+          callSubquery = RegularSinglePlannerQuery(
+            QueryGraph(
+              patternNodes = Set("a"),
+              hints = hints
+            )
+          ),
+          correlated = false
+        )
+      )
+    }
+
+    val expected = plannerQueryWithSubquery(Set(newIndexHint()))
+    val solved = plannerQueryWithSubquery(Set.empty)
+
+    val context =
+      newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = false), useErrorsOverWarnings = true)
+    val plan = newMockedLogicalPlanWithSolved(context.planningAttributes, Set("a"), solved)
+
+    an [IndexHintException] should be thrownBy {
+      verifyBestPlan(plan, expected, context)
     }
   }
 }
