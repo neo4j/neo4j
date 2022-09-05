@@ -339,9 +339,9 @@ public class TransportTestUtil
     {
         return transportConnection ->
         {
-            ResponseMessage nextMessage = null;
+            ResponseMessage nextMessage;
 
-            while ( nextMessage instanceof SuccessMessage )
+            do
             {
                 try
                 {
@@ -352,8 +352,8 @@ public class TransportTestUtil
                     throw new RuntimeException( e );
                 }
             }
+            while ( !(nextMessage instanceof SuccessMessage) );
         };
-
     }
 
     public static Condition<TransportConnection> eventuallyDisconnects()
