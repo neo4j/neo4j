@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ast.AllQualifier
 import org.neo4j.cypher.internal.ast.AlterDatabase
 import org.neo4j.cypher.internal.ast.AlterLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterRemoteDatabaseAlias
+import org.neo4j.cypher.internal.ast.AlterServer
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.Clause
@@ -771,6 +772,17 @@ case class Prettifier(
           case NoOptions               => ""
         }
         s"${x.name} $name$optionString"
+
+      case x @ AlterServer(serverName, options) =>
+        val name = serverName match {
+          case Left(s)          => expr.quote(s)
+          case Right(parameter) => expr(parameter)
+        }
+        val optionString = options match {
+          case OptionsMap(optionsMap)  => optionsToString(optionsMap)
+          case OptionsParam(parameter) => s" OPTIONS ${expr(parameter)}"
+        }
+        s"${x.name} $name SET$optionString"
 
       case x @ RenameServer(serverName, newName) =>
         val from = serverName match {

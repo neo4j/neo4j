@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.AlterDatabase
 import org.neo4j.cypher.internal.ast.AlterDatabaseAction
 import org.neo4j.cypher.internal.ast.AlterLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterRemoteDatabaseAlias
+import org.neo4j.cypher.internal.ast.AlterServer
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AssignImmutablePrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
@@ -946,6 +947,10 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val checkBlocked = plans.AssertNotBlockedDatabaseManagement(ServerManagementAction)
         val assertAllowed = plans.AssertAllowedDbmsActions(checkBlocked, ServerManagementAction)
         Some(plans.LogSystemCommand(plans.EnableServer(assertAllowed, name, options), prettifier.asString(c)))
+
+      case c @ AlterServer(name, options) =>
+        val assertAllowed = plans.AssertAllowedDbmsActions(ServerManagementAction)
+        Some(plans.LogSystemCommand(plans.AlterServer(assertAllowed, name, options), prettifier.asString(c)))
 
       case c @ RenameServer(name, newName) =>
         val checkBlocked = plans.AssertNotBlockedDatabaseManagement(ServerManagementAction)

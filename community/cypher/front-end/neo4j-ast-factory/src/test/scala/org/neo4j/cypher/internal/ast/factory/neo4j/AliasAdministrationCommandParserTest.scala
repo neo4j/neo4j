@@ -711,7 +711,12 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   test("ALTER RANDOM name") {
     assertFailsWithMessage(
       testName,
-      """Invalid input 'RANDOM': expected "ALIAS", "CURRENT", "DATABASE" or "USER" (line 1, column 7 (offset: 6))"""
+      """Invalid input 'RANDOM': expected
+        |  "ALIAS"
+        |  "CURRENT"
+        |  "DATABASE"
+        |  "SERVER"
+        |  "USER" (line 1, column 7 (offset: 6))""".stripMargin
     )
   }
 

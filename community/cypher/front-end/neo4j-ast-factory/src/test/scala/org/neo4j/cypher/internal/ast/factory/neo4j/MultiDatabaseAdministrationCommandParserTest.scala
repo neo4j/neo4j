@@ -737,7 +737,12 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   test("ALTER OR REPLACE DATABASE foo SET ACCESS READ WRITE") {
     assertFailsWithMessage(
       testName,
-      "Invalid input 'OR': expected \"ALIAS\", \"CURRENT\", \"DATABASE\" or \"USER\" (line 1, column 7 (offset: 6))"
+      """Invalid input 'OR': expected
+        |  "ALIAS"
+        |  "CURRENT"
+        |  "DATABASE"
+        |  "SERVER"
+        |  "USER" (line 1, column 7 (offset: 6))""".stripMargin
     )
   }
 

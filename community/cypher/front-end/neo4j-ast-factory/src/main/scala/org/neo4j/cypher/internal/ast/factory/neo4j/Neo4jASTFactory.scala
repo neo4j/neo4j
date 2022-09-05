@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.ast.AlterDatabase
 import org.neo4j.cypher.internal.ast.AlterDatabaseAction
 import org.neo4j.cypher.internal.ast.AlterLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterRemoteDatabaseAlias
+import org.neo4j.cypher.internal.ast.AlterServer
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AscSortItem
@@ -2105,6 +2106,13 @@ class Neo4jASTFactory(query: String)
     options: SimpleEither[util.Map[String, Expression], Parameter]
   ): EnableServer =
     EnableServer(serverName.asScala, asOptionsAst(options))(p)
+
+  override def alterServer(
+    p: InputPosition,
+    serverName: SimpleEither[String, Parameter],
+    options: SimpleEither[util.Map[String, Expression], Parameter]
+  ): AlterServer =
+    AlterServer(serverName.asScala, asOptionsAst(options))(p)
 
   override def renameServer(
     p: InputPosition,

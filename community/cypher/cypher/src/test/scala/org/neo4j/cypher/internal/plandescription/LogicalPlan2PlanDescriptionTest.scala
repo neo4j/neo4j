@@ -138,6 +138,7 @@ import org.neo4j.cypher.internal.logical.plans.AllowedNonAdministrationCommands
 import org.neo4j.cypher.internal.logical.plans.AlterDatabase
 import org.neo4j.cypher.internal.logical.plans.AlterLocalDatabaseAlias
 import org.neo4j.cypher.internal.logical.plans.AlterRemoteDatabaseAlias
+import org.neo4j.cypher.internal.logical.plans.AlterServer
 import org.neo4j.cypher.internal.logical.plans.AlterUser
 import org.neo4j.cypher.internal.logical.plans.Anti
 import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
@@ -173,6 +174,7 @@ import org.neo4j.cypher.internal.logical.plans.CreateRole
 import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateUser
+import org.neo4j.cypher.internal.logical.plans.DeallocateServer
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeletePath
@@ -201,9 +203,11 @@ import org.neo4j.cypher.internal.logical.plans.DropDatabase
 import org.neo4j.cypher.internal.logical.plans.DropDatabaseAlias
 import org.neo4j.cypher.internal.logical.plans.DropIndexOnName
 import org.neo4j.cypher.internal.logical.plans.DropRole
+import org.neo4j.cypher.internal.logical.plans.DropServer
 import org.neo4j.cypher.internal.logical.plans.DropUser
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
+import org.neo4j.cypher.internal.logical.plans.EnableServer
 import org.neo4j.cypher.internal.logical.plans.EnsureNodeExists
 import org.neo4j.cypher.internal.logical.plans.EnsureValidNonSystemDatabase
 import org.neo4j.cypher.internal.logical.plans.EnsureValidNumberOfDatabases
@@ -272,6 +276,7 @@ import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RenameRole
+import org.neo4j.cypher.internal.logical.plans.RenameServer
 import org.neo4j.cypher.internal.logical.plans.RenameUser
 import org.neo4j.cypher.internal.logical.plans.RequireRole
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
@@ -306,6 +311,7 @@ import org.neo4j.cypher.internal.logical.plans.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.logical.plans.ShowPrivileges
 import org.neo4j.cypher.internal.logical.plans.ShowProcedures
 import org.neo4j.cypher.internal.logical.plans.ShowRoles
+import org.neo4j.cypher.internal.logical.plans.ShowServers
 import org.neo4j.cypher.internal.logical.plans.ShowTransactions
 import org.neo4j.cypher.internal.logical.plans.ShowUsers
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
@@ -4795,6 +4801,36 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(AlterDatabase(privLhsLP, NamespacedName("db1")(pos), Some(ReadWriteAccess), None), 1.0),
+      adminPlanDescription
+    )
+
+    assertGood(
+      attach(EnableServer(privLhsLP, Left("s1"), NoOptions), 1.0),
+      adminPlanDescription
+    )
+
+    assertGood(
+      attach(AlterServer(privLhsLP, Left("s1"), NoOptions), 1.0),
+      adminPlanDescription
+    )
+
+    assertGood(
+      attach(RenameServer(privLhsLP, Left("s1"), Left("s2")), 1.0),
+      adminPlanDescription
+    )
+
+    assertGood(
+      attach(DropServer(privLhsLP, Left("s1")), 1.0),
+      adminPlanDescription
+    )
+
+    assertGood(
+      attach(ShowServers(privLhsLP, verbose = false, List.empty[String], None, None), 1.0),
+      adminPlanDescription
+    )
+
+    assertGood(
+      attach(DeallocateServer(privLhsLP, Left("s1")), 1.0),
       adminPlanDescription
     )
 

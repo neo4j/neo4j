@@ -95,7 +95,7 @@ trait OptionsConverter[T] {
   def convert(options: MapValue): T
 }
 
-case object EnableServerOptionsConverter extends OptionsConverter[EnableServerOptions] {
+case object ServerOptionsConverter extends OptionsConverter[ServerOptions] {
   private val ALLOWED_DATABASES = "allowedDatabases"
   private val DENIED_DATABASES = "deniedDatabases"
   private val MODE_CONSTRAINT = "modeConstraint"
@@ -104,8 +104,8 @@ case object EnableServerOptionsConverter extends OptionsConverter[EnableServerOp
 
   override def operation: String = "enable server"
 
-  override def convert(map: MapValue): EnableServerOptions = {
-    map.foldLeft(EnableServerOptions(None, None, None)) {
+  override def convert(map: MapValue): ServerOptions = {
+    map.foldLeft(ServerOptions(None, None, None)) {
       case (ops, (key, value)) =>
         if (key.equalsIgnoreCase(ALLOWED_DATABASES)) {
           value match {
@@ -567,7 +567,7 @@ case class CreateDatabaseOptions(
   seedConfig: Option[String]
 )
 
-case class EnableServerOptions(
+case class ServerOptions(
   allowed: Option[Set[NormalizedDatabaseName]],
   denied: Option[Set[NormalizedDatabaseName]],
   mode: Option[InstanceModeConstraint]

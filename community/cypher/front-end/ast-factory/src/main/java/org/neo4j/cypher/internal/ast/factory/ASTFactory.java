@@ -537,6 +537,11 @@ public interface ASTFactory<
             SimpleEither<String, PARAMETER> serverName,
             SimpleEither<Map<String, EXPRESSION>, PARAMETER> options);
 
+    ADMINISTRATION_COMMAND alterServer(
+            POS p,
+            SimpleEither<String, PARAMETER> serverName,
+            SimpleEither<Map<String, EXPRESSION>, PARAMETER> options);
+
     ADMINISTRATION_COMMAND renameServer(
             POS p, SimpleEither<String, PARAMETER> serverName, SimpleEither<String, PARAMETER> newName);
 

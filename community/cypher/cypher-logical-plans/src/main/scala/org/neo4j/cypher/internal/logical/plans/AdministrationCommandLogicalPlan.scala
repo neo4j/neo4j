@@ -518,6 +518,12 @@ case class EnableServer(
   options: Options
 )(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 
+case class AlterServer(
+  source: AdministrationCommandLogicalPlan,
+  serverName: Either[String, Parameter],
+  options: Options
+)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
+
 case class RenameServer(
   source: AdministrationCommandLogicalPlan,
   serverName: Either[String, Parameter],

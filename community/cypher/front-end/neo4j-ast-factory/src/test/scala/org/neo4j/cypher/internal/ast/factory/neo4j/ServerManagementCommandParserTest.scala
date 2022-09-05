@@ -22,11 +22,13 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.OptionsMap
+import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTMap
 
 class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
   // SHOW
@@ -108,6 +110,30 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
 
   test("ENABLE SERVER") {
     assertFailsWithMessageStart(testName, """Invalid input '': expected "\"", "\'" or a parameter""")
+  }
+
+  // ALTER
+
+  test("ALTER SERVER 'name' SET OPTIONS { modeConstraint: 'PRIMARY'}") {
+    val optionsMap = OptionsMap(Map("modeConstraint" -> literalString("PRIMARY")))
+    assertAst(ast.AlterServer(literal("name"), optionsMap)(defaultPos))
+  }
+
+  test("ALTER SERVER $name SET OPTIONS {}") {
+    val optionsMap = OptionsMap(Map.empty)
+    assertAst(ast.AlterServer(stringParam("name"), optionsMap)(defaultPos))
+  }
+
+  test("ALTER SERVER 'name' SET OPTIONS $map") {
+    assertAst(ast.AlterServer(literal("name"), OptionsParam(parameter("map", CTMap)))(defaultPos))
+  }
+
+  test("ALTER SERVER 'name'") {
+    assertFailsWithMessageStart(testName, """Invalid input '': expected "SET"""")
+  }
+
+  test("ALTER SERVER 'name' SET OPTIONS") {
+    assertFailsWithMessageStart(testName, """Invalid input '': expected "{" or a parameter""")
   }
 
   // RENAME

@@ -3286,6 +3286,7 @@ STATEMENT_WITH_GRAPH AlterCommand() throws Exception:
         | s=AlterAlias( start )
         | s=AlterCurrentUser( start )
         | s=AlterUser( start )
+        | s=AlterServer( start )
     )
     {
         return s;
@@ -4315,6 +4316,18 @@ ADMINISTRATION_COMMAND EnableServerCommand():
     (<OPTIONS> options=MapOrParameter())?
     {
         return astFactory.enableServer( pos( start ), serverName, options );
+    }
+}
+
+ADMINISTRATION_COMMAND AlterServer( Token start ):
+{
+    SimpleEither<String, PARAMETER> serverName = null;
+    SimpleEither<Map<String, EXPRESSION>, PARAMETER> options = null;
+}
+{
+    <SERVER> serverName=StringOrParameter() <SET> <OPTIONS> options=MapOrParameter()
+    {
+        return astFactory.alterServer( pos( start ), serverName, options );
     }
 }
 

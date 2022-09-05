@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.ast.AlterDatabase
 import org.neo4j.cypher.internal.ast.AlterDatabaseAction
 import org.neo4j.cypher.internal.ast.AlterLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterRemoteDatabaseAlias
+import org.neo4j.cypher.internal.ast.AlterServer
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AscSortItem
@@ -1570,7 +1571,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     props <- _listOfProperties
     name <- option(_identifier)
     ifExistsDo <- _ifExistsDo
-    options <- _optionsMapAsEither
+    options <- _optionsMapAsEitherOrNone
     fromDefault <- boolean
     use <- option(_use)
     rangeNodeIndex = CreateRangeNodeIndex(variable, labelName, props, name, ifExistsDo, options, fromDefault, use)(pos)
@@ -1629,7 +1630,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     name <- option(_identifier)
     ifExistsDo <- _ifExistsDo
     containsOn <- boolean
-    options <- _optionsMapAsEither
+    options <- _optionsMapAsEitherOrNone
     use <- option(_use)
     nodeKey = CreateNodeKeyConstraint(
       variable,
@@ -1722,10 +1723,16 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     finalName <- oneOf(NamespacedName(name)(pos), ParameterName(param)(pos))
   } yield finalName
 
-  def _optionsMapAsEither: Gen[Options] = for {
+  def _optionsMapAsEitherOrNone: Gen[Options] = for {
     map <- oneOrMore(tuple(_identifier, _expression)).map(_.toMap)
     param <- _mapParameter
     finalMap <- oneOf(OptionsMap(map), OptionsParam(param), NoOptions)
+  } yield finalMap
+
+  def _optionsMapAsEither: Gen[Options] = for {
+    map <- oneOrMore(tuple(_identifier, _expression)).map(_.toMap)
+    param <- _mapParameter
+    finalMap <- oneOf(OptionsMap(map), OptionsParam(param))
   } yield finalMap
 
   def _optionalMapAsEither: Gen[Either[Map[String, Expression], Parameter]] = for {
@@ -2141,7 +2148,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     dbName <- _databaseNameNoNamespace
     ifExistsDo <- _ifExistsDo
     wait <- _waitUntilComplete
-    options <- _optionsMapAsEither
+    options <- _optionsMapAsEitherOrNone
     topology <- option(_topology)
   } yield CreateDatabase(dbName, ifExistsDo, options, wait, topology)(pos)
 
@@ -2269,8 +2276,13 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _enableServer: Gen[EnableServer] = for {
     serverName <- _nameAsEither
-    options <- _optionsMapAsEither
+    options <- _optionsMapAsEitherOrNone
   } yield EnableServer(serverName, options)(pos)
+
+  def _alterServer: Gen[AlterServer] = for {
+    serverName <- _nameAsEither
+    options <- _optionsMapAsEither
+  } yield AlterServer(serverName, options)(pos)
 
   def _renameServer: Gen[RenameServer] = for {
     serverName <- _nameAsEither
