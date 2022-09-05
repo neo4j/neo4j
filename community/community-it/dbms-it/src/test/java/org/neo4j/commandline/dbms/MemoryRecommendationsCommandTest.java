@@ -107,7 +107,7 @@ class MemoryRecommendationsCommandTest {
                                 USAGE
 
                                 memory-recommendation [-h] [--docker] [--expand-commands] [--verbose]
-                                                      [--additional-config=<path>] [--memory=<size>]
+                                                      [--additional-config=<file>] [--memory=<size>]
 
                                 DESCRIPTION
 
@@ -121,7 +121,7 @@ class MemoryRecommendationsCommandTest {
 
                                 OPTIONS
 
-                                      --additional-config=<path>
+                                      --additional-config=<file>
                                                           Configuration file with additional configuration.
                                       --docker            The recommended memory settings are produced in the
                                                             form of environment variables that can be directly

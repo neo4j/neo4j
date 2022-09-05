@@ -81,7 +81,7 @@ class UnbindCommandTest {
 
                 USAGE
 
-                unbind [-h] [--expand-commands] [--verbose] [--additional-config=<path>]
+                unbind [-h] [--expand-commands] [--verbose] [--additional-config=<file>]
 
                 DESCRIPTION
 
@@ -89,7 +89,7 @@ class UnbindCommandTest {
                 itself.
 
                 OPTIONS
-                      --additional-config=<path>
+                      --additional-config=<file>
                                           Configuration file with additional configuration.
                       --expand-commands   Allow command expansion in config value evaluation.
                   -h, --help              Show this help message and exit.

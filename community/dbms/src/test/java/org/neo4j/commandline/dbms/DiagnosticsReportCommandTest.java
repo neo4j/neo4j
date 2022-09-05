@@ -43,8 +43,8 @@ class DiagnosticsReportCommandTest {
 
                 USAGE
 
-                report [-h] [--expand-commands] [--ignore-disk-space-check] [--list]
-                       [--verbose] [--additional-config=<path>] [--to-path=<path>]
+                report [-h] [--expand-commands] [--list] [--verbose] [--ignore-disk-space-check
+                       [=true|false]] [--additional-config=<file>] [--to-path=<path>]
                        [<classifier>...]
 
                 DESCRIPTION
@@ -60,12 +60,13 @@ class DiagnosticsReportCommandTest {
 
                 OPTIONS
 
-                      --additional-config=<path>
+                      --additional-config=<file>
                                           Configuration file with additional configuration.
                       --expand-commands   Allow command expansion in config value evaluation.
                   -h, --help              Show this help message and exit.
-                      --ignore-disk-space-check
+                      --ignore-disk-space-check[=true|false]
                                           Ignore disk full warning
+                                            Default: false
                       --list              List all available classifiers
                       --to-path=<path>    Destination directory for reports. Defaults to a
                                             system tmp directory.

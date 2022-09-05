@@ -80,8 +80,9 @@ public class StoreInfoCommand extends AbstractAdminCommand {
             names = "--format",
             arity = "1",
             defaultValue = "text",
-            description = "The format of the returned information. Either 'text' or 'json'.",
+            description = "The format of the returned information.",
             showDefaultValue = CommandLine.Help.Visibility.ALWAYS,
+            paramLabel = "text|json",
             converter = FormatConverter.class)
     private boolean structuredFormat;
 

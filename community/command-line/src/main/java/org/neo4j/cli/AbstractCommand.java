@@ -38,7 +38,7 @@ import picocli.CommandLine.Spec;
         parameterListHeading = "%n@|bold,underline PARAMETERS|@%n%n",
         showDefaultValues = true)
 public abstract class AbstractCommand implements Callable<Integer> {
-    @Option(names = "--verbose", arity = "0", description = "Enable verbose output.")
+    @Option(names = "--verbose", description = "Enable verbose output.")
     protected boolean verbose;
 
     @Option(

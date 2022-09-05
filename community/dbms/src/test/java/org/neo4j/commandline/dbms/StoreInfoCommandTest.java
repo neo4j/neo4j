@@ -105,8 +105,8 @@ class StoreInfoCommandTest {
 
                 USAGE
 
-                info [-h] [--expand-commands] [--verbose] [--additional-config=<path>]
-                     [--format=<structuredFormat>] [--from-path=<path>] [<database>]
+                info [-h] [--expand-commands] [--verbose] [--additional-config=<file>]
+                     [--format=text|json] [--from-path=<path>] [<database>]
 
                 DESCRIPTION
 
@@ -121,12 +121,10 @@ class StoreInfoCommandTest {
 
                 OPTIONS
 
-                      --additional-config=<path>
+                      --additional-config=<file>
                                            Configuration file with additional configuration.
                       --expand-commands    Allow command expansion in config value evaluation.
-                      --format=<structuredFormat>
-                                           The format of the returned information. Either
-                                             'text' or 'json'.
+                      --format=text|json   The format of the returned information.
                                              Default: text
                       --from-path=<path>   Path to databases directory.
                   -h, --help               Show this help message and exit.

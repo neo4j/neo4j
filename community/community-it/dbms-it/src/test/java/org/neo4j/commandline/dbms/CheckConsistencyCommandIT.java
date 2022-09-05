@@ -91,7 +91,7 @@ class CheckConsistencyCommandIT {
 
                         USAGE
 
-                        check [-h] [--expand-commands] [--verbose] [--additional-config=<path>]
+                        check [-h] [--expand-commands] [--verbose] [--additional-config=<file>]
                               [--check-graph=<true/false>] [--check-index-structure=<true/false>]
                               [--check-indexes=<true/false>] [--report-dir=<path>]
                               (--database=<database> | --backup=<path>)
@@ -107,7 +107,7 @@ class CheckConsistencyCommandIT {
 
                         OPTIONS
 
-                              --additional-config=<path>
+                              --additional-config=<file>
                                                     Configuration file with additional configuration.
                               --backup=<path>       Path to backup to check consistency of. Cannot be
                                                       used together with --database.

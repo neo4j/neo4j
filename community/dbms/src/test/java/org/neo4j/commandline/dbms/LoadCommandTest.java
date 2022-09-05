@@ -97,8 +97,9 @@ class LoadCommandTest {
 
                 USAGE
 
-                load [-h] [--expand-commands] [--info] [--overwrite-destination] [--verbose]
-                     [--additional-config=<path>] [--from-path=<path> | --from-stdin] <database>
+                load [-h] [--expand-commands] [--info] [--verbose] [--overwrite-destination
+                     [=true|false]] [--additional-config=<file>] [--from-path=<path> |
+                     --from-stdin] <database>
 
                 DESCRIPTION
 
@@ -118,7 +119,7 @@ class LoadCommandTest {
 
                 OPTIONS
 
-                      --additional-config=<path>
+                      --additional-config=<file>
                                            Configuration file with additional configuration.
                       --expand-commands    Allow command expansion in config value evaluation.
                       --from-path=<path>   Path to directory containing archive(s) created with
@@ -127,8 +128,9 @@ class LoadCommandTest {
                   -h, --help               Show this help message and exit.
                       --info               Print meta-data information about the archive file,
                                              instead of loading the contained database.
-                      --overwrite-destination
+                      --overwrite-destination[=true|false]
                                            If an existing database should be replaced.
+                                             Default: false
                       --verbose            Enable verbose output.""");
     }
 

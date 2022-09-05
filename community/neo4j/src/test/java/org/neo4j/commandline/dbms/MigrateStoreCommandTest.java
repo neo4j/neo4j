@@ -43,8 +43,9 @@ class MigrateStoreCommandTest {
 
                          USAGE
 
-                         migrate [-h] [--expand-commands] [--verbose] [--additional-config=<path>]
-                                 [--pagecache=<size>] [--to-format=<format name>] <database>
+                         migrate [-h] [--expand-commands] [--verbose] [--additional-config=<file>]
+                                 [--pagecache=<size>] [--to-format=standard|high_limit|aligned]
+                                 <database>
 
                          DESCRIPTION
 
@@ -59,7 +60,7 @@ class MigrateStoreCommandTest {
 
                          OPTIONS
 
-                               --additional-config=<path>
+                               --additional-config=<file>
                                                     Configuration file with additional configuration.
                                --expand-commands    Allow command expansion in config value evaluation.
                            -h, --help               Show this help message and exit.
@@ -68,7 +69,7 @@ class MigrateStoreCommandTest {
                                                       size of the database proportionally increase
                                                       performance.
                                                       Default: 8m
-                               --to-format=<format name>
+                               --to-format=standard|high_limit|aligned
                                                     Name of the format to migrate the store to. If this
                                                       option is not specified, the tool will migrate the
                                                       database store to the latest version of the format

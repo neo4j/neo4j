@@ -53,7 +53,7 @@ public abstract class AbstractAdminCommand extends AbstractCommand {
 
     @CommandLine.Option(
             names = "--additional-config",
-            paramLabel = "<path>",
+            paramLabel = "<file>",
             description = "Configuration file with additional configuration.")
     private Path additionalConfig;
 

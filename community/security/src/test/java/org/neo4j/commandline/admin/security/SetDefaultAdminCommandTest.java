@@ -76,7 +76,7 @@ class SetDefaultAdminCommandTest {
                                 USAGE
 
                                 set-default-admin [-h] [--expand-commands] [--verbose]
-                                                  [--additional-config=<path>] <username>
+                                                  [--additional-config=<file>] <username>
 
                                 DESCRIPTION
 
@@ -89,7 +89,7 @@ class SetDefaultAdminCommandTest {
 
                                 OPTIONS
 
-                                      --additional-config=<path>
+                                      --additional-config=<file>
                                                           Configuration file with additional configuration.
                                       --expand-commands   Allow command expansion in config value evaluation.
                                   -h, --help              Show this help message and exit.

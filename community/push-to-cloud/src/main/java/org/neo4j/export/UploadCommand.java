@@ -55,6 +55,7 @@ public class UploadCommand extends AbstractAdminCommand {
 
     @Option(
             names = "--from-path",
+            paramLabel = "<path>",
             description =
                     "'/path/to/directory-containing-dump' Path to a directory containing a database dump to upload.",
             required = true)
@@ -62,6 +63,7 @@ public class UploadCommand extends AbstractAdminCommand {
 
     @Option(
             names = "--to-uri",
+            paramLabel = "<uri>",
             arity = "1",
             required = true,
             description = "'neo4j://mydatabaseid.databases.neo4j.io' Bolt URI of target database")
@@ -83,11 +85,17 @@ public class UploadCommand extends AbstractAdminCommand {
                             + "Alternatively NEO4J_PASSWORD environment variable can be used.")
     private String password;
 
-    @Option(names = "--overwrite-destination", description = "Overwrite the data in the target database.")
+    @Option(
+            names = "--overwrite-destination",
+            arity = "0..1",
+            paramLabel = "true|false",
+            showDefaultValue = CommandLine.Help.Visibility.ALWAYS,
+            description = "Overwrite the data in the target database.")
     private boolean overwrite;
 
     @Option(
             names = "--to",
+            paramLabel = "<destination>",
             description = "The destination for the upload.",
             defaultValue = "aura",
             showDefaultValue = CommandLine.Help.Visibility.ALWAYS)

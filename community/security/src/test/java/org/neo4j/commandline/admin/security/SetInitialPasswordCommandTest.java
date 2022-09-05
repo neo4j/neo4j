@@ -78,8 +78,9 @@ class SetInitialPasswordCommandTest {
                         """
                                 USAGE
 
-                                set-initial-password [-h] [--expand-commands] [--require-password-change]
-                                                     [--verbose] [--additional-config=<path>] <password>
+                                set-initial-password [-h] [--expand-commands] [--verbose]
+                                                     [--require-password-change[=true|false]]
+                                                     [--additional-config=<file>] <password>
 
                                 DESCRIPTION
 
@@ -93,13 +94,14 @@ class SetInitialPasswordCommandTest {
 
                                 OPTIONS
 
-                                      --additional-config=<path>
+                                      --additional-config=<file>
                                                           Configuration file with additional configuration.
                                       --expand-commands   Allow command expansion in config value evaluation.
                                   -h, --help              Show this help message and exit.
-                                      --require-password-change
+                                      --require-password-change[=true|false]
                                                           Require the user to change their password on first
                                                             login.
+                                                            Default: false
                                       --verbose           Enable verbose output.""");
     }
 

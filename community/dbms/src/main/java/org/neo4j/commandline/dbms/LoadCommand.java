@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import static org.neo4j.commandline.Util.wrapIOException;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static picocli.CommandLine.Command;
+import static picocli.CommandLine.Help.Visibility.ALWAYS;
 import static picocli.CommandLine.Option;
 
 import java.io.IOException;
@@ -82,7 +83,12 @@ public class LoadCommand extends AbstractAdminCommand {
         private boolean stdIn;
     }
 
-    @Option(names = "--overwrite-destination", arity = "0", description = "If an existing database should be replaced.")
+    @Option(
+            names = "--overwrite-destination",
+            arity = "0..1",
+            paramLabel = "true|false",
+            showDefaultValue = ALWAYS,
+            description = "If an existing database should be replaced.")
     private boolean force;
 
     @Option(

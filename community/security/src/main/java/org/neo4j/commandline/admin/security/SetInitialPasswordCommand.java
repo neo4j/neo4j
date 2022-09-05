@@ -21,6 +21,7 @@ package org.neo4j.commandline.admin.security;
 
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
 import static picocli.CommandLine.Command;
+import static picocli.CommandLine.Help.Visibility.ALWAYS;
 import static picocli.CommandLine.Option;
 import static picocli.CommandLine.Parameters;
 
@@ -49,6 +50,9 @@ import org.neo4j.util.VisibleForTesting;
 public class SetInitialPasswordCommand extends AbstractAdminCommand implements PasswordCommand {
     @Option(
             names = "--require-password-change",
+            arity = "0..1",
+            paramLabel = "true|false",
+            showDefaultValue = ALWAYS,
             defaultValue = "false",
             description = "Require the user to change their password on first login.")
     private boolean changeRequired;

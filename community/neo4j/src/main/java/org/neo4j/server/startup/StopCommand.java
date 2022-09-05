@@ -29,6 +29,7 @@ public class StopCommand extends AbstractCommand {
 
     @Option(
             names = "--shutdown-timeout",
+            paramLabel = "<seconds>",
             description =
                     "A time interval in seconds for how long the command will wait for the DBMS process to stop. The default is "
                             + Bootloader.DEFAULT_NEO4J_SHUTDOWN_TIMEOUT

@@ -23,6 +23,7 @@ import static java.lang.String.join;
 import static org.apache.commons.text.StringEscapeUtils.escapeCsv;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
 import static picocli.CommandLine.Command;
+import static picocli.CommandLine.Help.Visibility.ALWAYS;
 import static picocli.CommandLine.Option;
 import static picocli.CommandLine.Parameters;
 
@@ -66,13 +67,15 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
     };
     private static final DateTimeFormatter filenameDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmmss");
 
-    @Option(names = "--list", arity = "0", description = "List all available classifiers")
+    @Option(names = "--list", description = "List all available classifiers")
     private boolean list;
 
     @Option(
             names = "--ignore-disk-space-check",
             defaultValue = "false",
-            arity = "0",
+            arity = "0..1",
+            paramLabel = "true|false",
+            showDefaultValue = ALWAYS,
             description = "Ignore disk full warning")
     private boolean ignoreDiskSpaceCheck;
 

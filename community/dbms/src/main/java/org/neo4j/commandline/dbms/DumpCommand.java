@@ -24,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 import static picocli.CommandLine.Command;
+import static picocli.CommandLine.Help.Visibility.ALWAYS;
 import static picocli.CommandLine.Option;
 
 import java.io.Closeable;
@@ -95,7 +96,9 @@ public class DumpCommand extends AbstractAdminCommand {
 
     @Option(
             names = "--overwrite-destination",
-            arity = "0",
+            arity = "0..1",
+            paramLabel = "true|false",
+            showDefaultValue = ALWAYS,
             description = "Overwrite any existing dump file in the destination folder.")
     private boolean overwriteDestination;
 
