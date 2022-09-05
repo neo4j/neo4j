@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.eclipse.collections.api.iterator.IntIterator;
+import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
+import static org.neo4j.storageengine.api.LongReference.NULL_REFERENCE;
+
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -39,7 +40,6 @@ import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.Degrees;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
-import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
@@ -47,9 +47,6 @@ import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.util.EagerDegrees;
 import org.neo4j.storageengine.util.SingleDegree;
-
-import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
-import static org.neo4j.storageengine.api.LongReference.NULL_REFERENCE;
 
 class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements NodeCursor
 {
@@ -284,8 +281,14 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
 
     private void fillDegrees( RelationshipSelection selection, Degrees.Mutator degrees )
     {
-        boolean hasChanges = hasChanges();
-        NodeState nodeTxState = hasChanges ? read.txState().getNodeState( nodeReference() ) : null;
+        if ( hasChanges() )
+        {
+            var nodeTxState = read.txState().getNodeState( nodeReference() );
+            if ( nodeTxState != null )
+            {
+                nodeTxState.fillDegrees( selection, degrees );
+            }
+        }
         if ( currentAddedInTx == NO_ID )
         {
             if ( allowsTraverseAll() )
@@ -296,11 +299,6 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
             {
                 readRestrictedDegrees( selection, degrees );
             }
-        }
-        if ( nodeTxState != null )
-        {
-                // Then add the remaining types that's only present in the tx-state
-                nodeTxState.fillDegrees(selection, degrees);
         }
     }
 
