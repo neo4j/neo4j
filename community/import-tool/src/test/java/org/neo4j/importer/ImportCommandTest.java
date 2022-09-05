@@ -64,7 +64,7 @@ class ImportCommandTest {
         final var help = getUsageHelp(command);
         // All non-hidden subcommands
         var subcommands = help.subcommands().keySet();
-        var expectedSubcommands = Set.of("full", "help");
+        var expectedSubcommands = Set.of("full", "incremental", "help");
         assertThat(subcommands).isEqualTo(expectedSubcommands);
     }
 
@@ -120,7 +120,7 @@ class ImportCommandTest {
         final var help = getUsageHelp(command);
         final var options = getOptions(help);
         var expectedOptions = new ArrayList<String>(List.of(sharedOptions));
-        expectedOptions.addAll(List.of("--stage"));
+        expectedOptions.addAll(List.of("--stage", "--force"));
         final var positionals = getPositionals(help);
         final var expectedPositionals = List.of(sharedPositionals);
 
@@ -149,7 +149,7 @@ class ImportCommandTest {
     @Test
     void shouldAllowAliasesForIncrementalStage() {
         var tempFileName = testDir.createFile("dummy").toString();
-        var requiredArgs = List.of("--nodes", tempFileName, "--relationships", tempFileName);
+        var requiredArgs = List.of("--force", "--nodes", tempFileName, "--relationships", tempFileName);
 
         assertIncrementalStageAliases(
                 requiredArgs, List.of("prepare", "PREPARE", "1"), CsvImporter.IncrementalStage.prepare);

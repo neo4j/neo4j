@@ -130,6 +130,7 @@ class AdminCommandsIT {
                 "--nodes=" + testDirectory.createFile("foo.csv").toAbsolutePath());
         assertExpansionError(
                 new ImportCommand.Incremental(context),
+                "--force",
                 "--nodes=" + testDirectory.createFile("foo.csv").toAbsolutePath());
         assertExpansionError(
                 new DumpCommand(context, new Dumper(context.err())), "test", "--to-path", dumpFolder.toString());

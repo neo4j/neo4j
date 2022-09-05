@@ -508,7 +508,7 @@ public class ImportCommand {
         }
     }
 
-    @Command(name = "incremental", description = "Incremental import into an existing database.", hidden = true)
+    @Command(name = "incremental", description = "Incremental import into an existing database.")
     public static class Incremental extends Base {
         @Option(
                 names = "--stage",
@@ -521,12 +521,20 @@ public class ImportCommand {
                 converter = StageConverter.class)
         CsvImporter.IncrementalStage stage = CsvImporter.IncrementalStage.all;
 
+        @Option(names = "--force", required = true, description = "Confirm incremental import by setting this flag")
+        boolean forced;
+
         public Incremental(ExecutionContext ctx) {
             super(ctx);
         }
 
         @Override
         public void execute() throws Exception {
+            if (!forced) {
+                System.err.println(
+                        "ERROR: Incremental import needs to be used with care. Please confirm by specifying --force");
+                throw new IllegalArgumentException("Missing force");
+            }
             doExecute(true, stage, null, false);
         }
 
