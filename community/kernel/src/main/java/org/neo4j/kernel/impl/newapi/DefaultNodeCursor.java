@@ -260,17 +260,6 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
     {
         boolean hasChanges = hasChanges();
         NodeState nodeTxState = hasChanges ? read.txState().getNodeState( nodeReference() ) : null;
-        if ( currentAddedInTx == NO_ID )
-        {
-            if ( allowsTraverseAll() )
-            {
-                storeCursor.degrees( selection, degrees, true );
-            }
-            else
-            {
-                storeCursor.degrees( new SecureRelationshipSelection( selection ), degrees, false );
-            }
-        }
         if ( nodeTxState != null )
         {
             // Then add the remaining types that's only present in the tx-state
@@ -288,6 +277,17 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
                         return;
                     }
                 }
+            }
+        }
+        if ( currentAddedInTx == NO_ID )
+        {
+            if ( allowsTraverseAll() )
+            {
+                storeCursor.degrees( selection, degrees, true );
+            }
+            else
+            {
+                storeCursor.degrees( new SecureRelationshipSelection( selection ), degrees, false );
             }
         }
     }
