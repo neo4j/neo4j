@@ -214,7 +214,7 @@ sealed class TransactionBoundQueryContext(
 
       if (!providerIndexType.equals(indexType)) {
         val indexProviders =
-          schemaWrite.indexProvidersByType(indexType).asScala.toList.map(_.name()).mkString("['", "', '", "']")
+          schemaWrite.indexProvidersByType(indexType).asScala.toList.map(_.name()).sorted.mkString("['", "', '", "']")
         val indexDescription = if (providerIndexType.isLookup) "token lookup" else providerIndexType.name().toLowerCase
         throw new InvalidArgumentsException(
           s"""Could not create $schemaDescription with specified index provider '$providerString'.

@@ -247,14 +247,15 @@ object ShowIndexesCommand {
         }
       case IndexType.TEXT =>
         val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
+        val optionsString = s"{indexConfig: {}, indexProvider: '$providerName'}"
 
         entityType match {
           case EntityType.NODE =>
             val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
-            s"CREATE TEXT INDEX $escapedName FOR (n$labelsOrTypesWithColons) ON ($escapedNodeProperties)"
+            s"CREATE TEXT INDEX $escapedName FOR (n$labelsOrTypesWithColons) ON ($escapedNodeProperties) OPTIONS $optionsString"
           case EntityType.RELATIONSHIP =>
             val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
-            s"CREATE TEXT INDEX $escapedName FOR ()-[r$labelsOrTypesWithColons]-() ON ($escapedRelProperties)"
+            s"CREATE TEXT INDEX $escapedName FOR ()-[r$labelsOrTypesWithColons]-() ON ($escapedRelProperties) OPTIONS $optionsString"
           case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
         }
       case IndexType.POINT =>
