@@ -136,7 +136,6 @@ public class SecurityLogHelper {
                     && Objects.equals(expected.expectedLevel, map.get("level"))
                     && Objects.equals(expected.expectedSource, map.get("source"))
                     && Objects.equals(expected.expectedDatabase, map.get("database"))
-                    && Objects.equals(expected.expectedExecutingUser, map.get("username"))
                     && Objects.equals(expected.expectedExecutingUser, map.get("executingUser"))
                     && Objects.equals(expected.expectedAuthenticatedUser, map.get("authenticatedUser"))
                     && Objects.equals(expected.expectedMessage, map.get("message"));
@@ -147,7 +146,6 @@ public class SecurityLogHelper {
             assertEquals(expected.expectedLevel, map.get("level"), "'level' mismatch");
             assertEquals(expected.expectedSource, map.get("source"), "'source' mismatch");
             assertEquals(expected.expectedDatabase, map.get("database"), "'database' mismatch");
-            assertEquals(expected.expectedExecutingUser, map.get("username"), "'username' mismatch");
             assertEquals(expected.expectedExecutingUser, map.get("executingUser"), "'executingUser' mismatch");
             assertEquals(
                     expected.expectedAuthenticatedUser, map.get("authenticatedUser"), "'authenticatedUser' mismatch");

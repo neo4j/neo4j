@@ -142,7 +142,6 @@ public abstract class AbstractSecurityLog {
                 with("database", database);
             }
             if (executingUser != null && executingUser.length() > 0) {
-                with("username", executingUser);
                 with("executingUser", executingUser);
             }
             if (authenticatedUser != null && authenticatedUser.length() > 0) {
