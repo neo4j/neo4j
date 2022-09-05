@@ -41,9 +41,12 @@ import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTString
@@ -272,42 +275,7 @@ object VerifyBestPlan {
       }
     }
 
-    /**
-     * Tests whether there exists a predicate on the given property that can be used by a text index. And if not, return the predicates searched through.
-     */
-    def hasPropertyOfTypeText(
-      variable: Variable,
-      propertyName: PropertyKeyName,
-      semanticTable: SemanticTable,
-      queryGraph: QueryGraph
-    ): Either[Set[IndexCompatiblePredicate], Boolean] = {
-      val predicates = queryGraph.selections.flatPredicates.toSet
-      val arguments: Set[LogicalVariable] = queryGraph.argumentIds.map(Variable(_)(InputPosition.NONE))
-      val matchingPredicates = IndexCompatiblePredicatesProvider.findExplicitCompatiblePredicates(
-        arguments,
-        predicates,
-        semanticTable
-      ).collect {
-        case pred @ IndexCompatiblePredicate(`variable`, LogicalProperty(_, `propertyName`), _, _, _, _, _, _, _, _) =>
-          pred
-      }
-      if (matchingPredicates.exists(_.cypherType == CTString)) {
-        Right(true)
-      } else {
-        Left(matchingPredicates)
-      }
-    }
-
-    val hintsForWrongType = query.asSinglePlannerQuery.allPlannerQueries.flatMap(query =>
-      query.queryGraph.allHints.flatMap {
-        case hint @ UsingIndexHint(variable, _, Seq(property), _, UsingTextIndexType) =>
-          hasPropertyOfTypeText(variable, property, semanticTable, query.queryGraph).left.toOption.map(
-            WrongPropertyTypeHint(hint, _)
-          )
-
-        case _ => None
-      }
-    )
+    val hintsForWrongType = collectWrongPropertyTypeHints(query, semanticTable)
 
     val hintsWithoutIndex = query.allHints.flatMap {
       // using index name:label(property1,property2)
@@ -333,12 +301,71 @@ object VerifyBestPlan {
       // don't care about other hints
       case _ => None
     }
-    UnfulfillableIndexHints(hintsWithoutIndex, hintsForWrongType)
+    UnfulfillableIndexHints(hintsWithoutIndex, hintsForWrongType.toVector)
   }
 
   private def findUnfulfillableJoinHints(query: PlannerQueryPart): Set[UsingJoinHint] = {
     query.allHints.collect {
       case hint: UsingJoinHint => hint
+    }
+  }
+
+  private def collectWrongPropertyTypeHints(
+    query: PlannerQueryPart,
+    semanticTable: SemanticTable
+  ): Set[WrongPropertyTypeHint] = {
+    query match {
+      case query: SinglePlannerQuery => query.fold(Set.empty[WrongPropertyTypeHint]) {
+          case (acc, query) =>
+            val qgHints = collectWrongPropertyTypeHintsFromQg(query.queryGraph, semanticTable)
+            val optionalQgHints =
+              query.queryGraph.optionalMatches.flatMap(collectWrongPropertyTypeHintsFromQg(_, semanticTable))
+            val horizonHints = query.horizon match {
+              case subquery: CallSubqueryHorizon => collectWrongPropertyTypeHints(subquery.callSubquery, semanticTable)
+              case _                             => Set.empty
+            }
+            acc ++ qgHints ++ optionalQgHints ++ horizonHints
+        }
+      case union: UnionQuery =>
+        collectWrongPropertyTypeHints(union.query, semanticTable) ++
+          collectWrongPropertyTypeHints(union.part, semanticTable)
+    }
+  }
+
+  private def collectWrongPropertyTypeHintsFromQg(
+    queryGraph: QueryGraph,
+    semanticTable: SemanticTable
+  ): Set[WrongPropertyTypeHint] = {
+    queryGraph.hints.flatMap {
+      case hint @ UsingIndexHint(variable, _, Seq(property), _, UsingTextIndexType) =>
+        hasPropertyOfTypeText(variable, property, semanticTable, queryGraph).left.toOption.map(
+          WrongPropertyTypeHint(hint, _)
+        )
+
+      case _ => None
+    }
+  }
+
+  /**
+   * Tests whether there  exists a predicate on the given property that can be used by a text index. And if not, return the predicates searched through.
+   */
+  private def hasPropertyOfTypeText(
+    variable: Variable,
+    propertyName: PropertyKeyName,
+    semanticTable: SemanticTable,
+    queryGraph: QueryGraph
+  ): Either[Set[IndexCompatiblePredicate], Boolean] = {
+    val predicates = queryGraph.selections.flatPredicates.toSet
+    val arguments: Set[LogicalVariable] = queryGraph.argumentIds.map(Variable(_)(InputPosition.NONE))
+    val matchingPredicates =
+      IndexCompatiblePredicatesProvider.findExplicitCompatiblePredicates(arguments, predicates, semanticTable).collect {
+        case pred @ IndexCompatiblePredicate(`variable`, LogicalProperty(_, `propertyName`), _, _, _, _, _, _, _, _) =>
+          pred
+      }
+    if (matchingPredicates.exists(_.cypherType == CTString)) {
+      Right(true)
+    } else {
+      Left(matchingPredicates)
     }
   }
 }
