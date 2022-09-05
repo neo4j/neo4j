@@ -87,7 +87,11 @@ trait SinglePlannerQuery extends PlannerQueryPart {
     copy(input = Some(queryInput), queryGraph = queryGraph.copy(argumentIds = queryGraph.argumentIds ++ queryInput))
 
   override def withoutHints(hintsToIgnore: Set[Hint]): SinglePlannerQuery = {
-    copy(queryGraph = queryGraph.withoutHints(hintsToIgnore), tail = tail.map(x => x.withoutHints(hintsToIgnore)))
+    copy(
+      queryGraph = queryGraph.withoutHints(hintsToIgnore),
+      horizon = horizon.withoutHints(hintsToIgnore),
+      tail = tail.map(x => x.withoutHints(hintsToIgnore))
+    )
   }
 
   def withHorizon(horizon: QueryHorizon): SinglePlannerQuery = copy(horizon = horizon)
@@ -135,9 +139,9 @@ trait SinglePlannerQuery extends PlannerQueryPart {
 
   def isCoveredByHints(other: SinglePlannerQuery): Boolean = allHints.forall(other.allHints.contains)
 
-  override def allHints: Set[Hint] = tail match {
-    case Some(tailPlannerQuery) => queryGraph.allHints ++ tailPlannerQuery.allHints
-    case None => queryGraph.allHints
+  override def allHints: Set[Hint] = {
+    val headHints = queryGraph.allHints ++ horizon.allHints
+    tail.fold(headHints)(_.allHints ++ headHints)
   }
 
   override def numHints: Int = allHints.size
