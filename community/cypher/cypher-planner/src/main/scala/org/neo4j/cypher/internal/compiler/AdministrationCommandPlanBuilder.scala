@@ -79,6 +79,7 @@ import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
 import org.neo4j.cypher.internal.ast.RenameRole
 import org.neo4j.cypher.internal.ast.RenameRoleAction
+import org.neo4j.cypher.internal.ast.RenameServer
 import org.neo4j.cypher.internal.ast.RenameUser
 import org.neo4j.cypher.internal.ast.RenameUserAction
 import org.neo4j.cypher.internal.ast.Return
@@ -946,6 +947,10 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case c @ EnableServer(name, options) =>
         val assertAllowed = plans.AssertAllowedDbmsActions(ServerManagementAction)
         Some(plans.LogSystemCommand(plans.EnableServer(assertAllowed, name, options), prettifier.asString(c)))
+
+      case c @ RenameServer(name, newName) =>
+        val assertAllowed = plans.AssertAllowedDbmsActions(ServerManagementAction)
+        Some(plans.LogSystemCommand(plans.RenameServer(assertAllowed, name, newName), prettifier.asString(c)))
 
       case c @ DropServer(name) =>
         val assertAllowed = plans.AssertAllowedDbmsActions(ServerManagementAction)

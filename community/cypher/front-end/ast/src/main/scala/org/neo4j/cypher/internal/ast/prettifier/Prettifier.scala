@@ -138,6 +138,7 @@ import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.RemoveLabelItem
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.RenameRole
+import org.neo4j.cypher.internal.ast.RenameServer
 import org.neo4j.cypher.internal.ast.RenameUser
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
@@ -766,6 +767,17 @@ case class Prettifier(
           case NoOptions               => ""
         }
         s"${x.name} $name$optionString"
+
+      case x @ RenameServer(serverName, newName) =>
+        val from = serverName match {
+          case Left(s)          => expr.quote(s)
+          case Right(parameter) => expr(parameter)
+        }
+        val to = newName match {
+          case Left(s)          => expr.quote(s)
+          case Right(parameter) => expr(parameter)
+        }
+        s"${x.name} $from TO $to"
 
       case x @ DropServer(serverName) =>
         val name = serverName match {

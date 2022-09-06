@@ -194,6 +194,7 @@ import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
 import org.neo4j.cypher.internal.ast.RenameRole
 import org.neo4j.cypher.internal.ast.RenameRoleAction
+import org.neo4j.cypher.internal.ast.RenameServer
 import org.neo4j.cypher.internal.ast.RenameUser
 import org.neo4j.cypher.internal.ast.RenameUserAction
 import org.neo4j.cypher.internal.ast.Return
@@ -2251,6 +2252,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _serverCommand: Gen[AdministrationCommand] = oneOf(
     _enableServer,
+    _renameServer,
     _dropServer,
     _deallocateServer,
     _showServers
@@ -2260,6 +2262,11 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     serverName <- _nameAsEither
     options <- _optionsMapAsEither
   } yield EnableServer(serverName, options)(pos)
+
+  def _renameServer: Gen[RenameServer] = for {
+    serverName <- _nameAsEither
+    newName <- _nameAsEither
+  } yield RenameServer(serverName, newName)(pos)
 
   def _showServers: Gen[ShowServers] = for {
     yields <- _eitherYieldOrWhere

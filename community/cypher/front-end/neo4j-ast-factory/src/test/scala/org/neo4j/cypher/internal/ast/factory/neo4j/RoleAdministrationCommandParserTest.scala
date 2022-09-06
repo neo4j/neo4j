@@ -504,11 +504,17 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("RENAME IF EXISTS ROLE foo TO bar") {
-    assertFailsWithMessage(testName, "Invalid input 'IF': expected \"ROLE\" or \"USER\" (line 1, column 8 (offset: 7))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input 'IF': expected \"ROLE\", \"SERVER\" or \"USER\" (line 1, column 8 (offset: 7))"
+    )
   }
 
   test("RENAME OR REPLACE ROLE foo TO bar") {
-    assertFailsWithMessage(testName, "Invalid input 'OR': expected \"ROLE\" or \"USER\" (line 1, column 8 (offset: 7))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input 'OR': expected \"ROLE\", \"SERVER\" or \"USER\" (line 1, column 8 (offset: 7))"
+    )
   }
 
   //  Dropping role

@@ -210,6 +210,7 @@ import org.neo4j.cypher.internal.ast.RemoveRoleAction
 import org.neo4j.cypher.internal.ast.RemovedSyntax
 import org.neo4j.cypher.internal.ast.RenameRole
 import org.neo4j.cypher.internal.ast.RenameRoleAction
+import org.neo4j.cypher.internal.ast.RenameServer
 import org.neo4j.cypher.internal.ast.RenameUser
 import org.neo4j.cypher.internal.ast.RenameUserAction
 import org.neo4j.cypher.internal.ast.Return
@@ -2103,6 +2104,13 @@ class Neo4jASTFactory(query: String)
     options: SimpleEither[util.Map[String, Expression], Parameter]
   ): EnableServer =
     EnableServer(serverName.asScala, asOptionsAst(options))(p)
+
+  override def renameServer(
+    p: InputPosition,
+    serverName: SimpleEither[String, Parameter],
+    newName: SimpleEither[String, Parameter]
+  ): RenameServer =
+    RenameServer(serverName.asScala, newName.asScala)(p)
 
   override def dropServer(p: InputPosition, serverName: SimpleEither[String, Parameter]): DropServer =
     DropServer(serverName.asScala)(p)

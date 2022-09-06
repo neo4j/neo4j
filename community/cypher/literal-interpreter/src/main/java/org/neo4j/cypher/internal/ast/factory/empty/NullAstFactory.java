@@ -1154,6 +1154,11 @@ public class NullAstFactory
     }
 
     @Override
+    public NULL renameServer(NULL p, SimpleEither<String, NULL> serverName, SimpleEither<String, NULL> newName) {
+        return null;
+    }
+
+    @Override
     public NULL dropServer(NULL p, SimpleEither<String, NULL> serverName) {
         return null;
     }

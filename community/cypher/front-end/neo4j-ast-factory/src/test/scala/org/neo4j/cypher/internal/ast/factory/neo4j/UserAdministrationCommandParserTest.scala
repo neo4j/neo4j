@@ -924,11 +924,17 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("RENAME IF EXISTS USER foo TO bar") {
-    assertFailsWithMessage(testName, "Invalid input 'IF': expected \"ROLE\" or \"USER\" (line 1, column 8 (offset: 7))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input 'IF': expected \"ROLE\", \"SERVER\" or \"USER\" (line 1, column 8 (offset: 7))"
+    )
   }
 
   test("RENAME OR REPLACE USER foo TO bar") {
-    assertFailsWithMessage(testName, "Invalid input 'OR': expected \"ROLE\" or \"USER\" (line 1, column 8 (offset: 7))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input 'OR': expected \"ROLE\", \"SERVER\" or \"USER\" (line 1, column 8 (offset: 7))"
+    )
   }
 
   test("RENAME USER foo TO bar SET PASSWORD 'secret'") {

@@ -675,6 +675,16 @@ final case class EnableServer(serverName: Either[String, Parameter], optionsMap:
       SemanticState.recordCurrentScope(this)
 }
 
+final case class RenameServer(serverName: Either[String, Parameter], newName: Either[String, Parameter])(
+  val position: InputPosition
+) extends WriteAdministrationCommand {
+  override def name: String = "RENAME SERVER"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
 final case class DropServer(serverName: Either[String, Parameter])(
   val position: InputPosition
 ) extends WriteAdministrationCommand {

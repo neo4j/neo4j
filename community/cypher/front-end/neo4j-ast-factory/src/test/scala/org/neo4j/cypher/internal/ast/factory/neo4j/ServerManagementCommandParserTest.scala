@@ -110,6 +110,24 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
     assertFailsWithMessageStart(testName, """Invalid input '': expected "\"", "\'" or a parameter""")
   }
 
+  // RENAME
+
+  test("RENAME SERVER 'badger' TO 'snake'") {
+    assertAst(ast.RenameServer(literal("badger"), literal("snake"))(defaultPos))
+  }
+
+  test("RENAME SERVER $from TO $to") {
+    assertAst(ast.RenameServer(stringParam("from"), stringParam("to"))(defaultPos))
+  }
+
+  test("RENAME SERVER `bad,ger` TO $to") {
+    assertFailsWithMessageStart(testName, """Invalid input 'bad,ger': expected "\"", "\'" or a parameter""")
+  }
+
+  test("RENAME SERVER 'badger' $to") {
+    assertFailsWithMessageStart(testName, "Invalid input '$': expected \"TO\"")
+  }
+
   // DROP
 
   test("DROP SERVER 'name'") {

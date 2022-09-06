@@ -4234,6 +4234,7 @@ ADMINISTRATION_COMMAND RenameCommand():
     (
         command=RenameRole( start )
         | command=RenameUser( start )
+        | command=RenameServer( start )
     )
     {
         return command;
@@ -4306,6 +4307,18 @@ ADMINISTRATION_COMMAND EnableServerCommand():
     (<OPTIONS> options=MapOrParameter())?
     {
         return astFactory.enableServer( pos( start ), serverName, options );
+    }
+}
+
+ADMINISTRATION_COMMAND RenameServer( Token start ):
+{
+    SimpleEither<String, PARAMETER> serverName = null;
+    SimpleEither<String, PARAMETER> newName = null;
+}
+{
+    <SERVER> serverName=StringOrParameter() <TO> newName=StringOrParameter()
+    {
+        return astFactory.renameServer( pos( start ), serverName, newName );
     }
 }
 

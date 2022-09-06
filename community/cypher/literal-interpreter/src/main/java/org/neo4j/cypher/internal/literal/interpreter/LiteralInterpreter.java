@@ -825,6 +825,11 @@ public class LiteralInterpreter
     }
 
     @Override
+    public NULL renameServer(NULL p, SimpleEither<String, Object> serverName, SimpleEither<String, Object> newName) {
+        throw new UnsupportedOperationException("renameServer is not a literal");
+    }
+
+    @Override
     public NULL dropServer(NULL p, SimpleEither<String, Object> serverName) {
         throw new UnsupportedOperationException("dropServer is not a literal");
     }
