@@ -200,7 +200,7 @@ class IndexCapabilityTest {
                 // RANGE
                 Arguments.of(IndexQueryType.RANGE, NUMBER, of(RANGE)),
                 Arguments.of(IndexQueryType.RANGE, NUMBER_ARRAY, of(RANGE)),
-                Arguments.of(IndexQueryType.RANGE, ValueCategory.TEXT, of(RANGE, TEXT)),
+                Arguments.of(IndexQueryType.RANGE, ValueCategory.TEXT, of(RANGE)),
                 Arguments.of(IndexQueryType.RANGE, TEXT_ARRAY, of(RANGE)),
                 Arguments.of(IndexQueryType.RANGE, GEOMETRY, of(RANGE)),
                 Arguments.of(IndexQueryType.RANGE, GEOMETRY_ARRAY, of(RANGE)),

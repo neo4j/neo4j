@@ -214,15 +214,6 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           IndexOrderNone,
           IndexType.RANGE
         ),
-        NodeIndexSeek(
-          "n",
-          labelToken,
-          Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)),
-          RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(litFoo))))(pos)),
-          Set("x"),
-          IndexOrderNone,
-          IndexType.TEXT
-        ),
         // nPropEqualsLit42
         NodeIndexSeek(
           "n",

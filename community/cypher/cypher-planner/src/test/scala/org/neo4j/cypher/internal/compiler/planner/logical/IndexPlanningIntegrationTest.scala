@@ -1251,7 +1251,7 @@ class IndexPlanningIntegrationTest
       .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
       .build()
 
-    for (op <- List("STARTS WITH", "ENDS WITH", "CONTAINS", "<", "<=", ">", ">=")) {
+    for (op <- List("STARTS WITH", "ENDS WITH", "CONTAINS")) {
       val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("a.prop AS `a.prop`")
@@ -1264,6 +1264,14 @@ class IndexPlanningIntegrationTest
       plan shouldEqual cfg.subPlanBuilder()
         .projection("cacheN[a.prop] AS `a.prop`")
         .nodeIndexOperator(s"a:A(prop $op 'hello')", getValue = Map("prop" -> GetValue), indexType = IndexType.TEXT)
+        .build()
+    }
+    for (op <- List("<", "<=", ">", ">=")) {
+      val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("cacheN[a.prop] AS `a.prop`")
+        .filter(s"cacheNFromStore[a.prop] $op 'hello'")
+        .nodeByLabelScan("a", "A")
         .build()
     }
   }
@@ -1387,7 +1395,7 @@ class IndexPlanningIntegrationTest
       )
       .build()
 
-    for (op <- List("STARTS WITH", "ENDS WITH", "CONTAINS", "<", "<=", ">", ">=")) {
+    for (op <- List("STARTS WITH", "ENDS WITH", "CONTAINS")) {
       val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("r.prop AS `r.prop`")
@@ -1404,6 +1412,14 @@ class IndexPlanningIntegrationTest
           getValue = Map("prop" -> GetValue),
           indexType = IndexType.TEXT
         )
+        .build()
+    }
+    for (op <- List("<", "<=", ">", ">=")) {
+      val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("cacheR[r.prop] AS `r.prop`")
+        .filter(s"cacheRFromStore[r.prop] $op 'hello'")
+        .relationshipTypeScan("(a)-[r:REL]->(b)")
         .build()
     }
   }

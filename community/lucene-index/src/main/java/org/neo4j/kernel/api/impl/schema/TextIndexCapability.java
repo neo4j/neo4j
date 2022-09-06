@@ -76,7 +76,12 @@ public abstract class TextIndexCapability implements IndexCapability {
         return isIndexQueryTypeSupported(queryType);
     }
 
-    abstract boolean isIndexQueryTypeSupported(IndexQueryType indexQueryType);
+    private static boolean isIndexQueryTypeSupported(IndexQueryType indexQueryType) {
+        return switch (indexQueryType) {
+            case EXACT, STRING_PREFIX, STRING_CONTAINS, STRING_SUFFIX -> true;
+            default -> false;
+        };
+    }
 
     @Override
     public double getCostMultiplier(IndexQueryType... queryTypes) {
@@ -108,14 +113,6 @@ public abstract class TextIndexCapability implements IndexCapability {
         protected double costMultiplierGood() {
             return COST_MULTIPLIER_TEXT_GOOD;
         }
-
-        @Override
-        boolean isIndexQueryTypeSupported(IndexQueryType indexQueryType) {
-            return switch (indexQueryType) {
-                case EXACT, RANGE, STRING_PREFIX, STRING_CONTAINS, STRING_SUFFIX -> true;
-                default -> false;
-            };
-        }
     }
 
     private static class Trigram extends TextIndexCapability {
@@ -128,14 +125,6 @@ public abstract class TextIndexCapability implements IndexCapability {
         @Override
         protected double costMultiplierGood() {
             return COST_MULTIPLIER_TRIGRAM_GOOD;
-        }
-
-        @Override
-        boolean isIndexQueryTypeSupported(IndexQueryType indexQueryType) {
-            return switch (indexQueryType) {
-                case EXACT, STRING_PREFIX, STRING_CONTAINS, STRING_SUFFIX -> true;
-                default -> false;
-            };
         }
     }
 }
