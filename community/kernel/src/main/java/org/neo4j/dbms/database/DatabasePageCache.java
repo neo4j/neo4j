@@ -27,9 +27,12 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.dbms.database.TicketMachine.Barrier;
 import org.neo4j.dbms.database.TicketMachine.Ticket;
@@ -55,7 +58,7 @@ import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
 public class DatabasePageCache implements PageCache {
 
     private final PageCache globalPageCache;
-    private final CopyOnWriteArrayList<DatabasePageFile> databasePagedFiles = new CopyOnWriteArrayList<>();
+    private final Map<Path, DatabasePagedFile> uniqueDatabasePagedFiles = new ConcurrentHashMap<>();
     private final IOController ioController;
     private final List<FileMappedListener> mappedListeners = new CopyOnWriteArrayList<>();
     private boolean closed;
@@ -69,7 +72,7 @@ public class DatabasePageCache implements PageCache {
     }
 
     @Override
-    public PagedFile map(
+    public synchronized PagedFile map(
             Path path,
             int pageSize,
             String databaseName,
@@ -81,17 +84,25 @@ public class DatabasePageCache implements PageCache {
         // since it is this class that is decorating map calls with the name of the database
         PagedFile pagedFile =
                 globalPageCache.map(path, pageSize, databaseName, openOptions, ioController, versionStorage);
-        DatabasePageFile databasePageFile =
-                new DatabasePageFile(pagedFile, databasePagedFiles, mappedListeners, ticketMachine.newTicket());
-        databasePagedFiles.add(databasePageFile);
-        invokeFileMapListeners(mappedListeners, databasePageFile);
-        return databasePageFile;
+        // Our default page cache handles mapping a file multiple times, where additional mappings for the
+        // same file just returns the existing mapping. The DatabasePageCache needs to keep track of when
+        // a file is mapped the first time _for this particular instance_ tho, so that listeners can be
+        // invoked only when file is mapped first time and unmapped last time.
+        var newMapping = new DatabasePagedFile(pagedFile, ticketMachine.newTicket());
+        var existingMapping = uniqueDatabasePagedFiles.putIfAbsent(path, newMapping);
+        if (existingMapping == null) {
+            invokeFileMapListeners(mappedListeners, newMapping);
+            return newMapping;
+        } else {
+            existingMapping.refCount.incrementAndGet();
+            return existingMapping;
+        }
     }
 
     @Override
     public Optional<PagedFile> getExistingMapping(Path path) {
         Path canonicalFile = path.normalize();
-        return databasePagedFiles.stream()
+        return uniqueDatabasePagedFiles.values().stream()
                 .filter(pagedFile -> pagedFile.path().equals(canonicalFile))
                 .map(pf -> (PagedFile) pf)
                 .findFirst();
@@ -99,7 +110,7 @@ public class DatabasePageCache implements PageCache {
 
     @Override
     public List<PagedFile> listExistingMappings() {
-        return new ArrayList<>(databasePagedFiles);
+        return new ArrayList<>(uniqueDatabasePagedFiles.values());
     }
 
     @Override
@@ -108,7 +119,7 @@ public class DatabasePageCache implements PageCache {
     }
 
     private void flushAndForce(DatabaseFlushEvent flushEvent, Barrier barrier) throws IOException {
-        for (DatabasePageFile pagedFile : databasePagedFiles) {
+        for (DatabasePagedFile pagedFile : uniqueDatabasePagedFiles.values()) {
             if (barrier.canPass(pagedFile.flushTicket())) {
                 try (FileFlushEvent fileFlushEvent = flushEvent.beginFileFlush()) {
                     pagedFile.flushAndForce(fileFlushEvent);
@@ -122,10 +133,14 @@ public class DatabasePageCache implements PageCache {
         if (closed) {
             throw new IllegalStateException("Database page cache was already closed");
         }
-        for (PagedFile pagedFile : databasePagedFiles) {
-            pagedFile.close();
+        for (var pagedFile : uniqueDatabasePagedFiles.values()) {
+            // We must call close an equal number of times that we this file have been mapped (and not yet unmapped)
+            // pagedFile.close() will decrement refCount itself.
+            while (pagedFile.refCount.get() > 0) {
+                pagedFile.close();
+            }
         }
-        databasePagedFiles.clear();
+        uniqueDatabasePagedFiles.clear();
         closed = true;
     }
 
@@ -149,14 +164,14 @@ public class DatabasePageCache implements PageCache {
         return globalPageCache.getBufferFactory();
     }
 
-    private static void invokeFileMapListeners(List<FileMappedListener> listeners, DatabasePageFile databasePageFile) {
+    private static void invokeFileMapListeners(List<FileMappedListener> listeners, DatabasePagedFile databasePageFile) {
         for (FileMappedListener mappedListener : listeners) {
             mappedListener.fileMapped(databasePageFile);
         }
     }
 
     private static void invokeFileUnmapListeners(
-            List<FileMappedListener> listeners, DatabasePageFile databasePageFile) {
+            List<FileMappedListener> listeners, DatabasePagedFile databasePageFile) {
         for (FileMappedListener mappedListener : listeners) {
             mappedListener.fileUnmapped(databasePageFile);
         }
@@ -175,6 +190,13 @@ public class DatabasePageCache implements PageCache {
         return () -> flushAndForce(flushEvent, barrier);
     }
 
+    private synchronized void unmap(DatabasePagedFile databasePagedFile) {
+        if (databasePagedFile.refCount.decrementAndGet() == 0) {
+            invokeFileUnmapListeners(mappedListeners, databasePagedFile);
+            uniqueDatabasePagedFiles.remove(databasePagedFile.path());
+        }
+    }
+
     /**
      * A flush guard to flush any mapped and un-flushed files since creation of the guard
      */
@@ -183,20 +205,13 @@ public class DatabasePageCache implements PageCache {
         void flushUnflushed() throws IOException;
     }
 
-    private static class DatabasePageFile implements PagedFile {
+    private class DatabasePagedFile implements PagedFile {
         private final PagedFile delegate;
-        private final List<DatabasePageFile> databaseFiles;
-        private final List<FileMappedListener> mappedListeners;
         private final Ticket flushTicket;
+        private final AtomicInteger refCount = new AtomicInteger(1);
 
-        DatabasePageFile(
-                PagedFile delegate,
-                List<DatabasePageFile> databaseFiles,
-                List<FileMappedListener> mappedListeners,
-                Ticket flushTicket) {
+        DatabasePagedFile(PagedFile delegate, Ticket flushTicket) {
             this.delegate = delegate;
-            this.databaseFiles = databaseFiles;
-            this.mappedListeners = mappedListeners;
             this.flushTicket = flushTicket;
         }
 
@@ -248,9 +263,10 @@ public class DatabasePageCache implements PageCache {
 
         @Override
         public void close() {
-            invokeFileUnmapListeners(mappedListeners, this);
+            // Just like MuninnPagedFile#close() this method on a specific instance can be called multiple times,
+            // or rather as many times as this file has been mapped (and not yet unmapped) in this database.
+            unmap(this);
             delegate.close();
-            databaseFiles.remove(this);
         }
 
         @Override
@@ -291,7 +307,7 @@ public class DatabasePageCache implements PageCache {
             if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-            DatabasePageFile that = (DatabasePageFile) o;
+            DatabasePagedFile that = (DatabasePagedFile) o;
             return delegate.equals(that.delegate);
         }
 

@@ -33,6 +33,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.IOController.DISABLED;
@@ -306,8 +307,8 @@ class DatabasePageCacheTest {
         databasePageCache.map(mapFile1, PAGE_SIZE, DATABASE_NAME);
         databasePageCache.map(mapFile2, PAGE_SIZE, DATABASE_NAME);
         List<PagedFile> pagedFiles = pagedFileMapper.getPagedFiles();
-        PagedFile originalPagedFile1 = findPagedFile(pagedFiles, mapFile1);
-        PagedFile originalPagedFile2 = findPagedFile(pagedFiles, mapFile2);
+        PagedFile originalPagedFile1 = findPagedFileByMappingOrder(0, pagedFiles);
+        PagedFile originalPagedFile2 = findPagedFileByMappingOrder(1, pagedFiles);
 
         doThrow(new IOException("test")).when(originalPagedFile1).flushAndForce(FileFlushEvent.NULL);
 
@@ -342,6 +343,64 @@ class DatabasePageCacheTest {
         verify(originalPagedFile2, never()).flushAndForce(FileFlushEvent.NULL); // This depends on mapped order
     }
 
+    @Test
+    void shouldTriggerMappedListenerEventOnFirstFileMapOnly() throws IOException {
+        // Given
+        var mapFile = testDirectory.createFile("mapFile");
+        var listener = new TestFileMappedListener();
+        databasePageCache.registerFileMappedListener(listener);
+        var firstMapping = databasePageCache.map(mapFile, PAGE_SIZE, DATABASE_NAME);
+        assertThat(listener.mappedHistory).isEqualTo(List.of(firstMapping));
+
+        // When
+        databasePageCache.map(mapFile, PAGE_SIZE, DATABASE_NAME);
+
+        // Then
+        assertThat(listener.mappedHistory).isEqualTo(List.of(firstMapping));
+    }
+
+    @Test
+    void shouldTriggerUnmappedListenerEventOnLastFileUnmapOnly() throws IOException {
+        // Given
+        var mapFile = testDirectory.createFile("mapFile");
+        var listener = new TestFileMappedListener();
+        databasePageCache.registerFileMappedListener(listener);
+        var firstMapping = databasePageCache.map(mapFile, PAGE_SIZE, DATABASE_NAME);
+        var secondMapping = databasePageCache.map(mapFile, PAGE_SIZE, DATABASE_NAME);
+        firstMapping.close();
+        assertThat(listener.mappedHistory).isEqualTo(List.of(firstMapping));
+        assertThat(listener.unmappedHistory).isEmpty();
+
+        // When
+        secondMapping.close();
+
+        // Then
+        assertThat(listener.unmappedHistory).isEqualTo(List.of(firstMapping));
+    }
+
+    @Test
+    void shouldCloseMultipleMappingsOnSameFileOnPageCacheClose() throws IOException {
+        // Given
+        var mapFile = testDirectory.createFile("mapFile");
+        databasePageCache.map(mapFile, PAGE_SIZE, DATABASE_NAME);
+        databasePageCache.map(mapFile, PAGE_SIZE, DATABASE_NAME);
+        assertThat(pagedFileMapper.pagedFiles.size()).isEqualTo(1);
+
+        // When
+        databasePageCache.close();
+        databasePageCache = null;
+
+        // Then
+        for (var pagedFile : pagedFileMapper.pagedFiles) {
+            verify(pagedFile, times(2)).close();
+        }
+    }
+
+    private PagedFile findPagedFileByMappingOrder(int index, List<PagedFile> pagedFiles) {
+        var dbPagedFile = databasePageCache.listExistingMappings().get(index);
+        return findPagedFile(pagedFiles, dbPagedFile.path());
+    }
+
     private void flushFileUnderGuard(PagedFile file) throws IOException {
         DatabasePageCache.FlushGuard flushGuard = databasePageCache.flushGuard(DatabaseFlushEvent.NULL);
         file.flushAndForce(FileFlushEvent.NULL);
@@ -365,8 +424,17 @@ class DatabasePageCacheTest {
 
         @Override
         public PagedFile answer(InvocationOnMock invocation) {
+            // This behaviour makes this mocked page cache behave like MuninnPageCache regarding mapping
+            // a file multiple times
+            Path path = invocation.getArgument(0);
+            for (PagedFile pagedFile : pagedFiles) {
+                if (pagedFile.path().equals(path)) {
+                    return pagedFile;
+                }
+            }
+
             PagedFile pagedFile = mock(PagedFile.class);
-            when(pagedFile.path()).thenReturn(invocation.getArgument(0));
+            when(pagedFile.path()).thenReturn(path);
             pagedFiles.add(pagedFile);
             return pagedFile;
         }
