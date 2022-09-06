@@ -76,19 +76,37 @@ case class ArgumentPipe()(val id: Id = Id.INVALID_ID) extends Pipe {
 abstract class PipeWithSource(source: Pipe) extends Pipe {
 
   final override def createResults(state: QueryState): ClosingIterator[CypherRow] = {
-    val sourceResult = source.createResults(state)
+    val decoratedState = decorateState(state)
 
-    val decoratedState = state.decorator.decorate(this.id, state)
-    decoratedState.setExecutionContextFactory(rowFactory)
-    val result = internalCreateResults(sourceResult, decoratedState)
-    state.decorator.afterCreateResults(this.id, decoratedState)
-    val decoratedResult = state.decorator.decorate(this.id, decoratedState, result, sourceResult).closing(sourceResult)
+    val decoratedResult = computeDecoratedResult(state, decoratedState)
 
     if (isRootPipe) {
       state.decorator.decorateRoot(this.id, decoratedState, decoratedResult)
     } else {
       decoratedResult
     }
+  }
+
+  protected def computeDecoratedResult(state: QueryState, decoratedState: QueryState): ClosingIterator[CypherRow] = {
+    val sourceResult = source.createResults(state)
+    decorateResult(sourceResult, decoratedState, internalCreateResults(sourceResult, decoratedState))
+  }
+
+  final def decorateResult(
+    sourceResult: ClosingIterator[CypherRow],
+    decoratedState: QueryState,
+    result: ClosingIterator[CypherRow]
+  ): ClosingIterator[CypherRow] = {
+    decoratedState.decorator.afterCreateResults(this.id, decoratedState)
+    val decoratedResult =
+      decoratedState.decorator.decorate(this.id, decoratedState, result, sourceResult).closing(sourceResult)
+    decoratedResult
+  }
+
+  final def decorateState(state: QueryState): QueryState = {
+    val decoratedState = state.decorator.decorate(this.id, state)
+    decoratedState.setExecutionContextFactory(rowFactory)
+    decoratedState
   }
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] =
