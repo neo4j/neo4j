@@ -33,7 +33,7 @@ class PrimitiveLongIntKeyValueArrayTest
         PrimitiveLongIntKeyValueArray map = new PrimitiveLongIntKeyValueArray();
         assertThat( map.capacity() ).isEqualTo( PrimitiveLongIntKeyValueArray.DEFAULT_INITIAL_CAPACITY );
 
-        map = new PrimitiveLongIntKeyValueArray(110);
+        map = new PrimitiveLongIntKeyValueArray( 110 );
         assertThat( map.capacity()).isEqualTo( 110 );
 
         map.ensureCapacity( 10 );
