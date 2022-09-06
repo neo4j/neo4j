@@ -41,12 +41,9 @@ import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
-import org.neo4j.cypher.internal.ir.SinglePlannerQuery
-import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTString
@@ -314,35 +311,12 @@ object VerifyBestPlan {
     query: PlannerQueryPart,
     semanticTable: SemanticTable
   ): Set[WrongPropertyTypeHint] = {
-    query match {
-      case query: SinglePlannerQuery => query.fold(Set.empty[WrongPropertyTypeHint]) {
-          case (acc, query) =>
-            val qgHints = collectWrongPropertyTypeHintsFromQg(query.queryGraph, semanticTable)
-            val optionalQgHints =
-              query.queryGraph.optionalMatches.flatMap(collectWrongPropertyTypeHintsFromQg(_, semanticTable))
-            val horizonHints = query.horizon match {
-              case subquery: CallSubqueryHorizon => collectWrongPropertyTypeHints(subquery.callSubquery, semanticTable)
-              case _                             => Set.empty
-            }
-            acc ++ qgHints ++ optionalQgHints ++ horizonHints
-        }
-      case union: UnionQuery =>
-        collectWrongPropertyTypeHints(union.query, semanticTable) ++
-          collectWrongPropertyTypeHints(union.part, semanticTable)
-    }
-  }
-
-  private def collectWrongPropertyTypeHintsFromQg(
-    queryGraph: QueryGraph,
-    semanticTable: SemanticTable
-  ): Set[WrongPropertyTypeHint] = {
-    queryGraph.hints.flatMap {
-      case hint @ UsingIndexHint(variable, _, Seq(property), _, UsingTextIndexType) =>
-        hasPropertyOfTypeText(variable, property, semanticTable, queryGraph).left.toOption.map(
+    query.visitHints(Set.empty[WrongPropertyTypeHint]) {
+      case (acc, hint @ UsingIndexHint(variable, _, Seq(property), _, UsingTextIndexType), queryGraph) =>
+        acc ++ hasPropertyOfTypeText(variable, property, semanticTable, queryGraph).left.toOption.map(
           WrongPropertyTypeHint(hint, _)
         )
-
-      case _ => None
+      case (acc, _, _) => acc
     }
   }
 

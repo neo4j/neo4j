@@ -148,6 +148,10 @@ trait SinglePlannerQuery extends PlannerQueryPart {
     tail.fold(headHints)(_.allHints ++ headHints)
   }
 
+  override def visitHints[A](acc: A)(f: (A, Hint, QueryGraph) => A): A = {
+    SinglePlannerQuery.visitHints(this, acc, f)
+  }
+
   override def numHints: Int = allHints.size
 
   def amendQueryGraph(f: QueryGraph => QueryGraph): SinglePlannerQuery = withQueryGraph(f(queryGraph))
@@ -297,6 +301,20 @@ object SinglePlannerQuery {
       case _ => Map.empty[String, Set[LabelName]]
     }
     labelInfo ++ projectedLabelInfo
+  }
+
+  private def visitHints[A](query: SinglePlannerQuery, acc: A, f: (A, Hint, QueryGraph) => A): A = {
+    query.fold(acc) { case (acc, query) =>
+      val qgAcc = query.queryGraph.hints.foldLeft(acc)(f(_, _, query.queryGraph))
+      val optAcc = query.queryGraph.optionalMatches.foldLeft(qgAcc) {
+        case (acc, optQg) => optQg.hints.foldLeft(acc)(f(_, _, optQg))
+      }
+      val horizonAcc = query.horizon match {
+        case subqueryHorizon: CallSubqueryHorizon => subqueryHorizon.callSubquery.visitHints(optAcc)(f)
+        case _                                    => optAcc
+      }
+      horizonAcc
+    }
   }
 }
 

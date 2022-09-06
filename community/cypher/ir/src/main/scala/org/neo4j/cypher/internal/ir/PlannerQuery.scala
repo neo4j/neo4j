@@ -39,6 +39,7 @@ trait PlannerQueryPart {
   def allHints: Set[Hint]
   def withoutHints(hintsToIgnore: Set[Hint]): PlannerQueryPart
   def numHints: Int
+  def visitHints[A](acc: A)(f: (A, Hint, QueryGraph) => A): A
 
   /**
    * @return all recursively included query graphs, with leaf information for Eagerness analysis.
@@ -83,6 +84,11 @@ case class UnionQuery(
   )
 
   override def numHints: Int = part.numHints + query.numHints
+
+  override def visitHints[A](acc: A)(f: (A, Hint, QueryGraph) => A): A = {
+    val queryAcc = query.visitHints(acc)(f)
+    part.visitHints(queryAcc)(f)
+  }
 
   override def asSinglePlannerQuery: SinglePlannerQuery =
     throw new IllegalStateException("Called asSinglePlannerQuery on a UnionQuery")
