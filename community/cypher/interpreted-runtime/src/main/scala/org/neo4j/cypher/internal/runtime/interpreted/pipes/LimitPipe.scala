@@ -30,10 +30,24 @@ case class LimitPipe(source: Pipe, exp: Expression)
                     (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
-    val limit = SkipPipe.evaluateStaticSkipOrLimitNumberOrThrow(exp, state, "LIMIT")
+  override protected def computeDecoratedResult(
+    state: QueryState,
+    decoratedState: QueryState
+  ): ClosingIterator[CypherRow] = {
+    val limit = SkipPipe.evaluateStaticSkipOrLimitNumberOrThrow(exp, decoratedState, "LIMIT")
+    val sourceResult = if (limit == 0) {
+      ClosingIterator.empty
+    } else {
+      source.createResults(state)
+    }
+    decorateResult(sourceResult, decoratedState, internalCreateResults(sourceResult, limit))
+  }
 
-    if (limit == 0 || input.isEmpty) return ClosingIterator.empty
+  private def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    limit: Long
+  ): ClosingIterator[CypherRow] = {
+    if (input.isEmpty) return ClosingIterator.empty
 
     new ClosingIterator[CypherRow] {
       private var remaining = limit
@@ -50,4 +64,11 @@ case class LimitPipe(source: Pipe, exp: Expression)
         else empty.next()
     }
   }
+
+  override protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] =
+    throw new UnsupportedOperationException("This method should never be called on Limit")
+
 }

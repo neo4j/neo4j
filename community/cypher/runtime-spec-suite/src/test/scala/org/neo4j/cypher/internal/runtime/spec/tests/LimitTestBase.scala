@@ -1267,4 +1267,19 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("a").withNoRows()
   }
+
+  test("should not call downstream if limit 0") {
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .limit(0)
+      .aggregation(Seq.empty, Seq("count(*) AS c"))
+      .apply()
+      .|.errorPlan(new RuntimeException("NO!"))
+      .|.argument("c")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array[Any](1)))
+    runtimeResult should beColumns("c").withNoRows()
+  }
 }
