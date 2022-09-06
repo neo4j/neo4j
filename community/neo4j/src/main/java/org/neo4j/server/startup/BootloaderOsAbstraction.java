@@ -28,7 +28,6 @@ import static org.neo4j.server.startup.Bootloader.ENV_HEAP_SIZE;
 import static org.neo4j.server.startup.Bootloader.ENV_JAVA_OPTS;
 import static org.neo4j.server.startup.Bootloader.PROP_JAVA_CP;
 import static org.neo4j.server.startup.Bootloader.PROP_VM_NAME;
-import static org.neo4j.server.startup.ProcessManager.behaviour;
 
 import java.io.File;
 import java.io.IOException;
@@ -60,7 +59,7 @@ abstract class BootloaderOsAbstraction {
         this.bootloader = bootloader;
     }
 
-    abstract Long getPidIfRunning();
+    abstract Optional<Long> getPidIfRunning();
 
     abstract boolean isRunning(long pid);
 
@@ -69,11 +68,20 @@ abstract class BootloaderOsAbstraction {
     abstract void stop(long pid) throws CommandFailedException;
 
     long console() throws CommandFailedException {
-        return bootloader.processManager().run(buildStandardStartArguments(), consoleBehaviour());
+        return bootloader.processManager().run(buildStandardStartArguments(), new ConsoleProcess());
     }
 
-    protected ProcessManager.Behaviour consoleBehaviour() {
-        return behaviour().blocking().inheritIO().withShutdownHook();
+    static class ConsoleProcess implements ProcessStages {
+        @Override
+        public void preStart(ProcessManager processManager, ProcessBuilder processBuilder) {
+            processBuilder.inheritIO();
+        }
+
+        @Override
+        public void postStart(ProcessManager processManager, Process process) throws Exception {
+            processManager.installShutdownHook(process);
+            processManager.waitUntilSuccessful(process);
+        }
     }
 
     long admin() throws CommandFailedException {
@@ -84,11 +92,20 @@ abstract class BootloaderOsAbstraction {
             // like getting store info.
             arguments = arguments.reject(argument -> argument.startsWith("-Xms"));
         }
-        return bootloader
-                .processManager()
-                .run(
-                        arguments.withAll(bootloader.additionalArgs),
-                        behaviour().blocking().inheritIO().homeAndConfAsEnv());
+        return bootloader.processManager().run(arguments.withAll(bootloader.additionalArgs), new AdminProcess());
+    }
+
+    private static class AdminProcess implements ProcessStages {
+        @Override
+        public void preStart(ProcessManager processManager, ProcessBuilder processBuilder) {
+            processManager.addHomeAndConf(processBuilder);
+            processBuilder.inheritIO();
+        }
+
+        @Override
+        public void postStart(ProcessManager processManager, Process process) throws Exception {
+            processManager.waitUntilSuccessful(process);
+        }
     }
 
     abstract void installService() throws CommandFailedException;

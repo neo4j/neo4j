@@ -27,6 +27,7 @@ import static org.mockito.Mockito.spy;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -122,7 +123,7 @@ class StopTimeoutTest extends ServerProcessTestBase {
         }
 
         @Override
-        long run(List<String> command, Behaviour behaviour) throws CommandFailedException {
+        long run(List<String> command, ProcessStages processStages) throws CommandFailedException {
             if (commandMatches(command, "start")) {
                 return handler.start();
             }
@@ -136,14 +137,14 @@ class StopTimeoutTest extends ServerProcessTestBase {
         }
 
         @Override
-        ProcessHandle getProcessHandle(long pid) throws CommandFailedException {
+        Optional<ProcessHandle> getProcessHandle(long pid) throws CommandFailedException {
             if (handler.isRunning()) {
                 ProcessHandle ph = mock(ProcessHandle.class);
                 doAnswer(inv -> pid).when(ph).pid();
                 doAnswer(inv -> handler.isRunning()).when(ph).isAlive();
-                return ph;
+                return Optional.of(ph);
             }
-            return null;
+            return Optional.empty();
         }
 
         private static boolean commandMatches(List<String> command, String string) {

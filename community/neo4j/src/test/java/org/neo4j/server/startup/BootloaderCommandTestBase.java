@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.startup;
 
+import static java.lang.String.format;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
@@ -30,9 +32,12 @@ import static org.junit.platform.testkit.engine.EventConditions.event;
 import static org.junit.platform.testkit.engine.EventConditions.finishedSuccessfully;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.BootloaderSettings.windows_service_name;
 import static org.neo4j.server.startup.BootloaderOsAbstraction.UNKNOWN_PID;
 import static org.neo4j.test.proc.ProcessUtil.start;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -196,7 +201,7 @@ abstract class BootloaderCommandTestBase {
             List<String> allSettings = new ArrayList<>(Files.readAllLines(confFile));
             allSettings.removeIf(
                     s -> s.startsWith(setting.name()) && !Config.Builder.allowedMultipleDeclarations(setting.name()));
-            allSettings.add(String.format("%s=%s%n", setting.name(), value));
+            allSettings.add(format("%s=%s%n", setting.name(), value));
             Files.write(confFile, allSettings);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -392,7 +397,7 @@ abstract class BootloaderCommandTestBase {
         }
 
         @Override
-        long run(List<String> command, Behaviour behaviour) throws CommandFailedException {
+        long run(List<String> command, ProcessStages processStages) throws CommandFailedException {
             // Here we're just trying to mimic the minimum required responses one would expect when executing the actual
             // command.
             // Responses depend on previously executed commands, held as state in the ProcessHandler
@@ -404,8 +409,15 @@ abstract class BootloaderCommandTestBase {
                 handler.stop();
             } else if (commandMatches(command, "Get-Service")) {
                 if (handler.isInstalled()) {
-                    String status = handler.isRunning() ? "Running" : "Stopped";
-                    behaviour.outputConsumer.println(status + config.get(BootloaderSettings.windows_service_name));
+                    Process process = mock(Process.class);
+                    String outPut = format(
+                            "%s %s%n", handler.isRunning() ? "Running" : "Stopped", config.get(windows_service_name));
+                    when(process.getInputStream()).thenReturn(new ByteArrayInputStream(outPut.getBytes(UTF_8)));
+                    try {
+                        processStages.postStart(this, process);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                 } else {
                     throw new BootProcessFailureException(1); // To simulate command when service is not installed
                 }
@@ -431,8 +443,8 @@ abstract class BootloaderCommandTestBase {
         }
 
         @Override
-        ProcessHandle getProcessHandle(long pid) throws CommandFailedException {
-            return handler.handle(pid);
+        Optional<ProcessHandle> getProcessHandle(long pid) throws CommandFailedException {
+            return Optional.ofNullable(handler.handle(pid));
         }
 
         private static boolean commandMatches(List<String> command, String string) {

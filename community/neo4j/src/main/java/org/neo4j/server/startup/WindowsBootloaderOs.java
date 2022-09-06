@@ -27,13 +27,13 @@ import static org.apache.commons.lang3.StringUtils.join;
 import static org.neo4j.configuration.BootloaderSettings.windows_tools_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.server.startup.Bootloader.EXIT_CODE_NOT_RUNNING;
-import static org.neo4j.server.startup.ProcessManager.behaviour;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -60,14 +60,21 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
         if (!serviceInstalled()) {
             throw new CommandFailedException("Neo4j service is not installed", EXIT_CODE_NOT_RUNNING);
         }
-        issueServiceCommand("ES", behaviour().blocking());
+        issueServiceCommand("ES", new BlockingProcess());
         return UNKNOWN_PID;
+    }
+
+    private static class BlockingProcess extends ProcessStages.Adapter {
+        @Override
+        public void postStart(ProcessManager processManager, Process process) throws Exception {
+            processManager.waitUntilSuccessful(process);
+        }
     }
 
     @Override
     void stop(long pid) throws CommandFailedException {
         if (serviceInstalled()) {
-            issueServiceCommand("SS", behaviour());
+            issueServiceCommand("SS", ProcessStages.NO_OP);
         }
     }
 
@@ -109,7 +116,19 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
         // Apparently the Xms/Xmx options are passed in a special form here too
         argList = includeMemoryOption(jvmOpts, argList, "-Xms", "--JvmMs", "Start");
         argList = includeMemoryOption(jvmOpts, argList, "-Xmx", "--JvmMx", "Max");
-        runProcess(argList, behaviour().inheritIO().blocking());
+        runProcess(argList, new ServiceCommandProcess());
+    }
+
+    private static class ServiceCommandProcess implements ProcessStages {
+        @Override
+        public void preStart(ProcessManager processManager, ProcessBuilder processBuilder) {
+            processBuilder.inheritIO();
+        }
+
+        @Override
+        public void postStart(ProcessManager processManager, Process process) throws Exception {
+            processManager.waitUntilSuccessful(process);
+        }
     }
 
     private static String multiArg(String key, String... values) {
@@ -142,7 +161,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
 
     @Override
     void uninstallService() throws CommandFailedException {
-        issueServiceCommand("DS", behaviour().blocking());
+        issueServiceCommand("DS", new BlockingProcess());
         Stopwatch stopwatch = Stopwatch.start();
         while (serviceInstalled()
                 && !stopwatch.hasTimedOut(Bootloader.DEFAULT_NEO4J_SHUTDOWN_TIMEOUT, TimeUnit.SECONDS)) {
@@ -161,15 +180,18 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
     }
 
     @Override
-    Long getPidIfRunning() {
+    Optional<Long> getPidIfRunning() {
         String status = getStatus();
         boolean stopped = StringUtils.isEmpty(status) || status.startsWith("Stopped");
-        return stopped ? null : UNKNOWN_PID;
+        if (stopped) {
+            return Optional.empty();
+        }
+        return Optional.of(UNKNOWN_PID);
     }
 
     @Override
     boolean isRunning(long pid) {
-        return getPidIfRunning() != null;
+        return getPidIfRunning().isPresent();
     }
 
     @Override
@@ -213,24 +235,36 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
 
     private String[] resultFromPowerShellCommand(String... command) {
         var outBuffer = new ByteArrayOutputStream();
-        var errBuffer = new ByteArrayOutputStream();
-        try (var out = new PrintStream(outBuffer);
-                var err = new PrintStream(errBuffer)) {
-            // Note that stderr is kept separate but "muted" by ignoring what has been written to the stream.
-            bootloader
-                    .processManager()
-                    .run(
-                            asPowershellScript(List.of(command)),
-                            behaviour().blocking().outputConsumer(out).errorConsumer(err));
+        try (var out = new PrintStream(outBuffer)) {
+            bootloader.processManager().run(asPowershellScript(List.of(command)), new PowershellWithResult(out));
             return outBuffer.toString().split(format("%n"));
         }
     }
 
-    private void issueServiceCommand(String serviceCommand, ProcessManager.Behaviour behaviour) {
+    private static class PowershellWithResult implements ProcessStages {
+        private final PrintStream out;
+
+        PowershellWithResult(PrintStream out) {
+            this.out = out;
+        }
+
+        @Override
+        public void preStart(ProcessManager processManager, ProcessBuilder processBuilder) {
+            processBuilder.redirectError(ProcessBuilder.Redirect.DISCARD);
+        }
+
+        @Override
+        public void postStart(ProcessManager processManager, Process process) throws Exception {
+            processManager.waitUntilSuccessful(process);
+            out.write(process.getInputStream().readAllBytes());
+        }
+    }
+
+    private void issueServiceCommand(String serviceCommand, ProcessStages behaviour) {
         runProcess(baseServiceCommandArgList(serviceCommand), behaviour);
     }
 
-    private void runProcess(List<String> command, ProcessManager.Behaviour behaviour) {
+    private void runProcess(List<String> command, ProcessStages behaviour) {
         List<String> entireCommand = asExternalCommand(command);
         var powershellProcessId = bootloader.processManager().run(entireCommand, behaviour);
         if (entireCommand.stream().anyMatch(cmd -> cmd.equals(powershellCmd()))

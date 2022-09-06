@@ -23,7 +23,6 @@ import static org.neo4j.server.NeoBootstrapper.SIGINT;
 import static org.neo4j.server.NeoBootstrapper.SIGTERM;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Path;
 import java.util.List;
@@ -36,79 +35,13 @@ import sun.misc.Signal;
 class ProcessManager {
     private final Bootloader bootloader;
 
-    static class Behaviour {
-        protected boolean inheritIO;
-        protected boolean blocking;
-        protected boolean storePid;
-        protected boolean throwOnStorePidFailure;
-        protected boolean homeAndConfAsEnv;
-        protected boolean shutdownHook;
-        protected PrintStream outputConsumer;
-        protected PrintStream errorConsumer;
-
-        Behaviour inheritIO() {
-            this.inheritIO = true;
-            return this;
-        }
-
-        Behaviour blocking() {
-            this.blocking = true;
-            return this;
-        }
-
-        Behaviour withShutdownHook() {
-            this.shutdownHook = true;
-            return this;
-        }
-
-        Behaviour storePid() {
-            this.storePid = true;
-            this.throwOnStorePidFailure = true;
-            return this;
-        }
-
-        Behaviour tryStorePid() {
-            this.storePid = true;
-            throwOnStorePidFailure = false;
-            return this;
-        }
-
-        Behaviour outputConsumer(PrintStream stream) {
-            this.outputConsumer = stream;
-            return this;
-        }
-
-        Behaviour errorConsumer(PrintStream stream) {
-            this.errorConsumer = stream;
-            return this;
-        }
-
-        Behaviour homeAndConfAsEnv() {
-            this.homeAndConfAsEnv = true;
-            return this;
-        }
-    }
-
-    static Behaviour behaviour() {
-        return new Behaviour();
-    }
-
     ProcessManager(Bootloader bootloader) {
         this.bootloader = bootloader;
     }
 
-    long run(List<String> command, Behaviour behaviour) throws CommandFailedException {
+    long run(List<String> command, ProcessStages processStages) throws CommandFailedException {
         ProcessBuilder processBuilder = new ProcessBuilder(command);
-        if (behaviour.inheritIO) {
-            processBuilder.inheritIO();
-        }
-
-        if (behaviour.homeAndConfAsEnv) {
-            Map<String, String> env = processBuilder.environment();
-            env.putIfAbsent(Bootloader.ENV_NEO4J_HOME, bootloader.home().toString());
-            env.putIfAbsent(Bootloader.ENV_NEO4J_CONF, bootloader.confDir().toString());
-        }
-
+        processStages.preStart(this, processBuilder);
         Process process = null;
         try {
             if (bootloader.verbose) {
@@ -116,29 +49,7 @@ class ProcessManager {
             }
             process = processBuilder.start();
 
-            if (behaviour.shutdownHook) {
-                installShutdownHook(process);
-            }
-            if (behaviour.storePid) {
-                storePid(process.pid(), behaviour.throwOnStorePidFailure);
-            }
-            if (behaviour.blocking) {
-                process.waitFor();
-            }
-
-            if (!process.isAlive()) {
-                if (!behaviour.inheritIO) {
-                    PrintStream out =
-                            behaviour.outputConsumer != null ? behaviour.outputConsumer : bootloader.environment.out();
-                    PrintStream err =
-                            behaviour.errorConsumer != null ? behaviour.errorConsumer : bootloader.environment.err();
-                    out.write(process.getInputStream().readAllBytes());
-                    err.write(process.getErrorStream().readAllBytes());
-                }
-                if (process.exitValue() != 0) {
-                    throw new BootProcessFailureException(process.exitValue());
-                }
-            }
+            processStages.postStart(this, process);
             return process.pid();
         } catch (CommandFailedException e) {
             throw e; // rethrow
@@ -153,7 +64,19 @@ class ProcessManager {
         }
     }
 
-    private void installShutdownHook(Process finalProcess) {
+    void addHomeAndConf(ProcessBuilder processBuilder) {
+        Map<String, String> env = processBuilder.environment();
+        env.putIfAbsent(Bootloader.ENV_NEO4J_HOME, bootloader.home().toString());
+        env.putIfAbsent(Bootloader.ENV_NEO4J_CONF, bootloader.confDir().toString());
+    }
+
+    void waitUntilSuccessful(Process process) throws InterruptedException {
+        if (process.waitFor() != 0) {
+            throw new BootProcessFailureException(process.exitValue());
+        }
+    }
+
+    void installShutdownHook(Process finalProcess) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> killProcess(finalProcess)));
         Runnable onSignal = () -> System.exit(killProcess(finalProcess));
         installSignal(SIGINT, onSignal);
@@ -195,20 +118,20 @@ class ProcessManager {
         }
     }
 
-    ProcessHandle getProcessHandle(long pid) throws CommandFailedException {
+    Optional<ProcessHandle> getProcessHandle(long pid) throws CommandFailedException {
         Optional<ProcessHandle> handleOption = ProcessHandle.of(pid);
         if (handleOption.isEmpty() || !handleOption.get().isAlive()) {
             deletePid();
-            return null;
+            return Optional.empty();
         }
-        return handleOption.get();
+        return handleOption;
     }
 
     private void deletePid() {
         PidFileHelper.remove(pidFile());
     }
 
-    private void storePid(long pid, boolean throwOnFailure) throws IOException {
+    void storePid(long pid, boolean throwOnFailure) throws IOException {
         Path pidFilePath = pidFile();
         try {
             PidFileHelper.storePid(pidFile(), pid);

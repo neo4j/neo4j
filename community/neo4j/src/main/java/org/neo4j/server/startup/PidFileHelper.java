@@ -24,18 +24,21 @@ import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
-public class PidFileHelper {
+public final class PidFileHelper {
+    private PidFileHelper() {}
+
     public static Long readPid(Path pidFile) throws IOException {
         if (Files.exists(pidFile)) {
             try {
-                return Long.parseLong(Files.readString(pidFile).trim());
-            } catch (
-                    NoSuchFileException
-                            ignored) { // In case file was concurrently deleted between the existence check and the read
+                return Long.parseLong(
+                        Files.readString(pidFile, StandardCharsets.UTF_8).trim());
+            } catch (NoSuchFileException ignored) {
+                // In case file was concurrently deleted between the existence check and the read
             } catch (NumberFormatException e) {
                 remove(pidFile);
                 return null;
@@ -46,7 +49,7 @@ public class PidFileHelper {
 
     public static void storePid(Path pidFile, long pid) throws IOException {
         Files.createDirectories(pidFile.getParent());
-        Files.write(pidFile, Long.toString(pid).getBytes(), CREATE, WRITE, TRUNCATE_EXISTING);
+        Files.writeString(pidFile, Long.toString(pid), CREATE, WRITE, TRUNCATE_EXISTING);
     }
 
     public static void remove(Path pidFile) {

@@ -19,8 +19,7 @@
  */
 package org.neo4j.server.startup;
 
-import static org.neo4j.server.startup.ProcessManager.behaviour;
-
+import java.util.Optional;
 import org.neo4j.cli.CommandFailedException;
 
 abstract class AbstractUnixBootloaderOs extends BootloaderOsAbstraction {
@@ -30,22 +29,32 @@ abstract class AbstractUnixBootloaderOs extends BootloaderOsAbstraction {
 
     @Override
     long start() {
-        return bootloader
-                .processManager()
-                .run(buildStandardStartArguments(), behaviour().storePid());
+        return bootloader.processManager().run(buildStandardStartArguments(), new StartProcess());
     }
 
-    @Override
-    void stop(long pid) throws CommandFailedException {
-        ProcessHandle process = getProcessIfAlive(pid);
-        if (process != null) {
-            process.destroy();
+    private static class StartProcess extends ProcessStages.Adapter {
+        @Override
+        public void postStart(ProcessManager processManager, Process process) throws Exception {
+            processManager.storePid(process.pid(), true);
         }
     }
 
     @Override
-    protected ProcessManager.Behaviour consoleBehaviour() {
-        return super.consoleBehaviour().tryStorePid();
+    void stop(long pid) throws CommandFailedException {
+        getProcessIfAlive(pid).ifPresent(ProcessHandle::destroy);
+    }
+
+    @Override
+    long console() throws CommandFailedException {
+        return bootloader.processManager().run(buildStandardStartArguments(), new UnixConsoleProcess());
+    }
+
+    static class UnixConsoleProcess extends ConsoleProcess {
+        @Override
+        public void postStart(ProcessManager processManager, Process process) throws Exception {
+            processManager.storePid(process.pid(), false);
+            super.postStart(processManager, process);
+        }
     }
 
     @Override
@@ -69,20 +78,19 @@ abstract class AbstractUnixBootloaderOs extends BootloaderOsAbstraction {
     }
 
     @Override
-    Long getPidIfRunning() {
-        ProcessHandle handle = getProcessIfAlive(bootloader.processManager().getPidFromFile());
-        return handle != null ? handle.pid() : null;
+    Optional<Long> getPidIfRunning() {
+        return getProcessIfAlive(bootloader.processManager().getPidFromFile()).map(ProcessHandle::pid);
     }
 
     @Override
     boolean isRunning(long pid) {
-        return getProcessIfAlive(pid) != null;
+        return getProcessIfAlive(pid).isPresent();
     }
 
-    private ProcessHandle getProcessIfAlive(Long pid) {
+    private Optional<ProcessHandle> getProcessIfAlive(Long pid) {
         if (pid != null) {
             return bootloader.processManager().getProcessHandle(pid);
         }
-        return null;
+        return Optional.empty();
     }
 }
