@@ -43,6 +43,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import org.apache.commons.lang3.StringUtils;
@@ -322,6 +323,11 @@ public class ImportCommand {
 
         Base(ExecutionContext ctx) {
             super(ctx);
+        }
+
+        @Override
+        protected Optional<String> commandConfigName() {
+            return Optional.of("database-import");
         }
 
         protected void doExecute(

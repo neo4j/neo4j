@@ -328,9 +328,13 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
     }
 
     private Config buildConfig() {
-        return createPrefilledConfigBuilder()
-                .set(pagecache_memory, ByteUnit.parse(pagecacheMemory))
-                .build();
+        try {
+            return createPrefilledConfigBuilder()
+                    .set(pagecache_memory, ByteUnit.parse(pagecacheMemory))
+                    .build();
+        } catch (Exception e) {
+            throw new CommandFailedException(e.getMessage(), e);
+        }
     }
 
     private static StaticIndexProviderMap getIndexProviderMap(

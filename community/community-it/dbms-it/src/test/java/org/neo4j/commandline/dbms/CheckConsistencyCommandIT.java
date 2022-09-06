@@ -20,7 +20,9 @@
 package org.neo4j.commandline.dbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.consistency.checking.ConsistencyFlags.DEFAULT;
 
 import java.io.ByteArrayOutputStream;
@@ -28,6 +30,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
@@ -311,6 +314,25 @@ class CheckConsistencyCommandIT {
         checkConsistencyCommand.execute();
 
         consistencyCheckService.verifyArgument(DatabaseLayout.class, backupLayout);
+    }
+
+    @Test
+    void shouldUseCheckCommandConfigIfAvailable() throws Exception {
+        // Checking that the command is unhappy about an invalid value is enough to verify
+        // that the command-specific config is being taken into account.
+        Files.writeString(
+                confPath.resolve("neo4j-admin-database-check.conf"), pagecache_memory.name() + "=some nonsense");
+
+        assertThatThrownBy(() -> {
+                    TrackingConsistencyCheckService consistencyCheckService =
+                            new TrackingConsistencyCheckService(ConsistencyCheckService.Result.success(null, null));
+                    CheckConsistencyCommand checkConsistencyCommand = new CheckConsistencyCommand(
+                            new ExecutionContext(homeDir, confPath), consistencyCheckService);
+                    CommandLine.populateCommand(checkConsistencyCommand, "--database=mydb");
+                    checkConsistencyCommand.execute();
+                })
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("'some nonsense' is not a valid size");
     }
 
     private void prepareBackupDatabase(DatabaseLayout backupLayout) throws IOException {

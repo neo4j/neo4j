@@ -90,6 +90,11 @@ public class CheckConsistencyCommand extends AbstractAdminCommand {
         this(ctx, new ConsistencyCheckService(null));
     }
 
+    @Override
+    protected Optional<String> commandConfigName() {
+        return Optional.of("database-check");
+    }
+
     @VisibleForTesting
     public CheckConsistencyCommand(ExecutionContext ctx, ConsistencyCheckService consistencyCheckService) {
         super(ctx);

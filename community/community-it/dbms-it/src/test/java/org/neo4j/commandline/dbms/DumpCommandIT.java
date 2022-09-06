@@ -24,6 +24,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -36,6 +37,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
@@ -382,6 +384,18 @@ class DumpCommandIT {
         CommandFailedException commandFailed =
                 assertThrows(CommandFailedException.class, () -> execute("foo*", archive));
         assertThat(commandFailed.getMessage()).isEqualTo(archive + " is not an existing directory");
+    }
+
+    @Test
+    void shouldUseDumpCommandConfigIfAvailable() throws Exception {
+        // Checking that the command is unhappy about an invalid value is enough to verify
+        // that the command-specific config is being taken into account.
+        Files.writeString(
+                configDir.resolve("neo4j-admin-database-dump.conf"), pagecache_memory.name() + "=some nonsense");
+
+        assertThatThrownBy(() -> execute("foo"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("'some nonsense' is not a valid size");
     }
 
     private void execute(String database) {

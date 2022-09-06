@@ -39,6 +39,7 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_ro
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
@@ -2007,6 +2008,23 @@ class ImportCommandTest {
             }
             assertThat(count(tx.getAllRelationships())).isEqualTo(1);
         }
+    }
+
+    @Test
+    void shouldUseImportCommandConfigIfAvailable() throws Exception {
+        Path nodesFile = testDirectory.file("something");
+        Files.createFile(nodesFile);
+        Path configDir = testDirectory.absolutePath().resolve(Config.DEFAULT_CONFIG_DIR_NAME);
+        Files.createDirectories(configDir);
+        Path importCommandConfig = configDir.resolve("neo4j-admin-database-import.conf");
+
+        // Checking that the command is unhappy about an invalid value is enough to verify
+        // that the command-specific config is being taken into account.
+        Files.writeString(importCommandConfig, pagecache_memory.name() + "=some nonsense");
+
+        assertThatThrownBy(() -> runImport("--nodes", nodesFile.toAbsolutePath().toString()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("'some nonsense' is not a valid size");
     }
 
     private static void assertContains(List<String> errorLines, String string) {
