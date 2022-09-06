@@ -84,6 +84,10 @@ abstract class AbstractUnixBootloaderOs extends BootloaderOsAbstraction {
     }
 
     static class UnixConsoleProcess extends ConsoleProcess {
+        UnixConsoleProcess() {
+            super(true);
+        }
+
         @Override
         public void postStart(ProcessManager processManager, Process process) throws Exception {
             processManager.storePid(process.pid(), false);

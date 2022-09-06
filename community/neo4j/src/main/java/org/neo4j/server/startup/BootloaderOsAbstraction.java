@@ -68,10 +68,16 @@ abstract class BootloaderOsAbstraction {
     abstract void stop(long pid) throws CommandFailedException;
 
     long console() throws CommandFailedException {
-        return bootloader.processManager().run(buildStandardStartArguments(), new ConsoleProcess());
+        return bootloader.processManager().run(buildStandardStartArguments(), new ConsoleProcess(true));
     }
 
     static class ConsoleProcess implements ProcessStages {
+        private boolean installShutdownHooksForParentProcess;
+
+        ConsoleProcess(boolean installShutdownHooksForParentProcess) {
+            this.installShutdownHooksForParentProcess = installShutdownHooksForParentProcess;
+        }
+
         @Override
         public void preStart(ProcessManager processManager, ProcessBuilder processBuilder) {
             processBuilder.inheritIO();
@@ -79,7 +85,9 @@ abstract class BootloaderOsAbstraction {
 
         @Override
         public void postStart(ProcessManager processManager, Process process) throws Exception {
-            processManager.installShutdownHook(process);
+            if (installShutdownHooksForParentProcess) {
+                processManager.installShutdownHook(process);
+            }
             processManager.waitUntilSuccessful(process);
         }
     }

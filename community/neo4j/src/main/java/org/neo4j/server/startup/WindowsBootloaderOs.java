@@ -83,6 +83,11 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
         runServiceCommand("IS");
     }
 
+    @Override
+    long console() throws CommandFailedException {
+        return bootloader.processManager().run(buildStandardStartArguments(), new ConsoleProcess(false));
+    }
+
     private void runServiceCommand(String baseCommand) {
         MutableList<String> argList = baseServiceCommandArgList(baseCommand);
         Path home = bootloader.home();
