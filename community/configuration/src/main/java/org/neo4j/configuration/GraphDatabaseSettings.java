@@ -179,16 +179,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     public static final Setting<String> db_format =
             newBuilder("db.format", STRING, "aligned").dynamic().build();
 
-    @Description(
-            "Whether to allow a system graph upgrade to happen automatically in single instance mode (dbms.mode=SINGLE). "
-                    + "Default is true. In clustering environments no automatic upgrade will happen (dbms.mode=CORE or dbms.mode=READ_REPLICA). "
-                    + "If set to false, or when in a clustering environment, it is necessary to call the procedure `dbms.upgrade()` to "
-                    + "complete the upgrade.")
-    public static final Setting<Boolean> allow_single_automatic_upgrade = newBuilder(
-                    "dbms.allow_single_automatic_upgrade", BOOL, true)
-            .dynamic()
-            .build();
-
     @Description("Routing strategy for neo4j:// protocol connections.\n"
             + "Default is `CLIENT`, using client-side routing, with server-side routing as a fallback (if enabled).\n"
             + "When set to `SERVER`, client-side routing is short-circuited, and requests will rely on server-side routing "

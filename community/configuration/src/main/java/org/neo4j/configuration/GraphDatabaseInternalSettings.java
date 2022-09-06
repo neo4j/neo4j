@@ -997,4 +997,15 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<ExtractLiteral> extract_literals = newBuilder(
                     "internal.cypher.extract_literals", ofEnum(ExtractLiteral.class), ExtractLiteral.ALWAYS)
             .build();
+
+    @Internal
+    @Description(
+            "Whether to allow a system graph upgrade to happen automatically in single instance mode (dbms.mode=SINGLE). "
+                    + "Default is true. In clustering environments no automatic upgrade will happen (dbms.mode=CORE or dbms.mode=READ_REPLICA). "
+                    + "If set to false, or when in a clustering environment, it is necessary to call the procedure `dbms.upgrade()` to "
+                    + "complete the upgrade.")
+    public static final Setting<Boolean> allow_single_automatic_upgrade = newBuilder(
+                    "internal.dbms.allow_single_automatic_upgrade", BOOL, true)
+            .dynamic()
+            .build();
 }

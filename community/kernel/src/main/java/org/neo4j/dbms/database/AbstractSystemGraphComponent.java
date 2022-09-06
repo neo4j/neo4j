@@ -24,7 +24,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import java.util.Arrays;
 import java.util.Optional;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -67,7 +67,7 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
 
     @Override
     public void initializeSystemGraph(GraphDatabaseService system, boolean firstInitialization) throws Exception {
-        boolean mayUpgrade = config.get(GraphDatabaseSettings.allow_single_automatic_upgrade);
+        boolean mayUpgrade = config.get(GraphDatabaseInternalSettings.allow_single_automatic_upgrade);
 
         Preconditions.checkState(
                 system.databaseName().equals(SYSTEM_DATABASE_NAME),

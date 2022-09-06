@@ -130,6 +130,7 @@ public final class SettingMigrators {
         private static final String OLD_PREFIX = "dbms.connector";
         private static final Pattern SUPPORTED_CONNECTOR_PATTERN = Pattern.compile("(.+)\\.(bolt|http|https)\\.(.+)");
         private static final List<String> REMOVED_SETTINGS = List.of(
+                "dbms.allow_single_automatic_upgrade",
                 "dbms.allow_upgrade",
                 "dbms.clustering.enable",
                 "dbms.record_format",

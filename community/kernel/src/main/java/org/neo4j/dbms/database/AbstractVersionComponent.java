@@ -23,7 +23,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 
 import java.util.function.Function;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.util.Preconditions;
@@ -75,7 +75,7 @@ public abstract class AbstractVersionComponent<T extends ComponentVersion> exten
 
     @Override
     public void initializeSystemGraph(GraphDatabaseService system, boolean firstInitialization) throws Exception {
-        boolean mayUpgrade = config.get(GraphDatabaseSettings.allow_single_automatic_upgrade);
+        boolean mayUpgrade = config.get(GraphDatabaseInternalSettings.allow_single_automatic_upgrade);
 
         Preconditions.checkState(
                 system.databaseName().equals(SYSTEM_DATABASE_NAME),

@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.ResultTransformer;
@@ -156,7 +156,7 @@ class DbmsRuntimeSystemGraphComponentTest {
 
     private void initDbmsComponent(boolean automaticUpgrade) {
         var config = Config.newBuilder()
-                .set(GraphDatabaseSettings.allow_single_automatic_upgrade, automaticUpgrade)
+                .set(GraphDatabaseInternalSettings.allow_single_automatic_upgrade, automaticUpgrade)
                 .build();
         dbmsRuntimeSystemGraphComponent = new DbmsRuntimeSystemGraphComponent(config);
         systemGraphComponents.register(dbmsRuntimeSystemGraphComponent);
