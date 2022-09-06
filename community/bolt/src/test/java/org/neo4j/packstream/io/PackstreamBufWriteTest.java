@@ -1310,12 +1310,13 @@ public class PackstreamBufWriteTest {
                     var payload = new Object();
                     var writer = mock(StructWriter.class);
                     var registry = mock(StructRegistry.class);
+                    var ctx = mock(Object.class);
 
-                    when(registry.getWriter(payload)).thenReturn(Optional.<StructWriter<Object>>of(writer));
+                    when(registry.getWriter(payload)).thenReturn(Optional.<StructWriter<Object, Object>>of(writer));
                     when(writer.getTag(payload)).thenReturn((short) 0x21);
                     when(writer.getLength(payload)).thenReturn((long) fields);
 
-                    var buf = prepareBuffer(b -> b.writeStruct(registry, payload));
+                    var buf = prepareBuffer(b -> b.writeStruct(ctx, registry, payload));
 
                     var marker = buf.readUnsignedByte();
                     var length = marker & 0x0F;
@@ -1332,7 +1333,7 @@ public class PackstreamBufWriteTest {
 
                     inOrder.verify(writer).getTag(payload);
                     inOrder.verify(writer).getLength(payload);
-                    inOrder.verify(writer).write(notNull(), same(payload));
+                    inOrder.verify(writer).write(same(ctx), notNull(), same(payload));
 
                     inOrder.verifyNoMoreInteractions();
                 }));
@@ -1347,7 +1348,7 @@ public class PackstreamBufWriteTest {
         when(registry.getWriter(payload)).thenReturn(Optional.empty());
 
         var ex = assertThrows(
-                IllegalArgumentException.class, () -> prepareBuffer(b -> b.writeStruct(registry, payload)));
+                IllegalArgumentException.class, () -> prepareBuffer(b -> b.writeStruct(null, registry, payload)));
 
         assertThat(ex).hasMessage("Illegal struct: %s", payload);
 
@@ -1359,7 +1360,7 @@ public class PackstreamBufWriteTest {
     void writeStructShouldFailWithNullPointerWhenRegistryIsNull() {
         var payload = new Object();
 
-        var ex = assertThrows(NullPointerException.class, () -> prepareBuffer(b -> b.writeStruct(null, payload)));
+        var ex = assertThrows(NullPointerException.class, () -> prepareBuffer(b -> b.writeStruct(null, null, payload)));
 
         assertThat(ex).hasMessage("registry cannot be null");
     }
@@ -1370,11 +1371,11 @@ public class PackstreamBufWriteTest {
         var registry = mock(StructRegistry.class);
         var writer = mock(StructWriter.class);
 
-        when(registry.getWriter(null)).thenReturn(Optional.<StructWriter<Object>>of(writer));
+        when(registry.getWriter(null)).thenReturn(Optional.<StructWriter<Object, Object>>of(writer));
         when(writer.getTag(null)).thenReturn((short) 0x09);
         when(writer.getLength(null)).thenReturn(4L);
 
-        var buf = prepareBuffer(b -> b.writeStruct(registry, null));
+        var buf = prepareBuffer(b -> b.writeStruct(null, registry, null));
 
         var marker = buf.readUnsignedByte();
         var length = marker & 0x0F;

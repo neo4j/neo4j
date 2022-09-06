@@ -33,9 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.bolt.testing.assertions.AnyValueAssertions.assertThat;
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
 import static org.neo4j.bolt.testing.assertions.ListValueAssertions.assertThat;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.pull;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
@@ -82,6 +79,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.bolt.testing.messages.BoltDefaultWire;
+import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.function.Predicates;
@@ -115,6 +114,8 @@ class ConnectionTrackingIT {
     private final ExecutorService executor = Executors.newCachedThreadPool();
     private final Set<TransportConnection> connections = ConcurrentHashMap.newKeySet();
     private final Set<HttpClient> httpClients = ConcurrentHashMap.newKeySet();
+
+    private final BoltWire wire = new BoltDefaultWire();
 
     @Inject
     private TestDirectory dir;
@@ -473,9 +474,9 @@ class ConnectionTrackingIT {
         return executor.submit(() -> {
             connectSocketTo(neo4j.boltURI())
                     .sendDefaultProtocolVersion()
-                    .send(hello(username, password))
-                    .send(run("MATCH (n) WHERE id(n) = " + id + " SET n.prop = 42"))
-                    .send(pull());
+                    .send(wire.hello(username, password))
+                    .send(wire.run("MATCH (n) WHERE id(n) = " + id + " SET n.prop = 42"))
+                    .send(wire.pull());
 
             return null;
         });
@@ -494,9 +495,9 @@ class ConnectionTrackingIT {
         try (var connection = connectSocketTo(neo4j.boltURI())) {
             connection
                     .sendDefaultProtocolVersion()
-                    .send(hello("neo4j", NEO4J_USER_PWD))
-                    .send(run("CALL dbms.killConnection('" + id + "')"))
-                    .send(pull());
+                    .send(wire.hello("neo4j", NEO4J_USER_PWD))
+                    .send(wire.run("CALL dbms.killConnection('" + id + "')"))
+                    .send(wire.pull());
 
             assertThat(connection)
                     .negotiatesDefaultVersion()

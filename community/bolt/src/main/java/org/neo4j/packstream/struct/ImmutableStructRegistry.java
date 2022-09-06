@@ -21,42 +21,45 @@ package org.neo4j.packstream.struct;
 
 import java.util.Map;
 
-public class ImmutableStructRegistry<S> extends AbstractStructRegistry<S> {
+public class ImmutableStructRegistry<CTX, S> extends AbstractStructRegistry<CTX, S> {
 
     private ImmutableStructRegistry(
-            Map<Short, StructReader<? extends S>> tagToReaderMap,
-            Map<Class<?>, StructWriter<? super S>> typeToWriterMap) {
+            Map<Short, StructReader<? super CTX, ? extends S>> tagToReaderMap,
+            Map<Class<?>, StructWriter<? super CTX, ? super S>> typeToWriterMap) {
         super(tagToReaderMap, typeToWriterMap);
     }
 
     /**
      * Creates a new empty builder capable of creating a new immutable struct registry.
      *
+     * @param <CTX> a context type.
      * @param <S> a struct type.
      * @return an empty factory.
      */
-    public static <S> ImmutableStructRegistry.Builder<S> emptyBuilder() {
+    public static <CTX, S> Builder<CTX, S> emptyBuilder() {
         return new Builder<>();
     }
 
     @Override
-    public StructRegistry.Builder<S> builderOf() {
-        return new Builder<>(this.tagToReaderMap, this.typeToWriterMap);
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public <C extends CTX> AbstractStructRegistry.Builder<C, S> builderOf() {
+        return new Builder<>((Map) this.tagToReaderMap, this.typeToWriterMap);
     }
 
-    public static class Builder<S> extends AbstractStructRegistry.Builder<S> {
+    public static class Builder<CTX, S> extends AbstractStructRegistry.Builder<CTX, S> {
 
         private Builder() {}
 
         private Builder(
-                Map<Short, StructReader<? extends S>> tagToReaderMap,
-                Map<Class<?>, StructWriter<? super S>> typeToWriterMap) {
+                Map<Short, StructReader<? super CTX, ? extends S>> tagToReaderMap,
+                Map<Class<?>, StructWriter<? super CTX, ? super S>> typeToWriterMap) {
             super(tagToReaderMap, typeToWriterMap);
         }
 
         @Override
-        public ImmutableStructRegistry<S> build() {
-            return new ImmutableStructRegistry<S>(Map.copyOf(this.tagToReaderMap), Map.copyOf(this.typeToWriterMap));
+        public ImmutableStructRegistry<CTX, S> build() {
+            return new ImmutableStructRegistry<CTX, S>(
+                    Map.copyOf(this.tagToReaderMap), Map.copyOf(this.typeToWriterMap));
         }
     }
 }

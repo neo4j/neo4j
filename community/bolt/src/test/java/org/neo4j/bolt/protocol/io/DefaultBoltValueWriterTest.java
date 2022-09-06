@@ -20,14 +20,19 @@
 package org.neo4j.bolt.protocol.io;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.neo4j.bolt.protocol.io.pipeline.WriterContext;
+import org.neo4j.bolt.protocol.io.writer.DefaultStructWriter;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.io.PackstreamBuf;
+import org.neo4j.packstream.io.Type;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
@@ -39,19 +44,23 @@ class DefaultBoltValueWriterTest {
     @Test
     void shouldWriteNode() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
+        var ctx = Mockito.mock(WriterContext.class);
+
+        Mockito.doReturn(buf).when(ctx).buffer();
 
         var propertyBuilder = new MapValueBuilder();
         propertyBuilder.add("the_answer", Values.intValue(42));
         propertyBuilder.add(
                 "some_unrelated_string", Values.stringValue("What do you get when you multiply six by nine"));
+        var properties = propertyBuilder.build();
 
-        new DefaultBoltValueWriter(buf)
-                .writeNode("42", 42, stringArray("foo", "bar", "baz"), propertyBuilder.build(), false);
+        DefaultStructWriter.getInstance()
+                .writeNode(ctx, "42", 42, stringArray("foo", "bar", "baz"), propertyBuilder.build(), false);
 
         var header = buf.readStructHeader();
         var nodeId = buf.readInt();
         var labels = buf.readList(PackstreamBuf::readString);
-        var properties = buf.readMap(PackstreamBuf::readValue);
+        Mockito.verify(ctx).writeValue(properties);
         var elementId = buf.readString();
 
         assertThat(header.tag()).isEqualTo((short) 'N');
@@ -61,40 +70,31 @@ class DefaultBoltValueWriterTest {
         assertThat(elementId).isEqualTo("42");
 
         assertThat(labels).hasSize(3).containsExactly("foo", "bar", "baz");
-
-        assertThat(properties)
-                .hasSize(2)
-                .containsEntry("the_answer", 42L)
-                .containsEntry("some_unrelated_string", "What do you get when you multiply six by nine");
     }
 
     @Test
     void shouldWriteRelationship() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
+        var ctx = Mockito.mock(WriterContext.class);
+
+        Mockito.doReturn(buf).when(ctx).buffer();
 
         var propertyBuilder = new MapValueBuilder();
         propertyBuilder.add("the_answer", Values.intValue(42));
         propertyBuilder.add(
                 "some_unrelated_string", Values.stringValue("What do you get when you multiply six by nine"));
+        var properties = propertyBuilder.build();
 
-        new DefaultBoltValueWriter(buf)
+        DefaultStructWriter.getInstance()
                 .writeRelationship(
-                        "42",
-                        42,
-                        "21",
-                        21,
-                        "84",
-                        84,
-                        stringValue("LIKES_WORKING_WITH"),
-                        propertyBuilder.build(),
-                        false);
+                        ctx, "42", 42, "21", 21, "84", 84, stringValue("LIKES_WORKING_WITH"), properties, false);
 
         var header = buf.readStructHeader();
         var relationshipId = buf.readInt();
         var startNodeId = buf.readInt();
         var endNodeId = buf.readInt();
         var type = buf.readString();
-        var properties = buf.readMap();
+        Mockito.verify(ctx).writeValue(properties);
         var elementId = buf.readString();
         var startNodeElementId = buf.readString();
         var endNodeElementId = buf.readString();
@@ -109,29 +109,27 @@ class DefaultBoltValueWriterTest {
         assertThat(endNodeElementId).isEqualTo("84");
         assertThat(endNodeId).isEqualTo(84);
         assertThat(type).isEqualTo("LIKES_WORKING_WITH");
-
-        assertThat(properties)
-                .hasSize(2)
-                .containsEntry("the_answer", 42L)
-                .containsEntry("some_unrelated_string", "What do you get when you multiply six by nine");
     }
 
     @Test
     void shouldWriteUnboundRelationship() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
+        var ctx = Mockito.mock(WriterContext.class);
+
+        Mockito.doReturn(buf).when(ctx).buffer();
 
         var propertyBuilder = new MapValueBuilder();
         propertyBuilder.add("the_answer", Values.intValue(42));
         propertyBuilder.add(
                 "some_unrelated_string", Values.stringValue("What do you get when you multiply six by nine"));
+        var properties = propertyBuilder.build();
 
-        new DefaultBoltValueWriter(buf)
-                .writeUnboundRelationship("42", 42, "LIKES_WORKING_WITH", propertyBuilder.build());
+        DefaultStructWriter.getInstance().writeUnboundRelationship(ctx, "42", 42, "LIKES_WORKING_WITH", properties);
 
         var header = buf.readStructHeader();
         var relationshipId = buf.readInt();
         var type = buf.readString();
-        var properties = buf.readMap();
+        Mockito.verify(ctx).writeValue(properties);
         var elementId = buf.readString();
 
         assertThat(header.tag()).isEqualTo((short) 'r');
@@ -140,67 +138,44 @@ class DefaultBoltValueWriterTest {
         assertThat(elementId).isEqualTo("42");
         assertThat(relationshipId).isEqualTo(42L);
         assertThat(type).isEqualTo("LIKES_WORKING_WITH");
-
-        assertThat(properties)
-                .hasSize(2)
-                .containsEntry("the_answer", 42L)
-                .containsEntry("some_unrelated_string", "What do you get when you multiply six by nine");
     }
 
     @Test
     void shouldWritePath() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
+        var ctx = Mockito.mock(WriterContext.class);
 
-        {
-            var person = nodeValue(21, "21", stringArray("Person"), MapValue.EMPTY);
-            var computer = nodeValue(42, "42", stringArray("Computer"), MapValue.EMPTY);
-            var vendor = nodeValue(84, "84", stringArray("vendor"), MapValue.EMPTY);
+        Mockito.doReturn(buf).when(ctx).buffer();
 
-            var owns = relationshipValue(13, "13", person, computer, Values.stringValue("OWNS"), MapValue.EMPTY);
-            var makes = relationshipValue(26, "26", vendor, computer, Values.stringValue("MAKES"), MapValue.EMPTY);
+        var person = nodeValue(21, "21", stringArray("Person"), MapValue.EMPTY);
+        var computer = nodeValue(42, "42", stringArray("Computer"), MapValue.EMPTY);
+        var vendor = nodeValue(84, "84", stringArray("Vendor"), MapValue.EMPTY);
 
-            var nodes = new NodeValue[] {person, computer, vendor};
-            var rels = new RelationshipValue[] {owns, makes};
+        var owns = relationshipValue(13, "13", person, computer, Values.stringValue("OWNS"), MapValue.EMPTY);
+        var makes = relationshipValue(26, "26", vendor, computer, Values.stringValue("MAKES"), MapValue.EMPTY);
 
-            new DefaultBoltValueWriter(buf).writePath(nodes, rels);
-        }
+        var nodes = new NodeValue[] {person, computer, vendor};
+        var rels = new RelationshipValue[] {owns, makes};
+
+        DefaultStructWriter.getInstance().writePath(ctx, nodes, rels);
 
         var header = buf.readStructHeader();
-        var nodes = buf.readList(b -> {
-            var nodeHeader = b.readStructHeader();
-            var nodeId = b.readInt();
-            var labels = b.readList(PackstreamBuf::readString);
-            var properties = b.readMap(PackstreamBuf::readNull);
-            var elementId = b.readString();
+        var nodesHeader = buf.readLengthPrefixMarker(Type.LIST);
+        var relsHeader = buf.readLengthPrefixMarker(Type.LIST);
 
-            assertThat(elementId).isIn("21", "42", "84");
-            assertThat(nodeId % 21).isEqualTo(0);
-            assertThat(labels).hasSize(1);
-            assertThat(properties).isEmpty();
-
-            return nodeHeader;
-        });
-        var rels = buf.readList(b -> {
-            var relHeader = b.readStructHeader();
-            var relId = b.readInt();
-            var type = b.readString();
-            var properties = b.readMap(PackstreamBuf::readNull);
-            var elementId = b.readString();
-
-            assertThat(elementId).isIn("13", "26");
-            assertThat(relId % 13).isEqualTo(0);
-            assertThat(type).isNotBlank();
-            assertThat(properties).isEmpty();
-
-            return relHeader;
-        });
         var indices = buf.readList(PackstreamBuf::readInt);
 
         assertThat(header.length()).isEqualTo(3);
         assertThat(header.tag()).isEqualTo((short) 'P');
 
-        assertThat(nodes).hasSize(3);
-        assertThat(rels).hasSize(2);
+        assertThat(nodesHeader).isEqualTo(3);
+        Mockito.verify(ctx).writeValue(eq(person));
+        Mockito.verify(ctx).writeValue(eq(computer));
+        Mockito.verify(ctx).writeValue(eq(vendor));
+
+        assertThat(relsHeader).isEqualTo(2);
+        Mockito.verify(ctx).writeUnboundRelationship("13", 13, "OWNS", MapValue.EMPTY);
+        Mockito.verify(ctx).writeUnboundRelationship("26", 26, "MAKES", MapValue.EMPTY);
 
         assertThat(indices).hasSize(4).containsExactly(1L, 1L, -2L, 2L);
     }
@@ -208,6 +183,9 @@ class DefaultBoltValueWriterTest {
     @Test
     void shouldWriteEasyPath() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
+        var ctx = Mockito.mock(WriterContext.class);
+
+        Mockito.doReturn(buf).when(ctx).buffer();
 
         {
             var person = nodeValue(21, "21", stringArray("Person"), MapValue.EMPTY);
@@ -220,45 +198,19 @@ class DefaultBoltValueWriterTest {
             var nodes = new NodeValue[] {person, computer, cpu};
             var rels = new RelationshipValue[] {owns, makes};
 
-            new DefaultBoltValueWriter(buf).writePath(nodes, rels);
+            DefaultStructWriter.getInstance().writePath(ctx, nodes, rels);
         }
 
         var header = buf.readStructHeader();
-        var nodes = buf.readList(b -> {
-            var nodeHeader = b.readStructHeader();
-            var nodeId = b.readInt();
-            var labels = b.readList(PackstreamBuf::readString);
-            var properties = b.readMap(PackstreamBuf::readNull);
-            var elementId = b.readString();
-
-            assertThat(elementId).isIn("21", "42", "84");
-            assertThat(nodeId % 21).isEqualTo(0);
-            assertThat(labels).hasSize(1);
-            assertThat(properties).isEmpty();
-
-            return nodeHeader;
-        });
-        var rels = buf.readList(b -> {
-            var relHeader = b.readStructHeader();
-            var relId = b.readInt();
-            var type = b.readString();
-            var properties = b.readMap(PackstreamBuf::readNull);
-            var elementId = b.readString();
-
-            assertThat(elementId).isIn("13", "26");
-            assertThat(relId % 13).isEqualTo(0);
-            assertThat(type).isNotBlank();
-            assertThat(properties).isEmpty();
-
-            return relHeader;
-        });
+        var nodesHeader = buf.readLengthPrefixMarker(Type.LIST);
+        var relsHeader = buf.readLengthPrefixMarker(Type.LIST);
         var indices = buf.readList(PackstreamBuf::readInt);
 
         assertThat(header.length()).isEqualTo(3);
         assertThat(header.tag()).isEqualTo((short) 'P');
 
-        assertThat(nodes).hasSize(3);
-        assertThat(rels).hasSize(2);
+        assertThat(nodesHeader).isEqualTo(3);
+        assertThat(relsHeader).isEqualTo(2);
 
         assertThat(indices).hasSize(4).containsExactly(1L, 1L, 2L, 2L);
     }

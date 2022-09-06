@@ -22,11 +22,6 @@ package org.neo4j.bolt.transport;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.list;
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.begin;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.pull;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.rollback;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -100,7 +95,7 @@ public class ConcurrentAccessIT extends AbstractBoltTransportsTest {
                 // Connect
                 var connection = newConnection();
 
-                connection.connect().sendDefaultProtocolVersion().send(hello());
+                connection.connect().sendDefaultProtocolVersion().send(wire.hello());
 
                 assertThat(connection).negotiatesDefaultVersion().receivesSuccess();
 
@@ -112,7 +107,11 @@ public class ConcurrentAccessIT extends AbstractBoltTransportsTest {
             }
 
             private void createAndRollback(TransportConnection connection) throws Exception {
-                connection.send(begin()).send(run("CREATE (n)")).send(pull()).send(rollback());
+                connection
+                        .send(wire.begin())
+                        .send(wire.run("CREATE (n)"))
+                        .send(wire.pull())
+                        .send(wire.rollback());
 
                 assertThat(connection)
                         .receivesSuccess()
@@ -124,7 +123,7 @@ public class ConcurrentAccessIT extends AbstractBoltTransportsTest {
                         .receivesSuccess(meta -> assertThat(meta).containsKeys("t_last", "db"))
                         .receivesSuccess();
 
-                connection.send(run("MATCH (n) RETURN n")).send(pull());
+                connection.send(wire.run("MATCH (n) RETURN n")).send(wire.pull());
 
                 assertThat(connection)
                         .receivesSuccess(meta -> assertThat(meta)

@@ -25,9 +25,10 @@ import org.neo4j.packstream.io.PackstreamBuf;
 /**
  * Provides necessary logic to decode a given struct type.
  *
+ * @param <CTX> a context type.
  * @param <O> a struct POJO type.
  */
-public interface StructReader<O> {
+public interface StructReader<CTX, O> {
 
     /**
      * Retrieves the tag with which the struct provided by this reader is typically identified.
@@ -39,10 +40,11 @@ public interface StructReader<O> {
     /**
      * Retrieves the struct from a given buffer based on a previously retrieved header.
      *
+     * @param ctx a context object.
      * @param buffer a buffer.
      * @param header a struct header.
      * @return a decoded structure.
      * @throws PackstreamReaderException when decoding the structure fails.
      */
-    O read(PackstreamBuf buffer, StructHeader header) throws PackstreamReaderException;
+    O read(CTX ctx, PackstreamBuf buffer, StructHeader header) throws PackstreamReaderException;
 }

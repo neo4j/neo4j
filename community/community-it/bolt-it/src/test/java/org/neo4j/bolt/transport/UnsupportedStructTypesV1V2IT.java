@@ -20,19 +20,18 @@
 package org.neo4j.bolt.transport;
 
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.reset;
-import static org.neo4j.packstream.testing.example.Paths.ALL_PATHS;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.bolt.AbstractBoltTransportsTest;
-import org.neo4j.bolt.protocol.io.LegacyBoltValueWriter;
+import org.neo4j.bolt.protocol.io.StructType;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.testing.messages.BoltV40Wire;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -40,9 +39,7 @@ import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
-import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValueBuilder;
-import org.neo4j.values.virtual.PathValue;
 
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
@@ -109,8 +106,7 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest {
         properties.add("the_answer", longValue(42));
         properties.add("one_does_not_simply", stringValue("break_decoding"));
 
-        this.sendRun(buf -> new LegacyBoltValueWriter(buf)
-                .writeNode("42", 42, Values.stringArray("Broken", "Dreams"), properties.build(), false));
+        this.sendRun(buf -> wire.nodeValue(buf, "42", 42, List.of("Broken", "Dreams")));
 
         assertThat(this.connection)
                 .receivesFailure(
@@ -127,9 +123,7 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest {
         properties.add("the_answer", longValue(42));
         properties.add("one_does_not_simply", stringValue("break_decoding"));
 
-        this.sendRun(buf -> new LegacyBoltValueWriter(buf)
-                .writeRelationship(
-                        "42", 42, "21", 21, "84", 84, stringValue("RUINS_EXPECTATIONS"), properties.build(), false));
+        this.sendRun(buf -> wire.relationshipValue(buf, "42", 42, "21", 21, "84", 84, "RUINS_EXPECTATIONS"));
 
         assertThat(this.connection)
                 .receivesFailure(
@@ -141,17 +135,28 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest {
     public void shouldFailWhenPathIsSentWithRun(TransportConnection.Factory connectionFactory) throws Exception {
         this.initConnection(connectionFactory);
 
-        for (PathValue path : ALL_PATHS) {
-            this.sendRun(buf -> path.writeTo(new LegacyBoltValueWriter(buf)));
+        this.sendRun(buf -> {
+            buf.writeStructHeader(new StructHeader(3, StructType.PATH.getTag()));
 
-            assertThat(connection)
-                    .receivesFailure(
-                            Status.Request.Invalid, "Illegal value for field \"params\": Unexpected struct tag: 0x50");
+            buf.writeListHeader(2);
+            wire.nodeValue(buf, "42", 42, List.of("Computer"));
+            wire.nodeValue(buf, "84", 84, List.of("Vendor"));
 
-            this.connection.send(reset());
+            buf.writeListHeader(1);
+            wire.unboundRelationshipValue(buf, "13", 13, "MAKES");
 
-            assertThat(connection).receivesSuccess();
-        }
+            buf.writeListHeader(2);
+            buf.writeInt(1);
+            buf.writeInt(1);
+        });
+
+        assertThat(connection)
+                .receivesFailure(
+                        Status.Request.Invalid, "Illegal value for field \"params\": Unexpected struct tag: 0x50");
+
+        this.connection.send(wire.reset());
+
+        assertThat(connection).receivesSuccess();
     }
 
     @ParameterizedTest(name = "{displayName} {arguments}")

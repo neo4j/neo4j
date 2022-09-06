@@ -31,6 +31,7 @@ import java.net.BindException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
+import org.neo4j.bolt.protocol.common.bookmark.BookmarkParser;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
@@ -78,6 +79,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
             AuthConfigProvider authConfigProvider,
             DefaultDatabaseResolver defaultDatabaseResolver,
             ConnectionHintProvider connectionHintProvider,
+            BookmarkParser bookmarkParser,
             InternalLogProvider userLogProvider,
             InternalLogProvider logging) {
         super(
@@ -92,6 +94,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
                 authConfigProvider,
                 defaultDatabaseResolver,
                 connectionHintProvider,
+                bookmarkParser,
                 userLogProvider,
                 logging);
         if (transport.getDomainSocketChannelType() == null) {
@@ -123,6 +126,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
             AuthConfigProvider authConfigProvider,
             DefaultDatabaseResolver defaultDatabaseResolver,
             ConnectionHintProvider connectionHintProvider,
+            BookmarkParser bookmarkParser,
             InternalLogProvider userLogProvider,
             InternalLogProvider logging) {
         this(
@@ -141,6 +145,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
                 authConfigProvider,
                 defaultDatabaseResolver,
                 connectionHintProvider,
+                bookmarkParser,
                 userLogProvider,
                 logging);
     }

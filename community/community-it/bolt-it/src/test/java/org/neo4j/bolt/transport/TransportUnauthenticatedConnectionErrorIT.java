@@ -20,7 +20,6 @@
 package org.neo4j.bolt.transport;
 
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 
 import io.netty.buffer.Unpooled;
@@ -85,7 +84,7 @@ public class TransportUnauthenticatedConnectionErrorIT extends AbstractBoltTrans
         initParameters(connectionFactory);
 
         // When
-        connection.connect().sendDefaultProtocolVersion().send(hello());
+        connection.connect().sendDefaultProtocolVersion().send(wire.hello());
 
         // Then
         assertThat(connection).negotiatesDefaultVersion().receivesSuccess();
@@ -142,7 +141,7 @@ public class TransportUnauthenticatedConnectionErrorIT extends AbstractBoltTrans
         initParameters(connectionFactory);
 
         // Given half written hello message
-        var msg = hello();
+        var msg = wire.hello();
         var buffer = msg.readSlice(msg.readableBytes() / 2);
 
         // When
@@ -160,11 +159,11 @@ public class TransportUnauthenticatedConnectionErrorIT extends AbstractBoltTrans
 
         // When
         var meta = new HashMap<String, Object>();
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 200; i++) {
             meta.put("index-" + i, i);
         }
 
-        connection.connect().sendDefaultProtocolVersion().send(hello(meta, null));
+        connection.connect().sendDefaultProtocolVersion().send(wire.hello(meta, null));
 
         // Then
         assertThat(connection).negotiatesDefaultVersion().isEventuallyTerminated();

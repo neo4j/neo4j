@@ -19,11 +19,12 @@
  */
 package org.neo4j.bolt.protocol.common.message.encoder;
 
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.message.response.IgnoredMessage;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructWriter;
 
-public final class IgnoredMessageEncoder implements StructWriter<IgnoredMessage> {
+public final class IgnoredMessageEncoder implements StructWriter<Connection, IgnoredMessage> {
     private static final IgnoredMessageEncoder INSTANCE = new IgnoredMessageEncoder();
 
     private IgnoredMessageEncoder() {}
@@ -48,7 +49,7 @@ public final class IgnoredMessageEncoder implements StructWriter<IgnoredMessage>
     }
 
     @Override
-    public void write(PackstreamBuf buffer, IgnoredMessage payload) {
+    public void write(Connection ctx, PackstreamBuf buffer, IgnoredMessage payload) {
         // NOOP - IGNORED does not contain any fields
     }
 }

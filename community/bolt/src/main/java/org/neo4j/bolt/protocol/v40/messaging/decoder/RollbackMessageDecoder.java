@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.protocol.v40.messaging.decoder;
 
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.v40.messaging.request.RollbackMessage;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.struct.IllegalStructSizeException;
@@ -26,7 +27,7 @@ import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.packstream.struct.StructReader;
 
-public final class RollbackMessageDecoder implements StructReader<RollbackMessage> {
+public final class RollbackMessageDecoder implements StructReader<Connection, RollbackMessage> {
     private static final RollbackMessageDecoder INSTANCE = new RollbackMessageDecoder();
 
     private RollbackMessageDecoder() {}
@@ -41,7 +42,8 @@ public final class RollbackMessageDecoder implements StructReader<RollbackMessag
     }
 
     @Override
-    public RollbackMessage read(PackstreamBuf buffer, StructHeader header) throws PackstreamReaderException {
+    public RollbackMessage read(Connection ctx, PackstreamBuf buffer, StructHeader header)
+            throws PackstreamReaderException {
         if (header.length() != 0) {
             throw new IllegalStructSizeException(0, header.length());
         }

@@ -38,9 +38,9 @@ import org.neo4j.packstream.error.reader.LimitExceededException;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.reader.UnexpectedTypeException;
 import org.neo4j.packstream.io.PackstreamBuf;
-import org.neo4j.packstream.io.value.PackstreamValues;
 import org.neo4j.packstream.testing.PackstreamBufAssertions;
 import org.neo4j.packstream.testing.PackstreamConnectionAssertions;
+import org.neo4j.packstream.testing.PackstreamTestValueReader;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.ListValue;
 import org.opentest4j.AssertionFailedError;
@@ -101,7 +101,8 @@ public final class BoltConnectionAssertions
                             var type = (Short) actual.getValue();
                             if (type == (short) 0x7F) {
                                 try {
-                                    var meta = msg.readMap();
+                                    var meta = PackstreamTestValueReader.readMapValue(
+                                            msg, PackstreamTestValueReader.DEFAULT_STRUCT_REGISTRY);
                                     throw new AssertionFailedError(
                                             ex.getMessage() + ": " + meta,
                                             ex.getExpected(),
@@ -343,7 +344,8 @@ public final class BoltConnectionAssertions
                                 PackstreamBufAssertions.assertThat(buf).containsStruct(0x71, 1);
 
                                 try {
-                                    return buf.readList(PackstreamValues::readValue);
+                                    return buf.readList(b -> PackstreamTestValueReader.readStorable(
+                                            b, PackstreamTestValueReader.DEFAULT_STRUCT_REGISTRY));
                                 } catch (PackstreamReaderException ex) {
                                     failWithMessage(
                                             "Expected record to contain valid list of fields: %s", ex.getMessage());

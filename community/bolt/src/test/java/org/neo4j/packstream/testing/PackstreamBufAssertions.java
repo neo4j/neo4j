@@ -29,19 +29,32 @@ import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.reader.UnexpectedTypeException;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.io.Type;
-import org.neo4j.packstream.io.value.PackstreamValues;
 import org.neo4j.packstream.struct.StructHeader;
+import org.neo4j.packstream.struct.StructRegistry;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 
 public class PackstreamBufAssertions extends AbstractAssert<PackstreamBufAssertions, PackstreamBuf> {
 
-    PackstreamBufAssertions(PackstreamBuf buf) {
+    private final StructRegistry<Object, Value> structRegistry;
+
+    PackstreamBufAssertions(PackstreamBuf buf, StructRegistry<Object, Value> structRegistry) {
         super(buf, PackstreamBufAssertions.class);
+        this.structRegistry = structRegistry;
+    }
+
+    PackstreamBufAssertions(PackstreamBuf buf) {
+        this(buf, PackstreamTestValueReader.DEFAULT_STRUCT_REGISTRY);
     }
 
     public static PackstreamBufAssertions assertThat(PackstreamBuf value) {
         return new PackstreamBufAssertions(value);
+    }
+
+    public static PackstreamBufAssertions assertThat(
+            PackstreamBuf value, StructRegistry<Object, Value> structRegistry) {
+        return new PackstreamBufAssertions(value, structRegistry);
     }
 
     private void fail(UnexpectedTypeException ex) {
@@ -74,7 +87,7 @@ public class PackstreamBufAssertions extends AbstractAssert<PackstreamBufAsserti
     public PackstreamBufAssertions containsLengthPrefixMarker(Type type, long expected) {
         long actual;
         try {
-            actual = this.actual.readLengthPrefixMarker(type, -1);
+            actual = this.actual.readLengthPrefixMarker(type);
         } catch (UnexpectedTypeException ex) {
             fail(ex);
             return this;
@@ -221,7 +234,7 @@ public class PackstreamBufAssertions extends AbstractAssert<PackstreamBufAsserti
     public PackstreamBufAssertions containsListHeader(long expected) {
         long actual;
         try {
-            actual = this.actual.readLengthPrefixMarker(Type.LIST, -1);
+            actual = this.actual.readLengthPrefixMarker(Type.LIST);
         } catch (UnexpectedTypeException ex) {
             fail(ex);
             return this;
@@ -241,7 +254,8 @@ public class PackstreamBufAssertions extends AbstractAssert<PackstreamBufAsserti
     public PackstreamBufAssertions containsList(Consumer<List<Object>> assertions) {
         List<Object> value;
         try {
-            value = this.actual.readList();
+            value = this.actual.readList(
+                    ignore -> PackstreamTestValueReader.readValue(this.actual, this.structRegistry));
         } catch (UnexpectedTypeException ex) {
             fail(ex);
             return this;
@@ -260,7 +274,7 @@ public class PackstreamBufAssertions extends AbstractAssert<PackstreamBufAsserti
     public PackstreamBufAssertions containsListValue(Consumer<ListValue> assertions) {
         ListValue value;
         try {
-            value = PackstreamValues.readList(this.actual);
+            value = PackstreamTestValueReader.readListValue(this.actual, this.structRegistry);
         } catch (UnexpectedTypeException ex) {
             fail(ex);
             return this;
@@ -279,7 +293,8 @@ public class PackstreamBufAssertions extends AbstractAssert<PackstreamBufAsserti
     public PackstreamBufAssertions containsMap(Consumer<Map<String, Object>> assertions) {
         Map<String, Object> value;
         try {
-            value = this.actual.readMap();
+            value = this.actual.readMap(
+                    ignore -> PackstreamTestValueReader.readValue(this.actual, this.structRegistry));
         } catch (UnexpectedTypeException ex) {
             fail(ex);
             return this;
@@ -298,7 +313,7 @@ public class PackstreamBufAssertions extends AbstractAssert<PackstreamBufAsserti
     public PackstreamBufAssertions containsMapValue(Consumer<MapValue> assertions) {
         MapValue value;
         try {
-            value = PackstreamValues.readMap(this.actual);
+            value = PackstreamTestValueReader.readMapValue(this.actual, this.structRegistry);
         } catch (UnexpectedTypeException ex) {
             fail(ex);
             return this;

@@ -23,44 +23,63 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
-import org.neo4j.packstream.error.reader.UnexpectedTypeException;
 import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.error.struct.IllegalStructSizeException;
-import org.neo4j.packstream.io.NativeStruct;
 import org.neo4j.packstream.io.PackstreamBuf;
+import org.neo4j.packstream.io.value.PackstreamValueReader;
 import org.neo4j.packstream.struct.StructHeader;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.MapValueBuilder;
 
 class HelloMessageDecoderTest {
 
     @Test
     void shouldReadMessage() throws PackstreamReaderException {
-        var buf = PackstreamBuf.allocUnpooled()
-                .writeMapHeader(2)
-                .writeString("user_agent")
-                .writeString("Example/1.0 (+https://github.com/neo4j)")
-                .writeString("scheme")
-                .writeString("none");
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
 
-        var msg = HelloMessageDecoder.getInstance().read(buf, new StructHeader(1, (short) 0x42));
+        var meta = new MapValueBuilder();
+        meta.add("user_agent", Values.stringValue("Example/1.0 (+https://github.com/neo4j)"));
+        meta.add("scheme", Values.stringValue("none"));
+
+        Mockito.doReturn(meta.build()).when(reader).readPrimitiveMap(Mockito.anyLong());
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
+
+        var msg = HelloMessageDecoder.getInstance().read(connection, buf, new StructHeader(1, (short) 0x42));
 
         assertThat(msg).isNotNull();
         assertThat(msg.userAgent()).isEqualTo("Example/1.0 (+https://github.com/neo4j)");
         assertThat(msg.authToken()).hasSize(2).containsEntry("scheme", "none");
+
+        // ensure that readPrimitiveMap is the only interaction point on PackstreamValueReader as HELLO explicitly
+        // forbids the use of complex structures (such as dates, points, etc) to reduce potential attack vectors that
+        // could lead to denial of service attacks
+        Mockito.verify(reader).readPrimitiveMap(Mockito.anyLong());
+        Mockito.verifyNoMoreInteractions(reader);
     }
 
     @Test
     void shouldConvertSensitiveValues() throws PackstreamReaderException {
-        var buf = PackstreamBuf.allocUnpooled()
-                .writeMapHeader(2)
-                .writeString("user_agent")
-                .writeString("Example/1.0 (+https://github.com/neo4j)")
-                .writeString("credentials")
-                .writeString("5upers3cre7");
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
 
-        var msg = HelloMessageDecoder.getInstance().read(buf, new StructHeader(1, (short) 0x42));
+        var meta = new MapValueBuilder();
+        meta.add("user_agent", Values.stringValue("Example/1.0 (+https://github.com/neo4j)"));
+        meta.add("scheme", Values.stringValue("something"));
+        meta.add("credentials", Values.stringValue("5upers3cre7"));
+
+        Mockito.doReturn(meta.build()).when(reader).readPrimitiveMap(Mockito.anyLong());
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
+
+        var msg = HelloMessageDecoder.getInstance().read(connection, buf, new StructHeader(1, (short) 0x42));
 
         assertThat(msg).isNotNull();
         assertThat(msg.authToken()).containsEntry("credentials", "5upers3cre7".getBytes(StandardCharsets.UTF_8));
@@ -68,10 +87,12 @@ class HelloMessageDecoderTest {
 
     @Test
     void shouldFailWithIllegalStructSizeWhenEmptyStructIsGiven() {
+        var connection = ConnectionMockFactory.newInstance();
         var decoder = HelloMessageDecoder.getInstance();
 
         assertThatExceptionOfType(IllegalStructSizeException.class)
-                .isThrownBy(() -> decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(0, (short) 0x42)))
+                .isThrownBy(() ->
+                        decoder.read(connection, PackstreamBuf.allocUnpooled(), new StructHeader(0, (short) 0x42)))
                 .withMessage("Illegal struct size: Expected struct to be 1 fields but got 0");
     }
 
@@ -80,66 +101,69 @@ class HelloMessageDecoderTest {
         var decoder = HelloMessageDecoder.getInstance();
 
         assertThatExceptionOfType(IllegalStructSizeException.class)
-                .isThrownBy(() -> decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(2, (short) 0x42)))
+                .isThrownBy(() -> decoder.read(
+                        ConnectionMockFactory.newInstance(), PackstreamBuf.allocUnpooled(), new StructHeader(2, (short)
+                                0x42)))
                 .withMessage("Illegal struct size: Expected struct to be 1 fields but got 2");
     }
 
     @Test
-    void shouldFailWithIllegalStructArgumentWhenInvalidArgumentIsPassed() {
+    void shouldFailWithIllegalStructArgumentWhenInvalidArgumentIsPassed() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled().writeInt(42);
+        var reader = Mockito.mock(PackstreamValueReader.class);
+        var ex = new PackstreamReaderException("Something went kaput :(");
+
+        Mockito.doThrow(ex).when(reader).readPrimitiveMap(Mockito.anyLong());
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
 
         var decoder = HelloMessageDecoder.getInstance();
 
         assertThatExceptionOfType(IllegalStructArgumentException.class)
-                .isThrownBy(() -> decoder.read(buf, new StructHeader(1, (short) 0x42)))
-                .withMessage("Illegal value for field \"extra\": Unexpected type: Expected MAP but got INT")
-                .withCauseInstanceOf(UnexpectedTypeException.class);
+                .isThrownBy(() -> decoder.read(connection, buf, new StructHeader(1, (short) 0x42)))
+                .withMessage("Illegal value for field \"extra\": Something went kaput :(")
+                .withCause(ex);
     }
 
     @Test
-    void shouldFailWithIllegalStructArgumentWhenInvalidMetadataEntryIsPassed() {
-        var buf = PackstreamBuf.allocUnpooled()
-                .writeMapHeader(1)
-                .writeString("user_agent")
-                .writeInt(42);
+    void shouldFailWithIllegalStructArgumentWhenInvalidMetadataEntryIsPassed() throws PackstreamReaderException {
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
+
+        var meta = new MapValueBuilder();
+        meta.add("user_agent", Values.longValue(42));
+        meta.add("scheme", Values.stringValue("none"));
+
+        Mockito.doReturn(meta.build()).when(reader).readPrimitiveMap(Mockito.anyLong());
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
 
         var decoder = HelloMessageDecoder.getInstance();
 
         assertThatExceptionOfType(IllegalStructArgumentException.class)
-                .isThrownBy(() -> decoder.read(buf, new StructHeader(1, (short) 0x42)))
+                .isThrownBy(() -> decoder.read(connection, buf, new StructHeader(1, (short) 0x42)))
                 .withMessage("Illegal value for field \"user_agent\": Expected value to be a string");
     }
 
     @Test
-    void shouldFailWithIllegalStructArgumentWhenUserAgentIsOmitted() {
-        var buf = PackstreamBuf.allocUnpooled()
-                .writeMapHeader(1)
-                .writeString("scheme")
-                .writeString("none");
+    void shouldFailWithIllegalStructArgumentWhenUserAgentIsOmitted() throws PackstreamReaderException {
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
+
+        var meta = new MapValueBuilder();
+        meta.add("scheme", Values.stringValue("none"));
+
+        Mockito.doReturn(meta.build()).when(reader).readPrimitiveMap(Mockito.anyLong());
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
 
         var decoder = HelloMessageDecoder.getInstance();
 
         assertThatExceptionOfType(IllegalStructArgumentException.class)
-                .isThrownBy(() -> decoder.read(buf, new StructHeader(1, (short) 0x42)))
+                .isThrownBy(() -> decoder.read(connection, buf, new StructHeader(1, (short) 0x42)))
                 .withMessage("Illegal value for field \"user_agent\": Expected \"user_agent\" to be non-null");
-    }
-
-    @Test
-    void shouldFailWithIllegalStructArgumentWhenComplexValueIsPassed() {
-        var buf = PackstreamBuf.allocUnpooled()
-                .writeMapHeader(3)
-                .writeString("user_agent")
-                .writeString("Example/1.0 (+https://github.com/neo4j)")
-                .writeString("scheme")
-                .writeString("none")
-                .writeString("credentials");
-        NativeStruct.writeDate(buf, LocalDate.EPOCH);
-
-        var decoder = HelloMessageDecoder.getInstance();
-
-        assertThatExceptionOfType(IllegalStructArgumentException.class)
-                .isThrownBy(() -> decoder.read(buf, new StructHeader(1, (short) 0x42)))
-                .withMessage("Illegal value for field \"extra\": Unexpected type: STRUCT")
-                .withCauseInstanceOf(UnexpectedTypeException.class);
     }
 }

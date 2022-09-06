@@ -19,16 +19,21 @@
  */
 package org.neo4j.bolt.protocol.common;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.function.Predicate;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.response.ResponseMessage;
-import org.neo4j.bolt.protocol.io.LegacyBoltValueWriter;
+import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
+import org.neo4j.bolt.protocol.io.writer.DefaultStructWriter;
 import org.neo4j.packstream.signal.FrameSignal;
 import org.neo4j.packstream.struct.StructRegistry;
+import org.neo4j.values.storable.Value;
 
 public interface BoltProtocol {
     /**
@@ -37,6 +42,20 @@ public interface BoltProtocol {
      * @return a protocol version number.
      */
     ProtocolVersion version();
+
+    /**
+     * Retrieves a set of features which are always enabled on this connection regardless of whether they have been
+     * negotiated or not.
+     * <p />
+     * Note: Features listed within this set are effectively blacklisted (e.g. cannot be negotiated later) and should
+     * thus be provided through reader/writer pipeline configurators within the protocol implementations rather than
+     * relying on the configuration functions provided by {@link Feature}.
+     *
+     * @return a set of features.
+     */
+    default Set<Feature> features() {
+        return Collections.emptySet();
+    }
 
     /**
      * Retrieves a provider which registers a set of connection hints upon connection creation.
@@ -60,29 +79,32 @@ public interface BoltProtocol {
     StateMachine createStateMachine(Connection connection);
 
     /**
-     * Retrieves a factory capable of creating a protocol specific value writer for a given buffer.
-     *
-     * @return a result handler.
-     * @deprecated Will be removed in 6.0 - Required for legacy id support.
-     */
-    // TODO: Deprecation: Intermediate LegacyBoltValueWriter will be merged with DefaultBoltValueWriter in 6.0
-    @SuppressWarnings("removal")
-    @Deprecated(forRemoval = true)
-    default LegacyBoltValueWriter.Factory valueWriterFactory() {
-        return LegacyBoltValueWriter::new;
-    }
-
-    /**
      * Retrieves the struct registry which provides read capabilities for request messages.
      *
      * @return a struct registry.
      */
-    StructRegistry<RequestMessage> requestMessageRegistry();
+    StructRegistry<Connection, RequestMessage> requestMessageRegistry();
 
     /**
      * Retrieves the struct registry which provides write capabilities for response messages.
      *
      * @return a struct registry.
      */
-    StructRegistry<ResponseMessage> responseMessageRegistry();
+    StructRegistry<Connection, ResponseMessage> responseMessageRegistry();
+
+    /**
+     * Registers protocol specific struct readers for decoding of values sent to the server by a client.
+     *
+     * @param builder a struct registry.
+     */
+    void registerStructReaders(StructRegistry.Builder<Connection, Value> builder);
+
+    /**
+     * Registers protocol specific struct writers for encoding of values through the result streaming APIs.
+     *
+     * @param pipeline a writer pipeline.
+     */
+    default void registerStructWriters(WriterPipeline pipeline) {
+        pipeline.addLast(DefaultStructWriter.getInstance());
+    }
 }

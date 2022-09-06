@@ -20,13 +20,6 @@
 package org.neo4j.bolt.runtime;
 
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.begin;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.commit;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.discard;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.pull;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.reset;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.rollback;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 
 import java.io.IOException;
@@ -46,7 +39,8 @@ import org.junit.jupiter.api.parallel.Resources;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
-import org.neo4j.bolt.testing.messages.BoltV44Wire;
+import org.neo4j.bolt.testing.messages.BoltDefaultWire;
+import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.testing.sequence.RequestSequenceCollection;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
@@ -86,6 +80,8 @@ public class ResetFuzzIT {
 
     private HostnamePort address;
 
+    private final BoltWire wire = new BoltDefaultWire();
+
     @BeforeEach
     public void setup(TestInfo testInfo) throws IOException {
         server.setGraphDatabaseFactory(getTestGraphDatabaseFactory());
@@ -104,9 +100,9 @@ public class ResetFuzzIT {
     @Timeout(value = 1, unit = TimeUnit.MINUTES)
     public void shouldTerminateAutoCommitQuery() throws Exception {
         var sequences = new RequestSequenceCollection()
-                .with(run(SHORT_QUERY_1), pull())
-                .with(run(SHORT_QUERY_2), discard())
-                .with(run(SHORT_QUERY_3));
+                .with(wire.run(SHORT_QUERY_1), wire.pull())
+                .with(wire.run(SHORT_QUERY_2), wire.discard())
+                .with(wire.run(SHORT_QUERY_3));
 
         execute(sequences);
     }
@@ -115,7 +111,7 @@ public class ResetFuzzIT {
     @Timeout(value = 1, unit = TimeUnit.MINUTES)
     public void shouldTerminateLongRunningAutoCommitQuery() throws Exception {
         // It takes a while for kernel to notice the tx get killed.
-        var sequences = new RequestSequenceCollection().with(run(LONG_QUERY), discard());
+        var sequences = new RequestSequenceCollection().with(wire.run(LONG_QUERY), wire.discard());
 
         execute(sequences);
     }
@@ -124,11 +120,11 @@ public class ResetFuzzIT {
     @Timeout(value = 1, unit = TimeUnit.MINUTES)
     public void shouldTerminateQueryInExplicitTransaction() throws Exception {
         var sequences = new RequestSequenceCollection()
-                .with(begin(), run(SHORT_QUERY_1), pull(), rollback())
-                .with(begin(), run(SHORT_QUERY_2), pull(), commit())
-                .with(begin(), run(SHORT_QUERY_3), pull())
-                .with(begin(), run(SHORT_QUERY_1))
-                .with(begin());
+                .with(wire.begin(), wire.run(SHORT_QUERY_1), wire.pull(), wire.rollback())
+                .with(wire.begin(), wire.run(SHORT_QUERY_2), wire.pull(), wire.commit())
+                .with(wire.begin(), wire.run(SHORT_QUERY_3), wire.pull())
+                .with(wire.begin(), wire.run(SHORT_QUERY_1))
+                .with(wire.begin());
 
         execute(sequences);
     }
@@ -136,7 +132,8 @@ public class ResetFuzzIT {
     @Test
     @Timeout(value = 1, unit = TimeUnit.MINUTES)
     public void shouldTerminateLongRunningQueryInExplicitTransaction() throws Exception {
-        var sequences = new RequestSequenceCollection().with(begin(), run(LONG_QUERY), pull(), rollback());
+        var sequences =
+                new RequestSequenceCollection().with(wire.begin(), wire.run(LONG_QUERY), wire.pull(), wire.rollback());
 
         execute(sequences);
     }
@@ -149,7 +146,7 @@ public class ResetFuzzIT {
         while (System.currentTimeMillis() < deadline) {
             var request = sequences.execute(connection, rand);
 
-            connection.send(reset());
+            connection.send(wire.reset());
 
             request.assertResponseOrRecord(connection);
             assertThat(connection).receivesSuccess();
@@ -160,7 +157,7 @@ public class ResetFuzzIT {
         var connection = new SocketConnection(address)
                 .connect()
                 .sendDefaultProtocolVersion()
-                .send(BoltV44Wire.hello());
+                .send(wire.hello());
 
         assertThat(connection).negotiatesDefaultVersion();
 

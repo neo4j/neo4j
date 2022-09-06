@@ -19,18 +19,18 @@
  */
 package org.neo4j.bolt.protocol.v40.messaging.decoder;
 
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.v40.messaging.request.PullMessage;
 import org.neo4j.bolt.protocol.v40.messaging.util.MessageMetadataParserV40;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.error.struct.IllegalStructSizeException;
 import org.neo4j.packstream.io.PackstreamBuf;
-import org.neo4j.packstream.io.value.PackstreamValues;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.packstream.struct.StructReader;
 import org.neo4j.values.virtual.MapValue;
 
-public final class PullMessageDecoder implements StructReader<PullMessage> {
+public final class PullMessageDecoder implements StructReader<Connection, PullMessage> {
     private static final PullMessageDecoder INSTANCE = new PullMessageDecoder();
 
     private PullMessageDecoder() {}
@@ -45,14 +45,17 @@ public final class PullMessageDecoder implements StructReader<PullMessage> {
     }
 
     @Override
-    public PullMessage read(PackstreamBuf buffer, StructHeader header) throws PackstreamReaderException {
+    public PullMessage read(Connection ctx, PackstreamBuf buffer, StructHeader header)
+            throws PackstreamReaderException {
         if (header.length() != 1) {
             throw new IllegalStructSizeException(1, header.length());
         }
 
+        var valueReader = ctx.valueReader(buffer);
+
         MapValue meta;
         try {
-            meta = PackstreamValues.readMap(buffer);
+            meta = valueReader.readMap();
         } catch (PackstreamReaderException ex) {
             throw new IllegalStructArgumentException("meta", ex);
         }

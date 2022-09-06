@@ -28,11 +28,13 @@ import org.neo4j.packstream.error.reader.UnexpectedStructException;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructRegistry;
 
-public class PackstreamStructDecoder extends MessageToMessageDecoder<PackstreamBuf> {
-    private final StructRegistry<?> registry;
+public class PackstreamStructDecoder<CTX> extends MessageToMessageDecoder<PackstreamBuf> {
+    private final CTX ctx;
+    private final StructRegistry<CTX, ?> registry;
     private final InternalLog log;
 
-    public PackstreamStructDecoder(StructRegistry<?> registry, InternalLogProvider logging) {
+    public PackstreamStructDecoder(CTX ctx, StructRegistry<CTX, ?> registry, InternalLogProvider logging) {
+        this.ctx = ctx;
         this.registry = registry;
         this.log = logging.getLog(PackstreamStructDecoder.class);
     }
@@ -40,7 +42,7 @@ public class PackstreamStructDecoder extends MessageToMessageDecoder<PackstreamB
     @Override
     protected void decode(ChannelHandlerContext ctx, PackstreamBuf msg, List<Object> out) throws Exception {
         try {
-            var struct = msg.readStruct(this.registry);
+            var struct = msg.readStruct(this.ctx, this.registry);
             out.add(struct);
         } catch (UnexpectedStructException ex) {
             // TODO: Return FAILURE instead to make Bolt connections more fault tolerant and driver dev friendly?

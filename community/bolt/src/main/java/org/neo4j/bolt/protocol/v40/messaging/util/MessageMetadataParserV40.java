@@ -27,7 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
-import org.neo4j.bolt.protocol.common.bookmark.BookmarksParser;
+import org.neo4j.bolt.protocol.common.bookmark.BookmarkParser;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.transaction.statement.metadata.StatementMetadata;
 import org.neo4j.graphdb.Node;
@@ -59,8 +59,7 @@ public final class MessageMetadataParserV40 {
 
     private MessageMetadataParserV40() {}
 
-    public static List<Bookmark> parseBookmarks(BookmarksParser parser, MapValue meta)
-            throws PackstreamReaderException {
+    public static List<Bookmark> parseBookmarks(BookmarkParser parser, MapValue meta) throws PackstreamReaderException {
         var anyValue = meta.get(BOOKMARKS_KEY);
         if (anyValue == Values.NO_VALUE) {
             return List.of();

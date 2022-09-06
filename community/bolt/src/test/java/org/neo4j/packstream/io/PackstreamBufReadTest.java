@@ -26,12 +26,12 @@ import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -52,6 +52,7 @@ import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.function.ThrowingConsumer;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.neo4j.packstream.error.reader.LimitExceededException;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.reader.UnexpectedStructException;
@@ -1155,42 +1156,9 @@ class PackstreamBufReadTest {
     Stream<DynamicTest> readMapShouldFailWithUnexpectedType() {
         return getValidMarkers(Type.MAP)
                 .map(invalid -> dynamicTest(
-                        invalid.name(), () -> assertThrowsUnexpectedType(Type.MAP, invalid, PackstreamBuf::readMap)));
-    }
-
-    @TestFactory
-    Stream<DynamicTest> readMapShouldFailWithLimitExceeded() {
-        return TypeMarker.MAP_TYPES.stream()
-                .map(marker -> dynamicTest(marker.name(), () -> {
-                    var reader = mock(Reader.class);
-                    var buf = prepareBuffer(b -> {
-                        if (marker.isNibbleMarker()) {
-                            b.writeByte(marker.getValue() ^ 15);
-                        } else {
-                            b.writeByte(marker.getValue());
-                            marker.getLengthPrefix().writeTo(b, 43);
-                        }
-                    });
-
-                    @SuppressWarnings("unchecked")
-                    var ex = assertThrows(LimitExceededException.class, () -> {
-                        if (marker.isNibbleMarker()) {
-                            buf.readMap(14, reader);
-                        } else {
-                            buf.readMap(42, reader);
-                        }
-                    });
-
-                    if (marker.isNibbleMarker()) {
-                        assertThat(ex.getLimit()).isEqualTo(14);
-                        assertThat(ex.getActual()).isEqualTo(15);
-                    } else {
-                        assertThat(ex.getLimit()).isEqualTo(42);
-                        assertThat(ex.getActual()).isEqualTo(43);
-                    }
-
-                    verifyNoInteractions(reader);
-                }));
+                        invalid.name(),
+                        () -> assertThrowsUnexpectedType(
+                                Type.MAP, invalid, buf -> buf.readMap(Mockito.mock(Reader.class)))));
     }
 
     @Test
@@ -1373,16 +1341,6 @@ class PackstreamBufReadTest {
                 }));
     }
 
-    @Test
-    void readStructHeaderShouldFailWithLimitExceeded() {
-        var buf = prepareBuffer(b -> b.writeByte(TypeMarker.TINY_STRUCT.getValue() ^ 15));
-
-        var ex = assertThrows(LimitExceededException.class, () -> buf.readStructHeader(14));
-
-        assertThat(ex.getLimit()).isEqualTo(14);
-        assertThat(ex.getActual()).isEqualTo(15);
-    }
-
     @TestFactory
     Stream<DynamicTest> readStructHeaderShouldFailWithUnexpectedType() {
         return getValidMarkers(Type.STRUCT)
@@ -1399,13 +1357,14 @@ class PackstreamBufReadTest {
                     var registry = mock(StructRegistry.class);
                     var reader = mock(StructReader.class);
                     var headerCaptor = ArgumentCaptor.forClass(StructHeader.class);
+                    var ctx = Mockito.mock(Object.class);
 
                     var buf = prepareBuffer(b -> b.writeByte(TypeMarker.TINY_STRUCT.getValue() ^ size)
                             .writeByte(0x42));
 
                     when(registry.getReader(headerCaptor.capture())).thenReturn(Optional.of(reader));
 
-                    buf.readStruct(registry);
+                    buf.readStruct(ctx, registry);
 
                     var header = headerCaptor.getValue();
 
@@ -1415,7 +1374,7 @@ class PackstreamBufReadTest {
                     verify(registry).getReader(header);
                     verifyNoMoreInteractions(registry);
 
-                    verify(reader).read(buf, header);
+                    verify(reader).read(ctx, buf, header);
                     verifyNoMoreInteractions(reader);
                 }));
     }
@@ -1427,7 +1386,7 @@ class PackstreamBufReadTest {
                 .map(invalid -> dynamicTest(
                         invalid.name(),
                         () -> assertThrowsUnexpectedType(
-                                Type.STRUCT, invalid, buf -> buf.readStruct(mock(StructRegistry.class)))));
+                                Type.STRUCT, invalid, buf -> buf.readStruct(null, mock(StructRegistry.class)))));
     }
 
     @Test
@@ -1439,7 +1398,7 @@ class PackstreamBufReadTest {
 
         when(registry.getReader(notNull())).thenReturn(Optional.empty());
 
-        var ex = assertThrows(UnexpectedStructException.class, () -> buf.readStruct(registry));
+        var ex = assertThrows(UnexpectedStructException.class, () -> buf.readStruct(null, registry));
 
         assertThat(ex.getLength()).isEqualTo(0);
         assertThat(ex.getTag()).isEqualTo((short) 0x42);
@@ -1455,16 +1414,16 @@ class PackstreamBufReadTest {
                 b -> b.writeByte(TypeMarker.TINY_STRUCT.getValue()).writeByte(0x42));
 
         when(registry.getReader(any())).thenReturn(Optional.of(reader));
-        when(reader.read(eq(buf), any())).thenThrow(new PackstreamReaderException("Test Exception"));
+        when(reader.read(isNull(), eq(buf), any())).thenThrow(new PackstreamReaderException("Test Exception"));
 
-        var ex = assertThrows(PackstreamReaderException.class, () -> buf.readStruct(registry));
+        var ex = assertThrows(PackstreamReaderException.class, () -> buf.readStruct(null, registry));
 
         assertThat(ex.getMessage()).isEqualTo("Test Exception");
 
         verify(registry).getReader(notNull());
         verifyNoMoreInteractions(registry);
 
-        verify(reader).read(eq(buf), notNull());
+        verify(reader).read(isNull(), eq(buf), notNull());
         verifyNoMoreInteractions(reader);
     }
 }

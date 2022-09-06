@@ -22,7 +22,6 @@ package org.neo4j.bolt.protocol.v41;
 import java.util.function.Predicate;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
-import org.neo4j.bolt.protocol.common.bookmark.BookmarksParser;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineSPIImpl;
@@ -45,19 +44,12 @@ public class BoltProtocolV41 extends BoltProtocolV40 {
     public static final ProtocolVersion VERSION = new ProtocolVersion(4, 1);
 
     public BoltProtocolV41(
-            BookmarksParser bookmarksParser,
             LogService logging,
             BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
             DefaultDatabaseResolver defaultDatabaseResolver,
             TransactionManager transactionManager,
             SystemNanoClock clock) {
-        super(
-                bookmarksParser,
-                logging,
-                boltGraphDatabaseManagementServiceSPI,
-                defaultDatabaseResolver,
-                transactionManager,
-                clock);
+        super(logging, boltGraphDatabaseManagementServiceSPI, defaultDatabaseResolver, transactionManager, clock);
     }
 
     @Override
@@ -67,8 +59,8 @@ public class BoltProtocolV41 extends BoltProtocolV40 {
     }
 
     @Override
-    public StructRegistry<RequestMessage> requestMessageRegistry() {
-        return super.requestMessageRegistry()
+    protected StructRegistry<Connection, RequestMessage> createRequestMessageRegistry() {
+        return super.createRequestMessageRegistry()
                 .builderOf()
                 .register(HelloMessageDecoder.getInstance())
                 .build();

@@ -25,16 +25,18 @@ import io.netty.handler.codec.MessageToByteEncoder;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructRegistry;
 
-public class PackstreamStructEncoder<O> extends MessageToByteEncoder<O> {
-    private final StructRegistry<O> registry;
+public class PackstreamStructEncoder<CTX, O> extends MessageToByteEncoder<O> {
+    private final CTX ctx;
+    private final StructRegistry<CTX, O> registry;
 
-    public PackstreamStructEncoder(Class<? extends O> type, StructRegistry<O> registry) {
+    public PackstreamStructEncoder(Class<? extends O> type, CTX ctx, StructRegistry<CTX, O> registry) {
         super(type);
+        this.ctx = ctx;
         this.registry = registry;
     }
 
     @Override
     protected void encode(ChannelHandlerContext ctx, O msg, ByteBuf out) throws Exception {
-        PackstreamBuf.wrap(out).writeStruct(this.registry, msg);
+        PackstreamBuf.wrap(out).writeStruct(this.ctx, this.registry, msg);
     }
 }

@@ -22,11 +22,10 @@ package org.neo4j.bolt.v50.runtime;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
-import static org.neo4j.bolt.testing.messages.BoltV50Wire.hello;
-import static org.neo4j.bolt.testing.messages.BoltV50Wire.pull;
-import static org.neo4j.bolt.testing.messages.BoltV50Wire.run;
 import static org.neo4j.packstream.testing.PackstreamBufAssertions.assertThat;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -34,32 +33,36 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.bolt.AbstractBoltITBase;
-import org.neo4j.bolt.protocol.v50.BoltProtocolV50;
+import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.bolt.testing.messages.BoltV44Wire;
+import org.neo4j.bolt.testing.messages.BoltV50Wire;
+import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.packstream.error.reader.UnexpectedTypeException;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.virtual.MapValueBuilder;
 
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
 public class BoltV50TransportIT extends AbstractBoltITBase {
 
     @Override
-    protected void negotiateBolt() throws Exception {
-        connection.send(BoltProtocolV50.VERSION);
-        assertThat(connection).negotiates(BoltProtocolV50.VERSION);
-
-        connection.send(hello());
-        assertThat(connection).receivesSuccess();
+    protected BoltWire initWire() {
+        return new BoltV50Wire();
     }
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("argumentsProvider")
     void shouldReturnElementIdForNodes(TransportConnection.Factory connectionFactory) throws Exception {
-        this.init(connectionFactory);
+        this.connectAndHandshake(connectionFactory);
 
-        connection.send(run("CREATE (m:Movie{title:\"The Matrix\"}) RETURN m")).send(pull());
+        connection
+                .send(wire.run("CREATE (m:Movie{title:\"The Matrix\"}) RETURN m"))
+                .send(wire.pull());
 
         assertThat(connection)
                 .receivesSuccess()
@@ -92,13 +95,13 @@ public class BoltV50TransportIT extends AbstractBoltITBase {
     @ParameterizedTest(name = "{0}")
     @MethodSource("argumentsProvider")
     void shouldReturnElementIdForRelationships(TransportConnection.Factory connectionFactory) throws Exception {
-        this.init(connectionFactory);
+        this.connectAndHandshake(connectionFactory);
 
         connection
                 .send(
-                        run(
+                        wire.run(
                                 "CREATE (:Actor{name: \"Greg\"})-[r:PLAYED_IN{year: 2021}]->(:Movie{title:\"The Matrix\"}) RETURN r"))
-                .send(pull());
+                .send(wire.pull());
 
         assertThat(connection)
                 .receivesSuccess()
@@ -120,13 +123,13 @@ public class BoltV50TransportIT extends AbstractBoltITBase {
     @ParameterizedTest(name = "{0}")
     @MethodSource("argumentsProvider")
     void shouldReturnElementIdForPaths(TransportConnection.Factory connectionFactory) throws Exception {
-        this.init(connectionFactory);
+        this.connectAndHandshake(connectionFactory);
 
         connection
                 .send(
-                        run(
+                        wire.run(
                                 "CREATE p=(:Actor{name: \"Greg\"})-[:PLAYED_IN{year: 2021}]->(:Movie{title:\"The Matrix\"}) RETURN p"))
-                .send(pull());
+                .send(wire.pull());
 
         assertThat(connection)
                 .receivesSuccess()
@@ -155,9 +158,11 @@ public class BoltV50TransportIT extends AbstractBoltITBase {
     @ParameterizedTest(name = "{0}")
     @MethodSource("argumentsProvider")
     void shouldReturnUniqueNodeIds(TransportConnection.Factory connectionFactory) throws Exception {
-        this.init(connectionFactory);
+        this.connectAndHandshake(connectionFactory);
 
-        connection.send(run("CREATE (a), (b), (c), (d), (e) RETURN a,b,c,d,e")).send(pull());
+        connection
+                .send(wire.run("CREATE (a), (b), (c), (d), (e) RETURN a,b,c,d,e"))
+                .send(wire.pull());
 
         assertThat(connection)
                 .receivesSuccess()
@@ -165,6 +170,90 @@ public class BoltV50TransportIT extends AbstractBoltITBase {
                         .containsStruct(0x71, 1)
                         .containsListHeader(5)
                         .satisfies(BoltV50TransportIT::assertUniqueNodeIdsReturned)
+                        .asBuffer()
+                        .hasNoRemainingReadableBytes())
+                .receivesSuccess();
+    }
+
+    /**
+     * Ensure that 5.x drivers cannot negotiate the UTC patch as it is implicitly enabled as part of the 5.0 protocol.
+     */
+    @ParameterizedTest
+    @MethodSource("argumentsProvider")
+    void shouldFailToNegotiateUTCPatch(TransportConnection.Factory connectionFactory) throws Exception {
+        this.connectAndNegotiate(connectionFactory);
+
+        wire.enable(Feature.UTC_DATETIME);
+
+        connection.send(wire.hello());
+
+        assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(meta).doesNotContainKey("patch_bolt"));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("argumentsProvider")
+    void shouldRejectLegacyOffsetDates(TransportConnection.Factory connectionFactory) throws Exception {
+        this.connectAndHandshake(connectionFactory);
+
+        var input =
+                DateTimeValue.datetime(OffsetDateTime.of(1995, 6, 14, 12, 50, 35, 556000000, ZoneOffset.ofHours(1)));
+
+        var params = new MapValueBuilder();
+        params.add("input", input);
+
+        var legacyOffsetWire = new BoltV44Wire();
+
+        connection.send(legacyOffsetWire.run("RETURN $input", params.build()));
+
+        assertThat(connection).receivesFailure(Status.Request.Invalid);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("argumentsProvider")
+    void shouldImplicitlyAcceptUTCOffsetDateTimes(TransportConnection.Factory connectionFactory) throws Exception {
+        this.connectAndHandshake(connectionFactory);
+
+        var input =
+                DateTimeValue.datetime(OffsetDateTime.of(1995, 6, 14, 12, 50, 35, 556000000, ZoneOffset.ofHours(1)));
+
+        var params = new MapValueBuilder();
+        params.add("input", input);
+
+        connection.send(wire.run("RETURN $input", params.build())).send(wire.pull());
+
+        assertThat(connection)
+                .receivesSuccess()
+                .packstreamSatisfies(stream -> stream.receivesMessage()
+                        .containsStruct(0x71, 1)
+                        .containsListHeader(1)
+                        .containsStruct(0x49, 3)
+                        .containsInt(803130635)
+                        .containsInt(556000000)
+                        .containsInt(3600)
+                        .asBuffer()
+                        .hasNoRemainingReadableBytes())
+                .receivesSuccess();
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("argumentsProvider")
+    void shouldImplicitlyAcceptUTCZoneDateTimes(TransportConnection.Factory connectionFactory) throws Exception {
+        this.connectAndHandshake(connectionFactory);
+
+        connection
+                .send(wire.run("RETURN datetime('1995-06-14T12:50:35.556+02:00[Europe/Berlin]')"))
+                .send(wire.pull());
+
+        assertThat(connection)
+                .receivesSuccess()
+                .packstreamSatisfies(stream -> stream.receivesMessage()
+                        .containsStruct(0x71, 1)
+                        .containsListHeader(1)
+                        .containsStruct(0x69, 3)
+                        .containsInt(803127035)
+                        .containsInt(556000000)
+                        .containsString("Europe/Berlin")
                         .asBuffer()
                         .hasNoRemainingReadableBytes())
                 .receivesSuccess();

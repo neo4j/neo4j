@@ -19,11 +19,12 @@
  */
 package org.neo4j.bolt.protocol.common.message.encoder;
 
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.message.response.FailureMessage;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructWriter;
 
-public final class FailureMessageEncoder implements StructWriter<FailureMessage> {
+public final class FailureMessageEncoder implements StructWriter<Connection, FailureMessage> {
     private static final FailureMessageEncoder INSTANCE = new FailureMessageEncoder();
 
     private FailureMessageEncoder() {}
@@ -48,7 +49,7 @@ public final class FailureMessageEncoder implements StructWriter<FailureMessage>
     }
 
     @Override
-    public void write(PackstreamBuf buffer, FailureMessage payload) {
+    public void write(Connection ctx, PackstreamBuf buffer, FailureMessage payload) {
         buffer.writeMapHeader(2);
 
         buffer.writeString("code");

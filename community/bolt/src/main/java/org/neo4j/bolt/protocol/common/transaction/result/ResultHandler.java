@@ -31,7 +31,6 @@ import org.neo4j.bolt.protocol.common.message.response.IgnoredMessage;
 import org.neo4j.bolt.protocol.common.message.response.SuccessMessage;
 import org.neo4j.bolt.protocol.common.message.result.BoltResult;
 import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
-import org.neo4j.bolt.protocol.io.LegacyBoltValueWriter;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.Log;
@@ -49,24 +48,18 @@ public class ResultHandler implements ResponseHandler {
     protected final Log log;
     protected final Connection connection;
 
-    @SuppressWarnings("removal")
-    protected final LegacyBoltValueWriter.Factory valueWriterFactory;
-
     private Error error;
     private boolean ignored;
 
     @SuppressWarnings("removal")
-    public ResultHandler(
-            Connection connection, LegacyBoltValueWriter.Factory valueWriterFactory, InternalLogProvider logging) {
+    public ResultHandler(Connection connection, InternalLogProvider logging) {
         this.connection = connection;
         this.log = logging.getLog(ResultHandler.class);
-        this.valueWriterFactory = valueWriterFactory;
     }
 
     @Override
     public boolean onPullRecords(BoltResult result, long size) throws Throwable {
-        return markHasMore(result.handleRecords(
-                new RecordMessageWriter(this.connection.channel(), this, this.valueWriterFactory), size));
+        return markHasMore(result.handleRecords(new RecordMessageWriter(this.connection, this), size));
     }
 
     @Override

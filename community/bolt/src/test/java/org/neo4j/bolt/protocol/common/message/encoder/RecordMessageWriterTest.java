@@ -22,7 +22,6 @@ package org.neo4j.bolt.protocol.common.message.encoder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -41,10 +40,10 @@ import org.junit.jupiter.api.TestFactory;
 import org.mockito.ArgumentCaptor;
 import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
 import org.neo4j.bolt.protocol.common.signal.MessageSignal;
-import org.neo4j.bolt.protocol.io.DefaultBoltValueWriter;
+import org.neo4j.bolt.protocol.io.pipeline.PipelineContext;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.io.Type;
-import org.neo4j.packstream.io.value.PackstreamValues;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 
@@ -56,13 +55,14 @@ class RecordMessageWriterTest {
     void shouldBeginRecord() throws IOException {
         var channel = mock(Channel.class);
         var parent = mock(ResponseHandler.class);
+        var connection = ConnectionMockFactory.newFactory().withChannel(channel).build();
 
         var captor = ArgumentCaptor.forClass(ByteBuf.class);
 
         when(channel.alloc()).thenReturn(ByteBufAllocator.DEFAULT);
         when(channel.write(captor.capture())).thenReturn(mock(ChannelPromise.class));
 
-        var writer = new RecordMessageWriter(channel, parent, DefaultBoltValueWriter::new);
+        var writer = new RecordMessageWriter(connection, parent);
 
         writer.beginRecord(42);
 
@@ -73,7 +73,7 @@ class RecordMessageWriterTest {
         var buf = PackstreamBuf.wrap(captor.getValue());
 
         var header = buf.readStructHeader();
-        var listHeader = buf.readLengthPrefixMarker(Type.LIST, -1);
+        var listHeader = buf.readLengthPrefixMarker(Type.LIST);
 
         assertThat(header.tag()).isEqualTo(RECORD_TAG);
         assertThat(header.length()).isEqualTo(1);
@@ -93,13 +93,19 @@ class RecordMessageWriterTest {
                 .map(expected -> dynamicTest(expected.getTypeName(), () -> {
                     var channel = mock(Channel.class);
                     var parent = mock(ResponseHandler.class);
+                    var context = mock(PipelineContext.class);
+
+                    var connection = ConnectionMockFactory.newFactory()
+                            .withChannel(channel)
+                            .withWriterContext(context)
+                            .build();
 
                     var captor = ArgumentCaptor.forClass(ByteBuf.class);
 
                     when(channel.alloc()).thenReturn(ByteBufAllocator.DEFAULT);
                     when(channel.write(captor.capture())).thenReturn(mock(ChannelPromise.class));
 
-                    var writer = new RecordMessageWriter(channel, parent, DefaultBoltValueWriter::new);
+                    var writer = new RecordMessageWriter(connection, parent);
 
                     writer.consumeField(expected);
 
@@ -107,47 +113,45 @@ class RecordMessageWriterTest {
                     verify(channel).write(any(ByteBuf.class));
                     verifyNoMoreInteractions(channel);
 
-                    var buf = PackstreamBuf.wrap(captor.getValue());
-                    var actual = PackstreamValues.readValue(buf);
-
-                    assertThat(actual).isEqualTo(expected);
+                    verify(context).writeValue(expected);
                 }));
     }
 
     @Test
     void shouldEndMessageOnRecordEnd() throws IOException {
-        var channel = mock(Channel.class, RETURNS_MOCKS);
         var parent = mock(ResponseHandler.class);
+        var connection = ConnectionMockFactory.newInstance();
 
-        var writer = new RecordMessageWriter(channel, parent, DefaultBoltValueWriter::new);
+        var writer = new RecordMessageWriter(connection, parent);
 
         writer.endRecord();
 
-        verify(channel).write(MessageSignal.END);
+        verify(connection).write(MessageSignal.END);
     }
 
     @Test
     void shouldResetOnError() throws IOException {
-        var channel = mock(Channel.class, RETURNS_MOCKS);
         var parent = mock(ResponseHandler.class);
+        var connection = ConnectionMockFactory.newInstance();
 
-        var writer = new RecordMessageWriter(channel, parent, DefaultBoltValueWriter::new);
+        var writer = new RecordMessageWriter(connection, parent);
 
         writer.onError();
 
-        verify(channel).write(MessageSignal.RESET);
+        verify(connection).write(MessageSignal.RESET);
     }
 
     @Test
     void shouldInvokeParentWhenMetadataIsPassed() {
-        var channel = mock(Channel.class);
         var parent = mock(ResponseHandler.class);
-        var child = new RecordMessageWriter(channel, parent, DefaultBoltValueWriter::new);
+        var connection = ConnectionMockFactory.newInstance();
+
+        var child = new RecordMessageWriter(connection, parent);
 
         child.addMetadata("the_answer", Values.longValue(42));
         child.addMetadata("foo", Values.stringValue("bar"));
 
-        verifyNoInteractions(channel);
+        verifyNoInteractions(connection);
 
         verify(parent).onMetadata("the_answer", Values.longValue(42));
         verify(parent).onMetadata("foo", Values.stringValue("bar"));

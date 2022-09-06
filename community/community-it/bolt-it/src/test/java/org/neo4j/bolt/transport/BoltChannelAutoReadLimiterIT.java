@@ -21,9 +21,6 @@ package org.neo4j.bolt.transport;
 
 import static java.util.Collections.singletonMap;
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.discard;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
@@ -37,6 +34,8 @@ import org.junit.jupiter.api.TestInfo;
 import org.neo4j.bolt.runtime.throttle.ChannelReadThrottleHandler;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.bolt.testing.messages.BoltDefaultWire;
+import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
@@ -66,6 +65,7 @@ class BoltChannelAutoReadLimiterIT {
 
     private AssertableLogProvider logProvider;
     private TransportConnection connection;
+    private final BoltWire wire = new BoltDefaultWire();
 
     @BeforeEach
     public void setup(TestInfo testInfo) throws Exception {
@@ -100,16 +100,16 @@ class BoltChannelAutoReadLimiterIT {
         int numberOfRunDiscardPairs = 20;
         String largeString = " ".repeat(8 * 1024);
 
-        connection.connect().sendDefaultProtocolVersion().send(hello());
+        connection.connect().sendDefaultProtocolVersion().send(wire.hello());
 
         assertThat(connection).negotiatesDefaultVersion().receivesSuccess();
 
         // when
         for (int i = 0; i < numberOfRunDiscardPairs; i++) {
             connection
-                    .send(run(
+                    .send(wire.run(
                             "CALL boltissue.sleep( $data )", ValueUtils.asMapValue(singletonMap("data", largeString))))
-                    .send(discard());
+                    .send(wire.discard());
         }
 
         // expect

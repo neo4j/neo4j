@@ -23,10 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.list;
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
 import static org.neo4j.bolt.testing.client.TransportConnection.DEFAULT_PROTOCOL_VERSION;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.discard;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.pull;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.reset;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -111,7 +107,9 @@ public class TransportSessionIT extends AbstractBoltTransportsTest {
         this.initConnection(connectionFactory);
 
         // When
-        connection.send(run("UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared")).send(pull());
+        connection
+                .send(wire.run("UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared"))
+                .send(wire.pull());
 
         // Then
         assertThat(connection)
@@ -133,7 +131,9 @@ public class TransportSessionIT extends AbstractBoltTransportsTest {
         this.initConnection(connectionFactory);
 
         // When
-        connection.send(run("UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared")).send(discard());
+        connection
+                .send(wire.run("UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared"))
+                .send(wire.discard());
 
         // Then
         assertThat(connection)
@@ -152,14 +152,14 @@ public class TransportSessionIT extends AbstractBoltTransportsTest {
         this.initConnection(connectionFactory);
 
         // Given
-        connection.send(run("QINVALID")).send(pull());
+        connection.send(wire.run("QINVALID")).send(wire.pull());
 
         assertThat(connection)
                 .receivesFailureFuzzy(Status.Statement.SyntaxError, "line 1, column 1")
                 .receivesIgnored();
 
         // When
-        connection.send(reset()).send(run("RETURN 1")).send(pull());
+        connection.send(wire.reset()).send(wire.run("RETURN 1")).send(wire.pull());
 
         // Then
         assertThat(connection)
@@ -175,7 +175,9 @@ public class TransportSessionIT extends AbstractBoltTransportsTest {
         this.initConnection(connectionFactory);
 
         // Given
-        connection.send(run("CREATE (n:Test {age: 2}) RETURN n.age AS age")).send(pull());
+        connection
+                .send(wire.run("CREATE (n:Test {age: 2}) RETURN n.age AS age"))
+                .send(wire.pull());
 
         assertThat(connection)
                 .receivesSuccess(meta -> assertThat(meta)
@@ -188,7 +190,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest {
                 .receivesSuccess(meta -> assertThat(meta).containsKey("t_last"));
 
         // When
-        connection.send(run("CALL db.labels() YIELD label")).send(pull());
+        connection.send(wire.run("CALL db.labels() YIELD label")).send(wire.pull());
 
         // Then
         assertThat(connection)
@@ -208,7 +210,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest {
         this.initConnection(connectionFactory);
 
         // When
-        connection.send(run("CREATE (n:Test) DELETE n RETURN n")).send(pull());
+        connection.send(wire.run("CREATE (n:Test) DELETE n RETURN n")).send(wire.pull());
 
         // Then
         assertThat(connection)
@@ -246,8 +248,8 @@ public class TransportSessionIT extends AbstractBoltTransportsTest {
 
         // When
         connection
-                .send(run("CREATE (a)-[r:T {prop: 42}]->(b) DELETE r RETURN r"))
-                .send(pull());
+                .send(wire.run("CREATE (a)-[r:T {prop: 42}]->(b) DELETE r RETURN r"))
+                .send(wire.pull());
 
         // Then
         assertThat(connection)
@@ -288,12 +290,12 @@ public class TransportSessionIT extends AbstractBoltTransportsTest {
         this.initConnection(connectionFactory);
 
         // Given
-        connection.send(run("CREATE (n)")).send(pull());
+        connection.send(wire.run("CREATE (n)")).send(wire.pull());
 
         assertThat(connection).receivesSuccess(2);
 
         // When
-        connection.send(run("RETURN 1")).send(pull());
+        connection.send(wire.run("RETURN 1")).send(wire.pull());
 
         // Then
         assertThat(connection).receivesSuccess().receivesRecord(longValue(1)).receivesSuccess(meta -> assertThat(meta)
@@ -308,8 +310,8 @@ public class TransportSessionIT extends AbstractBoltTransportsTest {
 
         // When
         connection
-                .send(run("EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)"))
-                .send(pull());
+                .send(wire.run("EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)"))
+                .send(wire.pull());
 
         // Then
         assertThat(connection)
@@ -334,7 +336,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest {
         this.initConnection(connectionFactory);
 
         // When
-        connection.send(run("DROP INDEX my_index")).send(pull());
+        connection.send(wire.run("DROP INDEX my_index")).send(wire.pull());
 
         // Then
         assertThat(connection)

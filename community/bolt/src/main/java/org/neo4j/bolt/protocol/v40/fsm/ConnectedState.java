@@ -31,6 +31,7 @@ import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValueBuilder;
 
 /**
@@ -54,6 +55,10 @@ public class ConnectedState implements State {
             var routingContext = extractRoutingContext(helloMessage);
 
             if (processAuthentication(userAgent, authToken, context)) {
+                var enabledFeatures = helloMessage.features().stream()
+                        .filter(feature -> context.connection().enableFeature(feature))
+                        .toList();
+
                 context.initStatementProcessorProvider(routingContext);
 
                 context.connectionState().onMetadata(CONNECTION_ID_KEY, Values.utf8Value(context.connectionId()));
@@ -61,6 +66,13 @@ public class ConnectedState implements State {
                 var connectionHints = new MapValueBuilder();
                 context.connection().connector().connectionHintProvider().append(connectionHints);
                 context.connectionState().onMetadata("hints", connectionHints.build());
+
+                if (!enabledFeatures.isEmpty()) {
+                    var builder = ListValueBuilder.newListBuilder(enabledFeatures.size());
+                    enabledFeatures.forEach(feature -> builder.add(Values.stringValue(feature.getId())));
+
+                    context.connectionState().onMetadata("patch_bolt", builder.build());
+                }
 
                 return readyState;
             } else {

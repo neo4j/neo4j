@@ -21,12 +21,11 @@ package org.neo4j.bolt.protocol.v40.messaging.decoder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.v40.messaging.request.GoodbyeMessage;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.struct.IllegalStructSizeException;
 import org.neo4j.packstream.io.PackstreamBuf;
@@ -36,11 +35,11 @@ class GoodbyeMessageDecoderTest {
 
     @Test
     void shouldReadMessage() throws PackstreamReaderException {
-        var connection = mock(Connection.class);
+        var connection = ConnectionMockFactory.newInstance();
         var decoder = GoodbyeMessageDecoder.getInstance();
 
-        var msg1 = decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(0, (short) 0x42));
-        var msg2 = decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(0, (short) 0x42));
+        var msg1 = decoder.read(connection, PackstreamBuf.allocUnpooled(), new StructHeader(0, (short) 0x42));
+        var msg2 = decoder.read(connection, PackstreamBuf.allocUnpooled(), new StructHeader(0, (short) 0x42));
 
         assertThat(msg1).isNotNull().isSameAs(GoodbyeMessage.INSTANCE).isSameAs(msg2);
 
@@ -49,10 +48,12 @@ class GoodbyeMessageDecoderTest {
 
     @Test
     void shouldFailWithIllegalStructSizeWhenNonEmptyStructIsGiven() {
+        var connection = ConnectionMockFactory.newInstance();
         var decoder = GoodbyeMessageDecoder.getInstance();
 
         assertThatExceptionOfType(IllegalStructSizeException.class)
-                .isThrownBy(() -> decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(1, (short) 0x42)))
+                .isThrownBy(() ->
+                        decoder.read(connection, PackstreamBuf.allocUnpooled(), new StructHeader(1, (short) 0x42)))
                 .withMessage("Illegal struct size: Expected struct to be 0 fields but got 1");
     }
 }

@@ -20,22 +20,10 @@
 package org.neo4j.packstream.io.value;
 
 import io.netty.buffer.Unpooled;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetTime;
-import java.time.ZonedDateTime;
-import org.neo4j.packstream.io.NativeStruct;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.values.AnyValueWriter;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.TextArray;
-import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.NodeValue;
-import org.neo4j.values.virtual.RelationshipValue;
 
-public class PackstreamValueWriter implements AnyValueWriter<RuntimeException> {
+public abstract class PackstreamValueWriter implements AnyValueWriter<RuntimeException> {
     protected final PackstreamBuf buf;
 
     public PackstreamValueWriter(PackstreamBuf target) {
@@ -108,41 +96,6 @@ public class PackstreamValueWriter implements AnyValueWriter<RuntimeException> {
     }
 
     @Override
-    public void writePoint(CoordinateReferenceSystem crs, double[] coordinate) {
-        NativeStruct.writePoint(this.buf, crs, coordinate);
-    }
-
-    @Override
-    public void writeDuration(long months, long days, long seconds, int nanos) {
-        NativeStruct.writeDuration(this.buf, months, days, seconds, nanos);
-    }
-
-    @Override
-    public void writeDate(LocalDate localDate) {
-        NativeStruct.writeDate(this.buf, localDate);
-    }
-
-    @Override
-    public void writeLocalTime(LocalTime localTime) {
-        NativeStruct.writeLocalTime(this.buf, localTime);
-    }
-
-    @Override
-    public void writeTime(OffsetTime offsetTime) {
-        NativeStruct.writeTime(this.buf, offsetTime);
-    }
-
-    @Override
-    public void writeLocalDateTime(LocalDateTime localDateTime) {
-        NativeStruct.writeLocalDateTime(this.buf, localDateTime);
-    }
-
-    @Override
-    public void writeDateTime(ZonedDateTime zonedDateTime) {
-        NativeStruct.writeDateTimeZoneId(this.buf, zonedDateTime);
-    }
-
-    @Override
     public EntityMode entityMode() {
         return EntityMode.FULL;
     }
@@ -173,36 +126,12 @@ public class PackstreamValueWriter implements AnyValueWriter<RuntimeException> {
     }
 
     @Override
-    public void writeNode(String elementId, long nodeId, TextArray labels, MapValue properties, boolean isDeleted) {
-        throw new UnsupportedOperationException("Unsupported data type: Node");
-    }
-
-    @Override
     public void writeRelationshipReference(long relId) {
         throw new UnsupportedOperationException("Cannot write raw relationship reference");
     }
 
     @Override
-    public void writeRelationship(
-            String elementId,
-            long relId,
-            String startNodeElementId,
-            long startNodeId,
-            String endNodeElementId,
-            long endNodeId,
-            TextValue type,
-            MapValue properties,
-            boolean isDeleted) {
-        throw new UnsupportedOperationException("Unsupported data type: Relationship");
-    }
-
-    @Override
     public void writePathReference(long[] nodes, long[] relationships) {
         throw new UnsupportedOperationException("Cannot write raw path reference");
-    }
-
-    @Override
-    public void writePath(NodeValue[] nodes, RelationshipValue[] relationships) {
-        throw new UnsupportedOperationException("Unsupported data type: Path");
     }
 }

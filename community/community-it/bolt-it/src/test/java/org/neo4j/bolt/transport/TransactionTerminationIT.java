@@ -20,10 +20,6 @@
 package org.neo4j.bolt.transport;
 
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.begin;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.reset;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +27,8 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.bolt.testing.messages.BoltDefaultWire;
+import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -48,6 +46,8 @@ public class TransactionTerminationIT {
 
     @Inject
     public Neo4jWithSocket server;
+
+    private final BoltWire wire = new BoltDefaultWire();
 
     @BeforeEach
     void setUp(TestInfo testInfo) throws Exception {
@@ -67,12 +67,12 @@ public class TransactionTerminationIT {
     void killTxViaReset() throws Exception {
         var connection = initializeConnection(serverAddress);
 
-        connection.send(begin()).send(run("UNWIND range(1, 2000000) AS i CREATE (n)"));
+        connection.send(wire.begin()).send(wire.run("UNWIND range(1, 2000000) AS i CREATE (n)"));
 
         // let the query start actually executing
         awaitTransactionStart();
 
-        connection.send(reset());
+        connection.send(wire.reset());
 
         assertThat(connection)
                 .receivesSuccess()
@@ -95,7 +95,7 @@ public class TransactionTerminationIT {
         var connection = new SocketConnection(address)
                 .connect()
                 .sendDefaultProtocolVersion()
-                .send(hello());
+                .send(wire.hello());
 
         assertThat(connection).negotiatesDefaultVersion().receivesSuccess();
 

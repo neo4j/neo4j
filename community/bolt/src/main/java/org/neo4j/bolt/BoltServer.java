@@ -39,6 +39,7 @@ import javax.net.ssl.SSLException;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
+import org.neo4j.bolt.protocol.common.bookmark.BookmarkParser;
 import org.neo4j.bolt.protocol.common.connection.BoltConnectionMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.Connector;
@@ -54,7 +55,7 @@ import org.neo4j.bolt.protocol.common.connector.netty.DomainSocketNettyConnector
 import org.neo4j.bolt.protocol.common.connector.netty.SocketNettyConnector;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
 import org.neo4j.bolt.protocol.v40.BoltProtocolV40;
-import org.neo4j.bolt.protocol.v40.bookmark.BookmarksParserV40;
+import org.neo4j.bolt.protocol.v40.bookmark.BookmarkParserV40;
 import org.neo4j.bolt.protocol.v41.BoltProtocolV41;
 import org.neo4j.bolt.protocol.v42.BoltProtocolV42;
 import org.neo4j.bolt.protocol.v43.BoltProtocolV43;
@@ -121,6 +122,7 @@ public class BoltServer extends LifecycleAdapter {
     private final BoltProtocolRegistry protocolRegistry;
     private final AuthConfigProvider authConfigProvider;
     private final InternalLog log;
+    private final BookmarkParser bookmarkParser;
 
     private final InternalLog userLog;
 
@@ -181,46 +183,40 @@ public class BoltServer extends LifecycleAdapter {
         var customBookmarkParser = boltGraphDatabaseManagementServiceSPI
                 .getCustomBookmarkFormatParser()
                 .orElse(CustomBookmarkFormatParser.DEFAULT);
-        var bookmarksParser = new BookmarksParserV40(databaseIdRepository, customBookmarkParser);
+        this.bookmarkParser = new BookmarkParserV40(databaseIdRepository, customBookmarkParser);
 
         this.protocolRegistry = BoltProtocolRegistry.builder()
                 .register(new BoltProtocolV40(
-                        bookmarksParser,
                         logService,
                         boltGraphDatabaseManagementServiceSPI,
                         defaultDatabaseResolver,
                         transactionManager,
                         clock))
                 .register(new BoltProtocolV41(
-                        bookmarksParser,
                         logService,
                         boltGraphDatabaseManagementServiceSPI,
                         defaultDatabaseResolver,
                         transactionManager,
                         clock))
                 .register(new BoltProtocolV42(
-                        bookmarksParser,
                         logService,
                         boltGraphDatabaseManagementServiceSPI,
                         defaultDatabaseResolver,
                         transactionManager,
                         clock))
                 .register(new BoltProtocolV43(
-                        bookmarksParser,
                         logService,
                         boltGraphDatabaseManagementServiceSPI,
                         defaultDatabaseResolver,
                         transactionManager,
                         clock))
                 .register(new BoltProtocolV44(
-                        bookmarksParser,
                         logService,
                         boltGraphDatabaseManagementServiceSPI,
                         defaultDatabaseResolver,
                         transactionManager,
                         clock))
                 .register(new BoltProtocolV50(
-                        bookmarksParser,
                         logService,
                         boltGraphDatabaseManagementServiceSPI,
                         defaultDatabaseResolver,
@@ -485,6 +481,7 @@ public class BoltServer extends LifecycleAdapter {
                 this.authConfigProvider,
                 this.defaultDatabaseResolver,
                 this.connectionHintProvider,
+                this.bookmarkParser,
                 this.logService.getUserLogProvider(),
                 this.logService.getInternalLogProvider());
     }
@@ -514,6 +511,7 @@ public class BoltServer extends LifecycleAdapter {
                 this.authConfigProvider,
                 this.defaultDatabaseResolver,
                 this.connectionHintProvider,
+                this.bookmarkParser,
                 this.logService.getUserLogProvider(),
                 this.logService.getInternalLogProvider());
     }

@@ -26,9 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
-import static org.neo4j.bolt.testing.messages.BoltV44Wire.hello;
-import static org.neo4j.bolt.testing.messages.BoltV44Wire.pull;
-import static org.neo4j.bolt.testing.messages.BoltV44Wire.run;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -50,6 +47,7 @@ import org.junit.jupiter.api.parallel.Resources;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.testing.messages.BoltDefaultWire;
+import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -89,6 +87,7 @@ public class ShutdownSequenceIT {
     private HostnamePort address;
     private CountDownLatch txStarted;
     private CountDownLatch boltWorkerThreadPoolShuttingDown;
+    private final BoltWire wire = new BoltDefaultWire();
 
     @BeforeEach
     public void setup(TestInfo testInfo) throws Exception {
@@ -116,7 +115,7 @@ public class ShutdownSequenceIT {
     public void shutdownShouldResultInFailureMessageForTransactionAwareConnections() throws Exception {
         var connection = connectAndAuthenticate();
 
-        connection.send(run("CALL test.stream.nodes()")).send(BoltDefaultWire.pull());
+        connection.send(wire.run("CALL test.stream.nodes()")).send(wire.pull());
 
         // Wait for a transaction to start on the server side
         assertTrue(txStarted.await(1, MINUTES));
@@ -178,7 +177,7 @@ public class ShutdownSequenceIT {
     public void shutdownShouldWaitForNonTransactionAwareConnections() throws Exception {
         var connection = connectAndAuthenticate();
 
-        connection.send(run("CALL test.stream.strings()")).send(pull());
+        connection.send(wire.run("CALL test.stream.strings()")).send(wire.pull());
 
         // Wait for a transaction to start on the server side
         assertTrue(txStarted.await(1, MINUTES));
@@ -224,7 +223,7 @@ public class ShutdownSequenceIT {
         var connection = new SocketConnection(address)
                 .connect()
                 .sendDefaultProtocolVersion()
-                .send(hello());
+                .send(wire.hello());
 
         assertThat(connection).negotiatesDefaultVersion();
 

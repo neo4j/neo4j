@@ -247,6 +247,10 @@ public final class PackstreamBuf implements ReferenceCounted {
         return length;
     }
 
+    public long readLengthPrefixMarker(Type type) throws UnexpectedTypeException, LimitExceededException {
+        return this.readLengthPrefixMarker(type, -1);
+    }
+
     /**
      * Retrieves the next type marker within this buffer.
      * <p>
@@ -363,67 +367,6 @@ public final class PackstreamBuf implements ReferenceCounted {
                 .collect(Collectors.joining(", "));
 
         throw new IllegalArgumentException("Length " + length + " exceeds supported maximum lengths of " + maxLengths);
-    }
-
-    /**
-     * Retrieves an arbitrary value from this buffer.
-     *
-     * @param structRegistry a struct registry (or null if struct decoding is not desired).
-     * @return a payload object.
-     * @throws LimitExceededException    when one of the value limits is exceeded.
-     * @throws UnexpectedStructException when a given struct type cannot be located in the given registry.
-     * @throws PackstreamReaderException when a value cannot be retrieved.
-     */
-    public Object readValue(StructRegistry<?> structRegistry) throws PackstreamReaderException {
-        var marker = this.peekMarker();
-
-        if (marker == NULL) {
-            this.readNull();
-            return null;
-        }
-
-        switch (marker.getType()) {
-            case BYTES:
-                // We treat BYTES as a special case here as we cannot rely on the caller to free this value in this
-                // particular context as we may be wrapping the
-                // value in a Map or List type thus hiding the ReferenceCounted nature of the object
-                var buffer = this.readBytes();
-
-                var heap = new byte[buffer.readableBytes()];
-                buffer.readBytes(heap);
-
-                return heap;
-            case BOOLEAN:
-                return this.readBoolean();
-            case FLOAT:
-                return this.readFloat();
-            case INT:
-                return this.readInt();
-            case LIST:
-                return this.readList();
-            case MAP:
-                return this.readMap();
-            case STRING:
-                return this.readString();
-            case STRUCT:
-                if (structRegistry != null) {
-                    return this.readStruct(structRegistry);
-                }
-                return this.readStructHeader();
-            default:
-                throw new PackstreamReaderException("Unsupported type: " + marker.getType() + " (" + marker + ")");
-        }
-    }
-
-    /**
-     * Retrieves an arbitrary value from this buffer.
-     *
-     * @return a payload object.
-     * @throws LimitExceededException    when one of the value limits is exceeded.
-     * @throws PackstreamReaderException when a value cannot be retrieved.
-     */
-    public Object readValue() throws PackstreamReaderException {
-        return this.readValue(null);
     }
 
     /**
@@ -1151,18 +1094,6 @@ public final class PackstreamBuf implements ReferenceCounted {
     }
 
     /**
-     * Retrieves a list of arbitrary element types from this buffer.
-     *
-     * @return a list of arbitrary content.
-     * @throws LimitExceededException        when the given limit of elements or another value limit is exceeded.
-     * @throws UnexpectedTypeMarkerException when the value type does not meet the expectations.
-     * @throws PackstreamReaderException     when a reader fails to decode a list element.
-     */
-    public List<Object> readList() throws PackstreamReaderException {
-        return this.readList(PackstreamBuf::readValue);
-    }
-
-    /**
      * Writes the contents of a list to this buffer.
      *
      * @param payload a list of arbitrary elements.
@@ -1395,17 +1326,6 @@ public final class PackstreamBuf implements ReferenceCounted {
     }
 
     /**
-     * Retrieves a generic map consisting of simple Packstream values.
-     *
-     * @return a map.
-     * @throws UnexpectedTypeException when an invalid or otherwise unsupported type marker is encountered.
-     * @throws LimitExceededException  when a value exceeds its bounds.
-     */
-    public Map<String, Object> readMap() throws PackstreamReaderException {
-        return this.readMap(PackstreamBuf::readValue);
-    }
-
-    /**
      * Writes a map of a given type to this buffer.
      *
      * @param payload a map value.
@@ -1477,46 +1397,19 @@ public final class PackstreamBuf implements ReferenceCounted {
     /**
      * Retrieves the next struct header without advancing the reader index.
      *
-     * @param limit a struct header size limit.
-     * @return a struct header.
-     * @throws LimitExceededException  when the struct header size has been exceeded.
-     * @throws UnexpectedTypeException when an unexpected value type is encountered.
-     */
-    public StructHeader peekStructHeader(long limit) throws LimitExceededException, UnexpectedTypeException {
-        var originalMarkerLocation = this.delegate.readerIndex();
-
-        try {
-            this.delegate.markReaderIndex();
-            return this.readStructHeader(limit);
-        } finally {
-            this.delegate.resetReaderIndex().readerIndex(originalMarkerLocation);
-        }
-    }
-
-    /**
-     * Retrieves the next struct header without advancing the reader index.
-     *
      * @return a struct header.
      * @throws LimitExceededException  when the struct header size has been exceeded.
      * @throws UnexpectedTypeException when an unexpected value type is encountered.
      */
     public StructHeader peekStructHeader() throws LimitExceededException, UnexpectedTypeException {
-        return this.peekStructHeader(-1);
-    }
+        var originalMarkerLocation = this.delegate.readerIndex();
 
-    /**
-     * Retrieves a struct header from this buffer.
-     *
-     * @param limit the maximum number of fields within the struct (none if negative).
-     * @return a struct header.
-     * @throws LimitExceededException  when the given limit exceeded.
-     * @throws UnexpectedTypeException when the value type does not match the expectations.
-     */
-    public StructHeader readStructHeader(long limit) throws LimitExceededException, UnexpectedTypeException {
-        var length = this.readLengthPrefixMarker(STRUCT, limit);
-        var tag = this.delegate.readUnsignedByte();
-
-        return new StructHeader(length, tag);
+        try {
+            this.delegate.markReaderIndex();
+            return this.readStructHeader();
+        } finally {
+            this.delegate.resetReaderIndex().readerIndex(originalMarkerLocation);
+        }
     }
 
     /**
@@ -1527,7 +1420,10 @@ public final class PackstreamBuf implements ReferenceCounted {
      * @throws UnexpectedTypeException when the value type does not match the expectations.
      */
     public StructHeader readStructHeader() throws LimitExceededException, UnexpectedTypeException {
-        return this.readStructHeader(-1);
+        var length = this.readLengthPrefixMarker(STRUCT);
+        var tag = this.delegate.readUnsignedByte();
+
+        return new StructHeader(length, tag);
     }
 
     /**
@@ -1547,18 +1443,19 @@ public final class PackstreamBuf implements ReferenceCounted {
      * Retrieves a struct from this buffer.
      *
      * @param registry a struct type registry.
+     * @param <CTX> a context type.
      * @param <O>      a struct POJO base type.
      * @return a struct POJO.
      * @throws LimitExceededException    when a value limit is exceeded.
      * @throws UnexpectedTypeException   when the value type does not match the expectations.
      * @throws PackstreamReaderException when the structure cannot be decoded.
      */
-    public <O> O readStruct(StructRegistry<O> registry) throws PackstreamReaderException {
+    public <CTX, O> O readStruct(CTX ctx, StructRegistry<CTX, O> registry) throws PackstreamReaderException {
         var header = this.readStructHeader();
 
         return registry.getReader(header)
                 .orElseThrow(() -> new UnexpectedStructException(header))
-                .read(this, header);
+                .read(ctx, this, header);
     }
 
     /**
@@ -1566,12 +1463,13 @@ public final class PackstreamBuf implements ReferenceCounted {
      *
      * @param registry a struct type registry.
      * @param payload  a struct POJO payload.
+     * @param <CTX>    a context type.
      * @param <S>      a base struct POJO type.
      * @param <P>      a payload POJO type.
      * @return a reference to this buffer.
      * @throws IllegalArgumentException when an unknown struct type or an invalid value is passed.
      */
-    public <S, P extends S> PackstreamBuf writeStruct(StructRegistry<S> registry, P payload) {
+    public <CTX, S, P extends S> PackstreamBuf writeStruct(CTX ctx, StructRegistry<CTX, S> registry, P payload) {
         if (registry == null) {
             throw new NullPointerException("registry cannot be null");
         }
@@ -1585,7 +1483,7 @@ public final class PackstreamBuf implements ReferenceCounted {
         var header = new StructHeader(length, tag);
         this.writeStructHeader(header);
 
-        writer.write(this, payload);
+        writer.write(ctx, this, payload);
         return this;
     }
 

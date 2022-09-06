@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
+import org.neo4j.bolt.protocol.common.bookmark.BookmarkParser;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.ConnectionRegistry;
 import org.neo4j.bolt.protocol.common.connector.Connector;
@@ -122,6 +123,10 @@ public final class ConnectorMockFactory extends AbstractMockFactory<Connector, C
 
     public ConnectorMockFactory withConnectionHintProvider(ConnectionHintProvider connectionHintProvider) {
         return this.withStaticValue(Connector::connectionHintProvider, connectionHintProvider);
+    }
+
+    public ConnectorMockFactory withBookmarkParser(BookmarkParser parser) {
+        return this.withStaticValue(Connector::bookmarkParser, parser);
     }
 
     public ConnectorMockFactory withConnectionCreationFunction(Supplier<Connection> factory) {

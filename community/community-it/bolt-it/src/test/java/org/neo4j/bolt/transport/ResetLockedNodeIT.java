@@ -20,13 +20,6 @@
 package org.neo4j.bolt.transport;
 
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.begin;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.commit;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.goodbye;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.pull;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.reset;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 import static org.neo4j.values.storable.Values.intValue;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +27,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
 import org.neo4j.bolt.testing.client.SocketConnection;
+import org.neo4j.bolt.testing.messages.BoltDefaultWire;
+import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -53,6 +48,8 @@ public class ResetLockedNodeIT {
     @Inject
     public Neo4jWithSocket server;
 
+    private final BoltWire wire = new BoltDefaultWire();
+
     @BeforeEach
     void setUp(TestInfo testInfo) throws Exception {
         server.setGraphDatabaseFactory(new TestDatabaseManagementServiceBuilder());
@@ -67,11 +64,11 @@ public class ResetLockedNodeIT {
         SocketConnection connection = new SocketConnection(serverAddress);
         initializeConnection(connection);
 
-        connection.send(run("CREATE (n {id: 123})")).send(pull(100));
+        connection.send(wire.run("CREATE (n {id: 123})")).send(wire.pull(100));
 
         assertThat(connection).receivesSuccess(2);
 
-        connection.send(goodbye());
+        connection.send(wire.goodbye());
     }
 
     @Test
@@ -92,20 +89,20 @@ public class ResetLockedNodeIT {
         paramsB.add("newId", intValue(789));
 
         // Given a connectionA has acquired a lock whilst updating a node.
-        connA.send(begin())
-                .send(run("MATCH (n {id: $currentId}) SET n.id = $newId", paramsA.build()))
-                .send(pull(100));
+        connA.send(wire.begin())
+                .send(wire.run("MATCH (n {id: $currentId}) SET n.id = $newId", paramsA.build()))
+                .send(wire.pull(100));
 
         assertThat(connA).receivesSuccess(3);
 
         // And when connectionB is blocked waiting to acquire the same lock.
-        connB.send(run("MATCH (n {id: $currentId}) SET n.id = $newId", paramsB.build()))
-                .send(pull(100));
+        connB.send(wire.run("MATCH (n {id: $currentId}) SET n.id = $newId", paramsB.build()))
+                .send(wire.pull(100));
 
         Thread.sleep(300); // Allow time for connection B to become blocked on a lock.
 
         // When the connectionB is RESET
-        connB.send(reset());
+        connB.send(wire.reset());
 
         // Then that connection receives an error
         assertThat(connB)
@@ -114,13 +111,13 @@ public class ResetLockedNodeIT {
                 .receivesSuccess();
 
         // And the other connection can commit successfully.
-        connA.send(commit());
+        connA.send(wire.commit());
 
         assertThat(connA).receivesSuccess();
     }
 
     private void initializeConnection(SocketConnection connection) throws Exception {
-        connection.connect().sendDefaultProtocolVersion().send(hello());
+        connection.connect().sendDefaultProtocolVersion().send(wire.hello());
 
         assertThat(connection).negotiatesDefaultVersion().receivesSuccess();
     }

@@ -49,7 +49,7 @@ import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.authentication.AuthenticationFlag;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.v40.BoltProtocolV40;
-import org.neo4j.bolt.protocol.v40.bookmark.BookmarksParserV40;
+import org.neo4j.bolt.protocol.v40.bookmark.BookmarkParserV40;
 import org.neo4j.bolt.protocol.v41.BoltProtocolV41;
 import org.neo4j.bolt.protocol.v43.BoltProtocolV43;
 import org.neo4j.bolt.protocol.v44.BoltProtocolV44;
@@ -198,38 +198,18 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback {
         var databaseManagementService = new BoltKernelDatabaseManagementServiceProvider(
                 managementService, new Monitors(), clock, ofSeconds(30));
 
-        var bookmarksParser = new BookmarksParserV40(
+        var bookmarksParser = new BookmarkParserV40(
                 databaseContextProvider.databaseIdRepository(), CustomBookmarkFormatParser.DEFAULT);
 
         protocolRegistry = BoltProtocolRegistry.builder()
                 .register(new BoltProtocolV40(
-                        bookmarksParser,
-                        logService,
-                        databaseManagementService,
-                        defaultDatabaseResolver,
-                        txManager,
-                        clock))
+                        logService, databaseManagementService, defaultDatabaseResolver, txManager, clock))
                 .register(new BoltProtocolV41(
-                        bookmarksParser,
-                        logService,
-                        databaseManagementService,
-                        defaultDatabaseResolver,
-                        txManager,
-                        clock))
+                        logService, databaseManagementService, defaultDatabaseResolver, txManager, clock))
                 .register(new BoltProtocolV43(
-                        bookmarksParser,
-                        logService,
-                        databaseManagementService,
-                        defaultDatabaseResolver,
-                        txManager,
-                        clock))
+                        logService, databaseManagementService, defaultDatabaseResolver, txManager, clock))
                 .register(new BoltProtocolV44(
-                        bookmarksParser,
-                        logService,
-                        databaseManagementService,
-                        defaultDatabaseResolver,
-                        txManager,
-                        clock))
+                        logService, databaseManagementService, defaultDatabaseResolver, txManager, clock))
                 .build();
 
         var authManager = resolver.resolveDependency(AuthManager.class);

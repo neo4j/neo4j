@@ -36,9 +36,12 @@ import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
+import org.neo4j.bolt.protocol.io.pipeline.PipelineContext;
 import org.neo4j.bolt.security.error.AuthenticationException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
+import org.neo4j.packstream.io.PackstreamBuf;
+import org.neo4j.packstream.io.value.PackstreamValueReader;
 
 /**
  * Represents an established Bolt connection as well as its current state.
@@ -169,6 +172,30 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
      * @throws IllegalStateException when the protocol has already been selected.
      */
     void selectProtocol(BoltProtocol protocol);
+
+    /**
+     * Retrieves the value reader which shall be used to parse Packstream values via this connection.
+     *
+     * @param buf a buffer.
+     * @return a packstream value reader.
+     */
+    PackstreamValueReader<Connection> valueReader(PackstreamBuf buf);
+
+    /**
+     * Creates a writer context around a given target buffer.
+     *
+     * @param buf a buffer.
+     * @return a packstream value writer.
+     */
+    PipelineContext writerContext(PackstreamBuf buf);
+
+    /**
+     * Enables a designated feature for use with this connection.
+     *
+     * @param feature a feature.
+     * @return true if the feature has been enabled, false otherwise.
+     */
+    boolean enableFeature(Feature feature);
 
     /**
      * Retrieves the finite state machine for this connection.

@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import java.util.HashMap;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -102,5 +103,18 @@ class AbstractStructRegistryTest {
         assertThat(result).isEmpty();
     }
 
-    private class StructRegistryImpl extends AbstractMutableStructRegistry<Object> {}
+    private static class StructRegistryImpl extends AbstractStructRegistry<Object, Object> {
+
+        public StructRegistryImpl() {
+            super(new HashMap<>(), new HashMap<>());
+        }
+
+        private void registerReader(short tag, StructReader<? super Object, ?> reader) {
+            this.tagToReaderMap.put(tag, reader);
+        }
+
+        private void registerWriter(Class<?> type, StructWriter<? super Object, ? super Object> writer) {
+            this.typeToWriterMap.put(type, writer);
+        }
+    }
 }

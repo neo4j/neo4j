@@ -21,7 +21,6 @@ package org.neo4j.bolt.protocol.v44;
 
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
-import org.neo4j.bolt.protocol.common.bookmark.BookmarksParser;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineSPIImpl;
@@ -45,19 +44,12 @@ public class BoltProtocolV44 extends BoltProtocolV43 {
     public static final ProtocolVersion VERSION = new ProtocolVersion(4, 4);
 
     public BoltProtocolV44(
-            BookmarksParser bookmarksParser,
             LogService logging,
             BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
             DefaultDatabaseResolver defaultDatabaseResolver,
             TransactionManager transactionManager,
             SystemNanoClock clock) {
-        super(
-                bookmarksParser,
-                logging,
-                boltGraphDatabaseManagementServiceSPI,
-                defaultDatabaseResolver,
-                transactionManager,
-                clock);
+        super(logging, boltGraphDatabaseManagementServiceSPI, defaultDatabaseResolver, transactionManager, clock);
     }
 
     @Override
@@ -66,12 +58,12 @@ public class BoltProtocolV44 extends BoltProtocolV43 {
     }
 
     @Override
-    public StructRegistry<RequestMessage> requestMessageRegistry() {
-        return super.requestMessageRegistry()
+    protected StructRegistry<Connection, RequestMessage> createRequestMessageRegistry() {
+        return super.createRequestMessageRegistry()
                 .builderOf()
-                .register(new BeginMessageDecoder(this.bookmarksParser))
-                .register(new RouteMessageDecoder(this.bookmarksParser))
-                .register(new RunMessageDecoder(this.bookmarksParser))
+                .register(BeginMessageDecoder.getInstance())
+                .register(RouteMessageDecoder.getInstance())
+                .register(RunMessageDecoder.getInstance())
                 .build();
     }
 

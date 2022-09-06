@@ -19,34 +19,40 @@
  */
 package org.neo4j.bolt.protocol.v50;
 
+import java.util.Set;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
-import org.neo4j.bolt.protocol.common.bookmark.BookmarksParser;
-import org.neo4j.bolt.protocol.io.DefaultBoltValueWriter;
-import org.neo4j.bolt.protocol.io.LegacyBoltValueWriter;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.connection.Feature;
+import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
+import org.neo4j.bolt.protocol.io.reader.DateReader;
+import org.neo4j.bolt.protocol.io.reader.DateTimeReader;
+import org.neo4j.bolt.protocol.io.reader.DateTimeZoneIdReader;
+import org.neo4j.bolt.protocol.io.reader.DurationReader;
+import org.neo4j.bolt.protocol.io.reader.LocalDateTimeReader;
+import org.neo4j.bolt.protocol.io.reader.LocalTimeReader;
+import org.neo4j.bolt.protocol.io.reader.Point2dReader;
+import org.neo4j.bolt.protocol.io.reader.Point3dReader;
+import org.neo4j.bolt.protocol.io.reader.TimeReader;
+import org.neo4j.bolt.protocol.io.writer.DefaultStructWriter;
 import org.neo4j.bolt.protocol.v44.BoltProtocolV44;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.packstream.struct.StructRegistry;
 import org.neo4j.time.SystemNanoClock;
+import org.neo4j.values.storable.Value;
 
 public class BoltProtocolV50 extends BoltProtocolV44 {
     public static final ProtocolVersion VERSION = new ProtocolVersion(5, 0);
 
     public BoltProtocolV50(
-            BookmarksParser bookmarksParser,
             LogService logging,
             BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
             DefaultDatabaseResolver defaultDatabaseResolver,
             TransactionManager transactionManager,
             SystemNanoClock clock) {
-        super(
-                bookmarksParser,
-                logging,
-                boltGraphDatabaseManagementServiceSPI,
-                defaultDatabaseResolver,
-                transactionManager,
-                clock);
+        super(logging, boltGraphDatabaseManagementServiceSPI, defaultDatabaseResolver, transactionManager, clock);
     }
 
     @Override
@@ -54,10 +60,28 @@ public class BoltProtocolV50 extends BoltProtocolV44 {
         return VERSION;
     }
 
-    // TODO: Deprecation: Intermediate LegacyBoltValueWriter will be merged with DefaultBoltValueWriter in 6.0
     @Override
-    @SuppressWarnings("removal")
-    public LegacyBoltValueWriter.Factory valueWriterFactory() {
-        return DefaultBoltValueWriter::new;
+    public Set<Feature> features() {
+        return Set.of(Feature.UTC_DATETIME);
+    }
+
+    @Override
+    public void registerStructWriters(WriterPipeline pipeline) {
+        pipeline.addLast(DefaultStructWriter.getInstance());
+    }
+
+    @Override
+    public void registerStructReaders(StructRegistry.Builder<Connection, Value> builder) {
+        // TODO: Protocols should no longer need to inherit from each other in order of release.
+        //       Provide a base type per major release instead?
+        builder.register(DateReader.getInstance())
+                .register(DurationReader.getInstance())
+                .register(LocalDateTimeReader.getInstance())
+                .register(LocalTimeReader.getInstance())
+                .register(Point2dReader.getInstance())
+                .register(Point3dReader.getInstance())
+                .register(TimeReader.getInstance())
+                .register(DateTimeReader.getInstance())
+                .register(DateTimeZoneIdReader.getInstance());
     }
 }

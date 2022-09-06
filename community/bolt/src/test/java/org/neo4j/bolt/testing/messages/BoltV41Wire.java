@@ -19,101 +19,16 @@
  */
 package org.neo4j.bolt.testing.messages;
 
-import io.netty.buffer.ByteBuf;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
-import org.neo4j.values.virtual.MapValue;
+import org.neo4j.bolt.protocol.v41.BoltProtocolV41;
 
-public final class BoltV41Wire {
+public final class BoltV41Wire extends BoltV40Wire {
 
-    private static final String USER_AGENT = "BoltV41Wire/0.0";
-
-    private BoltV41Wire() {}
-
-    public static ByteBuf begin() {
-        return BoltV40Wire.begin();
+    public BoltV41Wire() {
+        super(BoltProtocolV41.VERSION);
     }
 
-    public static ByteBuf begin(String db) {
-        return BoltV40Wire.begin(db);
-    }
-
-    public static ByteBuf begin(Collection<String> bookmarks) {
-        return BoltV40Wire.begin(bookmarks);
-    }
-
-    public static ByteBuf begin(String db, Collection<String> bookmarks) {
-        return BoltV40Wire.begin(db, bookmarks);
-    }
-
-    public static ByteBuf discard() {
-        return BoltV40Wire.discard();
-    }
-
-    public static ByteBuf discard(long n) {
-        return BoltV40Wire.discard(n);
-    }
-
-    public static ByteBuf pull() {
-        return BoltV40Wire.pull();
-    }
-
-    public static ByteBuf pull(long n) {
-        return BoltV40Wire.pull(n);
-    }
-
-    public static ByteBuf pull(long n, long qid) {
-        return BoltV40Wire.pull(n, qid);
-    }
-
-    public static ByteBuf hello() {
-        return hello(new HashMap<>(), null);
-    }
-
-    public static ByteBuf hello(Map<String, Object> meta) {
-        return hello(meta, null);
-    }
-
-    public static ByteBuf hello(Map<String, Object> meta, RoutingContext context) {
-        meta.putIfAbsent("user_agent", USER_AGENT);
-        if (context != null) {
-            meta.put("routing", context.getParameters());
-        }
-
-        return BoltV40Wire.hello(meta);
-    }
-
-    public static ByteBuf run() {
-        return BoltV40Wire.run();
-    }
-
-    public static ByteBuf run(String statement) {
-        return BoltV40Wire.run(statement);
-    }
-
-    public static ByteBuf run(String statement, MapValue params) {
-        return BoltV40Wire.run(statement, params);
-    }
-
-    public static ByteBuf run(String statement, MapValue params, MapValue meta) {
-        return BoltV40Wire.run(statement, params, meta);
-    }
-
-    public static ByteBuf rollback() {
-        return BoltV40Wire.rollback();
-    }
-
-    public static ByteBuf commit() {
-        return BoltV40Wire.commit();
-    }
-
-    public static ByteBuf reset() {
-        return BoltV40Wire.reset();
-    }
-
-    public static ByteBuf goodbye() {
-        return BoltV40Wire.goodbye();
+    @Override
+    protected String getUserAgent() {
+        return "BoltWire/4.1";
     }
 }

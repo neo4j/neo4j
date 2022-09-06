@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.lang3.ArrayUtils;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.v40.messaging.request.HelloMessage;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -35,7 +36,7 @@ import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.error.struct.IllegalStructSizeException;
 import org.neo4j.packstream.io.PackstreamBuf;
-import org.neo4j.packstream.io.value.PackstreamValues;
+import org.neo4j.packstream.io.value.PackstreamValueReader;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.packstream.struct.StructReader;
 import org.neo4j.values.AnyValue;
@@ -45,7 +46,7 @@ import org.neo4j.values.storable.UTF8StringValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.MapValue;
 
-public class HelloMessageDecoder implements StructReader<HelloMessage> {
+public class HelloMessageDecoder implements StructReader<Connection, HelloMessage> {
     private static final HelloMessageDecoder INSTANCE = new HelloMessageDecoder();
 
     protected HelloMessageDecoder() {}
@@ -60,12 +61,15 @@ public class HelloMessageDecoder implements StructReader<HelloMessage> {
     }
 
     @Override
-    public HelloMessage read(PackstreamBuf buffer, StructHeader header) throws PackstreamReaderException {
+    public HelloMessage read(Connection ctx, PackstreamBuf buffer, StructHeader header)
+            throws PackstreamReaderException {
         if (header.length() != 1) {
             throw new IllegalStructSizeException(1, header.length());
         }
 
-        var meta = readMetaDataMap(buffer);
+        var reader = ctx.valueReader(buffer);
+
+        var meta = this.readMetaDataMap(reader, buffer.getTarget().readableBytes());
 
         var userAgent = meta.get("user_agent");
         if (userAgent == null) {
@@ -78,11 +82,11 @@ public class HelloMessageDecoder implements StructReader<HelloMessage> {
         return new HelloMessage(meta);
     }
 
-    protected static Map<String, Object> readMetaDataMap(PackstreamBuf buf) throws PackstreamReaderException {
+    protected Map<String, Object> readMetaDataMap(PackstreamValueReader<Connection> reader, int limit)
+            throws PackstreamReaderException {
         MapValue metaDataMapValue;
         try {
-            metaDataMapValue =
-                    PackstreamValues.readPrimitiveMap(buf, buf.getTarget().readableBytes());
+            metaDataMapValue = reader.readPrimitiveMap(limit);
         } catch (PackstreamReaderException ex) {
             throw new IllegalStructArgumentException("extra", ex);
         }

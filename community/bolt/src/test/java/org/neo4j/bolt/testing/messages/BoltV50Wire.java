@@ -19,112 +19,17 @@
  */
 package org.neo4j.bolt.testing.messages;
 
-import io.netty.buffer.ByteBuf;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
-import org.neo4j.values.virtual.MapValue;
+import org.neo4j.bolt.protocol.common.connector.connection.Feature;
+import org.neo4j.bolt.protocol.v50.BoltProtocolV50;
 
-public final class BoltV50Wire {
-    private static final String USER_AGENT = "BoltV5Wire/0.0";
+public final class BoltV50Wire extends AbstractBoltWire {
 
-    private BoltV50Wire() {}
-
-    public static ByteBuf begin() {
-        return begin(null, null, null);
+    public BoltV50Wire() {
+        super(BoltProtocolV50.VERSION, Feature.UTC_DATETIME);
     }
 
-    public static ByteBuf begin(String db) {
-        return begin(db, null, null);
-    }
-
-    public static ByteBuf begin(Collection<String> bookmarks) {
-        return BoltV40Wire.begin(bookmarks);
-    }
-
-    public static ByteBuf begin(String db, String impersonatedUser) {
-        return begin(db, impersonatedUser, null);
-    }
-
-    public static ByteBuf begin(String db, String impersonatedUser, Collection<String> bookmarks) {
-        return BoltV44Wire.begin(db, impersonatedUser, bookmarks);
-    }
-
-    public static ByteBuf discard() {
-        return discard(-1);
-    }
-
-    public static ByteBuf discard(long n) {
-        return BoltV40Wire.discard(n);
-    }
-
-    public static ByteBuf pull() {
-        return pull(-1);
-    }
-
-    public static ByteBuf pull(long n) {
-        return BoltV40Wire.pull(n);
-    }
-
-    public static ByteBuf pull(long n, long qid) {
-        return BoltV40Wire.pull(n, qid);
-    }
-
-    public static ByteBuf hello() {
-        return hello(new HashMap<>(), null);
-    }
-
-    public static ByteBuf hello(Map<String, Object> meta, RoutingContext context) {
-        return BoltV44Wire.hello(meta, context);
-    }
-
-    public static ByteBuf run() {
-        return BoltV40Wire.run();
-    }
-
-    public static ByteBuf run(String statement) {
-        return BoltV40Wire.run(statement);
-    }
-
-    public static ByteBuf run(String statement, MapValue params) {
-        return BoltV40Wire.run(statement, params);
-    }
-
-    public static ByteBuf run(String statement, MapValue params, MapValue meta) {
-        return BoltV40Wire.run(statement, params, meta);
-    }
-
-    public static ByteBuf rollback() {
-        return BoltV40Wire.rollback();
-    }
-
-    public static ByteBuf commit() {
-        return BoltV40Wire.commit();
-    }
-
-    public static ByteBuf reset() {
-        return BoltV40Wire.reset();
-    }
-
-    public static ByteBuf goodbye() {
-        return BoltV40Wire.goodbye();
-    }
-
-    public static ByteBuf route() {
-        return route(null, null, null, null);
-    }
-
-    public static ByteBuf route(String impersonatedUser) {
-        return route(null, null, null, impersonatedUser);
-    }
-
-    public static ByteBuf route(RoutingContext context, Collection<String> bookmarks, String db) {
-        return route(context, bookmarks, db, null);
-    }
-
-    public static ByteBuf route(
-            RoutingContext context, Collection<String> bookmarks, String db, String impersonatedUser) {
-        return BoltV44Wire.route(context, bookmarks, db, impersonatedUser);
+    @Override
+    protected String getUserAgent() {
+        return "BoltWire/5.0";
     }
 }

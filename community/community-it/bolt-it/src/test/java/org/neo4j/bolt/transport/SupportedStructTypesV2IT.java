@@ -20,9 +20,6 @@
 package org.neo4j.bolt.transport;
 
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.pull;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
@@ -45,6 +42,8 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.bolt.testing.messages.BoltDefaultWire;
+import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -58,6 +57,7 @@ public class SupportedStructTypesV2IT {
 
     private HostnamePort address;
     private TransportConnection connection;
+    private final BoltWire wire = new BoltDefaultWire();
 
     @BeforeEach
     public void setup(TestInfo testInfo) throws IOException {
@@ -287,9 +287,10 @@ public class SupportedStructTypesV2IT {
         handshakeAndAuth();
 
         connection
-                .send(run("CREATE (n:Node {value: $value}) RETURN 42", map(new String[] {"value"}, new AnyValue[] {value
-                })))
-                .send(pull());
+                .send(wire.run(
+                        "CREATE (n:Node {value: $value}) RETURN 42",
+                        map(new String[] {"value"}, new AnyValue[] {value})))
+                .send(wire.pull());
 
         assertThat(connection).receivesSuccess().receivesRecord(longValue(42)).receivesSuccess();
     }
@@ -297,7 +298,7 @@ public class SupportedStructTypesV2IT {
     private <T extends AnyValue> void testReceivingOfBoltV2Value(String query, T expectedValue) throws Exception {
         handshakeAndAuth();
 
-        connection.send(run(query)).send(pull());
+        connection.send(wire.run(query)).send(wire.pull());
 
         assertThat(connection).receivesSuccess().receivesRecord(expectedValue).receivesSuccess();
     }
@@ -306,14 +307,14 @@ public class SupportedStructTypesV2IT {
         handshakeAndAuth();
 
         connection
-                .send(run("RETURN $value", map(new String[] {"value"}, new AnyValue[] {value})))
-                .send(pull());
+                .send(wire.run("RETURN $value", map(new String[] {"value"}, new AnyValue[] {value})))
+                .send(wire.pull());
 
         assertThat(connection).receivesSuccess().receivesRecord(value).receivesSuccess();
     }
 
     private void handshakeAndAuth() throws Exception {
-        connection.connect().sendDefaultProtocolVersion().send(hello());
+        connection.connect().sendDefaultProtocolVersion().send(wire.hello());
 
         assertThat(connection).negotiatesDefaultVersion().receivesSuccess();
     }

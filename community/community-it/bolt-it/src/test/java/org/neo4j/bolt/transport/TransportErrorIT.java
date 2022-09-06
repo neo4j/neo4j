@@ -29,7 +29,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.protocol.v40.messaging.request.RunMessage;
 import org.neo4j.bolt.testing.client.TransportConnection;
-import org.neo4j.bolt.testing.messages.BoltDefaultWire;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
@@ -56,7 +55,7 @@ public class TransportErrorIT extends AbstractBoltTransportsTest {
         this.initParameters(connectionFactory);
 
         // Given I have a message that gets truncated in the chunking, so part of it is missing
-        var msg = BoltDefaultWire.run("UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared");
+        var msg = wire.run("UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared");
         var truncated = msg.readSlice(msg.readableBytes() - 12);
 
         // When

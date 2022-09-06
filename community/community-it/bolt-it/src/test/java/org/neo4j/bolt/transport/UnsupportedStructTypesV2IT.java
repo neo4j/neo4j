@@ -20,7 +20,6 @@
 package org.neo4j.bolt.transport;
 
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
 import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
 
 import io.netty.buffer.ByteBuf;
@@ -32,12 +31,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.bolt.protocol.io.StructType;
 import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.bolt.testing.messages.BoltDefaultWire;
 import org.neo4j.bolt.testing.messages.BoltV40Wire;
+import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.packstream.io.NativeStruct;
-import org.neo4j.packstream.io.NativeStructType;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.test.extension.Inject;
@@ -52,6 +52,7 @@ public class UnsupportedStructTypesV2IT {
 
     private HostnamePort address;
     private TransportConnection connection;
+    private final BoltWire wire = new BoltDefaultWire();
 
     @BeforeEach
     public void setup(TestInfo testInfo) throws IOException {
@@ -82,7 +83,7 @@ public class UnsupportedStructTypesV2IT {
         initConnection(connectionFactory);
 
         testFailureWithUnpackableValue(
-                buf -> buf.writeStructHeader(new StructHeader(3, NativeStructType.POINT_2D.getTag()))
+                buf -> buf.writeStructHeader(new StructHeader(3, StructType.POINT_2D.getTag()))
                         .writeInt(5) // CRS
                         .writeFloat(3.15) // X
                         .writeFloat(4.012), // Y
@@ -96,7 +97,7 @@ public class UnsupportedStructTypesV2IT {
         initConnection(connectionFactory);
 
         testFailureWithUnpackableValue(
-                buf -> buf.writeStructHeader(new StructHeader(4, NativeStructType.POINT_3D.getTag()))
+                buf -> buf.writeStructHeader(new StructHeader(4, StructType.POINT_3D.getTag()))
                         .writeInt(1200) // CRS
                         .writeFloat(3.15)
                         .writeFloat(4.012)
@@ -111,7 +112,10 @@ public class UnsupportedStructTypesV2IT {
         initConnection(connectionFactory);
 
         testFailureWithUnpackableValue(
-                buf -> NativeStruct.writePoint2d(buf, CoordinateReferenceSystem.CARTESIAN_3D, 3.15, 4.012),
+                buf -> buf.writeStructHeader(new StructHeader(3, StructType.POINT_2D.getTag()))
+                        .writeInt(CoordinateReferenceSystem.CARTESIAN_3D.getCode())
+                        .writeFloat(3.15)
+                        .writeFloat(4.012),
                 "Illegal value for field \"params\": Illegal value for field \"coords\": Illegal CRS/coords combination (crs=cartesian-3d, x=3.15, y=4.012)");
     }
 
@@ -122,7 +126,11 @@ public class UnsupportedStructTypesV2IT {
         initConnection(connectionFactory);
 
         testFailureWithUnpackableValue(
-                buf -> NativeStruct.writePoint3d(buf, CoordinateReferenceSystem.CARTESIAN, 3.15, 4.012, 5.905),
+                buf -> buf.writeStructHeader(new StructHeader(4, StructType.POINT_3D.getTag()))
+                        .writeInt(CoordinateReferenceSystem.CARTESIAN.getCode())
+                        .writeFloat(3.15)
+                        .writeFloat(4.012)
+                        .writeFloat(5.905),
                 "Illegal value for field \"params\": Illegal value for field \"coords\": Illegal CRS/coords combination (crs=cartesian, x=3.15, y=4.012, z=5.905)");
     }
 
@@ -133,7 +141,7 @@ public class UnsupportedStructTypesV2IT {
         initConnection(connectionFactory);
 
         testFailureWithUnpackableValue(
-                buf -> buf.writeStructHeader(new StructHeader(3, NativeStructType.DATE_TIME_ZONE_ID.getTag()))
+                buf -> buf.writeStructHeader(new StructHeader(3, StructType.DATE_TIME_ZONE_ID_LEGACY.getTag()))
                         .writeInt(0)
                         .writeInt(0)
                         .writeString("Europe/Marmaris"),
@@ -142,7 +150,7 @@ public class UnsupportedStructTypesV2IT {
 
     private void testFailureWithUnpackableValue(Consumer<PackstreamBuf> packer, String expectedMessage)
             throws Exception {
-        connection.connect().sendDefaultProtocolVersion().send(hello());
+        connection.connect().sendDefaultProtocolVersion().send(wire.hello());
 
         assertThat(connection).negotiatesDefaultVersion();
 

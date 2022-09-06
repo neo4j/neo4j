@@ -19,14 +19,13 @@
  */
 package org.neo4j.bolt.protocol.common.message.encoder;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import java.io.IOException;
 import java.util.function.Consumer;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.message.result.BoltResult;
 import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
 import org.neo4j.bolt.protocol.common.signal.MessageSignal;
-import org.neo4j.bolt.protocol.io.LegacyBoltValueWriter;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.values.AnyValue;
@@ -34,22 +33,19 @@ import org.neo4j.values.AnyValue;
 public class RecordMessageWriter implements BoltResult.RecordConsumer {
     public static final short RECORD_TAG = 0x71;
 
-    private final Channel channel;
+    private final Connection connection;
     private final ResponseHandler parent;
-    private final LegacyBoltValueWriter.Factory valueWriterFactory;
 
-    public RecordMessageWriter(
-            Channel channel, ResponseHandler parent, LegacyBoltValueWriter.Factory valueWriterFactory) {
-        this.channel = channel;
+    public RecordMessageWriter(Connection connection, ResponseHandler parent) {
+        this.connection = connection;
         this.parent = parent;
-        this.valueWriterFactory = valueWriterFactory;
     }
 
     private void write(Consumer<PackstreamBuf> consumer) throws IOException {
-        var buf = this.channel.alloc().buffer();
+        var buf = this.connection.channel().alloc().buffer();
         consumer.accept(PackstreamBuf.wrap(buf));
 
-        this.channel.write(buf).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+        this.connection.write(buf).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
     }
 
     @Override
@@ -59,17 +55,17 @@ public class RecordMessageWriter implements BoltResult.RecordConsumer {
 
     @Override
     public void consumeField(AnyValue value) throws IOException {
-        this.write(b -> value.writeTo(this.valueWriterFactory.create(b)));
+        this.write(b -> this.connection.writerContext(b).writeValue(value));
     }
 
     @Override
     public void endRecord() throws IOException {
-        this.channel.write(MessageSignal.END).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+        this.connection.write(MessageSignal.END).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
     }
 
     @Override
     public void onError() throws IOException {
-        this.channel.write(MessageSignal.RESET).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+        this.connection.write(MessageSignal.RESET).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
     }
 
     @Override

@@ -40,10 +40,12 @@ import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.authentication.AuthenticationFlag;
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
+import org.neo4j.bolt.protocol.io.pipeline.PipelineContext;
 import org.neo4j.bolt.security.error.AuthenticationException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.packstream.io.value.PackstreamValueReader;
 
 public class ConnectionMockFactory extends AbstractMockFactory<Connection, ConnectionMockFactory> {
     private static final String DEFAULT_ID = "bolt-test-connection";
@@ -135,6 +137,22 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
     }
 
     public ConnectionMockFactory withChannel(Channel channel) {
+        this.with(mock -> Mockito.doAnswer(invocation -> channel.write(invocation.getArgument(0)))
+                .when(mock)
+                .write(ArgumentMatchers.any()));
+        this.with(mock -> Mockito.doAnswer(
+                        invocation -> channel.write(invocation.getArgument(0), invocation.getArgument(1)))
+                .when(mock)
+                .write(ArgumentMatchers.any(), ArgumentMatchers.any()));
+
+        this.with(mock -> Mockito.doAnswer(invocation -> channel.writeAndFlush(invocation.getArgument(0)))
+                .when(mock)
+                .writeAndFlush(ArgumentMatchers.any()));
+        this.with(mock -> Mockito.doAnswer(
+                        invocation -> channel.writeAndFlush(invocation.getArgument(0), invocation.getArgument(1)))
+                .when(mock)
+                .writeAndFlush(ArgumentMatchers.any(), ArgumentMatchers.any()));
+
         return this.withStaticValue(Connection::channel, channel);
     }
 
@@ -163,6 +181,14 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
         var captor = this.withArgumentCaptor(BoltProtocol.class, Connection::selectProtocol);
         this.withAnswer(Connection::protocol, invocation -> captor.getValue());
         return captor;
+    }
+
+    public ConnectionMockFactory withValueReader(PackstreamValueReader<Connection> valueReader) {
+        return this.withStaticValue(mock -> mock.valueReader(ArgumentMatchers.any()), valueReader);
+    }
+
+    public ConnectionMockFactory withWriterContext(PipelineContext ctx) {
+        return this.withStaticValue(mock -> mock.writerContext(ArgumentMatchers.any()), ctx);
     }
 
     public ConnectionMockFactory withFSM(StateMachine fsm) {

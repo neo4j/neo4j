@@ -19,13 +19,13 @@
  */
 package org.neo4j.bolt.protocol.common.message.encoder;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.neo4j.bolt.protocol.common.message.response.SuccessMessage;
+import org.neo4j.bolt.protocol.io.pipeline.PipelineContext;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.io.PackstreamBuf;
-import org.neo4j.packstream.io.value.PackstreamValues;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValueBuilder;
 
@@ -35,16 +35,17 @@ class SuccessMessageEncoderTest {
     void shouldWriteSimpleMessage() throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
         var encoder = SuccessMessageEncoder.getInstance();
+        var ctx = Mockito.mock(PipelineContext.class);
+        var connection =
+                ConnectionMockFactory.newFactory().withWriterContext(ctx).build();
 
         var metaBuilder = new MapValueBuilder();
         metaBuilder.add("the_answer", Values.longValue(42));
         metaBuilder.add("foo", Values.stringValue("bar"));
         var expectedMeta = metaBuilder.build();
 
-        encoder.write(buf, new SuccessMessage(expectedMeta));
+        encoder.write(connection, buf, new SuccessMessage(expectedMeta));
 
-        var actualMeta = PackstreamValues.readMap(buf);
-
-        assertThat(actualMeta).isEqualTo(expectedMeta);
+        Mockito.verify(ctx).writeValue(expectedMeta);
     }
 }

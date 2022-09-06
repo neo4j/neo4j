@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.protocol.v40.messaging.request.ResetMessage;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.struct.IllegalStructSizeException;
 import org.neo4j.packstream.io.PackstreamBuf;
@@ -35,8 +36,10 @@ class ResetMessageDecoderTest {
     void shouldReadMessage() throws PackstreamReaderException {
         var decoder = ResetMessageDecoder.getInstance();
 
-        var msg1 = decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(0, (short) 0x42));
-        var msg2 = decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(0, (short) 0x42));
+        var msg1 = decoder.read(
+                ConnectionMockFactory.newInstance(), PackstreamBuf.allocUnpooled(), new StructHeader(0, (short) 0x42));
+        var msg2 = decoder.read(
+                ConnectionMockFactory.newInstance(), PackstreamBuf.allocUnpooled(), new StructHeader(0, (short) 0x42));
 
         assertThat(msg1).isNotNull().isSameAs(ResetMessage.INSTANCE).isSameAs(msg2);
     }
@@ -46,7 +49,9 @@ class ResetMessageDecoderTest {
         var decoder = ResetMessageDecoder.getInstance();
 
         assertThatExceptionOfType(IllegalStructSizeException.class)
-                .isThrownBy(() -> decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(1, (short) 0x42)))
+                .isThrownBy(() -> decoder.read(
+                        ConnectionMockFactory.newInstance(), PackstreamBuf.allocUnpooled(), new StructHeader(1, (short)
+                                0x42)))
                 .withMessage("Illegal struct size: Expected struct to be 0 fields but got 1");
     }
 }

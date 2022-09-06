@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.protocol.v40.messaging.decoder;
 
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.v40.messaging.request.CommitMessage;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.struct.IllegalStructSizeException;
@@ -26,7 +27,7 @@ import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.packstream.struct.StructReader;
 
-public final class CommitMessageDecoder implements StructReader<CommitMessage> {
+public final class CommitMessageDecoder implements StructReader<Connection, CommitMessage> {
     private static final CommitMessageDecoder INSTANCE = new CommitMessageDecoder();
 
     private CommitMessageDecoder() {}
@@ -41,7 +42,8 @@ public final class CommitMessageDecoder implements StructReader<CommitMessage> {
     }
 
     @Override
-    public CommitMessage read(PackstreamBuf buffer, StructHeader header) throws PackstreamReaderException {
+    public CommitMessage read(Connection ctx, PackstreamBuf buffer, StructHeader header)
+            throws PackstreamReaderException {
         if (header.length() != 0) {
             throw new IllegalStructSizeException(0, header.length());
         }

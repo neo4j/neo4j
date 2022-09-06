@@ -32,7 +32,7 @@ class IgnoredMessageEncoderTest {
         var buf = PackstreamBuf.allocUnpooled();
         var encoder = IgnoredMessageEncoder.getInstance();
 
-        encoder.write(buf, IgnoredMessage.INSTANCE);
+        encoder.write(null, buf, IgnoredMessage.INSTANCE);
 
         assertThat(buf.getTarget().isReadable()).isFalse();
     }

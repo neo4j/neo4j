@@ -20,9 +20,6 @@
 package org.neo4j.bolt.transport;
 
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.pull;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
 import java.time.Duration;
@@ -33,6 +30,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.bolt.testing.messages.BoltDefaultWire;
+import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -59,6 +58,7 @@ public class BoltKeepAliveSchedulingIT {
 
     private HostnamePort address;
     private TransportConnection connection;
+    private final BoltWire wire = new BoltDefaultWire();
 
     protected static Consumer<Map<Setting<?>, Object>> getSettingsFunction() {
         return settings -> {
@@ -83,9 +83,9 @@ public class BoltKeepAliveSchedulingIT {
         connection
                 .connect()
                 .sendDefaultProtocolVersion()
-                .send(hello())
-                .send(run("CALL boltissue.sleep()"))
-                .send(pull());
+                .send(wire.hello())
+                .send(wire.run("CALL boltissue.sleep()"))
+                .send(wire.pull());
 
         assertThat(connection)
                 .negotiatesDefaultVersion()

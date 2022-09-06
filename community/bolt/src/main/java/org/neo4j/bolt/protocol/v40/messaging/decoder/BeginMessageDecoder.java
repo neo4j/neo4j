@@ -23,7 +23,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
-import org.neo4j.bolt.protocol.common.bookmark.BookmarksParser;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.v40.messaging.request.BeginMessage;
 import org.neo4j.bolt.protocol.v40.messaging.util.MessageMetadataParserV40;
@@ -31,16 +31,17 @@ import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.error.struct.IllegalStructSizeException;
 import org.neo4j.packstream.io.PackstreamBuf;
-import org.neo4j.packstream.io.value.PackstreamValues;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.packstream.struct.StructReader;
 import org.neo4j.values.virtual.MapValue;
 
-public class BeginMessageDecoder implements StructReader<BeginMessage> {
-    private final BookmarksParser bookmarksParser; // TODO: Remove?
+public class BeginMessageDecoder implements StructReader<Connection, BeginMessage> {
+    private static final BeginMessageDecoder INSTANCE = new BeginMessageDecoder();
 
-    public BeginMessageDecoder(BookmarksParser bookmarksParser) {
-        this.bookmarksParser = bookmarksParser;
+    protected BeginMessageDecoder() {}
+
+    public static BeginMessageDecoder getInstance() {
+        return INSTANCE;
     }
 
     @Override
@@ -49,19 +50,22 @@ public class BeginMessageDecoder implements StructReader<BeginMessage> {
     }
 
     @Override
-    public BeginMessage read(PackstreamBuf buffer, StructHeader header) throws PackstreamReaderException {
+    public BeginMessage read(Connection ctx, PackstreamBuf buffer, StructHeader header)
+            throws PackstreamReaderException {
         if (header.length() != 1) {
             throw new IllegalStructSizeException(1, header.length());
         }
 
+        var valueReader = ctx.valueReader(buffer);
+
         MapValue metadata;
         try {
-            metadata = PackstreamValues.readMap(buffer);
+            metadata = valueReader.readMap();
         } catch (PackstreamReaderException ex) {
             throw new IllegalStructArgumentException("metadata", ex);
         }
 
-        var bookmarks = MessageMetadataParserV40.parseBookmarks(bookmarksParser, metadata);
+        var bookmarks = MessageMetadataParserV40.parseBookmarks(ctx.connector().bookmarkParser(), metadata);
         try {
             var txTimeout = MessageMetadataParserV40.parseTransactionTimeout(metadata);
             var accessMode = MessageMetadataParserV40.parseAccessMode(metadata);

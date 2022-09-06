@@ -525,6 +525,9 @@ class AtomicSchedulingConnectionTest {
 
         // a state machine should have been created for the selected protocol version
         Mockito.verify(this.protocol).createStateMachine(this.connection);
+        Mockito.verify(this.protocol).registerStructReaders(Mockito.any());
+        Mockito.verify(this.protocol).registerStructWriters(Mockito.any());
+        Mockito.verify(this.protocol).features();
         Mockito.verifyNoMoreInteractions(this.protocol);
 
         // listeners should have been notified about the initialization of the state machine
@@ -536,6 +539,9 @@ class AtomicSchedulingConnectionTest {
     void selectProtocolShouldFailWithIllegalStateWhenInvokedTwice() {
         this.selectProtocol();
         Mockito.verify(this.protocol).createStateMachine(this.connection);
+        Mockito.verify(this.protocol).registerStructReaders(Mockito.any());
+        Mockito.verify(this.protocol).registerStructWriters(Mockito.any());
+        Mockito.verify(this.protocol).features();
         Mockito.verifyNoMoreInteractions(this.protocol);
 
         Assertions.assertThatExceptionOfType(IllegalStateException.class)

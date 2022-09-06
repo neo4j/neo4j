@@ -22,131 +22,252 @@ package org.neo4j.bolt.protocol.v41.message.decoder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
+import java.util.List;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.neo4j.bolt.protocol.common.connector.connection.Feature;
+import org.neo4j.bolt.protocol.v41.message.request.HelloMessage;
+import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.error.struct.IllegalStructSizeException;
 import org.neo4j.packstream.io.PackstreamBuf;
+import org.neo4j.packstream.io.value.PackstreamValueReader;
 import org.neo4j.packstream.struct.StructHeader;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
+import org.neo4j.values.virtual.VirtualValues;
 
 class HelloMessageDecoderTest {
 
     @Test
     void shouldReadMessageWithoutRoutingContext() throws PackstreamReaderException {
-        var buf = PackstreamBuf.allocUnpooled()
-                .writeMapHeader(2)
-                .writeString("user_agent")
-                .writeString("Example/1.0 (+https://github.com/neo4j)")
-                .writeString("scheme")
-                .writeString("none");
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
 
-        var msg = HelloMessageDecoder.getInstance().read(buf, new StructHeader(1, (short) 0x42));
+        var meta = new MapValueBuilder();
+        meta.add("user_agent", Values.stringValue("Example/1.0 (+https://github.com/neo4j)"));
+        meta.add("scheme", Values.stringValue("none"));
+
+        Mockito.doReturn(meta.build()).when(reader).readPrimitiveMap(Mockito.anyLong());
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
+
+        var msg = HelloMessageDecoder.getInstance().read(connection, buf, new StructHeader(1, (short) 0x42));
 
         assertThat(msg).isNotNull();
         assertThat(msg.userAgent()).isEqualTo("Example/1.0 (+https://github.com/neo4j)");
         assertThat(msg.authToken()).hasSize(2).containsEntry("scheme", "none");
-        assertThat(msg.routingContext()).isNotNull();
-        assertThat(msg.routingContext().isServerRoutingEnabled()).isFalse();
+
+        assertThat(msg)
+                .asInstanceOf(InstanceOfAssertFactories.type(HelloMessage.class))
+                .extracting(HelloMessage::routingContext)
+                .isNotNull()
+                .extracting(RoutingContext::isServerRoutingEnabled)
+                .isEqualTo(false);
+    }
+
+    @Test
+    void shouldReadMessageWithPatchOptions() throws PackstreamReaderException {
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
+
+        var meta = new MapValueBuilder();
+        meta.add("user_agent", Values.stringValue("Example/1.0 (+https://github.com/neo4j)"));
+        meta.add("scheme", Values.stringValue("none"));
+        meta.add("patch_bolt", VirtualValues.list(Values.stringValue("utc")));
+
+        Mockito.doReturn(meta.build()).when(reader).readPrimitiveMap(Mockito.anyLong());
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
+
+        var msg = HelloMessageDecoder.getInstance().read(connection, buf, new StructHeader(1, (short) 0x42));
+
+        assertThat(msg).isNotNull();
+        assertThat(msg.userAgent()).isEqualTo("Example/1.0 (+https://github.com/neo4j)");
+        assertThat(msg.authToken()).hasSize(3).containsEntry("scheme", "none");
+        assertThat(msg.features()).isEqualTo(List.of(Feature.UTC_DATETIME));
+
+        assertThat(msg)
+                .asInstanceOf(InstanceOfAssertFactories.type(HelloMessage.class))
+                .extracting(HelloMessage::routingContext)
+                .isNotNull()
+                .extracting(RoutingContext::isServerRoutingEnabled)
+                .isEqualTo(false);
+    }
+
+    @Test
+    void shouldIgnoreUnknownPatchOptions() throws PackstreamReaderException {
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
+
+        var meta = new MapValueBuilder();
+        meta.add("user_agent", Values.stringValue("Example/1.0 (+https://github.com/neo4j)"));
+        meta.add("scheme", Values.stringValue("none"));
+        meta.add("patch_bolt", VirtualValues.list(Values.stringValue("monkey"), Values.stringValue("banana")));
+
+        Mockito.doReturn(meta.build()).when(reader).readPrimitiveMap(Mockito.anyLong());
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
+
+        var msg = HelloMessageDecoder.getInstance().read(connection, buf, new StructHeader(1, (short) 0x42));
+
+        assertThat(msg).isNotNull();
+        assertThat(msg.userAgent()).isEqualTo("Example/1.0 (+https://github.com/neo4j)");
+        assertThat(msg.authToken()).hasSize(3).containsEntry("scheme", "none");
+        assertThat(msg.features()).isEmpty();
+
+        assertThat(msg)
+                .asInstanceOf(InstanceOfAssertFactories.type(HelloMessage.class))
+                .extracting(HelloMessage::routingContext)
+                .isNotNull()
+                .extracting(RoutingContext::isServerRoutingEnabled)
+                .isEqualTo(false);
     }
 
     @Test
     void shouldReadMessageWithRoutingContext() throws PackstreamReaderException {
-        var buf = PackstreamBuf.allocUnpooled()
-                .writeMapHeader(3)
-                .writeString("user_agent")
-                .writeString("Example/1.0 (+https://github.com/neo4j)")
-                .writeString("scheme")
-                .writeString("none")
-                .writeString("routing")
-                .writeMapHeader(1)
-                .writeString("region")
-                .writeString("eu-west");
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
 
-        var msg = HelloMessageDecoder.getInstance().read(buf, new StructHeader(1, (short) 0x42));
+        var routing = new MapValueBuilder();
+        routing.add("region", Values.stringValue("eu-west"));
+
+        var meta = new MapValueBuilder();
+        meta.add("user_agent", Values.stringValue("Example/1.0 (+https://github.com/neo4j)"));
+        meta.add("scheme", Values.stringValue("none"));
+        meta.add("routing", routing.build());
+
+        Mockito.doReturn(meta.build()).when(reader).readPrimitiveMap(Mockito.anyLong());
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
+
+        var msg = HelloMessageDecoder.getInstance().read(connection, buf, new StructHeader(1, (short) 0x42));
 
         assertThat(msg).isNotNull();
         assertThat(msg.userAgent()).isEqualTo("Example/1.0 (+https://github.com/neo4j)");
-        assertThat(msg.authToken()).hasSize(2).containsEntry("scheme", "none");
-        assertThat(msg.routingContext()).isNotNull();
-        assertThat(msg.routingContext().isServerRoutingEnabled()).isTrue();
-        assertThat(msg.routingContext().parameters()).hasSize(1).containsEntry("region", "eu-west");
-        assertThat(msg.authToken()).doesNotContainKey("routing").doesNotContainKey("region");
+        assertThat(msg.authToken())
+                .hasSize(2)
+                .containsEntry("scheme", "none")
+                .doesNotContainKey("routing")
+                .doesNotContainKey("region");
+
+        assertThat(msg)
+                .asInstanceOf(InstanceOfAssertFactories.type(HelloMessage.class))
+                .extracting(HelloMessage::routingContext)
+                .isNotNull()
+                .satisfies(ctx -> {
+                    assertThat(ctx.isServerRoutingEnabled()).isTrue();
+
+                    assertThat(ctx.parameters()).hasSize(1).containsEntry("region", "eu-west");
+                });
     }
 
     @Test
     void shouldReadMessageWithEmptyRoutingContext() throws PackstreamReaderException {
-        var buf = PackstreamBuf.allocUnpooled()
-                .writeMapHeader(3)
-                .writeString("user_agent")
-                .writeString("Example/1.0 (+https://github.com/neo4j)")
-                .writeString("scheme")
-                .writeString("none")
-                .writeString("routing")
-                .writeMapHeader(0);
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
 
-        var msg = HelloMessageDecoder.getInstance().read(buf, new StructHeader(1, (short) 0x42));
+        var meta = new MapValueBuilder();
+        meta.add("user_agent", Values.stringValue("Example/1.0 (+https://github.com/neo4j)"));
+        meta.add("scheme", Values.stringValue("none"));
+        meta.add("routing", MapValue.EMPTY);
+
+        Mockito.doReturn(meta.build()).when(reader).readPrimitiveMap(Mockito.anyLong());
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
+
+        var msg = HelloMessageDecoder.getInstance().read(connection, buf, new StructHeader(1, (short) 0x42));
 
         assertThat(msg).isNotNull();
         assertThat(msg.userAgent()).isEqualTo("Example/1.0 (+https://github.com/neo4j)");
         assertThat(msg.authToken()).hasSize(2).containsEntry("scheme", "none");
-        assertThat(msg.routingContext()).isNotNull();
-        assertThat(msg.routingContext().isServerRoutingEnabled()).isTrue();
-        assertThat(msg.routingContext().parameters()).isEmpty();
+
+        assertThat(msg)
+                .asInstanceOf(InstanceOfAssertFactories.type(HelloMessage.class))
+                .extracting(HelloMessage::routingContext)
+                .isNotNull()
+                .satisfies(ctx -> {
+                    assertThat(ctx.isServerRoutingEnabled()).isTrue();
+                    assertThat(ctx.parameters()).isEmpty();
+                });
     }
 
     @Test
-    void shouldFailWithIllegalStructArgumentWhenInvalidRoutingContextValueIsPassed() {
-        var buf = PackstreamBuf.allocUnpooled()
-                .writeMapHeader(3)
-                .writeString("user_agent")
-                .writeString("Example/1.0 (+https://github.com/neo4j)")
-                .writeString("scheme")
-                .writeString("none")
-                .writeString("routing")
-                .writeInt(42);
+    void shouldFailWithIllegalStructArgumentWhenInvalidRoutingContextValueIsPassed() throws PackstreamReaderException {
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
+
+        var meta = new MapValueBuilder();
+        meta.add("user_agent", Values.stringValue("Example/1.0 (+https://github.com/neo4j)"));
+        meta.add("scheme", Values.stringValue("none"));
+        meta.add("routing", Values.longValue(42));
+
+        Mockito.doReturn(meta.build()).when(reader).readPrimitiveMap(Mockito.anyLong());
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
 
         var decoder = HelloMessageDecoder.getInstance();
 
         // See work note in HelloMessageDecoder
         assertThatExceptionOfType(IllegalStructArgumentException.class)
-                .isThrownBy(() -> decoder.read(buf, new StructHeader(1, (short) 0x42)));
+                .isThrownBy(() -> decoder.read(connection, buf, new StructHeader(1, (short) 0x42)));
     }
 
     @Test
-    void shouldFailWithIllegalStructArgumentWhenInvalidRoutingContextContentIsPassed() {
-        var buf = PackstreamBuf.allocUnpooled()
-                .writeMapHeader(3)
-                .writeString("user_agent")
-                .writeString("Example/1.0 (+https://github.com/neo4j)")
-                .writeString("scheme")
-                .writeString("none")
-                .writeString("routing")
-                .writeMapHeader(1)
-                .writeString("foo")
-                .writeInt(42);
+    void shouldFailWithIllegalStructArgumentWhenInvalidRoutingContextContentIsPassed()
+            throws PackstreamReaderException {
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
+
+        var routing = new MapValueBuilder();
+        routing.add("foo", Values.longValue(42));
+
+        var meta = new MapValueBuilder();
+        meta.add("user_agent", Values.stringValue("Example/1.0 (+https://github.com/neo4j)"));
+        meta.add("scheme", Values.stringValue("none"));
+        meta.add("routing", routing.build());
+
+        Mockito.doReturn(meta.build()).when(reader).readPrimitiveMap(Mockito.anyLong());
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
 
         var decoder = HelloMessageDecoder.getInstance();
 
         assertThatExceptionOfType(IllegalStructArgumentException.class)
-                .isThrownBy(() -> decoder.read(buf, new StructHeader(1, (short) 0x42)))
+                .isThrownBy(() -> decoder.read(connection, buf, new StructHeader(1, (short) 0x42)))
                 .withMessage("Illegal value for field \"routing\": Must be a map with string keys and string values.");
     }
 
     @Test
     void shouldFailWithIllegalStructSizeWhenEmptyStructIsGiven() {
-        var decoder = org.neo4j.bolt.protocol.v40.messaging.decoder.HelloMessageDecoder.getInstance();
+        var decoder = HelloMessageDecoder.getInstance();
 
         assertThatExceptionOfType(IllegalStructSizeException.class)
-                .isThrownBy(() -> decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(0, (short) 0x42)))
+                .isThrownBy(() -> decoder.read(
+                        ConnectionMockFactory.newInstance(), PackstreamBuf.allocUnpooled(), new StructHeader(0, (short)
+                                0x42)))
                 .withMessage("Illegal struct size: Expected struct to be 1 fields but got 0");
     }
 
     @Test
     void shouldFailWithIllegalStructSizeWhenLargeStructIsGiven() {
-        var decoder = org.neo4j.bolt.protocol.v40.messaging.decoder.HelloMessageDecoder.getInstance();
+        var decoder = HelloMessageDecoder.getInstance();
 
         assertThatExceptionOfType(IllegalStructSizeException.class)
-                .isThrownBy(() -> decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(2, (short) 0x42)))
+                .isThrownBy(() -> decoder.read(
+                        ConnectionMockFactory.newInstance(), PackstreamBuf.allocUnpooled(), new StructHeader(2, (short)
+                                0x42)))
                 .withMessage("Illegal struct size: Expected struct to be 1 fields but got 2");
     }
 }

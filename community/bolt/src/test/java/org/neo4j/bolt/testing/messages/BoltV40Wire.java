@@ -20,166 +20,111 @@
 package org.neo4j.bolt.testing.messages;
 
 import io.netty.buffer.ByteBuf;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.protocol.common.connector.connection.Feature;
+import org.neo4j.bolt.protocol.io.StructType;
+import org.neo4j.bolt.protocol.io.writer.LegacyStructWriter;
+import org.neo4j.bolt.protocol.v40.BoltProtocolV40;
+import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
 import org.neo4j.packstream.io.PackstreamBuf;
-import org.neo4j.packstream.io.value.PackstreamValues;
 import org.neo4j.packstream.struct.StructHeader;
-import org.neo4j.values.virtual.MapValue;
 
-public final class BoltV40Wire {
+public class BoltV40Wire extends AbstractBoltWire {
 
-    public static final short MESSAGE_TAG_BEGIN = (short) 0x11;
-    public static final short MESSAGE_TAG_DISCARD = (short) 0x2F;
-    public static final short MESSAGE_TAG_PULL = (short) 0x3F;
-    public static final short MESSAGE_TAG_HELLO = (short) 0x01;
-    public static final short MESSAGE_TAG_RUN = (short) 0x10;
-    public static final short MESSAGE_TAG_ROLLBACK = (short) 0x13;
-    public static final short MESSAGE_TAG_COMMIT = (short) 0x12;
-    public static final short MESSAGE_TAG_RESET = (short) 0x0F;
-    public static final short MESSAGE_TAG_GOODBYE = (short) 0x02;
-
-    private static final String USER_AGENT = "BoltV40Wire/0.0";
-
-    private BoltV40Wire() {}
-
-    public static ByteBuf begin() {
-        return PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(1, MESSAGE_TAG_BEGIN))
-                .writeMapHeader(0)
-                .getTarget();
+    public BoltV40Wire() {
+        super(BoltProtocolV40.VERSION);
     }
 
-    public static ByteBuf begin(String db) {
-        return begin(db, null);
+    protected BoltV40Wire(ProtocolVersion version, Feature... implicitFeatures) {
+        super(version, implicitFeatures);
     }
 
-    public static ByteBuf begin(Collection<String> bookmarks) {
-        return begin(null, bookmarks);
+    @Override
+    protected void configurePipeline() {
+        this.pipeline.addLast(LegacyStructWriter.getInstance());
     }
 
-    public static ByteBuf begin(String db, Collection<String> bookmarks) {
-        var meta = new HashMap<String, Object>();
-        if (db != null) {
-            meta.put("db", db);
-        }
-        if (bookmarks != null) {
-            meta.put("bookmarks", new ArrayList<>(bookmarks));
+    @Override
+    protected String getUserAgent() {
+        return "BoltWire/4.0";
+    }
+
+    @Override
+    public ByteBuf route(RoutingContext context, Collection<String> bookmarks, String db, String impersonatedUser) {
+        var buf = PackstreamBuf.allocUnpooled();
+
+        Map<String, String> routingParams;
+        if (context != null) {
+            routingParams = context.getParameters();
+        } else {
+            routingParams = Collections.emptyMap();
         }
 
-        return PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(1, MESSAGE_TAG_BEGIN))
-                .writeMap(meta)
-                .getTarget();
+        Collection<String> bookmarkStrings = bookmarks;
+        if (bookmarkStrings == null) {
+            bookmarkStrings = Collections.emptyList();
+        }
+
+        buf.writeStructHeader(new StructHeader(3, MESSAGE_TAG_ROUTE))
+                .writeMap(routingParams, PackstreamBuf::writeString)
+                .writeList(bookmarkStrings, PackstreamBuf::writeString);
+
+        if (db == null) {
+            buf.writeNull();
+        } else {
+            buf.writeString(db);
+        }
+
+        return buf.getTarget();
     }
 
-    public static ByteBuf discard(long n) {
-        return PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(1, MESSAGE_TAG_DISCARD))
-                .writeMapHeader(1)
-                .writeString("n")
-                .writeInt(n)
-                .getTarget();
-    }
-
-    public static ByteBuf discard() {
-        return discard(-1);
-    }
-
-    public static ByteBuf pull(long n) {
-        return PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(1, MESSAGE_TAG_PULL))
-                .writeMapHeader(1)
-                .writeString("n")
-                .writeInt(n)
-                .getTarget();
-    }
-
-    public static ByteBuf pull(long n, long qid) {
-        return PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(1, MESSAGE_TAG_PULL))
+    @Override
+    public void nodeValue(PackstreamBuf buf, String elementId, int id, List<String> labels) {
+        buf.writeStructHeader(new StructHeader(3, StructType.NODE.getTag()))
+                .writeInt(id)
+                .writeList(labels, PackstreamBuf::writeString)
                 .writeMapHeader(2)
-                .writeString("n")
-                .writeInt(n)
-                .writeString("qid")
-                .writeInt(qid)
-                .getTarget();
+                .writeString("theAnswer")
+                .writeInt(42)
+                .writeString("one_does_not_simply")
+                .writeString("break_decoding");
     }
 
-    public static ByteBuf pull() {
-        return pull(-1);
+    @Override
+    public void relationshipValue(
+            PackstreamBuf buf,
+            String elementId,
+            int id,
+            String startElementId,
+            int startId,
+            String endElementId,
+            int endId,
+            String type) {
+        buf.writeStructHeader(new StructHeader(5, StructType.RELATIONSHIP.getTag()))
+                .writeInt(id)
+                .writeInt(startId)
+                .writeInt(endId)
+                .writeString(type)
+                .writeMapHeader(2)
+                .writeString("the_answer")
+                .writeInt(42)
+                .writeString("one_does_not_simply")
+                .writeString("break_decoding");
     }
 
-    public static ByteBuf hello(Map<String, Object> meta) {
-        meta.putIfAbsent("user_agent", USER_AGENT);
-
-        return PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(1, MESSAGE_TAG_HELLO))
-                .writeMap(meta)
-                .getTarget();
-    }
-
-    public static ByteBuf hello() {
-        return hello(new HashMap<>());
-    }
-
-    public static ByteBuf run() {
-        return run("RETURN 1");
-    }
-
-    public static ByteBuf run(String statement) {
-        return PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(3, MESSAGE_TAG_RUN))
-                .writeString(statement)
-                .writeMapHeader(0)
-                .writeMapHeader(0)
-                .getTarget();
-    }
-
-    public static ByteBuf run(String statement, MapValue params) {
-        var buf = PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(3, MESSAGE_TAG_RUN))
-                .writeString(statement);
-        PackstreamValues.writeValue(buf, params);
-        buf.writeMapHeader(0);
-
-        return buf.getTarget();
-    }
-
-    public static ByteBuf run(String statement, MapValue params, MapValue meta) {
-        var buf = PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(3, MESSAGE_TAG_RUN))
-                .writeString(statement);
-
-        PackstreamValues.writeValue(buf, params);
-        PackstreamValues.writeValue(buf, meta);
-
-        return buf.getTarget();
-    }
-
-    public static ByteBuf rollback() {
-        return PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(0, MESSAGE_TAG_ROLLBACK))
-                .getTarget();
-    }
-
-    public static ByteBuf commit() {
-        return PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(0, MESSAGE_TAG_COMMIT))
-                .getTarget();
-    }
-
-    public static ByteBuf reset() {
-        return PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(0, MESSAGE_TAG_RESET))
-                .getTarget();
-    }
-
-    public static ByteBuf goodbye() {
-        return PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(0, MESSAGE_TAG_GOODBYE))
-                .getTarget();
+    @Override
+    public void unboundRelationshipValue(PackstreamBuf buf, String elementId, int id, String type) {
+        buf.writeStructHeader(new StructHeader(5, StructType.RELATIONSHIP.getTag()))
+                .writeInt(id)
+                .writeString(type)
+                .writeMapHeader(2)
+                .writeString("the_answer")
+                .writeInt(42)
+                .writeString("one_does_not_simply")
+                .writeString("break_decoding");
     }
 }

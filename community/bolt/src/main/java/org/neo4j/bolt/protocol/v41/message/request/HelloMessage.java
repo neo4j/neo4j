@@ -22,7 +22,6 @@ package org.neo4j.bolt.protocol.v41.message.request;
 import java.util.Map;
 
 public class HelloMessage extends org.neo4j.bolt.protocol.v40.messaging.request.HelloMessage {
-    public static final String ROUTING = "routing";
 
     private final RoutingContext routingContext;
     private final Map<String, Object> authToken;

@@ -23,25 +23,36 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
-import org.neo4j.packstream.error.reader.UnexpectedTypeException;
 import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.error.struct.IllegalStructSizeException;
 import org.neo4j.packstream.io.PackstreamBuf;
+import org.neo4j.packstream.io.value.PackstreamValueReader;
 import org.neo4j.packstream.struct.StructHeader;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
 
 class PullMessageDecoderTest {
 
     @Test
+    @SuppressWarnings("unchecked")
     void shouldReadMessage() throws PackstreamReaderException {
-        var buf = PackstreamBuf.allocUnpooled()
-                .writeMapHeader(2)
-                .writeString("n")
-                .writeInt(42)
-                .writeString("qid")
-                .writeInt(21);
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
 
-        var msg = PullMessageDecoder.getInstance().read(buf, new StructHeader(1, (short) 0x42));
+        var meta = new MapValueBuilder();
+        meta.add("n", Values.longValue(42));
+        meta.add("qid", Values.longValue(21));
+
+        Mockito.doReturn(meta.build()).when(reader).readMap();
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
+
+        var msg = PullMessageDecoder.getInstance().read(connection, buf, new StructHeader(1, (short) 0x42));
 
         assertThat(msg).isNotNull();
         assertThat(msg.n()).isEqualTo(42);
@@ -50,14 +61,19 @@ class PullMessageDecoderTest {
 
     @Test
     void shouldReadMessageWithAllRecordMarker() throws PackstreamReaderException {
-        var buf = PackstreamBuf.allocUnpooled()
-                .writeMapHeader(2)
-                .writeString("n")
-                .writeInt(-1)
-                .writeString("qid")
-                .writeInt(21);
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
 
-        var msg = PullMessageDecoder.getInstance().read(buf, new StructHeader(1, (short) 0x42));
+        var meta = new MapValueBuilder();
+        meta.add("n", Values.longValue(-1));
+        meta.add("qid", Values.longValue(21));
+
+        Mockito.doReturn(meta.build()).when(reader).readMap();
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
+
+        var msg = PullMessageDecoder.getInstance().read(connection, buf, new StructHeader(1, (short) 0x42));
 
         assertThat(msg).isNotNull();
         assertThat(msg.n()).isEqualTo(-1);
@@ -65,32 +81,44 @@ class PullMessageDecoderTest {
     }
 
     @Test
-    void shouldFailWithIllegalStructArgumentWhenZeroRecordsAreDiscarded() {
-        var buf = PackstreamBuf.allocUnpooled()
-                .writeMapHeader(2)
-                .writeString("n")
-                .writeInt(0)
-                .writeString("qid")
-                .writeInt(21);
+    void shouldFailWithIllegalStructArgumentWhenZeroRecordsAreDiscarded() throws PackstreamReaderException {
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
+
+        var meta = new MapValueBuilder();
+        meta.add("n", Values.longValue(0));
+        meta.add("qid", Values.longValue(21));
+
+        Mockito.doReturn(meta.build()).when(reader).readMap();
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
 
         assertThatExceptionOfType(IllegalStructArgumentException.class)
-                .isThrownBy(() -> PullMessageDecoder.getInstance().read(buf, new StructHeader(1, (short) 0x42)))
+                .isThrownBy(
+                        () -> PullMessageDecoder.getInstance().read(connection, buf, new StructHeader(1, (short) 0x42)))
                 .withMessage(
                         "Illegal value for field \"meta\": Illegal value for field \"n\": Expecting size to be at least 1, but got: 0")
                 .withCauseInstanceOf(IllegalStructArgumentException.class);
     }
 
     @Test
-    void shouldFailWithIllegalStructArgumentWhenNegativeRecordsAreDiscarded() {
-        var buf = PackstreamBuf.allocUnpooled()
-                .writeMapHeader(2)
-                .writeString("n")
-                .writeInt(-2)
-                .writeString("qid")
-                .writeInt(21);
+    void shouldFailWithIllegalStructArgumentWhenNegativeRecordsAreDiscarded() throws PackstreamReaderException {
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
+
+        var meta = new MapValueBuilder();
+        meta.add("n", Values.longValue(-2));
+        meta.add("qid", Values.longValue(21));
+
+        Mockito.doReturn(meta.build()).when(reader).readMap();
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
 
         assertThatExceptionOfType(IllegalStructArgumentException.class)
-                .isThrownBy(() -> PullMessageDecoder.getInstance().read(buf, new StructHeader(1, (short) 0x42)))
+                .isThrownBy(
+                        () -> PullMessageDecoder.getInstance().read(connection, buf, new StructHeader(1, (short) 0x42)))
                 .withMessage(
                         "Illegal value for field \"meta\": Illegal value for field \"n\": Expecting size to be at least 1, but got: -2")
                 .withCauseInstanceOf(IllegalStructArgumentException.class);
@@ -98,43 +126,58 @@ class PullMessageDecoderTest {
 
     @Test
     void shouldFailWithIllegalStructSizeWhenEmptyStructIsGiven() {
-        var decoder = PullMessageDecoder.getInstance();
+        var connection = ConnectionMockFactory.newInstance();
 
         assertThatExceptionOfType(IllegalStructSizeException.class)
-                .isThrownBy(() -> decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(0, (short) 0x42)))
+                .isThrownBy(() -> PullMessageDecoder.getInstance()
+                        .read(connection, PackstreamBuf.allocUnpooled(), new StructHeader(0, (short) 0x42)))
                 .withMessage("Illegal struct size: Expected struct to be 1 fields but got 0");
     }
 
     @Test
     void shouldFailWithIllegalStructSizeWhenLargeStructIsGiven() {
-        var decoder = PullMessageDecoder.getInstance();
+        var connection = ConnectionMockFactory.newInstance();
 
         assertThatExceptionOfType(IllegalStructSizeException.class)
-                .isThrownBy(() -> decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(2, (short) 0x42)))
+                .isThrownBy(() -> PullMessageDecoder.getInstance()
+                        .read(connection, PackstreamBuf.allocUnpooled(), new StructHeader(2, (short) 0x42)))
                 .withMessage("Illegal struct size: Expected struct to be 1 fields but got 2");
     }
 
     @Test
-    void shouldFailWithIllegalStructArgumentWhenInvalidArgumentIsPassed() {
-        var buf = PackstreamBuf.allocUnpooled().writeInt(42);
+    void shouldFailWithIllegalStructArgumentWhenInvalidArgumentIsPassed() throws PackstreamReaderException {
+        var ex = new PackstreamReaderException("Something went kaput :(");
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
 
-        var decoder = PullMessageDecoder.getInstance();
+        Mockito.doThrow(ex).when(reader).readMap();
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
 
         assertThatExceptionOfType(IllegalStructArgumentException.class)
-                .isThrownBy(() -> decoder.read(buf, new StructHeader(1, (short) 0x42)))
-                .withMessage("Illegal value for field \"meta\": Unexpected type: Expected MAP but got INT")
-                .withCauseInstanceOf(UnexpectedTypeException.class);
+                .isThrownBy(
+                        () -> PullMessageDecoder.getInstance().read(connection, buf, new StructHeader(1, (short) 0x42)))
+                .withMessage("Illegal value for field \"meta\": Something went kaput :(")
+                .withCause(ex);
     }
 
     @Test
-    void shouldFailWithIllegalStructArgumentWhenInvalidMetadataEntryIsPassed() {
-        var buf =
-                PackstreamBuf.allocUnpooled().writeMapHeader(1).writeString("n").writeString("✨✨ nonsense ✨✨");
+    void shouldFailWithIllegalStructArgumentWhenInvalidMetadataEntryIsPassed() throws PackstreamReaderException {
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
 
-        var decoder = PullMessageDecoder.getInstance();
+        var meta = new MapValueBuilder();
+        meta.add("n", Values.stringValue("✨✨ nonsense ✨✨"));
+
+        Mockito.doReturn(meta.build()).when(reader).readMap();
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
 
         assertThatExceptionOfType(IllegalStructArgumentException.class)
-                .isThrownBy(() -> decoder.read(buf, new StructHeader(1, (short) 0x42)))
+                .isThrownBy(
+                        () -> PullMessageDecoder.getInstance().read(connection, buf, new StructHeader(1, (short) 0x42)))
                 .withMessage(
                         "Illegal value for field \"meta\": Illegal value for field \"n\": Expecting size to be a Long value, but got: String(\"✨✨ nonsense ✨✨\")")
                 .withCauseInstanceOf(IllegalStructArgumentException.class)
@@ -144,13 +187,18 @@ class PullMessageDecoderTest {
     }
 
     @Test
-    void shouldFailWithIllegalStructArgumentWhenNumberOfRecordsIsOmitted() {
-        var buf = PackstreamBuf.allocUnpooled().writeMapHeader(0);
+    void shouldFailWithIllegalStructArgumentWhenNumberOfRecordsIsOmitted() throws PackstreamReaderException {
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
 
-        var decoder = PullMessageDecoder.getInstance();
+        Mockito.doReturn(MapValue.EMPTY).when(reader).readMap();
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
 
         assertThatExceptionOfType(IllegalStructArgumentException.class)
-                .isThrownBy(() -> decoder.read(buf, new StructHeader(1, (short) 0x42)))
+                .isThrownBy(
+                        () -> PullMessageDecoder.getInstance().read(connection, buf, new StructHeader(1, (short) 0x42)))
                 .withMessage(
                         "Illegal value for field \"meta\": Illegal value for field \"n\": Expecting size to be a Long value, but got: NO_VALUE")
                 .withCauseInstanceOf(IllegalStructArgumentException.class);

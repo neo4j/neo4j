@@ -22,9 +22,6 @@ package org.neo4j.bolt.transport;
 import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.pull;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
@@ -46,6 +43,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.bolt.protocol.common.handler.HouseKeeperHandler;
 import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.bolt.testing.messages.BoltDefaultWire;
+import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.graphdb.config.Setting;
@@ -72,6 +71,7 @@ public class BoltThrottleMaxDurationIT {
 
     private HostnamePort address;
     private TransportConnection connection;
+    private final BoltWire wire = new BoltDefaultWire();
 
     @BeforeEach
     public void setup(TestInfo testInfo) throws IOException {
@@ -124,7 +124,7 @@ public class BoltThrottleMaxDurationIT {
                 .connect()
                 .setOption(StandardSocketOptions.SO_RCVBUF, (int) ByteUnit.kibiBytes(32))
                 .sendDefaultProtocolVersion()
-                .send(hello());
+                .send(wire.hello());
 
         assertThat(connection).negotiatesDefaultVersion().receivesSuccess();
 
@@ -133,8 +133,8 @@ public class BoltThrottleMaxDurationIT {
             //       spamming the server until the error is raised
             while (!Thread.interrupted()) {
                 connection
-                        .send(run("RETURN $data as data", asMapValue(singletonMap("data", largeString))))
-                        .send(pull());
+                        .send(wire.run("RETURN $data as data", asMapValue(singletonMap("data", largeString))))
+                        .send(wire.pull());
             }
 
             return null;

@@ -24,9 +24,10 @@ import org.neo4j.packstream.io.PackstreamBuf;
 /**
  * Provides logic to encode structs to their wire format as well as related metadata.
  *
+ * @param <CTX> a context type.
  * @param <I> a struct POJO type.
  */
-public interface StructWriter<I> {
+public interface StructWriter<CTX, I> {
 
     /**
      * Identifies the preferred type returned by this writer.
@@ -54,8 +55,9 @@ public interface StructWriter<I> {
     /**
      * Writes a struct payload to the given buffer.
      *
+     * @param ctx a context object.
      * @param buffer  a buffer.
      * @param payload a struct payload.
      */
-    void write(PackstreamBuf buffer, I payload);
+    void write(CTX ctx, PackstreamBuf buffer, I payload);
 }

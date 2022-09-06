@@ -38,7 +38,6 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.response.SuccessMessage;
 import org.neo4j.bolt.protocol.common.message.result.BoltResult;
-import org.neo4j.bolt.protocol.io.DefaultBoltValueWriter;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -56,7 +55,7 @@ public class ResultHandlerTest {
 
         var connection = ConnectionMockFactory.newFactory().withChannel(ch).build();
 
-        var handler = new ResultHandler(connection, DefaultBoltValueWriter::new, NullLogProvider.getInstance());
+        var handler = new ResultHandler(connection, NullLogProvider.getInstance());
 
         // When
         handler.onFinish();
@@ -116,7 +115,7 @@ public class ResultHandlerTest {
         var ch = mock(Channel.class);
         var connection = ConnectionMockFactory.newFactory().withChannel(ch).build();
 
-        var handler = new ResultHandler(connection, DefaultBoltValueWriter::new, NullLogProvider.getInstance());
+        var handler = new ResultHandler(connection, NullLogProvider.getInstance());
 
         var result = mock(BoltResult.class);
 
@@ -132,7 +131,7 @@ public class ResultHandlerTest {
         var channel = mock(Channel.class);
         var connection = ConnectionMockFactory.newFactory().withChannel(channel).build();
 
-        var handler = new ResultHandler(connection, DefaultBoltValueWriter::new, NullLogProvider.getInstance());
+        var handler = new ResultHandler(connection, NullLogProvider.getInstance());
 
         var result = mock(BoltResult.class);
 
@@ -170,7 +169,7 @@ public class ResultHandlerTest {
 
         var connection = ConnectionMockFactory.newFactory().withChannel(ch).build();
 
-        var handler = new ResultHandler(connection, DefaultBoltValueWriter::new, logProvider);
+        var handler = new ResultHandler(connection, logProvider);
 
         handler.markFailed(error);
         handler.onFinish();

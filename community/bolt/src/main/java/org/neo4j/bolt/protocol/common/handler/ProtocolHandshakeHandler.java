@@ -159,10 +159,13 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
 
         ctx.pipeline()
                 .addLast("chunkFrameEncoder", new ChunkFrameEncoder())
-                .addLast("structDecoder", new PackstreamStructDecoder(protocol.requestMessageRegistry(), logging))
+                .addLast(
+                        "structDecoder",
+                        new PackstreamStructDecoder<>(connection, protocol.requestMessageRegistry(), logging))
                 .addLast(
                         "structEncoder",
-                        new PackstreamStructEncoder<>(ResponseMessage.class, protocol.responseMessageRegistry()));
+                        new PackstreamStructEncoder<>(
+                                ResponseMessage.class, connection, protocol.responseMessageRegistry()));
 
         var inboundMessageThrottleHighWatermark =
                 config.get(BoltConnectorInternalSettings.bolt_inbound_message_throttle_high_water_mark);
@@ -193,10 +196,7 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
 
         ctx.pipeline()
                 .addLast("outboundPayloadAccumulator", new RecordResponseAccumulator())
-                .addLast(
-                        "requestHandler",
-                        new RequestHandler(
-                                new ResultHandler(connection, protocol.valueWriterFactory(), logging), logging))
+                .addLast("requestHandler", new RequestHandler(new ResultHandler(connection, logging), logging))
                 .addLast("housekeeper", new HouseKeeperHandler(logging))
                 .remove(this);
 

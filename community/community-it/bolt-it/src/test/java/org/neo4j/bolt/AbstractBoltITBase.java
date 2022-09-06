@@ -19,16 +19,18 @@
  */
 package org.neo4j.bolt;
 
+import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
 import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
-import static org.neo4j.values.storable.Values.longValue;
 
 import java.io.IOException;
 import java.util.stream.Stream;
-import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
+import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.bolt.testing.messages.BoltDefaultWire;
+import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.fabric.config.FabricSettings;
 import org.neo4j.internal.helpers.HostnamePort;
@@ -37,7 +39,6 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.values.AnyValue;
 
 public abstract class AbstractBoltITBase {
     @Inject
@@ -45,13 +46,10 @@ public abstract class AbstractBoltITBase {
 
     protected TransportConnection connection;
     protected HostnamePort address;
+    protected BoltWire wire;
 
     protected static Stream<TransportConnection.Factory> argumentsProvider() {
         return TransportConnection.factories();
-    }
-
-    protected static Condition<AnyValue> longValueCondition(long expected) {
-        return new Condition<>(value -> value.equals(longValue(expected)), "equals");
     }
 
     @BeforeEach
@@ -65,9 +63,30 @@ public abstract class AbstractBoltITBase {
         address = server.lookupDefaultConnector();
     }
 
-    protected void init(TransportConnection.Factory connectionFactory) throws Exception {
+    protected void connect(TransportConnection.Factory connectionFactory) throws IOException {
         connection = connectionFactory.create(address).connect();
-        negotiateBolt();
+        wire = this.initWire();
+    }
+
+    protected void connectAndNegotiate(TransportConnection.Factory connectionFactory) throws IOException {
+        this.connect(connectionFactory);
+
+        connection.send(this.wire.getProtocolVersion());
+        assertThat(connection).negotiates(this.wire.getProtocolVersion());
+    }
+
+    protected void connectAndHandshake(TransportConnection.Factory connectionFactory, Feature... features)
+            throws Exception {
+        this.connectAndNegotiate(connectionFactory);
+
+        wire.enable(features);
+
+        connection.send(wire.hello());
+        assertThat(connection).receivesSuccess();
+    }
+
+    protected BoltWire initWire() {
+        return new BoltDefaultWire();
     }
 
     @AfterEach
@@ -75,9 +94,8 @@ public abstract class AbstractBoltITBase {
         if (connection != null) {
             connection.disconnect();
         }
+        wire = null;
     }
-
-    protected abstract void negotiateBolt() throws Exception;
 
     protected long getLastClosedTransactionId() {
         var resolver = ((GraphDatabaseAPI) server.graphDatabaseService()).getDependencyResolver();

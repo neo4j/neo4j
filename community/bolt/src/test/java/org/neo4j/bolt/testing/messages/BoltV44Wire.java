@@ -19,163 +19,74 @@
  */
 package org.neo4j.bolt.testing.messages;
 
-import io.netty.buffer.ByteBuf;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
+import java.util.List;
+import org.neo4j.bolt.protocol.io.StructType;
+import org.neo4j.bolt.protocol.io.writer.DefaultStructWriter;
+import org.neo4j.bolt.protocol.io.writer.LegacyStructWriter;
+import org.neo4j.bolt.protocol.v44.BoltProtocolV44;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
-import org.neo4j.values.virtual.MapValue;
 
-public final class BoltV44Wire {
-    private static final String USER_AGENT = "BoltV44Wire/0.0";
+public class BoltV44Wire extends AbstractBoltWire {
 
-    public static final short MESSAGE_TAG_BEGIN = (short) 0x11;
-    public static final short MESSAGE_TAG_ROUTE = (short) 0x66;
-
-    private BoltV44Wire() {}
-
-    public static ByteBuf begin() {
-        return begin(null, null, null);
+    public BoltV44Wire() {
+        super(BoltProtocolV44.VERSION);
     }
 
-    public static ByteBuf begin(String db) {
-        return begin(db, null, null);
+    @Override
+    protected void configurePipeline() {
+        this.pipeline.addLast(DefaultStructWriter.getInstance());
+        this.pipeline.addFirst(LegacyStructWriter.getInstance());
     }
 
-    public static ByteBuf begin(Collection<String> bookmarks) {
-        return BoltV40Wire.begin(bookmarks);
+    @Override
+    protected String getUserAgent() {
+        return "BoltWire/4.4";
     }
 
-    public static ByteBuf begin(String db, String impersonatedUser) {
-        return begin(db, impersonatedUser, null);
+    @Override
+    public void nodeValue(PackstreamBuf buf, String elementId, int id, List<String> labels) {
+        buf.writeStructHeader(new StructHeader(3, StructType.NODE.getTag()))
+                .writeInt(id)
+                .writeList(labels, PackstreamBuf::writeString)
+                .writeMapHeader(2)
+                .writeString("theAnswer")
+                .writeInt(42)
+                .writeString("one_does_not_simply")
+                .writeString("break_decoding");
     }
 
-    public static ByteBuf begin(String db, String impersonatedUser, Collection<String> bookmarks) {
-        var meta = new HashMap<String, Object>();
-        if (db != null) {
-            meta.put("db", db);
-        }
-        if (impersonatedUser != null) {
-            meta.put("imp_user", impersonatedUser);
-        }
-        if (bookmarks != null) {
-            meta.put("bookmarks", new ArrayList<>(bookmarks));
-        }
-
-        return PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(1, MESSAGE_TAG_BEGIN))
-                .writeMap(meta)
-                .getTarget();
+    @Override
+    public void relationshipValue(
+            PackstreamBuf buf,
+            String elementId,
+            int id,
+            String startElementId,
+            int startId,
+            String endElementId,
+            int endId,
+            String type) {
+        buf.writeStructHeader(new StructHeader(5, StructType.RELATIONSHIP.getTag()))
+                .writeInt(id)
+                .writeInt(startId)
+                .writeInt(endId)
+                .writeString(type)
+                .writeMapHeader(2)
+                .writeString("the_answer")
+                .writeInt(42)
+                .writeString("one_does_not_simply")
+                .writeString("break_decoding");
     }
 
-    public static ByteBuf discard() {
-        return discard(-1);
-    }
-
-    public static ByteBuf discard(long n) {
-        return BoltV40Wire.discard(n);
-    }
-
-    public static ByteBuf pull() {
-        return pull(-1);
-    }
-
-    public static ByteBuf pull(long n) {
-        return BoltV40Wire.pull(n);
-    }
-
-    public static ByteBuf pull(long n, long qid) {
-        return BoltV40Wire.pull(n, qid);
-    }
-
-    public static ByteBuf hello() {
-        return hello(new HashMap<>(), null);
-    }
-
-    public static ByteBuf hello(Map<String, Object> meta, RoutingContext context) {
-        meta.putIfAbsent("user_agent", USER_AGENT);
-        if (context != null) {
-            meta.put("routing", context.getParameters());
-        }
-
-        return BoltV40Wire.hello(meta);
-    }
-
-    public static ByteBuf run() {
-        return BoltV40Wire.run();
-    }
-
-    public static ByteBuf run(String statement) {
-        return BoltV40Wire.run(statement);
-    }
-
-    public static ByteBuf run(String statement, MapValue params) {
-        return BoltV40Wire.run(statement, params);
-    }
-
-    public static ByteBuf run(String statement, MapValue params, MapValue meta) {
-        return BoltV40Wire.run(statement, params, meta);
-    }
-
-    public static ByteBuf rollback() {
-        return BoltV40Wire.rollback();
-    }
-
-    public static ByteBuf commit() {
-        return BoltV40Wire.commit();
-    }
-
-    public static ByteBuf reset() {
-        return BoltV40Wire.reset();
-    }
-
-    public static ByteBuf goodbye() {
-        return BoltV40Wire.goodbye();
-    }
-
-    public static ByteBuf route() {
-        return route(null, null, null, null);
-    }
-
-    public static ByteBuf route(String impersonatedUser) {
-        return route(null, null, null, impersonatedUser);
-    }
-
-    public static ByteBuf route(RoutingContext context, Collection<String> bookmarks, String db) {
-        return route(context, bookmarks, db, null);
-    }
-
-    public static ByteBuf route(
-            RoutingContext context, Collection<String> bookmarks, String db, String impersonatedUser) {
-        Map<String, String> routingParams;
-        if (context != null) {
-            routingParams = context.getParameters();
-        } else {
-            routingParams = Collections.emptyMap();
-        }
-
-        Collection<String> bookmarkStrings = bookmarks;
-        if (bookmarkStrings == null) {
-            bookmarkStrings = Collections.emptyList();
-        }
-
-        var meta = new HashMap<String, Object>();
-        if (db != null) {
-            meta.put("db", db);
-        }
-        if (impersonatedUser != null) {
-            meta.put("imp_user", impersonatedUser);
-        }
-
-        return PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(3, MESSAGE_TAG_ROUTE))
-                .writeMap(routingParams, PackstreamBuf::writeString)
-                .writeList(bookmarkStrings, PackstreamBuf::writeString)
-                .writeMap(meta)
-                .getTarget();
+    @Override
+    public void unboundRelationshipValue(PackstreamBuf buf, String elementId, int id, String type) {
+        buf.writeStructHeader(new StructHeader(5, StructType.RELATIONSHIP.getTag()))
+                .writeInt(id)
+                .writeString(type)
+                .writeMapHeader(2)
+                .writeString("the_answer")
+                .writeInt(42)
+                .writeString("one_does_not_simply")
+                .writeString("break_decoding");
     }
 }

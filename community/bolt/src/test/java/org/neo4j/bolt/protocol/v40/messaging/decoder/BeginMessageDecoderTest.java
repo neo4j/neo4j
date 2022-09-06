@@ -22,52 +22,53 @@ package org.neo4j.bolt.protocol.v40.messaging.decoder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.RETURNS_DEFAULTS;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.protocol.common.bookmark.BookmarksParser;
+import org.mockito.Mockito;
+import org.neo4j.bolt.protocol.common.bookmark.BookmarkParser;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
-import org.neo4j.bolt.protocol.error.bookmark.BookmarkParserException;
 import org.neo4j.bolt.protocol.error.bookmark.MalformedBookmarkException;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
-import org.neo4j.packstream.error.reader.UnexpectedTypeException;
 import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.error.struct.IllegalStructSizeException;
 import org.neo4j.packstream.io.PackstreamBuf;
+import org.neo4j.packstream.io.value.PackstreamValueReader;
 import org.neo4j.packstream.struct.StructHeader;
-import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.MapValueBuilder;
+import org.neo4j.values.virtual.VirtualValues;
 
 class BeginMessageDecoderTest {
 
     @Test
     void shouldReadMessage() throws PackstreamReaderException {
-        var bookmarkParser = mock(BookmarksParser.class, RETURNS_DEFAULTS);
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
 
-        var buf = PackstreamBuf.allocUnpooled()
-                .writeMapHeader(5)
-                .writeString("bookmarks")
-                .writeListHeader(2)
-                .writeString("neo4j:mock:bookmark1")
-                .writeString("neo4j:mock:bookmark2")
-                .writeString("tx_timeout")
-                .writeInt(42)
-                .writeString("mode")
-                .writeString("w")
-                .writeString("tx_metadata")
-                .writeMapHeader(2)
-                .writeString("foo") // key
-                .writeString("bar") // value
-                .writeString("baz") // key
-                .writeInt(4) // value - decided by a fair dice roll
-                .writeString("db")
-                .writeString("neo4j");
+        var txMetadata = new MapValueBuilder();
+        txMetadata.add("foo", Values.stringValue("bar"));
+        txMetadata.add("baz", Values.longValue(4));
 
-        var msg = new BeginMessageDecoder(bookmarkParser).read(buf, new StructHeader(1, (short) 0x42));
+        var meta = new MapValueBuilder();
+        meta.add(
+                "bookmarks",
+                VirtualValues.list(
+                        Values.stringValue("neo4j:mock:bookmark1"), Values.stringValue("neo4j:mock:bookmark2")));
+        meta.add("tx_timeout", Values.longValue(42));
+        meta.add("mode", Values.stringValue("w"));
+        meta.add("tx_metadata", txMetadata.build());
+        meta.add("db", Values.stringValue("neo4j"));
+
+        Mockito.doReturn(meta.build()).when(reader).readMap();
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
+
+        var msg = BeginMessageDecoder.getInstance().read(connection, buf, new StructHeader(1, (short) 0x42));
 
         assertThat(msg).isNotNull();
         assertThat(msg.bookmarks()).isEmpty();
@@ -75,73 +76,93 @@ class BeginMessageDecoderTest {
         assertThat(msg.getAccessMode()).isEqualTo(AccessMode.WRITE);
         assertThat(msg.transactionMetadata()).containsEntry("foo", "bar").containsEntry("baz", 4L);
         assertThat(msg.databaseName()).isEqualTo("neo4j");
-
-        verify(bookmarkParser).parseBookmarks(any(ListValue.class));
-        verifyNoMoreInteractions(bookmarkParser);
     }
 
     @Test
     void shouldFailWithIllegalStructSizeWhenEmptyStructIsGiven() {
-        var decoder = new BeginMessageDecoder(mock(BookmarksParser.class));
-
         assertThatExceptionOfType(IllegalStructSizeException.class)
-                .isThrownBy(() -> decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(0, (short) 0x42)))
+                .isThrownBy(() -> BeginMessageDecoder.getInstance()
+                        .read(
+                                ConnectionMockFactory.newInstance(),
+                                PackstreamBuf.allocUnpooled(),
+                                new StructHeader(0, (short) 0x42)))
                 .withMessage("Illegal struct size: Expected struct to be 1 fields but got 0");
     }
 
     @Test
     void shouldFailWithIllegalStructSizeWhenLargerStructIsGiven() {
-        var decoder = new BeginMessageDecoder(mock(BookmarksParser.class));
-
         assertThatExceptionOfType(IllegalStructSizeException.class)
-                .isThrownBy(() -> decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(2, (short) 0x42)))
+                .isThrownBy(() -> BeginMessageDecoder.getInstance()
+                        .read(
+                                ConnectionMockFactory.newInstance(),
+                                PackstreamBuf.allocUnpooled(),
+                                new StructHeader(2, (short) 0x42)))
                 .withMessage("Illegal struct size: Expected struct to be 1 fields but got 2");
     }
 
     @Test
-    void shouldFailWithBookmarkParserExceptionWhenParsingFails() throws BookmarkParserException {
-        var bookmarkParser = mock(BookmarksParser.class);
+    void shouldFailWithBookmarkParserExceptionWhenParsingFails() throws PackstreamReaderException {
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
+
+        var meta = new MapValueBuilder();
+        meta.add(
+                "bookmarks",
+                VirtualValues.list(
+                        Values.stringValue("neo4j:mock:bookmark1"), Values.stringValue("neo4j:mock:bookmark2")));
+
+        Mockito.doReturn(meta.build()).when(reader).readMap();
+
+        var bookmarkParser = mock(BookmarkParser.class);
         doThrow(new MalformedBookmarkException("Something went wrong! :("))
                 .when(bookmarkParser)
                 .parseBookmarks(any());
 
-        var buf = PackstreamBuf.allocUnpooled()
-                .writeMapHeader(1)
-                .writeString("bookmarks")
-                .writeListHeader(2)
-                .writeString("neo4j:mock:bookmark")
-                .writeString("neo4j:mock:bookmark");
-
-        var decoder = new BeginMessageDecoder(bookmarkParser);
+        var connection = ConnectionMockFactory.newFactory()
+                .withConnector(factory -> factory.withBookmarkParser(bookmarkParser))
+                .withValueReader(reader)
+                .build();
 
         assertThatExceptionOfType(MalformedBookmarkException.class)
-                .isThrownBy(() -> decoder.read(buf, new StructHeader(1, (short) 0x42)))
+                .isThrownBy(() ->
+                        BeginMessageDecoder.getInstance().read(connection, buf, new StructHeader(1, (short) 0x42)))
                 .withMessage("Something went wrong! :(");
     }
 
     @Test
-    void shouldFailWithIllegalStructArgumentWhenInvalidArgumentIsPassed() {
-        var buf = PackstreamBuf.allocUnpooled().writeInt(42);
+    void shouldFailWithIllegalStructArgumentWhenInvalidArgumentIsPassed() throws PackstreamReaderException {
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
+        var ex = new PackstreamReaderException("Something went kaput :(");
 
-        var decoder = new BeginMessageDecoder(mock(BookmarksParser.class));
+        Mockito.doThrow(ex).when(reader).readMap();
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
 
         assertThatExceptionOfType(IllegalStructArgumentException.class)
-                .isThrownBy(() -> decoder.read(buf, new StructHeader(1, (short) 0x42)))
-                .withMessage("Illegal value for field \"metadata\": Unexpected type: Expected MAP but got INT")
-                .withCauseInstanceOf(UnexpectedTypeException.class);
+                .isThrownBy(() ->
+                        BeginMessageDecoder.getInstance().read(connection, buf, new StructHeader(1, (short) 0x42)))
+                .withMessage("Illegal value for field \"metadata\": Something went kaput :(")
+                .withCause(ex);
     }
 
     @Test
-    void shouldFailWithIllegalStructArgumentWhenInvalidMetadataEntryIsPassed() {
-        var buf = PackstreamBuf.allocUnpooled()
-                .writeMapHeader(1)
-                .writeString("tx_timeout")
-                .writeString("✨✨ nonsense ✨✨");
+    void shouldFailWithIllegalStructArgumentWhenInvalidMetadataEntryIsPassed() throws PackstreamReaderException {
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
 
-        var decoder = new BeginMessageDecoder(mock(BookmarksParser.class));
+        var meta = new MapValueBuilder();
+        meta.add("tx_timeout", Values.stringValue("✨✨ nonsense ✨✨"));
+
+        Mockito.doReturn(meta.build()).when(reader).readMap();
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
 
         assertThatExceptionOfType(IllegalStructArgumentException.class)
-                .isThrownBy(() -> decoder.read(buf, new StructHeader(1, (short) 0x42)))
+                .isThrownBy(() ->
+                        BeginMessageDecoder.getInstance().read(connection, buf, new StructHeader(1, (short) 0x42)))
                 .withMessage(
                         "Illegal value for field \"metadata\": Illegal value for field \"tx_timeout\": Expecting transaction timeout value to be a Long value, but got: String(\"✨✨ nonsense ✨✨\")")
                 .withCauseInstanceOf(IllegalStructArgumentException.class);

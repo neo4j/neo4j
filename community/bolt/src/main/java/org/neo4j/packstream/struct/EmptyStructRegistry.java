@@ -24,31 +24,32 @@ import java.util.Optional;
 /**
  * Provides a no-op struct registry which rejects any struct values given to it.
  *
+ * @param <CTX> a context type.
  * @param <S> an arbitrary value type.
  */
-final class EmptyStructRegistry<S> implements StructRegistry<S> {
+final class EmptyStructRegistry<CTX, S> implements StructRegistry<CTX, S> {
     @SuppressWarnings("rawtypes")
     private static final EmptyStructRegistry INSTANCE = new EmptyStructRegistry();
 
     private EmptyStructRegistry() {}
 
     @Override
-    public Builder<S> builderOf() {
+    public <C extends CTX> Builder<C, S> builderOf() {
         return StructRegistry.builder();
     }
 
     @SuppressWarnings("unchecked")
-    static <S> EmptyStructRegistry<S> getInstance() {
+    static <CTX, S> EmptyStructRegistry<CTX, S> getInstance() {
         return INSTANCE;
     }
 
     @Override
-    public Optional<? extends StructReader<? extends S>> getReader(StructHeader header) {
+    public Optional<? extends StructReader<? super CTX, ? extends S>> getReader(StructHeader header) {
         return Optional.empty();
     }
 
     @Override
-    public <O extends S> Optional<? extends StructWriter<? super O>> getWriter(O payload) {
+    public <O extends S> Optional<? extends StructWriter<? super CTX, ? super O>> getWriter(O payload) {
         return Optional.empty();
     }
 }

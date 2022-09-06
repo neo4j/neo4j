@@ -21,13 +21,20 @@ package org.neo4j.bolt.protocol.v40.messaging.request;
 
 import static java.util.Objects.requireNonNull;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 
 public class HelloMessage implements RequestMessage {
     public static final byte SIGNATURE = 0x01;
+
     private static final String USER_AGENT = "user_agent";
+    private static final String FEATURES = "patch_bolt";
+
     private final Map<String, Object> meta;
 
     public HelloMessage(Map<String, Object> meta) {
@@ -36,6 +43,23 @@ public class HelloMessage implements RequestMessage {
 
     public String userAgent() {
         return requireNonNull((String) meta.get(USER_AGENT));
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public List<Feature> features() {
+        var param = meta.get(FEATURES);
+        if (!(param instanceof List<?>)) {
+            return Collections.emptyList();
+        }
+
+        // Since this is an optional protocol feature which was introduced after the original spec was written, we're
+        // not going to strictly validate the list or its contents
+        return (List<Feature>) ((List) param)
+                .stream()
+                        .filter(it -> it instanceof String)
+                        .map(id -> Feature.findFeatureById((String) id))
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
     }
 
     public Map<String, Object> authToken() {

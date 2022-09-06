@@ -20,7 +20,6 @@
 package org.neo4j.bolt;
 
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
 import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
 
 import java.util.Map;
@@ -28,6 +27,8 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.bolt.testing.messages.BoltDefaultWire;
+import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.HostnamePort;
 
@@ -37,17 +38,23 @@ public abstract class AbstractBoltTransportsTest {
 
     protected HostnamePort address;
     protected TransportConnection connection;
+    protected BoltWire wire;
 
     protected void initParameters(TransportConnection.Factory connectionFactory) throws Exception {
         this.connectionFactory = connectionFactory;
 
         connection = newConnection();
+        wire = this.initWire();
+    }
+
+    protected BoltWire initWire() {
+        return new BoltDefaultWire();
     }
 
     protected void initConnection(TransportConnection.Factory factory) throws Exception {
         this.initParameters(factory);
 
-        this.connection.connect().sendDefaultProtocolVersion().send(hello());
+        this.connection.connect().sendDefaultProtocolVersion().send(this.wire.hello());
 
         assertThat(connection).negotiatesDefaultVersion().receivesSuccess();
     }

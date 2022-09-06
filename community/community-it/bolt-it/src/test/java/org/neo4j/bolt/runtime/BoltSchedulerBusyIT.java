@@ -21,9 +21,6 @@ package org.neo4j.bolt.runtime;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.discard;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -110,7 +107,7 @@ class BoltSchedulerBusyIT extends AbstractBoltTransportsTest {
         try {
             connection3 = connectAndPerformBoltHandshake(newConnection());
 
-            connection3.sendDefaultProtocolVersion().send(hello());
+            connection3.sendDefaultProtocolVersion().send(wire.hello());
 
             assertThat(connection3)
                     .receivesFailureFuzzy(
@@ -191,13 +188,13 @@ class BoltSchedulerBusyIT extends AbstractBoltTransportsTest {
     private void enterStreaming(TransportConnection connection, int sleepSeconds) throws Exception {
         connectAndPerformBoltHandshake(connection);
 
-        connection.send(hello());
+        connection.send(wire.hello());
 
         assertThat(connection).receivesSuccess();
 
         SECONDS.sleep(sleepSeconds); // sleep a bit to allow the worker thread to return to the pool
 
-        connection.send(run("UNWIND RANGE (1, 100) AS x RETURN x"));
+        connection.send(wire.run("UNWIND RANGE (1, 100) AS x RETURN x"));
 
         assertThat(connection).receivesSuccess();
     }
@@ -211,7 +208,7 @@ class BoltSchedulerBusyIT extends AbstractBoltTransportsTest {
     }
 
     private void exitStreaming(TransportConnection connection) throws Exception {
-        connection.send(discard());
+        connection.send(wire.discard());
 
         assertThat(connection).receivesSuccess();
     }

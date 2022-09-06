@@ -24,12 +24,12 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 import java.util.List;
 import java.util.Optional;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
-import org.neo4j.bolt.protocol.common.bookmark.BookmarksParser;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.v43.message.request.RouteMessage;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
+import org.neo4j.packstream.error.struct.IllegalStructSizeException;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.io.Type;
-import org.neo4j.packstream.io.value.PackstreamValues;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.packstream.struct.StructReader;
 import org.neo4j.values.storable.TextValue;
@@ -37,11 +37,13 @@ import org.neo4j.values.storable.TextValue;
 /**
  * Responsible for decoding the RouteMessage and its fields.
  */
-public class RouteMessageDecoder implements StructReader<RouteMessage> {
-    private final BookmarksParser bookmarksParser;
+public class RouteMessageDecoder implements StructReader<Connection, RouteMessage> {
+    private static final RouteMessageDecoder INSTANCE = new RouteMessageDecoder();
 
-    public RouteMessageDecoder(BookmarksParser bookmarksParser) {
-        this.bookmarksParser = bookmarksParser;
+    protected RouteMessageDecoder() {}
+
+    public static RouteMessageDecoder getInstance() {
+        return INSTANCE;
     }
 
     @Override
@@ -50,15 +52,21 @@ public class RouteMessageDecoder implements StructReader<RouteMessage> {
     }
 
     @Override
-    public RouteMessage read(PackstreamBuf buffer, StructHeader header) throws PackstreamReaderException {
-        var routingContext = PackstreamValues.readMap(buffer);
+    public RouteMessage read(Connection connection, PackstreamBuf buffer, StructHeader header)
+            throws PackstreamReaderException {
+        if (header.length() != 3) {
+            throw new IllegalStructSizeException(3, header.length());
+        }
+
+        var valueReader = connection.valueReader(buffer);
+        var routingContext = valueReader.readMap();
 
         List<Bookmark> bookmarkList = List.of();
         if (buffer.peekType() != Type.NONE) {
-            bookmarkList = bookmarksParser.parseBookmarks(PackstreamValues.readList(buffer));
+            bookmarkList = connection.connector().bookmarkParser().parseBookmarks(valueReader.readList());
         }
 
-        var databaseName = Optional.of(PackstreamValues.readValue(buffer))
+        var databaseName = Optional.of(valueReader.readValue())
                 .filter(any -> any != NO_VALUE && any instanceof TextValue)
                 .map(any -> ((TextValue) any).stringValue())
                 .orElse(null);

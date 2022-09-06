@@ -32,7 +32,7 @@ import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.error.bookmark.BookmarkParserException;
-import org.neo4j.bolt.protocol.v40.bookmark.BookmarksParserV40;
+import org.neo4j.bolt.protocol.v40.bookmark.BookmarkParserV40;
 import org.neo4j.bolt.protocol.v40.messaging.request.BeginMessage;
 import org.neo4j.bolt.protocol.v40.messaging.request.DiscardMessage;
 import org.neo4j.bolt.protocol.v40.messaging.request.GoodbyeMessage;
@@ -72,7 +72,7 @@ public class BoltV43Messages {
     public static RequestMessage begin(DatabaseIdRepository repository, ListValue bookmarks)
             throws BookmarkParserException {
         var bookmarkList =
-                new BookmarksParserV40(repository, CustomBookmarkFormatParser.DEFAULT).parseBookmarks(bookmarks);
+                new BookmarkParserV40(repository, CustomBookmarkFormatParser.DEFAULT).parseBookmarks(bookmarks);
         return new BeginMessage(MapValue.EMPTY, bookmarkList, null, AccessMode.WRITE, Map.of(), ABSENT_DB_NAME);
     }
 

@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.protocol.v40.messaging.request.CommitMessage;
+import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.struct.IllegalStructSizeException;
 import org.neo4j.packstream.io.PackstreamBuf;
@@ -33,20 +34,24 @@ class CommitMessageDecoderTest {
 
     @Test
     void shouldReadMessage() throws PackstreamReaderException {
-        var decoder = CommitMessageDecoder.getInstance();
-
-        var msg1 = decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(0, (short) 0x42));
-        var msg2 = decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(0, (short) 0x42));
+        var msg1 = CommitMessageDecoder.getInstance()
+                .read(ConnectionMockFactory.newInstance(), PackstreamBuf.allocUnpooled(), new StructHeader(0, (short)
+                        0x42));
+        var msg2 = CommitMessageDecoder.getInstance()
+                .read(ConnectionMockFactory.newInstance(), PackstreamBuf.allocUnpooled(), new StructHeader(0, (short)
+                        0x42));
 
         assertThat(msg1).isNotNull().isSameAs(CommitMessage.INSTANCE).isSameAs(msg2);
     }
 
     @Test
     void shouldFailWithIllegalStructSizeWhenNonEmptyStructIsGiven() {
-        var decoder = CommitMessageDecoder.getInstance();
-
         assertThatExceptionOfType(IllegalStructSizeException.class)
-                .isThrownBy(() -> decoder.read(PackstreamBuf.allocUnpooled(), new StructHeader(1, (short) 0x42)))
+                .isThrownBy(() -> CommitMessageDecoder.getInstance()
+                        .read(
+                                ConnectionMockFactory.newInstance(),
+                                PackstreamBuf.allocUnpooled(),
+                                new StructHeader(1, (short) 0x42)))
                 .withMessage("Illegal struct size: Expected struct to be 0 fields but got 1");
     }
 }

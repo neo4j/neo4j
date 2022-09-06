@@ -19,12 +19,12 @@
  */
 package org.neo4j.bolt.protocol.common.message.encoder;
 
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.message.response.SuccessMessage;
 import org.neo4j.packstream.io.PackstreamBuf;
-import org.neo4j.packstream.io.value.PackstreamValueWriter;
 import org.neo4j.packstream.struct.StructWriter;
 
-public final class SuccessMessageEncoder implements StructWriter<SuccessMessage> {
+public final class SuccessMessageEncoder implements StructWriter<Connection, SuccessMessage> {
     private static final SuccessMessageEncoder INSTANCE = new SuccessMessageEncoder();
 
     private SuccessMessageEncoder() {}
@@ -49,7 +49,7 @@ public final class SuccessMessageEncoder implements StructWriter<SuccessMessage>
     }
 
     @Override
-    public void write(PackstreamBuf buffer, SuccessMessage payload) {
-        payload.meta().writeTo(new PackstreamValueWriter(buffer));
+    public void write(Connection ctx, PackstreamBuf buffer, SuccessMessage payload) {
+        ctx.writerContext(buffer).writeValue(payload.meta());
     }
 }

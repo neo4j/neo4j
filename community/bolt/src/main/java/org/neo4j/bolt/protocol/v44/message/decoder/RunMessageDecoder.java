@@ -23,17 +23,19 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
-import org.neo4j.bolt.protocol.common.bookmark.BookmarksParser;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
-import org.neo4j.bolt.protocol.v44.message.request.RunMessage;
+import org.neo4j.bolt.protocol.v40.messaging.request.RunMessage;
 import org.neo4j.bolt.protocol.v44.message.util.MessageMetadataParserV44;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.values.virtual.MapValue;
 
-public class RunMessageDecoder extends org.neo4j.bolt.protocol.v40.messaging.decoder.RunMessageDecoder {
+public final class RunMessageDecoder extends org.neo4j.bolt.protocol.v40.messaging.decoder.RunMessageDecoder {
+    private static final RunMessageDecoder INSTANCE = new RunMessageDecoder();
 
-    public RunMessageDecoder(BookmarksParser bookmarksParser) {
-        super(bookmarksParser);
+    private RunMessageDecoder() {}
+
+    public static RunMessageDecoder getInstance() {
+        return INSTANCE;
     }
 
     @Override
@@ -61,9 +63,8 @@ public class RunMessageDecoder extends org.neo4j.bolt.protocol.v40.messaging.dec
             AccessMode accessMode,
             Map<String, Object> txMetadata,
             String databaseName,
-            String impersonatedUser)
-            throws PackstreamReaderException {
-        return new RunMessage(
+            String impersonatedUser) {
+        return new org.neo4j.bolt.protocol.v44.message.request.RunMessage(
                 statement, params, meta, bookmarks, txTimeout, accessMode, txMetadata, databaseName, impersonatedUser);
     }
 }

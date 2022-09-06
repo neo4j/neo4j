@@ -21,7 +21,6 @@ package org.neo4j.bolt.protocol.v42;
 
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
-import org.neo4j.bolt.protocol.common.bookmark.BookmarksParser;
 import org.neo4j.bolt.protocol.v41.BoltProtocolV41;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
@@ -35,19 +34,12 @@ public class BoltProtocolV42 extends BoltProtocolV41 {
     public static final ProtocolVersion VERSION = new ProtocolVersion(4, 2);
 
     public BoltProtocolV42(
-            BookmarksParser bookmarksParser,
             LogService logging,
             BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
             DefaultDatabaseResolver defaultDatabaseResolver,
             TransactionManager transactionManager,
             SystemNanoClock clock) {
-        super(
-                bookmarksParser,
-                logging,
-                boltGraphDatabaseManagementServiceSPI,
-                defaultDatabaseResolver,
-                transactionManager,
-                clock);
+        super(logging, boltGraphDatabaseManagementServiceSPI, defaultDatabaseResolver, transactionManager, clock);
     }
 
     @Override

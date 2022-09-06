@@ -24,25 +24,27 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 import java.util.List;
 import java.util.Optional;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
-import org.neo4j.bolt.protocol.common.bookmark.BookmarksParser;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.v44.message.request.RouteMessage;
 import org.neo4j.bolt.protocol.v44.message.util.MessageMetadataParserV44;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
+import org.neo4j.packstream.error.struct.IllegalStructSizeException;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.io.Type;
-import org.neo4j.packstream.io.value.PackstreamValues;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.packstream.struct.StructReader;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
-public class RouteMessageDecoder implements StructReader<RouteMessage> {
+public final class RouteMessageDecoder implements StructReader<Connection, RouteMessage> {
+    private static final RouteMessageDecoder INSTANCE = new RouteMessageDecoder();
+
     public static final String DB_KEY = "db";
 
-    private final BookmarksParser bookmarksParser;
+    private RouteMessageDecoder() {}
 
-    public RouteMessageDecoder(BookmarksParser bookmarksParser) {
-        this.bookmarksParser = bookmarksParser;
+    public static RouteMessageDecoder getInstance() {
+        return INSTANCE;
     }
 
     @Override
@@ -51,15 +53,21 @@ public class RouteMessageDecoder implements StructReader<RouteMessage> {
     }
 
     @Override
-    public RouteMessage read(PackstreamBuf buffer, StructHeader header) throws PackstreamReaderException {
-        var routingContext = PackstreamValues.readMap(buffer);
+    public RouteMessage read(Connection ctx, PackstreamBuf buffer, StructHeader header)
+            throws PackstreamReaderException {
+        if (header.length() != 3) {
+            throw new IllegalStructSizeException(3, header.length());
+        }
+
+        var valueReader = ctx.valueReader(buffer);
+        var routingContext = valueReader.readMap();
 
         List<Bookmark> bookmarkList = List.of();
         if (buffer.peekType() != Type.NONE) {
-            bookmarkList = bookmarksParser.parseBookmarks(PackstreamValues.readList(buffer));
+            bookmarkList = ctx.connector().bookmarkParser().parseBookmarks(valueReader.readList());
         }
 
-        var meta = PackstreamValues.readMap(buffer);
+        var meta = valueReader.readMap();
 
         var databaseName = Optional.of(meta.get(DB_KEY))
                 .filter(any -> any != NO_VALUE && any instanceof TextValue)

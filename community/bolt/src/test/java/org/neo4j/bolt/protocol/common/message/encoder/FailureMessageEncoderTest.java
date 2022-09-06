@@ -26,6 +26,7 @@ import org.neo4j.bolt.protocol.common.message.response.FailureMessage;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.io.PackstreamBuf;
+import org.neo4j.packstream.testing.PackstreamBufAssertions;
 
 class FailureMessageEncoderTest {
 
@@ -34,15 +35,13 @@ class FailureMessageEncoderTest {
         var buf = PackstreamBuf.allocUnpooled();
         var encoder = FailureMessageEncoder.getInstance();
 
-        encoder.write(buf, new FailureMessage(Status.Request.InvalidFormat, "Something went wrong! :(", false));
+        encoder.write(null, buf, new FailureMessage(Status.Request.InvalidFormat, "Something went wrong! :(", false));
 
-        var map = buf.readMap();
-
-        assertThat(map)
+        PackstreamBufAssertions.assertThat(buf).containsMap(meta -> assertThat(meta)
                 .isNotNull()
                 .hasSize(2)
                 .containsEntry("code", Status.Request.InvalidFormat.code().serialize())
-                .containsEntry("message", "Something went wrong! :(");
+                .containsEntry("message", "Something went wrong! :("));
 
         assertThat(buf.getTarget().isReadable()).isFalse();
     }

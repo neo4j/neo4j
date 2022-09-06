@@ -22,10 +22,6 @@ package org.neo4j.bolt.transport;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.hello;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.pull;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.reset;
-import static org.neo4j.bolt.testing.messages.BoltDefaultWire.run;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -94,7 +90,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
         connection
                 .connect()
                 .sendDefaultProtocolVersion()
-                .send(hello(Map.of(
+                .send(wire.hello(Map.of(
                         "scheme", "basic",
                         "principal", "neo4j",
                         "credentials", "neo4j")));
@@ -114,7 +110,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
         connection
                 .connect()
                 .sendDefaultProtocolVersion()
-                .send(hello(Map.of(
+                .send(wire.hello(Map.of(
                         "scheme", "basic",
                         "principal", "neo4j",
                         "credentials", "wrong")));
@@ -156,7 +152,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
         connection
                 .connect()
                 .sendDefaultProtocolVersion()
-                .send(hello(Map.of(
+                .send(wire.hello(Map.of(
                         "scheme", "basic",
                         "principal", "neo4j",
                         "credentials", "neo4j")));
@@ -166,11 +162,11 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
         assertThat(connection).receivesSuccess();
 
         // change password
-        connection.send(run(
+        connection.send(wire.run(
                 "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
                 singletonMap("password", "secret"),
                 singletonMap("db", SYSTEM_DATABASE_NAME)));
-        connection.send(pull());
+        connection.send(wire.pull());
 
         assertThat(connection).receivesSuccess();
         // Then
@@ -180,7 +176,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
         connection
                 .reconnect()
                 .sendDefaultProtocolVersion()
-                .send(hello(Map.of(
+                .send(wire.hello(Map.of(
                         "scheme", "basic",
                         "principal", "neo4j",
                         "credentials", "secret")));
@@ -192,7 +188,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
         connection
                 .reconnect()
                 .sendDefaultProtocolVersion()
-                .send(hello(Map.of(
+                .send(wire.hello(Map.of(
                         "scheme", "basic",
                         "principal", "neo4j",
                         "credentials", "neo4j")));
@@ -214,7 +210,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
         connection
                 .connect()
                 .sendDefaultProtocolVersion()
-                .send(hello(Map.of(
+                .send(wire.hello(Map.of(
                         "scheme", "basic",
                         "principal", List.of("neo4j"),
                         "credentials", "neo4j")));
@@ -237,7 +233,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
         connection
                 .connect()
                 .sendDefaultProtocolVersion()
-                .send(hello(Map.of(
+                .send(wire.hello(Map.of(
                         "scheme", "basic",
                         "principal", "neo4j",
                         "this-should-have-been-credentials", "neo4j")));
@@ -259,7 +255,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
         connection
                 .connect()
                 .sendDefaultProtocolVersion()
-                .send(hello(Map.of(
+                .send(wire.hello(Map.of(
                         "principal", "neo4j",
                         "credentials", "neo4j")));
 
@@ -281,7 +277,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
         connection
                 .connect()
                 .sendDefaultProtocolVersion()
-                .send(hello(Map.of(
+                .send(wire.hello(Map.of(
                         "scheme", "unknown",
                         "principal", "neo4j",
                         "credentials", "neo4j")));
@@ -307,7 +303,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
             connection
                     .reconnect() // ensure that this works beyond connection boundaries
                     .sendDefaultProtocolVersion()
-                    .send(hello(Map.of(
+                    .send(wire.hello(Map.of(
                             "scheme", "basic",
                             "principal", "neo4j",
                             "credentials", "WHAT_WAS_THE_PASSWORD_AGAIN")));
@@ -331,7 +327,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
         connection
                 .connect()
                 .sendDefaultProtocolVersion()
-                .send(hello(Map.of(
+                .send(wire.hello(Map.of(
                         "scheme", "basic",
                         "principal", "neo4j",
                         "credentials", "neo4j")));
@@ -343,11 +339,11 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
 
         // When
         connection
-                .send(run(
+                .send(wire.run(
                         "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
                         singletonMap("password", "secret"),
                         singletonMap("db", SYSTEM_DATABASE_NAME)))
-                .send(pull());
+                .send(wire.pull());
 
         // Then
         assertThat(connection).receivesSuccess(2);
@@ -356,7 +352,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
         connection
                 .reconnect()
                 .sendDefaultProtocolVersion()
-                .send(hello(Map.of(
+                .send(wire.hello(Map.of(
                         "scheme", "basic",
                         "principal", "neo4j",
                         "credentials", "neo4j")));
@@ -370,7 +366,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
         connection
                 .reconnect()
                 .sendDefaultProtocolVersion()
-                .send(hello(Map.of(
+                .send(wire.hello(Map.of(
                         "scheme", "basic",
                         "principal", "neo4j",
                         "credentials", "secret")));
@@ -385,7 +381,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
         connection
                 .connect()
                 .sendDefaultProtocolVersion()
-                .send(hello(Map.of(
+                .send(wire.hello(Map.of(
                         "scheme", "basic",
                         "principal", "neo4j",
                         "credentials", "neo4j")));
@@ -397,11 +393,11 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
 
         // When
         connection
-                .send(run(
+                .send(wire.run(
                         "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
                         singletonMap("password", "neo4j"),
                         singletonMap("db", SYSTEM_DATABASE_NAME)))
-                .send(pull());
+                .send(wire.pull());
 
         // Then
         assertThat(connection)
@@ -411,12 +407,12 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
 
         // However, you should also be able to recover
         connection
-                .send(reset())
-                .send(run(
+                .send(wire.reset())
+                .send(wire.run(
                         "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
                         singletonMap("password", "abc"),
                         singletonMap("db", SYSTEM_DATABASE_NAME)))
-                .send(pull());
+                .send(wire.pull());
 
         assertThat(connection).receivesSuccess(3);
     }
@@ -430,7 +426,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
         connection
                 .connect()
                 .sendDefaultProtocolVersion()
-                .send(hello(Map.of(
+                .send(wire.hello(Map.of(
                         "scheme", "basic",
                         "principal", "neo4j",
                         "credentials", "neo4j")));
@@ -442,11 +438,11 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
 
         // When
         connection
-                .send(run(
+                .send(wire.run(
                         "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
                         singletonMap("password", ""),
                         singletonMap("db", SYSTEM_DATABASE_NAME)))
-                .send(pull());
+                .send(wire.pull());
 
         // Then
         assertThat(connection)
@@ -455,12 +451,12 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
 
         // However, you should also be able to recover
         connection
-                .send(reset())
-                .send(run(
+                .send(wire.reset())
+                .send(wire.run(
                         "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
                         singletonMap("password", "abc"),
                         singletonMap("db", SYSTEM_DATABASE_NAME)))
-                .send(pull());
+                .send(wire.pull());
 
         assertThat(connection).receivesSuccess(3);
     }
@@ -475,7 +471,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
         connection
                 .connect()
                 .sendDefaultProtocolVersion()
-                .send(hello(Map.of(
+                .send(wire.hello(Map.of(
                         "scheme", "basic",
                         "principal", "neo4j",
                         "credentials", "neo4j")));
@@ -486,7 +482,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest {
                 .containsKeys("server", "connection_id"));
 
         // When
-        connection.send(run("MATCH (n) RETURN n")).send(pull());
+        connection.send(wire.run("MATCH (n) RETURN n")).send(wire.pull());
 
         // Then
         try {
