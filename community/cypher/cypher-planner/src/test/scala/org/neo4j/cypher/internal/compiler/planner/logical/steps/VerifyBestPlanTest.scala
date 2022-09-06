@@ -39,11 +39,14 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanContext
@@ -54,6 +57,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.HintException
 import org.neo4j.exceptions.IndexHintException
 import org.neo4j.exceptions.InternalException
+import org.neo4j.exceptions.InvalidHintException
 import org.neo4j.exceptions.JoinHintException
 
 class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -93,8 +97,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
   private def getPlanContext(
     hasIndex: Boolean,
-    hasTextIndex: Boolean = false,
-    planningTextIndexesEnabled: Boolean = false
+    hasTextIndex: Boolean = false
   ): PlanContext = {
     val planContext = newMockedPlanContext()
     when(planContext.rangeIndexExistsForLabelAndProperties(anyString(), any())).thenReturn(hasIndex)
@@ -140,6 +143,9 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
     semanticTable
   }
+
+  private val cannotUseTextIndexMessage =
+    "Cannot use text index hint `USING TEXT INDEX a:User(name)` in this context: The hint specifies using a text index but no matching predicate was found."
 
   test("should throw when finding plan that does not solve all pattern nodes") {
     val query = RegularSinglePlannerQuery(
@@ -489,5 +495,116 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     a[HintException] should be thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandBandR(context), newQueryWithRelationshipIndexHint(), context)
     }
+  }
+
+  test("should throw when finding unfulfillable index hint in a subquery") {
+    def plannerQueryWithSubquery(hints: Set[Hint]): PlannerQueryPart = {
+      RegularSinglePlannerQuery(
+        horizon = CallSubqueryHorizon(
+          callSubquery = RegularSinglePlannerQuery(
+            QueryGraph(
+              patternNodes = Set("a"),
+              hints = hints
+            )
+          ),
+          correlated = false,
+          yielding = true,
+          inTransactionsParameters = None
+        )
+      )
+    }
+
+    val expected = plannerQueryWithSubquery(Set(newNodeIndexHint()))
+    val solved = plannerQueryWithSubquery(Set.empty)
+
+    val context =
+      newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = false), useErrorsOverWarnings = true)
+    val plan = newMockedLogicalPlanWithSolved(context.planningAttributes, Set("a"), solved)
+
+    the[IndexHintException] thrownBy {
+      VerifyBestPlan(plan, expected, context)
+    } should have message "No such index: INDEX FOR (`a`:`User`) ON (`a`.`name`)"
+  }
+
+  test("should throw when finding unfulfillable text index hint in a subquery") {
+    def plannerQueryWithSubquery(hints: Set[Hint]): PlannerQueryPart = {
+      RegularSinglePlannerQuery(
+        horizon = CallSubqueryHorizon(
+          callSubquery = RegularSinglePlannerQuery(
+            QueryGraph(
+              patternNodes = Set("a"),
+              hints = hints
+            )
+          ),
+          correlated = false,
+          yielding = true,
+          inTransactionsParameters = None
+        )
+      )
+    }
+
+    val expected = plannerQueryWithSubquery(Set(newNodeIndexHint(indexType = UsingTextIndexType)))
+    val solved = plannerQueryWithSubquery(Set.empty)
+
+    val context =
+      newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = true), useErrorsOverWarnings = true)
+    val plan = newMockedLogicalPlanWithSolved(context.planningAttributes, Set("a"), solved)
+
+    the[InvalidHintException] thrownBy {
+      VerifyBestPlan(plan, expected, context)
+    } should have message cannotUseTextIndexMessage
+  }
+
+  test("should throw when finding unfulfillable text index hint in UNION") {
+    def plannerUnionQuery(hints: Set[Hint]): PlannerQueryPart = {
+      UnionQuery(
+        query = RegularSinglePlannerQuery(
+          QueryGraph(
+            patternNodes = Set("a"),
+            hints = hints
+          )
+        ),
+        part = RegularSinglePlannerQuery(
+          QueryGraph(patternNodes = Set("a"))
+        ),
+        distinct = true,
+        unionMappings = List.empty
+      )
+    }
+
+    val expected = plannerUnionQuery(Set(newNodeIndexHint(indexType = UsingTextIndexType)))
+    val solved = plannerUnionQuery(Set.empty)
+
+    val context =
+      newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = true), useErrorsOverWarnings = true)
+    val plan = newMockedLogicalPlanWithSolved(context.planningAttributes, Set("a"), solved)
+
+    the[InvalidHintException] thrownBy {
+      VerifyBestPlan(plan, expected, context)
+    } should have message cannotUseTextIndexMessage
+  }
+
+  test("should throw when finding unfulfillable text index hint in OPTIONAL MATCH") {
+    def plannerQueryWithOptionalMatch(hints: Set[Hint]): PlannerQueryPart = {
+      RegularSinglePlannerQuery(
+        QueryGraph.empty.withAddedOptionalMatch(
+          QueryGraph(
+            patternNodes = Set("a"),
+            hints = hints
+          )
+        )
+      )
+    }
+
+    val expected = plannerQueryWithOptionalMatch(Set(newNodeIndexHint(indexType = UsingTextIndexType)))
+    val solved = plannerQueryWithOptionalMatch(Set.empty)
+
+    val context =
+      newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = true), useErrorsOverWarnings = true)
+    val plan = newMockedLogicalPlanWithSolved(context.planningAttributes, Set("a"), solved)
+
+    the[InvalidHintException] thrownBy {
+      VerifyBestPlan(plan, expected, context)
+    } should have message cannotUseTextIndexMessage
   }
 }
