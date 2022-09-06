@@ -21,11 +21,9 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.NamespacedName
-import org.neo4j.cypher.internal.ast.ParameterName
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.symbols.CTMap
-import org.neo4j.cypher.internal.util.symbols.CTString
 
 class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
@@ -509,7 +507,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
       test(s"ALTER DATABASE $$foo SET ACCESS $accessKeyword") {
         assertAst(ast.AlterDatabase(
-          ParameterName(Parameter("foo", CTString)((1, 16, 15)))((1, 16, 15)),
+          stringParamName("foo"),
           ifExists = false,
           accessType
         )(

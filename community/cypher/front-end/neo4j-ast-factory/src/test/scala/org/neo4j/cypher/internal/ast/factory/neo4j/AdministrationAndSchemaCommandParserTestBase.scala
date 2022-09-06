@@ -86,7 +86,7 @@ class AdministrationAndSchemaCommandParserTestBase extends JavaccParserAstTestBa
   val literalRole2: Either[String, Parameter] = literal("role2")
   val paramUser: Either[String, Parameter] = stringParam("user")
   val paramFoo: Either[String, Parameter] = stringParam("foo")
-  val namespacedParamFoo: ParameterName = ParameterName(Parameter("foo", CTString)(_))(_)
+  val namespacedParamFoo: ParameterName = stringParamName("foo")
   val paramRole: Either[String, Parameter] = stringParam("role")
   val paramRole1: Either[String, Parameter] = stringParam("role1")
   val paramRole2: Either[String, Parameter] = stringParam("role2")
@@ -115,7 +115,7 @@ class AdministrationAndSchemaCommandParserTestBase extends JavaccParserAstTestBa
   def pw(password: String): InputPosition => SensitiveStringLiteral =
     SensitiveStringLiteral(toUtf8Bytes(password))(_)
 
-  def pwParam(name: String): Parameter = Parameter(name, CTString)(_)
+  def pwParam(name: String): Parameter = parameter(name, CTString)
 
   def commandResultItem(original: String, alias: Option[String]): ast.CommandResultItem =
     ast.CommandResultItem(original, alias.map(varFor(_)).getOrElse(varFor(original)))(pos)

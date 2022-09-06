@@ -1180,6 +1180,12 @@ public class NullAstFactory
     }
 
     @Override
+    public NULL createCompositeDatabase(
+            NULL p, boolean replace, NULL compositeDatabaseName, boolean ifNotExists, NULL wait) {
+        return null;
+    }
+
+    @Override
     public NULL dropDatabase(
             NULL p, NULL databaseName, boolean ifExists, boolean composite, boolean dumpData, NULL wait) {
         return null;
@@ -1272,12 +1278,6 @@ public class NullAstFactory
 
     @Override
     public NULL showAliases(NULL p, NULL aliasName, NULL yieldExpr, NULL returnWithoutGraph, NULL aNull) {
-        return null;
-    }
-
-    @Override
-    public NULL createCompositeDatabase(
-            NULL p, boolean replace, NULL compositeDatabaseName, boolean ifNotExists, NULL wait) {
         return null;
     }
 

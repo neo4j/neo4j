@@ -975,6 +975,7 @@ class PrettifierIT extends CypherFunSuite {
   )
 
   def administrationTests(): Seq[(String, String)] = Seq[(String, String)](
+    // user commands
     "Show Users" ->
       "SHOW USERS",
     "Show Users where user = 'neo4j'" ->
@@ -1111,7 +1112,6 @@ class PrettifierIT extends CypherFunSuite {
       "ALTER USER abc SET PASSWORD CHANGE NOT REQUIRED SET STATUS ACTIVE",
     "alter user abc set home database null" ->
       "ALTER USER abc SET HOME DATABASE null", // this is the string "null"
-
     "alter user abc remove home database" ->
       "ALTER USER abc REMOVE HOME DATABASE",
     "alter user abc if exists remove home database" ->
@@ -1132,6 +1132,8 @@ class PrettifierIT extends CypherFunSuite {
       "ALTER CURRENT USER SET PASSWORD FROM '******' TO $newPassword",
     "alter current user set password from $currentPassword to $newPassword" ->
       "ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword",
+
+    // role commands
     "Show Roles" ->
       "SHOW ALL ROLES",
     "Show roles where role = 'admin'" ->
@@ -1280,6 +1282,8 @@ class PrettifierIT extends CypherFunSuite {
       "REVOKE ROLES abc, def FROM xyz, qwr",
     "revoke role `ab%$c` from `x%^yz`" ->
       "REVOKE ROLE `ab%$c` FROM `x%^yz`",
+
+    // show privileges
     "show privileges" ->
       "SHOW ALL PRIVILEGES",
     "show all privileges" ->
@@ -1358,6 +1362,8 @@ class PrettifierIT extends CypherFunSuite {
     "show user privileges as commands where command CONTAINS 'MATCH' and command CONTAINS 'NODE'" ->
       """SHOW USER PRIVILEGES AS COMMANDS
         |  WHERE command CONTAINS "MATCH" AND command CONTAINS "NODE"""".stripMargin,
+
+    // database commands
     "show databases" ->
       "SHOW DATABASES",
     "Show Databases YIELD * where name = 'neo4j' Return *" ->
@@ -1454,18 +1460,30 @@ class PrettifierIT extends CypherFunSuite {
       "STOP DATABASE $foo",
     "stop database foO_Bar_42" ->
       "STOP DATABASE foO_Bar_42",
+
+    // alias commands
     "create alias alias FOR database database" ->
       "CREATE ALIAS alias FOR DATABASE database",
     "create alias alias if not exists for database database" ->
       "CREATE ALIAS alias IF NOT EXISTS FOR DATABASE database",
     "create or replace alias alias FOR database database" ->
       "CREATE OR REPLACE ALIAS alias FOR DATABASE database",
+    "create alias composite.alias FOR database database" ->
+      "CREATE ALIAS composite.alias FOR DATABASE database",
+    "create alias composite.`alias.mine` FOR database database" ->
+      "CREATE ALIAS composite.`alias.mine` FOR DATABASE database",
+    "create alias `composite.alias.mine` FOR database database" ->
+      "CREATE ALIAS `composite.alias.mine` FOR DATABASE database",
     "create or replace alias alias FOR database database properties {foo:7}" ->
       "CREATE OR REPLACE ALIAS alias FOR DATABASE database PROPERTIES {foo: 7}",
     "create or replace alias alias FOR database database properties { foo : $param }" ->
       "CREATE OR REPLACE ALIAS alias FOR DATABASE database PROPERTIES {foo: $param}",
     "create alias alias FOR database database at 'url' user user password 'password'" ->
       """CREATE ALIAS alias FOR DATABASE database AT "url" USER user PASSWORD '******'""",
+    "create alias alias IF NOT EXISTS FOR database database at 'url' user user password 'password'" ->
+      """CREATE ALIAS alias IF NOT EXISTS FOR DATABASE database AT "url" USER user PASSWORD '******'""",
+    "create alias composite.alias FOR database database at 'url' user user password 'password'" ->
+      """CREATE ALIAS composite.alias FOR DATABASE database AT "url" USER user PASSWORD '******'""",
     "create or replace alias alias FOR database database at 'url' user user password 'password' driver { ssl_enforced: $val }" ->
       """CREATE OR REPLACE ALIAS alias FOR DATABASE database AT "url" USER user PASSWORD '******' DRIVER {ssl_enforced: $val}""",
     "create alias $alias if not exists FOR database $database at $url user $user password $password driver { }" ->
@@ -1486,12 +1504,14 @@ class PrettifierIT extends CypherFunSuite {
       "ALTER ALIAS alias SET DATABASE USER user",
     "alter alias alias set database password 'password'" ->
       "ALTER ALIAS alias SET DATABASE PASSWORD '******'",
-    "alter alias alias set database driver { ssl_enforced: true }" ->
-      "ALTER ALIAS alias SET DATABASE DRIVER {ssl_enforced: true}",
+    "alter alias composite.alias set database driver { ssl_enforced: true }" ->
+      "ALTER ALIAS composite.alias SET DATABASE DRIVER {ssl_enforced: true}",
     "drop alias alias for database" ->
       "DROP ALIAS alias FOR DATABASE",
     "drop alias alias if exists for database" ->
       "DROP ALIAS alias IF EXISTS FOR DATABASE",
+    "drop alias composite.alias for database" ->
+      "DROP ALIAS composite.alias FOR DATABASE",
     "show alias for database" ->
       "SHOW ALIASES FOR DATABASE",
     "show aliases for database" ->
@@ -1516,6 +1536,8 @@ class PrettifierIT extends CypherFunSuite {
         |    SKIP 1
         |    LIMIT 1
         |    WHERE name = "neo4j"""".stripMargin,
+
+    // server commands
     "enable server 'serverName'" ->
       """ENABLE SERVER "serverName"""".stripMargin,
     "enable server $param" ->

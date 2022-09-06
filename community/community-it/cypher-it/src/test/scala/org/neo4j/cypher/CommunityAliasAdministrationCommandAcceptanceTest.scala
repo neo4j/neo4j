@@ -56,10 +56,24 @@ class CommunityAliasAdministrationCommandAcceptanceTest extends CommunityAdminis
     )
   }
 
+  test("should fail on altering local alias (in composite) from community") {
+    assertFailure(
+      "ALTER ALIAS composite.alias SET DATABASE TARGET foo",
+      "Unsupported administration command: ALTER ALIAS composite.alias SET DATABASE TARGET foo"
+    )
+  }
+
   test("should fail on altering remote alias from community") {
     assertFailure(
       "ALTER ALIAS alias SET DATABASE TARGET foo AT 'url' USER user PASSWORD 'password'",
       "Unsupported administration command: ALTER ALIAS alias SET DATABASE TARGET foo AT 'url' USER user PASSWORD 'password'"
+    )
+  }
+
+  test("should fail on altering remote alias (in composite) from community") {
+    assertFailure(
+      "ALTER ALIAS composite.alias SET DATABASE TARGET foo AT 'url' USER user PASSWORD 'password'",
+      "Unsupported administration command: ALTER ALIAS composite.alias SET DATABASE TARGET foo AT 'url' USER user PASSWORD 'password'"
     )
   }
 
@@ -76,5 +90,19 @@ class CommunityAliasAdministrationCommandAcceptanceTest extends CommunityAdminis
 
   test("should fail on show aliases from community") {
     assertFailure("SHOW ALIASES FOR DATABASE", "Unsupported administration command: SHOW ALIASES FOR DATABASE")
+  }
+
+  test("should fail on show alias by name from community") {
+    assertFailure(
+      "SHOW ALIAS alias FOR DATABASES",
+      "Unsupported administration command: SHOW ALIAS alias FOR DATABASES"
+    )
+  }
+
+  test("should fail on show alias by name (in composite) from community") {
+    assertFailure(
+      "SHOW ALIAS composite.alias FOR DATABASES",
+      "Unsupported administration command: SHOW ALIAS composite.alias FOR DATABASES"
+    )
   }
 }
