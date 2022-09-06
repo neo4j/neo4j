@@ -524,6 +524,66 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(plan) // should not throw exception
   }
 
+  test("cartesian product can be solved with BFSPruningVarExpand") {
+    /* Simplest query:
+       match (a) match (b)-[:R*1..3]->(c) return distinct c
+       in logical plans:
+
+                               distinct
+                                  |
+                              cartesian
+                                /   \
+                 var-length-expand  all-nodes
+                              /       \
+                         all-nodes      arg
+     */
+
+    val aId = "a"
+    val relRId = "r"
+    val bId = "b"
+    val cId = "c"
+    val dir = SemanticDirection.BOTH
+    val length = VarPatternLength(1, Some(3))
+
+    val original =
+      Distinct(
+        CartesianProduct(
+          VarExpand(
+            AllNodesScan(bId, Set.empty),
+            bId,
+            dir,
+            dir,
+            Seq(RelTypeName("R")(pos)),
+            cId,
+            relRId,
+            length,
+            ExpandAll
+          ),
+          AllNodesScan(aId, Set(bId, cId))
+        ),
+        Map(cId -> varFor(cId))
+      )
+
+    val rewritten =
+      Distinct(
+        CartesianProduct(
+          BFSPruningVarExpand(
+            AllNodesScan(bId, Set.empty),
+            bId,
+            dir,
+            Seq(RelTypeName("R")(pos)),
+            cId,
+            includeStartNode = false,
+            3
+          ),
+          AllNodesScan(aId, Set(bId, cId))
+        ),
+        Map(cId -> varFor(cId))
+      )
+
+    rewrite(original) should equal(rewritten)
+  }
+
   private def assertNotRewritten(p: LogicalPlan): Unit = {
     rewrite(p) should equal(p)
   }

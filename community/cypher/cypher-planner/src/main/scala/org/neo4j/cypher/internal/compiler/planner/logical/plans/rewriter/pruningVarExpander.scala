@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
+import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -69,6 +70,7 @@ case object pruningVarExpander extends Rewriter {
         case _: Expand |
           _: VarExpand |
           _: Apply |
+          _: CartesianProduct |
           _: Optional =>
           dependencies
 
