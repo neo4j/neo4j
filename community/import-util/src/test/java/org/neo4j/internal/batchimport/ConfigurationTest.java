@@ -77,7 +77,7 @@ class ConfigurationTest {
         long memory = config.maxOffHeapMemory();
 
         // then
-        long expected = (long) ((freeMachineMemory - maxMemory) * (percent / 100D));
+        long expected = Math.round((freeMachineMemory - maxMemory) * (percent / 100D));
         assertThat(memory).isEqualTo(expected);
     }
 }
