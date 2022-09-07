@@ -25,6 +25,7 @@ import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.memory.HeapMemoryTracker
 import org.neo4j.memory.MemoryTracker
+import org.neo4j.memory.OuterInnerHeapMemoryTracker
 import org.neo4j.memory.ScopedMemoryTracker
 
 /**
@@ -72,7 +73,7 @@ object TransactionBoundMemoryTrackerForOperatorProvider {
   class TransactionBoundMemoryTracker(
     transactionMemoryTracker: MemoryTracker,
     queryGlobalMemoryTracker: HeapMemoryTracker
-  ) extends ScopedMemoryTracker(transactionMemoryTracker) {
+  ) extends ScopedMemoryTracker(transactionMemoryTracker) with OuterInnerHeapMemoryTracker {
 
     override def allocateHeap(bytes: Long): Unit = {
       // Forward to transaction memory tracker
@@ -87,6 +88,22 @@ object TransactionBoundMemoryTrackerForOperatorProvider {
       // Forward to the queryGlobalMemoryTracker
       queryGlobalMemoryTracker.releaseHeap(bytes)
     }
+
+    override def allocateHeapOuter(bytes: Long): Unit = transactionMemoryTracker match {
+      case x: OuterInnerHeapMemoryTracker =>
+        x.allocateHeapOuter(bytes)
+        queryGlobalMemoryTracker.allocateHeap(bytes)
+      case _ =>
+        allocateHeap(bytes)
+    }
+
+    override def releaseHeapOuter(bytes: Long): Unit = transactionMemoryTracker match {
+      case x: OuterInnerHeapMemoryTracker =>
+        x.releaseHeapOuter(bytes)
+        queryGlobalMemoryTracker.releaseHeap(bytes)
+      case _ =>
+        releaseHeap(bytes)
+    }
   }
 }
 
@@ -98,7 +115,7 @@ object TransactionBoundMemoryTrackerForOperatorProvider {
  *
  */
 class TransactionBoundMemoryTrackerForOperatorProvider(
-  transactionMemoryTracker: MemoryTracker,
+  val transactionMemoryTracker: MemoryTracker,
   queryHeapHighWatermarkTracker: TrackingQueryMemoryTracker
 ) extends TransactionBoundMemoryTracker(transactionMemoryTracker, queryHeapHighWatermarkTracker)
     with MemoryTrackerForOperatorProvider {

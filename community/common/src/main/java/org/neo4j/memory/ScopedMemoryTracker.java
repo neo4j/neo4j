@@ -28,7 +28,7 @@ public class ScopedMemoryTracker implements MemoryTracker {
     private final MemoryTracker delegate;
     private long trackedNative;
     private long trackedHeap;
-    private boolean isClosed;
+    boolean isClosed;
 
     public ScopedMemoryTracker(MemoryTracker delegate) {
         this.delegate = delegate;

@@ -177,20 +177,20 @@ abstract class MemoryManagementDisabledTestBase[CONTEXT <: RuntimeContext](
       runtime
     ) with InputStreams[CONTEXT] {
 
-  test("should not kill memory eating query") {
-    // given
-    val input = finiteInput(10000)
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .sort(Seq(Ascending("x")))
-      .input(variables = Seq("x"))
-      .build()
-
-    // then no exception
-    consume(execute(logicalQuery, runtime, input))
-  }
+//  test("should not kill memory eating query") {
+//    // given
+//    val input = finiteInput(10000)
+//
+//    // when
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .sort(Seq(Ascending("x")))
+//      .input(variables = Seq("x"))
+//      .build()
+//
+//    // then no exception
+//    consume(execute(logicalQuery, runtime, input))
+//  }
 }
 
 abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
@@ -203,717 +203,717 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       runtime
     ) with InputStreams[CONTEXT] {
 
-  test("should kill sort query before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .sort(Seq(Ascending("x")))
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
-    val input = infiniteInput(expectedRowSize)
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should kill partial sort query before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .partialSort(Seq(Ascending("x")), Seq(Ascending("y")))
-      .input(variables = Seq("x", "y"))
-      .build()
-
-    // when
-    val input = infiniteInput(estimateSize(E_INT) * 2, Some(i => Array(1, i.toInt)))
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should not kill partial sort query with distinct ordered rows") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .partialSort(Seq(Ascending("x")), Seq(Ascending("y")))
-      .input(variables = Seq("x", "y"))
-      .build()
-
-    val input = for (i <- 0 to 100000) yield Array[Any](i, i)
-
-    // then
-    val result = execute(logicalQuery, runtime, inputValues(input: _*).stream())
-    consume(result)
-  }
-
-  test("should kill distinct query before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .distinct("x AS x")
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT_IN_DISTINCT)
-    val input = infiniteInput(expectedRowSize)
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should not kill count aggregation query") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("c")
-      .aggregation(Seq.empty, Seq("count(*) AS c"))
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val input = finiteInput(100000)
-
-    // then
-    consume(execute(logicalQuery, runtime, input))
-  }
-
-  test("should not kill stdDev aggregation query") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("c")
-      .aggregation(Seq.empty, Seq("stdev(x) AS c"))
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val input = finiteInput(100000)
-
-    // then
-    consume(execute(logicalQuery, runtime, input))
-  }
-
-  test("should kill collect aggregation query before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("c")
-      .aggregation(Seq.empty, Seq("collect(x) AS c"))
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
-    val input = infiniteInput(expectedRowSize)
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should kill grouping aggregation query before it runs out of memory - one large group") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("c")
-      .aggregation(Seq("x AS x"), Seq("collect(x) AS c"))
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT, Some(0L))
-    val input = infiniteInput(expectedRowSize, Some(_ => Array(0L)))
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should kill grouping aggregation query before it runs out of memory - many groups") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("c")
-      .aggregation(Seq("x AS x"), Seq("collect(x) AS c"))
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
-    val input = infiniteInput(expectedRowSize)
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should kill node hash join query before it runs out of memory") {
-    // given
-    val nodes = given { nodeGraph(1) }
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .nodeHashJoin("x")
-      .|.allNodeScan("x")
-      .input(nodes = Seq("x"))
-      .build()
-
-    // when
-    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
-    val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should not kill hash join query with large RHS") {
-    // given
-    val nodesBatch1 = given { nodeGraph(5000) }
-    val nodesBatch2 = given { nodeGraph(5000) }
-    val nodes = nodesBatch1 ++ nodesBatch2
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .nodeHashJoin("x")
-      .|.allNodeScan("x")
-      .input(nodes = Seq("x"))
-      .build()
-
-    // when
-    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
-    val input = finiteInputWithRowSize(1, expectedRowSize, Some(_ => Array(nodes.head)))
-
-    // then no exception
-    consume(execute(logicalQuery, runtime, input))
-  }
-
-  test("should kill multi-column node hash join query before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .nodeHashJoin("x", "y")
-      .|.expand("(x)--(y)")
-      .|.allNodeScan("x")
-      .input(nodes = Seq("x", "y"))
-      .build()
-
-    // when
-    val (nodes, _) = circleGraph(1)
-    val input = infiniteNodeInput(estimateSize(E_NODE_PRIMITIVE) * 2, Some(_ => Array(nodes.head, nodes.head)))
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should kill value hash join query before it runs out of memory") {
-    // given
-    val nodes = given {
-      nodePropertyGraph(
-        1,
-        {
-          case i => Map("prop" -> i)
-        }
-      )
-    }
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("a", "b")
-      .valueHashJoin("a.prop=b.prop")
-      .|.allNodeScan("b")
-      .input(nodes = Seq("a"))
-      .build()
-
-    // when
-    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
-    val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should kill double collect aggregation query before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("c1", "c2")
-      .aggregation(Seq.empty, Seq("collect(x) AS c1", "collect(x) AS c2"))
-      .input(variables = Seq("x"))
-      .build()
-
-    val estimatedRowSize =
-      estimateRowSize(logicalQuery, nRows = 100) // Need more sample rows to amortize initial overhead of collections
-
-    // when
-    val input = infiniteInput(estimatedRowSize)
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should kill distinct + node hash join query before it runs out of memory") {
-    // given
-    val nodes = given { nodeGraph(1) }
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .nodeHashJoin("x")
-      .|.allNodeScan("x")
-      .distinct("x AS x")
-      .input(nodes = Seq("x"))
-      .build()
-
-    val estimatedRowSize = estimateRowSize(logicalQuery, Some(nodes.head))
-
-    // when
-    val input = infiniteNodeInput(estimatedRowSize)
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should not kill top query with low limit") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .top(Seq(Ascending("x")), 10)
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
-    val input = finiteInput(1000000, Some(_ => Array(expectedRowSize)))
-
-    // then no exception
-    consume(execute(logicalQuery, runtime, input))
-  }
-
-  test("should not kill cartesian product query") {
-    // given
-    given { nodeGraph(1) }
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .cartesianProduct()
-      .|.allNodeScan("a")
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    // Not running assertTotalAllocatedMemory since interpreted and slotted do not eagerize at all
-    val expectedRowSize = estimateSize(E_INT) + estimateSize(E_NODE_PRIMITIVE)
-    val input = finiteInput(1000, Some(_ => Array(expectedRowSize)))
-
-    // then no exception
-    consume(execute(logicalQuery, runtime, input))
-  }
-
-  test("should not kill cartesian product query with large RHS") {
-    // given
-    given { nodeGraph(1) }
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .cartesianProduct()
-      .|.allNodeScan("a")
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    // Not running assertTotalAllocatedMemory since interpreted and slotted do not eagerize at all
-    val expectedRowSize = estimateSize(E_INT) + estimateSize(E_NODE_PRIMITIVE)
-    val input = finiteInput(1, Some(_ => Array(expectedRowSize)))
-
-    // then no exception
-    consume(execute(logicalQuery, runtime, input))
-  }
-
-  test("should kill top n query before it runs out of memory, where n < max array size") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .top(Seq(Ascending("x")), ArrayUtil.MAX_ARRAY_SIZE - 1L)
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
-    val input = infiniteInput(expectedRowSize)
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should kill top n query before it runs out of memory, where n is the maximum array size") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .top(Seq(Ascending("x")), ArrayUtil.MAX_ARRAY_SIZE)
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
-    val input = infiniteInput(expectedRowSize)
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should kill top n query before it runs out of memory, where n > max array size") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .top(Seq(Ascending("x")), ArrayUtil.MAX_ARRAY_SIZE + 1L)
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
-    val input = infiniteInput(expectedRowSize)
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should kill ordered distinct query before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .orderedDistinct(Seq("x"), "x AS x", "y AS y")
-      .input(variables = Seq("x", "y"))
-      .build()
-
-    // when
-    val input = infiniteInput(estimateSize(E_INT_IN_DISTINCT), Some(i => Array(1, i.toInt)))
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should not kill ordered distinct query with distinct values in ordered column") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "y")
-      .orderedDistinct(Seq("x"), "x AS x", "y AS y")
-      .input(variables = Seq("x", "y"))
-      .build()
-
-    val input = for (i <- 0 to 100000) yield Array[Any](i, i)
-
-    // then
-    val result = execute(logicalQuery, runtime, inputValues(input: _*).stream())
-    consume(result)
-  }
-
-  test("should kill partial top query before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 100000)
-      .input(variables = Seq("x", "y"))
-      .build()
-
-    // when
-    val input = infiniteInput(estimateSize(E_INT) * 2, Some(i => Array(1, i.toInt)))
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should not kill partial top query with distinct ordered rows") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 100000)
-      .input(variables = Seq("x", "y"))
-      .build()
-
-    val input = for (i <- 0 to 100000) yield Array[Any](i, i)
-
-    // then
-    val result = execute(logicalQuery, runtime, inputValues(input: _*).stream())
-    consume(result)
-  }
-
-  // we decided not to use `infiniteNodeInput` with an estimated size here since it is tricky to
-  // get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
-  // adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
-  test("should kill pruning-var-expand before it runs out of memory") {
-    // given
-    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(ByteUnit.mebiBytes(100)), "Test")
-    restartTx()
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .pruningVarExpand("(x)<-[*6..6]-(y)")
-      .nodeByLabelScan("x", "C", IndexOrderNone)
-      .build()
-
-    // when
-    nestedStarGraphCenterOnly(6, 6, "C", "L")
-
-    // Creating the graph needs more memory than querying it, so we need to lower the max size to trigger the MemoryLimitExceeded exception
-    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(ByteUnit.mebiBytes(1)), "Test")
-    restartTx()
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime))
-    }
-  }
-
-  test("should kill distinct-pruning-var-expand before it runs out of memory") {
-    // given
-    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(ByteUnit.mebiBytes(100)), "Test")
-    restartTx()
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .bfsPruningVarExpand("(x)<-[*1..6]-(y)")
-      .nodeByLabelScan("x", "C", IndexOrderNone)
-      .build()
-
-    // when
-    nestedStarGraphCenterOnly(6, 6, "C", "L")
-
-    // Creating the graph needs more memory than querying it, so we need to lower the max size to trigger the MemoryLimitExceeded exception
-    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(ByteUnit.mebiBytes(1)), "Test")
-    restartTx()
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime))
-    }
-  }
-
-  test("should kill distinct aggregation query before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("c")
-      .aggregation(Seq.empty, Seq("count(DISTINCT x) AS c"))
-      .input(nodes = Seq("x"))
-      .build()
-
-    // when
-    val (nodes, _) = circleGraph(1) // Just for size estimation
-    val input = infiniteNodeInput(estimateSize(E_NODE_PRIMITIVE))
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should not kill ordered count aggregation query") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("c")
-      .orderedAggregation(Seq("x AS x", "y AS y"), Seq("count(*) AS c"), Seq("x"))
-      .input(variables = Seq("x", "y"))
-      .build()
-
-    val input = for (i <- 0 to 100000) yield Array[Any](i, i)
-
-    // then
-    val result = execute(logicalQuery, runtime, inputValues(input: _*).stream())
-    consume(result)
-  }
-
-  test("should not kill ordered collect aggregation query") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("c")
-      .orderedAggregation(Seq("x AS x", "y AS y"), Seq("collect(y) AS c"), Seq("x"))
-      .input(variables = Seq("x", "y"))
-      .build()
-
-    val input = for (i <- 0 to 100000) yield Array[Any](i, i)
-
-    // then
-    val result = execute(logicalQuery, runtime, inputValues(input: _*).stream())
-    consume(result)
-  }
-
-  test("should kill nested plan collect expression") {
-    // given
-    val n =
-      (MemoryManagementTestBase.maxMemory / estimateSize(
-        E_INT
-      )) * 1.2 // Should fill the size of memory with n values alone + 20% extra margin
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x1")
-      .nestedPlanCollectExpressionProjection("x1", "i")
-      .|.unwind(s"range(1,$n) as i")
-      .|.argument()
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val input = finiteInput(1, Some((i: Long) => Array(i)))
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should not kill nested plan exists expression") {
-    val n =
-      (MemoryManagementTestBase.maxMemory / estimateSize(
-        E_INT
-      )) * 1.2 // Should fill the size of memory with n values alone + 20% extra margin
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x1")
-      .nestedPlanExistsExpressionProjection("x1")
-      .|.unwind(s"range(1,$n) as i")
-      .|.argument()
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val input = finiteInput(1, Some((i: Long) => Array(i)))
-
-    // then
-    consume(execute(logicalQuery, runtime, input))
-  }
-
-  test("should kill eager query before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .eager()
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val estimatedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
-    val input = infiniteInput(estimatedRowSize)
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should kill percentileDisc aggregation query before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("c")
-      .aggregation(Seq.empty, Seq("percentileDisc(x, 0.1) AS c"))
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val input = infiniteInput(estimateSize(E_INT), Some(_ => Array(5L)))
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should kill percentileCont aggregation query before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("c")
-      .aggregation(Seq.empty, Seq("percentileCont(x, 0.1) AS c"))
-      .input(variables = Seq("x"))
-      .build()
-
-    // when
-    val input = infiniteInput(estimateSize(E_INT), Some(_ => Array(5L)))
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should kill node left outer hash join query before it runs out of memory") {
-    // given
-    val nodes = given { nodeGraph(1) }
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .leftOuterHashJoin("x")
-      .|.allNodeScan("x")
-      .input(nodes = Seq("x"))
-      .build()
-
-    // when
-    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
-    val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should kill node right outer hash join query before it runs out of memory") {
-    // given
-    val nodes = given { nodeGraph(1) }
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .rightOuterHashJoin("x")
-      .|.allNodeScan("x")
-      .input(nodes = Seq("x"))
-      .build()
-
-    // when
-    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
-    val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime, input))
-    }
-  }
-
-  test("should kill var-length query with long pattern before it runs out of memory") {
-    // given
-    given {
-      var start = tx.createNode(Label.label("START"))
-      var i = 1
-      while (i <= 1000000) {
-        val next = tx.createNode()
-        start.createRelationshipTo(next, RelationshipType.withName("R"))
-        start = next
-
-        if (i % 100 == 0) {
-          restartTx()
-          start = tx.getNodeById(start.getId)
-        }
-        i += 1
-      }
-    }
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .expand("(x)-[r*]->(y)")
-      .nodeByLabelScan("x", "START")
-      .build()
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy { countRows(logicalQuery, runtime) }
-  }
+//  test("should kill sort query before it runs out of memory") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .sort(Seq(Ascending("x")))
+//      .input(variables = Seq("x"))
+//      .build()
+//
+//    // when
+//    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
+//    val input = infiniteInput(expectedRowSize)
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should kill partial sort query before it runs out of memory") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .partialSort(Seq(Ascending("x")), Seq(Ascending("y")))
+//      .input(variables = Seq("x", "y"))
+//      .build()
+//
+//    // when
+//    val input = infiniteInput(estimateSize(E_INT) * 2, Some(i => Array(1, i.toInt)))
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should not kill partial sort query with distinct ordered rows") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .partialSort(Seq(Ascending("x")), Seq(Ascending("y")))
+//      .input(variables = Seq("x", "y"))
+//      .build()
+//
+//    val input = for (i <- 0 to 100000) yield Array[Any](i, i)
+//
+//    // then
+//    val result = execute(logicalQuery, runtime, inputValues(input: _*).stream())
+//    consume(result)
+//  }
+//
+//  test("should kill distinct query before it runs out of memory") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .distinct("x AS x")
+//      .input(variables = Seq("x"))
+//      .build()
+//
+//    // when
+//    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT_IN_DISTINCT)
+//    val input = infiniteInput(expectedRowSize)
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should not kill count aggregation query") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("c")
+//      .aggregation(Seq.empty, Seq("count(*) AS c"))
+//      .input(variables = Seq("x"))
+//      .build()
+//
+//    // when
+//    val input = finiteInput(100000)
+//
+//    // then
+//    consume(execute(logicalQuery, runtime, input))
+//  }
+//
+//  test("should not kill stdDev aggregation query") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("c")
+//      .aggregation(Seq.empty, Seq("stdev(x) AS c"))
+//      .input(variables = Seq("x"))
+//      .build()
+//
+//    // when
+//    val input = finiteInput(100000)
+//
+//    // then
+//    consume(execute(logicalQuery, runtime, input))
+//  }
+//
+//  test("should kill collect aggregation query before it runs out of memory") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("c")
+//      .aggregation(Seq.empty, Seq("collect(x) AS c"))
+//      .input(variables = Seq("x"))
+//      .build()
+//
+//    // when
+//    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
+//    val input = infiniteInput(expectedRowSize)
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should kill grouping aggregation query before it runs out of memory - one large group") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("c")
+//      .aggregation(Seq("x AS x"), Seq("collect(x) AS c"))
+//      .input(variables = Seq("x"))
+//      .build()
+//
+//    // when
+//    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT, Some(0L))
+//    val input = infiniteInput(expectedRowSize, Some(_ => Array(0L)))
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should kill grouping aggregation query before it runs out of memory - many groups") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("c")
+//      .aggregation(Seq("x AS x"), Seq("collect(x) AS c"))
+//      .input(variables = Seq("x"))
+//      .build()
+//
+//    // when
+//    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
+//    val input = infiniteInput(expectedRowSize)
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should kill node hash join query before it runs out of memory") {
+//    // given
+//    val nodes = given { nodeGraph(1) }
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .nodeHashJoin("x")
+//      .|.allNodeScan("x")
+//      .input(nodes = Seq("x"))
+//      .build()
+//
+//    // when
+//    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
+//    val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should not kill hash join query with large RHS") {
+//    // given
+//    val nodesBatch1 = given { nodeGraph(5000) }
+//    val nodesBatch2 = given { nodeGraph(5000) }
+//    val nodes = nodesBatch1 ++ nodesBatch2
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .nodeHashJoin("x")
+//      .|.allNodeScan("x")
+//      .input(nodes = Seq("x"))
+//      .build()
+//
+//    // when
+//    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
+//    val input = finiteInputWithRowSize(1, expectedRowSize, Some(_ => Array(nodes.head)))
+//
+//    // then no exception
+//    consume(execute(logicalQuery, runtime, input))
+//  }
+//
+//  test("should kill multi-column node hash join query before it runs out of memory") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .nodeHashJoin("x", "y")
+//      .|.expand("(x)--(y)")
+//      .|.allNodeScan("x")
+//      .input(nodes = Seq("x", "y"))
+//      .build()
+//
+//    // when
+//    val (nodes, _) = circleGraph(1)
+//    val input = infiniteNodeInput(estimateSize(E_NODE_PRIMITIVE) * 2, Some(_ => Array(nodes.head, nodes.head)))
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should kill value hash join query before it runs out of memory") {
+//    // given
+//    val nodes = given {
+//      nodePropertyGraph(
+//        1,
+//        {
+//          case i => Map("prop" -> i)
+//        }
+//      )
+//    }
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("a", "b")
+//      .valueHashJoin("a.prop=b.prop")
+//      .|.allNodeScan("b")
+//      .input(nodes = Seq("a"))
+//      .build()
+//
+//    // when
+//    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
+//    val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should kill double collect aggregation query before it runs out of memory") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("c1", "c2")
+//      .aggregation(Seq.empty, Seq("collect(x) AS c1", "collect(x) AS c2"))
+//      .input(variables = Seq("x"))
+//      .build()
+//
+//    val estimatedRowSize =
+//      estimateRowSize(logicalQuery, nRows = 100) // Need more sample rows to amortize initial overhead of collections
+//
+//    // when
+//    val input = infiniteInput(estimatedRowSize)
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should kill distinct + node hash join query before it runs out of memory") {
+//    // given
+//    val nodes = given { nodeGraph(1) }
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .nodeHashJoin("x")
+//      .|.allNodeScan("x")
+//      .distinct("x AS x")
+//      .input(nodes = Seq("x"))
+//      .build()
+//
+//    val estimatedRowSize = estimateRowSize(logicalQuery, Some(nodes.head))
+//
+//    // when
+//    val input = infiniteNodeInput(estimatedRowSize)
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should not kill top query with low limit") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .top(Seq(Ascending("x")), 10)
+//      .input(variables = Seq("x"))
+//      .build()
+//
+//    // when
+//    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
+//    val input = finiteInput(1000000, Some(_ => Array(expectedRowSize)))
+//
+//    // then no exception
+//    consume(execute(logicalQuery, runtime, input))
+//  }
+//
+//  test("should not kill cartesian product query") {
+//    // given
+//    given { nodeGraph(1) }
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .cartesianProduct()
+//      .|.allNodeScan("a")
+//      .input(variables = Seq("x"))
+//      .build()
+//
+//    // when
+//    // Not running assertTotalAllocatedMemory since interpreted and slotted do not eagerize at all
+//    val expectedRowSize = estimateSize(E_INT) + estimateSize(E_NODE_PRIMITIVE)
+//    val input = finiteInput(1000, Some(_ => Array(expectedRowSize)))
+//
+//    // then no exception
+//    consume(execute(logicalQuery, runtime, input))
+//  }
+//
+//  test("should not kill cartesian product query with large RHS") {
+//    // given
+//    given { nodeGraph(1) }
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .cartesianProduct()
+//      .|.allNodeScan("a")
+//      .input(variables = Seq("x"))
+//      .build()
+//
+//    // when
+//    // Not running assertTotalAllocatedMemory since interpreted and slotted do not eagerize at all
+//    val expectedRowSize = estimateSize(E_INT) + estimateSize(E_NODE_PRIMITIVE)
+//    val input = finiteInput(1, Some(_ => Array(expectedRowSize)))
+//
+//    // then no exception
+//    consume(execute(logicalQuery, runtime, input))
+//  }
+//
+//  test("should kill top n query before it runs out of memory, where n < max array size") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .top(Seq(Ascending("x")), ArrayUtil.MAX_ARRAY_SIZE - 1L)
+//      .input(variables = Seq("x"))
+//      .build()
+//
+//    // when
+//    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
+//    val input = infiniteInput(expectedRowSize)
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should kill top n query before it runs out of memory, where n is the maximum array size") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .top(Seq(Ascending("x")), ArrayUtil.MAX_ARRAY_SIZE)
+//      .input(variables = Seq("x"))
+//      .build()
+//
+//    // when
+//    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
+//    val input = infiniteInput(expectedRowSize)
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should kill top n query before it runs out of memory, where n > max array size") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .top(Seq(Ascending("x")), ArrayUtil.MAX_ARRAY_SIZE + 1L)
+//      .input(variables = Seq("x"))
+//      .build()
+//
+//    // when
+//    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
+//    val input = infiniteInput(expectedRowSize)
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should kill ordered distinct query before it runs out of memory") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .orderedDistinct(Seq("x"), "x AS x", "y AS y")
+//      .input(variables = Seq("x", "y"))
+//      .build()
+//
+//    // when
+//    val input = infiniteInput(estimateSize(E_INT_IN_DISTINCT), Some(i => Array(1, i.toInt)))
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should not kill ordered distinct query with distinct values in ordered column") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x", "y")
+//      .orderedDistinct(Seq("x"), "x AS x", "y AS y")
+//      .input(variables = Seq("x", "y"))
+//      .build()
+//
+//    val input = for (i <- 0 to 100000) yield Array[Any](i, i)
+//
+//    // then
+//    val result = execute(logicalQuery, runtime, inputValues(input: _*).stream())
+//    consume(result)
+//  }
+//
+//  test("should kill partial top query before it runs out of memory") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 100000)
+//      .input(variables = Seq("x", "y"))
+//      .build()
+//
+//    // when
+//    val input = infiniteInput(estimateSize(E_INT) * 2, Some(i => Array(1, i.toInt)))
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should not kill partial top query with distinct ordered rows") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 100000)
+//      .input(variables = Seq("x", "y"))
+//      .build()
+//
+//    val input = for (i <- 0 to 100000) yield Array[Any](i, i)
+//
+//    // then
+//    val result = execute(logicalQuery, runtime, inputValues(input: _*).stream())
+//    consume(result)
+//  }
+//
+//  // we decided not to use `infiniteNodeInput` with an estimated size here since it is tricky to
+//  // get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
+//  // adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
+//  test("should kill pruning-var-expand before it runs out of memory") {
+//    // given
+//    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(ByteUnit.mebiBytes(100)), "Test")
+//    restartTx()
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("y")
+//      .pruningVarExpand("(x)<-[*6..6]-(y)")
+//      .nodeByLabelScan("x", "C", IndexOrderNone)
+//      .build()
+//
+//    // when
+//    nestedStarGraphCenterOnly(6, 6, "C", "L")
+//
+//    // Creating the graph needs more memory than querying it, so we need to lower the max size to trigger the MemoryLimitExceeded exception
+//    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(ByteUnit.mebiBytes(1)), "Test")
+//    restartTx()
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime))
+//    }
+//  }
+//
+//  test("should kill distinct-pruning-var-expand before it runs out of memory") {
+//    // given
+//    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(ByteUnit.mebiBytes(100)), "Test")
+//    restartTx()
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("y")
+//      .bfsPruningVarExpand("(x)<-[*1..6]-(y)")
+//      .nodeByLabelScan("x", "C", IndexOrderNone)
+//      .build()
+//
+//    // when
+//    nestedStarGraphCenterOnly(6, 6, "C", "L")
+//
+//    // Creating the graph needs more memory than querying it, so we need to lower the max size to trigger the MemoryLimitExceeded exception
+//    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(ByteUnit.mebiBytes(1)), "Test")
+//    restartTx()
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime))
+//    }
+//  }
+//
+//  test("should kill distinct aggregation query before it runs out of memory") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("c")
+//      .aggregation(Seq.empty, Seq("count(DISTINCT x) AS c"))
+//      .input(nodes = Seq("x"))
+//      .build()
+//
+//    // when
+//    val (nodes, _) = circleGraph(1) // Just for size estimation
+//    val input = infiniteNodeInput(estimateSize(E_NODE_PRIMITIVE))
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should not kill ordered count aggregation query") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("c")
+//      .orderedAggregation(Seq("x AS x", "y AS y"), Seq("count(*) AS c"), Seq("x"))
+//      .input(variables = Seq("x", "y"))
+//      .build()
+//
+//    val input = for (i <- 0 to 100000) yield Array[Any](i, i)
+//
+//    // then
+//    val result = execute(logicalQuery, runtime, inputValues(input: _*).stream())
+//    consume(result)
+//  }
+//
+//  test("should not kill ordered collect aggregation query") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("c")
+//      .orderedAggregation(Seq("x AS x", "y AS y"), Seq("collect(y) AS c"), Seq("x"))
+//      .input(variables = Seq("x", "y"))
+//      .build()
+//
+//    val input = for (i <- 0 to 100000) yield Array[Any](i, i)
+//
+//    // then
+//    val result = execute(logicalQuery, runtime, inputValues(input: _*).stream())
+//    consume(result)
+//  }
+//
+//  test("should kill nested plan collect expression") {
+//    // given
+//    val n =
+//      (MemoryManagementTestBase.maxMemory / estimateSize(
+//        E_INT
+//      )) * 1.2 // Should fill the size of memory with n values alone + 20% extra margin
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x1")
+//      .nestedPlanCollectExpressionProjection("x1", "i")
+//      .|.unwind(s"range(1,$n) as i")
+//      .|.argument()
+//      .input(variables = Seq("x"))
+//      .build()
+//
+//    // when
+//    val input = finiteInput(1, Some((i: Long) => Array(i)))
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should not kill nested plan exists expression") {
+//    val n =
+//      (MemoryManagementTestBase.maxMemory / estimateSize(
+//        E_INT
+//      )) * 1.2 // Should fill the size of memory with n values alone + 20% extra margin
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x1")
+//      .nestedPlanExistsExpressionProjection("x1")
+//      .|.unwind(s"range(1,$n) as i")
+//      .|.argument()
+//      .input(variables = Seq("x"))
+//      .build()
+//
+//    // when
+//    val input = finiteInput(1, Some((i: Long) => Array(i)))
+//
+//    // then
+//    consume(execute(logicalQuery, runtime, input))
+//  }
+//
+//  test("should kill eager query before it runs out of memory") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .eager()
+//      .input(variables = Seq("x"))
+//      .build()
+//
+//    // when
+//    val estimatedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
+//    val input = infiniteInput(estimatedRowSize)
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should kill percentileDisc aggregation query before it runs out of memory") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("c")
+//      .aggregation(Seq.empty, Seq("percentileDisc(x, 0.1) AS c"))
+//      .input(variables = Seq("x"))
+//      .build()
+//
+//    // when
+//    val input = infiniteInput(estimateSize(E_INT), Some(_ => Array(5L)))
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should kill percentileCont aggregation query before it runs out of memory") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("c")
+//      .aggregation(Seq.empty, Seq("percentileCont(x, 0.1) AS c"))
+//      .input(variables = Seq("x"))
+//      .build()
+//
+//    // when
+//    val input = infiniteInput(estimateSize(E_INT), Some(_ => Array(5L)))
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should kill node left outer hash join query before it runs out of memory") {
+//    // given
+//    val nodes = given { nodeGraph(1) }
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .leftOuterHashJoin("x")
+//      .|.allNodeScan("x")
+//      .input(nodes = Seq("x"))
+//      .build()
+//
+//    // when
+//    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
+//    val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should kill node right outer hash join query before it runs out of memory") {
+//    // given
+//    val nodes = given { nodeGraph(1) }
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .rightOuterHashJoin("x")
+//      .|.allNodeScan("x")
+//      .input(nodes = Seq("x"))
+//      .build()
+//
+//    // when
+//    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
+//    val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime, input))
+//    }
+//  }
+//
+//  test("should kill var-length query with long pattern before it runs out of memory") {
+//    // given
+//    given {
+//      var start = tx.createNode(Label.label("START"))
+//      var i = 1
+//      while (i <= 1000000) {
+//        val next = tx.createNode()
+//        start.createRelationshipTo(next, RelationshipType.withName("R"))
+//        start = next
+//
+//        if (i % 100 == 0) {
+//          restartTx()
+//          start = tx.getNodeById(start.getId)
+//        }
+//        i += 1
+//      }
+//    }
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("y")
+//      .expand("(x)-[r*]->(y)")
+//      .nodeByLabelScan("x", "START")
+//      .build()
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy { countRows(logicalQuery, runtime) }
+//  }
 
   protected def assertHeapHighWaterMark(
     logicalQuery: LogicalQuery,
@@ -941,52 +941,52 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 trait FullSupportMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
   self: MemoryManagementTestBase[CONTEXT] =>
 
-  // expandInto and optionalExpandInto _are_ supported by pipelined.
-  // But since the cache is shorter lived there, it does not make sense to have this test for pipelined.
-
-  // we decided not to use `infiniteNodeInput` with an estimated here size since it is tricky to
-  // get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
-  // adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
-  test("should kill caching expand-into query before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .expandInto("(x)-->(y)")
-      .cartesianProduct()
-      .|.allNodeScan("y")
-      .allNodeScan("x")
-      .build()
-
-    // when
-    circleGraph(1500)
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime))
-    }
-  }
-
-  // we decided not to use `infiniteNodeInput` with an estimated here size since it is tricky to
-  // get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
-  // adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
-  test("should kill caching optional expand-into query before it runs out of memory") {
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .optionalExpandInto("(x)-->(y)")
-      .cartesianProduct()
-      .|.allNodeScan("y")
-      .allNodeScan("x")
-      .build()
-
-    // when
-    circleGraph(1500)
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime))
-    }
-  }
+//  // expandInto and optionalExpandInto _are_ supported by pipelined.
+//  // But since the cache is shorter lived there, it does not make sense to have this test for pipelined.
+//
+//  // we decided not to use `infiniteNodeInput` with an estimated here size since it is tricky to
+//  // get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
+//  // adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
+//  test("should kill caching expand-into query before it runs out of memory") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("y")
+//      .expandInto("(x)-->(y)")
+//      .cartesianProduct()
+//      .|.allNodeScan("y")
+//      .allNodeScan("x")
+//      .build()
+//
+//    // when
+//    circleGraph(1500)
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime))
+//    }
+//  }
+//
+//  // we decided not to use `infiniteNodeInput` with an estimated here size since it is tricky to
+//  // get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
+//  // adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
+//  test("should kill caching optional expand-into query before it runs out of memory") {
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("y")
+//      .optionalExpandInto("(x)-->(y)")
+//      .cartesianProduct()
+//      .|.allNodeScan("y")
+//      .allNodeScan("x")
+//      .build()
+//
+//    // when
+//    circleGraph(1500)
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime))
+//    }
+//  }
 }
 
 /**
@@ -995,32 +995,33 @@ trait FullSupportMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
 trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
   self: MemoryManagementTestBase[CONTEXT] =>
 
-  test("should kill transactional subquery before it runs out of memory") {
-    runtimeTestSupport.restartTx(KernelTransaction.Type.IMPLICIT)
-
-    // given
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .transactionForeach()
-      .|.emptyResult()
-      .|.sort(Seq(Ascending("y")))
-      .|.unwind("range(1, 100000000) as y")
-      .|.argument()
-      .unwind("[1, 2] AS x")
-      .argument()
-      .build(readOnly = false)
-
-    // then
-    a[MemoryLimitExceededException] should be thrownBy {
-      consume(execute(logicalQuery, runtime))
-    }
-  }
+//  test("should kill transactional subquery before it runs out of memory") {
+//    runtimeTestSupport.restartTx(KernelTransaction.Type.IMPLICIT)
+//
+//    // given
+//    val logicalQuery = new LogicalQueryBuilder(this)
+//      .produceResults("x")
+//      .transactionForeach()
+//      .|.emptyResult()
+//      .|.sort(Seq(Ascending("y")))
+//      .|.unwind("range(1, 100000000) as y")
+//      .|.argument()
+//      .unwind("[1, 2] AS x")
+//      .argument()
+//      .build(readOnly = false)
+//
+//    // then
+//    a[MemoryLimitExceededException] should be thrownBy {
+//      consume(execute(logicalQuery, runtime))
+//    }
+//  }
 
   test("should not kill transactional subquery if both inner and outer together exceed the limit") {
     // Determined empirically
     val rowCount = runtimeUsed match {
       case Interpreted => 32000
       case Slotted     => 52000
+      case Pipelined   => 70000
     }
 
     // given
