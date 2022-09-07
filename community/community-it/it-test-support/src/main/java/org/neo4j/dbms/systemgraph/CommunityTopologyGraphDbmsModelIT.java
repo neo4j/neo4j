@@ -22,6 +22,7 @@ package org.neo4j.dbms.systemgraph;
 import static java.time.Duration.ofSeconds;
 import static java.util.UUID.randomUUID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE;
 import static org.neo4j.values.storable.DurationValue.duration;
 
 import java.util.List;
@@ -221,7 +222,7 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         createExternalReferenceForDatabase(tx, aliasName, "foo", remoteNeo4j, randomUUID());
 
         // when
-        var result = dbmsModel.getDriverSettings(aliasName);
+        var result = dbmsModel.getDriverSettings(aliasName, DEFAULT_NAMESPACE);
 
         // then
         assertThat(result).isEmpty();
@@ -240,7 +241,7 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         createDriverSettingsForExternalAlias(tx, aliasNode, driverSettings);
 
         // when
-        var result = dbmsModel.getDriverSettings(aliasName);
+        var result = dbmsModel.getDriverSettings(aliasName, DEFAULT_NAMESPACE);
 
         // then
         assertThat(result).isPresent();

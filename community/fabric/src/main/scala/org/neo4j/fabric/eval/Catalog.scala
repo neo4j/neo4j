@@ -73,6 +73,7 @@ object Catalog {
     id: Long,
     uuid: UUID,
     graphName: NormalizedGraphName,
+    graphNamespace: Option[NormalizedGraphName],
     databaseName: NormalizedDatabaseName
   ) extends Alias {
     override def name: Option[String] = Some(graphName.name())
@@ -83,6 +84,7 @@ object Catalog {
     id: Long,
     uuid: UUID,
     graphName: NormalizedGraphName,
+    graphNamespace: Option[NormalizedGraphName],
     localDatabaseName: NormalizedDatabaseName,
     remoteDatabaseName: NormalizedDatabaseName,
     uri: RemoteUri

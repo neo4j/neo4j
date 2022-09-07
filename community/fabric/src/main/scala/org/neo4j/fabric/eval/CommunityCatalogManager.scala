@@ -119,7 +119,7 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: Globa
     }
     for {
       (ref, idx) <- nonPrimaryRefs.zip(ids.sequence)
-      alias <- aliasFactory(ref, idx)
+      alias <- aliasFactory(ref, idx, None)
     } yield alias
   }
 
@@ -132,7 +132,7 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: Globa
       (compositeRef, idx) <- compositeRefs.zip(ids.sequence)
       compositeAliases = for {
         (componentRef, idx) <- compositeRef.components.asScala.toSeq.zip(ids.sequence)
-        alias <- aliasFactory(componentRef, idx)
+        alias <- aliasFactory(componentRef, idx, Some(compositeRef.databaseId().name()))
       } yield NamespacedGraph(compositeRef.alias().name(), alias)
     } yield (
       Composite(idx, compositeRef.databaseId.databaseId.uuid, databaseName(compositeRef.databaseId)),
@@ -141,21 +141,30 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: Globa
 
   }
 
-  private def aliasFactory(ref: DatabaseReference, idx: Long): Option[Alias] = ref match {
+  private def aliasFactory(ref: DatabaseReference, idx: Long, namespace: Option[String]): Option[Alias] = ref match {
     case i: DatabaseReference.Internal if i.isPrimary =>
       None // ignore primary aliases
     case i: DatabaseReference.Internal =>
-      Some(InternalAlias(idx, i.databaseId.databaseId.uuid, graphName(i.alias), databaseName(i.databaseId())))
+      Some(InternalAlias(
+        idx,
+        i.databaseId.databaseId.uuid,
+        graphName(i.alias()),
+        graphName(namespace),
+        databaseName(i.databaseId())
+      ))
     case e: DatabaseReference.External =>
-      Some(ExternalAlias(idx, e.id, graphName(e.alias), e.alias, e.targetAlias, e.externalUri))
+      Some(ExternalAlias(idx, e.id, graphName(e.alias), graphName(namespace), e.alias, e.targetAlias, e.externalUri))
     case other =>
       None // ignore unexpected reference types
   }
 
-  protected def graphName(databaseName: NormalizedDatabaseName): NormalizedGraphName =
+  private def graphName(databaseName: Option[String]): Option[NormalizedGraphName] =
+    databaseName.map(new NormalizedGraphName(_))
+
+  private def graphName(databaseName: NormalizedDatabaseName): NormalizedGraphName =
     new NormalizedGraphName(databaseName.name)
 
-  protected def databaseName(databaseId: NamedDatabaseId): NormalizedDatabaseName =
+  private def databaseName(databaseId: NamedDatabaseId): NormalizedDatabaseName =
     new NormalizedDatabaseName(databaseId.name)
 
   override def locationOf(
@@ -166,7 +175,7 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: Globa
   ): Location = graph match {
     case Catalog.InternalGraph(id, uuid, _, databaseName) =>
       new Location.Local(id, uuid, databaseName.name())
-    case Catalog.InternalAlias(id, uuid, _, databaseName) =>
+    case Catalog.InternalAlias(id, uuid, _, _, databaseName) =>
       new Location.Local(id, uuid, databaseName.name())
     case _ => throw new IllegalArgumentException(s"Unexpected graph type $graph")
   }

@@ -221,14 +221,16 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
     }
 
     @Override
-    public Optional<DriverSettings> getDriverSettings(String databaseName) {
-        return Optional.ofNullable(tx.findNode(REMOTE_DATABASE_LABEL, NAME_PROPERTY, databaseName))
+    public Optional<DriverSettings> getDriverSettings(String databaseName, String namespace) {
+        return tx.findNodes(REMOTE_DATABASE_LABEL, NAME_PROPERTY, databaseName, NAMESPACE_PROPERTY, namespace).stream()
+                .findFirst()
                 .flatMap(CommunityTopologyGraphDbmsModel::getDriverSettings);
     }
 
     @Override
-    public Optional<ExternalDatabaseCredentials> getExternalDatabaseCredentials(String databaseName) {
-        return Optional.ofNullable(tx.findNode(REMOTE_DATABASE_LABEL, NAME_PROPERTY, databaseName))
+    public Optional<ExternalDatabaseCredentials> getExternalDatabaseCredentials(String databaseName, String namespace) {
+        return tx.findNodes(REMOTE_DATABASE_LABEL, NAME_PROPERTY, databaseName, NAMESPACE_PROPERTY, namespace).stream()
+                .findFirst()
                 .flatMap(CommunityTopologyGraphDbmsModel::getDatabaseCredentials);
     }
 

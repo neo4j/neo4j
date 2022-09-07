@@ -20,6 +20,7 @@
 package org.neo4j.fabric.executor;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import org.neo4j.configuration.helpers.RemoteUri;
 
@@ -179,14 +180,26 @@ public class Location {
         public static class ExternalWithCredentials extends External {
             private final String locationName;
 
+            private final String locationNamespace;
+
             public ExternalWithCredentials(
-                    long id, UUID uuid, RemoteUri uri, String databaseName, String locationName) {
+                    long id,
+                    UUID uuid,
+                    RemoteUri uri,
+                    String databaseName,
+                    String locationName,
+                    String locationNamespace) {
                 super(id, uuid, uri, databaseName);
                 this.locationName = locationName;
+                this.locationNamespace = locationNamespace;
             }
 
             public String locationName() {
                 return locationName;
+            }
+
+            public Optional<String> getLocationNamespace() {
+                return Optional.ofNullable(locationNamespace);
             }
         }
     }
