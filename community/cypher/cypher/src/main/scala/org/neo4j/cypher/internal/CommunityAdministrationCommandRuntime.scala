@@ -43,7 +43,6 @@ import org.neo4j.cypher.internal.logical.plans.AlterUser
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActions
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActionsOrSelf
-import org.neo4j.cypher.internal.logical.plans.AssertAllowedOneOfDbmsActions
 import org.neo4j.cypher.internal.logical.plans.AssertNotCurrentUser
 import org.neo4j.cypher.internal.logical.plans.CreateUser
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfDatabaseExists
@@ -64,7 +63,6 @@ import org.neo4j.cypher.internal.logical.plans.ShowUsers
 import org.neo4j.cypher.internal.logical.plans.SystemProcedureCall
 import org.neo4j.cypher.internal.procs.ActionMapper
 import org.neo4j.cypher.internal.procs.AuthorizationAndPredicateExecutionPlan
-import org.neo4j.cypher.internal.procs.AuthorizationOrPredicateExecutionPlan
 import org.neo4j.cypher.internal.procs.PredicateExecutionPlan
 import org.neo4j.cypher.internal.procs.SystemCommandExecutionPlan
 import org.neo4j.cypher.rendering.QueryRenderer
@@ -188,14 +186,6 @@ case class CommunityAdministrationCommandRuntime(
     // Check Admin Rights for DBMS commands
     case AssertAllowedDbmsActions(maybeSource, actions) => context =>
         AuthorizationAndPredicateExecutionPlan(
-          securityAuthorizationHandler,
-          (_, securityContext) => checkActions(actions, securityContext),
-          violationMessage = adminActionErrorMessage,
-          source = getSource(maybeSource, context)
-        )
-
-    case AssertAllowedOneOfDbmsActions(maybeSource, actions) => context =>
-        AuthorizationOrPredicateExecutionPlan(
           securityAuthorizationHandler,
           (_, securityContext) => checkActions(actions, securityContext),
           violationMessage = adminActionErrorMessage,

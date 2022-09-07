@@ -792,22 +792,19 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val (source, replace) = ifExistsDo match {
           case IfExistsReplace => (
               plans.DropDatabaseAlias(
-                plans.AssertAllowedOneOfDbmsActions(
-                  Some(plans.AssertAllowedOneOfDbmsActions(None, Seq(CreateDatabaseAction, CreateAliasAction))),
-                  Seq(DropDatabaseAction, DropAliasAction)
-                ),
+                plans.AssertAllowedDbmsActions(None, Seq(CreateAliasAction, DropAliasAction)),
                 aliasName
               ),
               true
             )
           case IfExistsDoNothing => (
               plans.DoNothingIfDatabaseExists(
-                plans.AssertAllowedOneOfDbmsActions(None, Seq(CreateDatabaseAction, CreateAliasAction)),
+                plans.AssertAllowedDbmsActions(None, Seq(CreateAliasAction)),
                 aliasName
               ),
               false
             )
-          case _ => (plans.AssertAllowedOneOfDbmsActions(None, Seq(CreateDatabaseAction, CreateAliasAction)), false)
+          case _ => (plans.AssertAllowedDbmsActions(None, Seq(CreateAliasAction)), false)
         }
         val ensureValidDatabase = plans.EnsureValidNonSystemDatabase(source, targetName, "create", Some(aliasName))
         val aliasCommand =
@@ -826,16 +823,16 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           properties
         ) =>
         val assertAllowed =
-          plans.AssertAllowedOneOfDbmsActions(
+          plans.AssertAllowedDbmsActions(
             Some(plans.AssertNotBlockedRemoteAliasManagement()),
-            Seq(CreateDatabaseAction, CreateAliasAction)
+            Seq(CreateAliasAction)
           )
 
         val (source, replace) = ifExistsDo match {
           case IfExistsReplace =>
             (
               plans.DropDatabaseAlias(
-                plans.AssertAllowedOneOfDbmsActions(Some(assertAllowed), Seq(DropDatabaseAction, DropAliasAction)),
+                plans.AssertAllowedDbmsActions(Some(assertAllowed), Seq(DropAliasAction)),
                 aliasName
               ),
               true
@@ -858,9 +855,9 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // DROP DATABASE ALIAS foo [IF EXISTS]
       case c @ DropDatabaseAlias(aliasName, ifExists) =>
-        val assertAllowed = plans.AssertAllowedOneOfDbmsActions(
+        val assertAllowed = plans.AssertAllowedDbmsActions(
           Some(plans.AssertNotBlockedDropAlias(aliasName)),
-          Seq(DropDatabaseAction, DropAliasAction)
+          Seq(DropAliasAction)
         )
         val source =
           if (ifExists) plans.DoNothingIfDatabaseNotExists(assertAllowed, aliasName, "delete")
@@ -875,7 +872,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // ALTER DATABASE ALIAS foo (local)
       case c @ AlterLocalDatabaseAlias(aliasName, targetName, ifExists, properties) =>
-        val assertAllowedLocal = plans.AssertAllowedOneOfDbmsActions(None, Seq(AlterDatabaseAction, AlterAliasAction))
+        val assertAllowedLocal = plans.AssertAllowedDbmsActions(None, Seq(AlterAliasAction))
 
         val source =
           if (ifExists)
@@ -906,9 +903,9 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           driverSettings,
           properties
         ) =>
-        val assertAllowedRemote = plans.AssertAllowedOneOfDbmsActions(
+        val assertAllowedRemote = plans.AssertAllowedDbmsActions(
           Some(plans.AssertNotBlockedRemoteAliasManagement()),
-          Seq(AlterDatabaseAction, AlterAliasAction)
+          Seq(AlterAliasAction)
         )
 
         val source =
