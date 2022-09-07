@@ -1764,7 +1764,7 @@ class ImportCommandTest {
     }
 
     @Test
-    void shouldFailOnInvalidMaxMemoryPercentageSetting() throws Exception {
+    void shouldFailOnInvalidMaxMemoryPercentageSetting() {
         // GIVEN
         List<String> nodeIds = nodeIds(10);
 
@@ -1777,7 +1777,7 @@ class ImportCommandTest {
                                 .toString(),
                         "--max-off-heap-memory",
                         "110%"));
-        assertThat(e).hasMessageContaining("percent");
+        assertThat(e).hasMessageContaining("Expected int value between 1 (inclusive) and 100 (exclusive), got 110.");
     }
 
     @Test
