@@ -131,7 +131,7 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: Globa
     for {
       (compositeRef, idx) <- compositeRefs.zip(ids.sequence)
       compositeAliases = for {
-        (componentRef, idx) <- compositeRef.components.asScala.toSeq.zip(ids.sequence)
+        (componentRef, idx) <- compositeRef.constituents.asScala.toSeq.zip(ids.sequence)
         alias <- aliasFactory(componentRef, idx, Some(compositeRef.databaseId().name()))
       } yield NamespacedGraph(compositeRef.alias().name(), alias)
     } yield (

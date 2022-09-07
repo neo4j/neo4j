@@ -19,6 +19,7 @@
  */
 package org.neo4j.fabric.eval
 
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.GraphSelection
 import org.neo4j.cypher.internal.evaluator.StaticEvaluation
@@ -32,6 +33,7 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.fabric.util.Errors
 import org.neo4j.fabric.util.Rewritten.RewritingOps
 import org.neo4j.kernel.api.procedure.GlobalProcedures
+import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
@@ -97,6 +99,34 @@ object UseEvaluation {
         return resolved
       }
     }
+
+    def resolveGraph(compositeName: NormalizedDatabaseName): Catalog.Graph =
+      catalog.resolveGraph(CatalogName(compositeName.name()))
+
+    def isConstituentOrSelf(graph: Catalog.Graph, composite: Catalog.Graph): Boolean =
+      (graph, composite) match {
+        case (c1: Catalog.Composite, c2: Catalog.Composite) =>
+          c1 == c2
+
+        case (n: Catalog.NamespacedGraph, c: Catalog.Composite) =>
+          n.namespace == c.databaseName.name()
+
+        case _ =>
+          false
+      }
+
+    def isSystem(graph: Catalog.Graph): Boolean =
+      qualifiedNameString(graph) == GraphDatabaseSettings.SYSTEM_DATABASE_NAME
+
+    def isNonComposite(graph: Catalog.Graph): Boolean =
+      graph match {
+        case _: Catalog.Composite       => false
+        case _: Catalog.NamespacedGraph => false
+        case _                          => true
+      }
+
+    def qualifiedNameString(graph: Catalog.Graph): String =
+      Catalog.catalogName(graph).qualifiedNameString
   }
 
   def isStatic(graphSelection: GraphSelection): Boolean =

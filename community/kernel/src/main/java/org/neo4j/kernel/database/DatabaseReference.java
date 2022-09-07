@@ -221,7 +221,7 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
             return namedDatabaseId.databaseId().uuid();
         }
 
-        public List<DatabaseReference> components() {
+        public List<DatabaseReference> constituents() {
             return constituents;
         }
 

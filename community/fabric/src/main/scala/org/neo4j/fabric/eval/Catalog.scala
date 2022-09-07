@@ -23,6 +23,7 @@ import org.neo4j.configuration.helpers.NormalizedGraphName
 import org.neo4j.configuration.helpers.RemoteUri
 import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.exceptions.InternalException
 import org.neo4j.fabric.eval.Catalog.normalize
 import org.neo4j.fabric.util.Errors
 import org.neo4j.fabric.util.Errors.show
@@ -185,6 +186,21 @@ object Catalog {
         case _                  => normalizedName(name)
       }
     } yield catalogName -> graph).toMap)
+
+  def catalogName(graph: Graph): CatalogName =
+    graph match {
+      case n: NamespacedGraph => normalizedName(n.namespace, graphName(n.graph))
+      case _                  => normalizedName(graphName(graph))
+    }
+
+  private def graphName(graph: Graph): String =
+    graph match {
+      case g: InternalGraph => g.graphName.name()
+      case g: InternalAlias => g.graphName.name()
+      case g: ExternalAlias => g.graphName.name()
+      case g: Composite     => g.databaseName.name()
+      case _                => throw new InternalException(s"Unexpected graph type: ${graph.getClass.getSimpleName}")
+    }
 
   private def byName(graphs: Seq[Catalog.Graph], namespace: String*): Catalog =
     Catalog(graphs = (for {

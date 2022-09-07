@@ -350,15 +350,21 @@ public class FabricExecutor {
         FragmentResult runExec(Fragment.Exec fragment, Record argument) {
             ctx.validateStatementType(fragment.statementType());
             Map<String, AnyValue> argumentValues = argumentValues(fragment, argument);
-            MapValue parameters = addParamsFromRecord(queryParams, argumentValues, asJava(fragment.parameters()));
 
             Catalog.Graph graph = evalUse(fragment.use().graphSelection(), argumentValues);
+
+            validateCanUseGraph(graph, ctx.getSessionDatabaseReference());
+
             var transactionMode = getTransactionMode(fragment.queryType(), graph.toString());
+
+            MapValue parameters = addParamsFromRecord(queryParams, argumentValues, asJava(fragment.parameters()));
+
             var location = catalogManager.locationOf(
                     ctx.getSessionDatabaseReference(),
                     graph,
                     transactionMode.requiresWrite(),
                     routingContext.isServerRoutingEnabled());
+
             if (location instanceof Location.Local local) {
                 FragmentResult input = run(fragment.input(), argument);
                 if (fragment.executable()) {
@@ -380,6 +386,38 @@ public class FabricExecutor {
             } else {
                 throw notImplemented("Invalid graph location", location);
             }
+        }
+
+        private void validateCanUseGraph(Catalog.Graph accessedGraph, DatabaseReference sessionDatabaseReference) {
+            var sessionGraph = useEvaluator.resolveGraph(sessionDatabaseReference.alias());
+
+            if (sessionGraph instanceof Catalog.Composite) {
+                if (!useEvaluator.isConstituentOrSelf(accessedGraph, sessionGraph)) {
+                    if (!useEvaluator.isSystem(accessedGraph)) {
+                        throw new InvalidSemanticsException(cantAccessNonConstituentsMessage(sessionGraph, accessedGraph));
+                    }
+                }
+            } else {
+                if (!useEvaluator.isNonComposite(accessedGraph)) {
+                    throw new InvalidSemanticsException(cantAccessCompositeConstituentsMessage(sessionGraph, accessedGraph));
+                }
+            }
+        }
+
+        private String cantAccessNonConstituentsMessage(Catalog.Graph sessionDatabase, Catalog.Graph accessed) {
+            return "When connected to a composite database, access is allowed only to its constituents. "
+                    + "Attempted to access '%s' while connected to '%s'"
+                            .formatted(
+                                    useEvaluator.qualifiedNameString(accessed),
+                                    useEvaluator.qualifiedNameString(sessionDatabase));
+        }
+
+        private String cantAccessCompositeConstituentsMessage(Catalog.Graph sessionDatabase, Catalog.Graph accessed) {
+            return "Accessing a composite database and its constituents is only allowed when connected to it. "
+                    + "Attempted to access '%s' while connected to '%s'"
+                            .formatted(
+                                    useEvaluator.qualifiedNameString(accessed),
+                                    useEvaluator.qualifiedNameString(sessionDatabase));
         }
 
         FragmentResult runLocalQueryAt(
