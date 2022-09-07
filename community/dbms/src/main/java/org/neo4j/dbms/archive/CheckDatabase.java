@@ -99,7 +99,7 @@ public interface CheckDatabase {
             NormalizedDatabaseName database,
             PrintStream out,
             boolean force)
-            throws IOException, IncorrectFormat;
+            throws Exception;
 
     static Collection<CheckDatabase> all() {
         return Services.loadAll(CheckDatabase.class);
