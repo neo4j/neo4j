@@ -67,6 +67,7 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.PrefixRange
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
@@ -126,6 +127,10 @@ case class ExpressionSelectivityCalculator(
     // WHERE a:Label
     case HasLabels(_, label :: Nil) =>
       calculateSelectivityForLabel(semanticTable.id(label))
+
+    // WHERE true
+    case True() =>
+      Selectivity.ONE
 
     // WHERE false
     case False() =>

@@ -1637,6 +1637,18 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     calculator(inequality.expr) should be > calculator(bbox.expr)
   }
 
+  test("true literal") {
+    val calculator = setUpCalculator()
+    val result = calculator(trueLiteral)
+    result should equal(Selectivity.ONE)
+  }
+
+  test("false literal") {
+    val calculator = setUpCalculator()
+    val result = calculator(falseLiteral)
+    result should equal(Selectivity.ZERO)
+  }
+
   // HELPER METHODS
 
   protected def setupSemanticTable(): SemanticTable = {

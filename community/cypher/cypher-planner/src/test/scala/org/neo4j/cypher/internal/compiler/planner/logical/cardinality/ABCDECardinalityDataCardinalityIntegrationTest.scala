@@ -43,6 +43,14 @@ abstract class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunS
     expectCardinality(N)
   }
 
+  test("MATCH (n) WHERE true") {
+    expectCardinality(N)
+  }
+
+  test("MATCH (n) WHERE false") {
+    expectCardinality(0)
+  }
+
   test("MATCH (n:A)") {
     expectCardinality(A)
   }
