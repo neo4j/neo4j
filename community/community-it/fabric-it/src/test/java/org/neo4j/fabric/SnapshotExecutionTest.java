@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.kernel.api.exceptions.Status.Statement.ArithmeticError;
 import static org.neo4j.kernel.api.exceptions.Status.Statement.SyntaxError;
+import static reactor.adapter.JdkFlowAdapter.flowPublisherToFlux;
 
 import java.util.List;
 import java.util.Map;
@@ -42,7 +43,6 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.TransientException;
-import org.neo4j.driver.reactive.ReactiveResult;
 import org.neo4j.driver.types.Path;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -210,8 +210,9 @@ class SnapshotExecutionTest {
     void testResultStreaming() {
         var query = joinAsLines("UNWIND range(0, 100) AS a", "RETURN a");
 
-        int receivedRecords = Mono.fromDirect(driver.reactiveSession().run(query))
-                .flatMapMany(ReactiveResult::records)
+        int receivedRecords = Mono.fromDirect(
+                        flowPublisherToFlux(driver.reactiveSession().run(query)))
+                .flatMapMany(result -> flowPublisherToFlux(result.records()))
                 .limitRate(5)
                 .take(50)
                 .collectList()

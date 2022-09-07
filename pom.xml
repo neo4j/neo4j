@@ -144,7 +144,7 @@
     <awaitility.version>4.2.0</awaitility.version>
     <log4j.version>2.18.0</log4j.version>
     <slf4j.version>1.7.30</slf4j.version>
-    <neo4j-java-driver.version>5.0.0-alpha03</neo4j-java-driver.version>
+    <neo4j-java-driver.version>5.0.0-beta01</neo4j-java-driver.version>
     <skip-scalastyle>false</skip-scalastyle>
   </properties>
 
@@ -1077,7 +1077,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-bom</artifactId>
-        <version>2020.0.21</version>
+        <version>2020.0.22</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -1386,7 +1386,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
-        <version>4.1.79.Final</version>
+        <version>4.1.80.Final</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
