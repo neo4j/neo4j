@@ -223,7 +223,6 @@ public class ImportCommand {
 
         @Option(
                 names = "--high-parallel-io",
-                arity = "0..1",
                 showDefaultValue = ALWAYS,
                 paramLabel = "on|off|auto",
                 defaultValue = "auto",
