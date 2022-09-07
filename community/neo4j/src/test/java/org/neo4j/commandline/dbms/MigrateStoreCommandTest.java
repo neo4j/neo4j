@@ -68,7 +68,6 @@ class MigrateStoreCommandTest {
                                                       process. The general rule is that values up to the
                                                       size of the database proportionally increase
                                                       performance.
-                                                      Default: 8m
                                --to-format=standard|high_limit|aligned
                                                     Name of the format to migrate the store to. If this
                                                       option is not specified, the tool will migrate the

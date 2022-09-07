@@ -115,7 +115,6 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
     @Option(
             names = "--pagecache",
             paramLabel = "<size>",
-            defaultValue = "8m",
             description = "The size of the page cache to use for the migration process. "
                     + "The general rule is that values up to the size of the database proportionally increase "
                     + "performance.")
@@ -330,9 +329,11 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
 
     private Config buildConfig() {
         try {
-            return createPrefilledConfigBuilder()
-                    .set(pagecache_memory, ByteUnit.parse(pagecacheMemory))
-                    .build();
+            var builder = createPrefilledConfigBuilder();
+            if (pagecacheMemory != null) {
+                builder.set(pagecache_memory, ByteUnit.parse(pagecacheMemory));
+            }
+            return builder.build();
         } catch (Exception e) {
             throw new CommandFailedException(e.getMessage(), e);
         }
