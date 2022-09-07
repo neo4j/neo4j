@@ -89,7 +89,7 @@ public record ProtocolVersion(short major, short minor, short range) implements 
             return false;
         }
 
-        var lowerBound = this.major - this.range;
+        var lowerBound = this.minor - this.range;
         return other.minor >= lowerBound && other.minor <= this.minor;
     }
 
