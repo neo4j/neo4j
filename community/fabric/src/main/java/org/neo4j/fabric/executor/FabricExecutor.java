@@ -394,17 +394,19 @@ public class FabricExecutor {
             if (sessionGraph instanceof Catalog.Composite) {
                 if (!useEvaluator.isConstituentOrSelf(accessedGraph, sessionGraph)) {
                     if (!useEvaluator.isSystem(accessedGraph)) {
-                        throw new InvalidSemanticsException(cantAccessNonConstituentsMessage(sessionGraph, accessedGraph));
+                        throw new InvalidSemanticsException(
+                                cantAccessOutsideCompositeMessage(sessionGraph, accessedGraph));
                     }
                 }
             } else {
-                if (!useEvaluator.isNonComposite(accessedGraph)) {
-                    throw new InvalidSemanticsException(cantAccessCompositeConstituentsMessage(sessionGraph, accessedGraph));
+                if (!useEvaluator.isDatabaseOrAliasInRoot(accessedGraph)) {
+                    throw new InvalidSemanticsException(
+                            cantAccessCompositeConstituentsMessage(sessionGraph, accessedGraph));
                 }
             }
         }
 
-        private String cantAccessNonConstituentsMessage(Catalog.Graph sessionDatabase, Catalog.Graph accessed) {
+        private String cantAccessOutsideCompositeMessage(Catalog.Graph sessionDatabase, Catalog.Graph accessed) {
             return "When connected to a composite database, access is allowed only to its constituents. "
                     + "Attempted to access '%s' while connected to '%s'"
                             .formatted(

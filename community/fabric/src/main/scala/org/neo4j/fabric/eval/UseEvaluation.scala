@@ -118,7 +118,7 @@ object UseEvaluation {
     def isSystem(graph: Catalog.Graph): Boolean =
       qualifiedNameString(graph) == GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 
-    def isNonComposite(graph: Catalog.Graph): Boolean =
+    def isDatabaseOrAliasInRoot(graph: Catalog.Graph): Boolean =
       graph match {
         case _: Catalog.Composite       => false
         case _: Catalog.NamespacedGraph => false
