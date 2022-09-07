@@ -347,7 +347,7 @@ public abstract class AbstractCypherResource {
 
     private Response createNonAvailableDatabaseResponse(Map<String, Object> parameters) {
         ErrorInvocation errorInvocation = new ErrorInvocation(new Neo4jError(
-                Status.Database.DatabaseUnavailable,
+                Status.General.DatabaseUnavailable,
                 String.format("Requested database is not available. Requested database name: '%s'.", databaseName)));
         return Response.status(Response.Status.NOT_FOUND)
                 .entity(new OutputEventStreamImpl(parameters, uriScheme, errorInvocation::execute))

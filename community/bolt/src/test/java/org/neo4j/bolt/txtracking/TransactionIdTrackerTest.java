@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
-import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
+import static org.neo4j.kernel.api.exceptions.Status.General.DatabaseUnavailable;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.BookmarkTimeout;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;

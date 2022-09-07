@@ -345,11 +345,11 @@ class KernelTransactionsTest {
         kernelTransactions.disposeAll();
 
         assertEquals(
-                Status.Database.DatabaseUnavailable, tx1.getReasonIfTerminated().get());
+                Status.General.DatabaseUnavailable, tx1.getReasonIfTerminated().get());
         assertEquals(
-                Status.Database.DatabaseUnavailable, tx2.getReasonIfTerminated().get());
+                Status.General.DatabaseUnavailable, tx2.getReasonIfTerminated().get());
         assertEquals(
-                Status.Database.DatabaseUnavailable, tx3.getReasonIfTerminated().get());
+                Status.General.DatabaseUnavailable, tx3.getReasonIfTerminated().get());
     }
 
     @Test

@@ -21,7 +21,7 @@ package org.neo4j.procedure.builtin.routing;
 
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.nullValue;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
-import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
+import static org.neo4j.kernel.api.exceptions.Status.General.DatabaseUnavailable;
 import static org.neo4j.kernel.api.exceptions.Status.Procedure.ProcedureCallFailed;
 import static org.neo4j.procedure.builtin.routing.ParameterNames.CONTEXT;
 import static org.neo4j.procedure.builtin.routing.ParameterNames.DATABASE;

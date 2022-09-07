@@ -72,7 +72,7 @@ public abstract class AbstractTransactionStatementSPIProvider implements Transac
                     format("Database does not exist. Database name: '%s'.", selectedDatabaseName));
         } catch (UnavailableException e) {
             throw new BoltIOException(
-                    Status.Database.DatabaseUnavailable, format("Database '%s' is unavailable.", selectedDatabaseName));
+                    Status.General.DatabaseUnavailable, format("Database '%s' is unavailable.", selectedDatabaseName));
         }
     }
 

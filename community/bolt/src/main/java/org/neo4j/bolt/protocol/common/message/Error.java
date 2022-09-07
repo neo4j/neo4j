@@ -131,7 +131,7 @@ public class Error {
                 queryId = ((HasQuery) cause).query();
             }
             if (cause instanceof DatabaseShutdownException) {
-                return new Error(Status.Database.DatabaseUnavailable, cause, isFatal, queryId);
+                return new Error(Status.General.DatabaseUnavailable, cause, isFatal, queryId);
             }
             if (cause instanceof Status.HasStatus) {
                 return new Error(((Status.HasStatus) cause).status(), cause.getMessage(), any, isFatal, queryId);

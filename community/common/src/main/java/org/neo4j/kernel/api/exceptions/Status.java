@@ -443,7 +443,13 @@ public interface Status {
                         + "just add -Xss2M as command line flag."),
         MemoryPoolOutOfMemoryError(
                 TransientError,
-                "The memory pool limit was exceeded. The corresponding setting can be found in the error message");
+                "The memory pool limit was exceeded. The corresponding setting can be found in the error message"),
+        // Do not move the DatabaseUnavailable status to its more natural namespace of `Database` as downstream clients
+        // depend on the string representation being `Neo.TransientError.General.DatabaseUnavailable`
+        DatabaseUnavailable(
+                TransientError,
+                "The database is not currently available to serve your request, refer to the database logs for more "
+                        + "details. Retrying your request at a later time may succeed.");
 
         private final Code code;
 
@@ -458,10 +464,6 @@ public interface Status {
     }
 
     enum Database implements Status {
-        DatabaseUnavailable(
-                TransientError,
-                "The database is not currently available to serve your request, refer to the database logs for more "
-                        + "details. Retrying your request at a later time may succeed."),
         DatabaseNotFound(ClientError, "The request referred to a database that does not exist."),
         HomeDatabaseNotFound(ClientNotification, "The request referred to a home database that does not exist."),
         ExistingAliasFound(ClientError, "The request referred to a database with an alias."),

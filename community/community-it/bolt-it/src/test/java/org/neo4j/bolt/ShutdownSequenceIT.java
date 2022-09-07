@@ -141,7 +141,7 @@ public class ShutdownSequenceIT {
                                 // todo this should not be a transient error such as Status.Transaction.Terminated
                                 .containsEntry(
                                         "code",
-                                        Status.Database.DatabaseUnavailable.code()
+                                        Status.General.DatabaseUnavailable.code()
                                                 .serialize())
                                 .containsEntry(
                                         "message",
@@ -204,7 +204,7 @@ public class ShutdownSequenceIT {
                                 // todo this should not be a transient error such as Status.Transaction.Terminated
                                 .containsEntry(
                                         "code",
-                                        Status.Database.DatabaseUnavailable.code()
+                                        Status.General.DatabaseUnavailable.code()
                                                 .serialize())
                                 .containsEntry(
                                         "message",

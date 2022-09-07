@@ -308,7 +308,7 @@ public class KernelTransactions extends LifecycleAdapter
         // we mark all transactions for termination since we want to make sure these transactions
         // won't be reused, ever. Each transaction has, among other things, a Locks.Client and we
         // certainly want to keep that from being reused from this point.
-        allTransactions.forEach(tx -> tx.markForTermination(Status.Database.DatabaseUnavailable));
+        allTransactions.forEach(tx -> tx.markForTermination(Status.General.DatabaseUnavailable));
     }
 
     public boolean haveClosingTransaction() {

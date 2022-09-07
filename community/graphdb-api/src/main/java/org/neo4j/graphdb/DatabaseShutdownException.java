@@ -34,6 +34,6 @@ public class DatabaseShutdownException extends RuntimeException implements Statu
 
     @Override
     public Status status() {
-        return Status.Database.DatabaseUnavailable;
+        return Status.General.DatabaseUnavailable;
     }
 }

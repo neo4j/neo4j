@@ -170,7 +170,7 @@ public class FabricLocalExecutor {
                 }
                 return facade;
             } catch (UnavailableException e) {
-                throw new FabricException(Status.Database.DatabaseUnavailable, e);
+                throw new FabricException(Status.General.DatabaseUnavailable, e);
             }
         }
 

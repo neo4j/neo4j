@@ -40,7 +40,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTMap;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
-import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
+import static org.neo4j.kernel.api.exceptions.Status.General.DatabaseUnavailable;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.procedure.builtin.routing.AbstractRoutingProcedureInstaller.DEFAULT_NAMESPACE;
 import static org.neo4j.procedure.builtin.routing.GetRoutingTableProcedure.ADDRESS_CONTEXT_KEY;

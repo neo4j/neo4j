@@ -26,7 +26,6 @@ org.neo4j.kernel.api.exceptions.Status.Code::toString() java.lang.String public
 org.neo4j.kernel.api.exceptions.Status.Database public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Database> implements org.neo4j.kernel.api.exceptions.Status
 org.neo4j.kernel.api.exceptions.Status.Database::DatabaseLimitReached org.neo4j.kernel.api.exceptions.Status.Database public static final
 org.neo4j.kernel.api.exceptions.Status.Database::DatabaseNotFound org.neo4j.kernel.api.exceptions.Status.Database public static final
-org.neo4j.kernel.api.exceptions.Status.Database::DatabaseUnavailable org.neo4j.kernel.api.exceptions.Status.Database public static final
 org.neo4j.kernel.api.exceptions.Status.Database::ExistingAliasFound org.neo4j.kernel.api.exceptions.Status.Database public static final
 org.neo4j.kernel.api.exceptions.Status.Database::ExistingDatabaseFound org.neo4j.kernel.api.exceptions.Status.Database public static final
 org.neo4j.kernel.api.exceptions.Status.Database::HomeDatabaseNotFound org.neo4j.kernel.api.exceptions.Status.Database public static final
@@ -42,6 +41,7 @@ org.neo4j.kernel.api.exceptions.Status.Fabric::code() org.neo4j.kernel.api.excep
 org.neo4j.kernel.api.exceptions.Status.Fabric::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Fabric public static
 org.neo4j.kernel.api.exceptions.Status.Fabric::values() org.neo4j.kernel.api.exceptions.Status.Fabric[] public static
 org.neo4j.kernel.api.exceptions.Status.General public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.General> implements org.neo4j.kernel.api.exceptions.Status
+org.neo4j.kernel.api.exceptions.Status.General::DatabaseUnavailable org.neo4j.kernel.api.exceptions.Status.General public static final
 org.neo4j.kernel.api.exceptions.Status.General::ForbiddenOnReadOnlyDatabase org.neo4j.kernel.api.exceptions.Status.General public static final
 org.neo4j.kernel.api.exceptions.Status.General::IndexCorruptionDetected org.neo4j.kernel.api.exceptions.Status.General public static final
 org.neo4j.kernel.api.exceptions.Status.General::InvalidArguments org.neo4j.kernel.api.exceptions.Status.General public static final

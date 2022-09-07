@@ -56,7 +56,7 @@ class ErrorTest {
         Error error = Error.from(ex);
 
         // Then
-        assertThat(error.status()).isEqualTo(Status.Database.DatabaseUnavailable);
+        assertThat(error.status()).isEqualTo(Status.General.DatabaseUnavailable);
         assertThat(error.cause()).isEqualTo(ex);
     }
 }
