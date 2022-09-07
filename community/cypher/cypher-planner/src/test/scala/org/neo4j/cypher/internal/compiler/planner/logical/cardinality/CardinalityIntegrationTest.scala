@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.planner.logical
+package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CardinalityModelIntegrationTest
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
@@ -34,7 +33,7 @@ import org.neo4j.graphdb.schema.IndexType
 
 import scala.math.sqrt
 
-abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with CardinalityModelIntegrationTest {
+abstract class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrationTestSupport {
 
   val allNodes = 733.0
   val personCount = 324.0
@@ -721,6 +720,6 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
   }
 }
 
-class RangeStatisticsBackedCardinalityModelTest extends StatisticsBackedCardinalityModelTest {
+class RangeCardinalityIntegrationTest extends CardinalityIntegrationTest {
   override def getIndexType = IndexType.RANGE
 }

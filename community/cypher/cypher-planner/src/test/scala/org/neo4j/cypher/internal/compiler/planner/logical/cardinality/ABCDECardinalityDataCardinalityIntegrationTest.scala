@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
+package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ABCDECardinalityData
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.PatternRelationshipMultiplierCalculator.uniquenessSelectivityForNRels
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Argument
@@ -37,7 +36,7 @@ import org.neo4j.graphdb.schema.IndexType
 import scala.math.cbrt
 import scala.math.sqrt
 
-abstract class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite with ABCDECardinalityData
+abstract class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with ABCDECardinalityData
     with TestName {
 
   test("MATCH (n)") {
@@ -821,6 +820,6 @@ abstract class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFu
     planShouldHaveCardinality(testName, findPlanId, expected)
 }
 
-class RangeAssumeIndependenceQueryGraphCardinalityModelTest extends AssumeIndependenceQueryGraphCardinalityModelTest {
+class RangeABCDECardinalityDataCardinalityIntegrationTest extends ABCDECardinalityDataCardinalityIntegrationTest {
   override def getIndexType: IndexType = IndexType.RANGE
 }

@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-trait CardinalityModelIntegrationTest extends StatisticsBackedLogicalPlanningSupport {
+trait CardinalityIntegrationTestSupport extends StatisticsBackedLogicalPlanningSupport {
   self: CypherFunSuite =>
 
   val DEFAULT_PREDICATE_SELECTIVITY: Double = PlannerDefaults.DEFAULT_PREDICATE_SELECTIVITY.factor

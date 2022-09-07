@@ -25,7 +25,7 @@ import org.neo4j.graphdb.schema.IndexType
 
 import scala.util.Random
 
-trait ABCDECardinalityData extends CardinalityModelIntegrationTest {
+trait ABCDECardinalityData extends CardinalityIntegrationTestSupport {
   self: CypherFunSuite =>
 
   /**
