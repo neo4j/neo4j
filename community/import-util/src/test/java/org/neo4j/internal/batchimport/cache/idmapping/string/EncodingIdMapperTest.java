@@ -393,7 +393,7 @@ public class EncodingIdMapperTest {
         for (int i = 0; i < groupCount; i++) {
             groups.getOrCreate("Group " + i);
         }
-        IdMapper mapper = mapper(
+        var mapper = mapper(
                 encoder,
                 Radix.LONG,
                 EncodingIdMapper.NO_MONITOR,
@@ -432,7 +432,13 @@ public class EncodingIdMapperTest {
         for (long nodeId = 0; nodeId < count; nodeId++) {
             var groupId = nodeIdToGroupId.apply(nodeId);
             var inputId = ids.lookupProperty(nodeId);
-            assertEquals(nodeId, mapper.get(inputId, groups.get(groupId)));
+            var actual = mapper.get(inputId, groups.get(groupId));
+            if (actual != nodeId) {
+                // TODO there's an issue which is very hard to reproduce, so dumping debug information
+                //  in order to help investigation
+                mapper.dumpState(System.err);
+            }
+            assertEquals(nodeId, actual);
         }
         verifyNoMoreInteractions(collector);
         assertFalse(mapper.leftOverDuplicateNodesIds().hasNext());
@@ -680,7 +686,7 @@ public class EncodingIdMapperTest {
                 INSTANCE);
     }
 
-    private IdMapper mapper(
+    private EncodingIdMapper mapper(
             Encoder encoder,
             Factory<Radix> radix,
             EncodingIdMapper.Monitor monitor,

@@ -25,9 +25,13 @@ import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static org.neo4j.internal.batchimport.cache.idmapping.string.ParallelSort.DEFAULT;
 
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.function.LongFunction;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.neo4j.collection.PrimitiveLongCollections;
@@ -47,8 +51,10 @@ import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * Maps arbitrary values to long ids. The values can be {@link #put(Object, long, Group) added} in any order,
@@ -864,5 +870,54 @@ public class EncodingIdMapper implements IdMapper {
                 return false;
             }
         };
+    }
+
+    /**
+     * Simple method for dumping state of this instance to aid in investigation for flaky test
+     */
+    @VisibleForTesting
+    public void dumpState(PrintStream out) {
+        try {
+            JSONObject jsonObject = new JSONObject();
+            long[] dataCacheArray = new long[toIntExact(highestSetIndex + 1)];
+            long[] groupCacheArray = new long[dataCacheArray.length];
+            long[] trackerCacheArray = new long[dataCacheArray.length];
+            for (int i = 0; i < dataCacheArray.length; i++) {
+                dataCacheArray[i] = dataCache.get(i);
+                groupCacheArray[i] = groupCache.get(i);
+                trackerCacheArray[i] = trackerCache.get(i);
+            }
+            jsonObject.put("dataCache", asJsonArray(dataCacheArray));
+            jsonObject.put("groupCache", asJsonArray(groupCacheArray));
+            jsonObject.put("trackerCache", asJsonArray(trackerCacheArray));
+            jsonObject.put("highestSetIndex", highestSetIndex);
+            jsonObject.put("highestSetTrackerIndex", highestSetTrackerIndex);
+            jsonObject.put("processorsForParallelWork", processorsForParallelWork);
+            jsonObject.put(
+                    "sortBuckets",
+                    asJsonArray(
+                            Arrays.stream(sortBuckets).map(SortBucket::toString).toArray(String[]::new)));
+            jsonObject.put("numberOfCollisions", numberOfCollisions);
+            out.println(jsonObject);
+        } catch (JSONException e) {
+            out.println("Couldn't create JSON data of " + getClass().getSimpleName() + " due to "
+                    + Exceptions.stringify(e));
+        }
+    }
+
+    private JSONArray asJsonArray(long[] data) throws JSONException {
+        var jsonArray = new JSONArray(data.length);
+        for (int i = 0; i < data.length; i++) {
+            jsonArray.put(i, data[i]);
+        }
+        return jsonArray;
+    }
+
+    private JSONArray asJsonArray(Object[] data) throws JSONException {
+        var jsonArray = new JSONArray(data.length);
+        for (int i = 0; i < data.length; i++) {
+            jsonArray.put(i, data[i]);
+        }
+        return jsonArray;
     }
 }
