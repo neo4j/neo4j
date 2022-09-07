@@ -38,6 +38,7 @@ public class WindowsServiceCommand {
     @CommandLine.Option(
             names = {"-h", "--help"},
             usageHelp = true,
+            fallbackValue = "true",
             description = "Show this help message and exit.")
     private boolean helpRequested;
 

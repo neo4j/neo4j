@@ -54,6 +54,7 @@ public class SetInitialPasswordCommand extends AbstractAdminCommand implements P
             paramLabel = "true|false",
             showDefaultValue = ALWAYS,
             defaultValue = "false",
+            fallbackValue = "true",
             description = "Require the user to change their password on first login.")
     private boolean changeRequired;
 

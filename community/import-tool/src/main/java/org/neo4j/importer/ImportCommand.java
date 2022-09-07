@@ -140,6 +140,7 @@ public class ImportCommand {
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
                 paramLabel = "true|false",
+                fallbackValue = "true",
                 description = "If un-specified columns should be ignored during the import.")
         private boolean ignoreExtraColumns;
 
@@ -148,6 +149,7 @@ public class ImportCommand {
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
                 paramLabel = "true|false",
+                fallbackValue = "true",
                 description =
                         "Whether or not fields from input source can span multiple lines, i.e. contain newline characters.")
         private boolean multilineFields = DEFAULT_CSV_CONFIG.multilineFields();
@@ -157,6 +159,7 @@ public class ImportCommand {
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
                 paramLabel = "true|false",
+                fallbackValue = "true",
                 description =
                         "Whether or not empty string fields, i.e. \"\" from input source are ignored, i.e. treated as null.")
         private boolean ignoreEmptyStrings = DEFAULT_CSV_CONFIG.emptyQuotedStringsAsNull();
@@ -166,6 +169,7 @@ public class ImportCommand {
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
                 paramLabel = "true|false",
+                fallbackValue = "true",
                 description = "Whether or not strings should be trimmed for whitespaces.")
         private boolean trimStrings = DEFAULT_CSV_CONFIG.trimStrings();
 
@@ -174,6 +178,7 @@ public class ImportCommand {
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
                 paramLabel = "true|false",
+                fallbackValue = "true",
                 description = "Whether or not backslash-escaped quote e.g. \\\" is interpreted as inner quote.")
         private boolean legacyStyleQuoting = DEFAULT_CSV_CONFIG.legacyStyleQuoting();
 
@@ -253,6 +258,7 @@ public class ImportCommand {
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
                 paramLabel = "true|false",
+                fallbackValue = "true",
                 description = "Whether or not to skip logging bad entries detected during import.")
         private boolean skipBadEntriesLogging;
 
@@ -261,6 +267,7 @@ public class ImportCommand {
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
                 paramLabel = "true|false",
+                fallbackValue = "true",
                 description =
                         "Whether or not to skip importing relationships that refers to missing node ids, i.e. either start or end node id/group referring "
                                 + "to node that wasn't specified by the node input data. Skipped relationships will be logged, containing at most number of entities "
@@ -272,6 +279,7 @@ public class ImportCommand {
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
                 paramLabel = "true|false",
+                fallbackValue = "true",
                 description =
                         "Whether or not to skip importing nodes that have the same id/group. In the event of multiple nodes within the same group having "
                                 + "the same id, the first encountered will be imported whereas consecutive such nodes will be skipped. Skipped nodes will be logged, "
@@ -283,6 +291,7 @@ public class ImportCommand {
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
                 paramLabel = "true|false",
+                fallbackValue = "true",
                 description =
                         "Whether or not to normalize property types to Cypher types, e.g. 'int' becomes 'long' and 'float' becomes 'double'")
         private boolean normalizeTypes = true;
@@ -316,6 +325,7 @@ public class ImportCommand {
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
                 paramLabel = "true|false",
+                fallbackValue = "true",
                 description =
                         "Automatically skip accidental header lines in subsequent files in file groups with more than one file")
         private boolean autoSkipHeaders;
@@ -500,6 +510,7 @@ public class ImportCommand {
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
                 paramLabel = "true|false",
+                fallbackValue = "true",
                 description = "Delete any existing database files prior to the import.")
         private boolean overwriteDestination;
 

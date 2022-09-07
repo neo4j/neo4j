@@ -103,6 +103,7 @@ public class MemoryRecommendationsCommand extends AbstractAdminCommand {
 
     @Option(
             names = "--docker",
+            fallbackValue = "true",
             description = "The recommended memory settings are produced in the form of environment variables "
                     + "that can be directly passed to Neo4j docker container. The recommended use is to save "
                     + "the generated environment variables to a file and pass the file to a docker container "

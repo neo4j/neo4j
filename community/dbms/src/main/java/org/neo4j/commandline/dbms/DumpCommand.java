@@ -98,6 +98,7 @@ public class DumpCommand extends AbstractAdminCommand {
             names = "--overwrite-destination",
             arity = "0..1",
             paramLabel = "true|false",
+            fallbackValue = "true",
             showDefaultValue = ALWAYS,
             description = "Overwrite any existing dump file in the destination folder.")
     private boolean overwriteDestination;

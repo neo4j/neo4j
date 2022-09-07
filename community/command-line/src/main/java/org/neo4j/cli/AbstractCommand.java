@@ -44,10 +44,14 @@ public abstract class AbstractCommand implements Callable<Integer> {
     @Option(
             names = {"-h", "--help"},
             usageHelp = true,
+            fallbackValue = "true",
             description = "Show this help message and exit.")
     private boolean helpRequested;
 
-    @Option(names = "--expand-commands", description = "Allow command expansion in config value evaluation.")
+    @Option(
+            names = "--expand-commands",
+            fallbackValue = "true",
+            description = "Allow command expansion in config value evaluation.")
     protected boolean allowCommandExpansion;
 
     protected final ExecutionContext ctx;

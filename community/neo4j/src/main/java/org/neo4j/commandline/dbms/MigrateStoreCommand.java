@@ -124,6 +124,7 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
     @Option(
             names = "--force-btree-indexes-to-range",
             hidden = true,
+            fallbackValue = "true",
             description = "Special option for turning all btree indexes/constraints into range")
     private boolean forceBtreeToRange;
 

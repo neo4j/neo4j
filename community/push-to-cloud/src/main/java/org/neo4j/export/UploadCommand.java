@@ -89,6 +89,7 @@ public class UploadCommand extends AbstractAdminCommand {
             names = "--overwrite-destination",
             arity = "0..1",
             paramLabel = "true|false",
+            fallbackValue = "true",
             showDefaultValue = CommandLine.Help.Visibility.ALWAYS,
             description = "Overwrite the data in the target database.")
     private boolean overwrite;

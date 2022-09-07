@@ -75,6 +75,7 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
             defaultValue = "false",
             arity = "0..1",
             paramLabel = "true|false",
+            fallbackValue = "true",
             showDefaultValue = ALWAYS,
             description = "Ignore disk full warning")
     private boolean ignoreDiskSpaceCheck;

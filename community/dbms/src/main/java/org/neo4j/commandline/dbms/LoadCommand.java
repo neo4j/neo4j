@@ -87,12 +87,14 @@ public class LoadCommand extends AbstractAdminCommand {
             names = "--overwrite-destination",
             arity = "0..1",
             paramLabel = "true|false",
+            fallbackValue = "true",
             showDefaultValue = ALWAYS,
             description = "If an existing database should be replaced.")
     private boolean force;
 
     @Option(
             names = "--info",
+            fallbackValue = "true",
             description =
                     "Print meta-data information about the archive file, instead of loading the contained database.")
     private boolean info;
