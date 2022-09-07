@@ -310,6 +310,16 @@ case class ShowDatabasesExecutionPlanner(
           PrivilegeAction.SET_DATABASE_ACCESS,
           AdminActionOnResource.DatabaseScope.ALL,
           Segment.ALL
+        )).allowsAccess() ||
+        securityContext.allowsAdminAction(new AdminActionOnResource(
+          PrivilegeAction.CREATE_COMPOSITE_DATABASE,
+          AdminActionOnResource.DatabaseScope.ALL,
+          Segment.ALL
+        )).allowsAccess() ||
+        securityContext.allowsAdminAction(new AdminActionOnResource(
+          PrivilegeAction.DROP_COMPOSITE_DATABASE,
+          AdminActionOnResource.DatabaseScope.ALL,
+          Segment.ALL
         )).allowsAccess()
     val roles = securityContext.mode().roles()
 
