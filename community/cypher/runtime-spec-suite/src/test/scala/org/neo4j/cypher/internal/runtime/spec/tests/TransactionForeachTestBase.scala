@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.Prober.Probe
-import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
@@ -143,15 +142,6 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     nodes.size shouldBe 2
   }
 
-  def inputStreamWithSideEffectInNewTxn(
-    inputValues: InputDataStream,
-    sideEffect: (InternalTransaction, Long) => Unit
-  ): InputDataStream = {
-    new OnNextInputDataStream(inputValues) {
-      override protected def onNext(offset: Long): Unit = withNewTx(sideEffect(_, offset))
-    }
-  }
-
   test("should create data in different transactions when using transactionForeach") {
     val numberOfIterations = 30
     val inputRows = (0 until numberOfIterations).map { i =>
@@ -163,10 +153,17 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       queryStatistics.getLabelsAdded shouldEqual 1
     })
 
+    var committedCount = 0L
+    val txProbe = txAssertionProbe(tx => {
+      Iterables.count(tx.getAllNodes) shouldEqual committedCount
+      committedCount += 1
+    })
+
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .transactionForeach(1)
       .|.emptyResult()
+      .|.prober(txProbe)
       .|.prober(probe)
       .|.create(createNode("n", "N"))
       .|.argument()
@@ -194,10 +191,21 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       queryStatistics.getLabelsAdded shouldEqual batchSize
     })
 
+    var committedCount = 0L
+    var inputRow = 0L
+    val txProbe = txAssertionProbe(tx => {
+      Iterables.count(tx.getAllNodes) shouldEqual committedCount
+      inputRow += 1
+      if (inputRow % batchSize == 0) {
+        committedCount = inputRow
+      }
+    })
+
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .transactionForeach(batchSize)
       .|.emptyResult()
+      .|.prober(txProbe)
       .|.prober(probe)
       .|.create(createNode("n", "N"))
       .|.argument()
@@ -226,10 +234,13 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Iterables.count(tx.getAllNodes) shouldEqual 0
     })
 
+    val txProbe = txAssertionProbe(tx => Iterables.count(tx.getAllNodes) shouldEqual 0)
+
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .transactionForeach(batchSize)
       .|.emptyResult()
+      .|.prober(txProbe)
       .|.prober(probe)
       .|.create(createNode("n", "N"))
       .|.argument()
@@ -251,22 +262,28 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
+    var nodesCreated = 0
+    val probe = newProbe(queryStatistics => {
+      nodesCreated += 1
+      queryStatistics.getNodesCreated shouldEqual nodesCreated
+      queryStatistics.getLabelsAdded shouldEqual nodesCreated
+    })
+
+    val txProbe = txAssertionProbe(tx => Iterables.count(tx.getAllNodes) shouldEqual 0)
+
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .subqueryForeach()
       .|.emptyResult()
+      .|.prober(txProbe)
+      .|.prober(probe)
       .|.create(createNode("n", "N"))
       .|.argument()
       .input(variables = Seq("x"))
       .build(readOnly = false)
 
-    val stream = inputStreamWithSideEffectInNewTxn(
-      inputValues(inputRows: _*).stream(),
-      (tx, _) => Iterables.count(tx.getAllNodes) shouldEqual 0
-    )
-
     // then
-    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, stream)
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, inputValues(inputRows: _*).stream())
 
     consume(runtimeResult)
 
@@ -292,10 +309,22 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       queryStatistics.getLabelsAdded shouldEqual _nodeCount
     })
 
+    var committedCount = 1L
+    var rhsRowsRemaining = 1L // initial node count
+    val txProbe = txAssertionProbe(tx => {
+      Iterables.count(tx.getAllNodes) shouldEqual committedCount
+      rhsRowsRemaining -= 1
+      if (rhsRowsRemaining == 0) {
+        committedCount *= 2
+        rhsRowsRemaining = committedCount
+      }
+    })
+
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .transactionForeach(1)
       .|.emptyResult()
+      .|.prober(txProbe)
       .|.prober(probe)
       .|.create(createNode("n", "N"))
       .|.nodeByLabelScan("y", "N")
@@ -332,10 +361,26 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       queryStatistics.getLabelsAdded shouldEqual nodeCount - _nodeCount
     })
 
+    var committedCount = 1L
+    var inputRow = 0L
+    var rhsRowsRemaining = Math.pow(2, inputRow).toLong
+    val txProbe = txAssertionProbe(tx => {
+      Iterables.count(tx.getAllNodes) shouldEqual committedCount
+      rhsRowsRemaining -= 1
+      if (rhsRowsRemaining == 0) {
+        inputRow += 1
+        rhsRowsRemaining = Math.pow(2, inputRow).toLong
+        if (inputRow % batchSize == 0) {
+          committedCount = Math.pow(2, inputRow).toLong
+        }
+      }
+    })
+
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .transactionForeach(batchSize)
       .|.emptyResult()
+      .|.prober(txProbe)
       .|.prober(probe)
       .|.create(createNode("n", "N"))
       .|.nodeByLabelScan("y", "N")
@@ -372,10 +417,22 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       queryStatistics.getLabelsAdded shouldEqual _nodeCount
     })
 
+    var committedCount = 1L
+    var rhsRowsRemaining = 1L // initial node count
+    val txProbe = txAssertionProbe(tx => {
+      Iterables.count(tx.getAllNodes) shouldEqual committedCount
+      rhsRowsRemaining -= 1
+      if (rhsRowsRemaining == 0) {
+        committedCount *= 2
+        rhsRowsRemaining = committedCount
+      }
+    })
+
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .transactionForeach(1)
       .|.emptyResult()
+      .|.prober(txProbe)
       .|.prober(probe)
       .|.create(createNodeWithProperties("b", Seq("Label"), "{prop: 2}"))
       .|.nodeIndexOperator("a:Label(prop=2)")
@@ -411,16 +468,31 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       queryStatistics.getLabelsAdded shouldEqual _nodeCount
     })
 
+    // assertion assumes scheduling/execution order
+    var committedCount = 1L
+    var rhsRowsRemaining = 1L // initial node count
+    val txProbe = txAssertionProbe(tx => {
+      val actual = Iterables.count(tx.getAllNodes)
+      actual shouldEqual committedCount
+      rhsRowsRemaining -= 1
+      if (rhsRowsRemaining == 0) {
+        committedCount *= 2
+        rhsRowsRemaining = committedCount
+      }
+    })
+
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .transactionForeach(1)
       .|.emptyResult()
+      .|.prober(txProbe)
       .|.prober(probe)
       .|.create(createNode("n", "N"))
       .|.nodeByLabelScan("y", "N")
       .eager()
       .transactionForeach(1)
       .|.emptyResult()
+      .|.prober(txProbe)
       .|.prober(probe)
       .|.create(createNode("n", "N"))
       .|.nodeByLabelScan("y", "N")
@@ -728,16 +800,16 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       n.setProperty("prop", 1L)
       val m = runtimeTestSupport.tx.createNode()
       m.setProperty("prop", 1L)
-      Seq(n, m)
+      Seq(m, n)
     }
 
     var x = 0
-    val probe = newProbe(_ => {
+    val probe = txAssertionProbe(tx => {
       x match {
         case 0 =>
-          runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toSet shouldEqual Set(1L, 2L)
+          checkExternalAndRuntimeNodes(tx, runtimeTestSupport, 1L)
         case 1 =>
-          runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toSet shouldEqual Set(2L, 2L)
+          checkExternalAndRuntimeNodes(tx, runtimeTestSupport, 2L)
       }
       x += 1
     })
@@ -771,16 +843,16 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       r.setProperty("prop", 1L)
       val s = n.createRelationshipTo(m, RelationshipType.withName("R"))
       s.setProperty("prop", 1L)
-      Seq(r, s)
+      Seq(s, r)
     }
 
     var x = 0
-    val probe = newProbe(_ => {
+    val probe = txAssertionProbe(tx => {
       x match {
         case 0 =>
-          runtimeTestSupport.tx.getAllRelationships.asScala.map(_.getProperty("prop")).toSet shouldEqual Set(1L, 2L)
+          checkExternalAndRuntimeRelationships(tx, runtimeTestSupport, 1L)
         case 1 =>
-          runtimeTestSupport.tx.getAllRelationships.asScala.map(_.getProperty("prop")).toSet shouldEqual Set(2L, 2L)
+          checkExternalAndRuntimeRelationships(tx, runtimeTestSupport, 2L)
       }
       x += 1
     })
@@ -815,16 +887,16 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       val m = runtimeTestSupport.tx.createNode()
       m.setProperty("prop", 1L)
       val q = Paths.singleNodePath(m)
-      Seq(p, q)
+      Seq(q, p)
     }
 
     var x = 0
-    val probe = newProbe(_ => {
+    val probe = txAssertionProbe(tx => {
       x match {
         case 0 =>
-          runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toSet shouldEqual Set(1L, 2L)
+          checkExternalAndRuntimeNodes(tx, runtimeTestSupport, 1L)
         case 1 =>
-          runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toSet shouldEqual Set(2L, 2L)
+          checkExternalAndRuntimeNodes(tx, runtimeTestSupport, 2L)
       }
       x += 1
     })
@@ -857,16 +929,16 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       n.setProperty("prop", 1L)
       val m = runtimeTestSupport.tx.createNode()
       m.setProperty("prop", 1L)
-      Seq(Array[Any](Array(n)), Array[Any](Array(m)))
+      Seq(Array[Any](Array(m)), Array[Any](Array(n)))
     }
 
     var x = 0
-    val probe = newProbe(_ => {
+    val probe = txAssertionProbe(tx => {
       x match {
         case 0 =>
-          runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toSet shouldEqual Set(1L, 2L)
+          checkExternalAndRuntimeNodes(tx, runtimeTestSupport, 1L)
         case 1 =>
-          runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toSet shouldEqual Set(2L, 2L)
+          checkExternalAndRuntimeNodes(tx, runtimeTestSupport, 2L)
       }
       x += 1
     })
@@ -899,16 +971,16 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       n.setProperty("prop", 1L)
       val m = runtimeTestSupport.tx.createNode()
       m.setProperty("prop", 1L)
-      Seq(n, m)
+      Seq(m, n)
     }
 
     var x = 0
-    val probe = newProbe(_ => {
+    val probe = txAssertionProbe(tx => {
       x match {
         case 0 =>
-          runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toSet shouldEqual Set(1L, 2L)
+          checkExternalAndRuntimeNodes(tx, runtimeTestSupport, 1L)
         case 1 =>
-          runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toSet shouldEqual Set(2L, 2L)
+          checkExternalAndRuntimeNodes(tx, runtimeTestSupport, 2L)
       }
       x += 1
     })
@@ -937,6 +1009,56 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(Seq(2L, 2L, 2L, 2L)))
+  }
+
+  private def checkExternalAndRuntimeNodes(
+    externalTx: InternalTransaction,
+    runtimeTestSupport: RuntimeTestSupport[CONTEXT],
+    firstItemVal: Long
+  ): Unit = {
+    val extAllNodes = externalTx.getAllNodes
+    try {
+      val runtimeAllNodes = runtimeTestSupport.tx.getAllNodes
+      try {
+        val externallyVisible = extAllNodes.asScala.map(_.getProperty("prop")).toList
+        val parentVisible = runtimeAllNodes.asScala.map(_.getProperty("prop")).toList
+        externallyVisible shouldEqual List(firstItemVal, 2L)
+        parentVisible shouldEqual List(firstItemVal, 2L)
+      } finally {
+        runtimeAllNodes.close()
+      }
+    } finally {
+      extAllNodes.close()
+    }
+  }
+
+  private def checkExternalAndRuntimeRelationships(
+    externalTx: InternalTransaction,
+    runtimeTestSupport: RuntimeTestSupport[CONTEXT],
+    firstItemVal: Long
+  ): Unit = {
+    val extAllRels = externalTx.getAllRelationships
+    try {
+      val runtimeAllRels = runtimeTestSupport.tx.getAllRelationships
+      try {
+        val externallyVisible = extAllRels.asScala.map(_.getProperty("prop")).toList
+        val parentVisible = runtimeAllRels.asScala.map(_.getProperty("prop")).toList
+        externallyVisible shouldEqual List(firstItemVal, 2L)
+        parentVisible shouldEqual List(firstItemVal, 2L)
+      } finally {
+        runtimeAllRels.close()
+      }
+    } finally {
+      extAllRels.close()
+    }
+  }
+
+  protected def txAssertionProbe(assertion: InternalTransaction => Unit): Prober.Probe = {
+    new Probe {
+      override def onRow(row: AnyRef, queryStatistics: QueryStatistics, transactionsCommitted: Int): Unit = {
+        withNewTx(assertion(_))
+      }
+    }
   }
 
   protected def newProbe(assertion: QueryStatistics => Unit): Prober.Probe = {
