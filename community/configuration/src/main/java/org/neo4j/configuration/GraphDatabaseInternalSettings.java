@@ -440,6 +440,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.dbms.block_remote_alias", BOOL, false).build();
 
     @Internal
+    @Description("Enable or disable the ability to perform server management.")
+    public static final Setting<Boolean> block_server_management =
+            newBuilder("internal.dbms.block_server_management", BOOL, false).build();
+
+    @Internal
     @Description("Enable or disable the ability to execute the `dbms.upgrade` procedure.")
     public static final Setting<Boolean> block_upgrade_procedures =
             newBuilder("internal.dbms.upgrade_restriction_enabled", BOOL, false).build();

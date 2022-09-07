@@ -942,15 +942,18 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           ))
 
       case c @ EnableServer(name, options) =>
-        val assertAllowed = plans.AssertAllowedDbmsActions(ServerManagementAction)
+        val checkBlocked = plans.AssertNotBlockedDatabaseManagement(ServerManagementAction)
+        val assertAllowed = plans.AssertAllowedDbmsActions(checkBlocked, ServerManagementAction)
         Some(plans.LogSystemCommand(plans.EnableServer(assertAllowed, name, options), prettifier.asString(c)))
 
       case c @ RenameServer(name, newName) =>
-        val assertAllowed = plans.AssertAllowedDbmsActions(ServerManagementAction)
+        val checkBlocked = plans.AssertNotBlockedDatabaseManagement(ServerManagementAction)
+        val assertAllowed = plans.AssertAllowedDbmsActions(checkBlocked, ServerManagementAction)
         Some(plans.LogSystemCommand(plans.RenameServer(assertAllowed, name, newName), prettifier.asString(c)))
 
       case c @ DropServer(name) =>
-        val assertAllowed = plans.AssertAllowedDbmsActions(ServerManagementAction)
+        val checkBlocked = plans.AssertNotBlockedDatabaseManagement(ServerManagementAction)
+        val assertAllowed = plans.AssertAllowedDbmsActions(checkBlocked, ServerManagementAction)
         Some(plans.LogSystemCommand(plans.DropServer(assertAllowed, name), prettifier.asString(c)))
 
       case showServers: ShowServers =>
@@ -964,8 +967,11 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         ))
 
       case c @ DeallocateServers(names) =>
+        val checkBlocked = plans.AssertNotBlockedDatabaseManagement(ServerManagementAction)
         val plan = names.foldLeft(
-          plans.AssertAllowedDbmsActions(ServerManagementAction).asInstanceOf[plans.AdministrationCommandLogicalPlan]
+          plans.AssertAllowedDbmsActions(checkBlocked, ServerManagementAction).asInstanceOf[
+            plans.AdministrationCommandLogicalPlan
+          ]
         ) {
           case (source, server) => plans.DeallocateServer(source, server)
         }
