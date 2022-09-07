@@ -40,6 +40,7 @@ import org.eclipse.collections.impl.factory.Sets;
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -212,7 +213,7 @@ class TextIndexPopulatingUpdaterIT {
     private IndexPopulator getPopulator(TextIndexProvider provider, SchemaDescriptorSupplier supplier)
             throws Exception {
         var samplingConfig = new IndexSamplingConfig(Config.defaults());
-        var index = forSchema(supplier.schema(), TextIndexProvider.DESCRIPTOR)
+        var index = forSchema(supplier.schema(), getIndexProviderDescriptor())
                 .withName("some_name")
                 .materialise(1);
         var bufferFactory = heapBufferFactory((int) kibiBytes(100));
@@ -220,6 +221,10 @@ class TextIndexPopulatingUpdaterIT {
                 index, samplingConfig, bufferFactory, INSTANCE, mock(TokenNameLookup.class), Sets.immutable.empty());
         populator.create();
         return populator;
+    }
+
+    protected IndexProviderDescriptor getIndexProviderDescriptor() {
+        return TextIndexProvider.DESCRIPTOR;
     }
 
     private TextIndexProvider createIndexProvider() {

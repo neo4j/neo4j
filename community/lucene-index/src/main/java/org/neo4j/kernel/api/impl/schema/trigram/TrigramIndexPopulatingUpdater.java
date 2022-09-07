@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.schema.trigram;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Arrays;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
@@ -64,8 +63,6 @@ class TrigramIndexPopulatingUpdater implements IndexUpdater {
                         TrigramDocumentStructure.newTermForChangeOrRemove(entityId),
                         TrigramDocumentStructure.createLuceneDocument(entityId, value));
                 case REMOVED -> writer.deleteDocuments(TrigramDocumentStructure.newTermForChangeOrRemove(entityId));
-                default -> throw new IllegalStateException(
-                        "Unknown update mode " + updateMode + " for values " + Arrays.toString(values));
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
