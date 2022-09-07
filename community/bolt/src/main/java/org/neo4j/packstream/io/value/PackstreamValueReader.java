@@ -67,11 +67,12 @@ public class PackstreamValueReader<CTX> {
     }
 
     private AnyValue doReadValue(Type type) throws PackstreamReaderException {
-        if (type == Type.STRUCT) {
-            return this.readStruct();
-        }
-
-        return this.doReadPrimitiveValue(type, -1);
+        return switch (type) {
+            case STRUCT -> this.readStruct();
+            case LIST -> this.readList();
+            case MAP -> this.readMap();
+            default -> this.doReadPrimitiveValue(type, -1);
+        };
     }
 
     /**

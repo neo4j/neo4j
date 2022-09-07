@@ -48,6 +48,8 @@ import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.virtual.ListValueBuilder;
+import org.neo4j.values.virtual.MapValueBuilder;
 
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
@@ -281,6 +283,28 @@ public class SupportedStructTypesV2IT {
         initConnection(connectionFactory);
 
         testSendingAndReceivingOfBoltV2Value(datetime(1899, 1, 1, 12, 12, 32, 0, ZoneOffset.ofHoursMinutes(-4, -15)));
+    }
+
+    @ParameterizedTest(name = "{displayName} {arguments}")
+    @MethodSource("factoryProvider")
+    public void shouldSendAndReceiveMapContainingStruct(TransportConnection.Factory connectionFactory)
+            throws Exception {
+        this.initConnection(connectionFactory);
+        var mapValueBuilder = new MapValueBuilder();
+        mapValueBuilder.add("foo", datetime(1899, 1, 1, 12, 12, 32, 0, ZoneOffset.ofHoursMinutes(-4, -15)));
+
+        testSendingAndReceivingOfBoltV2Value(mapValueBuilder.build());
+    }
+
+    @ParameterizedTest(name = "{displayName} {arguments}")
+    @MethodSource("factoryProvider")
+    public void shouldSendAndReceiveListContainingStruct(TransportConnection.Factory connectionFactory)
+            throws Exception {
+        this.initConnection(connectionFactory);
+        var listValueBuilder = ListValueBuilder.newListBuilder();
+        listValueBuilder.add(datetime(1899, 1, 1, 12, 12, 32, 0, ZoneOffset.ofHoursMinutes(-4, -15)));
+
+        testSendingAndReceivingOfBoltV2Value(listValueBuilder.build());
     }
 
     private <T extends AnyValue> void testSendingOfBoltV2Value(T value) throws Exception {
