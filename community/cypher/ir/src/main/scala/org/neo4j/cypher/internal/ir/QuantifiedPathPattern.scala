@@ -30,8 +30,8 @@ final case class QuantifiedPathPattern(
   rightBinding: EntityBinding,
   pattern: QueryGraph,
   repetition: Repetition,
-  nodeGroupVariables: Seq[EntityBinding],
-  relationshipGroupVariables: Seq[EntityBinding]
+  nodeGroupVariables: Set[EntityBinding],
+  relationshipGroupVariables: Set[EntityBinding]
 ) extends NodeConnection {
 
   override val left: String = leftBinding.outer
@@ -42,7 +42,7 @@ final case class QuantifiedPathPattern(
   override lazy val coveredIds: Set[String] = coveredNodeIds
 
   override def toString: String = {
-    s"QPP($leftBinding, $rightBinding, $pattern, $repetition)"
+    s"QPP($leftBinding, $rightBinding, $pattern, $repetition, $nodeGroupVariables, $relationshipGroupVariables)"
   }
 
   val dependencies: Set[String] = pattern.dependencies

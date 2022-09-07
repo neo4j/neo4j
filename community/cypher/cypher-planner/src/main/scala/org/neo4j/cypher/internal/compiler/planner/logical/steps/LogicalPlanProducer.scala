@@ -944,10 +944,10 @@ case class LogicalPlanProducer(
         innerEnd = endBinding.inner,
         groupNodes = pattern.nodeGroupVariables.map { case EntityBinding(inner, outer) =>
           GroupEntity(inner, outer)
-        }.toSet,
+        },
         groupRelationships = pattern.relationshipGroupVariables.map { case EntityBinding(inner, outer) =>
           GroupEntity(inner, outer)
-        }.toSet,
+        },
         allRelationships = pattern.pattern.patternRelationships.map(_.name),
         allRelationshipGroups = Set.empty
       ),

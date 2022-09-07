@@ -28,6 +28,8 @@ class VariableTest extends CypherFunSuite {
 
       override def copyId: LogicalVariable = ???
 
+      override def withPosition(position: InputPosition): LogicalVariable = ???
+
       override def renameId(newName: String): LogicalVariable = ???
 
       override def position: InputPosition = ???

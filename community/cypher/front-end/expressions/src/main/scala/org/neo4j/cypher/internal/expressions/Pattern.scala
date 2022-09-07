@@ -113,14 +113,27 @@ sealed trait PatternAtom extends ASTNode
 
 case class QuantifiedPath(
   part: PatternPart,
-  quantifier: GraphPatternQuantifier
+  quantifier: GraphPatternQuantifier,
+  groupVariables: Set[EntityBinding]
 )(val position: InputPosition)
     extends PathFactor with PatternAtom {
 
-  override def allVariables: Set[LogicalVariable] = part.allVariables
+  override def allVariables: Set[LogicalVariable] = groupVariables.map(_.outer)
 
   override def variable: Option[LogicalVariable] = None
 }
+
+object QuantifiedPath {
+
+  def apply(part: PatternPart, quantifier: GraphPatternQuantifier)(position: InputPosition): QuantifiedPath = {
+    val entityBindings = part.allVariables.map { innerVar =>
+      EntityBinding(innerVar.copyId, innerVar.withPosition(position))(position)
+    }
+    QuantifiedPath(part, quantifier, entityBindings)(position)
+  }
+}
+
+case class EntityBinding(inner: LogicalVariable, outer: LogicalVariable)(val position: InputPosition) extends ASTNode
 
 // We can currently parse these but not plan them. Therefore, we represent them in the AST but disallow them in semantic checking when concatenated and unwrap them otherwise.
 case class ParenthesizedPath(

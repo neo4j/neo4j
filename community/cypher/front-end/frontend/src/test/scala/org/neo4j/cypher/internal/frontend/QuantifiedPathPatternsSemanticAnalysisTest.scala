@@ -64,51 +64,53 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
   }
 
   test("MATCH (p = (a)-[]->(b))+ RETURN p") {
-    val result = runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
-    result.errors shouldBe empty
-    val innerP = Variable("p")(InputPosition(7, 1, 8))
-    result.semanticTable.types(innerP).specified shouldBe CTPath.invariant
-    val outerP = Variable("p")(InputPosition(32, 1, 33))
-    result.semanticTable.types(outerP).specified shouldBe CTList(CTPath).invariant
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+      "Assigning a path in a quantified path pattern is not yet supported."
+    )
   }
 
   test("MATCH (p = (a)--(b))+ (p = (c)--(d))+ RETURN p") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "The variable `p` occurs in multiple quantified path patterns and needs to be renamed."
+      "Assigning a path in a quantified path pattern is not yet supported.",
+      "Assigning a path in a quantified path pattern is not yet supported.",
+      "Variable `p` already declared"
     )
   }
 
   test("MATCH (p = (a)--(b))+ (p = (c)--(d)) RETURN p") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages.toSet shouldEqual Set(
-      // this is the error message that we ultimately expect
-      "The variable `p` occurs both inside and outside a quantified path pattern and needs to be renamed.",
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+      "Assigning a path in a quantified path pattern is not yet supported.",
+      "Type mismatch: p defined with conflicting type List<T> (expected Path)",
       "Sub-path assignment is currently not supported outside quantified path patterns."
     )
   }
 
   test("MATCH (p = (a)--(b))+ MATCH (p = (c)--(d))+ RETURN p") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "The variable `p` occurs in multiple quantified path patterns and needs to be renamed."
+      "Assigning a path in a quantified path pattern is not yet supported.",
+      "Assigning a path in a quantified path pattern is not yet supported.",
+      "Variable `p` already declared"
     )
   }
 
   test("MATCH p = (p = (a)--(b))+ (c)--(d) RETURN p") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages.toSet shouldEqual Set(
-      // this is the error message that we ultimately expect
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+      "Assigning a path in a quantified path pattern is not yet supported.",
       "Variable `p` already declared",
-      "Assigning a path with a quantified path patterns is not yet supported."
+      "Assigning a path with a quantified path pattern is not yet supported."
     )
   }
 
   // nested shortest path
   test("MATCH (p = shortestPath((a)-[]->(b)))+ RETURN p") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+      "Assigning a path in a quantified path pattern is not yet supported.",
       "shortestPath is only allowed as a top-level element and not inside a quantified path pattern"
     )
   }
 
   test("MATCH (shortestPath((a)-[]->(b))) RETURN count(*)") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages.toSet shouldEqual Set(
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       // this is the error message that we ultimately expect
       "shortestPath is only allowed as a top-level element and not inside a parenthesized path pattern"
     )
@@ -189,7 +191,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
   }
 
   test("MATCH ((n) (m)){1, 5} RETURN count(*)") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages.toSet shouldEqual Set(
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       // this is the error message that we ultimately expect
       """A quantified path pattern needs to have at least one relationship.
         |In this case, the quantified path pattern ((n) (m)){1, 5} consists of only nodes.""".stripMargin,
@@ -239,39 +241,76 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
 
   test("MATCH ((a)-->(b))+ ((b)-->(c))+ RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "The variable `b` occurs in multiple quantified path patterns and needs to be renamed."
+      "The variable `b` occurs in multiple quantified path patterns and needs to be renamed.",
+      "Variable `b` already declared"
+    )
+  }
+
+  test("MATCH (()-[r]->())+ (()-[r]->())+ RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+      "The variable `r` occurs in multiple quantified path patterns and needs to be renamed.",
+      "Variable `r` already declared",
+      "Cannot use the same relationship variable 'r' for multiple relationships"
     )
   }
 
   test("MATCH ((a)-[b]->(c))* (d)-[e]->(a) RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       "The variable `a` occurs both inside and outside a quantified path pattern and needs to be renamed."
+      // There is no "already declared" error, because the QPP variable `a` is defined first
     )
   }
 
-  ignore("MATCH ((a)-[b]->(c))* (d)-[e]->((a)-[f]->(g)){2,} RETURN count(*)") {
+  test("MATCH (a)-[e]->(d) ((a)-[b]->(c))*  RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+      "The variable `a` occurs both inside and outside a quantified path pattern and needs to be renamed.",
+      // There is a "already declared" error, because the non-QPP variable `a` is defined first, and group variables are not implicit variables like nodes.
+      "Variable `a` already declared"
+    )
+  }
+
+  test("MATCH (()-[r]->())* ()-[r]->() RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+      "The variable `r` occurs both inside and outside a quantified path pattern and needs to be renamed.",
+      "Cannot use the same relationship variable 'r' for multiple relationships"
+    )
+  }
+
+  test("MATCH ()-[r]->() (()-[r]->())*  RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+      "The variable `r` occurs both inside and outside a quantified path pattern and needs to be renamed.",
+      "Variable `r` already declared",
+      "Cannot use the same relationship variable 'r' for multiple relationships"
+    )
+  }
+
+  test("MATCH ((a)-[b]->(c))* (d)-[e]->()((a)-[f]->(g)){2,} RETURN count(*)") {
     // this example leaves out the node to the right of e
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "The variable `a` occurs in multiple quantified path patterns and needs to be renamed."
+      "The variable `a` occurs in multiple quantified path patterns and needs to be renamed.",
+      "Variable `a` already declared"
     )
   }
 
   ignore("MATCH ((a)-[b]->(c))* (d)-[b]->+(f) RETURN count(*)") {
     // this example contains a quantified relationship
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "The variable `b` occurs in a quantified path pattern as well as a variable length relationship and needs to be renamed."
+      "The variable `b` occurs in a quantified path pattern as well as a variable length relationship and needs to be renamed.",
+      "Variable `a` already declared"
     )
   }
 
   test("MATCH (a)-->(b) MATCH (x)--(y) ((a)-->(t)){1,5} ()-->(z) RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "The variable `a` occurs both inside and outside a quantified path pattern and needs to be renamed."
+      "The variable `a` occurs both inside and outside a quantified path pattern and needs to be renamed.",
+      "Variable `a` already declared"
     )
   }
 
   test("MATCH ((a)-->(b))+ MATCH (x)--(y) ((a)-->(t)){1,5} ()-->(z) RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "The variable `a` occurs in multiple quantified path patterns and needs to be renamed."
+      "The variable `a` occurs in multiple quantified path patterns and needs to be renamed.",
+      "Variable `a` already declared"
     )
   }
 
@@ -388,13 +427,13 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
   // path assignment with quantified path patterns
   test("MATCH p = ((a)-[]->(b))+ RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "Assigning a path with a quantified path patterns is not yet supported."
+      "Assigning a path with a quantified path pattern is not yet supported."
     )
   }
 
   test("MATCH p = (x)-->(y) ((a)-[]->(b))+ RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "Assigning a path with a quantified path patterns is not yet supported."
+      "Assigning a path with a quantified path pattern is not yet supported."
     )
   }
 

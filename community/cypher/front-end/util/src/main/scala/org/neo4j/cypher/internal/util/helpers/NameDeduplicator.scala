@@ -43,7 +43,7 @@ object NameDeduplicator {
   /**
    * Removes planner-generated uniquely identifying elements from Strings.
    *
-   * E.g. the String "  var@23(<uuid>)" becomes "var".
+   * E.g. the String "  var@23" becomes "var".
    */
   def removeGeneratedNamesAndParams(s: String): String = {
     val paramNamed = UNNAMED_PARAMS_PATTERN.replaceAllIn(s, m => s"${(m group 1).toLowerCase()}_${m group 2}")

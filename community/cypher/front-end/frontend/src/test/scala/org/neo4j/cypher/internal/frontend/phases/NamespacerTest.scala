@@ -23,12 +23,16 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.expressions.EntityBinding
+import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.QuantifiedPath
+import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -47,10 +51,34 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
       "MATCH (n), (`  x@0`) WITH n AS n MATCH (`  x@1`) RETURN n AS n, `  x@1` AS `  x@1`",
       List(varFor("  x@0"), varFor("  x@1"))
     ),
-    TestCase(
+    TestCaseWithStatement(
       "MATCH (a) ((x)-->(y))+ WHERE x = 0 WITH '1' as x WHERE y IS NOT NULL RETURN x",
-      "MATCH (a) ((`  x@0`)-->(y))+ WHERE `  x@0` = 0 WITH '1' as `  x@1` WHERE y IS NOT NULL RETURN `  x@1`",
-      List(varFor("  x@0"), varFor("  x@1"))
+      Query(singleQuery(
+        match_(
+          pathConcatenation(
+            nodePat(Some("a")),
+            QuantifiedPath(
+              EveryPath(RelationshipChain(
+                nodePat(Some("  x@0")),
+                relPat(Some("  UNNAMED0")),
+                nodePat(Some("  y@1"))
+              )(pos)),
+              plusQuantifier,
+              Set(
+                EntityBinding(varFor("  x@0"), varFor("  x@3"))(pos),
+                EntityBinding(varFor("  y@1"), varFor("  y@2"))(pos)
+              )
+            )(pos),
+            nodePat(Some("  UNNAMED1"))
+          ),
+          Some(where(equals(varFor("  x@3"), literalInt(0))))
+        ),
+        with_(aliasedReturnItem(literalString("1"), "  x@4")).copy(
+          where = Some(where(isNotNull(varFor("  y@2"))))
+        )(pos),
+        return_(aliasedReturnItem(varFor("  x@4")))
+      ))(pos),
+      List(varFor("  x@0"), varFor("  x@3"), varFor("  x@4"), varFor("  y@1"), varFor("  y@2"))
     ),
     TestCase(
       "MATCH (n), (x) WHERE [x in n.prop WHERE x = 2] RETURN x AS x",
@@ -246,7 +274,12 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
       }
     case TestCaseWithStatement(q, rewritten, semanticTableExpressions) =>
       test(q) {
-        assertRewritten(q.replace("\r\n", "\n"), rewritten, semanticTableExpressions)
+        assertRewritten(
+          q.replace("\r\n", "\n"),
+          rewritten,
+          semanticTableExpressions,
+          SemanticFeature.QuantifiedPathPatterns
+        )
       }
   }
 }

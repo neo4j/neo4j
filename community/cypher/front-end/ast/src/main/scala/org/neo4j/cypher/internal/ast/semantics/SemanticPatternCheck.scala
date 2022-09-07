@@ -86,11 +86,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       check(ctx, pattern.element) chain
       ensureNoDuplicateRelationships(pattern)
 
-  def checkPatternElement(ctx: SemanticContext, patternElement: PatternElement): SemanticCheck =
-    declareVariables(ctx, patternElement) chain
-      checkElementPredicates(ctx, patternElement) chain
-      ensureNoDuplicateRelationships(patternElement)
-
   def checkElementPredicates(ctx: SemanticContext)(part: PatternPart): SemanticCheck =
     checkElementPredicates(ctx, part.element)
 
@@ -115,7 +110,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       case PathConcatenation(factors) =>
         factors.map(checkElementPredicates(ctx, _)).reduce(_ chain _)
 
-      case QuantifiedPath(pattern, _) =>
+      case QuantifiedPath(pattern, _, _) =>
         checkElementPredicates(ctx, pattern.element)
 
       case ParenthesizedPath(pattern) =>
@@ -261,7 +256,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   private def checkNoQuantifiedPathPatterns(x: PatternPart) = {
     x.folder.treeFindByClass[QuantifiedPath].foldSemanticCheck(qpp =>
-      error("Assigning a path with a quantified path patterns is not yet supported.", qpp.position)
+      error("Assigning a path with a quantified path pattern is not yet supported.", qpp.position)
     )
   }
 
@@ -269,7 +264,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   private def checkMinimumNodeCount(x: PatternPart) = {
     when(x.element.folder.treeFold(true) {
-      case QuantifiedPath(_, quantifier) if quantifier.canBeEmpty =>
+      case QuantifiedPath(_, quantifier, _) if quantifier.canBeEmpty =>
         acc => SkipChildren(acc)
       case _: PathFactor =>
         _ => SkipChildren(false)
@@ -305,7 +300,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         factors.map(check(ctx, _)).reduce(_ chain _) chain
           checkValidConcatenation(factors)
 
-      case q @ QuantifiedPath(pattern, quantifier) =>
+      case q @ QuantifiedPath(pattern, quantifier, _) =>
         whenState(!_.features.contains(SemanticFeature.QuantifiedPathPatterns)) {
           error("Quantified path patterns are not yet supported.", q.position)
         } chain
@@ -522,11 +517,16 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       case PathConcatenation(factors) =>
         factors.map(declareVariables(ctx, _, quantified)).reduce(_ chain _)
 
-      case q @ QuantifiedPath(pattern, _) =>
+      case q @ QuantifiedPath(pattern, _, entityBindings) =>
         withScopedState {
           declareVariables(ctx, pattern.element, Some(q)) chain
-            declarePathVariable(pattern, Some(q))
-        } chain copyNewVariables(q)
+            ensureNoPathVariable(pattern) ifOkChain
+            entityBindings.foldSemanticCheck { entityBinding =>
+              ensureDefined(entityBinding.inner)
+            }
+        } chain entityBindings.foldSemanticCheck { entityBinding =>
+          declareVariable(entityBinding.outer, _.expressionType(entityBinding.inner).actual.wrapInList)
+        }
 
       case ParenthesizedPath(pattern) =>
         declareVariables(ctx, pattern.element, quantified) chain
@@ -539,27 +539,12 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       case _                   => SemanticCheck.success
     }
 
-  private def copyNewVariables(q: QuantifiedPath) = {
-    q.allVariables.foldSemanticCheck(variable => {
-      state: SemanticState =>
-        state.typeTable.get(variable).map {
-          typeInfo =>
-            // If we were to call `state.updateVariable()` we would either need to create a new "virtual" variable that do not have any representation in the query
-            // or override the previously recorded type for the existing variable. The virtual variables would cause unnecessary namespacing and lead to invalid
-            // queries when stringified.
-            // As we still want to see the variable with a different type on this scope, we therefore only copy the variables with a different type.
-            // This means that the Namespacer will not attempt to separate instances of variables inside and outside of QPPs, which we may want to revisit later on.
-            Right(state.copy(
-              currentScope = state.currentScope.updateVariable(
-                variable = variable.name,
-                types = typeInfo.specified.wrapInList,
-                definition = SymbolUse(variable),
-                uses = Set.empty
-              )
-            ))
-        }.getOrElse(Right(state))
-    })
-  }
+  private def ensureNoPathVariable(pattern: PatternPart): SemanticCheck =
+    pattern match {
+      case n: NamedPatternPart =>
+        error("Assigning a path in a quantified path pattern is not yet supported.", n.position)
+      case _ => SemanticCheck.success
+    }
 
   private def declareVariables(
     ctx: SemanticContext,

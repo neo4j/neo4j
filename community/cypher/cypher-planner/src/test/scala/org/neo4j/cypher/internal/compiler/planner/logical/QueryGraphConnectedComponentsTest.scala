@@ -54,8 +54,8 @@ class QueryGraphConnectedComponentsTest
       EntityBinding(s"${to}_inner", to),
       QueryGraph(patternRelationships = Set(rel(s"${from}_inner", s"${to}_inner"))),
       Repetition(0, Unlimited),
-      nodeGroupVariables = Seq(EntityBinding("anon_1", s"${from}_inner"), EntityBinding("anon_3", s"${to}_inner")),
-      relationshipGroupVariables = Seq(EntityBinding("anon_2", "r"))
+      nodeGroupVariables = Set(EntityBinding("anon_1", s"${from}_inner"), EntityBinding("anon_3", s"${to}_inner")),
+      relationshipGroupVariables = Set(EntityBinding("anon_2", "r"))
     )
 
   test("empty query graph returns no connected querygraphs") {

@@ -23,6 +23,8 @@ abstract class LogicalVariable extends Expression {
 
   def copyId: LogicalVariable
 
+  def withPosition(position: InputPosition): LogicalVariable
+
   def renameId(newName: String): LogicalVariable
 
   def position: InputPosition

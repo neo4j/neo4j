@@ -103,6 +103,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
     executionModel: ExecutionModel = ExecutionModel.default,
     useMinimumGraphStatistics: Boolean = false,
     txStateHasChanges: Boolean = false,
+    deduplicateNames: Boolean = true,
     semanticFeatures: Seq[SemanticFeature] = Seq.empty
   )
 
@@ -466,6 +467,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
 
   def enableMinimumGraphStatistics(enable: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
     this.copy(options = options.copy(useMinimumGraphStatistics = enable))
+  }
+
+  def disableDeduplicateNames(enable: Boolean = false): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(options = options.copy(deduplicateNames = enable))
   }
 
   def setExecutionModel(executionModel: ExecutionModel): StatisticsBackedLogicalPlanningConfigurationBuilder = {
@@ -939,7 +944,10 @@ class StatisticsBackedLogicalPlanningConfiguration(
       cfg.copy(semanticFeatures = cfg.semanticFeatures ++ options.semanticFeatures)
     }
 
-    LogicalPlanningTestSupport2.pipeLine(parsingConfig).transform(state, context)
+    LogicalPlanningTestSupport2.pipeLine(parsingConfig, deduplicateNames = options.deduplicateNames).transform(
+      state,
+      context
+    )
   }
 
   def planBuilder(): LogicalPlanBuilder = new LogicalPlanBuilder(wholePlan = true, resolver)

@@ -1554,28 +1554,56 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     )))
   }
 
+  // Note that namespaced names are removed in these tests
   test("should convert a single quantified pattern") {
     val query = buildSinglePlannerQuery("MATCH ((n)-[r]->(m))+ RETURN 1")
     query.queryGraph shouldBe QueryGraph(
       patternNodes = Set("anon_0", "anon_1"),
       quantifiedPathPatterns = Set(
         QuantifiedPathPattern(
-          leftBinding = EntityBinding("anon_2", "anon_0"),
-          rightBinding = EntityBinding("anon_4", "anon_1"),
+          leftBinding = EntityBinding("n", "anon_0"),
+          rightBinding = EntityBinding("m", "anon_1"),
           pattern = QueryGraph(
-            patternNodes = Set("anon_2", "anon_4"),
+            patternNodes = Set("n", "m"),
             patternRelationships =
               Set(PatternRelationship(
-                "anon_3",
-                ("anon_2", "anon_4"),
+                "r",
+                ("n", "m"),
                 SemanticDirection.OUTGOING,
                 Seq.empty,
                 SimplePatternLength
               ))
           ),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
-          nodeGroupVariables = Seq(EntityBinding("anon_2", "n"), EntityBinding("anon_4", "m")),
-          relationshipGroupVariables = Seq(EntityBinding("anon_3", "r"))
+          nodeGroupVariables = Set(EntityBinding("n", "n"), EntityBinding("m", "m")),
+          relationshipGroupVariables = Set(EntityBinding("r", "r"))
+        )
+      )
+    )
+  }
+
+  test("should convert a single quantified pattern with no node or relationship bindings") {
+    val query = buildSinglePlannerQuery("MATCH (()-->())+ RETURN 1")
+    query.queryGraph shouldBe QueryGraph(
+      patternNodes = Set("anon_0", "anon_4"),
+      quantifiedPathPatterns = Set(
+        QuantifiedPathPattern(
+          leftBinding = EntityBinding("anon_1", "anon_0"),
+          rightBinding = EntityBinding("anon_3", "anon_4"),
+          pattern = QueryGraph(
+            patternNodes = Set("anon_1", "anon_3"),
+            patternRelationships =
+              Set(PatternRelationship(
+                "anon_2",
+                ("anon_1", "anon_3"),
+                SemanticDirection.OUTGOING,
+                Seq.empty,
+                SimplePatternLength
+              ))
+          ),
+          repetition = Repetition(min = 1, max = UpperBound.Unlimited),
+          nodeGroupVariables = Set.empty,
+          relationshipGroupVariables = Set.empty
         )
       )
     )
@@ -1587,22 +1615,22 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       patternNodes = Set("a", "b"),
       quantifiedPathPatterns = Set(
         QuantifiedPathPattern(
-          leftBinding = EntityBinding("anon_0", "a"),
-          rightBinding = EntityBinding("anon_2", "b"),
+          leftBinding = EntityBinding("n", "a"),
+          rightBinding = EntityBinding("m", "b"),
           pattern = QueryGraph(
-            patternNodes = Set("anon_0", "anon_2"),
+            patternNodes = Set("n", "m"),
             patternRelationships =
               Set(PatternRelationship(
-                "anon_1",
-                ("anon_0", "anon_2"),
+                "r",
+                ("n", "m"),
                 SemanticDirection.OUTGOING,
                 Seq.empty,
                 SimplePatternLength
               ))
           ),
           repetition = Repetition(min = 2, max = UpperBound.Limited(5)),
-          nodeGroupVariables = Seq(EntityBinding("anon_0", "n"), EntityBinding("anon_2", "m")),
-          relationshipGroupVariables = Seq(EntityBinding("anon_1", "r"))
+          nodeGroupVariables = Set(EntityBinding("n", "n"), EntityBinding("m", "m")),
+          relationshipGroupVariables = Set(EntityBinding("r", "r"))
         )
       )
     )
@@ -1621,22 +1649,22 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       )),
       quantifiedPathPatterns = Set(
         QuantifiedPathPattern(
-          leftBinding = EntityBinding("anon_0", "b"),
-          rightBinding = EntityBinding("anon_2", "x"),
+          leftBinding = EntityBinding("n", "b"),
+          rightBinding = EntityBinding("m", "x"),
           pattern = QueryGraph(
-            patternNodes = Set("anon_0", "anon_2"),
+            patternNodes = Set("n", "m"),
             patternRelationships =
               Set(PatternRelationship(
-                "anon_1",
-                ("anon_0", "anon_2"),
+                "r2",
+                ("n", "m"),
                 SemanticDirection.OUTGOING,
                 Seq.empty,
                 SimplePatternLength
               ))
           ),
           repetition = Repetition(min = 3, max = UpperBound.Unlimited),
-          nodeGroupVariables = Seq(EntityBinding("anon_0", "n"), EntityBinding("anon_2", "m")),
-          relationshipGroupVariables = Seq(EntityBinding("anon_1", "r2"))
+          nodeGroupVariables = Set(EntityBinding("n", "n"), EntityBinding("m", "m")),
+          relationshipGroupVariables = Set(EntityBinding("r2", "r2"))
         )
       )
     )
@@ -1652,22 +1680,22 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       quantifiedPathPatterns = Set(
         QuantifiedPathPattern(
-          leftBinding = EntityBinding("anon_0", "b"),
-          rightBinding = EntityBinding("anon_2", "x"),
+          leftBinding = EntityBinding("n", "b"),
+          rightBinding = EntityBinding("m", "x"),
           pattern = QueryGraph(
-            patternNodes = Set("anon_0", "anon_2"),
+            patternNodes = Set("n", "m"),
             patternRelationships =
               Set(PatternRelationship(
-                "anon_1",
-                ("anon_0", "anon_2"),
+                "r2",
+                ("n", "m"),
                 SemanticDirection.OUTGOING,
                 Seq(relTypeName("R2")),
                 SimplePatternLength
               ))
           ),
           repetition = Repetition(min = 3, max = UpperBound.Unlimited),
-          nodeGroupVariables = Seq(EntityBinding("anon_0", "n"), EntityBinding("anon_2", "m")),
-          relationshipGroupVariables = Seq(EntityBinding("anon_1", "r2"))
+          nodeGroupVariables = Set(EntityBinding("n", "n"), EntityBinding("m", "m")),
+          relationshipGroupVariables = Set(EntityBinding("r2", "r2"))
         )
       )
     )
@@ -1680,40 +1708,40 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       selections = Selections.empty,
       quantifiedPathPatterns = Set(
         QuantifiedPathPattern(
-          leftBinding = EntityBinding("anon_3", "anon_0"),
-          rightBinding = EntityBinding("anon_5", "anon_1"),
+          leftBinding = EntityBinding("n", "anon_0"),
+          rightBinding = EntityBinding("m", "anon_1"),
           pattern = QueryGraph(
-            patternNodes = Set("anon_3", "anon_5"),
+            patternNodes = Set("n", "m"),
             patternRelationships =
               Set(PatternRelationship(
-                "anon_4",
-                ("anon_3", "anon_5"),
+                "r1",
+                ("n", "m"),
                 SemanticDirection.OUTGOING,
                 Seq.empty,
                 SimplePatternLength
               ))
           ),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
-          nodeGroupVariables = Seq(EntityBinding("anon_3", "n"), EntityBinding("anon_5", "m")),
-          relationshipGroupVariables = Seq(EntityBinding("anon_4", "r1"))
+          nodeGroupVariables = Set(EntityBinding("n", "n"), EntityBinding("m", "m")),
+          relationshipGroupVariables = Set(EntityBinding("r1", "r1"))
         ),
         QuantifiedPathPattern(
-          leftBinding = EntityBinding("anon_6", "anon_1"),
-          rightBinding = EntityBinding("anon_8", "anon_2"),
+          leftBinding = EntityBinding("x", "anon_1"),
+          rightBinding = EntityBinding("y", "anon_2"),
           pattern = QueryGraph(
-            patternNodes = Set("anon_6", "anon_8"),
+            patternNodes = Set("x", "y"),
             patternRelationships =
               Set(PatternRelationship(
-                "anon_7",
-                ("anon_6", "anon_8"),
+                "r2",
+                ("x", "y"),
                 SemanticDirection.OUTGOING,
                 Seq.empty,
                 SimplePatternLength
               ))
           ),
           repetition = Repetition(min = 0, max = UpperBound.Limited(3)),
-          nodeGroupVariables = Seq(EntityBinding("anon_6", "x"), EntityBinding("anon_8", "y")),
-          relationshipGroupVariables = Seq(EntityBinding("anon_7", "r2"))
+          nodeGroupVariables = Set(EntityBinding("x", "x"), EntityBinding("y", "y")),
+          relationshipGroupVariables = Set(EntityBinding("r2", "r2"))
         )
       )
     )
@@ -1726,22 +1754,22 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       selections = Selections.empty,
       quantifiedPathPatterns = Set(
         QuantifiedPathPattern(
-          leftBinding = EntityBinding("anon_3", "anon_0"),
-          rightBinding = EntityBinding("anon_7", "anon_1"),
+          leftBinding = EntityBinding("a", "anon_0"),
+          rightBinding = EntityBinding("c", "anon_1"),
           pattern = QueryGraph(
-            patternNodes = Set("anon_3", "anon_5", "anon_7"),
+            patternNodes = Set("a", "b", "c"),
             patternRelationships =
               Set(
                 PatternRelationship(
-                  "anon_4",
-                  ("anon_3", "anon_5"),
+                  "r1",
+                  ("a", "b"),
                   SemanticDirection.OUTGOING,
                   Seq.empty,
                   SimplePatternLength
                 ),
                 PatternRelationship(
-                  "anon_6",
-                  ("anon_5", "anon_7"),
+                  "r2",
+                  ("b", "c"),
                   SemanticDirection.OUTGOING,
                   Seq.empty,
                   SimplePatternLength
@@ -1750,26 +1778,26 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           ),
           repetition = Repetition(min = 5, max = UpperBound.Limited(5)),
           nodeGroupVariables =
-            Seq(EntityBinding("anon_3", "a"), EntityBinding("anon_5", "b"), EntityBinding("anon_7", "c")),
-          relationshipGroupVariables = Seq(EntityBinding("anon_4", "r1"), EntityBinding("anon_6", "r2"))
+            Set(EntityBinding("a", "a"), EntityBinding("b", "b"), EntityBinding("c", "c")),
+          relationshipGroupVariables = Set(EntityBinding("r1", "r1"), EntityBinding("r2", "r2"))
         ),
         QuantifiedPathPattern(
-          leftBinding = EntityBinding("anon_8", "anon_1"),
-          rightBinding = EntityBinding("anon_10", "anon_2"),
+          leftBinding = EntityBinding("x", "anon_1"),
+          rightBinding = EntityBinding("y", "anon_2"),
           pattern = QueryGraph(
-            patternNodes = Set("anon_8", "anon_10"),
+            patternNodes = Set("x", "y"),
             patternRelationships =
               Set(PatternRelationship(
-                "anon_9",
-                ("anon_8", "anon_10"),
+                "r3",
+                ("x", "y"),
                 SemanticDirection.OUTGOING,
                 Seq.empty,
                 SimplePatternLength
               ))
           ),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
-          nodeGroupVariables = Seq(EntityBinding("anon_8", "x"), EntityBinding("anon_10", "y")),
-          relationshipGroupVariables = Seq(EntityBinding("anon_9", "r3"))
+          nodeGroupVariables = Set(EntityBinding("x", "x"), EntityBinding("y", "y")),
+          relationshipGroupVariables = Set(EntityBinding("r3", "r3"))
         )
       )
     )
@@ -1782,22 +1810,22 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         patternNodes = Set("anon_0", "anon_1"),
         quantifiedPathPatterns = Set(
           QuantifiedPathPattern(
-            leftBinding = EntityBinding("anon_2", "anon_0"),
-            rightBinding = EntityBinding("anon_4", "anon_1"),
+            leftBinding = EntityBinding("n", "anon_0"),
+            rightBinding = EntityBinding("m", "anon_1"),
             pattern = QueryGraph(
-              patternNodes = Set("anon_2", "anon_4"),
+              patternNodes = Set("n", "m"),
               patternRelationships =
                 Set(PatternRelationship(
-                  "anon_3",
-                  ("anon_2", "anon_4"),
+                  "r",
+                  ("n", "m"),
                   SemanticDirection.OUTGOING,
                   Seq.empty,
                   SimplePatternLength
                 ))
             ),
             repetition = Repetition(min = 1, max = UpperBound.Unlimited),
-            nodeGroupVariables = Seq(EntityBinding("anon_2", "n"), EntityBinding("anon_4", "m")),
-            relationshipGroupVariables = Seq(EntityBinding("anon_3", "r"))
+            nodeGroupVariables = Set(EntityBinding("n", "n"), EntityBinding("m", "m")),
+            relationshipGroupVariables = Set(EntityBinding("r", "r"))
           )
         )
       ))
@@ -1808,22 +1836,22 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("MATCH (a) WHERE EXISTS { (a) ((n)-[r]->(m))+ } RETURN 1")
 
     val qpp = QuantifiedPathPattern(
-      leftBinding = EntityBinding("anon_1", "a"),
-      rightBinding = EntityBinding("anon_3", "anon_0"),
+      leftBinding = EntityBinding("n", "a"),
+      rightBinding = EntityBinding("m", "anon_0"),
       pattern = QueryGraph(
-        patternNodes = Set("anon_1", "anon_3"),
+        patternNodes = Set("n", "m"),
         patternRelationships =
           Set(PatternRelationship(
-            "anon_2",
-            ("anon_1", "anon_3"),
+            "r",
+            ("n", "m"),
             SemanticDirection.OUTGOING,
             Seq.empty,
             SimplePatternLength
           ))
       ),
       repetition = Repetition(min = 1, max = UpperBound.Unlimited),
-      nodeGroupVariables = Seq(EntityBinding("anon_1", "n"), EntityBinding("anon_3", "m")),
-      relationshipGroupVariables = Seq(EntityBinding("anon_2", "r"))
+      nodeGroupVariables = Set(EntityBinding("n", "n"), EntityBinding("m", "m")),
+      relationshipGroupVariables = Set(EntityBinding("r", "r"))
     )
 
     query.queryGraph.selections shouldBe Selections(ListSet(Predicate(
@@ -1836,7 +1864,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
             quantifiedPathPatterns = Set(qpp)
           )
         ),
-        "EXISTS { MATCH (a) ((n)-[r]->(m))+ (`anon_0`) }"
+        "EXISTS { MATCH (a) ((`n`)-[`r`]->(`m`))+ (`anon_0`) }"
       )(pos)
     )))
   }

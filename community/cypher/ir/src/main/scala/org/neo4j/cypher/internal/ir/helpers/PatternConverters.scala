@@ -47,35 +47,22 @@ import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.RangeConvertor
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PathConcatenationDestructor.FoldState
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Repetition
-import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.UpperBound
-import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.exceptions.InternalException
 
-case class RenameNodeAndRelationshipVariables(
-  nodeVariables: Map[LogicalVariable, LogicalVariable],
-  relVariables: Map[LogicalVariable, LogicalVariable]
-) {
-
-  def withNode(
-    n: NodePattern,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-  ): RenameNodeAndRelationshipVariables = n.variable
-    .filterNot(nodeVariables.contains)
-    .map(v => this.copy(nodeVariables = nodeVariables + (v -> v.renameId(anonymousVariableNameGenerator.nextName))))
-    .getOrElse(this)
-
-  def withRelationship(
-    n: RelationshipPattern,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-  ): RenameNodeAndRelationshipVariables =
-    n.variable
-      .filterNot(relVariables.contains)
-      .map(v => this.copy(relVariables = relVariables + (v -> v.renameId(anonymousVariableNameGenerator.nextName))))
-      .getOrElse(this)
-}
-
 object PatternConverters {
+
+  case class NodeAndRelationshipVariables(
+    nodeVariables: Set[LogicalVariable],
+    relVariables: Set[LogicalVariable]
+  ) {
+
+    def withNode(n: NodePattern): NodeAndRelationshipVariables =
+      copy(nodeVariables = nodeVariables ++ n.variable)
+
+    def withRelationship(r: RelationshipPattern): NodeAndRelationshipVariables =
+      copy(relVariables = relVariables ++ r.variable)
+  }
 
   object DestructResult { def empty: DestructResult = DestructResult(Seq.empty, Seq.empty, Seq.empty, Seq.empty) }
 
@@ -104,10 +91,10 @@ object PatternConverters {
 
   implicit class PatternElementDestructor(val pattern: PatternElement) extends AnyVal {
 
-    def destructed(anonymousVariableNameGenerator: AnonymousVariableNameGenerator): DestructResult = pattern match {
+    def destructed: DestructResult = pattern match {
       case relchain: RelationshipChain => relchain.destructedRelationshipChain
       case node: NodePattern           => node.destructedNodePattern
-      case pc: PathConcatenation       => pc.destructedPathConcatenation(anonymousVariableNameGenerator)
+      case pc: PathConcatenation       => pc.destructedPathConcatenation
     }
   }
 
@@ -162,13 +149,13 @@ object PatternConverters {
 
   implicit class PathConcatenationDestructor(val concatenation: PathConcatenation) extends AnyVal {
 
-    def destructedPathConcatenation(anonymousVariableNameGenerator: AnonymousVariableNameGenerator): DestructResult = {
+    def destructedPathConcatenation: DestructResult = {
       val (_, result) = concatenation.factors.foldLeft((FoldState.initial, DestructResult.empty)) {
 
         case ((FoldState.Initial | FoldState.EncounteredNode(_), acc), pattern: SimplePattern) =>
           (
             FoldState.EncounteredNode(rightNodeName(pattern)),
-            acc.merge(pattern.destructed(anonymousVariableNameGenerator))
+            acc.merge(pattern.destructed)
           )
 
         case ((FoldState.EncounteredNode(nodeName), acc), qp: QuantifiedPath) =>
@@ -178,7 +165,6 @@ object PatternConverters {
           val qpp = {
             val leftNodeOfTheRightPattern = leftNodeName(rightPattern)
             makeQuantifiedPathPattern(
-              anonymousVariableNameGenerator,
               outerLeft = leftNode,
               quantifiedPath = quantifiedPath,
               outerRight = leftNodeOfTheRightPattern
@@ -187,7 +173,7 @@ object PatternConverters {
 
           // _right_ node of the _rightPattern_ becomes _left_ outer node of the next QPP
           val nextState = FoldState.EncounteredNode(rightNodeName(rightPattern))
-          val nextAcc = acc.merge(rightPattern.destructed(anonymousVariableNameGenerator)).addQuantifiedPathPattern(qpp)
+          val nextAcc = acc.merge(rightPattern.destructed).addQuantifiedPathPattern(qpp)
           (nextState, nextAcc)
       }
       result
@@ -204,38 +190,21 @@ object PatternConverters {
     }
 
     private def makeQuantifiedPathPattern(
-      anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
       outerLeft: String,
       quantifiedPath: QuantifiedPath,
       outerRight: String
     ): QuantifiedPathPattern = {
       val quantifiedPathElement = quantifiedPath.part.element
-
-      /*
-       * Inside the quantified pattern each variable is either a node or relationship, outside it is a list of the aggregated nodes/relationships.
-       * In order to not have conflicting types, the node and relationship variables inside the quantified pattern plan must be replaced with new variables.
-       */
-
-      // Find all nodes/relationships in the quantified path element and create new variables for them.
-      val nodeAndRelationshipVariableMapping =
-        quantifiedPathElement.folder.fold(RenameNodeAndRelationshipVariables(Map.empty, Map.empty)) {
-          case n: NodePattern         => _.withNode(n, anonymousVariableNameGenerator)
-          case r: RelationshipPattern => _.withRelationship(r, anonymousVariableNameGenerator)
+      val nodesAndRels =
+        quantifiedPathElement.folder.fold(NodeAndRelationshipVariables(Set.empty, Set.empty)) {
+          case n: NodePattern         => _.withNode(n)
+          case r: RelationshipPattern => _.withRelationship(r)
         }
-
-      // Update relevant nodes/relationships with the new variable name
-      val renameVariables = bottomUp(Rewriter.lift {
-        case v: LogicalVariable if nodeAndRelationshipVariableMapping.nodeVariables.contains(v) =>
-          nodeAndRelationshipVariableMapping.nodeVariables(v)
-        case v: LogicalVariable if nodeAndRelationshipVariableMapping.relVariables.contains(v) =>
-          nodeAndRelationshipVariableMapping.relVariables(v)
-      })
-      val rewrittenPatternElement = quantifiedPath.part.element.endoRewrite(renameVariables)
-      val (innerLeft, innerRight) = rewrittenPatternElement match {
+      val (innerLeft, innerRight) = quantifiedPathElement match {
         case rel: RelationshipChain => (rel.leftNode.variable.get.name, rel.rightNode.variable.get.name)
       }
 
-      val content = rewrittenPatternElement.destructed(anonymousVariableNameGenerator)
+      val content = quantifiedPathElement.destructed
       val qg = QueryGraph(
         patternNodes = content.nodeIds.toSet,
         patternRelationships = content.rels.toSet,
@@ -243,12 +212,13 @@ object PatternConverters {
         selections = Selections.empty
       )
 
-      val nodeGroupVariables = nodeAndRelationshipVariableMapping.nodeVariables
-        .map { case (originalName, newName) => EntityBinding(newName.name, originalName.name) }
-        .toSeq
-      val relationshipGroupVariables = nodeAndRelationshipVariableMapping.relVariables
-        .map { case (originalName, newName) => EntityBinding(newName.name, originalName.name) }
-        .toSeq
+      val groupVariables = quantifiedPath.groupVariables
+      val nodeGroupVariables = groupVariables
+        .filter(eb => nodesAndRels.nodeVariables.contains(eb.inner))
+        .map(eb => EntityBinding(eb.inner.name, eb.outer.name))
+      val relationshipGroupVariables = groupVariables
+        .filter(eb => nodesAndRels.relVariables.contains(eb.inner))
+        .map(eb => EntityBinding(eb.inner.name, eb.outer.name))
 
       QuantifiedPathPattern(
         leftBinding = EntityBinding(innerLeft, outerLeft),
@@ -278,19 +248,19 @@ object PatternConverters {
     def destructed(anonymousVariableNameGenerator: AnonymousVariableNameGenerator): DestructResult = {
       pattern.patternParts.foldLeft(DestructResult.empty) {
         case (acc, NamedPatternPart(ident, sps @ ShortestPaths(element, single))) =>
-          val destructedElement: DestructResult = element.destructed(anonymousVariableNameGenerator)
+          val destructedElement: DestructResult = element.destructed
           val pathName = ident.name
           val newShortest = ShortestPathPattern(Some(pathName), destructedElement.rels.head, single)(sps)
           acc.addNodeId(destructedElement.nodeIds: _*).addShortestPaths(newShortest)
 
         case (acc, sps @ ShortestPaths(element, single)) =>
-          val destructedElement = element.destructed(anonymousVariableNameGenerator)
+          val destructedElement = element.destructed
           val newShortest =
             ShortestPathPattern(Some(anonymousVariableNameGenerator.nextName), destructedElement.rels.head, single)(sps)
           acc.addNodeId(destructedElement.nodeIds: _*).addShortestPaths(newShortest)
 
         case (acc, everyPath: EveryPath) =>
-          val destructedElement = everyPath.element.destructed(anonymousVariableNameGenerator)
+          val destructedElement = everyPath.element.destructed
           acc.merge(destructedElement)
 
         case p =>
