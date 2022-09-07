@@ -551,6 +551,8 @@ public interface ASTFactory<
 
     ADMINISTRATION_COMMAND deallocateServers(POS p, List<SimpleEither<String, PARAMETER>> serverNames);
 
+    ADMINISTRATION_COMMAND reallocateDatabases(POS p);
+
     // Database Administration Commands
 
     ADMINISTRATION_COMMAND createDatabase(

@@ -850,6 +850,11 @@ public class LiteralInterpreter
         throw new UnsupportedOperationException("deallocateServers is not a literal");
     }
 
+    @Override
+    public NULL reallocateDatabases(NULL p) {
+        throw new UnsupportedOperationException("reallocateDatabases is not a literal");
+    }
+
     // Database commands
 
     @Override

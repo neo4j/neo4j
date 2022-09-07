@@ -195,4 +195,19 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   test("DEALLOCATE SERVERS $name, 'foo'") {
     assertFailsWithMessageStart(testName, "Invalid input 'SERVERS': expected \"DATABASE\" or \"DATABASES\"")
   }
+
+  test("REALLOCATE DATABASE") {
+    assertAst(ast.ReallocateServers()(defaultPos))
+  }
+
+  test("REALLOCATE DATABASES") {
+    assertAst(ast.ReallocateServers()(defaultPos))
+  }
+
+  test("REALLOCATE SERVERS") {
+    assertFailsWithMessage(
+      testName,
+      "Invalid input 'SERVERS': expected \"DATABASE\" or \"DATABASES\" (line 1, column 12 (offset: 11))"
+    )
+  }
 }

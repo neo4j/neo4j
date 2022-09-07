@@ -182,6 +182,7 @@ import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.ReadOnlyAccess
 import org.neo4j.cypher.internal.ast.ReadWriteAccess
+import org.neo4j.cypher.internal.ast.ReallocateServers
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
@@ -2271,6 +2272,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     _renameServer,
     _dropServer,
     _deallocateServer,
+    _reallocateServers,
     _showServers
   )
 
@@ -2300,6 +2302,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _deallocateServer: Gen[DeallocateServers] = for {
     servers <- _listOfNameOfEither
   } yield DeallocateServers(servers)(pos)
+
+  def _reallocateServers: Gen[ReallocateServers] = ReallocateServers()(pos)
 
   // Top level administration command
 

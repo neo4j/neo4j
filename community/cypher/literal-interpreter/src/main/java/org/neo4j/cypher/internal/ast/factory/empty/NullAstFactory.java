@@ -1180,6 +1180,11 @@ public class NullAstFactory
     }
 
     @Override
+    public NULL reallocateDatabases(NULL p) {
+        return null;
+    }
+
+    @Override
     public NULL createDatabase(
             NULL p,
             boolean replace,

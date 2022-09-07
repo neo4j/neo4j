@@ -76,6 +76,7 @@ import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.ParsedAsYield
 import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.ReallocateServers
 import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
 import org.neo4j.cypher.internal.ast.RenameRole
@@ -983,6 +984,13 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           case (source, server) => plans.DeallocateServer(source, server)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
+
+      case c @ ReallocateServers() =>
+        val checkBlocked = plans.AssertNotBlockedDatabaseManagement(ServerManagementAction)
+        Some(plans.LogSystemCommand(
+          plans.ReallocateServers(plans.AssertAllowedDbmsActions(checkBlocked, ServerManagementAction)),
+          prettifier.asString(c)
+        ))
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!
       case Query(SingleQuery(Seq(

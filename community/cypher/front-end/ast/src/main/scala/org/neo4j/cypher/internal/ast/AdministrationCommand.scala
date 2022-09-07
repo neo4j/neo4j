@@ -785,6 +785,16 @@ final case class DeallocateServers(serverNames: Seq[Either[String, Parameter]])(
       SemanticState.recordCurrentScope(this)
 }
 
+final case class ReallocateServers()(
+  val position: InputPosition
+) extends WriteAdministrationCommand {
+  override def name: String = "REALLOCATE DATABASES"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
 // Database commands
 
 final case class ShowDatabase(

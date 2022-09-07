@@ -512,6 +512,7 @@ TOKEN [IGNORE_CASE] :
     | < RBRACKET: "]" >
     | < RCURLY: "}" >
     | < READ: "READ" >
+    | < REALLOCATE: "REALLOCATE" >
     | < REDUCE: "REDUCE" >
     | < RENAME: "RENAME" >
     | < REGEQ: "=~" >
@@ -3247,6 +3248,7 @@ STATEMENT_WITH_GRAPH CommandWithUseGraph( USE_CLAUSE useClause ) throws Exceptio
         | s=StopDatabase()
         | s=EnableServerCommand()
         | s=DeallocateDatabaseFromServers()
+        | s=ReallocateDatabases()
     )
     {
         return astFactory.useGraph( s, useClause );
@@ -4382,6 +4384,17 @@ ADMINISTRATION_COMMAND DeallocateDatabaseFromServers():
     entry=StringOrParameter() { serverNames.add( entry ); } ( "," entry=StringOrParameter() { serverNames.add( entry ); } )*
     {
         return astFactory.deallocateServers( pos( start ), serverNames );
+    }
+}
+
+ADMINISTRATION_COMMAND ReallocateDatabases():
+{
+    Token start;
+}
+{
+    start=<REALLOCATE> ( <DATABASE> | <DATABASES> )
+    {
+        return astFactory.reallocateDatabases( pos( start ) );
     }
 }
 
@@ -5998,6 +6011,7 @@ Token UnescapedSymbolicNameString() :
         | t=<PROPERTY>
         | t=<RANGE>
         | t=<READ>
+        | t=<REALLOCATE>
         | t=<REDUCE>
         | t=<REL>
         | t=<RELATIONSHIP>

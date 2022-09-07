@@ -132,6 +132,7 @@ import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.QueryPart
 import org.neo4j.cypher.internal.ast.ReadOnlyAccess
 import org.neo4j.cypher.internal.ast.ReadWriteAccess
+import org.neo4j.cypher.internal.ast.ReallocateServers
 import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
 import org.neo4j.cypher.internal.ast.Remove
@@ -813,6 +814,9 @@ case class Prettifier(
           case Right(parameter) => expr(parameter)
         }
         s"$commandString ${names.mkString(", ")}"
+
+      case x @ ReallocateServers() =>
+        x.name
     }
     useString + commandString
   }

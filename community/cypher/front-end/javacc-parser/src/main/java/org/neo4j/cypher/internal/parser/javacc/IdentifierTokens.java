@@ -152,6 +152,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROPERTIES
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROPERTY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.RANGE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.READ;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REALLOCATE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REDUCE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.RELATIONSHIP;
@@ -354,6 +355,7 @@ public class IdentifierTokens {
             PROPERTY,
             RANGE,
             READ,
+            REALLOCATE,
             REDUCE,
             REL,
             RELATIONSHIP,

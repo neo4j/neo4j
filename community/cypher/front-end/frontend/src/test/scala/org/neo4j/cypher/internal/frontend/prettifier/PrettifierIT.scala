@@ -1576,6 +1576,20 @@ class PrettifierIT extends CypherFunSuite {
       """ENABLE SERVER "serverName" OPTIONS {tags: ["a", "b"]}""".stripMargin,
     "enable server 'serverName' options $optionsParam" ->
       """ENABLE SERVER "serverName" OPTIONS $optionsParam""".stripMargin,
+    "alter server 'serverName' set options {}" ->
+      """ALTER SERVER "serverName" SET OPTIONS {}""".stripMargin,
+    "alter server 'serverName' set options { tags:[ 'a' , 'b' ] }" ->
+      """ALTER SERVER "serverName" SET OPTIONS {tags: ["a", "b"]}""".stripMargin,
+    "alter server 'serverName' set options $optionsParam" ->
+      """ALTER SERVER "serverName" SET OPTIONS $optionsParam""".stripMargin,
+    "rename server 'serverName' to 'newName'" ->
+      """RENAME SERVER "serverName" TO "newName"""",
+    "rename server 'serverName' to $new" ->
+      """RENAME SERVER "serverName" TO $new""",
+    "rename server $old to 'newName'" ->
+      """RENAME SERVER $old TO "newName"""",
+    "rename server $old to $new" ->
+      """RENAME SERVER $old TO $new""",
     "drop server 'abc'" ->
       """DROP SERVER "abc"""",
     "drop server $abc" ->
@@ -1584,6 +1598,10 @@ class PrettifierIT extends CypherFunSuite {
       """DEALLOCATE DATABASES FROM SERVER "abc"""",
     "deallocate database from server $name, 'abc'" ->
       """DEALLOCATE DATABASES FROM SERVERS $name, "abc"""",
+    "reallocate database" ->
+      """REALLOCATE DATABASES""",
+    "reallocate databases" ->
+      """REALLOCATE DATABASES""",
     "show servers" ->
       "SHOW SERVERS",
     "show servers YIELD * where name = 'serverId' Return *" ->
