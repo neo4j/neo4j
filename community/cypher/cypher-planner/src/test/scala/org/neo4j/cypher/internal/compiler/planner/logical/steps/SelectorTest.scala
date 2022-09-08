@@ -204,6 +204,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
           )
         )
       ),
+      "",
       ""
     )(pos)
 

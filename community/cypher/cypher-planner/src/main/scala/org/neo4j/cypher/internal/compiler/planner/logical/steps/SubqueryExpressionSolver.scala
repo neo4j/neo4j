@@ -133,6 +133,11 @@ object SubqueryExpressionSolver {
               solveUsingApply(resultPlan, expression, maybeKey, context)
             RewriteResult(newPlan, newVar, Set(newVar.name))
 
+          case expression: ExistsIRExpression =>
+            val (newPlan, newVar) =
+              solveUsingLetSemiApply(resultPlan, expression, maybeKey, context)
+            RewriteResult(newPlan, newVar, Set(newVar.name))
+
           case inExpression =>
             // Any remaining IRExpressions are rewritten with RollUpApply or NestedPlanExpression
             rewriteInnerExpressions(resultPlan, inExpression, context)
@@ -236,8 +241,23 @@ object SubqueryExpressionSolver {
     (producedPlan, Variable(countVariableName)(expr.position))
   }
 
+  private def solveUsingLetSemiApply(
+    source: LogicalPlan,
+    expr: ExistsIRExpression,
+    maybeKey: Option[String],
+    context: LogicalPlanningContext
+  ): (LogicalPlan, Variable) = {
+
+    val variableName = maybeKey.getOrElse(expr.existsVariableName)
+    val subQueryPlan = plannerQueryPartPlanner.planSubqueryWithLabelInfo(source, expr, context)
+    val producedPlan =
+      context.logicalPlanProducer.planLetSemiApply(source, subQueryPlan, variableName, context)
+
+    (producedPlan, Variable(variableName)(expr.position))
+  }
+
   /**
-   * Rewrite any [[IRExpression]] inside `expression`. If `RollupApply` is not possible,
+   * Rewrite any [[IRExpression]] inside `expression`. If RollupApply/Apply/LetSemiApply/... is not possible,
    * it will use the [[irExpressionRewriter]] to generate [[NestedPlanExpression]]s.
    * 
    * @param plan the current plan
@@ -252,7 +272,7 @@ object SubqueryExpressionSolver {
     val subqueryExpressions: Seq[IRExpression] =
       expression.folder(context.cancellationChecker).findAllByClass[IRExpression]
 
-    // First rewrite all IR expressions with RollupApply, where it is possible.
+    // First rewrite all IR expressions with RollupApply/Apply/LetSemiApply/..., where it is possible.
     val RewriteResult(finalPlan, expressionAfterRollupApply, finalIntroducedVariables) = {
       subqueryExpressions.foldLeft(RewriteResult(plan, expression, Set.empty)) {
         case (RewriteResult(currentPlan, currentExpression, introducedVariables), irExpression) =>
@@ -269,6 +289,11 @@ object SubqueryExpressionSolver {
               newPlan = p
               newVariable = v
               v
+            case existsIRExpression: ExistsIRExpression if existsIRExpression == irExpression =>
+              val (p, v) = solveUsingLetSemiApply(currentPlan, existsIRExpression, None, context)
+              newPlan = p
+              newVariable = v
+              v
           }
           /*
            * It's important to not go use RollUpApply if the expression we are working with is:
@@ -281,10 +306,9 @@ object SubqueryExpressionSolver {
           val rewriter = topDown(
             rewriter = inner,
             stopper = {
-              case _: ListIRExpression  => false
-              case _: CountIRExpression => false
-              // Note that ExistsIRExpression is a subtype of ScopeExpression (via IRExpression)
-              case _: ExistsIRExpression => true
+              case _: ListIRExpression   => false
+              case _: CountIRExpression  => false
+              case _: ExistsIRExpression => false
               // Loops
               case _: ScopeExpression => true
               // Conditionals & List accesses
@@ -385,9 +409,9 @@ object SubqueryExpressionSolver {
           (solvedExprs :+ not, solvedPlan)
         case ((solvedExprs, plan), o @ Ors(exprs)) =>
           val (existsExpressions, expressions) = exprs.partition {
-            case ExistsIRExpression(_, _)      => true
-            case Not(ExistsIRExpression(_, _)) => true
-            case _                             => false
+            case ExistsIRExpression(_, _, _)      => true
+            case Not(ExistsIRExpression(_, _, _)) => true
+            case _                                => false
           }
           // Only plan if the OR contains an EXISTS.
           if (existsExpressions.nonEmpty) {

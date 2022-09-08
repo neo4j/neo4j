@@ -264,6 +264,9 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   test("Rewrites exists(PatternExpression) with Node label disjunction") {
     val pe = PatternExpression(n_r_m_withLabelDisjunction)(Set(n))
 
+    val nameGenerator = makeAnonymousVariableNameGenerator()
+    val existsVariableName = nameGenerator.nextName
+
     val rewritten = rewrite(Exists(pe)(pos))
 
     rewritten should equal(
@@ -278,6 +281,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           ),
           None
         ),
+        existsVariableName,
         s"exists((${n.name})-[${r.name}]-(${m.name}:M|MM))"
       )(pos)
     )
@@ -438,6 +442,9 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   test("Rewrites ExistsExpression") {
     val esc = ExistsExpression(n_r_m_r2_o_r3_q, None)(pos, Set())
 
+    val nameGenerator = makeAnonymousVariableNameGenerator()
+    val existsVariableName = nameGenerator.nextName
+
     val rewritten = rewrite(esc)
 
     rewritten should equal(
@@ -459,6 +466,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           ),
           None
         ),
+        existsVariableName,
         "EXISTS { MATCH (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) }"
       )(pos)
     )
@@ -466,6 +474,9 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("Rewrites ExistsExpression with where clause") {
     val esc = ExistsExpression(n_r_m_r2_o_r3_q, Some(rPred))(pos, Set())
+
+    val nameGenerator = makeAnonymousVariableNameGenerator()
+    val existsVariableName = nameGenerator.nextName
 
     val rewritten = rewrite(esc)
 
@@ -489,6 +500,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           ),
           None
         ),
+        existsVariableName,
         "EXISTS { MATCH (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) WHERE r.foo > 5 }"
       )(pos)
     )

@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
@@ -90,7 +91,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
           ) if validAggregations(aggregations) =>
           val projectionDeps: Iterable[LogicalVariable] =
             (distinctExpressions.values ++ aggregations.values).flatMap(_.dependencies)
-          rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput)
+          rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput, from.anonymousVariableNameGenerator)
 
         case RegularSinglePlannerQuery(
             graph,
@@ -100,7 +101,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
             queryInput
           ) =>
           val projectionDeps: Iterable[LogicalVariable] = distinctExpressions.values.flatMap(_.dependencies)
-          rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput)
+          rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput, from.anonymousVariableNameGenerator)
 
         // Remove OPTIONAL MATCH if preceding MATCH solves the exact same query graph e.g.:
         // OPTIONAL MATCH (n)
@@ -121,7 +122,8 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     interestingOrder: InterestingOrder,
     proj: QueryProjection,
     tail: Option[SinglePlannerQuery],
-    queryInput: Option[Seq[String]]
+    queryInput: Option[Seq[String]],
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): RegularSinglePlannerQuery = {
     val updateDeps = graph.mutatingPatterns.flatMap(_.dependencies)
     val dependencies: Set[String] = projectionDeps.map(_.name).toSet ++ updateDeps
@@ -171,7 +173,8 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
           val patternPredicates = patternsToFilter.map(toAst(
             elementsToKeep,
             predicatesForPatternExpression,
-            _
+            _,
+            anonymousVariableNameGenerator
           ))
 
           val newOptionalGraph = original.withPatternRelationships(patternsToKeep).withPatternNodes(
@@ -305,7 +308,8 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
   private def toAst(
     elementsToKeep: Set[String],
     predicates: Map[String, Expression],
-    pattern: PatternRelationship
+    pattern: PatternRelationship,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Expression = {
 
     val innerVars = Set(pattern.nodes._1, pattern.name, pattern.nodes._2)
@@ -329,6 +333,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
 
     ExistsIRExpression(
       query,
+      anonymousVariableNameGenerator.nextName,
       s"EXISTS { MATCH $pattern$whereString }"
     )(InputPosition.NONE)
   }

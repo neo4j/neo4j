@@ -186,6 +186,7 @@ class irExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
           patternNodes = patternNodes
         )
       )),
+      "anon_0",
       "ExistsIRExpression"
     )(pos)
   }

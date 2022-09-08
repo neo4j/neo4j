@@ -56,6 +56,7 @@ class IRExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
           selections = Selections.from(varFor("b"))
         )
       )),
+      "anon_0",
       "ExistsIRExpression"
     )(pos)
 

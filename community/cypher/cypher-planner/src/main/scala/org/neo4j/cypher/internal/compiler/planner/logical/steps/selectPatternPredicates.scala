@@ -58,12 +58,12 @@ trait SelectPatternPredicates extends SelectionCandidateGenerator {
           context.logicalPlanProducer.planAntiSemiApply(lhs, rhs, p, context)
         case o @ Ors(exprs) =>
           val (subqueryExpressions, expressions) = exprs.partition {
-            case ExistsIRExpression(_, _)      => true
-            case Not(ExistsIRExpression(_, _)) => true
-            case _                             => false
+            case ExistsIRExpression(_, _, _)      => true
+            case Not(ExistsIRExpression(_, _, _)) => true
+            case _                                => false
           }
           val (plan, solvedPredicates) =
-            planPredicates(lhs, subqueryExpressions.toSet, expressions.toSet, None, interestingOrderConfig, context)
+            planPredicates(lhs, subqueryExpressions, expressions, None, interestingOrderConfig, context)
           AssertMacros.checkOnlyWhenAssertionsAreEnabled(
             exprs.forall(solvedPredicates.contains),
             "planPredicates is supposed to solve all predicates in an OR clause."

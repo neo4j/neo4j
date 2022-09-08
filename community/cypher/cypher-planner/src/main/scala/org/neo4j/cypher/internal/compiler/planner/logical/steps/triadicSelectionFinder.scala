@@ -260,6 +260,7 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator with Sele
           None,
           None
         )),
+        _,
         _
       )
       if patternNodes == Set(predicateFrom, predicateTo)

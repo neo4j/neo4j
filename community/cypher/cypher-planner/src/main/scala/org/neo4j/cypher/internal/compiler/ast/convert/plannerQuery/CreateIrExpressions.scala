@@ -130,8 +130,9 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
      * IR for MATCH (n)-[anon_0]->(anon_1:M)
      */
     case exists @ Exists(pe @ PatternExpression(pattern)) =>
+      val existsVariableName = anonymousVariableNameGenerator.nextName
       val query = getPlannerQuery(pattern, pe.dependencies.map(_.name), None, RegularQueryProjection())
-      ExistsIRExpression(query, stringifier(exists))(exists.position)
+      ExistsIRExpression(query, existsVariableName, stringifier(exists))(exists.position)
 
     /**
      * Rewrites exists{ (n)-[anon_0]->(anon_1:M)} into
@@ -139,13 +140,14 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
      *
      */
     case existsExpression @ ExistsExpression(pattern, optionalWhereExpression) =>
+      val existsVariableName = anonymousVariableNameGenerator.nextName
       val query = getPlannerQuery(
         pattern,
         existsExpression.dependencies.map(_.name),
         optionalWhereExpression,
         RegularQueryProjection()
       )
-      ExistsIRExpression(query, stringifier(existsExpression))(existsExpression.position)
+      ExistsIRExpression(query, existsVariableName, stringifier(existsExpression))(existsExpression.position)
 
     /**
      * Rewrites (n)-[anon_0]->(anon_1:M) into

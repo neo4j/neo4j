@@ -424,6 +424,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
           ))
         )
       ),
+      "",
       ""
     )(pos)
 

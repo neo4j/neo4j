@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.functions.Head
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
@@ -476,13 +477,13 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("a")
-        .selectOrAntiSemiApply("anon_5")
+        .selectOrAntiSemiApply("anon_7")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .letSelectOrSemiApply(
-          "anon_5",
+          "anon_7",
           "a.prop = 9"
-        ) // anon_5 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
+        ) // anon_7 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
         .|.expandAll("(a)-[anon_0:Y]->(anon_1)")
         .|.argument("a")
         .allNodeScan("a")
@@ -496,10 +497,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("a")
-        .selectOrAntiSemiApply("anon_5")
+        .selectOrAntiSemiApply("anon_7")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
-        .letSemiApply("anon_5") // anon_5 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
+        .letSemiApply("anon_7") // anon_7 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
         .|.expandAll("(a)-[anon_0:Y]->(anon_1)")
         .|.argument("a")
         .allNodeScan("a")
@@ -513,10 +514,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     logicalPlan should equal(
       planner.subPlanBuilder()
-        .selectOrAntiSemiApply("anon_5")
+        .selectOrAntiSemiApply("anon_7")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
-        .letAntiSemiApply("anon_5") // anon_5 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
+        .letAntiSemiApply("anon_7") // anon_7 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
         .|.expandAll("(a)-[anon_0:Y]->(anon_1)")
         .|.argument("a")
         .allNodeScan("a")
@@ -1028,12 +1029,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     plan should equal(
       planner.subPlanBuilder()
-        .selectOrAntiSemiApply("n.prop = reduce(sum = 0, x IN anon_4 | sum + x)")
+        .selectOrAntiSemiApply("n.prop = reduce(sum = 0, x IN anon_5 | sum + x)")
         .|.filter("anon_1:M")
         .|.expandAll("(n)-[anon_0:R]->(anon_1)")
         .|.argument("n")
-        .rollUpApply("anon_4", "anon_3")
-        .|.projection("b.age AS anon_3")
+        .rollUpApply("anon_5", "anon_4")
+        .|.projection("b.age AS anon_4")
         .|.allRelationshipsScan("(a)-[anon_2]->(b)")
         .allNodeScan("n")
         .build()
@@ -1052,16 +1053,16 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     plan should equal(
       planner.subPlanBuilder()
-        .selectOrAntiSemiApply("anon_8")
+        .selectOrAntiSemiApply("anon_10")
         .|.filter("anon_3:O")
         .|.expandAll("(n)-[anon_2:Q]->(anon_3)")
         .|.argument("n")
-        .letSelectOrAntiSemiApply("anon_8", "n.prop = reduce(sum = 0, x IN anon_6 | sum + x)")
+        .letSelectOrAntiSemiApply("anon_10", "n.prop = reduce(sum = 0, x IN anon_8 | sum + x)")
         .|.filter("anon_1:M")
         .|.expandAll("(n)-[anon_0:R]->(anon_1)")
         .|.argument("n")
-        .rollUpApply("anon_6", "anon_5")
-        .|.projection("b.age AS anon_5")
+        .rollUpApply("anon_8", "anon_7")
+        .|.projection("b.age AS anon_7")
         .|.allRelationshipsScan("(a)-[anon_4]->(b)")
         .allNodeScan("n")
         .build()
@@ -1080,12 +1081,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     plan should equal(
       planner.subPlanBuilder()
-        .selectOrSemiApply("n.prop = reduce(sum = 0, x IN anon_4 | sum + x)")
+        .selectOrSemiApply("n.prop = reduce(sum = 0, x IN anon_5 | sum + x)")
         .|.filter("anon_1:M")
         .|.expandAll("(n)-[anon_0:R]->(anon_1)")
         .|.argument("n")
-        .rollUpApply("anon_4", "anon_3")
-        .|.projection("b.age AS anon_3")
+        .rollUpApply("anon_5", "anon_4")
+        .|.projection("b.age AS anon_4")
         .|.allRelationshipsScan("(a)-[anon_2]->(b)")
         .allNodeScan("n")
         .build()
@@ -1104,16 +1105,16 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     plan should equal(
       planner.subPlanBuilder()
-        .selectOrSemiApply("anon_8")
+        .selectOrSemiApply("anon_10")
         .|.filter("anon_3:O")
         .|.expandAll("(n)-[anon_2:Q]->(anon_3)")
         .|.argument("n")
-        .letSelectOrSemiApply("anon_8", "n.prop = reduce(sum = 0, x IN anon_6 | sum + x)")
+        .letSelectOrSemiApply("anon_10", "n.prop = reduce(sum = 0, x IN anon_8 | sum + x)")
         .|.filter("anon_1:M")
         .|.expandAll("(n)-[anon_0:R]->(anon_1)")
         .|.argument("n")
-        .rollUpApply("anon_6", "anon_5")
-        .|.projection("b.age AS anon_5")
+        .rollUpApply("anon_8", "anon_7")
+        .|.projection("b.age AS anon_7")
         .|.allRelationshipsScan("(a)-[anon_4]->(b)")
         .allNodeScan("n")
         .build()
@@ -1707,7 +1708,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     val q =
       """
         |MATCH (n)
-        |RETURN exists( (n)-->()-->() ) AS foo
+        |RETURN head([exists( (n)-->()-->() )]) AS foo
         """.stripMargin
 
     val plan = planner.plan(q).stripProduceResults
@@ -1722,12 +1723,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     plan should equal(
       planner.subPlanBuilder()
         .projection(Map("foo" ->
-          NestedPlanExistsExpression(
-            expectedNestedPlan,
-            "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)-[`anon_2`]->(`anon_3`) }"
-          )(
-            pos
-          )))
+          Head(listOf(
+            NestedPlanExistsExpression(
+              expectedNestedPlan,
+              "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)-[`anon_2`]->(`anon_3`) }"
+            )(pos)
+          ))(pos)))
         .allNodeScan("n")
         .build()
     )
@@ -1737,7 +1738,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     val q =
       """
         |MATCH (n)
-        |RETURN exists( (n)-->(:B) ) AS foo
+        |RETURN head([exists( (n)-->(:B) )]) AS foo
         """.stripMargin
 
     val plan = planner.plan(q).stripProduceResults
@@ -1751,7 +1752,9 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     plan should equal(
       planner.subPlanBuilder()
         .projection(Map("foo" ->
-          NestedPlanExistsExpression(expectedNestedPlan, "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`:B) }")(pos)))
+          Head(listOf(
+            NestedPlanExistsExpression(expectedNestedPlan, "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`:B) }")(pos)
+          ))(pos)))
         .allNodeScan("n")
         .build()
     )
@@ -1763,7 +1766,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     val q =
       """
         |MATCH (n)
-        |RETURN exists( (n)-->(:B|C) ) AS foo
+        |RETURN head([exists( (n)-->(:B|C) )]) AS foo
         """.stripMargin
 
     val plan = planner.plan(q).stripProduceResults
@@ -1777,7 +1780,9 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     plan should equal(
       planner.subPlanBuilder()
         .projection(Map("foo" ->
-          NestedPlanExistsExpression(expectedNestedPlan, "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`:B|C) }")(pos)))
+          Head(listOf(
+            NestedPlanExistsExpression(expectedNestedPlan, "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`:B|C) }")(pos)
+          ))(pos)))
         .allNodeScan("n")
         .build()
     )
@@ -1787,7 +1792,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     val q =
       """
         |MATCH (n)
-        |RETURN exists( (n)-->(:D {prop: 5}) ) AS foo
+        |RETURN head([exists( (n)-->(:D {prop: 5}) )]) AS foo
         """.stripMargin
 
     val plan = planner.plan(q).stripProduceResults
@@ -1800,9 +1805,11 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     plan should equal(
       planner.subPlanBuilder()
         .projection(Map("foo" ->
-          NestedPlanExistsExpression(expectedNestedPlan, "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`:D {prop: 5}) }")(
-            pos
-          )))
+          Head(listOf(
+            NestedPlanExistsExpression(expectedNestedPlan, "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`:D {prop: 5}) }")(
+              pos
+            )
+          ))(pos)))
         .allNodeScan("n")
         .build()
     )
@@ -2259,6 +2266,35 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
           SemanticDirection.OUTGOING,
           literalInt(0)
         )(pos)))
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should use LetSemiApply to plan EXISTS in RETURN") {
+    val logicalPlan = planner.plan("MATCH (a) RETURN EXISTS { (a)-[:X]->(:Foo) } AS exists")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("exists")
+        .letSemiApply("exists")
+        .|.filter("anon_1:Foo")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should use LetSemiApply to plan EXISTS in AND in RETURN") {
+    val logicalPlan = planner.plan("MATCH (a) RETURN EXISTS { (a)-[:X]->(:Foo) } AND a.prop = 10 AS exists")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("exists")
+        .projection("anon_2 AND a.prop = 10 AS exists")
+        .letSemiApply("anon_2")
+        .|.filter("anon_1:Foo")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
         .allNodeScan("a")
         .build()
     )

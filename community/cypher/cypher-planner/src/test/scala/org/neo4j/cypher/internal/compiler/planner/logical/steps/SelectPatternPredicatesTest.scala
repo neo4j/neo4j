@@ -92,6 +92,7 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
         )
       )
     ),
+    "",
     s"exists((a)-[`$relName`]->(`$nodeName`))"
   )(pos)
 
@@ -106,6 +107,7 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
         )
       )
     ),
+    "",
     s"exists((a)-[`$relName2`]->(`$nodeName2`))"
   )(pos)
 

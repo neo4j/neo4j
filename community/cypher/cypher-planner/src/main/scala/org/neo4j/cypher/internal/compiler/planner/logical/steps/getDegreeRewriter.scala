@@ -240,6 +240,7 @@ object EligibleExistsIRExpression {
           types,
           dir
         ),
+        _,
         _
       ) =>
       isEligible(e, node, rel, otherNode, types, dir)

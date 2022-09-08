@@ -582,14 +582,16 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     assert_that(testName).is_rewritten_to(
       """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c)
         |WHERE a:A
-        | AND EXISTS { (b)-[r4:R4]-(e) WHERE e:E }
-        | AND c.prop = 2
-        | AND a.prop = 0
-        | AND EXISTS { (a)-[r3:R3]-(d) WHERE d:D }
-        | AND EXISTS { (c)-[r5:R5]-(f) WHERE f:F }
-        | AND b.prop = 1
-        | AND c:C
-        | AND b:B
+        |  AND b:B
+        |  AND c:C
+        |  AND a.prop = 0
+        |  AND b.prop = 1
+        |  AND c.prop = 2
+        |  // The order for the EXISTS predicates is unfortunately important, because anonymous variables get assigned in order.
+        |  AND EXISTS { (c)-[r5:R5]-(f) WHERE f:F } 
+        |  AND EXISTS { (a)-[r3:R3]-(d) WHERE d:D }
+        |  AND EXISTS { (b)-[r4:R4]-(e) WHERE e:E }
+        |        
         |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB, COUNT(DISTINCT c) as countC""".stripMargin
     )
   }

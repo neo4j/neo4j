@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.util.InputPosition
  */
 case class ExistsIRExpression(
   override val query: PlannerQuery,
+  existsVariableName: String,
   solvedExpressionAsString: String
 )(val position: InputPosition)
     extends IRExpression(query, solvedExpressionAsString)
