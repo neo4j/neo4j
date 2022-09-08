@@ -646,12 +646,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
-    @Description("Enable/disable the use of a merge cumulator for netty")
-    public static final Setting<Boolean> netty_message_merge_cumulator = newBuilder(
-                    "internal.dbms.bolt.netty_message_merge_cumulator", BOOL, false)
-            .build();
-
-    @Internal
     @Description("Create an archive of an index before re-creating it if failing to load on startup.")
     public static final Setting<Boolean> archive_failed_index =
             newBuilder("internal.dbms.index.archive_failed", BOOL, false).build();

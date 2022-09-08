@@ -23,6 +23,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.WriteBufferWaterMark;
+import io.netty.handler.codec.ByteToMessageDecoder;
 import java.util.Arrays;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.negotiation.codec.ProtocolNegotiationRequestDecoder;
@@ -143,18 +144,24 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
                             config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_high_water_mark)));
         }
 
+        ChunkFrameDecoder frameDecoder;
         var readLimit = config.get(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes);
         if (readLimit != 0) {
             this.log.debug(
                     "Imposing %d byte read-limit on connection '%s' until authentication is completed",
                     readLimit, this.connection.id());
 
-            ctx.pipeline().addLast(new ChunkFrameDecoder(readLimit, this.logging));
-
+            frameDecoder = new ChunkFrameDecoder(readLimit, this.logging);
             this.connection.registerListener(new ReadLimitConnectionListener(this.connection, this.logging));
         } else {
-            ctx.pipeline().addLast(new ChunkFrameDecoder(this.logging));
+            frameDecoder = new ChunkFrameDecoder(this.logging);
         }
+
+        if (config.get(BoltConnectorInternalSettings.netty_message_merge_cumulator)) {
+            this.log.warn("Enabling merge cumulator for chunk decoding - Network performance may be degraded");
+            frameDecoder.setCumulator(ByteToMessageDecoder.MERGE_CUMULATOR);
+        }
+        ctx.pipeline().addLast(frameDecoder);
 
         ctx.pipeline()
                 .addLast("chunkFrameEncoder", new ChunkFrameEncoder())

@@ -161,4 +161,10 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration 
                     "internal.dbms.bolt.inbound_message_throttle.low_watermark", INT, 100)
             .addConstraint(range(1, Integer.MAX_VALUE))
             .build();
+
+    @Internal
+    @Description("Enable/disable the use of a merge cumulator for netty")
+    public static final Setting<Boolean> netty_message_merge_cumulator = newBuilder(
+                    "internal.dbms.bolt.netty_message_merge_cumulator", BOOL, false)
+            .build();
 }
