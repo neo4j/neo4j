@@ -891,7 +891,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     @Description("The address the routing connector should bind to")
     public static final Setting<SocketAddress> routing_listen_address = newBuilder(
-                    "dbms.routing.listen_address", SOCKET_ADDRESS, new SocketAddress(DEFAULT_ROUTING_CONNECTOR_PORT))
+                    "server.routing.listen_address", SOCKET_ADDRESS, new SocketAddress(DEFAULT_ROUTING_CONNECTOR_PORT))
             .setDependency(default_listen_address)
             .build();
 
