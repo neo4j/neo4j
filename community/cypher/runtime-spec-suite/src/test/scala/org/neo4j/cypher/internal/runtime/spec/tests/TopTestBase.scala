@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -341,4 +342,23 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("x", "y", "z").withRows(expected)
   }
+
+  test("should create node when create precedes top 0") {
+    // when
+    val input = inputValues()
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .top(Seq(Ascending("n")), 0)
+      .create(createNode("n"))
+      .argument()
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    consume(runtimeResult)
+    runtimeResult should beColumns("n").withNoRows().withStatistics(nodesCreated = 1)
+  }
+
 }

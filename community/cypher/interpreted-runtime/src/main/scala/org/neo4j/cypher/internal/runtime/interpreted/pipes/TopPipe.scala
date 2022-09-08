@@ -45,7 +45,14 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
     state: QueryState
   ): ClosingIterator[CypherRow] = {
     val limit = SkipPipe.evaluateStaticSkipOrLimitNumberOrThrow(countExpression, state, "LIMIT")
-    if (limit == 0 || input.isEmpty) return ClosingIterator.empty
+    if (limit == 0 || input.isEmpty) {
+      // in the case limit is 0 we still need to exhaust the result since we might get here from
+      // a SORT + EXHAUSTIVE LIMIT
+      while (input.hasNext) {
+        input.next()
+      }
+      return ClosingIterator.empty
+    }
 
     val scopedMemoryTracker =
       state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x).getScopedMemoryTracker
