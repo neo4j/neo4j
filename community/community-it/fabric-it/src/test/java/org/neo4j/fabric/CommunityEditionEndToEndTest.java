@@ -142,7 +142,7 @@ class CommunityEditionEndToEndTest {
         var dependencyResolver = graphDatabase.getDependencyResolver();
         var transactionManager = dependencyResolver.resolveDependency(TransactionManager.class);
         var fabricExecutor = dependencyResolver.resolveDependency(FabricExecutor.class);
-        var databaseName = new NormalizedDatabaseName("mega");
+        var databaseName = new NormalizedDatabaseName("neo4j");
         var databaseId = DatabaseIdFactory.from(databaseName.name(), UUID.randomUUID());
         var databaseRef = new DatabaseReference.Internal(databaseName, databaseId, true);
         var transactionInfo = new FabricTransactionInfo(
