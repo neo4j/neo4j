@@ -83,7 +83,7 @@ case class Or(lhs: Expression, rhs: Expression)(val position: InputPosition) ext
 
 object Ors {
 
-  def apply(exprs: Seq[Expression])(position: InputPosition): Ors = {
+  def apply(exprs: IterableOnce[Expression])(position: InputPosition): Ors = {
     Ors(ListSet.from(exprs))(position)
   }
 }

@@ -47,9 +47,11 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 
+import scala.collection.immutable.ListSet
 import scala.collection.mutable
 
 /**
@@ -138,8 +140,13 @@ object SubqueryExpressionSolver {
               solveUsingLetSemiApply(resultPlan, expression, maybeKey, context)
             RewriteResult(newPlan, newVar, Set(newVar.name))
 
+          case Not(expression: ExistsIRExpression) =>
+            val (newPlan, newVar) =
+              solveUsingLetAntiSemiApply(resultPlan, expression, maybeKey, context)
+            RewriteResult(newPlan, newVar, Set(newVar.name))
+
           case inExpression =>
-            // Any remaining IRExpressions are rewritten with RollUpApply or NestedPlanExpression
+            // Any remaining IRExpressions are rewritten with RollupApply/Apply/LetSemiApply/... or NestedPlanExpression
             rewriteInnerExpressions(resultPlan, inExpression, context)
         }
         resultPlan = plan
@@ -209,7 +216,6 @@ object SubqueryExpressionSolver {
     maybeKey: Option[String],
     context: LogicalPlanningContext
   ): (LogicalPlan, Variable) = {
-
     val collectionName = maybeKey.getOrElse(expr.collectionName)
     val subQueryPlan = plannerQueryPartPlanner.planSubqueryWithLabelInfo(source, expr, context)
     val producedPlan = context.logicalPlanProducer.ForSubqueryExpressionSolver.planRollup(
@@ -229,7 +235,6 @@ object SubqueryExpressionSolver {
     maybeKey: Option[String],
     context: LogicalPlanningContext
   ): (LogicalPlan, Variable) = {
-
     val countVariableName = maybeKey.getOrElse(expr.countVariableName)
     val subQueryPlan = {
       val exprToPlan = maybeKey.fold(expr)(expr.renameCountVariable)
@@ -241,20 +246,65 @@ object SubqueryExpressionSolver {
     (producedPlan, Variable(countVariableName)(expr.position))
   }
 
+  private def solveUsingLetSemiApplyVariant(
+    source: LogicalPlan,
+    expr: ExistsIRExpression,
+    maybeKey: Option[String],
+    fn: (LogicalPlan, LogicalPlan, String, LogicalPlanningContext) => LogicalPlan,
+    context: LogicalPlanningContext
+  ): (LogicalPlan, Variable) = {
+    val variableName = maybeKey.getOrElse(expr.existsVariableName)
+    val subQueryPlan = plannerQueryPartPlanner.planSubqueryWithLabelInfo(source, expr, context)
+    val producedPlan = fn(source, subQueryPlan, variableName, context)
+
+    (producedPlan, Variable(variableName)(expr.position))
+  }
+
   private def solveUsingLetSemiApply(
     source: LogicalPlan,
     expr: ExistsIRExpression,
     maybeKey: Option[String],
     context: LogicalPlanningContext
-  ): (LogicalPlan, Variable) = {
+  ): (LogicalPlan, Variable) =
+    solveUsingLetSemiApplyVariant(source, expr, maybeKey, context.logicalPlanProducer.planLetSemiApply, context)
 
-    val variableName = maybeKey.getOrElse(expr.existsVariableName)
-    val subQueryPlan = plannerQueryPartPlanner.planSubqueryWithLabelInfo(source, expr, context)
-    val producedPlan =
-      context.logicalPlanProducer.planLetSemiApply(source, subQueryPlan, variableName, context)
+  private def solveUsingLetAntiSemiApply(
+    source: LogicalPlan,
+    expr: ExistsIRExpression,
+    maybeKey: Option[String],
+    context: LogicalPlanningContext
+  ): (LogicalPlan, Variable) =
+    solveUsingLetSemiApplyVariant(source, expr, maybeKey, context.logicalPlanProducer.planLetAntiSemiApply, context)
 
-    (producedPlan, Variable(variableName)(expr.position))
-  }
+  private def solveUsingLetSelectOrSemiApply(
+    source: LogicalPlan,
+    expr: ExistsIRExpression,
+    maybeKey: Option[String],
+    orExpression: Expression,
+    context: LogicalPlanningContext
+  ): (LogicalPlan, Variable) =
+    solveUsingLetSemiApplyVariant(
+      source,
+      expr,
+      maybeKey,
+      context.logicalPlanProducer.planLetSelectOrSemiApply(_, _, _, orExpression, _),
+      context
+    )
+
+  private def solveUsingLetSelectOrAntiSemiApply(
+    source: LogicalPlan,
+    expr: ExistsIRExpression,
+    maybeKey: Option[String],
+    orExpression: Expression,
+    context: LogicalPlanningContext
+  ): (LogicalPlan, Variable) =
+    solveUsingLetSemiApplyVariant(
+      source,
+      expr,
+      maybeKey,
+      context.logicalPlanProducer.planLetSelectOrAntiSemiApply(_, _, _, orExpression, _),
+      context
+    )
 
   /**
    * Rewrite any [[IRExpression]] inside `expression`. If RollupApply/Apply/LetSemiApply/... is not possible,
@@ -278,22 +328,60 @@ object SubqueryExpressionSolver {
         case (RewriteResult(currentPlan, currentExpression, introducedVariables), irExpression) =>
           var newPlan: LogicalPlan = null
           var newVariable: Variable = null
+          def updateVars(tuple: (LogicalPlan, Variable)): Variable = {
+            val (plan, variable) = tuple
+            newPlan = plan
+            newVariable = variable
+            variable
+          }
+
+          def solveOrsWithExists(
+            exprs: ListSet[Expression],
+            negated: Boolean
+          ): Expression = {
+            val existsIRExpression = irExpression.asInstanceOf[ExistsIRExpression]
+            val excludeExpr = if (negated) Not(irExpression)(InputPosition.NONE) else irExpression
+
+            val (otherExistsExpressions, otherExpressions) = (exprs - excludeExpr).partition {
+              case ExistsIRExpression(_, _, _)      => true
+              case Not(ExistsIRExpression(_, _, _)) => true
+              case _                                => false
+            }
+            if (otherExpressions.isEmpty) {
+              val (p, v) =
+                if (negated) solveUsingLetAntiSemiApply(currentPlan, existsIRExpression, None, context)
+                else solveUsingLetSemiApply(currentPlan, existsIRExpression, None, context)
+              newPlan = p
+              newVariable = v
+              SelectPatternPredicates.onePredicate(otherExistsExpressions + v)
+            } else {
+              val orExpr = SelectPatternPredicates.onePredicate(otherExpressions)
+              val (p, v) =
+                if (negated) solveUsingLetSelectOrAntiSemiApply(currentPlan, existsIRExpression, None, orExpr, context)
+                else solveUsingLetSelectOrSemiApply(currentPlan, existsIRExpression, None, orExpr, context)
+              newPlan = p
+              newVariable = v
+              SelectPatternPredicates.onePredicate(otherExistsExpressions + v)
+            }
+          }
+
           val inner = Rewriter.lift {
             case listIRExpression: ListIRExpression if listIRExpression == irExpression =>
-              val (p, v) = solveUsingRollUpApply(currentPlan, listIRExpression, None, context)
-              newPlan = p
-              newVariable = v
-              v
+              updateVars(solveUsingRollUpApply(currentPlan, listIRExpression, None, context))
             case countIRExpression: CountIRExpression if countIRExpression == irExpression =>
-              val (p, v) = solveUsingApply(currentPlan, countIRExpression, None, context)
-              newPlan = p
-              newVariable = v
-              v
+              updateVars(solveUsingApply(currentPlan, countIRExpression, None, context))
             case existsIRExpression: ExistsIRExpression if existsIRExpression == irExpression =>
-              val (p, v) = solveUsingLetSemiApply(currentPlan, existsIRExpression, None, context)
-              newPlan = p
-              newVariable = v
-              v
+              updateVars(solveUsingLetSemiApply(currentPlan, existsIRExpression, None, context))
+            case Not(existsIRExpression: ExistsIRExpression) if existsIRExpression == irExpression =>
+              updateVars(solveUsingLetAntiSemiApply(currentPlan, existsIRExpression, None, context))
+            case Ors(exprs)
+              if irExpression.isInstanceOf[ExistsIRExpression] &&
+                exprs.contains(irExpression) =>
+              solveOrsWithExists(exprs, negated = false)
+            case Ors(exprs)
+              if irExpression.isInstanceOf[ExistsIRExpression] &&
+                exprs.contains(Not(irExpression)(InputPosition.NONE)) =>
+              solveOrsWithExists(exprs, negated = true)
           }
           /*
            * It's important to not go use RollUpApply if the expression we are working with is:

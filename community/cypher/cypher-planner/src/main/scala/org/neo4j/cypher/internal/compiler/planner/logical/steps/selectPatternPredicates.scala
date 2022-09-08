@@ -36,6 +36,8 @@ import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Ref
 
+import scala.collection.immutable.ListSet
+
 trait SelectPatternPredicates extends SelectionCandidateGenerator {
 
   override def apply(
@@ -194,11 +196,11 @@ trait SelectPatternPredicates extends SelectionCandidateGenerator {
     rhsPlanner.plan(subquery, labelInfo, arguments, context)
   }
 
-  private def onePredicate(expressions: Set[Expression]): Expression =
+  def onePredicate(expressions: Set[Expression]): Expression =
     if (expressions.size == 1)
       expressions.head
     else
-      Ors(expressions.toSeq)(expressions.head.position)
+      Ors(expressions)(expressions.head.position)
 
   private def freshId(existsExpression: Expression, anonymousVariableNameGenerator: AnonymousVariableNameGenerator) = {
     val name = anonymousVariableNameGenerator.nextName

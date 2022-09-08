@@ -73,6 +73,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     .setLabelCardinality("C", 10)
     .setLabelCardinality("D", 1)
     .setLabelCardinality("Foo", 10)
+    .setLabelCardinality("Bar", 10)
     .setLabelCardinality("Person", 10)
     .setLabelCardinality("ComedyClub", 10)
     .setLabelCardinality("User", 10)
@@ -88,6 +89,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     .setRelationshipCardinality("()-[:REL]-()", 10)
     .setRelationshipCardinality("()-[:X]-()", 10)
     .setRelationshipCardinality("()-[:X]-(:Foo)", 10)
+    .setRelationshipCardinality("()-[:X]-(:Bar)", 10)
     .setRelationshipCardinality("(:Foo)-[]->()", 10)
     .setRelationshipCardinality("()-[]->(:Foo)", 10)
     .setRelationshipCardinality("()-[:Y]-()", 20)
@@ -2309,6 +2311,317 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         .produceResults("exists")
         .projection("anon_2 AND a.prop = 10 AS exists")
         .letSemiApply("anon_2")
+        .|.filter("anon_1:Foo")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should use LetAntiSemiApply to plan NOT EXISTS in RETURN") {
+    val logicalPlan = planner.plan("MATCH (a) RETURN NOT EXISTS { (a)-[:X]->(:Foo) } AS notExists")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("notExists")
+        .letAntiSemiApply("notExists")
+        .|.filter("anon_1:Foo")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should use LetAntiSemiApply to plan nested NOT EXISTS in RETURN") {
+    val logicalPlan = planner.plan("MATCH (a) RETURN [NOT EXISTS { (a)-[:X]->(:Foo) }] AS notExists")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("notExists")
+        .projection("[anon_2] AS notExists")
+        .letAntiSemiApply("anon_2")
+        .|.filter("anon_1:Foo")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should use LetAntiSemiApply to plan NOT EXISTS in AND in RETURN") {
+    val logicalPlan = planner.plan("MATCH (a) RETURN NOT EXISTS { (a)-[:X]->(:Foo) } AND a.prop = 10 AS notExists")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("notExists")
+        .projection("anon_2 AND a.prop = 10 AS notExists")
+        .letAntiSemiApply("anon_2")
+        .|.filter("anon_1:Foo")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should use LetSelectOrSemiApply to plan EXISTS ORed with another predicate in RETURN") {
+    val logicalPlan = planner.plan("MATCH (a) RETURN EXISTS { (a)-[:X]->(:Foo) } OR a.prop = 10 AS exists")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("exists")
+        .projection("anon_2 AS exists") // We could remove this unneeded projection, but it doesn't do much harm
+        .letSelectOrSemiApply("anon_2", "a.prop = 10")
+        .|.filter("anon_1:Foo")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should use LetSelectOrSemiApply to plan nested EXISTS ORed with another predicate in RETURN") {
+    val logicalPlan = planner.plan("MATCH (a) RETURN [EXISTS { (a)-[:X]->(:Foo) } OR a.prop = 10] AS exists")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("exists")
+        .projection("[anon_2] AS exists")
+        .letSelectOrSemiApply("anon_2", "a.prop = 10")
+        .|.filter("anon_1:Foo")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should use LetSelectOrSemiApply to plan EXISTS ORed with two other predicate in RETURN") {
+    val logicalPlan = planner.plan("MATCH (a) RETURN EXISTS { (a)-[:X]->(:Foo) } OR a.prop = 10 OR a.foo = 5 AS exists")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("exists")
+        .projection("anon_2 AS exists") // We could remove this unneeded projection, but it doesn't do much harm
+        .letSelectOrSemiApply("anon_2", "a.prop = 10 OR a.foo = 5")
+        .|.filter("anon_1:Foo")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should use LetSelectOrSemiApply to plan nested EXISTS ORed with two other predicate in RETURN") {
+    val logicalPlan =
+      planner.plan("MATCH (a) RETURN [EXISTS { (a)-[:X]->(:Foo) } OR a.prop = 10 OR a.foo = 5] AS exists")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("exists")
+        .projection("[anon_2] AS exists")
+        .letSelectOrSemiApply("anon_2", "a.prop = 10 OR a.foo = 5")
+        .|.filter("anon_1:Foo")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should use LetSelectOrAntiSemiApply to plan NOT EXISTS ORed with another predicate in RETURN") {
+    val logicalPlan = planner.plan("MATCH (a) RETURN NOT EXISTS { (a)-[:X]->(:Foo) } OR a.prop = 10 AS notExists")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("notExists")
+        .projection("anon_2 AS notExists") // We could remove this unneeded projection, but it doesn't do much harm
+        .letSelectOrAntiSemiApply("anon_2", "a.prop = 10")
+        .|.filter("anon_1:Foo")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should use LetSelectOrAntiSemiApply to plan nested NOT EXISTS ORed with another predicate in RETURN") {
+    val logicalPlan = planner.plan("MATCH (a) RETURN [NOT EXISTS { (a)-[:X]->(:Foo) } OR a.prop = 10] AS notExists")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("notExists")
+        .projection("[anon_2] AS notExists")
+        .letSelectOrAntiSemiApply("anon_2", "a.prop = 10")
+        .|.filter("anon_1:Foo")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should use LetSemiApply and LetSelectOrSemiApply to plan two ORed EXISTS in RETURN") {
+    val logicalPlan =
+      planner.plan("MATCH (a) RETURN EXISTS { (a)-[:X]->(:Foo) } OR EXISTS { (a)-[:X]->(:Bar) } AS exists")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("exists")
+        .projection("anon_5 AS exists") // We could remove this unneeded projection, but it doesn't do much harm
+        .letSelectOrSemiApply("anon_5", "anon_4")
+        .|.filter("anon_3:Bar")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
+        .|.argument("a")
+        .letSemiApply("anon_4")
+        .|.filter("anon_1:Foo")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should use LetSemiApply and LetSelectOrSemiApply to plan two nested ORed EXISTS in RETURN") {
+    val logicalPlan =
+      planner.plan("MATCH (a) RETURN [EXISTS { (a)-[:X]->(:Foo) } OR EXISTS { (a)-[:X]->(:Bar) }] AS exists")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("exists")
+        .projection("[anon_5] AS exists")
+        .letSelectOrSemiApply("anon_5", "anon_4")
+        .|.filter("anon_3:Bar")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
+        .|.argument("a")
+        .letSemiApply("anon_4")
+        .|.filter("anon_1:Foo")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should use LetAntiSemiApply and LetSelectOrAntiSemiApply to plan two ORed NOT EXISTS in RETURN") {
+    val logicalPlan =
+      planner.plan("MATCH (a) RETURN NOT EXISTS { (a)-[:X]->(:Foo) } OR NOT EXISTS { (a)-[:X]->(:Bar) } AS notExists")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("notExists")
+        .projection("anon_5 AS notExists") // We could remove this unneeded projection, but it doesn't do much harm
+        .letSelectOrAntiSemiApply("anon_5", "anon_4")
+        .|.filter("anon_3:Bar")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
+        .|.argument("a")
+        .letAntiSemiApply("anon_4")
+        .|.filter("anon_1:Foo")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should use LetAntiSemiApply and LetSelectOrAntiSemiApply to plan two nested ORed NOT EXISTS in RETURN") {
+    val logicalPlan =
+      planner.plan("MATCH (a) RETURN [NOT EXISTS { (a)-[:X]->(:Foo) } OR NOT EXISTS { (a)-[:X]->(:Bar) }] AS notExists")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("notExists")
+        .projection("[anon_5] AS notExists")
+        .letSelectOrAntiSemiApply("anon_5", "anon_4")
+        .|.filter("anon_3:Bar")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
+        .|.argument("a")
+        .letAntiSemiApply("anon_4")
+        .|.filter("anon_1:Foo")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test(
+    "should use LetSelectOrSemiApply and LetSelectOrSemiApply to plan two ORed EXISTS ORed with another predicate in RETURN"
+  ) {
+    val logicalPlan =
+      planner.plan(
+        "MATCH (a) RETURN EXISTS { (a)-[:X]->(:Foo) } OR EXISTS { (a)-[:X]->(:Bar) } OR a.prop = 10 AS exists"
+      )
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("exists")
+        .projection("anon_5 AS exists") // We could remove this unneeded projection, but it doesn't do much harm
+        .letSelectOrSemiApply("anon_5", "anon_4")
+        .|.filter("anon_3:Bar")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
+        .|.argument("a")
+        .letSelectOrSemiApply("anon_4", "a.prop = 10")
+        .|.filter("anon_1:Foo")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test(
+    "should use LetSelectOrSemiApply and LetSelectOrSemiApply to plan two nested ORed EXISTS ORed with another predicate in RETURN"
+  ) {
+    val logicalPlan =
+      planner.plan(
+        "MATCH (a) RETURN [EXISTS { (a)-[:X]->(:Foo) } OR EXISTS { (a)-[:X]->(:Bar) } OR a.prop = 10] AS exists"
+      )
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("exists")
+        .projection("[anon_5] AS exists")
+        .letSelectOrSemiApply("anon_5", "anon_4")
+        .|.filter("anon_3:Bar")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
+        .|.argument("a")
+        .letSelectOrSemiApply("anon_4", "a.prop = 10")
+        .|.filter("anon_1:Foo")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test(
+    "should use LetSelectOrAntiSemiApply and LetSelectOrAntiSemiApply to plan two ORed NOT EXISTS ORed with another predicate in RETURN"
+  ) {
+    val logicalPlan =
+      planner.plan(
+        "MATCH (a) RETURN NOT EXISTS { (a)-[:X]->(:Foo) } OR NOT EXISTS { (a)-[:X]->(:Bar) } OR a.prop = 10 AS notExists"
+      )
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("notExists")
+        .projection("anon_5 AS notExists") // We could remove this unneeded projection, but it doesn't do much harm
+        .letSelectOrAntiSemiApply("anon_5", "anon_4")
+        .|.filter("anon_3:Bar")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
+        .|.argument("a")
+        .letSelectOrAntiSemiApply("anon_4", "a.prop = 10")
+        .|.filter("anon_1:Foo")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test(
+    "should use LetSelectOrAntiSemiApply and LetSelectOrAntiSemiApply to plan two nested ORed NOT EXISTS ORed with another predicate in RETURN"
+  ) {
+    val logicalPlan =
+      planner.plan(
+        "MATCH (a) RETURN [NOT EXISTS { (a)-[:X]->(:Foo) } OR NOT EXISTS { (a)-[:X]->(:Bar) } OR a.prop = 10] AS notExists"
+      )
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("notExists")
+        .projection("[anon_5] AS notExists")
+        .letSelectOrAntiSemiApply("anon_5", "anon_4")
+        .|.filter("anon_3:Bar")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
+        .|.argument("a")
+        .letSelectOrAntiSemiApply("anon_4", "a.prop = 10")
         .|.filter("anon_1:Foo")
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
         .|.argument("a")
