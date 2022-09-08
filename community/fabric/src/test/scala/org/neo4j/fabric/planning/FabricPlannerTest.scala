@@ -69,7 +69,7 @@ import org.scalatest.matchers.Matcher
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 import java.time.Duration
-import java.util.Optional
+import java.util.UUID
 
 import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.util.Failure
@@ -83,22 +83,24 @@ class FabricPlannerTest
     with FragmentTestUtils
     with AstConstructionTestSupport {
 
-  private def makeConfig(fabricDbName: String) =
-    new FabricConfig(() => Duration.ZERO, new FabricConfig.DataStream(0, 0, 0, 0), false, true) {
+  private def makeConfig() =
+    new FabricConfig(() => Duration.ZERO, new FabricConfig.DataStream(0, 0, 0, 0), false, true)
 
-      override def getFabricDatabaseName: Optional[NormalizedDatabaseName] =
-        Optional.of(new NormalizedDatabaseName(fabricDbName))
-    }
-
-  private val config = makeConfig("mega")
+  private val config = makeConfig()
   private val planner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+  private val fabricName = "fabric"
+  private val sessionGraphName = "session"
+
+  private val fabricCatalog =
+    Catalog.byQualifiedName(Seq(Catalog.Composite(0, UUID.randomUUID(), new NormalizedDatabaseName(fabricName))))
 
   private def instance(
     query: String,
     params: MapValue = params,
     fabricContext: Boolean = false
-  ): planner.PlannerInstance =
-    planner.instance(query, params, defaultGraphName, Catalog(Map())).withForceFabricContext(fabricContext)
+  ): planner.PlannerInstance = {
+    planner.instance(query, params, defaultGraphName, fabricCatalog).withForceFabricContext(fabricContext)
+  }
 
   private def plan(query: String, params: MapValue = params, fabricContext: Boolean = false) =
     instance(query, params, fabricContext).plan
@@ -1207,30 +1209,27 @@ class FabricPlannerTest
          |""".stripMargin
     )
 
-    def planAndStitch(sessionGraphName: String, fabricName: String, query: String, params: MapValue = params) = {
+    def planAndStitch(sessionGraphName: String, query: String, params: MapValue = params) = {
       val planner =
-        FabricPlanner(makeConfig(fabricName), cypherConfig, monitors, cacheFactory, signatures)
-          .instance(query, params, sessionGraphName, Catalog(Map()))
+        FabricPlanner(makeConfig(), cypherConfig, monitors, cacheFactory, signatures)
+          .instance(query, params, sessionGraphName, fabricCatalog)
       Try(planner.plan)
     }
-
-    val fabricName = "fabric"
-    val sessionGraphName = "session"
 
     "stitches single-graph queries" in {
 
       forAll(defaultGraphQueries) { query =>
-        planAndStitch(sessionGraphName, fabricName, query)
+        planAndStitch(sessionGraphName, query)
           .should(beFullyStitched)
       }
 
       forAll(singleGraphQueries(graphName = "foo")) { query =>
-        planAndStitch(sessionGraphName, fabricName, query)
+        planAndStitch(sessionGraphName, query)
           .should(beFullyStitched)
       }
 
       forAll(singleGraphQueries(graphName = "foo.bar")) { query =>
-        planAndStitch(sessionGraphName, fabricName, query)
+        planAndStitch(sessionGraphName, query)
           .should(beFullyStitched)
       }
     }
@@ -1238,32 +1237,32 @@ class FabricPlannerTest
     "stitches multi-graph queries when graph is the same" in {
 
       forAll(singlePlusDefaultGraphQueries(graphName = sessionGraphName)) { query =>
-        planAndStitch(sessionGraphName, fabricName, query)
+        planAndStitch(sessionGraphName, query)
           .should(beFullyStitched)
       }
 
       forAll(defaultPlusSingleGraphQueries(graphName = sessionGraphName)) { query =>
-        planAndStitch(sessionGraphName, fabricName, query)
+        planAndStitch(sessionGraphName, query)
           .should(beFullyStitched)
       }
 
       forAll(doubleGraphQueries(graphName1 = "foo", graphName2 = "foo")) { query =>
-        planAndStitch(sessionGraphName, fabricName, query)
+        planAndStitch(sessionGraphName, query)
           .should(beFullyStitched)
       }
 
       forAll(doubleGraphQueries(graphName1 = "foo.bar", graphName2 = "foo.bar")) { query =>
-        planAndStitch(sessionGraphName, fabricName, query)
+        planAndStitch(sessionGraphName, query)
           .should(beFullyStitched)
       }
 
       forAll(doubleGraphQueries(graphName1 = "foo", graphName2 = "foo")) { query =>
-        planAndStitch(sessionGraphName, fabricName, query)
+        planAndStitch(sessionGraphName, query)
           .should(beFullyStitched)
       }
 
       forAll(tripleGraphQueries(graphName1 = "foo.bar", graphName2 = "foo.bar", graphName3 = "foo.bar")) { query =>
-        planAndStitch(sessionGraphName, fabricName, query)
+        planAndStitch(sessionGraphName, query)
           .should(beFullyStitched)
       }
     }
@@ -1271,32 +1270,32 @@ class FabricPlannerTest
     "disallows dynamic USE outside fabric" in {
 
       forAll(singleGraphQueries(graphName = "f(1)")) { query =>
-        planAndStitch(sessionGraphName, fabricName, query)
+        planAndStitch(sessionGraphName, query)
           .should(matchPattern { case Failure(_) => })
       }
 
       forAll(singleGraphQueries(graphName = "$p")) { query =>
-        planAndStitch(sessionGraphName, fabricName, query)
+        planAndStitch(sessionGraphName, query)
           .should(matchPattern { case Failure(_) => })
       }
 
       forAll(singlePlusDefaultGraphQueries(graphName = "f(1)")) { query =>
-        planAndStitch(sessionGraphName, fabricName, query)
+        planAndStitch(sessionGraphName, query)
           .should(matchPattern { case Failure(_) => })
       }
 
       forAll(defaultPlusSingleGraphQueries(graphName = "f(1)")) { query =>
-        planAndStitch(sessionGraphName, fabricName, query)
+        planAndStitch(sessionGraphName, query)
           .should(matchPattern { case Failure(_) => })
       }
 
       forAll(doubleGraphQueries(graphName1 = "foo", graphName2 = "f(1)")) { query =>
-        planAndStitch(sessionGraphName, fabricName, query)
+        planAndStitch(sessionGraphName, query)
           .should(matchPattern { case Failure(_) => })
       }
 
       forAll(tripleGraphQueries(graphName1 = "foo.bar", graphName2 = "f(1)", graphName3 = "foo.bar")) { query =>
-        planAndStitch(sessionGraphName, fabricName, query)
+        planAndStitch(sessionGraphName, query)
           .should(matchPattern { case Failure(_) => })
       }
     }
@@ -1304,22 +1303,22 @@ class FabricPlannerTest
     "disallows multi-graph outside fabric" in {
 
       forAll(singlePlusDefaultGraphQueries(graphName = "foo")) { query =>
-        planAndStitch(sessionGraphName, fabricName, query)
+        planAndStitch(sessionGraphName, query)
           .should(matchPattern { case Failure(_) => })
       }
 
       forAll(defaultPlusSingleGraphQueries(graphName = "foo")) { query =>
-        planAndStitch(sessionGraphName, fabricName, query)
+        planAndStitch(sessionGraphName, query)
           .should(matchPattern { case Failure(_) => })
       }
 
       forAll(doubleGraphQueries(graphName1 = "foo", graphName2 = "bar")) { query =>
-        planAndStitch(sessionGraphName, fabricName, query)
+        planAndStitch(sessionGraphName, query)
           .should(matchPattern { case Failure(_) => })
       }
 
       forAll(tripleGraphQueries(graphName1 = "foo.bar", graphName2 = "foo", graphName3 = "foo.bar")) { query =>
-        planAndStitch(sessionGraphName, fabricName, query)
+        planAndStitch(sessionGraphName, query)
           .should(matchPattern { case Failure(_) => })
       }
     }
@@ -1329,17 +1328,17 @@ class FabricPlannerTest
       "stitches single-graph queries" in {
 
         forAll(defaultGraphQueries) { query =>
-          planAndStitch(fabricName, fabricName, query)
+          planAndStitch(fabricName, query)
             .should(beFullyStitched)
         }
 
         forAll(singleGraphQueries(graphName = "foo")) { query =>
-          planAndStitch(fabricName, fabricName, query)
+          planAndStitch(fabricName, query)
             .should(beFullyStitched)
         }
 
         forAll(declaredUnionDeclared(graphName1 = fabricName, graphName2 = fabricName)) { query =>
-          planAndStitch(sessionGraphName, fabricName, query)
+          planAndStitch(sessionGraphName, query)
             .should(beFullyStitched)
         }
 
@@ -1348,7 +1347,7 @@ class FabricPlannerTest
           graphName2 = fabricName,
           graphName3 = fabricName
         )) { query =>
-          planAndStitch(sessionGraphName, fabricName, query)
+          planAndStitch(sessionGraphName, query)
             .should(beFullyStitched)
         }
 
@@ -1359,28 +1358,28 @@ class FabricPlannerTest
         "implicit" in {
 
           forAll(defaultSubqueryDeclared(graphName = "foo")) { query =>
-            planAndStitch(fabricName, fabricName, query)
+            planAndStitch(fabricName, query)
               .should(matchPattern { case Success(_) => })
           }
 
           forAll(defaultSubqueryDeclaredUnionDeclared(graphName1 = "foo", graphName2 = "bar")) { query =>
-            planAndStitch(fabricName, fabricName, query)
+            planAndStitch(fabricName, query)
               .should(matchPattern { case Success(_) => })
           }
 
           forAll(declaredUnionDeclared(graphName1 = "foo", graphName2 = "bar")) { query =>
-            planAndStitch(fabricName, fabricName, query)
+            planAndStitch(fabricName, query)
               .should(matchPattern { case Success(_) => })
           }
 
           forAll(declaredUnionDeclaredUnionDeclared(graphName1 = "foo", graphName2 = "bar", graphName3 = "baz")) {
             query =>
-              planAndStitch(fabricName, fabricName, query)
+              planAndStitch(fabricName, query)
                 .should(matchPattern { case Success(_) => })
           }
 
           forAll(defaultSubqueryDeclaredUnionSubqueryDeclared(graphName1 = "foo", graphName2 = "bar")) { query =>
-            planAndStitch(fabricName, fabricName, query)
+            planAndStitch(fabricName, query)
               .should(matchPattern { case Success(_) => })
           }
 
@@ -1389,12 +1388,12 @@ class FabricPlannerTest
         "explicit" in {
 
           forAll(declaredSubqueryDeclared(graphName1 = fabricName, graphName2 = "foo")) { query =>
-            planAndStitch(sessionGraphName, fabricName, query)
+            planAndStitch(sessionGraphName, query)
               .should(matchPattern { case Success(_) => })
           }
 
           forAll(declaredSubqueryDeclaredSubqueryInherited(graphName1 = fabricName, graphName2 = "foo")) { query =>
-            planAndStitch(sessionGraphName, fabricName, query)
+            planAndStitch(sessionGraphName, query)
               .should(matchPattern { case Success(_) => })
           }
         }
@@ -1402,28 +1401,28 @@ class FabricPlannerTest
         "implicit plus dynamic" in {
 
           forAll(defaultSubqueryDeclared(graphName = "f(1)")) { query =>
-            planAndStitch(fabricName, fabricName, query)
+            planAndStitch(fabricName, query)
               .should(matchPattern { case Success(_) => })
           }
 
           forAll(defaultSubqueryDeclaredUnionDeclared(graphName1 = "f(1)", graphName2 = "bar.f(2)")) { query =>
-            planAndStitch(fabricName, fabricName, query)
+            planAndStitch(fabricName, query)
               .should(matchPattern { case Success(_) => })
           }
 
           forAll(singleGraphQueries(graphName = "f(1)")) { query =>
-            planAndStitch(fabricName, fabricName, query)
+            planAndStitch(fabricName, query)
               .should(matchPattern { case Success(_) => })
           }
 
           forAll(declaredUnionDeclared(graphName1 = "f(1)", graphName2 = "g(2)")) { query =>
-            planAndStitch(fabricName, fabricName, query)
+            planAndStitch(fabricName, query)
               .should(matchPattern { case Success(_) => })
           }
 
           forAll(declaredUnionDeclaredUnionDeclared(graphName1 = "f(1)", graphName2 = "g(2)", graphName3 = "h(3)")) {
             query =>
-              planAndStitch(fabricName, fabricName, query)
+              planAndStitch(fabricName, query)
                 .should(matchPattern { case Success(_) => })
           }
         }
@@ -1431,12 +1430,12 @@ class FabricPlannerTest
         "explicit plus dynamic" in {
 
           forAll(declaredSubqueryDeclared(graphName1 = fabricName, graphName2 = "f(1)")) { query =>
-            planAndStitch(sessionGraphName, fabricName, query)
+            planAndStitch(sessionGraphName, query)
               .should(matchPattern { case Success(_) => })
           }
 
           forAll(declaredSubqueryDeclaredSubqueryInherited(graphName1 = fabricName, graphName2 = "f(1)")) { query =>
-            planAndStitch(sessionGraphName, fabricName, query)
+            planAndStitch(sessionGraphName, query)
               .should(matchPattern { case Success(_) => })
           }
 
@@ -1445,22 +1444,22 @@ class FabricPlannerTest
         "fails on nested USE" in {
 
           forAll(declaredSubqueryDeclared(graphName1 = "foo", graphName2 = "bar")) { query =>
-            planAndStitch(fabricName, fabricName, query)
+            planAndStitch(fabricName, query)
               .should(matchPattern { case Failure(_) => })
           }
 
           forAll(declaredSubqueryDeclared(graphName1 = "f(1)", graphName2 = "g(2)")) { query =>
-            planAndStitch(fabricName, fabricName, query)
+            planAndStitch(fabricName, query)
               .should(matchPattern { case Failure(_) => })
           }
 
           forAll(declaredSubqueryDeclaredSubqueryInherited(graphName1 = "foo", graphName2 = "bar")) { query =>
-            planAndStitch(fabricName, fabricName, query)
+            planAndStitch(fabricName, query)
               .should(matchPattern { case Failure(_) => })
           }
 
           forAll(declaredSubqueryDeclaredSubqueryInherited(graphName1 = "f(1)", graphName2 = "g(2)")) { query =>
-            planAndStitch(fabricName, fabricName, query)
+            planAndStitch(fabricName, query)
               .should(matchPattern { case Failure(_) => })
           }
 
@@ -1469,13 +1468,13 @@ class FabricPlannerTest
             graphName2 = "foo.bar(1)",
             graphName3 = "foo.baz(2)"
           )) { query =>
-            planAndStitch(sessionGraphName, fabricName, query)
+            planAndStitch(sessionGraphName, query)
               .should(matchPattern { case Failure(_) => })
           }
 
           forAll(declaredSubqueryDeclaredSubqueryDeclared(graphName1 = "foo", graphName2 = "bar", graphName3 = "baz")) {
             query =>
-              planAndStitch(fabricName, fabricName, query)
+              planAndStitch(fabricName, query)
                 .should(matchPattern { case Failure(_) => })
           }
 
@@ -1484,7 +1483,7 @@ class FabricPlannerTest
             graphName2 = "foo.bar",
             graphName3 = "foo.baz"
           )) { query =>
-            planAndStitch(sessionGraphName, fabricName, query)
+            planAndStitch(sessionGraphName, query)
               .should(matchPattern { case Failure(_) => })
           }
 
@@ -1493,7 +1492,7 @@ class FabricPlannerTest
             graphName2 = "g(2)",
             graphName3 = "h(3)"
           )) { query =>
-            planAndStitch(fabricName, fabricName, query)
+            planAndStitch(fabricName, query)
               .should(matchPattern { case Failure(_) => })
           }
 

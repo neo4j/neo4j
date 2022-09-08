@@ -23,12 +23,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
 import static org.neo4j.values.storable.Values.longValue;
 
+import java.util.List;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.bolt.AbstractBoltITBase;
-import org.neo4j.bolt.protocol.v40.bookmark.BookmarkWithDatabaseId;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
+import org.neo4j.fabric.bolt.FabricBookmark;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
 @EphemeralTestDirectoryExtension
@@ -43,7 +44,11 @@ public class BoltV4TransportIT extends AbstractBoltITBase {
 
         // bookmark is expected to advance once the auto-commit transaction is committed
         var lastClosedTransactionId = getLastClosedTransactionId();
-        var expectedBookmark = new BookmarkWithDatabaseId(lastClosedTransactionId + 1, getDatabaseId()).toString();
+        var expectedBookmark = new FabricBookmark(
+                        List.of(new FabricBookmark.InternalGraphState(
+                                getDatabaseId().databaseId().uuid(), lastClosedTransactionId + 1)),
+                        List.of())
+                .serialize();
 
         connection.send(wire.run("CREATE ()"));
         connection.send(wire.pull());
@@ -60,7 +65,11 @@ public class BoltV4TransportIT extends AbstractBoltITBase {
 
         // bookmark is expected to advance once the auto-commit transaction is committed
         var lastClosedTransactionId = getLastClosedTransactionId();
-        var expectedBookmark = new BookmarkWithDatabaseId(lastClosedTransactionId + 1, getDatabaseId()).toString();
+        var expectedBookmark = new FabricBookmark(
+                        List.of(new FabricBookmark.InternalGraphState(
+                                getDatabaseId().databaseId().uuid(), lastClosedTransactionId + 1)),
+                        List.of())
+                .serialize();
 
         connection.send(wire.begin());
         assertThat(connection).receivesSuccess();

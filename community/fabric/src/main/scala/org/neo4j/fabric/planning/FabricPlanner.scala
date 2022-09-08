@@ -54,8 +54,7 @@ case class FabricPlanner(
   private val frontend = FabricFrontEnd(cypherConfig, monitors, signatures, cacheFactory)
 
   private def fabricContextName: Option[String] = {
-    val name = config.getFabricDatabaseName
-    if (name.isPresent) Some(name.get().name()) else None
+    None
   }
 
   /**

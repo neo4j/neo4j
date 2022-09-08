@@ -25,7 +25,6 @@ import static scala.jdk.javaapi.CollectionConverters.asJava;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -66,7 +65,6 @@ import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DatabaseReference;
-import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -92,7 +90,6 @@ public class FabricExecutor {
     private final InternalLog log;
     private final FabricStatementLifecycles statementLifecycles;
     private final Executor fabricWorkerExecutor;
-    private final Optional<NormalizedDatabaseName> fabricDatabaseName;
 
     public FabricExecutor(
             FabricConfig config,
@@ -102,7 +99,6 @@ public class FabricExecutor {
             InternalLogProvider internalLog,
             FabricStatementLifecycles statementLifecycles,
             Executor fabricWorkerExecutor) {
-        this.fabricDatabaseName = config.getFabricDatabaseName();
         this.dataStreamConfig = config.getDataStream();
         this.planner = planner;
         this.useEvaluation = useEvaluation;

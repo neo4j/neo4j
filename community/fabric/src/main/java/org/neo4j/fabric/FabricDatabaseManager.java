@@ -25,7 +25,7 @@ import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.fabric.config.FabricConfig;
-import org.neo4j.fabric.config.FabricSettings;
+import org.neo4j.fabric.config.FabricConstants;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
@@ -49,7 +49,7 @@ public class FabricDatabaseManager {
     }
 
     public static boolean fabricByDefault(Config config) {
-        return config.get(FabricSettings.enabled_by_default);
+        return FabricConstants.ENABLED_BY_DEFAULT;
     }
 
     public DatabaseReferenceRepository databaseReferenceRepository() {
@@ -112,12 +112,7 @@ public class FabricDatabaseManager {
         return false;
     }
 
-    public boolean isFabricDatabasePresent() {
-        return false;
-    }
-
     public FabricConfig getFabricConfig() {
         return fabricConfig;
     }
 }
-;

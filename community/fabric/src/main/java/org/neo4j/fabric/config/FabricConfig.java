@@ -20,11 +20,9 @@
 package org.neo4j.fabric.config;
 
 import java.time.Duration;
-import java.util.Optional;
 import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.kernel.database.NormalizedDatabaseName;
 
 public class FabricConfig {
     private final Supplier<Duration> transactionTimeout;
@@ -51,10 +49,6 @@ public class FabricConfig {
         return dataStream;
     }
 
-    public Optional<NormalizedDatabaseName> getFabricDatabaseName() {
-        return Optional.empty();
-    }
-
     public boolean isRoutingEnabled() {
         return routingEnabled;
     }
@@ -64,10 +58,10 @@ public class FabricConfig {
     }
 
     public static FabricConfig from(Config config) {
-        var syncBatchSize = config.get(FabricSettings.batch_size_setting);
+        var syncBatchSize = FabricConstants.BATCH_SIZE;
         // the rest of the settings are not used for any type of queries supported in CE
         var dataStream = new DataStream(0, 0, syncBatchSize, 0);
-        var enabledByDefault = config.get(FabricSettings.enabled_by_default);
+        var enabledByDefault = FabricConstants.ENABLED_BY_DEFAULT;
         return new FabricConfig(
                 () -> config.get(GraphDatabaseSettings.transaction_timeout), dataStream, false, enabledByDefault);
     }

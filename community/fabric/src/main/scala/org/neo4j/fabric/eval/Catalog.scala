@@ -23,8 +23,6 @@ import org.neo4j.configuration.helpers.NormalizedGraphName
 import org.neo4j.configuration.helpers.RemoteUri
 import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.fabric.eval.Catalog.byIdView
-import org.neo4j.fabric.eval.Catalog.byQualifiedName
 import org.neo4j.fabric.eval.Catalog.normalize
 import org.neo4j.fabric.util.Errors
 import org.neo4j.fabric.util.Errors.show
@@ -33,9 +31,6 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.IntegralValue
 import org.neo4j.values.storable.StringValue
 
-import java.nio.charset.Charset
-import java.nio.charset.StandardCharsets
-import java.util.Base64
 import java.util.UUID
 
 object Catalog {
@@ -61,6 +56,7 @@ object Catalog {
     override def toString: String = s"internal graph $id" + name.map(n => s" ($n)").getOrElse("")
   }
 
+  // TODO: remove
   case class ExternalGraph(
     id: Long,
     name: Option[String],

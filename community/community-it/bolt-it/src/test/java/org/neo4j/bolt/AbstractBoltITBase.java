@@ -32,7 +32,6 @@ import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.testing.messages.BoltDefaultWire;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
-import org.neo4j.fabric.config.FabricSettings;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -56,7 +55,6 @@ public abstract class AbstractBoltITBase {
     public void setUp(TestInfo testInfo) throws IOException {
         server.setConfigure(settings -> {
             withOptionalBoltEncryption().accept(settings);
-            settings.put(FabricSettings.enabled_by_default, false);
         });
 
         server.init(testInfo);

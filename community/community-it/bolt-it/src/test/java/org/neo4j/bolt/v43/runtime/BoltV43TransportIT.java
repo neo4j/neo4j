@@ -35,6 +35,7 @@ import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.testing.messages.BoltV43Wire;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
+import org.neo4j.fabric.bolt.FabricBookmark;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
 @EphemeralTestDirectoryExtension
@@ -160,7 +161,11 @@ public class BoltV43TransportIT extends AbstractBoltITBase {
 
         // bookmark is expected to advance once the auto-commit transaction is committed
         var lastClosedTransactionId = getLastClosedTransactionId();
-        var expectedBookmark = new BookmarkWithDatabaseId(lastClosedTransactionId + 1, getDatabaseId()).toString();
+        var expectedBookmark = new FabricBookmark(
+                        List.of(new FabricBookmark.InternalGraphState(
+                                getDatabaseId().databaseId().uuid(), lastClosedTransactionId + 1)),
+                        List.of())
+                .serialize();
 
         connection.send(wire.run("CREATE ()"));
         connection.send(wire.pull());
@@ -177,7 +182,11 @@ public class BoltV43TransportIT extends AbstractBoltITBase {
 
         // bookmark is expected to advance once the auto-commit transaction is committed
         var lastClosedTransactionId = getLastClosedTransactionId();
-        var expectedBookmark = new BookmarkWithDatabaseId(lastClosedTransactionId + 1, getDatabaseId()).toString();
+        var expectedBookmark = new FabricBookmark(
+                        List.of(new FabricBookmark.InternalGraphState(
+                                getDatabaseId().databaseId().uuid(), lastClosedTransactionId + 1)),
+                        List.of())
+                .serialize();
 
         connection.send(wire.begin());
         assertThat(connection).receivesSuccess();

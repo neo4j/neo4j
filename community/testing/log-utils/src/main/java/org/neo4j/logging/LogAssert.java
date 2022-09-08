@@ -346,7 +346,9 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider> 
     }
 
     private boolean matchedLogger(LogCall call) {
-        return loggerClazz == null || loggerClazz.getName().equals(call.getContext());
+        return loggerClazz == null
+                || loggerClazz.getName().equals(call.getContext())
+                || loggerClazz.getSimpleName().equals(call.getContext());
     }
 
     private boolean matchedLevel(LogCall call) {
