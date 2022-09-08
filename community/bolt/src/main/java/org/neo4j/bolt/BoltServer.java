@@ -34,6 +34,7 @@ import java.io.File;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import javax.net.ssl.SSLException;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
@@ -69,6 +70,7 @@ import org.neo4j.bolt.transport.Netty4LoggerFactory;
 import org.neo4j.buffer.CentralBufferMangerHolder;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SslSystemSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -383,6 +385,14 @@ public class BoltServer extends LifecycleAdapter {
             // thread pool
             // TODO: Force shutdown if timeout exceeded?
             this.eventLoopGroup.shutdownGracefully().awaitUninterruptibly();
+            this.eventLoopGroup
+                    .shutdownGracefully(
+                            this.config.get(GraphDatabaseInternalSettings.netty_server_shutdown_quiet_period),
+                            this.config
+                                    .get(GraphDatabaseInternalSettings.netty_server_shutdown_timeout)
+                                    .toSeconds(),
+                            TimeUnit.SECONDS)
+                    .syncUninterruptibly();
 
             // also make sure that our executor service is cleanly shut down - there should be no remaining jobs present
             // as connectors will kill any remaining jobs forcefully as part of their shutdown procedures
