@@ -224,7 +224,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     )
   }
 
-  test("should build plans with SemiApply for a single pattern predicate with exists and with") {
+  test("should build plans with SemiApply for a single pattern predicate after a WITH") {
     val logicalPlan = planner.plan("MATCH (a) WITH a AS b WHERE EXISTS((b)-[:X]->()) RETURN b")
     logicalPlan should equal(
       planner.planBuilder()
@@ -251,7 +251,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     )
   }
 
-  test("should build plans with AntiSemiApply for a single negated pattern predicate with exists and with") {
+  test("should build plans with AntiSemiApply for a single negated pattern predicate after a WITH") {
     val logicalPlan = planner.plan("MATCH (a) WITH a AS b WHERE NOT exists((b)-[:X]->()) RETURN b")
     logicalPlan should equal(
       planner.planBuilder()
@@ -568,13 +568,30 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test(
-    "should build plans with SemiApply for a single pattern predicate with exists and WITH with Label on other node"
+    "should build plans with SemiApply for a single pattern predicate with label after a WITH"
   ) {
     val logicalPlan = planner.plan("MATCH (a) WITH a as b WHERE exists((b)-[:X]->(:Foo)) RETURN b")
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("b")
         .semiApply()
+        .|.filter("anon_1:Foo")
+        .|.expandAll("(b)-[anon_0:X]->(anon_1)")
+        .|.argument("b")
+        .projection("a AS b")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test(
+    "should build plans with SelectOrSemiApply for a single pattern predicate with label ORed with another predicate after a WITH"
+  ) {
+    val logicalPlan = planner.plan("MATCH (a) WITH a as b WHERE exists((b)-[:X]->(:Foo)) OR b.prop = 10 RETURN b")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("b")
+        .selectOrSemiApply("b.prop = 10")
         .|.filter("anon_1:Foo")
         .|.expandAll("(b)-[anon_0:X]->(anon_1)")
         .|.argument("b")
@@ -601,9 +618,9 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test(
-    "should build plans with AntiSemiApply for a single negated pattern predicate with WITH and exists with Label on other node"
+    "should build plans with AntiSemiApply for a single negated pattern predicate with a label after a WITH"
   ) {
-    val logicalPlan = planner.plan("MATCH (a) with a as b WHERE NOT exists((b)-[:X]->(:Foo)) RETURN b")
+    val logicalPlan = planner.plan("MATCH (a) WITH a as b WHERE NOT exists((b)-[:X]->(:Foo)) RETURN b")
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("b")
