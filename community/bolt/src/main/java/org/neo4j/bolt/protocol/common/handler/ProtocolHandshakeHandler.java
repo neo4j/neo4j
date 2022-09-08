@@ -82,7 +82,6 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
     }
 
     @Override
-    @SuppressWarnings("removal") // TODO: Required for legacy id support - Scheduled for removal in 6.0
     protected void channelRead0(ChannelHandlerContext ctx, ProtocolNegotiationRequest request) throws Exception {
         // ensure we've received the correct magic number - otherwise just close the connection immediately as we
         // cannot verify that we are talking to a bolt compatible client
@@ -134,7 +133,7 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
         ctx.writeAndFlush(new ProtocolNegotiationResponse(protocol.version()));
 
         // KeepAliveHandler needs the FrameSignalEncoder to send outbound NOOPs
-        ctx.pipeline().addLast(new FrameSignalEncoder());
+        ctx.pipeline().addLast(new FrameSignalEncoder(protocol.frameSignalFilter()));
 
         if (this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle)) {
             ctx.channel()
