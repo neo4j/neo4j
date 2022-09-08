@@ -290,7 +290,7 @@ case class ShowDatabasesExecutionPlanner(
       result.reduceOption(_ && _)
     }
 
-    val allowsDatabaseManagement: Boolean =
+    val allowsStandardDatabaseManagement: Boolean =
       securityContext.allowsAdminAction(new AdminActionOnResource(
         PrivilegeAction.CREATE_DATABASE,
         AdminActionOnResource.DatabaseScope.ALL,
@@ -310,17 +310,20 @@ case class ShowDatabasesExecutionPlanner(
           PrivilegeAction.SET_DATABASE_ACCESS,
           AdminActionOnResource.DatabaseScope.ALL,
           Segment.ALL
-        )).allowsAccess() ||
-        securityContext.allowsAdminAction(new AdminActionOnResource(
-          PrivilegeAction.CREATE_COMPOSITE_DATABASE,
-          AdminActionOnResource.DatabaseScope.ALL,
-          Segment.ALL
-        )).allowsAccess() ||
+        )).allowsAccess()
+    val allowsCompositeDatabaseManagement: Boolean =
+      securityContext.allowsAdminAction(new AdminActionOnResource(
+        PrivilegeAction.CREATE_COMPOSITE_DATABASE,
+        AdminActionOnResource.DatabaseScope.ALL,
+        Segment.ALL
+      )).allowsAccess() ||
         securityContext.allowsAdminAction(new AdminActionOnResource(
           PrivilegeAction.DROP_COMPOSITE_DATABASE,
           AdminActionOnResource.DatabaseScope.ALL,
           Segment.ALL
         )).allowsAccess()
+    val allowsAllDatabaseManagement: Boolean =
+      allowsStandardDatabaseManagement && allowsCompositeDatabaseManagement
     val roles = securityContext.mode().roles()
 
     def databaseAccess(label: String) =
@@ -346,7 +349,11 @@ case class ShowDatabasesExecutionPlanner(
         val isDefault = dbName.equals(defaultDatabaseName)
         if (dbName.equals(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)) {
           acc + (dbName -> System)
-        } else if (allowsDatabaseManagement) {
+        } else if (allowsAllDatabaseManagement) {
+          acc + (dbName -> dbType)
+        } else if (allowsStandardDatabaseManagement && dbType == Standard) {
+          acc + (dbName -> dbType)
+        } else if (allowsCompositeDatabaseManagement && dbType == Composite) {
           acc + (dbName -> dbType)
         } else {
           (accessForDatabase(dbNode, roles), allDatabaseAccess, defaultDatabaseAccess, isDefault) match {
