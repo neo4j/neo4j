@@ -22,11 +22,15 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.expressions.EveryPath
+import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -56,7 +60,7 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.exceptions.TestFailedException
 
-class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {
   self =>
 
   case class EmptySolverConfig() extends SingleComponentIDPSolverConfig() {
@@ -933,6 +937,24 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
     // When & Then
     noException should be thrownBy solver.hashCode()
+  }
+
+  test("should cache the result of EXISTS subquery planning") {
+    val monitor = mock[IDPQueryGraphSolverMonitor]
+
+    new given {
+      queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = ExpandOnlyIDPSolverConfig)
+    }.withLogicalPlanningContext { (_, ctx) =>
+
+      val exists = ExistsSubClause(Pattern(Seq(EveryPath(nodePat("a")), EveryPath(nodePat("x"))))(pos), None)(pos, Set(varFor("a")))
+
+      val plan = ctx.strategy.planInnerOfExistsSubquery(Set("a"), exists, InterestingOrderConfig.empty, ctx)
+      val planAgain = ctx.strategy.planInnerOfExistsSubquery(Set("a"), exists, InterestingOrderConfig.empty, ctx)
+      val planWithDifferentCtx = ctx.strategy.planInnerOfExistsSubquery(Set("a"), exists, InterestingOrderConfig.empty, ctx.copy())
+
+      (plan eq planAgain) shouldBe true
+      (plan eq planWithDifferentCtx) shouldBe false
+    }
   }
 
   private def createQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor, solverConfig: SingleComponentIDPSolverConfig) =
