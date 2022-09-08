@@ -23,13 +23,9 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.NodePatternExpression
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PatternExpression
-import org.neo4j.cypher.internal.expressions.RelationshipChain
-import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -87,38 +83,8 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
                           context: LogicalPlanningContext,
                           interestingOrderConfig: InterestingOrderConfig,
                           e: ExistsSubClause): LogicalPlan = {
-    // Creating a query graph by combining all extracted query graphs created by each entry of the patternElements
-    val qg = e.patternElements.foldLeft(QueryGraph.empty) { (acc, patternElement) =>
-      patternElement match {
-        case elem: RelationshipChain =>
-          val variableToCollectName = context.anonymousVariableNameGenerator.nextName
-          val collectionName = context.anonymousVariableNameGenerator.nextName
-          val patternExpr = PatternExpression(RelationshipsPattern(elem)(elem.position))(e.outerScope, variableToCollectName, collectionName)
-          val qg = asQueryGraph(patternExpr, lhs.availableSymbols, context.anonymousVariableNameGenerator)
-          acc ++ qg
-
-        case elem: NodePattern =>
-          val patternExpr = NodePatternExpression(List(elem))(elem.position)
-          val qg = asQueryGraph(patternExpr, lhs.availableSymbols, context.anonymousVariableNameGenerator)
-          acc ++ qg
-      }
-    }
-
-    // Adding the predicates and known outer variables to new query graph
-    val new_qg = e.optionalWhereExpression.foldLeft(qg) {
-      case (acc: QueryGraph, patternExpr: Expression) => {
-        val outerVariableNames = e.outerScope.map(id => id.name)
-        val usedVariables: Seq[String] = patternExpr.arguments.folder
-          .findByAllClass[Variable]
-          .map(_.name)
-          .distinct
-
-        acc.addPredicates(outerVariableNames, patternExpr)
-          .addArgumentIds(usedVariables.filter(v => outerVariableNames.contains(v)))
-      }
-    }
-
-    context.strategy.plan(new_qg, interestingOrderConfig, context).result
+    val arguments = lhs.availableSymbols.intersect(e.dependencies.map(_.name))
+    context.strategy.planInnerOfExistsSubquery(arguments, e, interestingOrderConfig, context)
   }
 
   def planPredicates(lhs: LogicalPlan,
