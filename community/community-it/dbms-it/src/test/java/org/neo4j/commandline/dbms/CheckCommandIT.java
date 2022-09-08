@@ -22,6 +22,8 @@ package org.neo4j.commandline.dbms;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.cli.AbstractAdminCommand.COMMAND_CONFIG_FILE_NAME_PATTERN;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 
@@ -33,6 +35,8 @@ import java.nio.file.Path;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.ObjectAssert;
@@ -384,14 +388,70 @@ class CheckCommandIT {
     @Test
     void checkDump() {
         final var dump = testDirectory.directory("dump");
-        final var ctx = new ExecutionContext(homeDir, confPath);
-        final var dumpCommand = new DumpCommand(ctx, new Dumper(ctx.out()));
-        CommandLine.populateCommand(dumpCommand, "--to-path=" + dump, dbName);
-        assertThatCode(dumpCommand::execute).doesNotThrowAnyException();
+        createDump(dump);
 
         final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath));
         CommandLine.populateCommand(checkCommand, "--from-path=" + dump, dbName);
         assertThatCode(checkCommand::execute).doesNotThrowAnyException();
+    }
+
+    @Test
+    void checkStagingAreaGetsClearedAwayForDump() {
+        final var dump = testDirectory.directory("dump");
+        createDump(dump);
+
+        // This will do all the setup but skip the actual consistency checking.
+        // Our temporary staging area should exist when the ConsistencyCheckService#runFullConsistencyCheck is called.
+        // Should have used the from-path as staging area when nothing was supplied.
+        AtomicReference<Path> tempDir = new AtomicReference<>();
+        final var consistencyCheckService = getConsistencyCheckServiceWithTempDirChecking(
+                dump, tempDir, ConsistencyCheckService.Result.success(null, null));
+        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CommandLine.populateCommand(checkCommand, "--from-path=" + dump, dbName);
+        checkCommand.execute();
+
+        // After the command has finished the staging area should have been cleared away
+        assertFalse(testDirectory.getFileSystem().fileExists(tempDir.get()));
+    }
+
+    @Test
+    void checkStagingAreaGetsClearedAwayForDumpEvenIfCheckFails() {
+        final var dump = testDirectory.directory("dump");
+        createDump(dump);
+
+        // This will do all the setup but skip the actual consistency checking.
+        // Our temporary staging area should exist when the ConsistencyCheckService#runFullConsistencyCheck is called.
+        // Should have used the from-path as staging area when nothing was supplied.
+        AtomicReference<Path> tempDir = new AtomicReference<>();
+        final var consistencyCheckService = getConsistencyCheckServiceWithTempDirChecking(
+                dump, tempDir, ConsistencyCheckService.Result.failure(null, null));
+        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CommandLine.populateCommand(checkCommand, "--from-path=" + dump, dbName);
+        assertThatThrownBy(checkCommand::execute).isInstanceOf(CommandFailedException.class);
+
+        // After the command has finished the staging area should have been cleared away
+        assertFalse(testDirectory.getFileSystem().fileExists(tempDir.get()));
+    }
+
+    @Test
+    void checkTempPathRespectedAsRootForStagingArea() {
+        final var dump = testDirectory.directory("dump");
+        createDump(dump);
+
+        // This will do all the setup but skip the actual consistency checking.
+        // Our temporary staging area should exist when the ConsistencyCheckService#runFullConsistencyCheck is called.
+        final var reqTempDir = testDirectory.directory("tempRoot");
+        AtomicReference<Path> tempDir = new AtomicReference<>();
+        final var consistencyCheckService = getConsistencyCheckServiceWithTempDirChecking(
+                reqTempDir, tempDir, ConsistencyCheckService.Result.success(null, null));
+        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
+        CommandLine.populateCommand(checkCommand, "--from-path=" + dump, "--temp-path=" + reqTempDir, dbName);
+        checkCommand.execute();
+
+        // After the command has finished the staging area should have been cleared away and the temp-path should still
+        // exist
+        assertFalse(testDirectory.getFileSystem().fileExists(tempDir.get()));
+        assertTrue(testDirectory.getFileSystem().fileExists(reqTempDir));
     }
 
     private void removeAndReprepareDatabase(DatabaseLayout databaseLayout) throws IOException {
@@ -420,20 +480,44 @@ class CheckCommandIT {
                 .isEqualTo(neo4jLayout.transactionLogsRootDirectory());
     }
 
+    private TrackingConsistencyCheckService getConsistencyCheckServiceWithTempDirChecking(
+            Path expectedTempRoot, AtomicReference<Path> tempDir, ConsistencyCheckService.Result returnValue) {
+        return new TrackingConsistencyCheckService(returnValue, (service) -> {
+            DatabaseLayout layout = (DatabaseLayout) service.arguments.get(DatabaseLayout.class);
+            tempDir.set(layout.getNeo4jLayout().homeDirectory().toAbsolutePath());
+            assertTrue(testDirectory.getFileSystem().fileExists(tempDir.get()));
+            assertThat(tempDir.get().getParent().toAbsolutePath()).isEqualTo(expectedTempRoot.toAbsolutePath());
+        });
+    }
+
+    private void createDump(Path dump) {
+        final var ctx = new ExecutionContext(homeDir, confPath);
+        final var dumpCommand = new DumpCommand(ctx, new Dumper(ctx.out()));
+        CommandLine.populateCommand(dumpCommand, "--to-path=" + dump, dbName);
+        assertThatCode(dumpCommand::execute).doesNotThrowAnyException();
+    }
+
     private static class TrackingConsistencyCheckService extends ConsistencyCheckService {
         private final Map<Class<?>, Object> arguments;
         private final Result result;
+        private final Consumer<TrackingConsistencyCheckService> runnable;
 
         TrackingConsistencyCheckService(Result result) {
+            this(result, null);
+        }
+
+        TrackingConsistencyCheckService(Result result, Consumer<TrackingConsistencyCheckService> runnable) {
             super(null);
             this.result = result;
             this.arguments = new HashMap<>();
+            this.runnable = runnable;
         }
 
         TrackingConsistencyCheckService(TrackingConsistencyCheckService from) {
             super(null);
             this.result = from.result;
             this.arguments = from.arguments;
+            this.runnable = from.runnable;
         }
 
         @Override
@@ -522,6 +606,9 @@ class CheckCommandIT {
 
         @Override
         public Result runFullConsistencyCheck() {
+            if (runnable != null) {
+                runnable.accept(this);
+            }
             return result;
         }
 
