@@ -111,7 +111,7 @@ class ServerUserLogTest {
     }
 
     @Test
-    void shouldLogToFileByDefault() throws Exception {
+    void shouldLogToFileAndConsoleByDefault() throws Exception {
         // given
         NeoBootstrapper neoBootstrapper = getServerBootstrapper();
         Path dir = homeDir.homePath();
@@ -129,7 +129,7 @@ class ServerUserLogTest {
             // stop the server so that resources are released and test teardown isn't flaky
             neoBootstrapper.stop();
         }
-        assertThat(getStdOut()).isEmpty();
+        assertThat(getStdOut()).isNotEmpty();
         assertThat(getUserLogFileLocation(dir)).exists();
         assertThat(readUserLogFile(dir)).isNotEmpty();
         assertThat(readUserLogFile(dir)).anyMatch(s -> s.contains("Started."));

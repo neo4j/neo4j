@@ -180,7 +180,7 @@ class LoggingSettingsMigrator {
                 getSettingValue(OldSettings.http_logging_rotation_keep_number),
                 DEFAULT_PLAIN_LAYOUT,
                 getSettingValue(OldSettings.http_log_format),
-                LogConfig.STRUCTURED_LOG_JSON_TEMPLATE,
+                LogConfig.STRUCTURED_LOG_JSON_TEMPLATE_WITH_MESSAGE,
                 false);
 
         appendAppender(

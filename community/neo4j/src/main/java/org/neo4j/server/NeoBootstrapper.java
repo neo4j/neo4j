@@ -87,7 +87,7 @@ public abstract class NeoBootstrapper implements Bootstrapper {
 
     @VisibleForTesting
     public final int start(Path homeDir, Map<String, String> configOverrides) {
-        return start(homeDir, null, configOverrides, false, false);
+        return start(homeDir, null, configOverrides, false, true);
     }
 
     /**

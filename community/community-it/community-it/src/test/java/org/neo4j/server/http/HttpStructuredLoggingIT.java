@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.logging.log4j.LogConfig.HTTP_LOG;
-import static org.neo4j.logging.log4j.LogConfig.SERVER_LOGS_XML;
 import static org.neo4j.logging.log4j.LogConfig.STRUCTURED_LOG_JSON_TEMPLATE_WITH_MESSAGE;
 import static org.neo4j.logging.log4j.LogUtils.newLoggerBuilder;
 import static org.neo4j.logging.log4j.LogUtils.newXmlConfigBuilder;
@@ -38,6 +37,7 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -64,9 +64,10 @@ class HttpStructuredLoggingIT extends ExclusiveWebContainerTestBase {
 
     @Test
     void shouldLogRequestsInStructuredFormat() throws Exception {
+        testDirectory.directory("logs");
+        Path log4jConfig = testDirectory.file("logs/testHttp.xml");
         Path httpLogPath = testDirectory.file("logs/" + HTTP_LOG);
-        var serverLogsPath = testDirectory.directory("config").resolve(SERVER_LOGS_XML);
-        newXmlConfigBuilder(testDirectory.getFileSystem(), serverLogsPath)
+        newXmlConfigBuilder(testDirectory.getFileSystem(), log4jConfig)
                 .withLogger(newLoggerBuilder(HTTP_LOGGER, httpLogPath)
                         .withJsonFormatTemplate(STRUCTURED_LOG_JSON_TEMPLATE_WITH_MESSAGE)
                         .build())
@@ -87,7 +88,7 @@ class HttpStructuredLoggingIT extends ExclusiveWebContainerTestBase {
                             HttpConnector.enabled.name(),
                             TRUE,
                             GraphDatabaseSettings.server_logging_config_path.name(),
-                            serverLogsPath.toString()));
+                            log4jConfig.toString()));
             assertThat(start).isEqualTo(0);
 
             var dependencyResolver = getDependencyResolver(bootstrapper.getDatabaseManagementService());
@@ -114,7 +115,8 @@ class HttpStructuredLoggingIT extends ExclusiveWebContainerTestBase {
         }
         assertThat(response.statusCode()).isEqualTo(200);
 
-        var httpLogLines = Files.readAllLines(httpLogPath).stream()
+        List<String> strings = Files.readAllLines(httpLogPath);
+        var httpLogLines = strings.stream()
                 .map(s -> {
                     try {
                         return OBJECT_MAPPER.readValue(s, MAP_TYPE);
