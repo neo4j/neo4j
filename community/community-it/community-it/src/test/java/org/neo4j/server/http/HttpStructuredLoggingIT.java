@@ -23,7 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.logging.log4j.LogConfig.HTTP_LOG;
-import static org.neo4j.logging.log4j.LogConfig.STRUCTURED_LOG_JSON_TEMPLATE;
+import static org.neo4j.logging.log4j.LogConfig.SERVER_LOGS_XML;
+import static org.neo4j.logging.log4j.LogConfig.STRUCTURED_LOG_JSON_TEMPLATE_WITH_MESSAGE;
 import static org.neo4j.logging.log4j.LogUtils.newLoggerBuilder;
 import static org.neo4j.logging.log4j.LogUtils.newXmlConfigBuilder;
 import static org.neo4j.logging.log4j.LoggerTarget.HTTP_LOGGER;
@@ -43,6 +44,7 @@ import org.apache.logging.log4j.LogManager;
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -62,12 +64,11 @@ class HttpStructuredLoggingIT extends ExclusiveWebContainerTestBase {
 
     @Test
     void shouldLogRequestsInStructuredFormat() throws Exception {
-        testDirectory.directory("logs");
-        Path log4jConfig = testDirectory.file("logs/testHttp.xml");
         Path httpLogPath = testDirectory.file("logs/" + HTTP_LOG);
-        newXmlConfigBuilder(testDirectory.getFileSystem(), log4jConfig)
+        var serverLogsPath = testDirectory.directory("config").resolve(SERVER_LOGS_XML);
+        newXmlConfigBuilder(testDirectory.getFileSystem(), serverLogsPath)
                 .withLogger(newLoggerBuilder(HTTP_LOGGER, httpLogPath)
-                        .withJsonFormatTemplate(STRUCTURED_LOG_JSON_TEMPLATE)
+                        .withJsonFormatTemplate(STRUCTURED_LOG_JSON_TEMPLATE_WITH_MESSAGE)
                         .build())
                 .create();
 
@@ -84,7 +85,9 @@ class HttpStructuredLoggingIT extends ExclusiveWebContainerTestBase {
                             ServerSettings.http_logging_enabled.name(),
                             TRUE,
                             HttpConnector.enabled.name(),
-                            TRUE));
+                            TRUE,
+                            GraphDatabaseSettings.server_logging_config_path.name(),
+                            serverLogsPath.toString()));
             assertThat(start).isEqualTo(0);
 
             var dependencyResolver = getDependencyResolver(bootstrapper.getDatabaseManagementService());
