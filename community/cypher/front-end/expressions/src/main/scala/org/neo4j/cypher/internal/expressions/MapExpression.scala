@@ -23,4 +23,6 @@ case class MapExpression(items: Seq[(PropertyKeyName, Expression)])(val position
   override def asCanonicalStringVal: String = items.map {
     case (key, value) => s"${key.asCanonicalStringVal}: ${value.asCanonicalStringVal}"
   }.mkString("{", ", ", "}")
+
+  override def isConstantForQuery: Boolean = items.forall(kv => kv._2.isConstantForQuery)
 }

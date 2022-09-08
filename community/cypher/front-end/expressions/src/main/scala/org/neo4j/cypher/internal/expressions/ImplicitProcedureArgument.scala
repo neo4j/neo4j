@@ -25,4 +25,6 @@ case class ImplicitProcedureArgument(name: String, parameterType: CypherType, de
   override def asCanonicalStringVal: String = "$" + name
 
   override def position: InputPosition = InputPosition.NONE
+
+  override def isConstantForQuery: Boolean = false
 }

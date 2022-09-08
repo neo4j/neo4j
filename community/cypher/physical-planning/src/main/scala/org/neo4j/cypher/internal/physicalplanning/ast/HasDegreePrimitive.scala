@@ -28,32 +28,42 @@ case class HasDegreeGreaterThanPrimitive(
   typ: Option[Either[Int, String]],
   direction: SemanticDirection,
   degree: Expression
-) extends BooleanRuntimeExpression
+) extends BooleanRuntimeExpression {
+  override def isConstantForQuery: Boolean = false
+}
 
 case class HasDegreeGreaterThanOrEqualPrimitive(
   offset: Int,
   typ: Option[Either[Int, String]],
   direction: SemanticDirection,
   degree: Expression
-) extends BooleanRuntimeExpression
+) extends BooleanRuntimeExpression {
+  override def isConstantForQuery: Boolean = false
+}
 
 case class HasDegreePrimitive(
   offset: Int,
   typ: Option[Either[Int, String]],
   direction: SemanticDirection,
   degree: Expression
-) extends BooleanRuntimeExpression
+) extends BooleanRuntimeExpression {
+  override def isConstantForQuery: Boolean = false
+}
 
 case class HasDegreeLessThanPrimitive(
   offset: Int,
   typ: Option[Either[Int, String]],
   direction: SemanticDirection,
   degree: Expression
-) extends BooleanRuntimeExpression
+) extends BooleanRuntimeExpression {
+  override def isConstantForQuery: Boolean = false
+}
 
 case class HasDegreeLessThanOrEqualPrimitive(
   offset: Int,
   typ: Option[Either[Int, String]],
   direction: SemanticDirection,
   degree: Expression
-) extends BooleanRuntimeExpression
+) extends BooleanRuntimeExpression {
+  override def isConstantForQuery: Boolean = false
+}

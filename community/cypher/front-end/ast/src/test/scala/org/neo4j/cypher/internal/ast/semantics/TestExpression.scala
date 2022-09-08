@@ -26,9 +26,13 @@ case class ErrorExpression(
   error: SemanticError,
   possibleTypes: TypeSpec,
   position: InputPosition = DummyPosition(0)
-) extends Expression
+) extends Expression {
+  override def isConstantForQuery: Boolean = false
+}
 
 case class CustomExpression(
   semanticCheck: (SemanticContext, CustomExpression) => SemanticCheck,
   position: InputPosition = DummyPosition(0)
-) extends Expression
+) extends Expression {
+  override def isConstantForQuery: Boolean = false
+}

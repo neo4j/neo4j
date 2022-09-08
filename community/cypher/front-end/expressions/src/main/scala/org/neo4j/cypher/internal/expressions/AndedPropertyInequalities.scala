@@ -25,4 +25,6 @@ case class AndedPropertyInequalities(
   inequalities: NonEmptyList[InequalityExpression]
 ) extends BooleanExpression {
   def position: InputPosition = variable.position
+
+  override def isConstantForQuery: Boolean = false
 }

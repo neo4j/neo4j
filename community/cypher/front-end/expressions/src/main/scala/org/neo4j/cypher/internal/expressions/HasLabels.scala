@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.util.InputPosition
  */
 trait LabelOrTypeCheckExpression extends BooleanExpression {
   def entityExpression: Expression
+  override def isConstantForQuery: Boolean = false
 }
 
 /**
@@ -30,6 +31,7 @@ trait LabelOrTypeCheckExpression extends BooleanExpression {
  */
 trait LabelCheckExpression extends BooleanExpression {
   def expression: Expression
+  override def isConstantForQuery: Boolean = false
 }
 
 /*
@@ -90,4 +92,6 @@ case class HasTypes(expression: Expression, types: Seq[RelTypeName])(val positio
 
   override def asCanonicalStringVal =
     s"${expression.asCanonicalStringVal}${types.map(_.asCanonicalStringVal).mkString(":", ":", "")}"
+
+  override def isConstantForQuery: Boolean = false
 }

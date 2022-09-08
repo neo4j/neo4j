@@ -26,6 +26,10 @@ case class CaseExpression(
 
   lazy val possibleExpressions: IndexedSeq[Expression] = alternatives.map(_._2) ++ default
 
+  override def isConstantForQuery: Boolean =
+    expression.forall(_.isConstantForQuery) &&
+      alternatives.forall(t => t._1.isConstantForQuery && t._2.isConstantForQuery) &&
+      default.forall(_.isConstantForQuery)
 }
 
 object CaseExpression {

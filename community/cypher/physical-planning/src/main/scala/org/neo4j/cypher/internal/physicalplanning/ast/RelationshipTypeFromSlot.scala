@@ -21,4 +21,6 @@ package org.neo4j.cypher.internal.physicalplanning.ast
 
 import org.neo4j.cypher.internal.runtime.ast.RuntimeExpression
 
-case class RelationshipTypeFromSlot(offset: Int) extends RuntimeExpression
+case class RelationshipTypeFromSlot(offset: Int) extends RuntimeExpression {
+  override def isConstantForQuery: Boolean = false
+}

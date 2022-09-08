@@ -34,6 +34,8 @@ trait ScopeExpression extends Expression {
   // We need to override dependencies because the default implementation relies on scope Expressions computing the dependencies manually,
   // so that it does not need to recurse into them.
   final override def dependencies: Set[LogicalVariable] = scopeDependencies
+
+  override def isConstantForQuery: Boolean = false
 }
 
 case class FilterScope(variable: LogicalVariable, innerPredicate: Option[Expression])(val position: InputPosition)

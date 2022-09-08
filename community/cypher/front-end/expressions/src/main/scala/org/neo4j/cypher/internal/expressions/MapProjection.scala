@@ -22,15 +22,31 @@ case class MapProjection(
   name: Variable, // Since this is always rewritten to DesugaredMapProjection this
   // (and in the elements below) may not need to be LogicalVariable
   items: Seq[MapProjectionElement]
-)(val position: InputPosition) extends Expression
+)(val position: InputPosition) extends Expression {
+  override def isConstantForQuery: Boolean = items.forall(_.isConstantForQuery)
+}
 
 case class DesugaredMapProjection(variable: LogicalVariable, items: Seq[LiteralEntry], includeAllProps: Boolean)(
   val position: InputPosition
-) extends Expression
+) extends Expression {
+  override def isConstantForQuery: Boolean = items.forall(_.isConstantForQuery)
+}
 
 sealed trait MapProjectionElement extends Expression
 
-case class LiteralEntry(key: PropertyKeyName, exp: Expression)(val position: InputPosition) extends MapProjectionElement
-case class VariableSelector(id: Variable)(val position: InputPosition) extends MapProjectionElement
-case class PropertySelector(id: Variable)(val position: InputPosition) extends MapProjectionElement
-case class AllPropertiesSelector()(val position: InputPosition) extends MapProjectionElement
+case class LiteralEntry(key: PropertyKeyName, exp: Expression)(val position: InputPosition)
+    extends MapProjectionElement {
+  override def isConstantForQuery: Boolean = exp.isConstantForQuery
+}
+
+case class VariableSelector(id: Variable)(val position: InputPosition) extends MapProjectionElement {
+  override def isConstantForQuery: Boolean = true
+}
+
+case class PropertySelector(id: Variable)(val position: InputPosition) extends MapProjectionElement {
+  override def isConstantForQuery: Boolean = true
+}
+
+case class AllPropertiesSelector()(val position: InputPosition) extends MapProjectionElement {
+  override def isConstantForQuery: Boolean = true
+}

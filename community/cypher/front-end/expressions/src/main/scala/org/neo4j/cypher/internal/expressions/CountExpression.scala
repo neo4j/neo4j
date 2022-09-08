@@ -45,4 +45,6 @@ case class CountExpression(pattern: Pattern, optionalWhereExpression: Option[Exp
       children(1).asInstanceOf[Option[Expression]]
     )(position, outerScope).asInstanceOf[this.type]
   }
+
+  override def isConstantForQuery: Boolean = optionalWhereExpression.forall(_.isConstantForQuery)
 }

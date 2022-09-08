@@ -28,7 +28,9 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 /**
  * Retrieve element id from long slot, requires slot to be non null.
  */
-trait ElementIdFromSlot extends RuntimeExpression
+trait ElementIdFromSlot extends RuntimeExpression {
+  override def isConstantForQuery: Boolean = false
+}
 
 object ElementIdFromSlot {
 

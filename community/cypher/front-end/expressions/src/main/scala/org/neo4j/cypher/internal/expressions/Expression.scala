@@ -182,6 +182,12 @@ abstract class Expression extends ASTNode {
     case f: FunctionInvocation if f.function == Rand || f.function == RandomUUID => true
     case _                                                                       => false
   }
+
+  /**
+   * 
+   * @return `true` if expression is constant and doesn't require the incoming row to be evaluated.
+   */
+  def isConstantForQuery: Boolean
 }
 
 /**

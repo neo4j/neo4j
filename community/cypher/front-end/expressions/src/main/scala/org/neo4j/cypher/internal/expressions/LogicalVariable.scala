@@ -30,6 +30,8 @@ abstract class LogicalVariable extends Expression {
   def position: InputPosition
 
   override def asCanonicalStringVal: String = name
+
+  override def isConstantForQuery: Boolean = false
 }
 
 object LogicalVariable {

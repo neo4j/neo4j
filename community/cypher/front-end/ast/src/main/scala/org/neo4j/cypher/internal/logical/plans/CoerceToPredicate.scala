@@ -37,4 +37,6 @@ case class CoerceToPredicate(inner: Expression) extends BooleanExpression with S
   // That is why, we need to adjust the dup method's behaviour
   override def dup(children: Seq[AnyRef]): this.type =
     CoerceToPredicate(children.head.asInstanceOf[Expression]).asInstanceOf[this.type]
+
+  override def isConstantForQuery: Boolean = inner.isConstantForQuery
 }

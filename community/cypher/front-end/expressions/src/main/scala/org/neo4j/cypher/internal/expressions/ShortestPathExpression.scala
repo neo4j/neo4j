@@ -18,4 +18,6 @@ package org.neo4j.cypher.internal.expressions
 
 case class ShortestPathExpression(pattern: ShortestPaths) extends Expression {
   def position = pattern.position
+
+  override def isConstantForQuery: Boolean = false
 }

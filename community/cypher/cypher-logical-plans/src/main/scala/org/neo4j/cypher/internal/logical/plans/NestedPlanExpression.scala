@@ -62,6 +62,8 @@ abstract class NestedPlanExpression extends Expression with SemanticCheckableExp
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheck.success
 
   override def asCanonicalStringVal: String = solvedExpressionAsString
+
+  override def isConstantForQuery: Boolean = false
 }
 
 object NestedPlanExpression {

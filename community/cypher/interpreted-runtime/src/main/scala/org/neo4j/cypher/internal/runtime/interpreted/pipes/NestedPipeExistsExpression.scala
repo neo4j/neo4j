@@ -30,4 +30,6 @@ case class NestedPipeExistsExpression(pipe: Pipe, availableExpressionVariables: 
 ) extends Expression {
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheck.success
+
+  override def isConstantForQuery: Boolean = false
 }

@@ -21,4 +21,6 @@ package org.neo4j.cypher.internal.physicalplanning.ast
 
 import org.neo4j.cypher.internal.runtime.ast.BooleanRuntimeExpression
 
-case class IsPrimitiveNull(offset: Int) extends BooleanRuntimeExpression
+case class IsPrimitiveNull(offset: Int) extends BooleanRuntimeExpression {
+  override def isConstantForQuery: Boolean = false
+}

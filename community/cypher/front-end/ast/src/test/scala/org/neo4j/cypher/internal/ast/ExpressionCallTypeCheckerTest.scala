@@ -152,5 +152,7 @@ class ExpressionCallTypeCheckerTest extends CypherFunSuite {
 
   case class TypeExpr(override val arguments: Seq[Expression]) extends Expression with AstConstructionTestSupport {
     override def position: InputPosition = pos
+
+    override def isConstantForQuery: Boolean = arguments.forall(_.isConstantForQuery)
   }
 }

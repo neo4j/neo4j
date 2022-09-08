@@ -20,4 +20,6 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 
 case class CoerceTo(expr: Expression, typ: CypherType) extends Expression {
   def position = expr.position
+
+  override def isConstantForQuery: Boolean = expr.isConstantForQuery
 }

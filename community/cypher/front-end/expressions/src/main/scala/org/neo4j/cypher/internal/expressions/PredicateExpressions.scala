@@ -174,6 +174,8 @@ case class In(lhs: Expression, rhs: Expression)(val position: InputPosition) ext
 sealed trait PartialPredicate[+P <: Expression] extends Expression {
   def coveredPredicate: P
   def coveringPredicate: Expression
+
+  override def isConstantForQuery: Boolean = coveredPredicate.isConstantForQuery
 }
 
 object PartialPredicate {
@@ -309,6 +311,8 @@ case class HasDegreeLessThan(
 
   override def asCanonicalStringVal: String =
     s"getDegree(${nodeRelationCanonicalString(node, relType, dir)}) < ${degree.asCanonicalStringVal}"
+
+  override def isConstantForQuery: Boolean = node.isConstantForQuery
 }
 
 case class HasDegreeLessThanOrEqual(
@@ -320,6 +324,8 @@ case class HasDegreeLessThanOrEqual(
 
   override def asCanonicalStringVal: String =
     s"getDegree(${nodeRelationCanonicalString(node, relType, dir)}) <= ${degree.asCanonicalStringVal}"
+
+  override def isConstantForQuery: Boolean = node.isConstantForQuery
 }
 
 case class HasDegreeGreaterThan(
@@ -331,6 +337,8 @@ case class HasDegreeGreaterThan(
 
   override def asCanonicalStringVal: String =
     s"getDegree(${nodeRelationCanonicalString(node, relType, dir)}) > ${degree.asCanonicalStringVal}"
+
+  override def isConstantForQuery: Boolean = node.isConstantForQuery
 }
 
 case class HasDegreeGreaterThanOrEqual(
@@ -342,6 +350,8 @@ case class HasDegreeGreaterThanOrEqual(
 
   override def asCanonicalStringVal: String =
     s"getDegree(${nodeRelationCanonicalString(node, relType, dir)}) >= ${degree.asCanonicalStringVal}"
+
+  override def isConstantForQuery: Boolean = node.isConstantForQuery
 }
 
 case class HasDegree(node: Expression, relType: Option[RelTypeName], dir: SemanticDirection, degree: Expression)(
@@ -350,6 +360,10 @@ case class HasDegree(node: Expression, relType: Option[RelTypeName], dir: Semant
 
   override def asCanonicalStringVal: String =
     s"getDegree(${nodeRelationCanonicalString(node, relType, dir)}) = ${degree.asCanonicalStringVal}"
+
+  override def isConstantForQuery: Boolean = node.isConstantForQuery
 }
 
-case class AssertIsNode(lhs: Expression)(val position: InputPosition) extends BooleanExpression
+case class AssertIsNode(lhs: Expression)(val position: InputPosition) extends BooleanExpression {
+  override def isConstantForQuery: Boolean = lhs.isConstantForQuery
+}

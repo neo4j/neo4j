@@ -28,4 +28,5 @@ case class GetDegree(
   override def asCanonicalStringVal: String =
     s"getDegree(${nodeRelationCanonicalString(node, relType, dir)})"
 
+  override def isConstantForQuery: Boolean = false
 }

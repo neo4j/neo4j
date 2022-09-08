@@ -20,6 +20,8 @@ import org.neo4j.cypher.internal.util.InputPosition
 
 sealed trait PathStep extends Expression {
   def dependencies: Set[LogicalVariable]
+
+  override def isConstantForQuery: Boolean = false
 }
 
 final case class NodePathStep(node: LogicalVariable, next: PathStep)(val position: InputPosition) extends PathStep {
@@ -48,4 +50,6 @@ case class NilPathStep()(val position: InputPosition) extends PathStep {
   override def dependencies = Set.empty[LogicalVariable]
 }
 
-case class PathExpression(step: PathStep)(val position: InputPosition) extends Expression
+case class PathExpression(step: PathStep)(val position: InputPosition) extends Expression {
+  override def isConstantForQuery: Boolean = false
+}

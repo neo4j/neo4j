@@ -34,4 +34,6 @@ case class NestedPipeGetByNameExpression(
 ) extends Expression {
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheck.success
+
+  override def isConstantForQuery: Boolean = false
 }

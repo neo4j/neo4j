@@ -20,4 +20,6 @@ import org.neo4j.cypher.internal.util.InputPosition
 
 case class CountStar()(val position: InputPosition) extends Expression {
   override def asCanonicalStringVal: String = "count(*)"
+
+  override def isConstantForQuery: Boolean = false
 }

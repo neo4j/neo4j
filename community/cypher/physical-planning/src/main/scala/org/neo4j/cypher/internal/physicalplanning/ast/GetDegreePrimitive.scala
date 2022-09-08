@@ -23,4 +23,6 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.ast.RuntimeExpression
 
 case class GetDegreePrimitive(offset: Int, typ: Option[Either[Int, String]], direction: SemanticDirection)
-    extends RuntimeExpression
+    extends RuntimeExpression {
+  override def isConstantForQuery: Boolean = false
+}

@@ -30,7 +30,9 @@ import org.neo4j.cypher.internal.util.InputPosition
  * 
  * Entities needs to be null checked during expression evaluation!
  */
-trait MapProjectionFromStore extends Expression
+trait MapProjectionFromStore extends Expression {
+  override def isConstantForQuery: Boolean = false
+}
 
 case class PropertyMapEntry(mapKey: String, property: PropertyFromStore)
 

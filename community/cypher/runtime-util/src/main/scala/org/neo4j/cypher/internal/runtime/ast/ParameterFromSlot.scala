@@ -23,4 +23,6 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 
 case class ParameterFromSlot(offset: Int, name: String, parameterType: CypherType) extends RuntimeExpression {
   override def asCanonicalStringVal: String = "$" + name
+
+  override def isConstantForQuery: Boolean = false
 }

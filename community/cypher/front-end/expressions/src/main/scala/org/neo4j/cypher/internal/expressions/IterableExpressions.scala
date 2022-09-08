@@ -40,6 +40,11 @@ case class ListComprehension(scope: ExtractScope, expression: Expression)(val po
   def variable: LogicalVariable = scope.variable
   def innerPredicate: Option[Expression] = scope.innerPredicate
   def extractExpression: Option[Expression] = scope.extractExpression
+
+  override def isConstantForQuery: Boolean =
+    expression.isConstantForQuery &&
+      innerPredicate.forall(_.isConstantForQuery) &&
+      scope.extractExpression.forall(_.isConstantForQuery)
 }
 
 object ListComprehension {
@@ -115,6 +120,10 @@ sealed trait IterablePredicateExpression extends FilteringExpression with Boolea
     val predicate = innerPredicate.map(p => s" where ${p.asCanonicalStringVal}").getOrElse("")
     s"$name(${variable.asCanonicalStringVal}) in ${expression.asCanonicalStringVal}$predicate"
   }
+
+  override def isConstantForQuery: Boolean =
+    expression.isConstantForQuery &&
+      innerPredicate.forall(_.isConstantForQuery)
 }
 
 object IterablePredicateExpression {
@@ -205,6 +214,9 @@ case class ReduceExpression(scope: ReduceScope, init: Expression, list: Expressi
   def variable: LogicalVariable = scope.variable
   def accumulator: LogicalVariable = scope.accumulator
   def expression: Expression = scope.expression
+
+  override def isConstantForQuery: Boolean =
+    scope.expression.isConstantForQuery && init.isConstantForQuery && list.isConstantForQuery
 }
 
 object ReduceExpression {

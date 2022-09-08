@@ -36,6 +36,8 @@ sealed trait Parameter extends Expression {
     case that: Parameter => that.canEqual(this) && this.name == that.name && this.parameterType == that.parameterType
     case _               => false
   }
+
+  override def isConstantForQuery: Boolean = true
 }
 
 object Parameter {

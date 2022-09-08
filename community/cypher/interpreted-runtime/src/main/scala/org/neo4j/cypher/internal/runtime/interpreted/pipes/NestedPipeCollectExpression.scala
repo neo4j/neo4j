@@ -32,4 +32,6 @@ case class NestedPipeCollectExpression(
 )(val position: InputPosition) extends Expression {
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheck.success
+
+  override def isConstantForQuery: Boolean = false
 }

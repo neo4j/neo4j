@@ -26,4 +26,6 @@ import org.neo4j.cypher.internal.runtime.ast.BooleanRuntimeExpression
  */
 case object IsEmpty extends BooleanRuntimeExpression {
   override def asCanonicalStringVal: String = "isEmpty()"
+
+  override def isConstantForQuery: Boolean = false
 }

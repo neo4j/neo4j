@@ -21,4 +21,6 @@ package org.neo4j.cypher.internal.runtime.ast
 
 import org.neo4j.cypher.internal.expressions.Expression
 
-case class MakeTraversable(e: Expression) extends RuntimeExpression
+case class MakeTraversable(e: Expression) extends RuntimeExpression {
+  override def isConstantForQuery: Boolean = e.isConstantForQuery
+}

@@ -64,6 +64,7 @@ sealed trait Literal extends Expression with LiteralWriter {
   def value: AnyRef
   def asCanonicalStringVal: String
   def asSensitiveLiteral: Literal with SensitiveLiteral
+  override def isConstantForQuery: Boolean = true
 }
 
 sealed trait NumberLiteral extends Literal {
@@ -192,6 +193,8 @@ final case class SensitiveStringLiteral(value: Array[Byte])(val position: InputP
   // we can't trust the value.lenth here because the length of the literal in
   // the query depends on how we quote it
   override def literalLength: Option[Int] = None
+
+  override def isConstantForQuery: Boolean = true
 }
 
 trait SensitiveLiteral {

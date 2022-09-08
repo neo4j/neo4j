@@ -32,6 +32,8 @@ trait LeftUnaryOperatorExpression extends OperatorExpression {
   def rhs: Expression
 
   override def asCanonicalStringVal: String = s"$canonicalOperatorSymbol(${rhs.asCanonicalStringVal})"
+
+  override def isConstantForQuery: Boolean = rhs.isConstantForQuery
 }
 
 trait RightUnaryOperatorExpression extends OperatorExpression {
@@ -39,6 +41,8 @@ trait RightUnaryOperatorExpression extends OperatorExpression {
 
   def lhs: Expression
   override def asCanonicalStringVal: String = s"$canonicalOperatorSymbol(${lhs.asCanonicalStringVal})"
+
+  override def isConstantForQuery: Boolean = lhs.isConstantForQuery
 }
 
 trait BinaryOperatorExpression extends OperatorExpression {
@@ -50,6 +54,8 @@ trait BinaryOperatorExpression extends OperatorExpression {
   override def asCanonicalStringVal: String = {
     s"${lhs.asCanonicalStringVal} $canonicalOperatorSymbol ${rhs.asCanonicalStringVal}"
   }
+
+  override def isConstantForQuery: Boolean = lhs.isConstantForQuery && rhs.isConstantForQuery
 }
 
 /**
@@ -66,4 +72,6 @@ trait MultiOperatorExpression extends OperatorExpression {
 
   override def asCanonicalStringVal: String =
     s"$canonicalOperatorSymbol( ${exprs.map(_.asCanonicalStringVal).mkString(", ")}"
+
+  override def isConstantForQuery: Boolean = exprs.forall(_.isConstantForQuery)
 }

@@ -131,4 +131,5 @@ case class ResolvedFunctionInvocation(
     args = arguments.toIndexedSeq
   )(position)
 
+  override def isConstantForQuery: Boolean = false
 }

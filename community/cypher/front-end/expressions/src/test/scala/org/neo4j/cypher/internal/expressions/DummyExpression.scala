@@ -23,4 +23,6 @@ import org.neo4j.cypher.internal.util.symbols.TypeSpec
 /**
  * This expression can be used in test code to test type specifications and expectation.
  */
-case class DummyExpression(possibleTypes: TypeSpec, position: InputPosition = DummyPosition(0)) extends Expression
+case class DummyExpression(possibleTypes: TypeSpec, position: InputPosition = DummyPosition(0)) extends Expression {
+  override def isConstantForQuery: Boolean = false
+}

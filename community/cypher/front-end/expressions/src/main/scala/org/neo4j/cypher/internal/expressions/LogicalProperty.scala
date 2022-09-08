@@ -19,6 +19,8 @@ package org.neo4j.cypher.internal.expressions
 abstract class LogicalProperty extends Expression {
   def map: Expression
   def propertyKey: PropertyKeyName
+
+  override def isConstantForQuery: Boolean = map.isConstantForQuery
 }
 
 object LogicalProperty {

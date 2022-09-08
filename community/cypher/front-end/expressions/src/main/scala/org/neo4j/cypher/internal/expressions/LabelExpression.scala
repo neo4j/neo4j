@@ -31,7 +31,9 @@ import scala.annotation.tailrec
  * @param entity expression to evaluate to the entity we want to check
  */
 case class LabelExpressionPredicate(entity: Expression, labelExpression: LabelExpression)(val position: InputPosition)
-    extends BooleanExpression
+    extends BooleanExpression {
+  override def isConstantForQuery: Boolean = false
+}
 
 sealed trait LabelExpression extends ASTNode {
 

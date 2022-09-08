@@ -22,10 +22,16 @@ package org.neo4j.cypher.internal.physicalplanning.ast
 import org.neo4j.cypher.internal.runtime.ast.BooleanRuntimeExpression
 
 case class HasLabelsFromSlot(offset: Int, resolvedLabelTokens: Seq[Int], lateLabels: Seq[String])
-    extends BooleanRuntimeExpression
+    extends BooleanRuntimeExpression {
+  override def isConstantForQuery: Boolean = false
+}
 
 case class HasALabelFromSlot(offset: Int)
-    extends BooleanRuntimeExpression
+    extends BooleanRuntimeExpression {
+  override def isConstantForQuery: Boolean = false
+}
 
 case class HasAnyLabelFromSlot(offset: Int, resolvedLabelTokens: Seq[Int], lateLabels: Seq[String])
-    extends BooleanRuntimeExpression
+    extends BooleanRuntimeExpression {
+  override def isConstantForQuery: Boolean = false
+}
