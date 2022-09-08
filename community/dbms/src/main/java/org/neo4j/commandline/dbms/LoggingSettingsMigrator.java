@@ -312,7 +312,11 @@ class LoggingSettingsMigrator {
 
     private String getRelativeFileName(Setting<Path> pathSetting) {
         Path logDirectory = getSettingValue(logs_directory);
-        return "${config:server.directories.logs}/" + logDirectory.relativize(getSettingValue(pathSetting));
+        return "${config:server.directories.logs}/"
+                + logDirectory
+                        .relativize(getSettingValue(pathSetting))
+                        .toString()
+                        .replace('\\', '/');
     }
 
     private <T> T getSettingValue(Setting<T> setting) {
