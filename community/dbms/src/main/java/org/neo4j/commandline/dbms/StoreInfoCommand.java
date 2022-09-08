@@ -50,6 +50,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
@@ -136,14 +137,17 @@ public class StoreInfoCommand extends AbstractAdminCommand {
                         .map(dbPath ->
                                 neo4jLayout.databaseLayout(dbPath.getFileName().toString()))
                         .filter(dbLayout -> database.matches(dbLayout.getDatabaseName())
-                                && storageEngineSelector
-                                        .selectStorageEngine(fs, dbLayout)
-                                        .isPresent())
+                                && Validators.isExistingDatabase(storageEngineSelector, fs, dbLayout))
                         .map(dbLayout -> printInfo(fs, dbLayout, pageCache, config, structuredFormat, true))
                         .collect(collector);
                 ctx.out().println(result);
             } else {
                 var databaseLayout = neo4jLayout.databaseLayout(database.getDatabaseName());
+                if (!Validators.isExistingDatabase(storageEngineSelector, fs, databaseLayout)) {
+                    throw new CommandFailedException(format(
+                            "Database does not exist: '%s'. Directory '%s' does not contain a database",
+                            database.getDatabaseName(), databaseLayout.databaseDirectory()));
+                }
                 ctx.out().println(printInfo(fs, databaseLayout, pageCache, config, structuredFormat, false));
             }
         } catch (CommandFailedException e) {
@@ -167,9 +171,7 @@ public class StoreInfoCommand extends AbstractAdminCommand {
 
         var dirName = storePath.getFileName().toString();
         var databaseLayout = neo4jLayout.databaseLayout(dirName);
-        var pathIsDatabase =
-                storageEngineSelector.selectStorageEngine(fs, databaseLayout).isPresent();
-        if (pathIsDatabase) {
+        if (Validators.isExistingDatabase(storageEngineSelector, fs, databaseLayout)) {
             throw new IllegalArgumentException(format(
                     "The directory %s contains the store files of a single database. --from-path should point to the "
                             + "databases directory.",
