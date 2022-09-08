@@ -73,6 +73,16 @@ class MessageMetadataParserV40Test {
     }
 
     @Test
+    void shouldParseAutoAccessMode() throws PackstreamReaderException {
+        var meta = new MapValueBuilder();
+        meta.add("mode", Values.stringValue("a"));
+
+        var mode = MessageMetadataParserV40.parseAccessMode(meta.build());
+
+        assertThat(mode).isNotNull().isEqualTo(AccessMode.WRITE);
+    }
+
+    @Test
     void shouldFallBackToWriteWhenNoAccessModeIsGiven() throws PackstreamReaderException {
         var mode = MessageMetadataParserV40.parseAccessMode(MapValue.EMPTY);
 
