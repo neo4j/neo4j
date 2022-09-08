@@ -74,6 +74,7 @@ import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -84,6 +85,9 @@ import picocli.CommandLine;
 abstract class BootloaderCommandTestBase {
     @Inject
     private TestDirectory testDirectory;
+
+    @Inject
+    FileSystemAbstraction fs;
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     ByteArrayOutputStream err = new ByteArrayOutputStream();

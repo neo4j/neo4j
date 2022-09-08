@@ -271,23 +271,17 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
                 && command.stream()
                         .anyMatch(cmd -> cmd.endsWith(PRUNSRV_I_386_EXE) || cmd.endsWith(PRUNSRV_AMD_64_EXE))) {
             // This is special condition where we run a command with our prunsrv windows-service util and we have to run
-            // it with powershell,
-            // probably because we're running a command which exceeds 2000 characters which is the limit of cmd.exe.
-            // Since it seems to be really hard to make powershell wait for completion of commands that it runs (we've
-            // certainly tried)
-            // then we have to try and wait the completion manually here. The general idea is to see if there's any
-            // prunsrv process running
-            // and we're simply waiting until there is none. Now this is somewhat risky because if there's any other
-            // process with the exact same name
-            // we'll wait here for the max time. Although know that the PS1 scripts that this was ported from doesn't
-            // even have the option to run
-            // these prunsrv commands in powershell.exe, it always ran them in cmd.exe. The main cause of a command line
-            // being too long for cmd.exe
-            // is that the classpath is too long since other things are somewhat fixed and doesn't exceed this limit on
-            // any sane environment.
-            // And the main reason the classpath is too long is that we're currently running in a test environment,
-            // because in a real-world
-            // packaging environment the classpath is a couple of wildcard directories.
+            // it with powershell, probably because we're running a command which exceeds 2000 characters which is the
+            // limit of cmd.exe. Since it seems to be really hard to make powershell wait for completion of commands
+            // that it runs (we've certainly tried) then we have to try and wait the completion manually here. The
+            // general idea is to see if there's any prunsrv process running and we're simply waiting until there is
+            // none. Now this is somewhat risky because if there's any other process with the exact same name we'll
+            // wait here for the max time. Although, knowing that the PS1 scripts that this was ported from doesn't even
+            // have the option to run these prunsrv commands in powershell.exe, it always ran them in cmd.exe. The
+            // main cause of a command line being too long for cmd.exe is that the classpath is too long since
+            // other things are somewhat fixed and doesn't exceed this limit on any sane environment. And the main
+            // reason the classpath is too long is that we're currently running in a test environment, because in
+            // a real-world packaging environment the classpath is a couple of wildcard directories.
             Stopwatch stopwatch = Stopwatch.start();
             do {
                 try {

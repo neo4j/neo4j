@@ -36,4 +36,10 @@ public record Environment(
 
     public static final Environment SYSTEM =
             new Environment(System.out, System.err, System::getenv, System::getProperty, Runtime.version());
+
+    /**
+     * This is sent by the child process when it is ready to fend for itself.
+     * When running in service mode, this implies that the parent process can detach.
+     */
+    public static final char FULLY_FLEDGED = '\u0006'; // <ACK>
 }

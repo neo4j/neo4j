@@ -34,11 +34,11 @@ import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.io.fs.FileSystemUtils.pathToString;
 import static org.neo4j.server.WebContainerTestUtils.getDefaultRelativeProperties;
 import static org.neo4j.server.WebContainerTestUtils.verifyConnector;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -54,6 +54,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorType;
@@ -66,8 +67,11 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.server.startup.Environment;
 import org.neo4j.test.conditions.Conditions;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
@@ -106,9 +110,9 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
             "--home-dir",
             testDirectory.directory("home-dir").toAbsolutePath().toString(),
             "-c",
-            configOption(data_directory, testDirectory.absolutePath().toString()),
+            configOption(data_directory, testDirectory.absolutePath()),
             "-c",
-            configOption(logs_directory, testDirectory.absolutePath().toString())
+            configOption(logs_directory, testDirectory.absolutePath())
         };
     }
 
@@ -271,6 +275,40 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
         assertFalse(Files.exists(pidFile));
     }
 
+    @Test
+    void loggingConfigurationErrorsShouldPreventStartup() throws IOException {
+        Path log4jConfig = testDirectory.file("user-logs.xml");
+        FileSystemUtils.writeString(
+                testDirectory.getFileSystem(), log4jConfig, "<Configuration><", EmptyMemoryTracker.INSTANCE);
+
+        String[] args = new String[] {
+            "--home-dir",
+            testDirectory.homePath().toString(),
+            "-c",
+            configOption(GraphDatabaseSettings.user_logging_config_path, log4jConfig)
+        };
+
+        int resultCode = NeoBootstrapper.start(bootstrapper, args);
+        assertThat(resultCode).isEqualTo(NeoBootstrapper.INVALID_CONFIGURATION_ERROR_CODE);
+        suppressOutput.getErrorVoice().containsMessage("[Fatal Error] user-logs.xml:");
+    }
+
+    @Test
+    void signalParentProcessInNonConsoleMode() {
+        int resultCode = NeoBootstrapper.start(
+                bootstrapper, "--home-dir", testDirectory.homePath().toString());
+        assertThat(resultCode).isEqualTo(NeoBootstrapper.OK);
+        assertThat(suppressOutput.getErrorVoice().toString()).contains(String.valueOf(Environment.FULLY_FLEDGED));
+    }
+
+    @Test
+    void dontSignalParentProcessInConsoleMode() {
+        int resultCode = NeoBootstrapper.start(
+                bootstrapper, "--home-dir", testDirectory.homePath().toString(), "--console-mode");
+        assertThat(resultCode).isEqualTo(NeoBootstrapper.OK);
+        assertThat(suppressOutput.getErrorVoice().toString()).doesNotContain(String.valueOf(Environment.FULLY_FLEDGED));
+    }
+
     protected abstract DatabaseManagementService newEmbeddedDbms(Path homeDir);
 
     protected static Map<String, String> connectorsOnRandomPortsConfig() {
@@ -287,12 +325,16 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
                 BoltConnector.enabled.name(), SettingValueParsers.TRUE);
     }
 
-    protected static String configOption(Setting<?> setting, String value) {
+    static String configOption(Setting<?> setting, String value) {
         return setting.name() + "=" + value;
     }
 
-    protected static String configOption(Setting<?> setting, boolean value) {
+    static String configOption(Setting<Boolean> setting, boolean value) {
         return setting.name() + "=" + (value ? SettingValueParsers.TRUE : FALSE);
+    }
+
+    protected static String configOption(Setting<Path> setting, Path value) {
+        return setting.name() + "=" + FileSystemUtils.pathToString(value);
     }
 
     protected static String[] withConnectorsOnRandomPortsConfig(String... otherConfigs) {
@@ -316,7 +358,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
             "-c",
             configOption(httpsPolicy.enabled, httpsEnabled),
             "-c",
-            configOption(httpsPolicy.base_directory, pathToString(testDirectory.absolutePath())),
+            configOption(httpsPolicy.base_directory, testDirectory.homePath()),
             "-c",
             configOption(HttpConnector.enabled, httpEnabled),
             "-c",

@@ -127,13 +127,13 @@ class CommandLineArgsTest {
     @Test
     void expandCommandsShouldBeDisabledByDefault() {
         // GIVEN
-        String[] args = array("--allow-console-appenders");
+        String[] args = array("--console-mode");
 
         // WHEN
         CommandLineArgs parsed = parse(args);
 
         // THEN
         assertFalse(parsed.expandCommands);
-        assertTrue(parsed.allowConsoleAppenders);
+        assertTrue(parsed.consoleMode);
     }
 }

@@ -27,9 +27,8 @@ import org.apache.logging.log4j.core.util.NullOutputStream;
  * Adaptor class to log using {@link InternalLog} instead of {@link PrintStream}.
  */
 public class LoggerPrintStreamAdaptor extends PrintStream {
-    InternalLog log;
-
-    Level level;
+    private final InternalLog log;
+    private final Level level;
 
     public LoggerPrintStreamAdaptor(InternalLog log, Level level) {
         super(NullOutputStream.getInstance());

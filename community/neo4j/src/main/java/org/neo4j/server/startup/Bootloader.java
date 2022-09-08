@@ -83,12 +83,12 @@ abstract class Bootloader implements AutoCloseable {
     static final String PROP_BASEDIR = "basedir";
 
     static final String ARG_EXPAND_COMMANDS = "--expand-commands";
+    static final String ARG_CONSOLE_MODE = "--console-mode";
 
     static final Path DEFAULT_CONFIG_LOCATION = Path.of(Config.DEFAULT_CONFIG_DIR_NAME);
     static final int DEFAULT_NEO4J_SHUTDOWN_TIMEOUT = 120;
 
     // With console mode we can allow console appenders
-    private static final String ARG_ALLOW_CONSOLE_APPENDERS = "--allow-console-appenders";
 
     final Class<?> entrypoint;
     final Environment environment;
@@ -400,7 +400,7 @@ abstract class Bootloader implements AutoCloseable {
 
             Optional<Long> runningProcess = os.getPidIfRunning();
 
-            this.additionalArgs.add(ARG_ALLOW_CONSOLE_APPENDERS);
+            this.additionalArgs.add(ARG_CONSOLE_MODE);
 
             if (dryRun) {
                 List<String> args = os.buildStandardStartArguments();

@@ -33,7 +33,7 @@
 
     <Appenders>
         <RollingRandomAccessFile name="Neo4jLog" fileName="${config:server.directories.logs}/neo4j.log"
-                                 filePattern="${config:server.directories.logs}/neo4j.log.%02i">
+                                 filePattern="$${config:server.directories.logs}/neo4j.log.%02i">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSSZ}{GMT+0} %-5p %m%n"/>
             <Policies>
                 <SizeBasedTriggeringPolicy size="20 MB"/>

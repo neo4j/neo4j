@@ -44,6 +44,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -837,6 +838,12 @@ class FakeDbmsLaunchTest {
                     .with(args)
                     .withAll(ManagementFactory.getRuntimeMXBean().getInputArguments())
                     .forEach(System.out::println);
+
+            if (Arrays.stream(args).noneMatch(s -> s.equals(Bootloader.ARG_CONSOLE_MODE))) {
+                // Daemon mode, tell parent process to leave us :'(
+                System.err.println(Environment.FULLY_FLEDGED);
+                System.err.close();
+            }
             Stopwatch stopwatch = Stopwatch.start();
 
             int timeoutSeconds = StringUtils.isNotEmpty(System.getenv(ENV_TIMEOUT))

@@ -82,7 +82,7 @@ public class SuppressOutputExtension extends StatefulFieldExtension<SuppressOutp
         });
         if (resourceLocks.stream().noneMatch(resourceLock -> Resources.SYSTEM_OUT.equals(resourceLock.value()))) {
             throw new IllegalStateException(
-                    getClass().getSimpleName() + " requires `@ResourceLock( Resources.SYSTEM_OUT )` annotation.");
+                    getClass().getSimpleName() + " requires `@ResourceLock(Resources.SYSTEM_OUT)` annotation.");
         }
     }
 }

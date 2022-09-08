@@ -20,25 +20,25 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 -->
-<!-- This will be used if no user provided xml file could be found -->
-<Configuration packages="org.neo4j.logging.log4j">
+<Configuration monitorInterval="5" packages="org.neo4j.logging.log4j">
+
     <Appenders>
-        <RollingRandomAccessFile name="RollingFile" fileName="${config:server.directories.logs}/neo4j.log"
-                                 filePattern="$${config:server.directories.logs}/neo4j.log.%02i">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSSZ}{GMT+0} %-5p %m%n"/>
+        <RollingFile name="RollingFile" fileName="${config:server.directories.logs}/debug.log"
+                     filePattern="$${config:server.directories.logs}/debug.log.%02i"
+                     immediateFlush="true">
+            <PatternLayout pattern="%d{yyyy-MM-dd}{GMT+0} %-5p [%c{1.}] %m%n"
+                           header="$${neo4j:diagnostics}%n"/>
             <Policies>
-                <SizeBasedTriggeringPolicy size="20 MB"/>
+                <SizeBasedTriggeringPolicy size="10 kB"/>
             </Policies>
-            <DefaultRolloverStrategy fileIndex="min" max="5"/>
-        </RollingRandomAccessFile>
-        <Console name="ConsoleAppender" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSSZ}{GMT+0} %-5p %m%n"/>
-        </Console>
+            <DefaultRolloverStrategy fileIndex="min" max="7"/>
+        </RollingFile>
     </Appenders>
+
     <Loggers>
         <Root level="info">
             <AppenderRef ref="RollingFile"/>
-            <AppenderRef ref="ConsoleAppender"/>
         </Root>
     </Loggers>
+
 </Configuration>

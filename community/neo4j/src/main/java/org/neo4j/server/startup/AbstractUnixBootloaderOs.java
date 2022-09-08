@@ -19,8 +19,12 @@
  */
 package org.neo4j.server.startup;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+
+import java.io.PrintStream;
 import java.util.Optional;
 import org.neo4j.cli.CommandFailedException;
+import org.neo4j.io.IOUtils;
 
 abstract class AbstractUnixBootloaderOs extends BootloaderOsAbstraction {
     AbstractUnixBootloaderOs(Bootloader bootloader) {
@@ -29,13 +33,43 @@ abstract class AbstractUnixBootloaderOs extends BootloaderOsAbstraction {
 
     @Override
     long start() {
-        return bootloader.processManager().run(buildStandardStartArguments(), new StartProcess());
+        return bootloader
+                .processManager()
+                .run(buildStandardStartArguments(), new StartProcess(bootloader.environment.err()));
     }
 
-    private static class StartProcess extends ProcessStages.Adapter {
+    private static class StartProcess implements ProcessStages {
+        private final PrintStream errorStream;
+
+        private StartProcess(PrintStream errorStream) {
+            this.errorStream = errorStream;
+        }
+
+        @Override
+        public void preStart(ProcessManager processManager, ProcessBuilder processBuilder) {
+            // Just inherit stdout, stderr will be "inherited" by the stream gobbler
+            processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+        }
+
         @Override
         public void postStart(ProcessManager processManager, Process process) throws Exception {
+            ErrorGobbler errorGobbler = new ErrorGobbler(errorStream, process.getErrorStream());
+            errorGobbler.start();
+
             processManager.storePid(process.pid(), true);
+
+            boolean success = errorGobbler.waitUntilFullyFledged();
+
+            // Detach
+            errorGobbler.join(MINUTES.toMillis(1));
+            IOUtils.closeAll(process.getOutputStream(), process.getErrorStream(), process.getInputStream());
+
+            if (!success) {
+                if (process.waitFor(1, MINUTES)) {
+                    throw new CommandFailedException("Failed to start server.", process.exitValue());
+                }
+                throw new CommandFailedException("Failed to start server.");
+            }
         }
     }
 

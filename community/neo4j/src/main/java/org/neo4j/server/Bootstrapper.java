@@ -28,7 +28,7 @@ public interface Bootstrapper {
             Path configFile,
             Map<String, String> configOverrides,
             boolean expandCommands,
-            boolean allowConsoleAppenders);
+            boolean consoleMode);
 
     int stop();
 }

@@ -38,8 +38,10 @@ public class CommandLineArgs {
     @CommandLine.Option(names = "--expand-commands", description = "allow execution of commands from the config")
     boolean expandCommands;
 
-    @CommandLine.Option(names = "--allow-console-appenders", description = "allow output to stdout")
-    boolean allowConsoleAppenders;
+    @CommandLine.Option(
+            names = "--console-mode",
+            description = "whether the bootstrapper should act as a console or daemon")
+    boolean consoleMode;
 
     @CommandLine.Option(
             names = "-c",

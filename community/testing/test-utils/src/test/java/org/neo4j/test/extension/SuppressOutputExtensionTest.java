@@ -52,7 +52,7 @@ class SuppressOutputExtensionTest {
                                         instanceOf(IllegalStateException.class),
                                         message(
                                                 message -> message.contains(
-                                                        "SuppressOutputExtension requires `@ResourceLock( Resources.SYSTEM_OUT )` annotation.")))));
+                                                        "SuppressOutputExtension requires `@ResourceLock(Resources.SYSTEM_OUT)` annotation.")))));
     }
 
     @Nested

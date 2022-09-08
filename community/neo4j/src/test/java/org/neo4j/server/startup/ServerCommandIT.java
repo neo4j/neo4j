@@ -29,6 +29,7 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,10 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.neo4j.configuration.BootloaderSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileSystemUtils;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.server.NeoBootstrapper;
 
 /**
  * A base test for some commands in 'neo4j-admin server' and 'neo4j' group.
@@ -47,6 +52,18 @@ abstract class ServerCommandIT extends ServerProcessTestBase {
     void shouldBeAbleToStartAndStopRealServerOnNonWindows() {
         shouldBeAbleToStartAndStopRealServer();
         assertThat(err.toString()).isEmpty();
+    }
+
+    @DisabledOnOs(OS.WINDOWS)
+    @Test
+    void shouldPropagateErrorsOnServerStart() throws IOException {
+        Path log4jConfig = config.get(GraphDatabaseSettings.user_logging_config_path);
+        FileSystemUtils.writeString(fs, log4jConfig, "<Configuration></Cunfigoratzion>", EmptyMemoryTracker.INSTANCE);
+        int start = execute(List.of("start"), Map.of());
+        assertThat(start).isEqualTo(NeoBootstrapper.INVALID_CONFIGURATION_ERROR_CODE);
+        assertThat(err.toString())
+                .contains(
+                        "[Fatal Error] user-logs.xml:1:18: The element type \"Configuration\" must be terminated by the matching end-tag \"</Configuration>\".");
     }
 
     @EnabledOnOs(OS.WINDOWS)
@@ -129,12 +146,8 @@ abstract class ServerCommandIT extends ServerProcessTestBase {
                 s -> s.contains(String.format("-Xms%dk, -Xmx%dk", initialHeapSize * 1024, MAX_HEAP_MB * 1024)),
                 5,
                 MINUTES);
-        assertEventually(this::getDebugLogLines, s -> s.contains(getVersion() + "NeoWebServer] ========"), 5, MINUTES);
+        assertEventually(this::getDebugLogLines, s -> s.contains("NeoWebServer] ========"), 5, MINUTES);
         assertEventually(this::getUserLogLines, s -> s.contains("Remote interface available at"), 5, MINUTES);
         assertThat(execute("stop")).isEqualTo(EXIT_CODE_OK);
-    }
-
-    protected String getVersion() {
-        return "Community";
     }
 }

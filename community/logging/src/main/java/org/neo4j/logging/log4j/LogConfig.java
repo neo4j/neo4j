@@ -110,19 +110,19 @@ public final class LogConfig {
     /**
      * Create a logger context from a log4j xml configuration file.
      *
-     * @param fs                    the file system.
-     * @param xmlConfigFile         the log4j xml configuration path.
-     * @param allowConsoleAppenders if {@code true}, console appenders will not be removed
-     * @param configLookup          a lookup function to get values for setting names.
-     * @param headerLogger          a callback for header the header logger, only applicable to {@link Neo4jDebugLogLayout}.
-     * @param headerClassName       classname to use in the header logger, only applicable to {@link Neo4jDebugLogLayout}.
+     * @param fs              the file system.
+     * @param xmlConfigFile   the log4j xml configuration path.
+     * @param consoleMode     if {@code false}, console appenders will be removed.
+     * @param configLookup    a lookup function to get values for setting names.
+     * @param headerLogger    a callback for header the header logger, only applicable to {@link Neo4jDebugLogLayout}.
+     * @param headerClassName classname to use in the header logger, only applicable to {@link Neo4jDebugLogLayout}.
      * @return a logger context configured with the provided xml file.
      */
     public static Neo4jLoggerContext createLoggerFromXmlConfig(
             FileSystemAbstraction fs,
             Path xmlConfigFile,
             boolean useDefaultOnMissingXml,
-            boolean allowConsoleAppenders,
+            boolean consoleMode,
             Function<String, Object> configLookup,
             Consumer<InternalLog> headerLogger,
             String headerClassName) {
@@ -130,7 +130,7 @@ public final class LogConfig {
                 .withConfigLookup(configLookup)
                 .withHeaderLogger(headerLogger, headerClassName)
                 .withUseDefaultOnMissingXml(useDefaultOnMissingXml)
-                .withAllowConsoleAppenders(allowConsoleAppenders)
+                .withConsoleMode(consoleMode)
                 .build();
     }
 
@@ -242,7 +242,7 @@ public final class LogConfig {
         private Function<String, Object> configLookup;
         private String jsonLayout;
         private boolean useDefaultOnMissingXml = false;
-        private boolean allowConsoleAppenders = false;
+        private boolean consoleMode = false;
 
         private Builder(FileSystemAbstraction fileSystemAbstraction, Path xmlConfigFile) {
             this.fileSystemAbstraction = fileSystemAbstraction;
@@ -284,8 +284,8 @@ public final class LogConfig {
             return this;
         }
 
-        public Builder withAllowConsoleAppenders(boolean allowConsoleAppenders) {
-            this.allowConsoleAppenders = allowConsoleAppenders;
+        public Builder withConsoleMode(boolean allowConsoleAppenders) {
+            this.consoleMode = allowConsoleAppenders;
             return this;
         }
 
@@ -297,12 +297,7 @@ public final class LogConfig {
                 try {
                     ConfigurationSource configurationSource = getConfigurationSource();
                     configureLoggingFromFile(
-                            context,
-                            headerLogger,
-                            headerClassName,
-                            configLookup,
-                            configurationSource,
-                            allowConsoleAppenders);
+                            context, headerLogger, headerClassName, configLookup, configurationSource, consoleMode);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

@@ -40,6 +40,9 @@ import java.util.concurrent.Callable;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -47,14 +50,20 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutput;
+import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
+@ResourceLock(Resources.SYSTEM_OUT)
+@ExtendWith(SuppressOutputExtension.class)
 class GraphDatabaseInternalLogIT {
-
     @Inject
     private TestDirectory testDir;
+
+    @Inject
+    private SuppressOutput suppressOutput;
 
     @Test
     void shouldWriteToInternalDiagnosticsLog() throws Exception {
@@ -169,6 +178,44 @@ class GraphDatabaseInternalLogIT {
         assertThat(internalLog2).isRegularFile();
         assertEventuallyContains(() -> countOccurrences(internalLog, "An info entry"));
         assertEventuallyContains(() -> countOccurrencesJson(internalLog2, "message", "An info entry"));
+    }
+
+    @Test
+    @Timeout(value = 3, unit = MINUTES)
+    void shouldHandlePathsWithSpecialCharacters() throws IOException, InterruptedException {
+        // Given
+        Path log4jXmlConfig = testDir.homePath().resolve(SERVER_LOGS_XML);
+        Path logsDirectory = testDir.directory("%s test");
+        Path internalLog = logsDirectory.resolve("debug.log");
+        Path rollingLogFile = logsDirectory.resolve("debug.log.01");
+
+        Files.createDirectories(log4jXmlConfig.getParent());
+        writeResourceToFile("testConfigSpecialChars.xml", log4jXmlConfig);
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(testDir.homePath())
+                .setConfig(GraphDatabaseSettings.server_logging_config_path, log4jXmlConfig)
+                .setConfig(GraphDatabaseSettings.logs_directory, logsDirectory)
+                .build();
+        GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
+
+        InternalLog log = ((GraphDatabaseAPI) db)
+                .getDependencyResolver()
+                .resolveDependency(LogService.class)
+                .getInternalLog(getClass());
+        log.info("An info entry");
+
+        assertThat(internalLog).isRegularFile();
+
+        // Wait for rotation
+        do {
+            log.info("An info entry");
+            Thread.sleep(100);
+        } while (!Files.exists(rollingLogFile));
+
+        managementService.shutdown();
+
+        assertThat(rollingLogFile).isRegularFile();
+        assertThat(suppressOutput.getOutputVoice().isEmpty()).isTrue();
+        assertThat(suppressOutput.getErrorVoice().isEmpty()).isTrue();
     }
 
     private static void assertEventuallyContains(Callable<Long> instances) {

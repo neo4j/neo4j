@@ -53,7 +53,7 @@ class BlockingBootstrapperTest {
                     Path configFile,
                     Map<String, String> configOverrides,
                     boolean expandCommands,
-                    boolean allowConsoleAppenders) {
+                    boolean consoleMode) {
                 running.set(true);
                 return 0;
             }
@@ -95,7 +95,7 @@ class BlockingBootstrapperTest {
                     Path configFile,
                     Map<String, String> configOverrides,
                     boolean expandCommands,
-                    boolean allowConsoleAppenders) {
+                    boolean consoleMode) {
                 return 1;
             }
 

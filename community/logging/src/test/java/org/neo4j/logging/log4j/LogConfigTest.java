@@ -316,7 +316,7 @@ class LogConfigTest {
         useConsoleLogger(false);
     }
 
-    private void useConsoleLogger(boolean allowConsole) throws IOException {
+    private void useConsoleLogger(boolean consoleMode) throws IOException {
         String xml =
                 """
                 <Configuration packages="org.neo4j.logging.log4j">
@@ -342,7 +342,7 @@ class LogConfigTest {
 
         Map<String, Object> config =
                 Map.of("server.directories.logs", dir.homePath().toAbsolutePath());
-        ctx = createLoggerFromXmlConfig(fs, xmlConfig, false, allowConsole, config::get, null, null);
+        ctx = createLoggerFromXmlConfig(fs, xmlConfig, false, consoleMode, config::get, null, null);
 
         ExtendedLogger logger = ctx.getLogger("org.neo4j.classname");
         logger.warn("test");
@@ -350,7 +350,7 @@ class LogConfigTest {
         assertThat(Files.readString(dir.homePath().resolve("neo4j.log")))
                 .matches(DATE_PATTERN + format(" %-5s test%n", Level.WARN));
         assertThat(suppressOutput.getOutputVoice().containsMessage(format(" %-5s test%n", Level.WARN)))
-                .isEqualTo(allowConsole);
+                .isEqualTo(consoleMode);
     }
 
     private static class MyStructure extends Neo4jMapMessage {
