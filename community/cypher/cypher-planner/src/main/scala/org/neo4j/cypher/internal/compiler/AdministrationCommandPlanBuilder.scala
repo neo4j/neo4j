@@ -949,7 +949,8 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plans.EnableServer(assertAllowed, name, options), prettifier.asString(c)))
 
       case c @ AlterServer(name, options) =>
-        val assertAllowed = plans.AssertAllowedDbmsActions(ServerManagementAction)
+        val checkBlocked = plans.AssertNotBlockedDatabaseManagement(ServerManagementAction)
+        val assertAllowed = plans.AssertAllowedDbmsActions(checkBlocked, ServerManagementAction)
         Some(plans.LogSystemCommand(plans.AlterServer(assertAllowed, name, options), prettifier.asString(c)))
 
       case c @ RenameServer(name, newName) =>
