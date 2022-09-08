@@ -54,6 +54,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.logging.LoggingReporterFactoryInvocationHandler;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.io.pagecache.PageCache;
@@ -443,7 +444,9 @@ public class ConsistencyCheckService {
                     config.get(GraphDatabaseInternalSettings.consistency_check_memory_limit_factor);
             final var summary = new ConsistencySummaryStatistics();
 
-            if (consistencyFlags.checkIndexes() && consistencyFlags.checkStructure()) {
+            if (consistencyFlags.checkIndexes()
+                    && consistencyFlags.checkStructure()
+                    && fileSystem.fileExists(databaseLayout.pathForStore(CommonDatabaseStores.INDEX_STATISTICS))) {
                 var openOptions =
                         storageEngineFactory.getStoreOpenOptions(fileSystem, pageCache, databaseLayout, contextFactory);
                 final var statisticsStore = new IndexStatisticsStore(

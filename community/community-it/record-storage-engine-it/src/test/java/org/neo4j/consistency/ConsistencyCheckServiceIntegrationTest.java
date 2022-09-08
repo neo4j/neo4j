@@ -60,6 +60,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -242,6 +243,24 @@ public class ConsistencyCheckServiceIntegrationTest {
 
         // then
         assertTrue(result.isSuccessful());
+    }
+
+    @Test
+    void shouldSkipNonExistentIndexStatisticsStore() throws Exception {
+        // given
+        fixture.close();
+        testDirectory
+                .getFileSystem()
+                .deleteFile(RecordDatabaseLayout.convert(databaseLayout).indexStatisticsStore());
+
+        // when
+        var result = new ConsistencyCheckService(fixture.databaseLayout())
+                .with(testDirectory.getFileSystem())
+                .with(Config.defaults(settings()))
+                .runFullConsistencyCheck();
+
+        // then
+        assertThat(result.isSuccessful()).isTrue();
     }
 
     @Test
