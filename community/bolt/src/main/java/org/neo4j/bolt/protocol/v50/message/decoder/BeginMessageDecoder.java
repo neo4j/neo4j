@@ -17,24 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.protocol.v44.message.decoder;
+package org.neo4j.bolt.protocol.v50.message.decoder;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
-import org.neo4j.bolt.protocol.v40.messaging.request.BeginMessage;
 import org.neo4j.bolt.protocol.v44.message.util.MessageMetadataParserV44;
+import org.neo4j.bolt.protocol.v50.message.request.BeginMessage;
+import org.neo4j.bolt.protocol.v50.message.util.MessageMetadataParserV50;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.values.virtual.MapValue;
 
-public class BeginMessageDecoder extends org.neo4j.bolt.protocol.v40.messaging.decoder.BeginMessageDecoder {
+public class BeginMessageDecoder extends org.neo4j.bolt.protocol.v44.message.decoder.BeginMessageDecoder {
     private static final BeginMessageDecoder INSTANCE = new BeginMessageDecoder();
 
-    protected BeginMessageDecoder() {}
+    private BeginMessageDecoder() {}
 
-    public static BeginMessageDecoder getInstance() {
+    public static org.neo4j.bolt.protocol.v44.message.decoder.BeginMessageDecoder getInstance() {
         return INSTANCE;
     }
 
@@ -48,7 +49,9 @@ public class BeginMessageDecoder extends org.neo4j.bolt.protocol.v40.messaging.d
             String databaseName)
             throws PackstreamReaderException {
         var impersonatedUser = MessageMetadataParserV44.parseImpersonatedUser(metadata);
-        return newBeginMessage(metadata, bookmarks, txTimeout, accessMode, txMetadata, databaseName, impersonatedUser);
+        var txType = MessageMetadataParserV50.parseTxType(metadata);
+        return newBeginMessage(
+                metadata, bookmarks, txTimeout, accessMode, txMetadata, databaseName, impersonatedUser, txType);
     }
 
     protected BeginMessage newBeginMessage(
@@ -58,8 +61,9 @@ public class BeginMessageDecoder extends org.neo4j.bolt.protocol.v40.messaging.d
             AccessMode accessMode,
             Map<String, Object> txMetadata,
             String databaseName,
-            String impersonatedUser) {
-        return new org.neo4j.bolt.protocol.v44.message.request.BeginMessage(
-                metadata, bookmarks, txTimeout, accessMode, txMetadata, databaseName, impersonatedUser);
+            String impersonatedUser,
+            String txType) {
+        return new BeginMessage(
+                metadata, bookmarks, txTimeout, accessMode, txMetadata, databaseName, impersonatedUser, txType);
     }
 }

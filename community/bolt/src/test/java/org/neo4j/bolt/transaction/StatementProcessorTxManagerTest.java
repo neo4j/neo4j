@@ -66,9 +66,16 @@ class StatementProcessorTxManagerTest {
         txManager.initialize(new InitializeContext("connectionId", statementProcessorProvider));
 
         String transactionId = txManager.begin(
-                AUTH_DISABLED, "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO, "connectionId");
+                AUTH_DISABLED,
+                "neo4j",
+                emptyList(),
+                false,
+                Collections.emptyMap(),
+                Duration.ZERO,
+                null,
+                "connectionId");
         assertThat(transactionId).isNotNull();
-        verify(statementProcessor).beginTransaction(emptyList(), Duration.ZERO, AccessMode.WRITE, emptyMap());
+        verify(statementProcessor).beginTransaction(emptyList(), Duration.ZERO, AccessMode.WRITE, emptyMap(), null);
     }
 
     @Test
@@ -81,7 +88,14 @@ class StatementProcessorTxManagerTest {
         txManager.initialize(new InitializeContext("connectionId", statementProcessorProvider));
 
         String transactionId = txManager.begin(
-                AUTH_DISABLED, "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO, "connectionId");
+                AUTH_DISABLED,
+                "neo4j",
+                emptyList(),
+                false,
+                Collections.emptyMap(),
+                Duration.ZERO,
+                null,
+                "connectionId");
         assertThat(transactionId).isNotNull();
 
         txManager.runQuery(transactionId, "RETURN 1", MapValue.EMPTY);
@@ -98,7 +112,14 @@ class StatementProcessorTxManagerTest {
         txManager.initialize(new InitializeContext("connectionId", statementProcessorProvider));
 
         String transactionId = txManager.begin(
-                AUTH_DISABLED, "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO, "connectionId");
+                AUTH_DISABLED,
+                "neo4j",
+                emptyList(),
+                false,
+                Collections.emptyMap(),
+                Duration.ZERO,
+                null,
+                "connectionId");
         assertThat(transactionId).isNotNull();
 
         // no error thrown
@@ -116,7 +137,14 @@ class StatementProcessorTxManagerTest {
         txManager.initialize(new InitializeContext("connectionId", statementProcessorProvider));
 
         String transactionId = txManager.begin(
-                AUTH_DISABLED, "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO, "connectionId");
+                AUTH_DISABLED,
+                "neo4j",
+                emptyList(),
+                false,
+                Collections.emptyMap(),
+                Duration.ZERO,
+                null,
+                "connectionId");
         assertThat(transactionId).isNotNull();
 
         txManager.rollback(transactionId);
@@ -133,7 +161,14 @@ class StatementProcessorTxManagerTest {
         txManager.initialize(new InitializeContext("connectionId", statementProcessorProvider));
 
         var transactionId = txManager.begin(
-                AUTH_DISABLED, "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO, "connectionId");
+                AUTH_DISABLED,
+                "neo4j",
+                emptyList(),
+                false,
+                Collections.emptyMap(),
+                Duration.ZERO,
+                null,
+                "connectionId");
         assertThat(transactionId).isNotNull();
 
         txManager.rollback(transactionId);
@@ -151,7 +186,14 @@ class StatementProcessorTxManagerTest {
         txManager.initialize(new InitializeContext("connectionId", statementProcessorProvider));
 
         String transactionId = txManager.begin(
-                AUTH_DISABLED, "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO, "connectionId");
+                AUTH_DISABLED,
+                "neo4j",
+                emptyList(),
+                false,
+                Collections.emptyMap(),
+                Duration.ZERO,
+                null,
+                "connectionId");
         assertThat(transactionId).isNotNull();
 
         assertThrows(KernelException.class, () -> txManager.runQuery(transactionId, "RETURN 1", MapValue.EMPTY));
@@ -190,7 +232,14 @@ class StatementProcessorTxManagerTest {
         txManager.initialize(new InitializeContext("connectionId", statementProcessorProvider));
 
         String transactionId = txManager.begin(
-                AUTH_DISABLED, "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO, "connectionId");
+                AUTH_DISABLED,
+                "neo4j",
+                emptyList(),
+                false,
+                Collections.emptyMap(),
+                Duration.ZERO,
+                null,
+                "connectionId");
         assertThat(transactionId).isNotNull();
 
         txManager.commit(transactionId);
@@ -328,7 +377,14 @@ class StatementProcessorTxManagerTest {
         txManager.initialize(new InitializeContext("connectionId", statementProcessorProvider));
 
         String transactionId = txManager.begin(
-                AUTH_DISABLED, "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO, "connectionId");
+                AUTH_DISABLED,
+                "neo4j",
+                emptyList(),
+                false,
+                Collections.emptyMap(),
+                Duration.ZERO,
+                null,
+                "connectionId");
 
         var metadata = txManager.runQuery(transactionId, "RETURN 1", MapValue.EMPTY);
 
@@ -349,7 +405,14 @@ class StatementProcessorTxManagerTest {
         txManager.initialize(new InitializeContext("connectionId", statementProcessorProvider));
 
         String transactionId = txManager.begin(
-                AUTH_DISABLED, "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO, "connectionId");
+                AUTH_DISABLED,
+                "neo4j",
+                emptyList(),
+                false,
+                Collections.emptyMap(),
+                Duration.ZERO,
+                null,
+                "connectionId");
         assertThat(transactionId).isNotNull();
 
         var metadata = txManager.runQuery(transactionId, "RETURN 1", MapValue.EMPTY);
@@ -372,7 +435,14 @@ class StatementProcessorTxManagerTest {
         txManager.initialize(new InitializeContext("connectionId", statementProcessorProvider));
 
         String transactionId = txManager.begin(
-                AUTH_DISABLED, "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO, "connectionId");
+                AUTH_DISABLED,
+                "neo4j",
+                emptyList(),
+                false,
+                Collections.emptyMap(),
+                Duration.ZERO,
+                null,
+                "connectionId");
         assertThat(transactionId).isNotNull();
 
         var metadata = txManager.runQuery(transactionId, "RETURN 1", MapValue.EMPTY);
@@ -393,7 +463,14 @@ class StatementProcessorTxManagerTest {
         txManager.initialize(new InitializeContext("connectionId", statementProcessorProvider));
 
         String transactionId = txManager.begin(
-                AUTH_DISABLED, "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO, "connectionId");
+                AUTH_DISABLED,
+                "neo4j",
+                emptyList(),
+                false,
+                Collections.emptyMap(),
+                Duration.ZERO,
+                null,
+                "connectionId");
         assertThat(transactionId).isNotNull();
 
         txManager.interrupt(transactionId);
@@ -410,7 +487,14 @@ class StatementProcessorTxManagerTest {
         txManager.initialize(new InitializeContext("connectionId", statementProcessorProvider));
 
         String transactionId = txManager.begin(
-                AUTH_DISABLED, "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO, "connectionId");
+                AUTH_DISABLED,
+                "neo4j",
+                emptyList(),
+                false,
+                Collections.emptyMap(),
+                Duration.ZERO,
+                null,
+                "connectionId");
         assertThat(transactionId).isNotNull();
 
         var transactionStatus = txManager.transactionStatus(transactionId);
@@ -428,7 +512,14 @@ class StatementProcessorTxManagerTest {
         txManager.initialize(new InitializeContext("connectionId", statementProcessorProvider));
 
         String transactionId = txManager.begin(
-                AUTH_DISABLED, "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO, "connectionId");
+                AUTH_DISABLED,
+                "neo4j",
+                emptyList(),
+                false,
+                Collections.emptyMap(),
+                Duration.ZERO,
+                null,
+                "connectionId");
         assertThat(transactionId).isNotNull();
 
         var transactionStatus = txManager.transactionStatus(transactionId);
@@ -466,7 +557,14 @@ class StatementProcessorTxManagerTest {
         txManager.initialize(new InitializeContext("connectionId", statementProcessorProvider));
 
         String transactionId = txManager.begin(
-                AUTH_DISABLED, "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO, "connectionId");
+                AUTH_DISABLED,
+                "neo4j",
+                emptyList(),
+                false,
+                Collections.emptyMap(),
+                Duration.ZERO,
+                null,
+                "connectionId");
 
         txManager.runQuery(transactionId, "RETURN 1", MapValue.EMPTY);
 
@@ -490,7 +588,14 @@ class StatementProcessorTxManagerTest {
         txManager.initialize(new InitializeContext("connectionId", statementProcessorProvider));
 
         String transactionId = txManager.begin(
-                AUTH_DISABLED, "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO, "connectionId");
+                AUTH_DISABLED,
+                "neo4j",
+                emptyList(),
+                false,
+                Collections.emptyMap(),
+                Duration.ZERO,
+                null,
+                "connectionId");
 
         txManager.cleanUp(new CleanUpTransactionContext(transactionId));
 
@@ -517,6 +622,7 @@ class StatementProcessorTxManagerTest {
                         false,
                         Collections.emptyMap(),
                         Duration.ZERO,
+                        null,
                         "connectionId"));
         assertThat(exception.getMessage())
                 .contains("StatementProcessorProvider for connectionId: connectionId not found.");

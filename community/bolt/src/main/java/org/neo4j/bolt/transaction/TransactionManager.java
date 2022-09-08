@@ -44,6 +44,7 @@ public interface TransactionManager {
      * @param isReadOnly          whether the transaction is read-only or not.
      * @param transactionMetadata metadata for this transaction.
      * @param transactionTimeout  how long to wait before this transaction will time out.
+     * @param txType              Kernel transaction type.
      * @param connectionId        the connection that this transaction is tied to (for future removal).
      * @return the id that uniquely identifies the transaction.
      * @throws KernelException General error that can occur during transaction creation.
@@ -57,6 +58,7 @@ public interface TransactionManager {
             boolean isReadOnly,
             Map<String, Object> transactionMetadata,
             Duration transactionTimeout,
+            String txType,
             String connectionId)
             throws KernelException;
 
@@ -78,7 +80,8 @@ public interface TransactionManager {
             List<Bookmark> bookmarks,
             boolean isReadOnly,
             Map<String, Object> transactionMetadata,
-            Duration transactionTimeout)
+            Duration transactionTimeout,
+            String txType)
             throws KernelException {
         throw new UnsupportedOperationException("Not Implemented");
     }

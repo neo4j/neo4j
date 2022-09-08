@@ -241,6 +241,7 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
                 readByDefault,
                 Collections.emptyMap(),
                 customTransactionTimeout,
+                null,
                 Long.toString(id));
     }
 

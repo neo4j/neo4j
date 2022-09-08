@@ -121,6 +121,7 @@ public class ReadyState extends FailSafeState {
                         message.getAccessMode().equals(AccessMode.READ),
                         message.transactionMetadata(),
                         message.transactionTimeout(),
+                        getTxType(message),
                         context.connectionId());
         context.connectionState().setCurrentTransactionId(transactionId);
 
@@ -128,5 +129,9 @@ public class ReadyState extends FailSafeState {
         context.connection().write(StateSignal.ENTER_STREAMING);
 
         return txReadyState;
+    }
+
+    protected String getTxType(BeginMessage beginMessage) {
+        return null;
     }
 }

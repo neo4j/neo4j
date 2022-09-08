@@ -24,6 +24,9 @@ import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
+import org.neo4j.bolt.protocol.common.fsm.StateMachine;
+import org.neo4j.bolt.protocol.common.fsm.StateMachineSPIImpl;
+import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
 import org.neo4j.bolt.protocol.io.reader.DateReader;
 import org.neo4j.bolt.protocol.io.reader.DateTimeReader;
@@ -35,7 +38,10 @@ import org.neo4j.bolt.protocol.io.reader.Point2dReader;
 import org.neo4j.bolt.protocol.io.reader.Point3dReader;
 import org.neo4j.bolt.protocol.io.reader.TimeReader;
 import org.neo4j.bolt.protocol.io.writer.DefaultStructWriter;
+import org.neo4j.bolt.protocol.v40.transaction.TransactionStateMachineSPIProviderV4;
 import org.neo4j.bolt.protocol.v44.BoltProtocolV44;
+import org.neo4j.bolt.protocol.v50.fsm.StateMachineV50;
+import org.neo4j.bolt.protocol.v50.message.decoder.BeginMessageDecoder;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.internal.LogService;
@@ -83,5 +89,28 @@ public class BoltProtocolV50 extends BoltProtocolV44 {
                 .register(TimeReader.getInstance())
                 .register(DateTimeReader.getInstance())
                 .register(DateTimeZoneIdReader.getInstance());
+    }
+
+    @Override
+    protected StructRegistry<Connection, RequestMessage> createRequestMessageRegistry() {
+        return super.createRequestMessageRegistry()
+                .builderOf()
+                .register(BeginMessageDecoder.getInstance())
+                .build();
+    }
+
+    @Override
+    public StateMachine createStateMachine(Connection connection) {
+        connection
+                .memoryTracker()
+                .allocateHeap(TransactionStateMachineSPIProviderV4.SHALLOW_SIZE
+                        + StateMachineSPIImpl.SHALLOW_SIZE
+                        + StateMachineV50.SHALLOW_SIZE);
+
+        var transactionSpiProvider =
+                new TransactionStateMachineSPIProviderV4(boltGraphDatabaseManagementServiceSPI, connection, clock);
+        var boltSPI = new StateMachineSPIImpl(logging, transactionSpiProvider);
+
+        return new StateMachineV50(boltSPI, connection, clock, defaultDatabaseResolver, transactionManager);
     }
 }

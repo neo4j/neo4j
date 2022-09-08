@@ -33,7 +33,11 @@ import org.neo4j.values.virtual.MapValue;
 
 public interface StatementProcessor {
     void beginTransaction(
-            List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode, Map<String, Object> txMetadata)
+            List<Bookmark> bookmarks,
+            Duration txTimeout,
+            AccessMode accessMode,
+            Map<String, Object> txMetadata,
+            String txType)
             throws KernelException;
 
     StatementMetadata run(String statement, MapValue params) throws KernelException;
@@ -68,7 +72,11 @@ public interface StatementProcessor {
     StatementProcessor EMPTY = new StatementProcessor() {
         @Override
         public void beginTransaction(
-                List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode, Map<String, Object> txMetadata) {
+                List<Bookmark> bookmarks,
+                Duration txTimeout,
+                AccessMode accessMode,
+                Map<String, Object> txMetadata,
+                String txType) {
             throw new UnsupportedOperationException("Unable to begin a transaction");
         }
 

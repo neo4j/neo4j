@@ -54,12 +54,13 @@ public class StatementProcessorTxManager implements TransactionManager {
             boolean isReadOnly,
             Map<String, Object> transactionMetadata,
             Duration transactionTimeout,
+            String txType,
             String connectionId)
             throws KernelException {
         String txId = Long.toString(txIdGenerator.incrementAndGet());
         StatementProcessor newTxProcessor = retrieveStatementProcessor(connectionId, loginContext, defaultDb, txId);
         var accessMode = isReadOnly ? AccessMode.READ : AccessMode.WRITE;
-        newTxProcessor.beginTransaction(bookmarks, transactionTimeout, accessMode, transactionMetadata);
+        newTxProcessor.beginTransaction(bookmarks, transactionTimeout, accessMode, transactionMetadata, txType);
         statementProcessors.put(txId, newTxProcessor);
         return txId;
     }

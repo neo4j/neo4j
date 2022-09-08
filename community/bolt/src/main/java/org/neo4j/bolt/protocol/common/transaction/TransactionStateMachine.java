@@ -72,9 +72,13 @@ public class TransactionStateMachine implements StatementProcessor {
 
     @Override
     public void beginTransaction(
-            List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode, Map<String, Object> txMetadata)
+            List<Bookmark> bookmarks,
+            Duration txTimeout,
+            AccessMode accessMode,
+            Map<String, Object> txMetadata,
+            String txType)
             throws KernelException {
-        state = state.beginTransaction(ctx, spi, bookmarks, txTimeout, accessMode, txMetadata);
+        state = state.beginTransaction(ctx, spi, bookmarks, txTimeout, accessMode, txMetadata, txType);
     }
 
     @Override
@@ -180,9 +184,16 @@ public class TransactionStateMachine implements StatementProcessor {
                     List<Bookmark> bookmarks,
                     Duration txTimeout,
                     AccessMode accessMode,
-                    Map<String, Object> txMetadata) {
-                beginTransaction(
-                        ctx, spi, bookmarks, txTimeout, accessMode, txMetadata, KernelTransaction.Type.EXPLICIT);
+                    Map<String, Object> txMetadata,
+                    String txType) {
+                KernelTransaction.Type kernelTxType;
+                try {
+                    kernelTxType =
+                            txType == null ? KernelTransaction.Type.EXPLICIT : KernelTransaction.Type.valueOf(txType);
+                } catch (IllegalArgumentException e) {
+                    kernelTxType = KernelTransaction.Type.EXPLICIT;
+                }
+                beginTransaction(ctx, spi, bookmarks, txTimeout, accessMode, txMetadata, kernelTxType);
                 return EXPLICIT_TRANSACTION;
             }
 
@@ -303,7 +314,8 @@ public class TransactionStateMachine implements StatementProcessor {
                     List<Bookmark> bookmarks,
                     Duration txTimeout,
                     AccessMode accessMode,
-                    Map<String, Object> txMetadata)
+                    Map<String, Object> txMetadata,
+                    String txType)
                     throws KernelException {
                 throw new QueryExecutionKernelException(
                         new InvalidSemanticsException("Nested transactions are not supported.", null));
@@ -380,7 +392,8 @@ public class TransactionStateMachine implements StatementProcessor {
                 List<Bookmark> bookmarks,
                 Duration txTimeout,
                 AccessMode accessMode,
-                Map<String, Object> txMetadata)
+                Map<String, Object> txMetadata,
+                String txType)
                 throws KernelException;
 
         abstract State run(
@@ -531,15 +544,21 @@ public class TransactionStateMachine implements StatementProcessor {
     }
 
     static class MutableTransactionState {
-        /** The current routing context for internal cluster communication */
+        /**
+         * The current routing context for internal cluster communication
+         */
         final RoutingContext routingContext;
 
         int statementCounter;
 
-        /** The current session security context to be used for starting transactions */
+        /**
+         * The current session security context to be used for starting transactions
+         */
         final LoginContext loginContext;
 
-        /** The current transaction, if present */
+        /**
+         * The current transaction, if present
+         */
         BoltTransaction currentTransaction;
 
         final Map<Integer, StatementOutcome> statementOutcomes = new HashMap<>();

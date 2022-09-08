@@ -130,6 +130,7 @@ class InvocationTest {
                         anyBoolean(),
                         anyMap(),
                         nullable(Duration.class),
+                        nullable(String.class),
                         anyString()))
                 .thenReturn(TX_ID);
         when(transactionManager.runQuery(TX_ID, "query", MapValue.EMPTY)).thenReturn(metadata);
@@ -177,6 +178,7 @@ class InvocationTest {
                         eq(true),
                         anyMap(),
                         nullable(Duration.class),
+                        nullable(String.class),
                         anyString());
         txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
         txManagerOrder
@@ -242,6 +244,7 @@ class InvocationTest {
                         eq(true),
                         anyMap(),
                         nullable(Duration.class),
+                        nullable(String.class),
                         anyString());
         txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
         txManagerOrder
@@ -306,6 +309,7 @@ class InvocationTest {
                         eq(true),
                         anyMap(),
                         nullable(Duration.class),
+                        nullable(String.class),
                         anyString());
         txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
         txManagerOrder
@@ -442,6 +446,7 @@ class InvocationTest {
                         eq(true),
                         anyMap(),
                         nullable(Duration.class),
+                        nullable(String.class),
                         anyString());
         txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
         txManagerOrder
@@ -499,6 +504,7 @@ class InvocationTest {
                         eq(true),
                         anyMap(),
                         nullable(Duration.class),
+                        nullable(String.class),
                         anyString());
         txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
         txManagerOrder.verify(transactionManager).rollback(TX_ID);
@@ -559,6 +565,7 @@ class InvocationTest {
                         eq(true),
                         anyMap(),
                         nullable(Duration.class),
+                        nullable(String.class),
                         anyString());
         txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
         txManagerOrder
@@ -591,6 +598,7 @@ class InvocationTest {
                         eq(true),
                         anyMap(),
                         nullable(Duration.class),
+                        nullable(String.class),
                         anyString()))
                 .thenThrow(mock(KernelException.class));
 
@@ -633,6 +641,7 @@ class InvocationTest {
                         eq(true),
                         anyMap(),
                         nullable(Duration.class),
+                        nullable(String.class),
                         anyString()))
                 .thenThrow(new AuthorizationViolationException("Forbidden"));
 
@@ -707,6 +716,7 @@ class InvocationTest {
                         eq(true),
                         anyMap(),
                         nullable(Duration.class),
+                        nullable(String.class),
                         anyString());
         txManagerOrder.verify(transactionManager).runQuery(TX_ID, queryText, MapValue.EMPTY);
         txManagerOrder.verify(transactionManager).rollback(TX_ID);
@@ -759,6 +769,7 @@ class InvocationTest {
                         eq(true),
                         anyMap(),
                         nullable(Duration.class),
+                        nullable(String.class),
                         anyString());
         txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
         txManagerOrder.verify(transactionManager).rollback(TX_ID);
@@ -814,6 +825,7 @@ class InvocationTest {
                         eq(true),
                         anyMap(),
                         nullable(Duration.class),
+                        nullable(String.class),
                         anyString());
         txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
         txManagerOrder.verify(transactionManager).rollback(TX_ID);
@@ -899,6 +911,7 @@ class InvocationTest {
                         eq(true),
                         anyMap(),
                         nullable(Duration.class),
+                        nullable(String.class),
                         anyString());
         txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
         txManagerOrder.verify(transactionManager).rollback(TX_ID);
@@ -950,7 +963,8 @@ class InvocationTest {
 
         // then
         verify(txManager).initialize(any());
-        verify(txManager).begin(AUTH_DISABLED, "neo4j", emptyList(), true, emptyMap(), Duration.ofMillis(100), "0");
+        verify(txManager)
+                .begin(AUTH_DISABLED, "neo4j", emptyList(), true, emptyMap(), Duration.ofMillis(100), null, "0");
     }
 
     @Test
@@ -1212,6 +1226,7 @@ class InvocationTest {
                         eq(false),
                         anyMap(),
                         nullable(Duration.class),
+                        nullable(String.class),
                         anyString());
         txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
         txManagerOrder

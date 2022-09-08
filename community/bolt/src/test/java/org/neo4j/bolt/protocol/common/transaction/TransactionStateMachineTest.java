@@ -89,7 +89,7 @@ class TransactionStateMachineTest {
         assertEquals(
                 TransactionStateMachine.State.EXPLICIT_TRANSACTION,
                 TransactionStateMachine.State.AUTO_COMMIT.beginTransaction(
-                        mutableState, stateMachineSPI, null, null, AccessMode.WRITE, null));
+                        mutableState, stateMachineSPI, null, null, AccessMode.WRITE, null, null));
     }
 
     @Test
@@ -111,7 +111,7 @@ class TransactionStateMachineTest {
         QueryExecutionKernelException e = assertThrows(
                 QueryExecutionKernelException.class,
                 () -> TransactionStateMachine.State.EXPLICIT_TRANSACTION.beginTransaction(
-                        mutableState, stateMachineSPI, null, null, AccessMode.WRITE, null));
+                        mutableState, stateMachineSPI, null, null, AccessMode.WRITE, null, null));
 
         assertEquals("Nested transactions are not supported.", e.getMessage());
     }
@@ -400,11 +400,11 @@ class TransactionStateMachineTest {
     }
 
     private static void beginTx(TransactionStateMachine stateMachine) throws KernelException {
-        stateMachine.beginTransaction(null, null, AccessMode.WRITE, Map.of());
+        stateMachine.beginTransaction(null, null, AccessMode.WRITE, Map.of(), null);
     }
 
     private static void beginTx(TransactionStateMachine stateMachine, List<Bookmark> bookmarks) throws KernelException {
-        stateMachine.beginTransaction(bookmarks, null, AccessMode.WRITE, Map.of());
+        stateMachine.beginTransaction(bookmarks, null, AccessMode.WRITE, Map.of(), null);
     }
 
     private static BoltTransaction newTransaction() {
