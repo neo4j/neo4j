@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -74,24 +75,26 @@ public class WorkSyncedIndexPopulator extends IndexPopulator.Delegating {
     }
 
     private class IndexUpdateWork implements Work<IndexUpdateApply, IndexUpdateWork> {
-        private final Collection<? extends IndexEntryUpdate<?>> updates;
-        private final CursorContext cursorContext;
+
+        record OneWork(Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext) {}
+
+        private final List<OneWork> works = new ArrayList<>(1);
 
         IndexUpdateWork(Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext) {
-            this.updates = updates;
-            this.cursorContext = cursorContext;
+            works.add(new OneWork(updates, cursorContext));
         }
 
         @Override
         public IndexUpdateWork combine(IndexUpdateWork work) {
-            ArrayList<IndexEntryUpdate<?>> combined = new ArrayList<>(updates);
-            combined.addAll(work.updates);
-            return new IndexUpdateWork(combined, cursorContext);
+            works.addAll(work.works);
+            return this;
         }
 
         @Override
         public void apply(IndexUpdateApply indexUpdateApply) throws Exception {
-            indexUpdateApply.process(updates, cursorContext);
+            for (OneWork work : works) {
+                indexUpdateApply.process(work.updates, work.cursorContext);
+            }
         }
     }
 }

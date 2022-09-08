@@ -87,7 +87,7 @@ public class IndexUpdatesWorkSync {
                         throw new ExecutionException(e);
                     }
                 } else {
-                    workSync.apply(new IndexUpdatesWork(updates, cursorContext));
+                    workSync.apply(new IndexUpdatesWork(combinedUpdates(updates), cursorContext));
                 }
             }
         }
@@ -97,7 +97,7 @@ public class IndexUpdatesWorkSync {
                 addSingleUpdates();
                 return updates.isEmpty()
                         ? AsyncApply.EMPTY
-                        : workSync.applyAsync(new IndexUpdatesWork(updates, cursorContext));
+                        : workSync.applyAsync(new IndexUpdatesWork(combinedUpdates(updates), cursorContext));
             }
             apply(cursorContext);
             return AsyncApply.EMPTY;
@@ -108,24 +108,27 @@ public class IndexUpdatesWorkSync {
      * Combines index updates from multiple transactions into one bigger job.
      */
     private static class IndexUpdatesWork implements Work<IndexUpdateListener, IndexUpdatesWork> {
-        private final List<Iterable<IndexEntryUpdate<IndexDescriptor>>> updates;
-        private final CursorContext cursorContext;
 
-        IndexUpdatesWork(List<Iterable<IndexEntryUpdate<IndexDescriptor>>> updates, CursorContext cursorContext) {
-            this.cursorContext = cursorContext;
-            this.updates = updates;
+        record OneWork(Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext) {}
+
+        private final List<OneWork> works = new ArrayList<>(1);
+
+        IndexUpdatesWork(Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext) {
+            works.add(new OneWork(updates, cursorContext));
         }
 
         @Override
         public IndexUpdatesWork combine(IndexUpdatesWork work) {
-            updates.addAll(work.updates);
+            works.addAll(work.works);
             return this;
         }
 
         @Override
         public void apply(IndexUpdateListener material) {
             try {
-                material.applyUpdates(combinedUpdates(updates), cursorContext, false);
+                for (OneWork work : works) {
+                    material.applyUpdates(work.updates, work.cursorContext, false);
+                }
             } catch (IOException | KernelException e) {
                 throw new UnderlyingStorageException(e);
             }
