@@ -28,12 +28,12 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *
  * for ( leftRow <- left ) {
  *   if ( leftRow.evaluate( expr) ) {
+ *     leftRow('idName') = true
  *     produce leftRow
  *   } else {
  *     right.setArgument( leftRow )
- *     if ( right.nonEmpty ) {
- *       produce leftRow
- *     }
+ *     leftRow('idName') =  right.nonEmpty
+ *     produce leftRow
  *   }
  * }
  */
@@ -54,12 +54,12 @@ case class LetSelectOrSemiApply(
  *
  * for ( leftRow <- left ) {
  *   if ( leftRow.evaluate( expr) ) {
+ *     leftRow('idName') = true
  *     produce leftRow
  *   } else {
  *     right.setArgument( leftRow )
- *     if ( right.isEmpty ) {
- *       produce leftRow
- *     }
+ *     leftRow('idName') =  right.isEmpty
+ *     produce leftRow
  *   }
  * }
  */
