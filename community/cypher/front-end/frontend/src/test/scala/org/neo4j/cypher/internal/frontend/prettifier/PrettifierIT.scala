@@ -1400,6 +1400,20 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE DATABASE foO_Bar_42 IF NOT EXISTS",
     "create or replace database `foO_Bar_42`" ->
       "CREATE OR REPLACE DATABASE foO_Bar_42",
+    "CREATE DATABASE foo topology 1 primary" ->
+      "CREATE DATABASE foo TOPOLOGY 1 PRIMARY",
+    "CREATE DATABASE foo topology 1 primaries" ->
+      "CREATE DATABASE foo TOPOLOGY 1 PRIMARY",
+    "CREATE DATABASE foo topology 2 PRIMARY" ->
+      "CREATE DATABASE foo TOPOLOGY 2 PRIMARIES",
+    "CREATE DATABASE foo topology 1 primary 2 secondary" ->
+      "CREATE DATABASE foo TOPOLOGY 1 PRIMARY 2 SECONDARIES",
+    "CREATE DATABASE foo topology 1 primaries 2 secondaries" ->
+      "CREATE DATABASE foo TOPOLOGY 1 PRIMARY 2 SECONDARIES",
+    "CREATE DATABASE foo if not exists topology 1 primaries 2 secondaries  options {existingData: 'use', existingDataSeedInstance: '84c3ee6f-260e-47db-a4b6-589c807f2c2e'} wait" ->
+      "CREATE DATABASE foo IF NOT EXISTS TOPOLOGY 1 PRIMARY 2 SECONDARIES OPTIONS {existingData: \"use\", existingDataSeedInstance: \"84c3ee6f-260e-47db-a4b6-589c807f2c2e\"} WAIT",
+    "CREATE DATABASE foo TOPOLOGY 1 SECONDARY 2 PRIMARY" ->
+      "CREATE DATABASE foo TOPOLOGY 2 PRIMARIES 1 SECONDARY",
     "create database `graph.db`" ->
       "CREATE DATABASE `graph.db`",
     "create database graph.db" ->
@@ -1450,6 +1464,20 @@ class PrettifierIT extends CypherFunSuite {
       "ALTER DATABASE foo SET ACCESS READ ONLY".stripMargin,
     "alteR databaSe foo if EXISTS SEt access read WRITE" ->
       "ALTER DATABASE foo IF EXISTS SET ACCESS READ WRITE".stripMargin,
+    "ALTER DATABASE foo SET topology 1 primary" ->
+      "ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY",
+    "ALTER DATABASE foo SET topology 1 primaries" ->
+      "ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY",
+    "ALTER DATABASE foo SET topology 2 PRIMARY" ->
+      "ALTER DATABASE foo SET TOPOLOGY 2 PRIMARIES",
+    "ALTER DATABASE foo SET topology 1 primary 2 secondary" ->
+      "ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 2 SECONDARIES",
+    "ALTER DATABASE foo SET topology 1 primaries 2 secondaries" ->
+      "ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 2 SECONDARIES",
+    "ALTER DATABASE foo SET TOPOLOGY 1 SECONDARY 2 PRIMARY" ->
+      "ALTER DATABASE foo SET TOPOLOGY 2 PRIMARIES 1 SECONDARY",
+    "ALTER DATABASE foo SET ACCESS read write SET TOPOLOGY 1 SECONDARY 2 PRIMARY" ->
+      "ALTER DATABASE foo SET ACCESS READ WRITE SET TOPOLOGY 2 PRIMARIES 1 SECONDARY",
     "start database $foo" ->
       "START DATABASE $foo",
     "start database foO_Bar_42" ->

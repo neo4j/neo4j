@@ -142,6 +142,8 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PERIODIC;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PLAINTEXT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.POINT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.POPULATED;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PRIMARIES;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PRIMARY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PRIVILEGE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PRIVILEGES;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROCEDURE;
@@ -168,6 +170,8 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ROWS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SCAN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SEC;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SECOND;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SECONDARIES;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SECONDARY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SECONDS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SEEK;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SERVER;
@@ -187,6 +191,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TERMINATE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TEXT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.THEN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TO;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TOPOLOGY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TRANSACTION;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TRANSACTIONS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TRAVERSE;
@@ -339,6 +344,8 @@ public class IdentifierTokens {
             PLAINTEXT,
             POINT,
             POPULATED,
+            PRIMARY,
+            PRIMARIES,
             PRIVILEGE,
             PRIVILEGES,
             PROCEDURE,
@@ -365,6 +372,8 @@ public class IdentifierTokens {
             SCAN,
             SEC,
             SECOND,
+            SECONDARY,
+            SECONDARIES,
             SECONDS,
             SEEK,
             SERVER,
@@ -384,6 +393,7 @@ public class IdentifierTokens {
             TEXT,
             THEN,
             TO,
+            TOPOLOGY,
             TRANSACTION,
             TRANSACTIONS,
             TRAVERSE,

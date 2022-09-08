@@ -554,7 +554,9 @@ public interface ASTFactory<
             DATABASE_NAME databaseName,
             boolean ifNotExists,
             WAIT_CLAUSE waitClause,
-            SimpleEither<Map<String, EXPRESSION>, PARAMETER> options);
+            SimpleEither<Map<String, EXPRESSION>, PARAMETER> options,
+            Integer topologyPrimaries,
+            Integer topologySecondaries);
 
     ADMINISTRATION_COMMAND createCompositeDatabase(
             POS p, boolean replace, DATABASE_NAME compositeDatabaseName, boolean ifNotExists, WAIT_CLAUSE waitClause);
@@ -562,7 +564,13 @@ public interface ASTFactory<
     ADMINISTRATION_COMMAND dropDatabase(
             POS p, DATABASE_NAME databaseName, boolean ifExists, boolean composite, boolean dumpData, WAIT_CLAUSE wait);
 
-    ADMINISTRATION_COMMAND alterDatabase(POS p, DATABASE_NAME databaseName, boolean ifExists, AccessType accessType);
+    ADMINISTRATION_COMMAND alterDatabase(
+            POS p,
+            DATABASE_NAME databaseName,
+            boolean ifExists,
+            AccessType accessType,
+            Integer topologyPrimaries,
+            Integer topologySecondaries);
 
     ADMINISTRATION_COMMAND showDatabase(
             POS p, DATABASE_SCOPE scope, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where);

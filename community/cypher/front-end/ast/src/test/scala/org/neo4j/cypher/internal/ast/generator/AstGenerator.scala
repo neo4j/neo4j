@@ -265,6 +265,7 @@ import org.neo4j.cypher.internal.ast.TerminateTransactionAction
 import org.neo4j.cypher.internal.ast.TerminateTransactionsClause
 import org.neo4j.cypher.internal.ast.TextIndexes
 import org.neo4j.cypher.internal.ast.TimeoutAfter
+import org.neo4j.cypher.internal.ast.Topology
 import org.neo4j.cypher.internal.ast.TransactionManagementAction
 import org.neo4j.cypher.internal.ast.TraverseAction
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
@@ -423,6 +424,7 @@ import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.Gen.alphaLowerChar
 import org.scalacheck.Gen.choose
+import org.scalacheck.Gen.chooseNum
 import org.scalacheck.Gen.const
 import org.scalacheck.Gen.frequency
 import org.scalacheck.Gen.listOf
@@ -1748,6 +1750,11 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     maybeNamespace <- option(namespace)
   } yield NamespacedName(name, maybeNamespace)(pos)
 
+  def _topology: Gen[Topology] = for {
+    primaries <- chooseNum[Int](1, Integer.MAX_VALUE)
+    secondaries <- option(chooseNum[Int](0, Integer.MAX_VALUE))
+  } yield Topology(primaries, secondaries)
+
   // User commands
 
   def _showUsers: Gen[ShowUsers] = for {
@@ -2135,7 +2142,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     ifExistsDo <- _ifExistsDo
     wait <- _waitUntilComplete
     options <- _optionsMapAsEither
-  } yield CreateDatabase(dbName, ifExistsDo, options, wait)(pos)
+    topology <- option(_topology)
+  } yield CreateDatabase(dbName, ifExistsDo, options, wait, topology)(pos)
 
   def _createCompositeDatabase: Gen[CreateCompositeDatabase] = for {
     dbName <- _databaseName
@@ -2154,8 +2162,9 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _alterDatabase: Gen[AlterDatabase] = for {
     dbName <- _databaseName
     ifExists <- boolean
-    access <- _access
-  } yield AlterDatabase(dbName, ifExists, access)(pos)
+    access <- option(_access)
+    topology <- if (access.isEmpty) some(_topology) else option(_topology)
+  } yield AlterDatabase(dbName, ifExists, access, topology)(pos)
 
   def _startDatabase: Gen[StartDatabase] = for {
     dbName <- _databaseName

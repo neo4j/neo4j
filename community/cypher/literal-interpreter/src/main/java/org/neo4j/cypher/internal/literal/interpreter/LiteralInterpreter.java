@@ -853,7 +853,9 @@ public class LiteralInterpreter
             NULL databaseName,
             boolean ifNotExists,
             NULL aNull,
-            SimpleEither<Map<String, Object>, Object> options) {
+            SimpleEither<Map<String, Object>, Object> options,
+            Integer topologyPrimaries,
+            Integer topologySecondaries) {
         throw new UnsupportedOperationException("createDatabase is not a literal");
     }
 
@@ -864,7 +866,13 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL alterDatabase(NULL p, NULL databaseName, boolean ifExists, AccessType accessType) {
+    public NULL alterDatabase(
+            NULL p,
+            NULL databaseName,
+            boolean ifExists,
+            AccessType accessType,
+            Integer topologyPrimaries,
+            Integer topologySecondaries) {
         throw new UnsupportedOperationException("alterDatabase is not a literal");
     }
 

@@ -181,6 +181,7 @@ import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.ast.TerminateTransactionsClause
+import org.neo4j.cypher.internal.ast.Topology
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.Union
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
@@ -460,7 +461,7 @@ case class Prettifier(
         case ReadOnlyAccess  => "READ ONLY"
         case ReadWriteAccess => "READ WRITE"
       }
-      "SET ACCESS " + accessValue
+      " SET ACCESS " + accessValue
     }
 
     val commandString = adminCommand match {
@@ -619,16 +620,18 @@ case class Prettifier(
         }
         s"${x.name}$optionalName$y$r"
 
-      case x @ CreateDatabase(dbName, ifExistsDo, options, waitUntilComplete) =>
+      case x @ CreateDatabase(dbName, ifExistsDo, options, waitUntilComplete, topology) =>
         val formattedOptions = asString(options)
         val withoutNamespace = dbName match {
           case n: NamespacedName => Left(n.toString)
           case ParameterName(p)  => Right(p)
         }
+        val maybeTopologyString = topology.map(Prettifier.extractTopology).getOrElse("")
         ifExistsDo match {
           case IfExistsDoNothing | IfExistsInvalidSyntax =>
-            s"${x.name} ${Prettifier.escapeName(withoutNamespace)} IF NOT EXISTS$formattedOptions${waitUntilComplete.name}"
-          case _ => s"${x.name} ${Prettifier.escapeName(withoutNamespace)}$formattedOptions${waitUntilComplete.name}"
+            s"${x.name} ${Prettifier.escapeName(withoutNamespace)} IF NOT EXISTS$maybeTopologyString$formattedOptions${waitUntilComplete.name}"
+          case _ =>
+            s"${x.name} ${Prettifier.escapeName(withoutNamespace)}$maybeTopologyString$formattedOptions${waitUntilComplete.name}"
         }
 
       case x @ CreateCompositeDatabase(name, ifExistsDo, waitUntilComplete) =>
@@ -650,10 +653,11 @@ case class Prettifier(
             s"${x.name} ${Prettifier.escapeName(dbName)} IF EXISTS DUMP DATA${waitUntilComplete.name}"
         }
 
-      case x @ AlterDatabase(dbName, ifExists, access) =>
-        val accessString = getAccessString(access)
+      case x @ AlterDatabase(dbName, ifExists, access, topology) =>
+        val maybeAccessString = access.map(getAccessString).getOrElse("")
         val maybeIfExists = if (ifExists) " IF EXISTS" else ""
-        s"${x.name} ${Prettifier.escapeName(dbName)}$maybeIfExists $accessString"
+        val maybeTopologyString = topology.map(topo => s" SET${Prettifier.extractTopology(topo)}").getOrElse("")
+        s"${x.name} ${Prettifier.escapeName(dbName)}$maybeIfExists$maybeAccessString$maybeTopologyString"
 
       case x @ StartDatabase(dbName, waitUntilComplete) =>
         s"${x.name} ${Prettifier.escapeName(dbName)}${waitUntilComplete.name}"
@@ -1333,5 +1337,17 @@ object Prettifier {
 
   def escapeNames(names: Seq[DatabaseName])(implicit d: DummyImplicit): String =
     names.map(escapeName).mkString(", ")
+
+  def extractTopology(topology: Topology): String = {
+    val primariesString = topology.primaries match {
+      case n if n > 1 => s" $n PRIMARIES"
+      case n          => s" $n PRIMARY"
+    }
+    val maybeSecondariesString = topology.secondaries.map {
+      case n if n > 1 => s" $n SECONDARIES"
+      case n          => s" $n SECONDARY"
+    }.getOrElse("")
+    s" TOPOLOGY$primariesString$maybeSecondariesString"
+  }
 
 }

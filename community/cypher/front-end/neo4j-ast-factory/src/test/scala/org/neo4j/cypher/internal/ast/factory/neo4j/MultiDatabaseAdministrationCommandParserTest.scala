@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.NamespacedName
+import org.neo4j.cypher.internal.ast.Topology
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.symbols.CTMap
@@ -134,118 +135,120 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   // CREATE DATABASE
 
   test("CREATE DATABASE foo") {
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsThrowError, ast.NoOptions, ast.NoWait))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None))
   }
 
   test("USE system CREATE DATABASE foo") {
     // can parse USE clause, but is not included in AST
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsThrowError, ast.NoOptions, ast.NoWait))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None))
   }
 
   test("CREATE DATABASE $foo") {
-    yields(ast.CreateDatabase(stringParamName("foo"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait))
+    yields(ast.CreateDatabase(stringParamName("foo"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None))
   }
 
   test("CREATE DATABASE $wait") {
-    yields(ast.CreateDatabase(stringParamName("wait"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait))
+    yields(ast.CreateDatabase(stringParamName("wait"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None))
   }
 
   test("CREATE DATABASE `nowait.sec`") {
-    yields(ast.CreateDatabase(literal("nowait.sec"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait))
+    yields(ast.CreateDatabase(literal("nowait.sec"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None))
   }
 
   test("CREATE DATABASE second WAIT") {
-    yields(ast.CreateDatabase(literal("second"), ast.IfExistsThrowError, ast.NoOptions, ast.IndefiniteWait))
+    yields(ast.CreateDatabase(literal("second"), ast.IfExistsThrowError, ast.NoOptions, ast.IndefiniteWait, None))
   }
 
   test("CREATE DATABASE seconds WAIT 12") {
-    yields(ast.CreateDatabase(literal("seconds"), ast.IfExistsThrowError, ast.NoOptions, ast.TimeoutAfter(12)))
+    yields(ast.CreateDatabase(literal("seconds"), ast.IfExistsThrowError, ast.NoOptions, ast.TimeoutAfter(12), None))
   }
 
   test("CREATE DATABASE dump WAIT 12 SEC") {
-    yields(ast.CreateDatabase(literal("dump"), ast.IfExistsThrowError, ast.NoOptions, ast.TimeoutAfter(12)))
+    yields(ast.CreateDatabase(literal("dump"), ast.IfExistsThrowError, ast.NoOptions, ast.TimeoutAfter(12), None))
   }
 
   test("CREATE DATABASE destroy WAIT 12 SECOND") {
-    yields(ast.CreateDatabase(literal("destroy"), ast.IfExistsThrowError, ast.NoOptions, ast.TimeoutAfter(12)))
+    yields(ast.CreateDatabase(literal("destroy"), ast.IfExistsThrowError, ast.NoOptions, ast.TimeoutAfter(12), None))
   }
 
   test("CREATE DATABASE data WAIT 12 SECONDS") {
-    yields(ast.CreateDatabase(literal("data"), ast.IfExistsThrowError, ast.NoOptions, ast.TimeoutAfter(12)))
+    yields(ast.CreateDatabase(literal("data"), ast.IfExistsThrowError, ast.NoOptions, ast.TimeoutAfter(12), None))
   }
 
   test("CREATE DATABASE foo NOWAIT") {
-    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait))
+    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None))
   }
 
   test("CREATE DATABASE `foo.bar`") {
-    yields(ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait))
+    yields(ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None))
   }
 
   test("CREATE DATABASE foo.bar") {
-    yields(ast.CreateDatabase(namespacedName("foo", "bar"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait))
+    yields(ast.CreateDatabase(namespacedName("foo", "bar"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None))
   }
 
   test("CREATE DATABASE `graph.db`.`db.db`") {
     yields(_ =>
-      ast.CreateDatabase(namespacedName("graph.db", "db.db"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait)(pos)
+      ast.CreateDatabase(namespacedName("graph.db", "db.db"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None)(
+        pos
+      )
     )
   }
 
   test("CREATE DATABASE `foo-bar42`") {
-    yields(_ => ast.CreateDatabase(literal("foo-bar42"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait)(pos))
+    yields(_ => ast.CreateDatabase(literal("foo-bar42"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None)(pos))
   }
 
   test("CREATE DATABASE `_foo-bar42`") {
-    yields(_ => ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait)(pos))
+    yields(_ => ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None)(pos))
   }
 
   test("CREATE DATABASE ``") {
-    yields(_ => ast.CreateDatabase(literal(""), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait)(pos))
+    yields(_ => ast.CreateDatabase(literal(""), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None)(pos))
   }
 
   test("CREATE DATABASE foo IF NOT EXISTS") {
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, ast.NoOptions, ast.NoWait))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, ast.NoOptions, ast.NoWait, None))
   }
 
   test("CREATE DATABASE foo IF NOT EXISTS WAIT 10 SECONDS") {
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, ast.NoOptions, ast.TimeoutAfter(10)))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, ast.NoOptions, ast.TimeoutAfter(10), None))
   }
 
   test("CREATE DATABASE foo IF NOT EXISTS WAIT") {
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, ast.NoOptions, ast.IndefiniteWait))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, ast.NoOptions, ast.IndefiniteWait, None))
   }
 
   test("CREATE  DATABASE foo IF NOT EXISTS NOWAIT") {
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, ast.NoOptions, ast.NoWait))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, ast.NoOptions, ast.NoWait, None))
   }
 
   test("CREATE DATABASE `_foo-bar42` IF NOT EXISTS") {
-    yields(_ => ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsDoNothing, ast.NoOptions, ast.NoWait)(pos))
+    yields(_ => ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsDoNothing, ast.NoOptions, ast.NoWait, None)(pos))
   }
 
   test("CREATE OR REPLACE DATABASE foo") {
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsReplace, ast.NoOptions, ast.NoWait))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsReplace, ast.NoOptions, ast.NoWait, None))
   }
 
   test("CREATE OR REPLACE DATABASE foo WAIT 10 SECONDS") {
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsReplace, ast.NoOptions, ast.TimeoutAfter(10)))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsReplace, ast.NoOptions, ast.TimeoutAfter(10), None))
   }
 
   test("CREATE OR REPLACE DATABASE foo WAIT") {
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsReplace, ast.NoOptions, ast.IndefiniteWait))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsReplace, ast.NoOptions, ast.IndefiniteWait, None))
   }
 
   test("CREATE OR REPLACE DATABASE foo NOWAIT") {
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsReplace, ast.NoOptions, ast.NoWait))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsReplace, ast.NoOptions, ast.NoWait, None))
   }
 
   test("CREATE OR REPLACE DATABASE `_foo-bar42`") {
-    yields(_ => ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsReplace, ast.NoOptions, ast.NoWait)(pos))
+    yields(_ => ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsReplace, ast.NoOptions, ast.NoWait, None)(pos))
   }
 
   test("CREATE OR REPLACE DATABASE foo IF NOT EXISTS") {
-    yields(ast.CreateDatabase(literalFoo, ast.IfExistsInvalidSyntax, ast.NoOptions, ast.NoWait))
+    yields(ast.CreateDatabase(literalFoo, ast.IfExistsInvalidSyntax, ast.NoOptions, ast.NoWait, None))
   }
 
   test("CREATE DATABASE") {
@@ -283,6 +286,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
          |  "IF"
          |  "NOWAIT"
          |  "OPTIONS"
+         |  "TOPOLOGY"
          |  "WAIT"
          |  <EOF> (line 1, column 21 (offset: 20))""".stripMargin
 
@@ -330,7 +334,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
           "existingData" -> StringLiteral("use")((1, 44, 43)),
           "existingDataSeedInstance" -> StringLiteral("84c3ee6f-260e-47db-a4b6-589c807f2c2e")((1, 77, 76))
         )),
-        ast.NoWait
+        ast.NoWait,
+        None
       )(defaultPos)
     )
   }
@@ -346,7 +351,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
           "existingData" -> StringLiteral("use")((1, 44, 43)),
           "existingDataSeedInstance" -> StringLiteral("84c3ee6f-260e-47db-a4b6-589c807f2c2e")((1, 77, 76))
         )),
-        ast.IndefiniteWait
+        ast.IndefiniteWait,
+        None
       )(defaultPos)
     )
   }
@@ -357,17 +363,144 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         NamespacedName("foo")((1, 17, 16)),
         ast.IfExistsThrowError,
         ast.OptionsParam(Parameter("param", CTMap)((1, 29, 28))),
-        ast.NoWait
+        ast.NoWait,
+        None
       )(defaultPos)
     )
   }
 
+  test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY") {
+    assertAst(
+      ast.CreateDatabase(
+        literalFoo,
+        ast.IfExistsThrowError,
+        ast.NoOptions,
+        ast.NoWait,
+        Some(Topology(1, None))
+      )(pos)
+    )
+  }
+
+  test("CREATE DATABASE foo TOPOLOGY 1 PRIMARIES") {
+    assertAst(
+      ast.CreateDatabase(
+        literalFoo,
+        ast.IfExistsThrowError,
+        ast.NoOptions,
+        ast.NoWait,
+        Some(Topology(1, None))
+      )(pos)
+    )
+  }
+
+  test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY 1 SECONDARY") {
+    assertAst(
+      ast.CreateDatabase(
+        literalFoo,
+        ast.IfExistsThrowError,
+        ast.NoOptions,
+        ast.NoWait,
+        Some(Topology(1, Some(1)))
+      )(pos)
+    )
+  }
+
+  test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY 2 SECONDARIES") {
+    assertAst(
+      ast.CreateDatabase(
+        literalFoo,
+        ast.IfExistsThrowError,
+        ast.NoOptions,
+        ast.NoWait,
+        Some(Topology(1, Some(2)))
+      )(pos)
+    )
+  }
+
+  test("CREATE DATABASE foo TOPOLOGY 1 SECONDARY 1 PRIMARY") {
+    assertAst(
+      ast.CreateDatabase(
+        literalFoo,
+        ast.IfExistsThrowError,
+        ast.NoOptions,
+        ast.NoWait,
+        Some(Topology(1, Some(1)))
+      )(pos)
+    )
+  }
+
+  test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY TOPOLOGY 1 SECONDARY") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'TOPOLOGY': expected
+        |  "NOWAIT"
+        |  "OPTIONS"
+        |  "WAIT"
+        |  <EOF>
+        |  <UNSIGNED_DECIMAL_INTEGER> (line 1, column 40 (offset: 39))""".stripMargin
+    )
+  }
+
+  test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY 1 PRIMARY") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'PRIMARY': expected "SECONDARIES" or "SECONDARY" (line 1, column 42 (offset: 41))""".stripMargin
+    )
+  }
+
+  test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY 1 SECONDARY 2 SECONDARY") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input '2': expected "NOWAIT", "OPTIONS", "WAIT" or <EOF> (line 1, column 52 (offset: 51))""".stripMargin
+    )
+  }
+
+  test("CREATE DATABASE foo TOPOLOGY -1 PRIMARY") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input '-': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 30 (offset: 29))""".stripMargin
+    )
+  }
+
+  test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY -1 SECONDARY") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input '-': expected
+        |  "NOWAIT"
+        |  "OPTIONS"
+        |  "WAIT"
+        |  <EOF>
+        |  <UNSIGNED_DECIMAL_INTEGER> (line 1, column 40 (offset: 39))""".stripMargin
+    )
+  }
+
+  test("CREATE DATABASE foo TOPOLOGY -1 SECONDARY 1 PRIMARY") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input '-': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 30 (offset: 29))""".stripMargin
+    )
+  }
+
+  test("CREATE DATABASE foo TOPOLOGY 1 SECONDARY 1 SECONDARY") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'SECONDARY': expected "PRIMARIES" or "PRIMARY" (line 1, column 44 (offset: 43))""".stripMargin
+    )
+  }
+
+  test("CREATE DATABASE foo TOPOLOGY 1 SECONDARY") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input '': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 41 (offset: 40))""".stripMargin
+    )
+  }
+
   test("CREATE DATABASE alias") {
-    yields(_ => ast.CreateDatabase(literal("alias"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait)(pos))
+    yields(_ => ast.CreateDatabase(literal("alias"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None)(pos))
   }
 
   test("CREATE DATABASE alias IF NOT EXISTS") {
-    yields(_ => ast.CreateDatabase(literal("alias"), ast.IfExistsDoNothing, ast.NoOptions, ast.NoWait)(pos))
+    yields(_ => ast.CreateDatabase(literal("alias"), ast.IfExistsDoNothing, ast.NoOptions, ast.NoWait, None)(pos))
   }
 
   // DROP DATABASE
@@ -502,30 +635,31 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   ).foreach {
     case (accessKeyword, accessType) =>
       test(s"ALTER DATABASE foo SET ACCESS $accessKeyword") {
-        assertAst(ast.AlterDatabase(literalFoo, ifExists = false, accessType)(defaultPos))
+        assertAst(ast.AlterDatabase(literalFoo, ifExists = false, Some(accessType), None)(defaultPos))
       }
 
       test(s"ALTER DATABASE $$foo SET ACCESS $accessKeyword") {
         assertAst(ast.AlterDatabase(
           stringParamName("foo"),
           ifExists = false,
-          accessType
+          Some(accessType),
+          None
         )(
           defaultPos
         ))
       }
 
       test(s"ALTER DATABASE `foo.bar` SET ACCESS $accessKeyword") {
-        assertAst(ast.AlterDatabase(literal("foo.bar"), ifExists = false, accessType)(defaultPos))
+        assertAst(ast.AlterDatabase(literal("foo.bar"), ifExists = false, Some(accessType), None)(defaultPos))
       }
 
       test(s"USE system ALTER DATABASE foo SET ACCESS $accessKeyword") {
         // can parse USE clause, but is not included in AST
-        assertAst(ast.AlterDatabase(literalFoo, ifExists = false, accessType)((1, 12, 11)))
+        assertAst(ast.AlterDatabase(literalFoo, ifExists = false, Some(accessType), None)((1, 12, 11)))
       }
 
       test(s"ALTER DATABASE foo IF EXISTS SET ACCESS $accessKeyword") {
-        assertAst(ast.AlterDatabase(literalFoo, ifExists = true, accessType)(defaultPos))
+        assertAst(ast.AlterDatabase(literalFoo, ifExists = true, Some(accessType), None)(defaultPos))
       }
   }
 
@@ -544,7 +678,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("ALTER DATABASE foo SET READ ONLY") {
-    assertFailsWithMessage(testName, "Invalid input 'READ': expected \"ACCESS\" (line 1, column 24 (offset: 23))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input 'READ': expected \"ACCESS\" or \"TOPOLOGY\" (line 1, column 24 (offset: 23))"
+    )
   }
 
   test("ALTER DATABASE foo ACCESS READ WRITE") {
@@ -575,12 +712,12 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   // Set ACCESS multiple times in the same command
   test("ALTER DATABASE foo SET ACCESS READ ONLY SET ACCESS READ WRITE") {
-    assertFailsWithMessage(testName, "Invalid input 'SET': expected <EOF> (line 1, column 41 (offset: 40))")
+    assertFailsWithMessage(testName, "Duplicate SET ACCESS clause (line 1, column 41 (offset: 40))")
   }
 
   // Wrong order between IF EXISTS and SET
   test("ALTER DATABASE foo SET ACCESS READ ONLY IF EXISTS") {
-    assertFailsWithMessage(testName, "Invalid input 'IF': expected <EOF> (line 1, column 41 (offset: 40))")
+    assertFailsWithMessage(testName, "Invalid input 'IF': expected \"SET\" or <EOF> (line 1, column 41 (offset: 40))")
   }
 
   // IF NOT EXISTS instead of IF EXISTS
@@ -590,7 +727,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   // ALTER with OPTIONS
   test("ALTER DATABASE foo SET ACCESS READ WRITE OPTIONS {existingData: 'use'}") {
-    assertFailsWithMessage(testName, "Invalid input 'OPTIONS': expected <EOF> (line 1, column 42 (offset: 41))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input 'OPTIONS': expected \"SET\" or <EOF> (line 1, column 42 (offset: 41))"
+    )
   }
 
   // ALTER OR REPLACE
@@ -598,6 +738,106 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     assertFailsWithMessage(
       testName,
       "Invalid input 'OR': expected \"ALIAS\", \"CURRENT\", \"DATABASE\" or \"USER\" (line 1, column 7 (offset: 6))"
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY") {
+    assertAst(
+      ast.AlterDatabase(
+        literalFoo,
+        ifExists = false,
+        None,
+        Some(Topology(1, None))
+      )(pos)
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 1 SECONDARY") {
+    assertAst(
+      ast.AlterDatabase(
+        literalFoo,
+        ifExists = false,
+        None,
+        Some(Topology(1, Some(1)))
+      )(pos)
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY 5 PRIMARIES 10 PRIMARIES 1 PRIMARY 2 SECONDARIES") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'PRIMARIES': expected "SECONDARIES" or "SECONDARY" (line 1, column 48 (offset: 47))"""
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 2 SECONDARIES 1 SECONDARIES") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input '1': expected "SET" or <EOF> (line 1, column 57 (offset: 56))"""
+    )
+  }
+
+  test("ALTER DATABASE foo SET ACCESS READ WRITE SET TOPOLOGY 1 PRIMARY 1 SECONDARY") {
+    assertAst(
+      ast.AlterDatabase(
+        literalFoo,
+        ifExists = false,
+        Some(ast.ReadWriteAccess),
+        Some(Topology(1, Some(1)))
+      )(pos)
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY SET TOPOLOGY 1 SECONDARY") {
+    assertFailsWithMessage(testName, "Duplicate SET TOPOLOGY clause (line 1, column 43 (offset: 42))")
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 1 PRIMARY") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'PRIMARY': expected "SECONDARIES" or "SECONDARY" (line 1, column 45 (offset: 44))""".stripMargin
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 1 SECONDARY 2 SECONDARY") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input '2': expected "SET" or <EOF> (line 1, column 55 (offset: 54))""".stripMargin
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY -1 PRIMARY") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input '-': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 33 (offset: 32))""".stripMargin
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY -1 SECONDARY") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input '-': expected "SET", <EOF> or <UNSIGNED_DECIMAL_INTEGER> (line 1, column 43 (offset: 42))""".stripMargin
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY -1 SECONDARY 1 PRIMARY") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input '-': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 33 (offset: 32))""".stripMargin
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY 1 SECONDARY 1 SECONDARY") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'SECONDARY': expected "PRIMARIES" or "PRIMARY" (line 1, column 47 (offset: 46))""".stripMargin
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY 1 SECONDARY") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input '': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 44 (offset: 43))""".stripMargin
     )
   }
 

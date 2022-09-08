@@ -280,6 +280,7 @@ import org.neo4j.cypher.internal.ast.TerminateTransactionAction
 import org.neo4j.cypher.internal.ast.TerminateTransactionsClause
 import org.neo4j.cypher.internal.ast.TextIndexes
 import org.neo4j.cypher.internal.ast.TimeoutAfter
+import org.neo4j.cypher.internal.ast.Topology
 import org.neo4j.cypher.internal.ast.TraverseAction
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.UnionAll
@@ -2137,13 +2138,18 @@ class Neo4jASTFactory(query: String)
     databaseName: DatabaseName,
     ifNotExists: Boolean,
     wait: WaitUntilComplete,
-    options: SimpleEither[util.Map[String, Expression], Parameter]
+    options: SimpleEither[util.Map[String, Expression], Parameter],
+    topologyPrimaries: Integer,
+    topologySecondaries: Integer
   ): CreateDatabase = {
+    val primaryOpt = Option(topologyPrimaries).map(_.intValue())
+    val secondaryOpt = Option(topologySecondaries).map(_.intValue())
     CreateDatabase(
       databaseName,
       ifExistsDo(replace, ifNotExists),
       asOptionsAst(options),
-      wait
+      wait,
+      primaryOpt.map(Topology(_, secondaryOpt))
     )(p)
   }
 
@@ -2179,13 +2185,22 @@ class Neo4jASTFactory(query: String)
     p: InputPosition,
     databaseName: DatabaseName,
     ifExists: Boolean,
-    accessType: AccessType
+    accessType: AccessType,
+    topologyPrimaries: Integer,
+    topologySecondaries: Integer
   ): AlterDatabase = {
-    val access = accessType match {
+    val access = Option(accessType) map {
       case READ_ONLY  => ReadOnlyAccess
       case READ_WRITE => ReadWriteAccess
     }
-    AlterDatabase(databaseName, ifExists, access)(p)
+    val primaryOpt = Option(topologyPrimaries).map(_.intValue())
+    val secondaryOpt = Option(topologySecondaries).map(_.intValue())
+    AlterDatabase(
+      databaseName,
+      ifExists,
+      access,
+      primaryOpt.map(Topology(_, secondaryOpt))
+    )(p)
   }
 
   override def showDatabase(

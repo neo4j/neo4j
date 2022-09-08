@@ -1180,7 +1180,9 @@ public class NullAstFactory
             NULL databaseName,
             boolean ifNotExists,
             NULL aNull,
-            SimpleEither<Map<String, NULL>, NULL> options) {
+            SimpleEither<Map<String, NULL>, NULL> options,
+            Integer topologyPrimaries,
+            Integer topologySecondaries) {
         return null;
     }
 
@@ -1197,7 +1199,13 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL alterDatabase(NULL p, NULL databaseName, boolean ifExists, AccessType accessType) {
+    public NULL alterDatabase(
+            NULL p,
+            NULL databaseName,
+            boolean ifExists,
+            AccessType accessType,
+            Integer topologyPrimaries,
+            Integer topologySecondaries) {
         return null;
     }
 

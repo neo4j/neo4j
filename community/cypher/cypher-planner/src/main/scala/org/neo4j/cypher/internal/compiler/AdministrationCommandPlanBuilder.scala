@@ -667,7 +667,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         ))
 
       // CREATE [OR REPLACE] DATABASE foo [IF NOT EXISTS]
-      case c @ CreateDatabase(dbName, ifExistsDo, options, waitUntilComplete) =>
+      case c @ CreateDatabase(dbName, ifExistsDo, options, waitUntilComplete, topology) =>
         Some(plans.AssertNotBlockedDatabaseManagement(CreateDatabaseAction))
           .map(plans.AssertAllowedDbmsActions(_, CreateDatabaseAction))
           .flatMap(canCreateCheck =>
@@ -691,7 +691,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                 Some(canCreateCheck)
             }
           ).map(plans.EnsureNameIsNotAmbiguous(_, dbName.asLegacyName, isComposite = false))
-          .map(plans.CreateDatabase(_, dbName.asLegacyName, options, ifExistsDo, isComposite = false))
+          .map(plans.CreateDatabase(_, dbName.asLegacyName, options, ifExistsDo, isComposite = false, topology))
           .map(plans.EnsureValidNumberOfDatabases(_))
           .map(wrapInWait(_, dbName, waitUntilComplete))
           .map(plans.LogSystemCommand(_, prettifier.asString(c)))
@@ -716,7 +716,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                 Some(canCreateCheck)
             }
           ).map(plans.EnsureNameIsNotAmbiguous(_, dbName.asLegacyName, isComposite = true))
-          .map(plans.CreateDatabase(_, dbName.asLegacyName, NoOptions, ifExistsDo, isComposite = true))
+          .map(plans.CreateDatabase(_, dbName.asLegacyName, NoOptions, ifExistsDo, isComposite = true, topology = None))
           .map(plans.EnsureValidNumberOfDatabases(_))
           .map(wrapInWait(_, dbName, waitUntilComplete))
           .map(plans.LogSystemCommand(_, prettifier.asString(c)))
@@ -746,7 +746,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           .map(plans.LogSystemCommand(_, prettifier.asString(c)))
 
       // ALTER DATABASE foo [IF EXISTS] SET ACCESS {READ ONLY | READ WRITE}
-      case c @ AlterDatabase(dbName, ifExists, access) =>
+      case c @ AlterDatabase(dbName, ifExists, access, topology) =>
         val assertAllowed = plans.AssertAllowedDbmsActions(
           plans.AssertNotBlockedDatabaseManagement(AlterDatabaseAction),
           SetDatabaseAccessAction
@@ -760,7 +760,8 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             Standard
           )
           else assertAllowed
-        val plan = plans.AlterDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "alter"), dbName, access)
+        val plan =
+          plans.AlterDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "alter"), dbName, access, topology)
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // START DATABASE foo

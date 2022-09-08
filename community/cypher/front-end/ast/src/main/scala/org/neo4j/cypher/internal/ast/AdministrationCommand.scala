@@ -42,10 +42,6 @@ import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-import java.util
-
-import scala.jdk.CollectionConverters.ListHasAsScala
-
 sealed trait AdministrationCommand extends StatementWithGraph with SemanticAnalysisTooling {
 
   def name: String
@@ -144,6 +140,34 @@ sealed trait ReadAdministrationCommand extends AdministrationCommand {
 sealed trait WriteAdministrationCommand extends AdministrationCommand {
   val isReadOnly: Boolean = false
   override def returnColumns: List[LogicalVariable] = List.empty
+
+  protected def topologyCheck(topology: Option[Topology], command: String): SemanticCheck = {
+
+    def numPrimaryGreaterThanZero(topology: Topology): SemanticCheck =
+      if (topology.primaries < 1) {
+        error(
+          s"Failed to $command with `${Prettifier.extractTopology(topology).trim}`, PRIMARY must be greater than 0.",
+          position
+        )
+      } else {
+        SemanticCheck.success
+      }
+
+    def numSecondaryPositive(topology: Topology): SemanticCheck =
+      if (topology.secondaries.exists(_ < 0)) {
+        error(
+          s"Failed to $command with `${Prettifier.extractTopology(topology).trim}`, SECONDARY must be a positive value.",
+          position
+        )
+      } else {
+        SemanticCheck.success
+      }
+
+    topology.map(topology => {
+      numPrimaryGreaterThanZero(topology) chain
+        numSecondaryPositive(topology)
+    }).getOrElse(SemanticCheck.success)
+  }
 }
 
 trait EitherAsString {
@@ -845,7 +869,8 @@ final case class CreateDatabase(
   dbName: DatabaseName,
   ifExistsDo: IfExistsDo,
   options: Options,
-  waitUntilComplete: WaitUntilComplete
+  waitUntilComplete: WaitUntilComplete,
+  topology: Option[Topology]
 )(val position: InputPosition)
     extends WaitableAdministrationCommand {
 
@@ -854,7 +879,7 @@ final case class CreateDatabase(
     case _                                       => "CREATE DATABASE"
   }
 
-  override def semanticCheck: SemanticCheck = ifExistsDo match {
+  override def semanticCheck: SemanticCheck = (ifExistsDo match {
     case IfExistsInvalidSyntax =>
       val name = Prettifier.escapeName(dbName)
       error(
@@ -864,8 +889,11 @@ final case class CreateDatabase(
     case _ =>
       super.semanticCheck chain
         SemanticState.recordCurrentScope(this)
-  }
+  })
+    .chain(topologyCheck(topology, name))
 }
+
+case class Topology(primaries: Int, secondaries: Option[Int])
 
 final case class CreateCompositeDatabase(
   databaseName: DatabaseName,
@@ -915,7 +943,12 @@ final case class DropDatabase(
       SemanticState.recordCurrentScope(this)
 }
 
-final case class AlterDatabase(dbName: DatabaseName, ifExists: Boolean, access: Access)(
+final case class AlterDatabase(
+  dbName: DatabaseName,
+  ifExists: Boolean,
+  access: Option[Access],
+  topology: Option[Topology]
+)(
   val position: InputPosition
 ) extends WriteAdministrationCommand {
 
@@ -923,7 +956,8 @@ final case class AlterDatabase(dbName: DatabaseName, ifExists: Boolean, access: 
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-      SemanticState.recordCurrentScope(this)
+      SemanticState.recordCurrentScope(this) chain
+      topologyCheck(topology, name)
 }
 
 final case class StartDatabase(dbName: DatabaseName, waitUntilComplete: WaitUntilComplete)(

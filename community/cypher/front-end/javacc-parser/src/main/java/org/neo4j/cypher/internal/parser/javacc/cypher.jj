@@ -499,6 +499,8 @@ TOKEN [IGNORE_CASE] :
     | < POINT: "POINT">
     | < POPULATED: "POPULATED">
     | < POW: "^" >
+    | < PRIMARY: "PRIMARY" >
+    | < PRIMARIES: "PRIMARIES" >
     | < PRIVILEGE: "PRIVILEGE" >
     | < PRIVILEGES: "PRIVILEGES" >
     | < PROCEDURE: "PROCEDURE" >
@@ -530,6 +532,8 @@ TOKEN [IGNORE_CASE] :
     | < SCAN: "SCAN" >
     | < SEC: "SEC">
     | < SECOND: "SECOND">
+    | < SECONDARY: "SECONDARY" >
+    | < SECONDARIES: "SECONDARIES" >
     | < SECONDS: "SECONDS">
     | < SEEK: "SEEK" >
     | < SERVER: "SERVER" >
@@ -550,6 +554,7 @@ TOKEN [IGNORE_CASE] :
     | < THEN: "THEN" >
     | < TIMES: "*" >
     | < TO: "TO" >
+    | < TOPOLOGY: "TOPOLOGY" >
     | < TRANSACTION: "TRANSACTION" >
     | < TRANSACTIONS: "TRANSACTIONS" >
     | < TRAVERSE: "TRAVERSE" >
@@ -5273,14 +5278,31 @@ ADMINISTRATION_COMMAND CreateDatabase( Token start, boolean replace ):
     boolean ifNotExists = false;
     WAIT_CLAUSE wait = astFactory.wait( false, -1 );
     SimpleEither<Map<String, EXPRESSION>, PARAMETER> options = null;
+    Token primaries = null;
+    Token secondaries = null;
+    Token count = null;
 }
 {
     <DATABASE> databaseName=SymbolicAliasName()
     ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )?
+    (
+        <TOPOLOGY> count=<UNSIGNED_DECIMAL_INTEGER>
+            (
+                ((<PRIMARY> | <PRIMARIES>) (secondaries=<UNSIGNED_DECIMAL_INTEGER> (<SECONDARY> | <SECONDARIES>))?){ primaries = count; } |
+                ((<SECONDARY> | <SECONDARIES>) primaries=<UNSIGNED_DECIMAL_INTEGER> (<PRIMARY> | <PRIMARIES>)){ secondaries = count; }
+            )
+    )?
     ( options=Options() )?
     ( wait = WaitClause() )?
     {
-       return astFactory.createDatabase( pos( start ), replace, databaseName.getLocalAliasName(astFactory), ifNotExists, wait, options );
+        return astFactory.createDatabase(
+            pos( start ),
+            replace, databaseName.getLocalAliasName(astFactory),
+            ifNotExists,
+            wait,
+            options, 
+            (primaries != null) ? Integer.parseInt(primaries.image) : null,
+            (secondaries != null) ? Integer.parseInt(secondaries.image) : null);
     }
 }
 
@@ -5330,19 +5352,45 @@ ADMINISTRATION_COMMAND DropDatabase( Token start ):
     }
 }
 
-ADMINISTRATION_COMMAND AlterDatabase( Token start ):
+ADMINISTRATION_COMMAND AlterDatabase( Token start ) throws Exception:
 {
     AliasName<DATABASE_NAME, PARAMETER> databaseName = null;
     boolean ifExists = false;
-    AccessType accessType = AccessType.READ_WRITE;
+    AccessType accessType = null;
+    Token primaries = null;
+    Token secondaries = null;
+    Token count = null;
+    Token set = null;
+    String accessSetError = "Duplicate SET ACCESS clause";
+    String topologySetError = "Duplicate SET TOPOLOGY clause";
 }
 {
     <DATABASE>
     databaseName=SymbolicAliasName()
     ( <IF> <EXISTS> { ifExists = true; } )?
-    <SET> <ACCESS> <READ> ( <ONLY> { accessType = AccessType.READ_ONLY; } | <WRITE> )
+    (set=<SET> (
+        <ACCESS> { assertNotAlreadySet( accessType, set, accessSetError); }
+            <READ> ( <ONLY> { accessType = AccessType.READ_ONLY; } | <WRITE> { accessType = AccessType.READ_WRITE; })
+        | <TOPOLOGY>
+            {
+                if ( count != null )
+                {
+                    throw exceptionFactory.syntaxException( new ParseException( topologySetError ), set.beginOffset, set.beginLine, set.beginColumn );
+                }
+            } count=<UNSIGNED_DECIMAL_INTEGER>
+            (
+                ((<PRIMARY> | <PRIMARIES>) (secondaries=<UNSIGNED_DECIMAL_INTEGER> (<SECONDARY> | <SECONDARIES>))?){ primaries = count; } |
+                ((<SECONDARY> | <SECONDARIES>) primaries=<UNSIGNED_DECIMAL_INTEGER> (<PRIMARY> | <PRIMARIES>)){ secondaries = count; }
+            )
+    ))+
     {
-        return astFactory.alterDatabase( pos( start ), databaseName.getLocalAliasName(astFactory), ifExists, accessType );
+        return astFactory.alterDatabase(
+            pos( start ),
+            databaseName.getLocalAliasName(astFactory),
+            ifExists,
+            accessType,
+            (primaries != null) ? Integer.parseInt(primaries.image) : null,
+            (secondaries != null) ? Integer.parseInt(secondaries.image) : null);
     }
 }
 
@@ -5927,6 +5975,8 @@ Token UnescapedSymbolicNameString() :
         | t=<PLAINTEXT>
         | t=<POINT>
         | t=<POPULATED>
+        | t=<PRIMARY>
+        | t=<PRIMARIES>
         | t=<PRIVILEGE>
         | t=<PRIVILEGES>
         | t=<PROCEDURE>
@@ -5953,6 +6003,8 @@ Token UnescapedSymbolicNameString() :
         | t=<SCAN>
         | t=<SEC>
         | t=<SECOND>
+        | t=<SECONDARY>
+        | t=<SECONDARIES>
         | t=<SECONDS>
         | t=<SEEK>
         | t=<SERVER>
@@ -5972,6 +6024,7 @@ Token UnescapedSymbolicNameString() :
         | t=<TEXT>
         | t=<THEN>
         | t=<TO>
+        | t=<TOPOLOGY>
         | t=<TRANSACTION>
         | t=<TRANSACTIONS>
         | t=<TRAVERSE>

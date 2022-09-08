@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ShowPrivilegeScope
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.Topology
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.Expression
@@ -410,7 +411,8 @@ case class CreateDatabase(
   databaseName: Either[String, Parameter],
   options: Options,
   ifExistsDo: IfExistsDo,
-  isComposite: Boolean
+  isComposite: Boolean,
+  topology: Option[Topology]
 )(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 
 case class DropDatabase(
@@ -423,7 +425,8 @@ case class DropDatabase(
 case class AlterDatabase(
   source: AdministrationCommandLogicalPlan,
   databaseName: DatabaseName,
-  access: Access
+  access: Option[Access],
+  topology: Option[Topology]
 )(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 
 case class StartDatabase(source: AdministrationCommandLogicalPlan, databaseName: DatabaseName)(
