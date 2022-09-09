@@ -36,12 +36,16 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 
+@ExtendWith(RandomExtension.class)
 class BufferedCharSeekerTest {
     private static final char[] WHITESPACE_CHARS = {
         Character.SPACE_SEPARATOR,
@@ -58,11 +62,13 @@ class BufferedCharSeekerTest {
     };
 
     private static final char[] DELIMITER_CHARS = {',', '\t'};
-
     private static final String TEST_SOURCE = "TestSource";
     private static final int TAB = '\t';
     private static final int COMMA = ',';
-    private static final Random random = new Random();
+
+    @Inject
+    private RandomSupport random;
+
     private final Extractors extractors = new Extractors(',');
     private final Mark mark = new Mark();
 
@@ -181,8 +187,8 @@ class BufferedCharSeekerTest {
         int cols = 3;
         int rows = 3;
         char delimiter = '\t';
-        String[][] data = randomWeirdValues(cols, rows, delimiter, '\n', '\r');
-        seeker = seeker(join(data, delimiter), threadAhead);
+        String[][] data = randomWeirdValues(cols, rows, delimiter, '\n', '\r', '"');
+        seeker = seeker(join(data, delimiter), withQuoteCharacter(config(), '"'), threadAhead);
 
         // WHEN/THEN
         for (int row = 0; row < rows; row++) {
@@ -702,11 +708,11 @@ class BufferedCharSeekerTest {
         assertEnd(seeker, mark, delimiter);
     }
 
-    private static char randomDelimiter() {
+    private char randomDelimiter() {
         return DELIMITER_CHARS[random.nextInt(DELIMITER_CHARS.length)];
     }
 
-    private static char randomWhitespace(char except) {
+    private char randomWhitespace(char except) {
         char ch;
         do {
             ch = WHITESPACE_CHARS[random.nextInt(WHITESPACE_CHARS.length)];
@@ -756,7 +762,7 @@ class BufferedCharSeekerTest {
         return builder.toString();
     }
 
-    private static String[][] randomWeirdValues(int cols, int rows, char... except) {
+    private String[][] randomWeirdValues(int cols, int rows, char... except) {
         String[][] data = new String[rows][cols];
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
@@ -766,7 +772,7 @@ class BufferedCharSeekerTest {
         return data;
     }
 
-    private static String randomWeirdValue(char... except) {
+    private String randomWeirdValue(char... except) {
         int length = random.nextInt(10) + 5;
         char[] chars = new char[length];
         for (int i = 0; i < length; i++) {
@@ -775,7 +781,7 @@ class BufferedCharSeekerTest {
         return new String(chars);
     }
 
-    private static char randomWeirdChar(char... except) {
+    private char randomWeirdChar(char... except) {
         while (true) {
             char candidate = (char) random.nextInt(Character.MAX_VALUE);
             if (!in(candidate, except)) {
