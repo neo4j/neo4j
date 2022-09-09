@@ -332,7 +332,9 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
       new SequentialIdGen(),
       simpleExpressionEvaluator,
       params,
-      transactionalContextWrapper.cancellationChecker)
+      transactionalContextWrapper.cancellationChecker,
+      options.materializedEntitiesMode
+    )
 
     // Prepare query for caching
     val preparedQuery = planner.normalizeQuery(syntacticQuery, plannerContext)

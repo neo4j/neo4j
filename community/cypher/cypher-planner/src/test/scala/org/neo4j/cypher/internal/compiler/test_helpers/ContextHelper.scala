@@ -59,8 +59,10 @@ object ContextHelper extends MockitoSugar {
              params: MapValue = MapValue.EMPTY,
              executionModel: ExecutionModel = ExecutionModel.default,
              cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled,
-            ): PlannerContext = {
+            materializedEntitiesMode: Boolean = false): PlannerContext = {
     new PlannerContext(cypherExceptionFactory, tracer, notificationLogger, planContext,
-      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, params, executionModel, cancellationChecker)
+      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, params, executionModel, cancellationChecker,
+      materializedEntitiesMode
+    )
   }
 }
