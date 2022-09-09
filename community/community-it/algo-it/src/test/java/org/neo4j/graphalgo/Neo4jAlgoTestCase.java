@@ -22,7 +22,7 @@ package org.neo4j.graphalgo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.track_cursor_close;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,28 +30,29 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.junit.jupiter.api.BeforeEach;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 /**
  * Base class for test cases working on a NeoService. It sets up a NeoService
  * and a transaction.
  */
+@ImpermanentDbmsExtension(configurationCallback = "configure")
 public abstract class Neo4jAlgoTestCase {
-    protected static GraphDatabaseService graphDb;
-    protected static SimpleGraphBuilder graph;
-    private static DatabaseManagementService managementService;
+    protected SimpleGraphBuilder graph;
+
+    @Inject
+    protected GraphDatabaseAPI graphDb;
 
     public enum MyRelTypes implements RelationshipType {
         R1,
@@ -59,29 +60,14 @@ public abstract class Neo4jAlgoTestCase {
         R3
     }
 
-    @BeforeAll
-    public static void setUpGraphDb() {
-        managementService = new TestDatabaseManagementServiceBuilder()
-                // There's a general issue with the traversal framework not closing traversal branches on not exhausting
-                // the traversal
-                // and it's made harder because it's public API and adding a close method is a breaking change. At some
-                // point it should
-                // be done, but perhaps in a major version.
-                .setConfig(GraphDatabaseInternalSettings.track_cursor_close, false)
-                .impermanent()
-                .build();
-        graphDb = managementService.database(DEFAULT_DATABASE_NAME);
+    @ExtensionCallback
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(track_cursor_close, false);
+    }
+
+    @BeforeEach
+    public void setUpGraphDb() {
         graph = new SimpleGraphBuilder(graphDb, MyRelTypes.R1);
-    }
-
-    @AfterAll
-    public static void tearDownGraphDb() {
-        managementService.shutdown();
-    }
-
-    @AfterEach
-    public void tearDownTransactionAndGraph() {
-        graph.clear();
     }
 
     protected static void assertPathDef(Path path, String... names) {
@@ -95,7 +81,8 @@ public abstract class Neo4jAlgoTestCase {
         assertEquals(names.length, i);
     }
 
-    protected static void assertPath(Transaction tx, Path path, String commaSeparatedNodePath) {
+    protected static void assertPath(
+            SimpleGraphBuilder graph, Transaction tx, Path path, String commaSeparatedNodePath) {
         String[] nodeIds = commaSeparatedNodePath.split(",");
         Node[] nodes = new Node[nodeIds.length];
         int i = 0;

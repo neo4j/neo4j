@@ -96,7 +96,7 @@ class TestBestFirstSelectorFactory extends Neo4jAlgoTestCase {
 
             int i = 0;
             while (iterator.hasNext()) {
-                assertPath(transaction, iterator.next(), expectedResult[i]);
+                assertPath(graph, transaction, iterator.next(), expectedResult[i]);
                 i++;
             }
             assertEquals(

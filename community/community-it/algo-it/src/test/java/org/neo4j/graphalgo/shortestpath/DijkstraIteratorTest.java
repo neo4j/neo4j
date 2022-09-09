@@ -28,6 +28,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.Neo4jAlgoTestCase;
+import org.neo4j.graphalgo.SimpleGraphBuilder;
 import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.impl.util.DoubleAdder;
 import org.neo4j.graphdb.Direction;
@@ -39,7 +40,7 @@ class DijkstraIteratorTest extends Neo4jAlgoTestCase {
     @Test
     void testRun() {
         try (Transaction transaction = graphDb.beginTx()) {
-            new TestDijkstra().runTest(transaction);
+            new TestDijkstra().runTest(graph, transaction);
             transaction.commit();
         }
     }
@@ -70,7 +71,7 @@ class DijkstraIteratorTest extends Neo4jAlgoTestCase {
             }
         }
 
-        void runTest(Transaction transaction) {
+        void runTest(SimpleGraphBuilder graph, Transaction transaction) {
             graph.makeEdge(transaction, "start", "a", "cost", (double) 1);
             graph.makeEdge(transaction, "a", "x", "cost", (double) 9);
             graph.makeEdge(transaction, "a", "b", "cost", (float) 1);

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.traversal;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,7 +31,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
-import org.junit.jupiter.api.parallel.ResourceLock;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -51,7 +49,6 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
-@ResourceLock(SHARED_RESOURCE)
 @DbmsExtension(configurationCallback = "configure")
 abstract class TraversalTestBase {
     @Inject

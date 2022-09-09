@@ -42,6 +42,7 @@ import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.EvaluationContext;
 import org.neo4j.graphalgo.Neo4jAlgoTestCase;
 import org.neo4j.graphalgo.PathFinder;
+import org.neo4j.graphalgo.SimpleGraphBuilder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphalgo.impl.path.Dijkstra;
 import org.neo4j.graphalgo.impl.path.DijkstraBidirectional;
@@ -434,7 +435,7 @@ class DijkstraTest extends Neo4jAlgoTestCase {
         }
     }
 
-    private static Relationship createGraph(Transaction transaction, boolean includeOnes) {
+    private static Relationship createGraph(SimpleGraphBuilder graph, Transaction transaction, boolean includeOnes) {
         /* Layout:
          *                       (y)
          *                        ^
@@ -469,7 +470,7 @@ class DijkstraTest extends Neo4jAlgoTestCase {
     @MethodSource("params")
     void testSmallGraph(DijkstraFactory factory) {
         try (Transaction transaction = graphDb.beginTx()) {
-            Relationship shortCTOXRelationship = createGraph(transaction, true);
+            Relationship shortCTOXRelationship = createGraph(graph, transaction, true);
             var context = new BasicEvaluationContext(transaction, graphDb);
             PathFinder<WeightedPath> finder = factory.dijkstra(
                     context,
@@ -496,7 +497,7 @@ class DijkstraTest extends Neo4jAlgoTestCase {
     @MethodSource("params")
     void testSmallGraphWithDefaults(DijkstraFactory factory) {
         try (Transaction transaction = graphDb.beginTx()) {
-            Relationship shortCTOXRelationship = createGraph(transaction, true);
+            Relationship shortCTOXRelationship = createGraph(graph, transaction, true);
             var context = new BasicEvaluationContext(transaction, graphDb);
             PathFinder<WeightedPath> finder = factory.dijkstra(
                     context,

@@ -33,6 +33,7 @@ import org.neo4j.graphalgo.BasicEvaluationContext;
 import org.neo4j.graphalgo.EvaluationContext;
 import org.neo4j.graphalgo.Neo4jAlgoTestCase;
 import org.neo4j.graphalgo.PathFinder;
+import org.neo4j.graphalgo.SimpleGraphBuilder;
 import org.neo4j.graphalgo.impl.path.ExactDepthPathFinder;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -42,7 +43,7 @@ import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Transaction;
 
 class TestExactDepthPathFinder extends Neo4jAlgoTestCase {
-    private static void createGraph(Transaction transaction) {
+    private static void createGraph(SimpleGraphBuilder graph, Transaction transaction) {
         graph.makeEdgeChain(transaction, "SOURCE,SUPER,c,d");
         graph.makeEdgeChain(transaction, "SUPER,e,f");
         graph.makeEdgeChain(transaction, "SUPER,5,6");
@@ -67,7 +68,7 @@ class TestExactDepthPathFinder extends Neo4jAlgoTestCase {
             final Set<String> possiblePaths = new HashSet<>();
             possiblePaths.add("SOURCE,z,9,0,TARGET");
             possiblePaths.add("SOURCE,SUPER,r,SPIDER,TARGET");
-            createGraph(transaction);
+            createGraph(graph, transaction);
             var context = new BasicEvaluationContext(transaction, graphDb);
             PathFinder<Path> finder = newFinder(context);
             Path path =
@@ -82,7 +83,7 @@ class TestExactDepthPathFinder extends Neo4jAlgoTestCase {
     @Test
     void testAll() {
         try (Transaction transaction = graphDb.beginTx()) {
-            createGraph(transaction);
+            createGraph(graph, transaction);
             var context = new BasicEvaluationContext(transaction, graphDb);
             PathFinder<Path> finder = newFinder(context);
             assertPaths(
