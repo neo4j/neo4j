@@ -178,7 +178,6 @@ class OuterInnerScopedMemoryTrackerTest {
         assertEquals(6, inner.estimatedHeapMemory());
     }
 
-
     @Test
     void delegatesToInnerUntilCloseInner() {
         scopedMemoryTracker.allocateNative(10);

@@ -122,8 +122,9 @@ public class OuterInnerScopedMemoryTracker extends ScopedMemoryTracker implement
     @Override
     public void close() {
         // On a parent ScopedMemoryTracker, only release memory if that parent was not already closed.
-        if (innerDelegate != null && (!(innerDelegate instanceof ScopedMemoryTracker)
-                || !((ScopedMemoryTracker) innerDelegate).isClosed)) {
+        if (innerDelegate != null
+                && (!(innerDelegate instanceof ScopedMemoryTracker)
+                        || !((ScopedMemoryTracker) innerDelegate).isClosed)) {
             innerDelegate.releaseNative(innerTrackedNative);
             innerDelegate.releaseHeap(innerTrackedHeap);
             innerDelegate = null;
