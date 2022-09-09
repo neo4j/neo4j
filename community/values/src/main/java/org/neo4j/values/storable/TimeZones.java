@@ -52,7 +52,8 @@ public class TimeZones {
         return zoneId >= 0 && zoneId < TIME_ZONE_SHORT_TO_STRING.size();
     }
 
-    private static final String LATEST_SUPPORTED_IANA_VERSION;
+    // This is used by the IANA-build in TeamCity and needs to be public
+    public static final String LATEST_SUPPORTED_IANA_VERSION;
 
     /**
      * @throws IllegalArgumentException if tzid is not in the file
