@@ -223,9 +223,7 @@ public class RecordFormatSelector {
      * NOTE this includes formats that are under development.
      */
     public static Iterable<RecordFormats> allFormats() {
-        Iterable<RecordFormats.Factory> loadableFormatFactories = Services.loadAll(RecordFormats.Factory.class);
-        Iterable<RecordFormats> loadableFormats = map(RecordFormats.Factory::newInstance, loadableFormatFactories);
-        return concat(KNOWN_FORMATS, loadableFormats);
+        return FormatLoader.AVAILABLE_FORMATS;
     }
 
     /**
@@ -293,13 +291,24 @@ public class RecordFormatSelector {
                 }
             }
         }
-        return Services.load(RecordFormats.Factory.class, recordFormat)
-                .map(RecordFormats.Factory::newInstance)
+        return Iterables.stream(allFormats())
+                .filter(f -> recordFormat.equals(f.name()))
                 .filter(recordFormats -> includeDevFormats || !recordFormats.formatUnderDevelopment())
+                .findFirst()
                 .orElse(null);
     }
 
     private static void info(InternalLogProvider logProvider, String message) {
         logProvider.getLog(RecordFormatSelector.class).info(message);
+    }
+
+    private static final class FormatLoader {
+        private static final Iterable<RecordFormats> AVAILABLE_FORMATS = loadFormats();
+
+        private static Iterable<RecordFormats> loadFormats() {
+            Iterable<RecordFormats.Factory> loadableFormatFactories = Services.loadAll(RecordFormats.Factory.class);
+            Iterable<RecordFormats> loadableFormats = map(RecordFormats.Factory::newInstance, loadableFormatFactories);
+            return concat(KNOWN_FORMATS, loadableFormats);
+        }
     }
 }
