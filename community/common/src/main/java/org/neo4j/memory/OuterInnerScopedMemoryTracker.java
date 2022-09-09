@@ -20,24 +20,25 @@
 package org.neo4j.memory;
 
 /**
- * TODO: Docs
+ * A {@link ScopedMemoryTracker} with a mutable inner delegate memory tracker.
+ * When the inner delegate memory tracker is null (the default), all allocation and release calls go to the
+ * outer scoped memory tracker, but when an inner delegate is set with {@link #setInnerDelegate(MemoryTracker)},
+ * all allocation and release calls gets routed to the inner delegate memory tracker instead.
+ * The inner delegate memory tracker can be reset with {@link #closeInner()}, after which all subsequent allocation and
+ * release calls will go back to get routed to the outer scoped memory tracker again.
+ * <p>
+ * There is also support for explicitly forcing recording allocation and release of heap memory on the outer scope with
+ * the {@link OuterInnerHeapMemoryTracker} interface.
+ * <p>
+ * This class is intended to simplify the management of recording allocations over inner transactions.
  */
-// TODO: Maybe extend ScopedMemoryTracker as the outer tracked values.
-//  Only really needed if we need to play in together with the isClosed hack
-//  (only release memory if that parent was not already closed)
-//  Verify if we still need this check on close
-//  TODO: Unit tests
-public class OuterInnerDelegateMemoryTracker implements MemoryTracker, OuterInnerHeapMemoryTracker {
-    private final MemoryTracker outerDelegate;
+public class OuterInnerScopedMemoryTracker extends ScopedMemoryTracker implements OuterInnerHeapMemoryTracker {
     private MemoryTracker innerDelegate;
-    private long outerTrackedNative;
     private long innerTrackedNative;
-    private long outerTrackedHeap;
     private long innerTrackedHeap;
-    private boolean isClosed;
 
-    public OuterInnerDelegateMemoryTracker(MemoryTracker outerDelegate) {
-        this.outerDelegate = outerDelegate;
+    public OuterInnerScopedMemoryTracker(MemoryTracker outerDelegate) {
+        super(outerDelegate);
     }
 
     public void setInnerDelegate(MemoryTracker innerDelegate) {
@@ -46,80 +47,62 @@ public class OuterInnerDelegateMemoryTracker implements MemoryTracker, OuterInne
 
     @Override
     public long usedNativeMemory() {
-        return outerTrackedNative + innerTrackedNative;
+        return super.usedNativeMemory() + innerTrackedNative;
     }
 
     @Override
     public long estimatedHeapMemory() {
-        return outerTrackedHeap + innerTrackedHeap;
+        return super.estimatedHeapMemory() + innerTrackedHeap;
     }
 
     @Override
     public void allocateNative(long bytes) {
-        throwIfClosed();
         if (innerDelegate != null) {
             innerDelegate.allocateNative(bytes);
             innerTrackedNative += bytes;
         } else {
-            outerDelegate.allocateNative(bytes);
-            outerTrackedNative += bytes;
+            super.allocateNative(bytes);
         }
     }
 
     @Override
     public void releaseNative(long bytes) {
-        throwIfClosed();
         if (innerDelegate != null) {
             innerDelegate.releaseNative(bytes);
             innerTrackedNative -= bytes;
         } else {
-            outerDelegate.releaseNative(bytes);
-            outerTrackedNative -= bytes;
+            super.releaseNative(bytes);
         }
     }
 
     @Override
     public void allocateHeap(long bytes) {
-        throwIfClosed();
         if (innerDelegate != null) {
             innerDelegate.allocateHeap(bytes);
             innerTrackedHeap += bytes;
         } else {
-            outerDelegate.allocateHeap(bytes);
-            outerTrackedHeap += bytes;
+            super.allocateHeap(bytes);
         }
     }
 
     @Override
     public void releaseHeap(long bytes) {
-        throwIfClosed();
         if (innerDelegate != null) {
             innerDelegate.releaseHeap(bytes);
             innerTrackedHeap -= bytes;
         } else {
-            outerDelegate.releaseHeap(bytes);
-            outerTrackedHeap -= bytes;
+            super.releaseHeap(bytes);
         }
     }
 
     @Override
     public void allocateHeapOuter(long bytes) {
-        throwIfClosed();
-        outerDelegate.allocateHeap(bytes);
-        outerTrackedHeap += bytes;
+        super.allocateHeap(bytes);
     }
 
     @Override
     public void releaseHeapOuter(long bytes) {
-        throwIfClosed();
-        outerDelegate.releaseHeap(bytes);
-        outerTrackedHeap -= bytes;
-    }
-
-    private void throwIfClosed() {
-        if (isClosed) {
-            throw new IllegalStateException("Should not use a closed ScopedMemoryTracker");
-        }
+        super.releaseHeap(bytes);
     }
 
     @Override
@@ -131,37 +114,28 @@ public class OuterInnerDelegateMemoryTracker implements MemoryTracker, OuterInne
     public void reset() {
         innerDelegate.releaseNative(innerTrackedNative);
         innerDelegate.releaseHeap(innerTrackedHeap);
-        outerDelegate.releaseNative(outerTrackedNative);
-        outerDelegate.releaseHeap(outerTrackedHeap);
         innerTrackedNative = 0;
         innerTrackedHeap = 0;
-        outerTrackedNative = 0;
-        outerTrackedHeap = 0;
+        super.reset();
     }
 
     @Override
     public void close() {
         // On a parent ScopedMemoryTracker, only release memory if that parent was not already closed.
-        // TODO: Check if we still need this?
-        if (!(innerDelegate instanceof ScopedMemoryTracker) || !((ScopedMemoryTracker) innerDelegate).isClosed) {
+        if (innerDelegate != null && (!(innerDelegate instanceof ScopedMemoryTracker)
+                || !((ScopedMemoryTracker) innerDelegate).isClosed)) {
             innerDelegate.releaseNative(innerTrackedNative);
             innerDelegate.releaseHeap(innerTrackedHeap);
-        }
-        if (!(outerDelegate instanceof ScopedMemoryTracker) || !((ScopedMemoryTracker) outerDelegate).isClosed) {
-            outerDelegate.releaseNative(outerTrackedNative);
-            outerDelegate.releaseHeap(outerTrackedHeap);
+            innerDelegate = null;
         }
         innerTrackedNative = 0;
         innerTrackedHeap = 0;
-        outerTrackedNative = 0;
-        outerTrackedHeap = 0;
-        isClosed = true;
+        super.close();
     }
 
     public void closeInner() {
         if (innerDelegate != null) {
             // On a parent ScopedMemoryTracker, only release memory if that parent was not already closed.
-            // TODO: Check if we still need this?
             if (!(innerDelegate instanceof ScopedMemoryTracker) || !((ScopedMemoryTracker) innerDelegate).isClosed) {
                 innerDelegate.releaseNative(innerTrackedNative);
                 innerDelegate.releaseHeap(innerTrackedHeap);

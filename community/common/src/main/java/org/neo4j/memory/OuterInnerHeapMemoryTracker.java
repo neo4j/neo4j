@@ -20,7 +20,8 @@
 package org.neo4j.memory;
 
 /**
- * TODO: Docs
+ * An interface that enables explicitly recording allocation and release of heap memory on
+ * the outer scope of an {@link OuterInnerScopedMemoryTracker}.
  */
 public interface OuterInnerHeapMemoryTracker {
     /**
