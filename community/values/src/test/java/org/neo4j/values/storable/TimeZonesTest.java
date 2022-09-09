@@ -97,8 +97,8 @@ class TimeZonesTest {
         String timeZonesInfo = Files.readString(path).replace("\r\n", "\n");
         byte[] timeZonesHash = DigestUtils.sha256(timeZonesInfo);
         assertThat(timeZonesHash).isEqualTo(new byte[] {
-            127, -106, 4, -18, -64, -55, 95, 19, -88, 99, -90, -47, -33, 71, -15, 0, -63, 122, 83, -10, -13, -126, 110,
-            -38, -63, -10, -86, -41, -1, -77, -3, -84
+            92, 26, -114, 87, 84, -74, 57, 107, -126, -30, -111, 79, -11, 20, -3, 69, -69, -75, 72, 59, 33, 30, 21, -17,
+            -55, 2, 109, -102, 92, -128, -120, -38
         });
     }
 }
