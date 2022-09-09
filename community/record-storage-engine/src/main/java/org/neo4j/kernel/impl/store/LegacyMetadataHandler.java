@@ -162,7 +162,8 @@ public class LegacyMetadataHandler {
                 RecordStorageEngineFactory.NAME,
                 recordFormat.getFormatFamily().name(),
                 recordFormat.majorVersion(),
-                recordFormat.minorVersion());
+                recordFormat.minorVersion(),
+                versionString);
     }
 
     private static String versionLongToString(long storeVersion) {

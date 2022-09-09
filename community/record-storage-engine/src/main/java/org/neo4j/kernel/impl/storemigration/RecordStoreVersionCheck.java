@@ -73,8 +73,9 @@ public class RecordStoreVersionCheck implements StoreVersionCheck {
     @Override
     public MigrationCheckResult getAndCheckMigrationTargetVersion(String formatFamily, CursorContext cursorContext) {
         RecordFormats formatToMigrateFrom;
+        StoreVersionIdentifier currentVersion;
         try {
-            StoreVersionIdentifier currentVersion = readVersion(cursorContext);
+            currentVersion = readVersion(cursorContext);
             formatToMigrateFrom = RecordFormatSelector.selectForStoreVersionIdentifier(currentVersion)
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Unknown store version '" + currentVersion.getStoreVersionUserString() + "'"));
@@ -91,39 +92,34 @@ public class RecordStoreVersionCheck implements StoreVersionCheck {
         if (formatToMigrateTo.onlyForMigration()) {
             return new MigrationCheckResult(
                     MigrationOutcome.UNSUPPORTED_TARGET_VERSION,
-                    versionIdentifier(formatToMigrateFrom),
+                    currentVersion,
                     versionIdentifier(formatToMigrateTo),
                     null);
         }
 
         if (formatToMigrateFrom.equals(formatToMigrateTo)) {
             return new MigrationCheckResult(
-                    MigrationOutcome.NO_OP,
-                    versionIdentifier(formatToMigrateFrom),
-                    versionIdentifier(formatToMigrateTo),
-                    null);
+                    MigrationOutcome.NO_OP, currentVersion, versionIdentifier(formatToMigrateTo), null);
         }
 
         if (formatToMigrateFrom.getFormatFamily().isHigherThan(formatToMigrateTo.getFormatFamily())) {
             return new MigrationCheckResult(
                     MigrationOutcome.UNSUPPORTED_MIGRATION_PATH,
-                    versionIdentifier(formatToMigrateFrom),
+                    currentVersion,
                     versionIdentifier(formatToMigrateTo),
                     null);
         }
 
         return new MigrationCheckResult(
-                MigrationOutcome.MIGRATION_POSSIBLE,
-                versionIdentifier(formatToMigrateFrom),
-                versionIdentifier(formatToMigrateTo),
-                null);
+                MigrationOutcome.MIGRATION_POSSIBLE, currentVersion, versionIdentifier(formatToMigrateTo), null);
     }
 
     @Override
     public UpgradeCheckResult getAndCheckUpgradeTargetVersion(CursorContext cursorContext) {
         RecordFormats formatToUpgradeFrom;
+        StoreVersionIdentifier currentVersion;
         try {
-            StoreVersionIdentifier currentVersion = readVersion(cursorContext);
+            currentVersion = readVersion(cursorContext);
             formatToUpgradeFrom = RecordFormatSelector.selectForStoreVersionIdentifier(currentVersion)
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Unknown store version '" + currentVersion.getStoreVersionUserString() + "'"));
@@ -136,24 +132,29 @@ public class RecordStoreVersionCheck implements StoreVersionCheck {
         if (formatToUpgradeTo.onlyForMigration()) {
             return new UpgradeCheckResult(
                     UpgradeOutcome.UNSUPPORTED_TARGET_VERSION,
-                    versionIdentifier(formatToUpgradeFrom),
-                    versionIdentifier(formatToUpgradeTo),
+                    currentVersion,
+                    // If we are on one of the pre-5.0 formats this will give us the overridden storeVersionUserString.
+                    formatToUpgradeTo.equals(formatToUpgradeFrom)
+                            ? currentVersion
+                            : versionIdentifier(formatToUpgradeTo),
                     null);
         }
 
         if (formatToUpgradeFrom.equals(formatToUpgradeTo)) {
             return new UpgradeCheckResult(
-                    UpgradeOutcome.NO_OP,
-                    versionIdentifier(formatToUpgradeFrom),
-                    versionIdentifier(formatToUpgradeTo),
-                    null);
+                    UpgradeOutcome.NO_OP, currentVersion, versionIdentifier(formatToUpgradeTo), null);
         }
 
         return new UpgradeCheckResult(
-                UpgradeOutcome.UPGRADE_POSSIBLE,
-                versionIdentifier(formatToUpgradeFrom),
-                versionIdentifier(formatToUpgradeTo),
-                null);
+                UpgradeOutcome.UPGRADE_POSSIBLE, currentVersion, versionIdentifier(formatToUpgradeTo), null);
+    }
+
+    @Override
+    public String getIntroductionVersionFromVersion(StoreVersionIdentifier versionIdentifier) {
+        return RecordFormatSelector.selectForStoreVersionIdentifier(versionIdentifier)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Unknown store version '" + versionIdentifier.getStoreVersionUserString() + "'"))
+                .introductionVersion();
     }
 
     private StoreVersionIdentifier versionIdentifier(RecordFormats format) {

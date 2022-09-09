@@ -90,7 +90,8 @@ public class StoreVersionLoader implements AutoCloseable {
             return new Result(
                     checkResult.outcome() == StoreVersionCheck.UpgradeOutcome.UNSUPPORTED_TARGET_VERSION,
                     checkResult.versionToUpgradeFrom(),
-                    checkResult.versionToUpgradeTo());
+                    checkResult.versionToUpgradeTo(),
+                    versionCheck.getIntroductionVersionFromVersion(checkResult.versionToUpgradeFrom()));
         }
     }
 
@@ -98,12 +99,17 @@ public class StoreVersionLoader implements AutoCloseable {
         public final StoreVersionIdentifier currentFormat;
         public final StoreVersionIdentifier latestFormat;
         public final boolean migrationNeeded;
+        public final String currentFormatIntroductionVersion;
 
         private Result(
-                boolean migrationNeeded, StoreVersionIdentifier currentFormat, StoreVersionIdentifier latestFormat) {
+                boolean migrationNeeded,
+                StoreVersionIdentifier currentFormat,
+                StoreVersionIdentifier latestFormat,
+                String currentFormatIntroductionVersion) {
             this.currentFormat = currentFormat;
             this.latestFormat = latestFormat;
             this.migrationNeeded = migrationNeeded;
+            this.currentFormatIntroductionVersion = currentFormatIntroductionVersion;
         }
     }
 }

@@ -43,6 +43,8 @@ public interface StoreVersionCheck {
      */
     UpgradeCheckResult getAndCheckUpgradeTargetVersion(CursorContext cursorContext);
 
+    String getIntroductionVersionFromVersion(StoreVersionIdentifier versionIdentifier);
+
     record MigrationCheckResult(
             MigrationOutcome outcome,
             StoreVersionIdentifier versionToMigrateFrom,

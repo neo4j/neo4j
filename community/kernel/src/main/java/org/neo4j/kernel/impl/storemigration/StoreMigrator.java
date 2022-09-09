@@ -324,8 +324,9 @@ public class StoreMigrator {
             case STORE_VERSION_RETRIEVAL_FAILURE -> throw new IllegalStateException(
                     "Failed to read current store version.", checkResult.cause());
             case UNSUPPORTED_TARGET_VERSION -> throw new UnableToMigrateException(String.format(
-                    "The selected target store format '%s' is no longer supported",
-                    checkResult.versionToUpgradeTo().getStoreVersionUserString()));
+                    "The selected target store format '%s' (introduced in %s) is no longer supported",
+                    checkResult.versionToUpgradeTo().getStoreVersionUserString(),
+                    storeVersionCheck.getIntroductionVersionFromVersion(checkResult.versionToUpgradeTo())));
         };
     }
 
