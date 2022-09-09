@@ -59,7 +59,7 @@ case class MaterializedEntitiesExpressionConverter(tokenContext: ReadTokenContex
     self: ExpressionConverters
   ): Option[commands.expressions.Expression] =
     expression match {
-      case e: expressions.Property           => toCommandProperty(id, e, self)
+      case e: expressions.LogicalProperty    => Some(toCommandProperty(id, e, self))
       case e: expressions.HasLabels          => hasLabels(id, e, self)
       case e: expressions.HasTypes           => hasTypes(id, e, self)
       case e: expressions.HasLabelsOrTypes   => hasLabelsOrTypes(id, e, self)
@@ -97,11 +97,14 @@ case class MaterializedEntitiesExpressionConverter(tokenContext: ReadTokenContex
     id: Id,
     e: expressions.LogicalProperty,
     self: ExpressionConverters
-  ): Option[commands.expressions.Expression] =
+  ): commands.expressions.Expression =
     e match {
       case Property(map, propertyKey) =>
-        Some(MaterializedEntityProperty(self.toCommandExpression(id, map), getPropertyKey(propertyKey)))
-      case _ => None
+        MaterializedEntityProperty(self.toCommandExpression(id, map), getPropertyKey(propertyKey))
+      case _ =>
+        throw new IllegalStateException(
+          "We do not expect this property in MaterializedEntitiesExpressionConverter: " + e
+        )
     }
 
   private def getPropertyKey(propertyKey: PropertyKeyName) = tokenContext.getOptPropertyKeyId(propertyKey.name) match {

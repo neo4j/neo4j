@@ -346,7 +346,8 @@ case class CypherPlanner(
       new SequentialIdGen(),
       simpleExpressionEvaluator,
       params,
-      transactionalContextWrapper.cancellationChecker
+      transactionalContextWrapper.cancellationChecker,
+      options.materializedEntitiesMode
     )
 
     // Prepare query for caching

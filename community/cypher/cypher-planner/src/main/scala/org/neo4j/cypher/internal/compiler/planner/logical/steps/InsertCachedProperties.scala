@@ -83,6 +83,12 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
 
+    if (context.materializedEntitiesMode) {
+      // When working with materialized entities only, caching properties is not useful.
+      // Moreover, the runtime implementation of CachedProperty does not work with virtual entities.
+      return from
+    }
+
     val logicalPlan =
       if (pushdownPropertyReads) {
         val effectiveCardinalities = from.planningAttributes.effectiveCardinalities

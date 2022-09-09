@@ -60,7 +60,8 @@ object ContextHelper extends MockitoSugar {
     logicalPlanIdGen: IdGen = new SequentialIdGen(),
     params: MapValue = MapValue.EMPTY,
     executionModel: ExecutionModel = ExecutionModel.default,
-    cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled
+    cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled,
+    materializedEntitiesMode: Boolean = false
   ): PlannerContext = {
     new PlannerContext(
       cypherExceptionFactory,
@@ -77,7 +78,8 @@ object ContextHelper extends MockitoSugar {
       logicalPlanIdGen,
       params,
       executionModel,
-      cancellationChecker
+      cancellationChecker,
+      materializedEntitiesMode
     )
   }
 }

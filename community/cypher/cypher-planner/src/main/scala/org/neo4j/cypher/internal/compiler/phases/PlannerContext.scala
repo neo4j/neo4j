@@ -89,7 +89,8 @@ class PlannerContext(
   val logicalPlanIdGen: IdGen,
   val params: MapValue,
   val executionModel: ExecutionModel,
-  cancellationChecker: CancellationChecker
+  cancellationChecker: CancellationChecker,
+  val materializedEntitiesMode: Boolean
 ) extends BaseContextImpl(cypherExceptionFactory, tracer, notificationLogger, monitors, cancellationChecker)
 
 object PlannerContext {
@@ -111,7 +112,8 @@ object PlannerContext {
     logicalPlanIdGen: IdGen,
     evaluator: ExpressionEvaluator,
     params: MapValue,
-    cancellationChecker: CancellationChecker
+    cancellationChecker: CancellationChecker,
+    materializedEntitiesMode: Boolean
   ): PlannerContext = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
 
@@ -139,7 +141,8 @@ object PlannerContext {
       logicalPlanIdGen,
       params,
       executionModel,
-      cancellationChecker
+      cancellationChecker,
+      materializedEntitiesMode
     )
   }
 }
