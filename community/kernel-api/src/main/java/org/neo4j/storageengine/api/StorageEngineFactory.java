@@ -453,7 +453,7 @@ public interface StorageEngineFactory {
      * @return all {@link StorageEngineFactory} instances that are available on the class path, loaded via {@link Service service loading}.
      */
     static Collection<StorageEngineFactory> allAvailableStorageEngines() {
-        return Services.loadAll(StorageEngineFactory.class);
+        return StorageEngineFactoryHolder.ALL_ENGINE_FACTORIES;
     }
 
     /**
@@ -529,4 +529,12 @@ public interface StorageEngineFactory {
     }
 
     Selector SELECTOR = StorageEngineFactory::selectStorageEngine;
+
+    final class StorageEngineFactoryHolder {
+        static final Collection<StorageEngineFactory> ALL_ENGINE_FACTORIES = loadFactories();
+
+        private static Collection<StorageEngineFactory> loadFactories() {
+            return Services.loadAll(StorageEngineFactory.class);
+        }
+    }
 }
