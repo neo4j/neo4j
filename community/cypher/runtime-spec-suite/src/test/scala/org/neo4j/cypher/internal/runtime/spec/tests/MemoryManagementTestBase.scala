@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.LogicalQuery
@@ -29,6 +30,7 @@ import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.runtime.spec.tests.ReactiveResultStressTestBase.MORSEL_SIZE
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.helpers.ArrayUtil
@@ -198,7 +200,9 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
   runtime: CypherRuntime[CONTEXT]
 ) extends RuntimeTestSuite[CONTEXT](
       edition.copyWith(
-        GraphDatabaseSettings.memory_transaction_max_size -> Long.box(MemoryManagementTestBase.maxMemory)
+        GraphDatabaseSettings.memory_transaction_max_size -> Long.box(MemoryManagementTestBase.maxMemory),
+        GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small -> Integer.valueOf(6),
+        GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big -> Integer.valueOf(6)
       ),
       runtime
     ) with InputStreams[CONTEXT] {
@@ -1016,7 +1020,7 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
     }
   }
 
-  test("should not kill transactional subquery if both inner and outer together exceed the limit") {
+  test("should not kill transaction foreach subquery if both inner and outer together exceed the limit") {
     // Determined empirically
     val rowCount = runtimeUsed match {
       case Interpreted => 32000
@@ -1029,9 +1033,7 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("x")
       .transactionForeach()
       .|.emptyResult()
-      .|.apply()
-      .|.|.sort(Seq(Ascending("y")))
-      .|.|.argument()
+      .|.sort(Seq(Ascending("y")))
       .|.unwind(s"range(1, $rowCount) as y")
       .|.argument()
       .limit(1)
@@ -1062,9 +1064,7 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
         .produceResults("x")
         .subqueryForeach()
         .|.emptyResult()
-        .|.apply()
-        .|.|.sort(Seq(Ascending("y")))
-        .|.|.argument()
+        .|.sort(Seq(Ascending("y")))
         .|.unwind(s"range(1, $rowCount) as y")
         .|.argument()
         .limit(1)
@@ -1083,4 +1083,143 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
     // then
     noException should be thrownBy consume(execute(logicalQuery, runtime))
   }
+
+  test(
+    "should not kill transaction foreach subquery with limit and distinct if both inner and outer together exceed the limit"
+  ) {
+    // Determined empirically
+    val rowCount = runtimeUsed match {
+      case Interpreted => 37000
+      case Slotted     => 53000
+      case Pipelined   => 80000
+    }
+
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionForeach(1)
+      .|.emptyResult()
+      .|.distinct("y AS y")
+      .|.limit(100)
+      .|.sort(Seq(Ascending("y")))
+      .|.unwind(s"range(1, $rowCount) as y")
+      .|.argument()
+      .distinct("x AS x")
+      .limit(100)
+      .sort(Seq(Ascending("x")))
+      .unwind(s"range(1, $rowCount) as x")
+      .argument()
+      .build(readOnly = false)
+
+    // Used to check that we choose the right amount of rows:
+    {
+      val checkQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .distinct("x AS x")
+        .limit(100)
+        .sort(Seq(Ascending("x")))
+        .unwind(s"range(1, ${2 * rowCount}) as x") // When doubling the rows we should consume too much
+        .argument()
+        .build()
+
+      a[MemoryLimitExceededException] should be thrownBy {
+        consume(execute(checkQuery, runtime))
+      }
+      // Restart tx here to reset memory usage
+      runtimeTestSupport.restartTx(KernelTransaction.Type.IMPLICIT)
+    }
+
+    // Used to check that the same query without IN TRANSACTIONS runs out of memory:
+    {
+      val checkQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .subqueryForeach()
+        .|.emptyResult()
+        .|.distinct("y AS y")
+        .|.limit(100)
+        .|.sort(Seq(Ascending("y")))
+        .|.unwind(s"range(1, $rowCount) as y")
+        .|.argument()
+        .distinct("x AS x")
+        .limit(100)
+        .sort(Seq(Ascending("x")))
+        .unwind(s"range(1, $rowCount) as x")
+        .argument()
+        .build(readOnly = false)
+
+      a[MemoryLimitExceededException] should be thrownBy {
+        consume(execute(checkQuery, runtime))
+      }
+      // Restart tx here to reset memory usage
+      runtimeTestSupport.restartTx(KernelTransaction.Type.IMPLICIT)
+    }
+
+    // then
+    noException should be thrownBy consume(execute(logicalQuery, runtime))
+  }
+
+    test("should not kill transaction apply subquery if both inner and outer together exceed the limit") {
+      // Determined empirically
+      val rowCount = runtimeUsed match {
+        case Interpreted => 37000
+        case Slotted     => 53000
+        case Pipelined   => 80000
+      }
+
+      // given
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .transactionApply()
+        .|.limit(1)
+        .|.sort(Seq(Ascending("y")))
+        .|.unwind(s"range(1, $rowCount) as y")
+        .|.argument()
+        .limit(1)
+        .sort(Seq(Ascending("x")))
+        .unwind(s"range(1, $rowCount) as x")
+        .argument()
+        .build(readOnly = false)
+
+      // Used to check that we choose the right amount of rows:
+      {
+        val checkQuery = new LogicalQueryBuilder(this)
+          .produceResults("x")
+          .limit(1)
+          .sort(Seq(Ascending("x")))
+          .unwind(s"range(1, ${2 * rowCount}) as x") // When doubling the rows we should consume too much
+          .argument()
+          .build()
+
+        a[MemoryLimitExceededException] should be thrownBy {
+          consume(execute(checkQuery, runtime))
+        }
+        // Restart tx here to reset memory usage
+        runtimeTestSupport.restartTx(KernelTransaction.Type.IMPLICIT)
+      }
+
+      // Used to check that the same query without IN TRANSACTIONS runs out of memory:
+      {
+        val checkQuery = new LogicalQueryBuilder(this)
+          .produceResults("x")
+          .apply()
+          .|.limit(1)
+          .|.sort(Seq(Ascending("y")))
+          .|.unwind(s"range(1, $rowCount) as y")
+          .|.argument()
+          .limit(1)
+          .sort(Seq(Ascending("x")))
+          .unwind(s"range(1, $rowCount) as x")
+          .argument()
+          .build(readOnly = false)
+
+        a[MemoryLimitExceededException] should be thrownBy {
+          consume(execute(checkQuery, runtime))
+        }
+        // Restart tx here to reset memory usage
+        runtimeTestSupport.restartTx(KernelTransaction.Type.IMPLICIT)
+      }
+
+      // then
+      noException should be thrownBy consume(execute(logicalQuery, runtime))
+    }
 }

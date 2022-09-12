@@ -40,6 +40,7 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.kernel.api.KernelTransaction.Type
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.logging.InternalLogProvider
 import org.scalatest.Assertion
 
@@ -239,16 +240,21 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
-    val probe = recordingProbe(
-      "n",
-      queryStatistics => {
-        queryStatistics.getNodesCreated shouldEqual 1
-        queryStatistics.getLabelsAdded shouldEqual 1
-      }
-    )
+    val probe = newProbe(queryStatistics => {
+      queryStatistics.getNodesCreated shouldEqual 1
+      queryStatistics.getLabelsAdded shouldEqual 1
+    })
+
+    var committedCount = 0L
+    val txProbe = txAssertionProbe(tx => {
+      Iterables.count(tx.getAllNodes) shouldEqual committedCount
+      committedCount += 1
+    })
+
     val query = new LogicalQueryBuilder(this)
       .produceResults("n")
       .transactionApply(1)
+      .|.prober(txProbe)
       .|.prober(probe)
       .|.create(createNode("n", "N"))
       .|.argument()
@@ -270,16 +276,25 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
-    val probe = recordingProbe(
-      "n",
-      queryStatistics => {
-        queryStatistics.getNodesCreated shouldEqual batchSize
-        queryStatistics.getLabelsAdded shouldEqual batchSize
+    val probe = newProbe(queryStatistics => {
+      queryStatistics.getNodesCreated shouldEqual batchSize
+      queryStatistics.getLabelsAdded shouldEqual batchSize
+    })
+
+    var committedCount = 0L
+    var inputRow = 0L
+    val txProbe = txAssertionProbe(tx => {
+      Iterables.count(tx.getAllNodes) shouldEqual committedCount
+      inputRow += 1
+      if (inputRow % batchSize == 0) {
+        committedCount = inputRow
       }
-    )
+    })
+
     val query = new LogicalQueryBuilder(this)
       .produceResults("n")
       .transactionApply(batchSize)
+      .|.prober(txProbe)
       .|.prober(probe)
       .|.create(createNode("n", "N"))
       .|.argument()
@@ -305,18 +320,28 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     }
 
     var nodeCount: Long = 1
-    val probe = recordingProbe(
-      "n",
-      queryStatistics => {
-        val _nodeCount = nodeCount
-        nodeCount = tx.findNodes(Label.label("N")).stream().count()
-        queryStatistics.getNodesCreated shouldEqual _nodeCount
-        queryStatistics.getLabelsAdded shouldEqual _nodeCount
+    val probe = newProbe(queryStatistics => {
+      val _nodeCount = nodeCount
+      nodeCount = tx.findNodes(Label.label("N")).stream().count()
+      queryStatistics.getNodesCreated shouldEqual _nodeCount
+      queryStatistics.getLabelsAdded shouldEqual _nodeCount
+    })
+
+    var committedCount = 1L
+    var rhsRowsRemaining = 1L // initial node count
+    val txProbe = txAssertionProbe(tx => {
+      Iterables.count(tx.getAllNodes) shouldEqual committedCount
+      rhsRowsRemaining -= 1
+      if (rhsRowsRemaining == 0) {
+        committedCount *= 2
+        rhsRowsRemaining = committedCount
       }
-    )
+    })
+
     val query = new LogicalQueryBuilder(this)
       .produceResults("n")
       .transactionApply(1)
+      .|.prober(txProbe)
       .|.prober(probe)
       .|.create(createNode("n", "N"))
       .|.nodeByLabelScan("y", "N")
@@ -343,18 +368,28 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     }
 
     var nodeCount: Long = 1
-    val probe = recordingProbe(
-      "b",
-      queryStatistics => {
-        val _nodeCount = nodeCount
-        nodeCount = tx.findNodes(Label.label("Label"), "prop", 2).stream().count()
-        queryStatistics.getNodesCreated shouldEqual _nodeCount
-        queryStatistics.getLabelsAdded shouldEqual _nodeCount
+    val probe = newProbe(queryStatistics => {
+      val _nodeCount = nodeCount
+      nodeCount = tx.findNodes(Label.label("Label"), "prop", 2).stream().count()
+      queryStatistics.getNodesCreated shouldEqual _nodeCount
+      queryStatistics.getLabelsAdded shouldEqual _nodeCount
+    })
+
+    var committedCount = 1L
+    var rhsRowsRemaining = 1L // initial node count
+    val txProbe = txAssertionProbe(tx => {
+      Iterables.count(tx.getAllNodes) shouldEqual committedCount
+      rhsRowsRemaining -= 1
+      if (rhsRowsRemaining == 0) {
+        committedCount *= 2
+        rhsRowsRemaining = committedCount
       }
-    )
+    })
+
     val query = new LogicalQueryBuilder(this)
       .produceResults("b")
       .transactionApply(1)
+      .|.prober(txProbe)
       .|.prober(probe)
       .|.create(createNodeWithProperties("b", Seq("Label"), "{prop: 2}"))
       .|.nodeIndexOperator("a:Label(prop=2)")
@@ -500,11 +535,18 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     )
   }
 
-  protected def recordingProbe(
-    variable: String,
+  protected def txAssertionProbe(assertion: InternalTransaction => Unit): Prober.Probe = {
+    new Probe {
+      override def onRow(row: AnyRef, queryStatistics: QueryStatistics, transactionsCommitted: Int): Unit = {
+        withNewTx(assertion(_))
+      }
+    }
+  }
+
+  protected def newProbe(
     assertion: QueryStatistics => Assertion
-  ): Prober.Probe with RecordingRowsProbe = {
-    val probe = new Probe {
+  ): Prober.Probe = {
+    new Probe {
       private var _prevTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics.empty
       private var _thisTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics.empty
       private var _transactionsCommitted = 0
@@ -518,6 +560,5 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
         _thisTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics(queryStatistics)
       }
     }
-    new RecordingProbe(variable)(probe)
   }
 }
