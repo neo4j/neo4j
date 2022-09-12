@@ -249,4 +249,30 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("n", "m").withNoRows()
   }
+
+  test("should close when not initialized") {
+    // given
+    nodeIndex("A", "prop")
+    nodeIndex("B", "prop")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "m")
+      .limit(0)
+      .apply()
+      .|.multiNodeIndexSeekOperator(
+        _.nodeIndexSeek("n:A(prop=1)"),
+        _.nodeIndexSeek("m:B(prop=2)")
+      )
+      .aggregation(Seq("x as x"), Seq("collect(distinct y) as ys"))
+      .unwind("[0, 1, 2] as y")
+      .unwind("[0, 1, 2] as x")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("n", "m").withNoRows()
+  }
 }
