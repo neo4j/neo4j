@@ -87,6 +87,7 @@ class PropertyStoreTest {
 
             var pageCacheTracer = PageCacheTracer.NULL;
             try (var store = new PropertyStore(
+                    fs,
                     storeFile,
                     idFile,
                     config,

@@ -28,6 +28,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordCursorTypes;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -52,6 +53,7 @@ class PropertyKeyTokenStoreTest extends TokenStoreTestTemplate<PropertyKeyTokenR
 
     @Override
     protected TokenStore<PropertyKeyTokenRecord> instantiateStore(
+            FileSystemAbstraction fileSystem,
             Path file,
             Path idFile,
             IdGeneratorFactory generatorFactory,
@@ -61,6 +63,7 @@ class PropertyKeyTokenStoreTest extends TokenStoreTestTemplate<PropertyKeyTokenR
             RecordFormats formats,
             Config config) {
         return new PropertyKeyTokenStore(
+                fileSystem,
                 file,
                 idFile,
                 config,

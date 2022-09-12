@@ -125,6 +125,7 @@ class DynamicArrayStoreTest {
         DefaultIdGeneratorFactory idGeneratorFactory =
                 new DefaultIdGeneratorFactory(fs, immediate(), PageCacheTracer.NULL, DEFAULT_DATABASE_NAME);
         DynamicArrayStore store = new DynamicArrayStore(
+                fs,
                 storeFile,
                 idFile,
                 Config.defaults(),

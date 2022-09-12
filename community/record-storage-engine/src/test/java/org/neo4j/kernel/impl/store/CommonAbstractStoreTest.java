@@ -59,6 +59,7 @@ import org.neo4j.internal.id.NegativeIdException;
 import org.neo4j.internal.id.ReservedIdException;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -162,6 +163,7 @@ class CommonAbstractStoreTest {
         RecordFormats recordFormats = defaultFormat();
 
         try (DynamicArrayStore dynamicArrayStore = new DynamicArrayStore(
+                fs,
                 storeFile,
                 idFile,
                 config,
@@ -230,6 +232,7 @@ class CommonAbstractStoreTest {
                 .idFile(RecordDatabaseFile.NODE_STORE)
                 .orElseThrow(() -> new IllegalStateException("Node store id file not found."));
         TheStore store = new TheStore(
+                fs,
                 nodeStore,
                 databaseLayout.idNodeStore(),
                 config,
@@ -269,6 +272,7 @@ class CommonAbstractStoreTest {
     private TheStore newStore() {
         InternalLogProvider log = NullLogProvider.getInstance();
         TheStore store = new TheStore(
+                fs,
                 storeFile,
                 idStoreFile,
                 config,
@@ -290,6 +294,7 @@ class CommonAbstractStoreTest {
         static final String TYPE_DESCRIPTOR = "TheType";
 
         TheStore(
+                FileSystemAbstraction fileSystem,
                 Path file,
                 Path idFile,
                 Config configuration,
@@ -300,6 +305,7 @@ class CommonAbstractStoreTest {
                 RecordFormat<TheRecord> recordFormat,
                 ImmutableSet<OpenOption> openOptions) {
             super(
+                    fileSystem,
                     file,
                     idFile,
                     configuration,

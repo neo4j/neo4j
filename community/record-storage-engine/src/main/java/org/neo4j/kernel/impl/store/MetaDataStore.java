@@ -39,6 +39,7 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.id.IdSequence;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCursor;
@@ -123,6 +124,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     private volatile boolean closed;
 
     MetaDataStore(
+            FileSystemAbstraction fileSystem,
             Path file,
             Config conf,
             PageCache pageCache,
@@ -135,6 +137,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
             ImmutableSet<OpenOption> openOptions,
             Supplier<StoreId> storeIdFactory) {
         super(
+                fileSystem,
                 file,
                 null,
                 conf,

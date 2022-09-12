@@ -28,6 +28,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordCursorTypes;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -52,6 +53,7 @@ class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<Relationship
 
     @Override
     protected TokenStore<RelationshipTypeTokenRecord> instantiateStore(
+            FileSystemAbstraction fileSystem,
             Path file,
             Path idFile,
             IdGeneratorFactory generatorFactory,
@@ -61,6 +63,7 @@ class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<Relationship
             RecordFormats formats,
             Config config) {
         return new RelationshipTypeTokenStore(
+                fileSystem,
                 file,
                 idFile,
                 config,

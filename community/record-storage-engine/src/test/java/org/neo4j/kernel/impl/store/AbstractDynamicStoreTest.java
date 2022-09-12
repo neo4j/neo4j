@@ -245,6 +245,7 @@ class AbstractDynamicStoreTest {
                 new DefaultIdGeneratorFactory(fs, immediate(), PageCacheTracer.NULL, DEFAULT_DATABASE_NAME);
         AbstractDynamicStore store =
                 new AbstractDynamicStore(
+                        fs,
                         storeFile,
                         idFile,
                         Config.defaults(),

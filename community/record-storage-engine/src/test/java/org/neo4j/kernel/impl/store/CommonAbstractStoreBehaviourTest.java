@@ -429,6 +429,7 @@ class CommonAbstractStoreBehaviourTest {
 
         MyStore(Config config, PageCache pageCache, MyFormat format) {
             super(
+                    fs,
                     Path.of(STORE_FILENAME),
                     Path.of(ID_FILENAME),
                     config,

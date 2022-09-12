@@ -35,6 +35,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -59,6 +60,7 @@ public abstract class TokenStore<RECORD extends TokenRecord> extends CommonAbstr
     private final CursorType dynamicCursorType;
 
     public TokenStore(
+            FileSystemAbstraction fileSystem,
             Path path,
             Path idFile,
             Config configuration,
@@ -76,6 +78,7 @@ public abstract class TokenStore<RECORD extends TokenRecord> extends CommonAbstr
             CursorType dynamicCursorType,
             ImmutableSet<OpenOption> openOptions) {
         super(
+                fileSystem,
                 path,
                 idFile,
                 configuration,

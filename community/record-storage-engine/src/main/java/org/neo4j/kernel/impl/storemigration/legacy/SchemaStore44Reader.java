@@ -45,6 +45,7 @@ import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorImplementation;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -114,6 +115,7 @@ public class SchemaStore44Reader implements AutoCloseable {
     private final KernelVersion kernelVersion;
 
     public SchemaStore44Reader(
+            FileSystemAbstraction fileSystem,
             PropertyStore propertyStore,
             TokenHolders tokenHolders,
             KernelVersion kernelVersion,
@@ -133,6 +135,7 @@ public class SchemaStore44Reader implements AutoCloseable {
         this.tokenHolders = tokenHolders;
         this.kernelVersion = kernelVersion;
         this.schemaStore = new SchemaStore44(
+                fileSystem,
                 schemaStoreLocation,
                 idFile,
                 conf,
@@ -417,6 +420,7 @@ public class SchemaStore44Reader implements AutoCloseable {
         private static final String TYPE_DESCRIPTOR = "SchemaStore44";
 
         SchemaStore44(
+                FileSystemAbstraction fileSystem,
                 Path path,
                 Path idFile,
                 Config conf,
@@ -431,6 +435,7 @@ public class SchemaStore44Reader implements AutoCloseable {
                 String databaseName,
                 ImmutableSet<OpenOption> openOptions) {
             super(
+                    fileSystem,
                     path,
                     idFile,
                     conf,

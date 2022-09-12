@@ -31,6 +31,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -65,6 +66,7 @@ public class NodeStore extends CommonAbstractStore<NodeRecord, NoStoreHeader> {
     }
 
     public NodeStore(
+            FileSystemAbstraction fileSystem,
             Path path,
             Path idFile,
             Config config,
@@ -78,6 +80,7 @@ public class NodeStore extends CommonAbstractStore<NodeRecord, NoStoreHeader> {
             String databaseName,
             ImmutableSet<OpenOption> openOptions) {
         super(
+                fileSystem,
                 path,
                 idFile,
                 config,

@@ -26,6 +26,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
@@ -40,6 +41,7 @@ public class DynamicStringStore extends AbstractDynamicStore {
     public static final String TYPE_DESCRIPTOR = "StringPropertyStore";
 
     public DynamicStringStore(
+            FileSystemAbstraction fileSystem,
             Path path,
             Path idFile,
             Config configuration,
@@ -54,6 +56,7 @@ public class DynamicStringStore extends AbstractDynamicStore {
             String databaseName,
             ImmutableSet<OpenOption> openOptions) {
         super(
+                fileSystem,
                 path,
                 idFile,
                 configuration,

@@ -41,6 +41,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -103,6 +104,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord, IntStoreHeade
     private final PropertyStore propertyStore;
 
     public SchemaStore(
+            FileSystemAbstraction fileSystem,
             Path path,
             Path idFile,
             Config conf,
@@ -117,6 +119,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord, IntStoreHeade
             String databaseName,
             ImmutableSet<OpenOption> openOptions) {
         super(
+                fileSystem,
                 path,
                 idFile,
                 conf,

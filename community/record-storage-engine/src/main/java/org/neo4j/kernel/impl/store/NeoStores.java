@@ -62,7 +62,6 @@ public class NeoStores implements AutoCloseable {
     private static final String STORE_ALREADY_CLOSED_MESSAGE = "Specified store was already closed.";
     private static final String STORE_NOT_INITIALIZED_TEMPLATE = "Specified store was not initialized. Please specify"
             + " %s as one of the stores types that should be open" + " to be able to use it.";
-    private static final String OPEN_ALL_STORES_TAG = "openAllStores";
 
     private static final StoreType[] STORE_TYPES = StoreType.values();
 
@@ -334,6 +333,7 @@ public class NeoStores implements AutoCloseable {
     CommonAbstractStore createNodeStore() {
         return initialize(
                 new NodeStore(
+                        fileSystem,
                         layout.nodeStore(),
                         layout.idNodeStore(),
                         config,
@@ -360,6 +360,7 @@ public class NeoStores implements AutoCloseable {
     CommonAbstractStore createPropertyKeyTokenStore() {
         return initialize(
                 new PropertyKeyTokenStore(
+                        fileSystem,
                         layout.propertyKeyTokenStore(),
                         layout.idPropertyKeyTokenStore(),
                         config,
@@ -386,6 +387,7 @@ public class NeoStores implements AutoCloseable {
     CommonAbstractStore createPropertyStore() {
         return initialize(
                 new PropertyStore(
+                        fileSystem,
                         layout.propertyStore(),
                         layout.idPropertyStore(),
                         config,
@@ -418,6 +420,7 @@ public class NeoStores implements AutoCloseable {
     CommonAbstractStore createRelationshipStore() {
         return initialize(
                 new RelationshipStore(
+                        fileSystem,
                         layout.relationshipStore(),
                         layout.idRelationshipStore(),
                         config,
@@ -435,6 +438,7 @@ public class NeoStores implements AutoCloseable {
     CommonAbstractStore createRelationshipTypeTokenStore() {
         return initialize(
                 new RelationshipTypeTokenStore(
+                        fileSystem,
                         layout.relationshipTypeTokenStore(),
                         layout.idRelationshipTypeTokenStore(),
                         config,
@@ -461,6 +465,7 @@ public class NeoStores implements AutoCloseable {
     CommonAbstractStore createLabelTokenStore() {
         return initialize(
                 new LabelTokenStore(
+                        fileSystem,
                         layout.labelTokenStore(),
                         layout.idLabelTokenStore(),
                         config,
@@ -479,6 +484,7 @@ public class NeoStores implements AutoCloseable {
     CommonAbstractStore createSchemaStore() {
         return initialize(
                 new SchemaStore(
+                        fileSystem,
                         layout.schemaStore(),
                         layout.idSchemaStore(),
                         config,
@@ -498,6 +504,7 @@ public class NeoStores implements AutoCloseable {
     CommonAbstractStore createRelationshipGroupStore() {
         return initialize(
                 new RelationshipGroupStore(
+                        fileSystem,
                         layout.relationshipGroupStore(),
                         layout.idRelationshipGroupStore(),
                         config,
@@ -523,6 +530,7 @@ public class NeoStores implements AutoCloseable {
     CommonAbstractStore createMetadataStore() {
         return initialize(
                 new MetaDataStore(
+                        fileSystem,
                         layout.metadataStore(),
                         config,
                         pageCache,
@@ -553,6 +561,7 @@ public class NeoStores implements AutoCloseable {
             Path storeFile, Path idFile, RecordIdType idType, int blockSize) {
         return initialize(
                 new DynamicStringStore(
+                        fileSystem,
                         storeFile,
                         idFile,
                         config,
@@ -580,6 +589,7 @@ public class NeoStores implements AutoCloseable {
         }
         return initialize(
                 new DynamicArrayStore(
+                        fileSystem,
                         storeFile,
                         idFile,
                         config,

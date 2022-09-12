@@ -199,6 +199,7 @@ public class SchemaStoreMigration {
 
         // 4.4 stores, need special handling for the schema store
         return getSchemaStore44Migrator(
+                fileSystem,
                 oldFormat,
                 directoryLayout,
                 cursorContext,

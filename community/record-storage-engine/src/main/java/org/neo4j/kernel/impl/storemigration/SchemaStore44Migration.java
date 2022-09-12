@@ -215,6 +215,7 @@ public class SchemaStore44Migration {
     }
 
     static SchemaStore44Migration.SchemaStore44Migrator getSchemaStore44Migrator(
+            FileSystemAbstraction fileSystem,
             RecordFormats oldFormat,
             RecordDatabaseLayout directoryLayout,
             CursorContext cursorContext,
@@ -245,6 +246,7 @@ public class SchemaStore44Migration {
 
             var srcTokensHolders = createTokenHolders(srcStore, srcCursors);
             try (var schemaStore44Reader = getSchemaStore44Reader(
+                    fileSystem,
                     directoryLayout,
                     oldFormat,
                     srcIdGeneratorFactory,
@@ -419,6 +421,7 @@ public class SchemaStore44Migration {
     }
 
     private static SchemaStore44Reader getSchemaStore44Reader(
+            FileSystemAbstraction fileSystem,
             RecordDatabaseLayout recordDatabaseLayout,
             RecordFormats formats,
             IdGeneratorFactory idGeneratorFactory,
@@ -430,6 +433,7 @@ public class SchemaStore44Migration {
             CursorContextFactory contextFactory,
             KernelVersion kernelVersion) {
         return new SchemaStore44Reader(
+                fileSystem,
                 neoStores.getPropertyStore(),
                 tokenHolders,
                 kernelVersion,

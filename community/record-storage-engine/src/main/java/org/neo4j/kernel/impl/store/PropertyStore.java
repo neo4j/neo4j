@@ -43,6 +43,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.InconsistentDataReadException;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.internal.recordstorage.RecordPropertyCursor;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -158,6 +159,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
     private final DynamicArrayStore arrayStore;
 
     public PropertyStore(
+            FileSystemAbstraction fileSystem,
             Path path,
             Path idFile,
             Config configuration,
@@ -173,6 +175,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
             String databaseName,
             ImmutableSet<OpenOption> openOptions) {
         super(
+                fileSystem,
                 path,
                 idFile,
                 configuration,

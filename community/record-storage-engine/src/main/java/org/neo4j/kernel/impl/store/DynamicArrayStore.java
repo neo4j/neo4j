@@ -37,6 +37,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -104,6 +105,7 @@ public class DynamicArrayStore extends AbstractDynamicStore {
     public static final String TYPE_DESCRIPTOR = "ArrayPropertyStore";
 
     public DynamicArrayStore(
+            FileSystemAbstraction fileSystem,
             Path path,
             Path idFile,
             Config configuration,
@@ -118,6 +120,7 @@ public class DynamicArrayStore extends AbstractDynamicStore {
             String databaseName,
             ImmutableSet<OpenOption> openOptions) {
         super(
+                fileSystem,
                 path,
                 idFile,
                 configuration,

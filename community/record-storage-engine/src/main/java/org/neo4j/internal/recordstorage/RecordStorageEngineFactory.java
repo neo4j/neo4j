@@ -423,6 +423,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                     cursorContext);
 
             try (SchemaStore44Reader schemaStoreReader = new SchemaStore44Reader(
+                    fs,
                     stores.getPropertyStore(),
                     tokenHolders,
                     metadata.kernelVersion(),

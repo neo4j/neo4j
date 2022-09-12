@@ -49,6 +49,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -95,6 +96,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord> {
         RecordFormats formats = RecordFormatSelector.defaultFormat();
         Config config = Config.defaults();
         nameStore = new DynamicStringStore(
+                fs,
                 namesFile,
                 namesIdFile,
                 config,
@@ -108,7 +110,8 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord> {
                 writable(),
                 DEFAULT_DATABASE_NAME,
                 immutable.empty());
-        store = instantiateStore(file, idFile, generatorFactory, pageCache, logProvider, nameStore, formats, config);
+        store = instantiateStore(
+                fs, file, idFile, generatorFactory, pageCache, logProvider, nameStore, formats, config);
         CursorContextFactory contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
         nameStore.initialise(true, contextFactory);
         store.initialise(true, contextFactory);
@@ -122,6 +125,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord> {
     protected abstract StoreCursors createCursors(TokenStore<R> store, DynamicStringStore nameStore);
 
     protected abstract TokenStore<R> instantiateStore(
+            FileSystemAbstraction fileSystem,
             Path file,
             Path idFile,
             IdGeneratorFactory generatorFactory,

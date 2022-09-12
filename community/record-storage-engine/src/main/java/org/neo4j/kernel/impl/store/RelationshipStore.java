@@ -28,6 +28,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -41,6 +42,7 @@ public class RelationshipStore extends CommonAbstractStore<RelationshipRecord, N
     public static final String TYPE_DESCRIPTOR = "RelationshipStore";
 
     public RelationshipStore(
+            FileSystemAbstraction fileSystem,
             Path path,
             Path idFile,
             Config configuration,
@@ -53,6 +55,7 @@ public class RelationshipStore extends CommonAbstractStore<RelationshipRecord, N
             String databaseName,
             ImmutableSet<OpenOption> openOptions) {
         super(
+                fileSystem,
                 path,
                 idFile,
                 configuration,

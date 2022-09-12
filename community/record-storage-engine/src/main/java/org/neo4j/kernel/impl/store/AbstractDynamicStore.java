@@ -35,6 +35,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -72,6 +73,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRecord, IntStoreHeader>
         implements DynamicRecordAllocator {
     public AbstractDynamicStore(
+            FileSystemAbstraction fileSystem,
             Path path,
             Path idFile,
             Config conf,
@@ -87,6 +89,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
             String databaseName,
             ImmutableSet<OpenOption> openOptions) {
         super(
+                fileSystem,
                 path,
                 idFile,
                 conf,
