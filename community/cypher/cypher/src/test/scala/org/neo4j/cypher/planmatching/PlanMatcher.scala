@@ -255,10 +255,10 @@ case class CountInTree(expectedCount: Int, inner: PlanMatcher, atLeast: Boolean 
     MatchResult(
       matches = if (atLeast) count >= expectedCount else count == expectedCount,
       rawFailureMessage = s"Expected to find $toPlanDescription\n ${if (atLeast) "at least "
-        else ""}$expectedCount times but found it $count times. Got $plan",
+      else ""}$expectedCount times but found it $count times. Got $plan",
       rawNegatedFailureMessage =
         s"Did not expect to find $toPlanDescription\n ${if (atLeast) s"more than ${expectedCount - 1}"
-          else s"exactly $expectedCount"} times but found it $count times. Got $plan"
+        else s"exactly $expectedCount"} times but found it $count times. Got $plan"
     )
   }
 
@@ -514,8 +514,7 @@ case class ExactPlan(
     )
 
   override def withEstimatedRows(estimatedRows: Long): PlanMatcher = this.estimatedRows.fold(copy(estimatedRows =
-    Some(new ExactArgumentMatcher(estimatedRows) with EstimatedRowsMatcher)
-  ))(_ =>
+    Some(new ExactArgumentMatcher(estimatedRows) with EstimatedRowsMatcher)))(_ =>
     throw new IllegalArgumentException("cannot have more than one assertion on estimatedRows")
   )
 
@@ -535,8 +534,7 @@ case class ExactPlan(
     )
 
   override def withGlobalMemory(): PlanMatcher = this.globalMemory.fold(copy(globalMemory =
-    Some(new RangeArgumentMatcher(1, Long.MaxValue) with GlobalMemoryMatcher)
-  ))(_ =>
+    Some(new RangeArgumentMatcher(1, Long.MaxValue) with GlobalMemoryMatcher)))(_ =>
     throw new IllegalArgumentException("cannot have more than one assertion on global memory")
   )
 
@@ -556,14 +554,12 @@ case class ExactPlan(
     )
 
   override def withPageCacheHits(): PlanMatcher = this.pageCacheHits.fold(copy(pageCacheHits =
-    Some(new RangeArgumentMatcher(1, Long.MaxValue) with PageCacheHitsMatcher)
-  ))(_ =>
+    Some(new RangeArgumentMatcher(1, Long.MaxValue) with PageCacheHitsMatcher)))(_ =>
     throw new IllegalArgumentException("cannot have more than one assertion on page cache hits")
   )
 
   override def withPageCacheMisses(): PlanMatcher = this.pageCacheMisses.fold(copy(pageCacheMisses =
-    Some(new RangeArgumentMatcher(1, Long.MaxValue) with PageCacheMissesMatcher)
-  ))(_ =>
+    Some(new RangeArgumentMatcher(1, Long.MaxValue) with PageCacheMissesMatcher)))(_ =>
     throw new IllegalArgumentException("cannot have more than one assertion on page cache misses")
   )
 

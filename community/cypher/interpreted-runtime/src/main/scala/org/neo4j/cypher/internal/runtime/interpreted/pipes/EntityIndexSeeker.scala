@@ -196,7 +196,7 @@ trait EntityIndexSeeker {
         computeExactQueries(state, row)
     }
 
-  private def computeRangeQueries(
+  def computeRangeQueries(
     state: QueryState,
     row: ReadableRow,
     rangeWrapper: Expression,
