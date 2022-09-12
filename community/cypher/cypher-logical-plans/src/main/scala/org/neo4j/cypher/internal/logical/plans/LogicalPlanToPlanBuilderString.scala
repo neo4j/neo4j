@@ -714,6 +714,7 @@ object LogicalPlanToPlanBuilderString {
       case EagernessReason.OverlappingSetLabels(labels) => s"${objectName(EagernessReason.OverlappingSetLabels)}(Seq(${wrapInQuotationsAndMkString(labels)}))"
       case EagernessReason.OverlappingDeletedLabels(labels) => s"${objectName(EagernessReason.OverlappingDeletedLabels)}(Seq(${wrapInQuotationsAndMkString(labels)}))"
       case EagernessReason.DeleteOverlap(identifiers) => s"${objectName(EagernessReason.DeleteOverlap)}(Seq(${wrapInQuotationsAndMkString(identifiers)}))"
+      case EagernessReason.ReadDeleteConflict(identifier) => s"${objectName(EagernessReason.ReadDeleteConflict)}(${wrapInQuotations(identifier)})"
     }
     s"$prefix.$suffix"
   }
