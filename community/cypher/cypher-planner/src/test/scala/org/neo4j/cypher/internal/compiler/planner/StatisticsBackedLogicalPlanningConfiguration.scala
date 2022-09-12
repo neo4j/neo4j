@@ -469,7 +469,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
     this.copy(options = options.copy(useMinimumGraphStatistics = enable))
   }
 
-  def disableDeduplicateNames(enable: Boolean = false): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+  def enableDeduplicateNames(enable: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
     this.copy(options = options.copy(deduplicateNames = enable))
   }
 

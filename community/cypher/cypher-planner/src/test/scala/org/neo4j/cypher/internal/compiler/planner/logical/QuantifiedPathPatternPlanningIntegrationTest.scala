@@ -43,30 +43,28 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
       .setAllRelationshipsCardinality(10)
-      .setRelationshipCardinality("()-[:R]->()", 10)
-      .setLabelCardinality("User", 5)
-      .disableDeduplicateNames()
+      .enableDeduplicateNames(enable = false)
       .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
       .build()
 
     val query = "MATCH (a)((n)-[r]->())*(b) RETURN n, r"
     val plan = planner.plan(query).stripProduceResults
-    val `(u)((n)-[]-(m))*` = TrailParameters(
-      0,
-      Unlimited,
-      "a",
-      Some("b"),
-      "  n@1",
-      "  UNNAMED0",
-      Set(("  n@1", "  n@4")),
-      Set(("  r@2", "  r@3")),
-      Set("  r@2"),
-      Set()
+    val `(a)((n)-[r]-())*(b)` = TrailParameters(
+      min = 0,
+      max = Unlimited,
+      start = "a",
+      end = Some("b"),
+      innerStart = "  n@1",
+      innerEnd = "  UNNAMED0",
+      groupNodes = Set(("  n@1", "  n@4")),
+      groupRelationships = Set(("  r@2", "  r@3")),
+      allRelationships = Set("  r@2"),
+      allRelationshipGroups = Set()
     )
 
     plan should equal(
       planner.subPlanBuilder()
-        .trail(`(u)((n)-[]-(m))*`)
+        .trail(`(a)((n)-[r]-())*(b)`)
         .|.expand("(`  n@1`)-[`  r@2`]->(`  UNNAMED0`)")
         .|.argument("  n@1")
         .allNodeScan("a")
@@ -78,16 +76,16 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     val query = "MATCH (u:User)((n)-[]->(m))* RETURN n, m"
     val plan = planner.plan(query).stripProduceResults
     val `(u)((n)-[]-(m))*` = TrailParameters(
-      0,
-      Unlimited,
-      "u",
-      Some("anon_1"),
-      "n",
-      "m",
-      Set(("n", "n"), ("m", "m")),
-      Set(),
-      Set("anon_0"),
-      Set()
+      min = 0,
+      max = Unlimited,
+      start = "u",
+      end = Some("anon_1"),
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(),
+      allRelationships = Set("anon_0"),
+      allRelationshipGroups = Set()
     )
 
     plan should equal(
@@ -105,16 +103,16 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
 
     val plan = planner.plan(query).stripProduceResults
     val `((n)-[]->(m))*(u)` = TrailParameters(
-      0,
-      Unlimited,
-      "u",
-      Some("anon_0"),
-      "m",
-      "n",
-      Set(("n", "n"), ("m", "m")),
-      Set(),
-      Set("anon_1"),
-      Set()
+      min = 0,
+      max = Unlimited,
+      start = "u",
+      end = Some("anon_0"),
+      innerStart = "m",
+      innerEnd = "n",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(),
+      allRelationships = Set("anon_1"),
+      allRelationshipGroups = Set()
     )
 
     plan should equal(
@@ -132,16 +130,16 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
 
     val plan = planner.plan(query).stripProduceResults
     val `((n)-[]->(m))+` = TrailParameters(
-      1,
-      Unlimited,
-      "anon_0",
-      Some("anon_2"),
-      "n",
-      "m",
-      Set(("n", "n"), ("m", "m")),
-      Set(),
-      Set("anon_1"),
-      Set()
+      min = 1,
+      max = Unlimited,
+      start = "anon_0",
+      end = Some("anon_2"),
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(),
+      allRelationships = Set("anon_1"),
+      allRelationshipGroups = Set()
     )
 
     plan should equal(
@@ -160,16 +158,16 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     val plan = planner.plan(query).stripProduceResults
 
     val `((n)-[]->(m)){1,}` = TrailParameters(
-      1,
-      Unlimited,
-      "anon_0",
-      Some("anon_2"),
-      "n",
-      "m",
-      Set(("n", "n"), ("m", "m")),
-      Set(),
-      Set("anon_1"),
-      Set()
+      min = 1,
+      max = Unlimited,
+      start = "anon_0",
+      end = Some("anon_2"),
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(),
+      allRelationships = Set("anon_1"),
+      allRelationshipGroups = Set()
     )
     plan should equal(
       planner.subPlanBuilder()
@@ -186,16 +184,16 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
 
     val plan = planner.plan(query).stripProduceResults
     val `()((n)-[]->(m)){,5}` = TrailParameters(
-      0,
-      UpperBound.Limited(5),
-      "anon_0",
-      Some("anon_2"),
-      "n",
-      "m",
-      Set(("n", "n"), ("m", "m")),
-      Set(),
-      Set("anon_1"),
-      Set()
+      min = 0,
+      max = UpperBound.Limited(5),
+      start = "anon_0",
+      end = Some("anon_2"),
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(),
+      allRelationships = Set("anon_1"),
+      allRelationshipGroups = Set()
     )
 
     plan should equal(
@@ -213,16 +211,16 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
 
     val plan = planner.plan(query).stripProduceResults
     val `((n)-[]->(m)){1,5}` = TrailParameters(
-      1,
-      UpperBound.Limited(5),
-      "anon_0",
-      Some("anon_2"),
-      "n",
-      "m",
-      Set(("n", "n"), ("m", "m")),
-      Set(),
-      Set("anon_1"),
-      Set()
+      min = 1,
+      max = UpperBound.Limited(5),
+      start = "anon_0",
+      end = Some("anon_2"),
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(),
+      allRelationships = Set("anon_1"),
+      allRelationshipGroups = Set()
     )
 
     plan should equal(
@@ -240,16 +238,16 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
 
     val plan = planner.plan(query).stripProduceResults
     val `((n)-[]->(m))+(a)` = TrailParameters(
-      1,
-      Unlimited,
-      "a",
-      Some("anon_0"),
-      "m",
-      "n",
-      Set(("n", "n"), ("m", "m")),
-      Set(),
-      Set("anon_1"),
-      Set()
+      min = 1,
+      max = Unlimited,
+      start = "a",
+      end = Some("anon_0"),
+      innerStart = "m",
+      innerEnd = "n",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(),
+      allRelationships = Set("anon_1"),
+      allRelationshipGroups = Set()
     )
 
     plan should equal(
@@ -273,16 +271,16 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
 
     val plan = planner.plan(query).stripProduceResults
     val `(n)((n_inner)-[r_inner]->(m_inner))+ (m)` = TrailParameters(
-      1,
-      Unlimited,
-      "n",
-      Some("anon_8"),
-      "n_inner",
-      "m_inner",
-      Set(("n_inner", "n_inner"), ("m_inner", "m_inner")),
-      Set(("r_inner", "r_inner")),
-      Set("r_inner"),
-      Set()
+      min = 1,
+      max = Unlimited,
+      start = "n",
+      end = Some("anon_8"),
+      innerStart = "n_inner",
+      innerEnd = "m_inner",
+      groupNodes = Set(("n_inner", "n_inner"), ("m_inner", "m_inner")),
+      groupRelationships = Set(("r_inner", "r_inner")),
+      allRelationships = Set("r_inner"),
+      allRelationshipGroups = Set()
     )
 
     plan should equal(

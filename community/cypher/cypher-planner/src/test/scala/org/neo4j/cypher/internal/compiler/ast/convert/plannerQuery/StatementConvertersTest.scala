@@ -1554,7 +1554,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     )))
   }
 
-  // Note that namespaced names are removed in these tests
+  // Note that namespaced names are removed in these tests by NameDeduplication
   test("should convert a single quantified pattern") {
     val query = buildSinglePlannerQuery("MATCH ((n)-[r]->(m))+ RETURN 1")
     query.queryGraph shouldBe QueryGraph(

@@ -264,7 +264,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
   test("MATCH (a)-[e]->(d) ((a)-[b]->(c))*  RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       "The variable `a` occurs both inside and outside a quantified path pattern and needs to be renamed.",
-      // There is a "already declared" error, because the non-QPP variable `a` is defined first, and group variables are not implicit variables like nodes.
+      // There is an "already declared" error, because the non-QPP variable `a` is defined first, and group variables are not implicit variables like nodes.
       "Variable `a` already declared"
     )
   }
@@ -285,7 +285,6 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
   }
 
   test("MATCH ((a)-[b]->(c))* (d)-[e]->()((a)-[f]->(g)){2,} RETURN count(*)") {
-    // this example leaves out the node to the right of e
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       "The variable `a` occurs in multiple quantified path patterns and needs to be renamed.",
       "Variable `a` already declared"
