@@ -56,7 +56,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.internal.helpers.Strings;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -173,12 +172,8 @@ public class ConsistencyCheckServiceIntegrationTest {
         nonRecoveredDatabase();
         var e = assertThrows(ConsistencyCheckIncompleteException.class, () -> consistencyCheckService()
                 .runFullConsistencyCheck());
-        assertEquals(
-                e.getCause().getMessage(),
-                Strings.joinAsLines(
-                        "Active logical log detected, this might be a source of inconsistencies.",
-                        "Please recover database.",
-                        "To perform recovery please start database in single mode and perform clean shutdown."));
+        assertThat(e.getCause().getMessage())
+                .contains("Active logical log detected, this might be a source of inconsistencies.");
     }
 
     @Test
