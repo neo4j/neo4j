@@ -921,7 +921,7 @@ final case class CreateCompositeDatabase(
   waitUntilComplete: WaitUntilComplete
 )(
   val position: InputPosition
-) extends WriteAdministrationCommand {
+) extends WaitableAdministrationCommand {
 
   override def name: String = ifExistsDo match {
     case IfExistsReplace | IfExistsInvalidSyntax => "CREATE OR REPLACE COMPOSITE DATABASE"
