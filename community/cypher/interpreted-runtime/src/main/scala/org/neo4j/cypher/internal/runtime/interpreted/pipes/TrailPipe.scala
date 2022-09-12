@@ -23,7 +23,7 @@ import org.neo4j.collection.trackable.HeapTrackingArrayList
 import org.neo4j.collection.trackable.HeapTrackingCollections
 import org.neo4j.collection.trackable.HeapTrackingCollections.newArrayDeque
 import org.neo4j.collection.trackable.HeapTrackingLongHashSet
-import org.neo4j.cypher.internal.logical.plans.GroupEntity
+import org.neo4j.cypher.internal.logical.plans.VariableGrouping
 import org.neo4j.cypher.internal.runtime.CastSupport.castOrFail
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
@@ -65,14 +65,14 @@ case class TrailPipe(
   end: Option[String],
   innerStart: String,
   innerEnd: String,
-  groupNodes: Set[GroupEntity],
-  groupRelationships: Set[GroupEntity],
+  groupNodes: Set[VariableGrouping],
+  groupRelationships: Set[VariableGrouping],
   allRelationships: Set[String],
   allRelationshipGroups: Set[String]
 )(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  private val groupNodeNames = groupNodes.toArray.sortBy(_.innerName)
-  private val groupRelationshipNames = groupRelationships.toArray.sortBy(_.innerName)
+  private val groupNodeNames = groupNodes.toArray.sortBy(_.singletonName)
+  private val groupRelationshipNames = groupRelationships.toArray.sortBy(_.singletonName)
   private val emptyGroupNodes = emptyLists(groupNodes.size)
   private val emptyGroupRelationships = emptyLists(groupRelationships.size)
   private val allRelationshipsArray = allRelationships.toArray
@@ -198,7 +198,7 @@ case class TrailPipe(
   }
 
   private def computeGroupVariables(
-    groupNames: Array[GroupEntity],
+    groupNames: Array[VariableGrouping],
     groupVariables: HeapTrackingArrayList[ListValue],
     row: CypherRow,
     tracker: MemoryTracker
@@ -206,7 +206,7 @@ case class TrailPipe(
     val res = HeapTrackingCollections.newArrayList[ListValue](groupNames.length, tracker)
     var i = 0
     while (i < groupNames.length) {
-      res.add(groupVariables.get(i).append(row.getByName(groupNames(i).innerName)))
+      res.add(groupVariables.get(i).append(row.getByName(groupNames(i).singletonName)))
       i += 1
     }
     res
@@ -221,12 +221,12 @@ case class TrailPipe(
     val res = new Array[(String, AnyValue)](newSize)
     var i = 0
     while (i < newGroupNodes.size()) {
-      res(i) = (groupNodeNames(i).outerName, newGroupNodes.get(i))
+      res(i) = (groupNodeNames(i).groupName, newGroupNodes.get(i))
       i += 1
     }
     var j = 0
     while (j < newGroupRels.size()) {
-      res(i) = (groupRelationshipNames(j).outerName, newGroupRels.get(j))
+      res(i) = (groupRelationshipNames(j).groupName, newGroupRels.get(j))
       j += 1
       i += 1
     }

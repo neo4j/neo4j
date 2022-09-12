@@ -522,10 +522,10 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
           declareVariables(ctx, pattern.element, Some(q)) chain
             ensureNoPathVariable(pattern) ifOkChain
             entityBindings.foldSemanticCheck { entityBinding =>
-              ensureDefined(entityBinding.inner)
+              ensureDefined(entityBinding.singleton)
             }
         } chain entityBindings.foldSemanticCheck { entityBinding =>
-          declareVariable(entityBinding.outer, _.expressionType(entityBinding.inner).actual.wrapInList)
+          declareVariable(entityBinding.group, _.expressionType(entityBinding.singleton).actual.wrapInList)
         }
 
       case ParenthesizedPath(pattern) =>

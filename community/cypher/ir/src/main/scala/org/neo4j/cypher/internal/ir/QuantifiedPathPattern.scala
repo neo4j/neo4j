@@ -21,17 +21,31 @@ package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.util.Repetition
 
-case class EntityBinding(inner: String, outer: String) {
+/**
+ * Describes the connection between two juxtaposed nodes - one inside of a [[QuantifiedPathPattern]]
+ * and the other one outside.
+ */
+case class NodeBinding(inner: String, outer: String) {
   override def toString: String = s"(inner=$inner, outer=$outer)"
 }
 
+/**
+ * Describes a variable that is exposed from a [[QuantifiedPath]].
+ *
+ * @param singletonName the name of the singleton variable inside the QuantifiedPath.
+ * @param groupName     the name of the group variable exposed outside of the QuantifiedPath.
+ */
+case class VariableGrouping(singletonName: String, groupName: String) {
+  override def toString: String = s"(singletonName=$singletonName, groupName=$groupName)"
+}
+
 final case class QuantifiedPathPattern(
-  leftBinding: EntityBinding,
-  rightBinding: EntityBinding,
+  leftBinding: NodeBinding,
+  rightBinding: NodeBinding,
   pattern: QueryGraph,
   repetition: Repetition,
-  nodeGroupVariables: Set[EntityBinding],
-  relationshipGroupVariables: Set[EntityBinding]
+  nodeVariableGroupings: Set[VariableGrouping],
+  relationshipVariableGroupings: Set[VariableGrouping]
 ) extends NodeConnection {
 
   override val left: String = leftBinding.outer
@@ -42,7 +56,7 @@ final case class QuantifiedPathPattern(
   override lazy val coveredIds: Set[String] = coveredNodeIds
 
   override def toString: String = {
-    s"QPP($leftBinding, $rightBinding, $pattern, $repetition, $nodeGroupVariables, $relationshipGroupVariables)"
+    s"QPP($leftBinding, $rightBinding, $pattern, $repetition, $nodeVariableGroupings, $relationshipVariableGroupings)"
   }
 
   val dependencies: Set[String] = pattern.dependencies

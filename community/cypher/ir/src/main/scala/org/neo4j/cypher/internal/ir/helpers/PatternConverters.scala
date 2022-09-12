@@ -37,12 +37,13 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.StarQuantifier
-import org.neo4j.cypher.internal.ir.EntityBinding
+import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.RangeConvertor
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PathConcatenationDestructor.FoldState
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -212,21 +213,21 @@ object PatternConverters {
         selections = Selections.empty
       )
 
-      val groupVariables = quantifiedPath.groupVariables
-      val nodeGroupVariables = groupVariables
-        .filter(eb => nodesAndRels.nodeVariables.contains(eb.inner))
-        .map(eb => EntityBinding(eb.inner.name, eb.outer.name))
-      val relationshipGroupVariables = groupVariables
-        .filter(eb => nodesAndRels.relVariables.contains(eb.inner))
-        .map(eb => EntityBinding(eb.inner.name, eb.outer.name))
+      val variableGroupings = quantifiedPath.variableGroupings
+      val nodeVariableGroupings = variableGroupings
+        .filter(eb => nodesAndRels.nodeVariables.contains(eb.singleton))
+        .map(eb => VariableGrouping(eb.singleton.name, eb.group.name))
+      val relationshipVariableGroupings = variableGroupings
+        .filter(eb => nodesAndRels.relVariables.contains(eb.singleton))
+        .map(eb => VariableGrouping(eb.singleton.name, eb.group.name))
 
       QuantifiedPathPattern(
-        leftBinding = EntityBinding(innerLeft, outerLeft),
-        rightBinding = EntityBinding(innerRight, outerRight),
+        leftBinding = NodeBinding(innerLeft, outerLeft),
+        rightBinding = NodeBinding(innerRight, outerRight),
         pattern = qg,
         repetition = quantifiedPath.quantifier.toRepetition,
-        nodeGroupVariables = nodeGroupVariables,
-        relationshipGroupVariables = relationshipGroupVariables
+        nodeVariableGroupings = nodeVariableGroupings,
+        relationshipVariableGroupings = relationshipVariableGroupings
       )
     }
   }

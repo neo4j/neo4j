@@ -224,7 +224,6 @@ import org.neo4j.cypher.internal.logical.plans.GrantDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.GrantDbmsAction
 import org.neo4j.cypher.internal.logical.plans.GrantGraphAction
 import org.neo4j.cypher.internal.logical.plans.GrantRoleToUser
-import org.neo4j.cypher.internal.logical.plans.GroupEntity
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.relationshipIndexSeek
@@ -338,6 +337,7 @@ import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.logical.plans.VariableGrouping
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.WaitForCompletion
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
@@ -5249,8 +5249,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           Some("end"),
           "  UNNAMED111",
           "  UNNAMED112",
-          Set(GroupEntity("  UNNAMED111", "a"), GroupEntity("  UNNAMED112", "b")),
-          Set(GroupEntity("  UNNAMED113", "r")),
+          Set(VariableGrouping("  UNNAMED111", "a"), VariableGrouping("  UNNAMED112", "b")),
+          Set(VariableGrouping("  UNNAMED113", "r")),
           Set("r"),
           Set.empty
         ),

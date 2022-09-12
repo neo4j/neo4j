@@ -22,13 +22,14 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.ir.EntityBinding
+import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -50,12 +51,13 @@ class QueryGraphConnectedComponentsTest
 
   private def qpp(from: String, to: String) =
     QuantifiedPathPattern(
-      EntityBinding(s"${from}_inner", from),
-      EntityBinding(s"${to}_inner", to),
+      NodeBinding(s"${from}_inner", from),
+      NodeBinding(s"${to}_inner", to),
       QueryGraph(patternRelationships = Set(rel(s"${from}_inner", s"${to}_inner"))),
       Repetition(0, Unlimited),
-      nodeGroupVariables = Set(EntityBinding("anon_1", s"${from}_inner"), EntityBinding("anon_3", s"${to}_inner")),
-      relationshipGroupVariables = Set(EntityBinding("anon_2", "r"))
+      nodeVariableGroupings =
+        Set(VariableGrouping("anon_1", s"${from}_inner"), VariableGrouping("anon_3", s"${to}_inner")),
+      relationshipVariableGroupings = Set(VariableGrouping("anon_2", "r"))
     )
 
   test("empty query graph returns no connected querygraphs") {

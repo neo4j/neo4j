@@ -1070,8 +1070,8 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         recordArgument(lp)
         val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans(lp.id))
         maybeEnd.foreach(e => result.newLong(e, false, CTNode)) // nullable?
-        groupNodes.foreach(n => result.newReference(n.outerName, false, CTList(CTNode)))
-        groupRelationships.foreach(r => result.newReference(r.outerName, false, CTList(CTRelationship)))
+        groupNodes.foreach(n => result.newReference(n.groupName, false, CTList(CTNode)))
+        groupRelationships.foreach(r => result.newReference(r.groupName, false, CTList(CTRelationship)))
         result
 
       case p =>

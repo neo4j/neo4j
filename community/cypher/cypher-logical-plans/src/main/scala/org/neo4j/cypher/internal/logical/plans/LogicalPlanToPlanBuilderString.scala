@@ -496,8 +496,10 @@ object LogicalPlanToPlanBuilderString {
           allRelationships,
           allRelationshipGroups
         ) =>
-        def groupEntitiesString(groupEntities: Set[GroupEntity]): String =
-          groupEntities.map(g => s"(${wrapInQuotations(g.innerName)}, ${wrapInQuotations(g.outerName)})").mkString(", ")
+        def groupEntitiesString(groupEntities: Set[VariableGrouping]): String =
+          groupEntities.map(g => s"(${wrapInQuotations(g.singletonName)}, ${wrapInQuotations(g.groupName)})").mkString(
+            ", "
+          )
 
         val trailParameters =
           s"""${repetition.min}, ${repetition.max}, "$start", ${end.map(

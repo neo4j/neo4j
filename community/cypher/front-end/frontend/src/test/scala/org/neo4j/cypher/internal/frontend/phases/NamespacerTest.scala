@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.expressions.EntityBinding
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Expression
@@ -34,6 +33,7 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -65,8 +65,8 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
               )(pos)),
               plusQuantifier,
               Set(
-                EntityBinding(varFor("  x@0"), varFor("  x@3"))(pos),
-                EntityBinding(varFor("  y@1"), varFor("  y@2"))(pos)
+                VariableGrouping(varFor("  x@0"), varFor("  x@3"))(pos),
+                VariableGrouping(varFor("  y@1"), varFor("  y@2"))(pos)
               )
             )(pos),
             nodePat(Some("  UNNAMED1"))

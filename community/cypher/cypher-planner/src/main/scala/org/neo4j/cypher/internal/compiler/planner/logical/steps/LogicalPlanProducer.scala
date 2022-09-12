@@ -80,11 +80,11 @@ import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.DeleteExpression
 import org.neo4j.cypher.internal.ir.DistinctQueryProjection
 import org.neo4j.cypher.internal.ir.EagernessReason
-import org.neo4j.cypher.internal.ir.EntityBinding
 import org.neo4j.cypher.internal.ir.ForeachPattern
 import org.neo4j.cypher.internal.ir.LoadCSVProjection
 import org.neo4j.cypher.internal.ir.MergeNodePattern
 import org.neo4j.cypher.internal.ir.MergeRelationshipPattern
+import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.PassthroughAllHorizon
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
@@ -110,6 +110,7 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.ordering
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
@@ -150,7 +151,6 @@ import org.neo4j.cypher.internal.logical.plans.ExpansionMode
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
-import org.neo4j.cypher.internal.logical.plans.GroupEntity
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
@@ -923,8 +923,8 @@ case class LogicalPlanProducer(
   def planTrail(
     source: LogicalPlan,
     pattern: QuantifiedPathPattern,
-    startBinding: EntityBinding,
-    endBinding: EntityBinding,
+    startBinding: NodeBinding,
+    endBinding: NodeBinding,
     maybeHiddenFilter: Option[Expression],
     context: LogicalPlanningContext,
     innerPlan: LogicalPlan
@@ -942,11 +942,12 @@ case class LogicalPlanProducer(
         end = Some(endBinding.outer),
         innerStart = startBinding.inner,
         innerEnd = endBinding.inner,
-        groupNodes = pattern.nodeGroupVariables.map { case EntityBinding(inner, outer) =>
-          GroupEntity(inner, outer)
+        nodeVariableGroupings = pattern.nodeVariableGroupings.map { case VariableGrouping(singleton, group) =>
+          plans.VariableGrouping(singleton, group)
         },
-        groupRelationships = pattern.relationshipGroupVariables.map { case EntityBinding(inner, outer) =>
-          GroupEntity(inner, outer)
+        relationshipVariableGroupings = pattern.relationshipVariableGroupings.map {
+          case VariableGrouping(singleton, group) =>
+            plans.VariableGrouping(singleton, group)
         },
         allRelationships = pattern.pattern.patternRelationships.map(_.name),
         allRelationshipGroups = Set.empty
