@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.bottomUp
 
+import scala.annotation.tailrec
+
 /**
  * @param entity expression to evaluate to the entity we want to check
  */
@@ -132,7 +134,14 @@ object LabelExpression {
       extends BinaryLabelExpression
 
   case class Negation(e: LabelExpression)(val position: InputPosition) extends LabelExpression {
-    override def flatten: Seq[LabelExpressionLeafName] = e.flatten
+
+    @tailrec
+    final override def flatten: Seq[LabelExpressionLeafName] = {
+      e match {
+        case e: Negation => e.flatten
+        case e           => e.flatten
+      }
+    }
   }
 
   case class Wildcard()(val position: InputPosition) extends LabelExpression {

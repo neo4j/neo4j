@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.expressions.LabelExpression.ColonDisjunction
 import org.neo4j.cypher.internal.expressions.LabelExpression.Conjunctions
 import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
+import org.neo4j.cypher.internal.expressions.LabelExpression.Negation
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -96,5 +97,14 @@ class LabelExpressionTest extends CypherFunSuite {
     val c = Leaf(LabelName("C")(pos))
     val expr = Disjunctions.flat(a, ColonDisjunction(b, c)(pos), pos)
     expr.replaceColonSyntax shouldBe Disjunctions(Seq(a, b, c))(pos)
+  }
+
+  test("flatten on many consecutive negations should not stackoverflow") {
+    val expr = (1 to 20000).foldLeft[LabelExpression](Leaf(LabelName("A")(pos))) {
+      case (expr, _) => Negation(expr)(pos)
+    }
+    noException should be thrownBy {
+      expr.flatten shouldBe Seq(LabelName("A")(pos))
+    }
   }
 }
