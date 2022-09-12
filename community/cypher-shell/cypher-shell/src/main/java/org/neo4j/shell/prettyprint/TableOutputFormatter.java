@@ -60,17 +60,30 @@ public class TableOutputFormatter implements OutputFormatter {
         return formatResultAndCountRows(columns, records, output);
     }
 
-    private static List<Record> take(Iterator<Record> records, int count) {
-        List<Record> topRecords = new ArrayList<>(count);
+    private static void take(Iterator<Record> records, ArrayList<Record> topRecords, int count) {
         while (records.hasNext() && topRecords.size() < count) {
             topRecords.add(records.next());
         }
-        return topRecords;
     }
 
     private int formatResultAndCountRows(String[] columns, Iterator<Record> records, LinePrinter output) {
 
-        List<Record> topRecords = take(records, numSampleRows);
+        ArrayList<Record> topRecords = new ArrayList<Record>(numSampleRows);
+        try {
+            take(records, topRecords, numSampleRows);
+        } catch (RuntimeException e) {
+            printTableAndCountRows(columns, records, output, topRecords, false);
+            throw e;
+        }
+        return printTableAndCountRows(columns, records, output, topRecords, true);
+    }
+
+    private int printTableAndCountRows(
+            String[] columns,
+            Iterator<Record> records,
+            LinePrinter output,
+            List<Record> topRecords,
+            boolean printFooter) {
         int[] columnSizes = calculateColumnSizes(columns, topRecords, records.hasNext());
 
         int totalWidth = 1;
@@ -88,15 +101,19 @@ public class TableOutputFormatter implements OutputFormatter {
         output.printOut(dashes);
 
         int numberOfRows = 0;
+
         for (Record record : topRecords) {
             output.printOut(formatRecord(builder, columnSizes, record));
             numberOfRows++;
         }
+
         while (records.hasNext()) {
             output.printOut(formatRecord(builder, columnSizes, records.next()));
             numberOfRows++;
         }
-        output.printOut(String.format("%s%n", dashes));
+
+        if (printFooter) output.printOut(String.format("%s%n", dashes));
+
         return numberOfRows;
     }
 

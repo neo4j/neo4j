@@ -26,7 +26,10 @@ import static java.util.stream.Collectors.joining;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.core.StringContains.containsString;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -38,9 +41,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
@@ -55,6 +60,7 @@ import org.neo4j.driver.internal.InternalPoint3D;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.internal.value.DurationValue;
+import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.PointValue;
@@ -331,6 +337,54 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         // THEN
         assertThat(table, containsString("| \"a\" | 42 |"));
         assertThat(table, containsString("| \"b\" | 43 |"));
+    }
+
+    @Test
+    void printAllButFooterWhenThrowInTopRecords() {
+        // GIVEN
+        BoltResult result = mock(BoltResult.class);
+
+        when(result.getKeys()).thenReturn(List.of("i"));
+        when(result.iterate()).thenReturn(new ThrowAfterN(5));
+
+        // WHEN
+        ToStringLinePrinter actual = new ToStringLinePrinter();
+
+        // THEN
+        assertThrows(RuntimeException.class, () -> verbosePrinter.format(result, actual));
+        assertThat(actual.result().replaceAll("\\s+", ""), endsWith("|1|".repeat(5)));
+    }
+
+    @Test
+    void printAllButFooterWhenThrowAfterTopRecords() {
+        // GIVEN
+        BoltResult result = mock(BoltResult.class);
+
+        when(result.getKeys()).thenReturn(List.of("i"));
+        when(result.iterate()).thenReturn(new ThrowAfterN(150));
+
+        // WHEN
+        ToStringLinePrinter actual = new ToStringLinePrinter();
+
+        // THEN
+        assertThrows(RuntimeException.class, () -> verbosePrinter.format(result, actual));
+        assertThat(actual.result().replaceAll("\\s+", ""), endsWith("|1|".repeat(150)));
+    }
+
+    @Test
+    void printAllButFooterWhenThrowInFirstRecord() {
+        // GIVEN
+        BoltResult result = mock(BoltResult.class);
+
+        when(result.getKeys()).thenReturn(List.of("i"));
+        when(result.iterate()).thenReturn(new ThrowAfterN(0));
+
+        // WHEN
+        ToStringLinePrinter actual = new ToStringLinePrinter();
+
+        // THEN
+        assertThrows(RuntimeException.class, () -> verbosePrinter.format(result, actual));
+        assertThat(actual.result(), equalTo("+---+\n| i |\n+---+\n"));
     }
 
     @Test
@@ -678,5 +732,39 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         assert cols.size() == data.size();
         Value[] values = data.stream().map(Values::value).toArray(Value[]::new);
         return new InternalRecord(cols, values);
+    }
+
+    class ThrowAfterN implements Iterator<Record> {
+        int counter = 0;
+        int n;
+        Record record = new InternalRecord(List.of("i"), new IntegerValue[] {new IntegerValue(1)});
+
+        public ThrowAfterN(int n) {
+            this.n = n;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return counter <= n;
+        }
+
+        @Override
+        public Record next() {
+            if (counter++ < n) {
+                return record;
+            } else {
+                throw new RuntimeException("Dummy Exception. ThrowAfter: " + counter);
+            }
+        }
+
+        @Override
+        public void remove() {
+            Iterator.super.remove();
+        }
+
+        @Override
+        public void forEachRemaining(Consumer<? super Record> action) {
+            Iterator.super.forEachRemaining(action);
+        }
     }
 }
