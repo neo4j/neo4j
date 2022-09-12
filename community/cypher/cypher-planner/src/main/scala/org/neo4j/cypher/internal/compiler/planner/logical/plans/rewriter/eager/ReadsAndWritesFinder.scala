@@ -362,9 +362,10 @@ object ReadsAndWritesFinder {
    * An accumulator of CREATEs in the logical plan tree.
    *
    * @param writtenProperties          a provider to find out which plans create which properties.
-   * @param writtenLabels              for each plan, the labels that it creates. We cannot group this by label instead,
+   * @param writtenLabels              for each plan, the labels that it creates. We cannot use the label as key for this map,
    *                                   because we need to view the composite label expressions when checking against
    *                                   filterExpressions.
+   *                                   This is a Set of a Set because we need to group the writes by which node they happen on.
    * @param plansThatCreateNodes       all plans that create nodes
    * @param filterExpressionsSnapshots for each plan (that will need to look at that later), a snapshot of the current filterExpressions.
    */
@@ -392,7 +393,7 @@ object ReadsAndWritesFinder {
       plan: LogicalPlan,
       filterExpressionsSnapshot: Map[LogicalVariable, FilterExpressions]
     ): Creates = {
-      val prevLabels = writtenLabels.getOrElse(plan, Seq.empty).toSet
+      val prevLabels = writtenLabels.getOrElse(plan, Set.empty)
       copy(
         writtenLabels = writtenLabels.updated(plan, prevLabels + labels),
         filterExpressionsSnapshots = filterExpressionsSnapshots + (plan -> filterExpressionsSnapshot)
