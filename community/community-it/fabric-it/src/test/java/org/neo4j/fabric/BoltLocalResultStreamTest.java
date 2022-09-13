@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Transaction;
+import org.neo4j.driver.TransactionContext;
 import org.neo4j.driver.reactive.ReactiveTransaction;
 import org.neo4j.test.extension.BoltDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -61,7 +61,6 @@ class BoltLocalResultStreamTest {
         List<String> result = inTx(tx -> tx.run("UNWIND range(0, 4) AS i RETURN 'r' + i as A").stream()
                 .map(r -> r.get("A").asString())
                 .collect(Collectors.toList()));
-
         assertThat(result).isEqualTo(List.of("r0", "r1", "r2", "r3", "r4"));
     }
 
@@ -95,9 +94,9 @@ class BoltLocalResultStreamTest {
         assertThat(result).isEqualTo(List.of("r0", "r1"));
     }
 
-    private static <T> T inTx(Function<Transaction, T> workload) {
+    private static <T> T inTx(Function<TransactionContext, T> workload) {
         try (var session = driver.session()) {
-            return session.writeTransaction(workload::apply);
+            return session.executeWrite(workload::apply);
         }
     }
 

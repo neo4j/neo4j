@@ -57,7 +57,6 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreId;
@@ -83,7 +82,6 @@ class ReversedMultiFileTransactionCursorTest {
     private RandomSupport random;
 
     private long txId = BASE_TX_ID;
-    private final AssertableLogProvider logProvider = new AssertableLogProvider(true);
     private ReverseTransactionCursorLoggingMonitor monitor;
     private LogFile logFile;
     private LogFiles logFiles;
