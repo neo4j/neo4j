@@ -65,7 +65,7 @@ class Edition[CONTEXT <: RuntimeContext](
   }
 
   def copyWith(additionalConfigs: (Setting[_], Object)*): Edition[CONTEXT] = {
-    val newConfigs = configs ++ additionalConfigs
+    val newConfigs = (configs ++ additionalConfigs).toMap
     new Edition(graphBuilderFactory, runtimeContextManagerFactory, newConfigs.toSeq: _*)
   }
 
@@ -73,7 +73,7 @@ class Edition[CONTEXT <: RuntimeContext](
     newRuntimeContextManagerFactory: RuntimeContextManagerFactory[CONTEXT],
     additionalConfigs: (Setting[_], Object)*
   ): Edition[CONTEXT] = {
-    val newConfigs = configs ++ additionalConfigs
+    val newConfigs = (configs ++ additionalConfigs).toMap
     new Edition(graphBuilderFactory, newRuntimeContextManagerFactory, newConfigs.toSeq: _*)
   }
 
