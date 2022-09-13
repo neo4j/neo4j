@@ -24,7 +24,6 @@ import static java.util.function.Function.identity;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 import static org.neo4j.kernel.database.NamedDatabaseId.SYSTEM_DATABASE_NAME;
 
-import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -39,7 +38,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.RemoteUri;
 import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.configuration.helpers.SocketAddressParser;
 
 public final class TestDatabaseReferenceRepository {
 
@@ -82,9 +80,8 @@ public final class TestDatabaseReferenceRepository {
             String localAliasName, String targetDatabaseName) {
         var normalizedAlias = new NormalizedDatabaseName(localAliasName);
         var normalizedTarget = new NormalizedDatabaseName(targetDatabaseName);
-        var addr = SocketAddressParser.socketAddress(
-                URI.create(localAliasName), BoltConnector.DEFAULT_PORT, SocketAddress::new);
-        var uri = new RemoteUri("neo4j", List.of(addr), null);
+        var addr = List.of(new SocketAddress(localAliasName, BoltConnector.DEFAULT_PORT));
+        var uri = new RemoteUri("neo4j", addr, null);
         var uuid = UUID.randomUUID();
         return new DatabaseReference.External(normalizedTarget, normalizedAlias, uri, uuid);
     }
