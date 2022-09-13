@@ -26,12 +26,12 @@ import org.neo4j.exceptions.KernelException;
  */
 public class WriteOnReadOnlyAccessDbException extends KernelException {
     public WriteOnReadOnlyAccessDbException() {
-        super(Status.General.WriteOnReadOnlyAccessDatabase, "This Neo4j instance is read-only for all databases");
+        super(Status.General.WriteOnReadOnlyAccessDatabase, "This Neo4j server is read-only for all databases");
     }
 
     public WriteOnReadOnlyAccessDbException(String databaseName) {
         super(
                 Status.General.WriteOnReadOnlyAccessDatabase,
-                "The database " + databaseName + " is in read-only mode on this Neo4j instance");
+                "The database " + databaseName + " is in read-only mode on this Neo4j server");
     }
 }
