@@ -337,7 +337,7 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context, T
         }
 
         @Override
-        public <E extends Entity> E validateSameDB(E entity) {
+        public Entity validateSameDB(Entity entity) {
             return transaction.validateSameDB(entity);
         }
 

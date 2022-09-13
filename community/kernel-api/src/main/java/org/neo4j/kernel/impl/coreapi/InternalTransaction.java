@@ -63,7 +63,7 @@ public interface InternalTransaction extends Transaction, TransactionalEntityFac
 
     String getDatabaseName();
 
-    <E extends Entity> E validateSameDB(E entity);
+    Entity validateSameDB(Entity entity);
 
     ElementIdMapper elementIdMapper();
 }

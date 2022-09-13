@@ -720,7 +720,7 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
 
   override def thawLocks(): Unit = inner.thawLocks()
 
-  override def validateSameDB[E <: Entity](entity: E): E = inner.validateSameDB(entity)
+  override def validateSameDB[E <: Entity](entity: E): Unit = inner.validateSameDB(entity)
 
   override def elementIdMapper(): ElementIdMapper = inner.elementIdMapper()
 }

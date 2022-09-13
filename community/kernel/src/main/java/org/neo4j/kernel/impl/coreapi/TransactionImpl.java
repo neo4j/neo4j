@@ -46,6 +46,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.neo4j.common.EntityType;
+import org.neo4j.exceptions.CypherExecutionException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Entity;
@@ -133,7 +134,7 @@ import org.neo4j.values.virtual.MapValue;
 /**
  * Default implementation of {@link org.neo4j.graphdb.Transaction}
  */
-public class TransactionImpl extends EntityValidationTransactionImpl {
+public class TransactionImpl implements InternalTransaction {
     private final TokenHolders tokenHolders;
     private final TransactionalContextFactory contextFactory;
     private final DatabaseAvailabilityGuard availabilityGuard;
@@ -841,6 +842,32 @@ public class TransactionImpl extends EntityValidationTransactionImpl {
         }
 
         return getNodesByLabelAndPropertyWithoutPropertyIndex(transaction, labelId, query);
+    }
+
+    @Override
+    public Entity validateSameDB(Entity entity) {
+        InternalTransaction internalTransaction;
+
+        if (entity instanceof NodeEntity node) {
+            internalTransaction = node.getTransaction();
+        } else if (entity instanceof RelationshipEntity rel) {
+            internalTransaction = rel.getTransaction();
+        } else {
+            return entity;
+        }
+
+        if (!internalTransaction.isOpen()) {
+            throw new NotInTransactionException(
+                    "The transaction of entity " + entity.getElementId() + " has been closed.");
+        }
+
+        if (internalTransaction.getDatabaseId() != this.getDatabaseId()) {
+            throw new CypherExecutionException("Can not use an entity from another database. Entity element id: "
+                    + entity.getElementId() + ", entity database: "
+                    + internalTransaction.getDatabaseName() + ", expected database: "
+                    + this.getDatabaseName() + ".");
+        }
+        return entity;
     }
 
     private ResourceIterator<Relationship> relationshipsByTypeAndProperty(

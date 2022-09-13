@@ -656,7 +656,7 @@ trait QueryTransactionalContext extends CloseableResource {
   def thawLocks(): Unit
 
   @VisibleForTesting
-  def validateSameDB[E <: Entity](entity: E): E
+  def validateSameDB[E <: Entity](entity: E): Unit
 
   def elementIdMapper(): ElementIdMapper
 }
