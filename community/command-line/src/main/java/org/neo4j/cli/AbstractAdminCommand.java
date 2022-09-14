@@ -19,6 +19,9 @@
  */
 package org.neo4j.cli;
 
+import static java.lang.String.format;
+
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -120,5 +123,13 @@ public abstract class AbstractAdminCommand extends AbstractCommand {
         configBuilder.set(HttpsConnector.enabled, Boolean.FALSE);
 
         return configBuilder;
+    }
+
+    protected Path requireExisting(Path p) {
+        try {
+            return p.toRealPath();
+        } catch (IOException e) {
+            throw new CommandFailedException(format("Path '%s' does not exist.", p), e);
+        }
     }
 }
