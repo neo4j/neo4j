@@ -64,4 +64,13 @@ object CachedFunction {
     : (a1, a2, a3, a4, a5, a6, a7) => b = {
     (x1, x2, x3, x4, x5, x6, x7) => f(Tuple7(x1, x2, x3, x4, x5, x6, x7))
   }
+
+  final case class CacheKey[Value, Key](cacheKey: Key)(val value: Value)
+
+  object CacheKey {
+
+    def computeFrom[Value, Key](value: Value)(f: Value => Key): CacheKey[Value, Key] = {
+      CacheKey(f(value))(value)
+    }
+  }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir.helpers
 
+import org.neo4j.cypher.internal.ir.helpers.CachedFunction.CacheKey
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CachedFunctionTest extends CypherFunSuite {
@@ -123,5 +124,23 @@ class CachedFunctionTest extends CypherFunSuite {
     cachedF(4, 5, 1, 1, 1, 1)
 
     i should be(3)
+  }
+
+  test("should cache calls with different values that evaluate to the same cache key") {
+    var i = 0
+    def f(s: String): Int = {
+      i += 1
+      123 + s.length
+    }
+    def g(key: CacheKey[String, Int]) = f(key.value)
+    val cachedG = CachedFunction(g _)
+    def cacheKey(s: String) = CacheKey.computeFrom(s)(_.length)
+
+    cachedG(cacheKey("abc"))
+    cachedG(cacheKey("123"))
+    cachedG(cacheKey("zzz"))
+    cachedG(cacheKey("hello"))
+
+    i shouldBe 2
   }
 }
