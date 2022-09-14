@@ -133,7 +133,7 @@
     <required.maven.version>3.5.4</required.maven.version>
     <jackson.version>2.13.2</jackson.version>
     <jackson-databind.version>2.13.2.2</jackson-databind.version>
-    <amazon-sdk.version>1.11.1022</amazon-sdk.version>
+    <amazon-sdk.version>1.12.301</amazon-sdk.version>
     <guava.version>29.0-jre</guava.version>
     <awaitility.version>4.0.3</awaitility.version>
     <!--    Be careful when updating Log4j version. We have workarounds for problems with shading/plugin handling
@@ -1533,9 +1533,9 @@
       </dependency>
       <!-- used by benchmark-infra module -->
       <dependency>
-      	<groupId>com.amazonaws</groupId>
-      	<artifactId>aws-java-sdk-batch</artifactId>
-      	<version>${amazon-sdk.version}</version>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-batch</artifactId>
+        <version>${amazon-sdk.version}</version>
       </dependency>
       <dependency>
         <groupId>com.amazonaws</groupId>
@@ -1548,14 +1548,14 @@
         <version>${amazon-sdk.version}</version>
       </dependency>
       <dependency>
-      	<groupId>com.amazonaws</groupId>
-      	<artifactId>aws-java-sdk-s3</artifactId>
-      	<version>${amazon-sdk.version}</version>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-s3</artifactId>
+        <version>${amazon-sdk.version}</version>
       </dependency>
       <dependency>
-      	<groupId>com.amazonaws</groupId>
-      	<artifactId>aws-java-sdk-secretsmanager</artifactId>
-      	<version>${amazon-sdk.version}</version>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-secretsmanager</artifactId>
+        <version>${amazon-sdk.version}</version>
       </dependency>
       <dependency>
         <groupId>com.amazonaws</groupId>
