@@ -2247,12 +2247,13 @@ PATTERN_ATOM ParenthesizedPath() :
     Token t;
     PATTERN p;
     VARIABLE v;
+    EXPRESSION where = null;
     PATTERN_QUANTIFIER quantifier = null;
 }
 {
-    t = <LPAREN> p = Pattern() <RPAREN> ( quantifier=Quantifier() )?
+    t = <LPAREN> p = Pattern() ( <WHERE> where=Expression() )? <RPAREN> ( quantifier=Quantifier() )?
     {
-        return astFactory.parenthesizedPathPattern( pos(t), p, quantifier );
+        return astFactory.parenthesizedPathPattern( pos(t), p, where, quantifier );
     }
 }
 

@@ -700,7 +700,7 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL parenthesizedPathPattern(NULL p, NULL internalPattern, NULL aNull) {
+    public NULL parenthesizedPathPattern(NULL p, NULL internalPattern, NULL where, NULL quantifier) {
         return null;
     }
 

@@ -48,7 +48,7 @@ import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternDestructor
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternElementDestructor
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.RelationshipChainDestructor
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
-import org.neo4j.cypher.internal.rewriting.rewriters.MatchPredicateNormalizer
+import org.neo4j.cypher.internal.rewriting.rewriters.PredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -58,7 +58,7 @@ import org.neo4j.cypher.internal.util.topDown
 case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends Rewriter {
   private val pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression
   private val stringifier = ExpressionStringifier(_.asCanonicalStringVal)
-  private val patternNormalizer = MatchPredicateNormalizer.defaultNormalizer(anonymousVariableNameGenerator)
+  private val patternNormalizer = PredicateNormalizer.defaultNormalizer(anonymousVariableNameGenerator)
   private val addUniquenessPredicates = AddUniquenessPredicates(anonymousVariableNameGenerator)
 
   /**

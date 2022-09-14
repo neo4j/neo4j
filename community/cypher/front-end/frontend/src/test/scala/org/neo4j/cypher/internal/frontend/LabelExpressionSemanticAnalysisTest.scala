@@ -546,12 +546,8 @@ class OtherLabelExpressionSemanticAnalysisTest
     // runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
   }
 
-  test("MATCH p=((:A:B)-[]->(b) WHERE a.p < b.p)+ RETURN p") {
-    // quantified path pattern predicates are not implemented yet. Once this is the case, please change to the test below
-    the[SyntaxException].thrownBy(
-      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
-    ).getMessage should include("Invalid input 'WHERE': expected \"(\" or \")\"")
-    // runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+  test("MATCH ((a:A:B)-[]->(b) WHERE a.p < b.p)+ RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
   }
 
   test("MATCH p = SHORTEST 2 PATHS (m)-[*0..5]-(n) RETURN p") {

@@ -64,6 +64,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
                 nodePat(Some("  y@1"))
               )(pos)),
               plusQuantifier,
+              None,
               Set(
                 VariableGrouping(varFor("  x@0"), varFor("  x@2"))(pos),
                 VariableGrouping(varFor("  y@1"), varFor("  y@3"))(pos)
@@ -79,6 +80,33 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
         return_(aliasedReturnItem(varFor("  x@4")))
       ))(pos),
       List(varFor("  x@0"), varFor("  x@2"), varFor("  x@4"), varFor("  y@1"), varFor("  y@3"))
+    ),
+    TestCaseWithStatement(
+      "MATCH ( (a)-->(b) WHERE all(a IN a.prop WHERE a > 0) )+ RETURN a",
+      Query(singleQuery(
+        match_(
+          pathConcatenation(
+            nodePat(Some("  UNNAMED0")),
+            QuantifiedPath(
+              EveryPath(RelationshipChain(
+                nodePat(Some("  a@0")),
+                relPat(Some("  UNNAMED1")),
+                nodePat(Some("  b@1"))
+              )(pos)),
+              plusQuantifier,
+              Some(allInList(varFor("  a@2"), prop("  a@0", "prop"), greaterThan(varFor("  a@2"), literalInt(0)))),
+              Set(
+                VariableGrouping(varFor("  a@0"), varFor("  a@4"))(pos),
+                VariableGrouping(varFor("  b@1"), varFor("  b@3"))(pos)
+              )
+            )(pos),
+            nodePat(Some("  UNNAMED2"))
+          ),
+          None
+        ),
+        return_(aliasedReturnItem(varFor("  a@4")))
+      ))(pos),
+      List(varFor("  a@0"), varFor("  a@2"), varFor("  a@4"), varFor("  b@1"), varFor("  b@3"))
     ),
     TestCase(
       "MATCH (n), (x) WHERE [x in n.prop WHERE x = 2] RETURN x AS x",

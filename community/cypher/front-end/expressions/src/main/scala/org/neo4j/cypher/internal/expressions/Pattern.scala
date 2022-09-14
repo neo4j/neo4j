@@ -114,6 +114,7 @@ sealed trait PatternAtom extends ASTNode
 case class QuantifiedPath(
   part: PatternPart,
   quantifier: GraphPatternQuantifier,
+  optionalWhereExpression: Option[Expression],
   variableGroupings: Set[VariableGrouping]
 )(val position: InputPosition)
     extends PathFactor with PatternAtom {
@@ -125,11 +126,15 @@ case class QuantifiedPath(
 
 object QuantifiedPath {
 
-  def apply(part: PatternPart, quantifier: GraphPatternQuantifier)(position: InputPosition): QuantifiedPath = {
+  def apply(
+    part: PatternPart,
+    quantifier: GraphPatternQuantifier,
+    optionalWhereExpression: Option[Expression]
+  )(position: InputPosition): QuantifiedPath = {
     val entityBindings = part.allVariables.map { innerVar =>
       VariableGrouping(innerVar.copyId, innerVar.withPosition(position))(position)
     }
-    QuantifiedPath(part, quantifier, entityBindings)(position)
+    QuantifiedPath(part, quantifier, optionalWhereExpression, entityBindings)(position)
   }
 }
 

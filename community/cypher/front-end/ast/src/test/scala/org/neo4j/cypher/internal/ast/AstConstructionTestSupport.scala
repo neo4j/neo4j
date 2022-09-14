@@ -555,8 +555,12 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def pathConcatenation(factors: PathFactor*): PathConcatenation = PathConcatenation(factors)(pos)
 
-  def quantifiedPath(part: PatternPart, quantifier: GraphPatternQuantifier): QuantifiedPath =
-    QuantifiedPath(part, quantifier)(pos)
+  def quantifiedPath(
+    part: PatternPart,
+    quantifier: GraphPatternQuantifier,
+    optionalWhereExpression: Option[Expression] = None
+  ): QuantifiedPath =
+    QuantifiedPath(part, quantifier, optionalWhereExpression)(pos)
 
   def plusQuantifier: PlusQuantifier = PlusQuantifier()(pos)
 

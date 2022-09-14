@@ -38,13 +38,13 @@ class normalizePredicatesTest extends CypherFunSuite with TestName {
 
   def rewriter(semanticState: SemanticState): Rewriter = inSequence(
     LabelExpressionPredicateNormalizer.instance,
-    normalizeHasLabelsAndHasType(semanticState),
     normalizePredicates.getRewriter(
       semanticState,
       Map.empty,
       OpenCypherExceptionFactory(None),
       new AnonymousVariableNameGenerator
-    )
+    ),
+    normalizeHasLabelsAndHasType(semanticState)
   )
 
   def rewriterWithoutNormalizeMatchPredicates(semanticState: SemanticState): Rewriter = inSequence(
@@ -246,5 +246,33 @@ class normalizePredicatesTest extends CypherFunSuite with TestName {
 
   test("RETURN [(a {prop: 5})-[r {prop: 5}]->(b) | a] AS result") {
     assertRewrite("RETURN [(a)-[r]->(b) WHERE a.prop = 5 AND r.prop = 5 | a] AS result")
+  }
+
+  test("MATCH () ((n {foo: 'bar'})--())+ () RETURN n") {
+    assertRewrite("MATCH () ((n)--() WHERE n.foo = 'bar')+ () RETURN n")
+  }
+
+  test("MATCH () (()-[r {foo: 'bar'}]-())+ () RETURN n") {
+    assertRewrite("MATCH () (()-[r]-() WHERE r.foo = 'bar')+ () RETURN n")
+  }
+
+  test("MATCH () ((n:N)-[r:REL]-(m:M))+ () RETURN n") {
+    assertRewrite("MATCH () ((n)-[r:REL]-(m) WHERE n:N AND m:M)+ () RETURN n")
+  }
+
+  test("MATCH () ((n:N&!M)-[r:!REL]-())+ () RETURN n") {
+    assertRewrite("MATCH () ((n)-[r]-() WHERE n:N AND not n:M AND not r:REL)+ () RETURN n")
+  }
+
+  test("MATCH () ((n WHERE n.foo = 'bar')--())+ () RETURN n") {
+    assertRewrite("MATCH () ((n)--() WHERE n.foo = 'bar')+ () RETURN n")
+  }
+
+  test("MATCH () (()-[r WHERE r.foo = 'bar']-())+ () RETURN n") {
+    assertRewrite("MATCH () (()-[r]-() WHERE r.foo = 'bar')+ () RETURN n")
+  }
+
+  test("MATCH (a:A) ((n {foo: 'bar'})--())+ () RETURN n") {
+    assertRewrite("MATCH (a) ((n)--() WHERE n.foo = 'bar')+ () WHERE a:A RETURN n")
   }
 }

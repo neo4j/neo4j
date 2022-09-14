@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
@@ -38,7 +39,7 @@ case object NoNodeOrRelationshipPredicates extends StepSequencer.Condition
 case object normalizePredicates extends StepSequencer.Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    noUnnamedNodesAndRelationships // unnamed pattern cannot be rewritten, so they need to handled first
+    noUnnamedNodesAndRelationships // unnamed pattern cannot be rewritten, so they need to be handled first
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(NoNodeOrRelationshipPredicates)
@@ -54,10 +55,10 @@ case object normalizePredicates extends StepSequencer.Step with ASTRewriterFacto
     cypherExceptionFactory: CypherExceptionFactory,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter =
-    normalizePredicates(MatchPredicateNormalizer.defaultNormalizer(anonymousVariableNameGenerator))
+    normalizePredicates(PredicateNormalizer.defaultNormalizer(anonymousVariableNameGenerator))
 }
 
-case class normalizePredicates(normalizer: MatchPredicateNormalizer) extends Rewriter {
+case class normalizePredicates(normalizer: PredicateNormalizer) extends Rewriter {
   override def apply(that: AnyRef): AnyRef = instance(that)
 
   private val rewriter = Rewriter.lift {
@@ -73,7 +74,7 @@ case class normalizePredicates(normalizer: MatchPredicateNormalizer) extends Rew
       }
 
       m.copy(
-        pattern = pattern.endoRewrite(topDown(Rewriter.lift(normalizer.replace))),
+        pattern = normalizer.replaceAllIn(pattern),
         where = newWhere
       )(m.position)
 
@@ -83,9 +84,19 @@ case class normalizePredicates(normalizer: MatchPredicateNormalizer) extends Rew
       val newPredicate: Option[Expression] = rewrittenPredicates.reduceOption(And(_, _)(p.position))
 
       p.copy(
-        pattern = p.pattern.endoRewrite(topDown(Rewriter.lift(normalizer.replace))),
+        pattern = normalizer.replaceAllIn(p.pattern),
         predicate = newPredicate
       )(p.position, p.outerScope)
+
+    case qp @ QuantifiedPath(patternPart, _, optionalWhereExpression, _) =>
+      val predicates = normalizer.extractAllFrom(patternPart)
+      val rewrittenPredicates = predicates ++ optionalWhereExpression
+      val newOptionalWhereExpression: Option[Expression] = rewrittenPredicates.reduceOption(And(_, _)(qp.position))
+
+      qp.copy(
+        part = normalizer.replaceAllIn(patternPart),
+        optionalWhereExpression = newOptionalWhereExpression
+      )(qp.position)
   }
 
   private val instance = topDown(rewriter)

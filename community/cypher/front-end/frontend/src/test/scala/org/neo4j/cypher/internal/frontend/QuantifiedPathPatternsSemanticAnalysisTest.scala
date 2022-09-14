@@ -370,18 +370,40 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
     )
   }
 
+  // Predicates
+
+  test("MATCH ((a)-->(b) WHERE b.prop > 7)+ RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+  }
+
+  test("MATCH ((a)-->(b) WHERE a.prop < b.prop)+ RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+  }
+
+  test("MATCH (x) MATCH ((a)-->(b) WHERE a.prop < x.prop)+ RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+  }
+
+  test("MATCH (x) MATCH ((a WHERE a.prop < x.prop)-->(b))+ RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+  }
+
+  test("MATCH (x) MATCH ((a)-[r:REL WHERE r.prop < x.prop]->(b))+ RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+  }
+
   // accessing non-local variables outside of the quantification
-  ignore("MATCH (x)-->(y)((a)-[e]->(b) WHERE a.h > x.h)* (s)-->(u) RETURN count(*)") {
-    // ignored because this uses a QPP predicate
+  test("MATCH (x)-->(y)((a)-[e]->(b) WHERE a.h > x.h)* (s)-->(u) RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "Non-local variables that are dependent on the quantification may not be referenced from within a quantified path pattern."
+      """From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
+        |In this case, x is defined in the same `MATCH` clause as ((a)-[e]->(b) WHERE a.h > x.h)*.""".stripMargin
     )
   }
 
-  ignore("MATCH (x)-->(y)((a)-[e]->(b) WHERE a.h > u.h)* (s)-->(u) RETURN count(*)") {
-    // ignored because this uses a QPP predicate
+  test("MATCH (x)-->(y)((a)-[e]->(b) WHERE a.h > u.h)* (s)-->(u) RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "Non-local variables that are dependent on the quantification may not be referenced from within a quantified path pattern."
+      """From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
+        |In this case, u is defined in the same `MATCH` clause as ((a)-[e]->(b) WHERE a.h > u.h)*.""".stripMargin
     )
   }
 
@@ -403,6 +425,13 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       """From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
         |In this case, x is defined in the same `MATCH` clause as ((a)-[e]->(b {h: x.h}))*.""".stripMargin
+    )
+  }
+
+  test("MATCH (x) ((a)-[e {h: x.h}]->(b))* (s)-->(u) RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+      """From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
+        |In this case, x is defined in the same `MATCH` clause as ((a)-[e {h: x.h}]->(b))*.""".stripMargin
     )
   }
 

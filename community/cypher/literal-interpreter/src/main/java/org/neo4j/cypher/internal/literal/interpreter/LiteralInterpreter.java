@@ -352,7 +352,7 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL parenthesizedPathPattern(NULL p, NULL internalPattern, NULL aNull) {
+    public NULL parenthesizedPathPattern(NULL p, NULL internalPattern, Object where, NULL aNull) {
         throw new UnsupportedOperationException("parenthesizedPathPattern is not a literal");
     }
 

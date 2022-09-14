@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 
-object RelationshipPatternPredicateNormalizer extends MatchPredicateNormalizer {
+object RelationshipPatternPredicateNormalizer extends PredicateNormalizer {
 
   override val extract: PartialFunction[AnyRef, IndexedSeq[Expression]] = {
     case RelationshipPattern(_, _, _, _, Some(predicate), _) => Vector(predicate)

@@ -132,7 +132,11 @@ private class DefaultPatternStringifier(expr: ExpressionStringifier) extends Pat
     concatenation.factors.map(apply).mkString(" ")
 
   override def apply(quantified: QuantifiedPath): String = {
-    val inner = apply(quantified.part)
+    val pattern = apply(quantified.part)
+    val where = quantified.optionalWhereExpression
+      .map(stringifyPredicate)
+      .map(w => s" $w")
+      .getOrElse("")
     val quantifier = quantified.quantifier match {
       case StarQuantifier() => "*"
       case PlusQuantifier() => "+"
@@ -140,7 +144,7 @@ private class DefaultPatternStringifier(expr: ExpressionStringifier) extends Pat
         s"{${lower.map(_.stringVal).getOrElse("")}, ${upper.map(_.stringVal).getOrElse("")}}"
       case FixedQuantifier(value) => s"{${value.stringVal}}"
     }
-    s"($inner)$quantifier"
+    s"($pattern$where)$quantifier"
   }
 
   override def apply(path: ParenthesizedPath): String = {

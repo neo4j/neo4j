@@ -223,6 +223,14 @@ trait SemanticAnalysisTooling {
       check chain
       SemanticAnalysisTooling.popStateScope
 
+  def withScopedStateWithVariablesFromRecordedScope(
+    astNode: ASTNode,
+    exclude: Set[String] = Set.empty
+  )(check: => SemanticCheck): SemanticCheck =
+    SemanticAnalysisTooling.pushStateScopeWithVariablesFromRecordedScope(astNode, exclude) chain
+      check chain
+      SemanticAnalysisTooling.popStateScope
+
   def typeSwitch(expr: Expression)(choice: TypeSpec => SemanticCheck): SemanticCheck =
     SemanticCheck.fromState(state => choice(state.expressionType(expr).actual))
 
@@ -302,5 +310,15 @@ trait SemanticAnalysisTooling {
 
 object SemanticAnalysisTooling {
   private val pushStateScope: SemanticCheck = (state: SemanticState) => SemanticCheckResult.success(state.newChildScope)
+
+  private def pushStateScopeWithVariablesFromRecordedScope(
+    astNode: ASTNode,
+    exclude: Set[String] = Set.empty
+  ): SemanticCheck =
+    (state: SemanticState) => {
+      val scopeToImportFrom = state.recordedScopes(astNode).scope
+      SemanticCheckResult.success(state.newChildScope.importValuesFromScope(scopeToImportFrom, exclude))
+    }
+
   private val popStateScope: SemanticCheck = (state: SemanticState) => SemanticCheckResult.success(state.popScope)
 }

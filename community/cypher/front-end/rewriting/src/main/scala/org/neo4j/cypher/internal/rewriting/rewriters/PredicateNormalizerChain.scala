@@ -19,9 +19,11 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.helpers.PartialFunctionSupport
 
-case class MatchPredicateNormalizerChain(normalizers: MatchPredicateNormalizer*) extends MatchPredicateNormalizer {
+case class PredicateNormalizerChain(normalizers: PredicateNormalizer*) extends PredicateNormalizer {
 
-  val extract =
+  final override val extract: PartialFunction[AnyRef, IndexedSeq[Expression]] =
     PartialFunctionSupport.reduceAnyDefined(normalizers.map(_.extract))(IndexedSeq.empty[Expression])(_ ++ _)
-  val replace = PartialFunctionSupport.composeIfDefined(normalizers.map(_.replace))
+
+  final override val replace: PartialFunction[AnyRef, AnyRef] =
+    PartialFunctionSupport.composeIfDefined(normalizers.map(_.replace))
 }

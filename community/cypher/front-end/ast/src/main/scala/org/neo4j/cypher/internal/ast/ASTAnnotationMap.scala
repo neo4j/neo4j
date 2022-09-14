@@ -47,6 +47,8 @@ object ASTAnnotationMap {
 
   case class PositionedNode[+N <: ASTNode](node: N) {
 
+    override def toString: String = s"PositionedNode($node@${node.position.offset})"
+
     def canEqual(a: Any): Boolean = {
       a.isInstanceOf[PositionedNode[N]]
     }

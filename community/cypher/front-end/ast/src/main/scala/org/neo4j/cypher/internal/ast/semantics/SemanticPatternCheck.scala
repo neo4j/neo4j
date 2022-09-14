@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.ast.semantics
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.success
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
@@ -203,7 +204,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
           check(ctx, x.element)
     }
 
-  private def checkNoQuantifiedPathPatterns(x: PatternPart) = {
+  private def checkNoQuantifiedPathPatterns(x: PatternPart): SemanticCheck = {
     x.folder.treeFindByClass[QuantifiedPath].foldSemanticCheck(qpp =>
       error("Assigning a path with a quantified path pattern is not yet supported.", qpp.position)
     )
@@ -211,9 +212,9 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   private val stringifier = ExpressionStringifier()
 
-  private def checkMinimumNodeCount(x: PatternPart) = {
+  private def checkMinimumNodeCount(x: PatternPart): SemanticCheck = {
     when(x.element.folder.treeFold(true) {
-      case QuantifiedPath(_, quantifier, _) if quantifier.canBeEmpty =>
+      case QuantifiedPath(_, quantifier, _, _) if quantifier.canBeEmpty =>
         acc => SkipChildren(acc)
       case _: PathFactor =>
         _ => SkipChildren(false)
@@ -250,16 +251,21 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         factors.map(check(ctx, _)).reduce(_ chain _) chain
           checkValidConcatenation(factors)
 
-      case q @ QuantifiedPath(pattern, quantifier, _) =>
-        whenState(!_.features.contains(SemanticFeature.QuantifiedPathPatterns)) {
-          error("Quantified path patterns are not yet supported.", q.position)
-        } chain
+      case q @ QuantifiedPath(pattern, quantifier, _, _) =>
+        def checkFeatureFlag: SemanticCheck =
+          whenState(!_.features.contains(SemanticFeature.QuantifiedPathPatterns)) {
+            error("Quantified path patterns are not yet supported.", q.position)
+          }
+
+        def checkContext: SemanticCheck =
           when(ctx != SemanticContext.Match) {
             error(
               s"Quantified path patterns are not allowed in ${ctx.name}, but only in MATCH clause.",
               q.position
             )
-          } chain
+          }
+
+        def checkContainedPatterns: SemanticCheck =
           pattern.folder.treeFold(SemanticCheck.success) {
             case quant: QuantifiedPath => acc =>
                 SkipChildren(acc chain SemanticError(
@@ -276,7 +282,9 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
                   "Variable length relationships cannot be part of a quantified path pattern.",
                   rel.position
                 ))
-          } chain
+          }
+
+        def checkRelCount: SemanticCheck =
           when(pattern.folder.treeFindByClass[RelationshipPattern].isEmpty) {
             val patternStringified = stringifier.patterns(q)
             val nodeCount = pattern.folder.findAllByClass[NodePattern].size
@@ -289,9 +297,18 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
                  |In this case, the quantified path pattern $patternStringified consists of only $nodeCountDescription.""".stripMargin,
               q.position
             )
-          } chain
+          }
+
+        checkFeatureFlag chain
+          checkContext chain
+          checkContainedPatterns chain
+          checkRelCount chain
           checkQuantifier(quantifier) chain
-          check(ctx)(pattern)
+          withScopedStateWithVariablesFromRecordedScope(q) {
+            // Here we import the variables from the previously recorded scope when we did all declarations.
+            check(ctx)(pattern) chain
+              q.optionalWhereExpression.foldSemanticCheck(Where.checkExpression)
+          }
 
       case ParenthesizedPath(NamedPatternPart(variable, _)) =>
         error("Sub-path assignment is currently not supported outside quantified path patterns.", variable.position)
@@ -485,13 +502,14 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       case PathConcatenation(factors) =>
         factors.map(declareVariables(ctx, _, quantified)).reduce(_ chain _)
 
-      case q @ QuantifiedPath(pattern, _, entityBindings) =>
+      case q @ QuantifiedPath(pattern, _, _, entityBindings) =>
         withScopedState {
           declareVariables(ctx, pattern.element, Some(q)) chain
             ensureNoPathVariable(pattern) ifOkChain
             entityBindings.foldSemanticCheck { entityBinding =>
               ensureDefined(entityBinding.singleton)
-            }
+            } chain
+            recordCurrentScope(q) // We need to record the inner scope of q to import the variables for later checks.
         } chain entityBindings.foldSemanticCheck { entityBinding =>
           declareVariable(entityBinding.group, _.expressionType(entityBinding.singleton).actual.wrapInList)
         }

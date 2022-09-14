@@ -996,7 +996,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _quantifiedPath: Gen[QuantifiedPath] = for {
     primary <- _pathFactor
     quantifier <- _quantifier
-  } yield QuantifiedPath(EveryPath(primary), quantifier)(pos)
+    where <- option(_expression)
+  } yield QuantifiedPath(EveryPath(primary), quantifier, where)(pos)
 
   def _pathFactor: Gen[PathFactor] = oneOf(
     lzy(_quantifiedPath),

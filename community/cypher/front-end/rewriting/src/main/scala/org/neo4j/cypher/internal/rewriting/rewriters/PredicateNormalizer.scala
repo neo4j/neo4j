@@ -17,13 +17,19 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
+import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.topDown
 
 /**
  * A helper trait used by `normalizePredicates`.
  */
-trait MatchPredicateNormalizer {
+trait PredicateNormalizer {
 
   /**
    * Extract not normalized predicates from a pattern element.
@@ -38,17 +44,30 @@ trait MatchPredicateNormalizer {
   /**
    * Traverse into pattern and extract not normalized predicates from its elements.
    */
-  final def extractAllFrom(pattern: Any): Seq[Expression] =
-    pattern.folder.fold(Vector.empty[Expression]) {
-      case patternElement: AnyRef if extract.isDefinedAt(patternElement) => acc => acc ++ extract(patternElement)
-      case _                                                             => identity
+  final def extractAllFrom(pattern: AnyRef): Seq[Expression] =
+    pattern.folder.treeFold(Vector.empty[Expression]) {
+      case _: QuantifiedPath => acc => SkipChildren(acc)
+      case patternElement: AnyRef if extract.isDefinedAt(patternElement) =>
+        acc => TraverseChildren(acc ++ extract(patternElement))
+      case _ => acc => TraverseChildren(acc)
     }
+
+  final def replaceAllIn[T <: AnyRef](pattern: T): T =
+    pattern.endoRewrite(
+      topDown(
+        Rewriter.lift(replace),
+        stopper = {
+          case _: QuantifiedPath => true
+          case _                 => false
+        }
+      )
+    )
 }
 
-object MatchPredicateNormalizer {
+object PredicateNormalizer {
 
-  def defaultNormalizer(anonymousVariableNameGenerator: AnonymousVariableNameGenerator): MatchPredicateNormalizer =
-    MatchPredicateNormalizerChain(
+  def defaultNormalizer(anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PredicateNormalizer =
+    PredicateNormalizerChain(
       PropertyPredicateNormalizer(anonymousVariableNameGenerator),
       LabelExpressionsInPatternsNormalizer,
       NodePatternPredicateNormalizer,

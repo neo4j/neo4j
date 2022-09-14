@@ -882,12 +882,17 @@ class Neo4jASTFactory(query: String)
   override def parenthesizedPathPattern(
     p: InputPosition,
     internalPattern: PatternPart,
+    where: Expression,
     length: GraphPatternQuantifier
   ): PatternAtom = {
     if (length != null)
-      QuantifiedPath(internalPattern, length)(p)
-    else
+      QuantifiedPath(internalPattern, length, Option(where))(p)
+    else {
+      if (where != null) {
+        throw new IllegalArgumentException("No support for WHERE in ParenthesizedPath yet.")
+      }
       ParenthesizedPath(internalPattern)(p)
+    }
   }
 
   // EXPRESSIONS

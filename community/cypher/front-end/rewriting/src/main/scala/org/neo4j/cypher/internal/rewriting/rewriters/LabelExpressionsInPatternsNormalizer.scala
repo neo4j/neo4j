@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 
-object LabelExpressionsInPatternsNormalizer extends MatchPredicateNormalizer {
+object LabelExpressionsInPatternsNormalizer extends PredicateNormalizer {
 
   override val extract: PartialFunction[AnyRef, IndexedSeq[Expression]] = {
     case NodePattern(Some(id), Some(expression), _, _) =>

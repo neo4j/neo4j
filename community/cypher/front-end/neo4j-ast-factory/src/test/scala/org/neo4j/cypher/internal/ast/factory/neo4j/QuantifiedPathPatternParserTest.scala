@@ -73,7 +73,8 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
             nodePat(Some("m"), position = (1, 11, 10))
           )((1, 2, 1))
         ),
-        StarQuantifier()((1, 15, 14))
+        StarQuantifier()((1, 15, 14)),
+        None
       )((1, 1, 0)))
     }
   }
@@ -91,7 +92,8 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
             )(pos)
           )
         )(pos),
-        StarQuantifier()(pos)
+        StarQuantifier()(pos),
+        None
       )(pos))
     }
   }
@@ -109,7 +111,8 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
                 nodePat(Some("m"), position = (1, 15, 14))
               )((1, 6, 5))
             ),
-            StarQuantifier()((1, 19, 18))
+            StarQuantifier()((1, 19, 18)),
+            None
           )((1, 5, 4))
         ))((1, 1, 0))
       )
@@ -128,7 +131,8 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
                 nodePat(Some("m"), position = (1, 11, 10))
               )((1, 2, 1))
             ),
-            StarQuantifier()((1, 15, 14))
+            StarQuantifier()((1, 15, 14)),
+            None
           )((1, 1, 0)),
           nodePat(name = Some("b"), position = (1, 17, 16))
         ))((1, 1, 0))
@@ -159,7 +163,8 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
               Some(UnsignedDecimalIntegerLiteral("3")(pos))
             )(
               pos
-            )
+            ),
+            None
           )(pos),
           nodePat(name = Some("b"))
         ))(pos)
@@ -181,7 +186,8 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
                 nodePat(Some("m"), position = (1, 15, 14))
               )((1, 6, 5))
             ),
-            StarQuantifier()((1, 19, 18))
+            StarQuantifier()((1, 19, 18)),
+            None
           )((1, 5, 4)),
           nodePat(name = Some("b"), position = (1, 21, 20)),
           nodePat(name = Some("c"), position = (1, 25, 24)),
@@ -193,7 +199,8 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
                 nodePat(Some("s"), position = (1, 39, 38))
               )((1, 30, 29))
             ),
-            PlusQuantifier()((1, 43, 42))
+            PlusQuantifier()((1, 43, 42)),
+            None
           )((1, 29, 28))
         ))((1, 1, 0))
       )
@@ -229,10 +236,12 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
                   nodePat(Some("m"))
                 )(pos))
               )(pos),
-              StarQuantifier()(pos)
+              StarQuantifier()(pos),
+              None
             )(pos))
           )(pos),
-          StarQuantifier()(pos)
+          StarQuantifier()(pos),
+          None
         )(pos)
       )
     }
@@ -260,7 +269,8 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
         ParenthesizedPath(EveryPath(RelationshipChain(nodePat(Some("a")), relPat(), nodePat(Some("b")))(pos)))(pos),
         QuantifiedPath(
           EveryPath(RelationshipChain(nodePat(Some("x")), relPat(), nodePat(Some("y")))(pos)),
-          StarQuantifier()(pos)
+          StarQuantifier()(pos),
+          None
         )(pos)
       ))(pos))
     }
@@ -308,7 +318,8 @@ class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite with JavaccP
                 relPat(direction = BOTH),
                 nodePat(Some("e"))
               )(pos)),
-              StarQuantifier()(pos)
+              StarQuantifier()(pos),
+              None
             )(pos),
             nodePat(Some("f"))
           ))(pos))
@@ -343,7 +354,8 @@ class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite with JavaccP
                 relPat(direction = BOTH),
                 nodePat(Some("e"))
               )(pos)),
-              StarQuantifier()(pos)
+              StarQuantifier()(pos),
+              None
             )(pos),
             nodePat(Some("f"))
           ))(pos))
@@ -385,7 +397,8 @@ class QuantifiedPathParserTest extends CypherFunSuite
             nodePat(Some("m"))
           )(pos)
         ),
-        StarQuantifier()(pos)
+        StarQuantifier()(pos),
+        None
       )(pos)
     }
   }
@@ -403,31 +416,34 @@ class QuantifiedPathParserTest extends CypherFunSuite
             )(pos)
           )
         )(pos),
-        StarQuantifier()(pos)
+        StarQuantifier()(pos),
+        None
       )(pos)
     }
   }
 
-  ignore("((n)-[r]->(m) WHERE n.prop = m.prop)*") {
+  test("((n)-[r]->(m) WHERE n.prop = m.prop)*") {
     gives {
       QuantifiedPath(
-        NamedPatternPart(
-          Variable("p"),
-          EveryPath(
-            RelationshipChain(
-              nodePat(Some("n")),
-              relPat(Some("r"), direction = SemanticDirection.OUTGOING),
-              nodePat(Some("m"))
-            )(pos)
-          )
-        )(pos),
-        StarQuantifier()(pos)
+        EveryPath(
+          RelationshipChain(
+            nodePat(Some("n")),
+            relPat(Some("r"), direction = SemanticDirection.OUTGOING),
+            nodePat(Some("m"))
+          )(pos)
+        ),
+        StarQuantifier()(pos),
+        Some(equals(prop("n", "prop"), prop("m", "prop")))
       )(pos)
     }
+  }
+
+  test("((a)-->(b) WHERE a.prop > b.prop)") {
+    failsToParse
   }
 
   // combining all previous GPM features
-  test("((n:A|B)-[r]->(m:% WHERE m.prop IS NOT NULL))*") {
+  test("((n:A|B)-[r:REL|LER WHERE r.prop > 0]->(m:% WHERE m.prop IS NOT NULL))*") {
     gives {
       QuantifiedPath(
         EveryPath(
@@ -436,7 +452,11 @@ class QuantifiedPathParserTest extends CypherFunSuite
               name = Some("n"),
               labelExpression = Some(labelDisjunction(labelLeaf("A"), labelLeaf("B")))
             ),
-            relPat(Some("r")),
+            relPat(
+              Some("r"),
+              Some(labelDisjunction(labelRelTypeLeaf("REL"), labelRelTypeLeaf("LER"))),
+              predicates = Some(greaterThan(prop("r", "prop"), literalInt(0)))
+            ),
             nodePat(
               name = Some("m"),
               labelExpression = Some(labelWildcard()),
@@ -444,19 +464,10 @@ class QuantifiedPathParserTest extends CypherFunSuite
             )
           )(pos)
         ),
-        StarQuantifier()(pos)
+        StarQuantifier()(pos),
+        None
       )(pos)
     }
-  }
-
-  // we currently do not support path pattern predicates
-  test("((a)-->(b) WHERE a.prop > b.prop)+") {
-    failsToParse
-  }
-
-  // we currently do not support path pattern predicates
-  test("((a)-->(b) WHERE a.prop > b.prop)") {
-    failsToParse
   }
 }
 
