@@ -383,6 +383,7 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
   case object disallowSplittingTop extends CypherDebugOption("disallowsplittingtop")
   case object warnOnCompilationErrors extends CypherDebugOption("warnoncompilationerrors")
   case object useLPEagerAnalyzer extends CypherDebugOption("uselogicalplaneageranalyzer")
+  case object disableExistsSubqueryCaching extends CypherDebugOption("disableexistssubquerycaching")
 
   def values: Set[CypherDebugOption] = Set(
     tostring,
@@ -401,7 +402,8 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
     logicalPlanBuilder,
     rawCardinalities,
     disallowSplittingTop,
-    warnOnCompilationErrors
+    warnOnCompilationErrors,
+    disableExistsSubqueryCaching
   )
 
   implicit val hasDefault: OptionDefault[CypherDebugOption] = OptionDefault.create(default)
@@ -449,4 +451,5 @@ case class CypherDebugOptions(enabledOptions: Set[CypherDebugOption]) {
   val disallowSplittingTopEnabled: Boolean = isEnabled(CypherDebugOption.disallowSplittingTop)
   val warnOnCompilationErrors: Boolean = isEnabled(CypherDebugOption.warnOnCompilationErrors)
   val useLPEagerAnalyzer: Boolean = isEnabled(CypherDebugOption.useLPEagerAnalyzer)
+  val disableExistsSubqueryCaching: Boolean = isEnabled(CypherDebugOption.disableExistsSubqueryCaching)
 }
