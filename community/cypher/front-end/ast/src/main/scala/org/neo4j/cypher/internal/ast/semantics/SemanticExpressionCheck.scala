@@ -81,7 +81,6 @@ import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.NaN
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
-import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.Null
@@ -672,23 +671,15 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         SemanticState.recordCurrentScope(x) chain
           withScopedState { // saves us from leaking to the outside
             SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain
-              when(x.optionalWhereExpression.isDefined) {
-                val whereExpression = x.optionalWhereExpression.get
-                check(ctx, whereExpression) chain
-                  expectType(CTBoolean.covariant, whereExpression)
-              }
+              x.optionalWhereExpression.foldSemanticCheck(Where.checkExpression)
           }
 
       // COUNT
-      case x @ CountExpression(_, maybeCountWhere) =>
+      case x : CountExpression =>
         SemanticState.recordCurrentScope(x) chain
           withScopedState { // saves us from leaking to the outside
             SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain
-              when(maybeCountWhere.isDefined) {
-                val whereExpression = maybeCountWhere.get
-                check(ctx, whereExpression) chain
-                  expectType(CTBoolean.covariant, whereExpression)
-              }
+              x.optionalWhereExpression.foldSemanticCheck(Where.checkExpression)
           } chain specifyType(CTInteger, x)
 
       case x: Expression => semanticCheckFallback(ctx, x)
