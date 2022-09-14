@@ -20,9 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
-import org.neo4j.cypher.internal.compiler.planner.logical.plannerQueryPartPlanner
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Ors
@@ -30,11 +28,9 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections.containsExistsSubquery
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
-import org.neo4j.cypher.internal.ir.helpers.CachedFunction
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.Ref
 
 import scala.collection.immutable.ListSet
 
@@ -179,8 +175,6 @@ trait SelectPatternPredicates extends SelectionCandidateGenerator {
       )
   }
 
-  protected def rhsPlanner: RhsPatternPlanner
-
   def rhsPlan(
     lhs: LogicalPlan,
     subquery: ExistsIRExpression,
@@ -193,7 +187,7 @@ trait SelectPatternPredicates extends SelectionCandidateGenerator {
       context.planningAttributes.solveds.get(lhs.id).asSinglePlannerQuery.lastLabelInfo
         // We only retain the relevant label infos to get more cache hits.
         .view.filterKeys(arguments).toMap
-    rhsPlanner.plan(subquery, labelInfo, arguments, context)
+    context.strategy.planInnerOfExistsSubquery(subquery, labelInfo, context)
   }
 
   def onePredicate(expressions: Set[Expression]): Expression =
@@ -209,60 +203,11 @@ trait SelectPatternPredicates extends SelectionCandidateGenerator {
 }
 
 case object SelectPatternPredicates extends SelectPatternPredicates with SelectionCandidateGeneratorFactory {
-  override protected def rhsPlanner: RhsPatternPlanner = RhsPatternPlanner
   override def generator(): SelectionCandidateGenerator = this
 }
 
-final case class SelectPatternPredicatesWithCaching() extends SelectPatternPredicates {
-  override protected val rhsPlanner: RhsPatternPlanner = RhsPatternPlannerWithCaching()
-}
+final case class SelectPatternPredicatesWithCaching() extends SelectPatternPredicates {}
 
 case object SelectPatternPredicatesWithCaching extends SelectionCandidateGeneratorFactory {
   override def generator(): SelectionCandidateGenerator = SelectPatternPredicatesWithCaching()
-}
-
-trait RhsPatternPlanner {
-
-  def plan(
-    subquery: ExistsIRExpression,
-    labelInfo: LabelInfo,
-    arguments: Set[String],
-    context: LogicalPlanningContext
-  ): LogicalPlan
-}
-
-case object RhsPatternPlanner extends RhsPatternPlanner {
-
-  override def plan(
-    subquery: ExistsIRExpression,
-    labelInfo: LabelInfo,
-    arguments: Set[String],
-    context: LogicalPlanningContext
-  ): LogicalPlan = {
-    val subqueryContext = context.withFusedLabelInfo(labelInfo)
-    plannerQueryPartPlanner.planSubquery(subquery, subqueryContext)
-  }
-}
-
-final case class RhsPatternPlannerWithCaching() extends RhsPatternPlanner {
-
-  private[this] val cachedDoPlan = CachedFunction.apply(doPlan _)
-
-  override def plan(
-    subquery: ExistsIRExpression,
-    labelInfo: LabelInfo,
-    arguments: Set[String],
-    context: LogicalPlanningContext
-  ): LogicalPlan = {
-    cachedDoPlan(subquery, labelInfo, arguments, Ref(context))
-  }
-
-  private def doPlan(
-    subquery: ExistsIRExpression,
-    labelInfo: LabelInfo,
-    arguments: Set[String],
-    context: Ref[LogicalPlanningContext]
-  ): LogicalPlan = {
-    RhsPatternPlanner.plan(subquery, labelInfo, arguments, context.value)
-  }
 }

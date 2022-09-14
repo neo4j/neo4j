@@ -22,17 +22,24 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.QPPInnerPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlannerWithCaching
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
@@ -57,7 +64,7 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.exceptions.TestFailedException
 
-class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {
   self =>
 
   case class EmptySolverConfig() extends SingleComponentIDPSolverConfig() {
@@ -89,7 +96,8 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     new given {
       queryGraphSolver = IDPQueryGraphSolver(
         SingleComponentPlanner(solverConfig = EmptySolverConfig())(monitor),
-        cartesianProductsOrValueJoins
+        cartesianProductsOrValueJoins,
+        ExistsSubqueryPlannerWithCaching()
       )(monitor)
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c")
@@ -1097,9 +1105,71 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     noException should be thrownBy solver.hashCode()
   }
 
+  test("should cache the result of EXISTS subquery planning when caching is enabled") {
+    val monitor = mock[IDPQueryGraphSolverMonitor]
+
+    new given {
+      queryGraphSolver = createQueryGraphSolver(
+        monitor = monitor,
+        solverConfig = ExpandOnlyIDPSolverConfig,
+        existSubqueryPlanner = ExistsSubqueryPlannerWithCaching()
+      )
+    }.withLogicalPlanningContext { (_, ctx) =>
+      val exists = ExistsIRExpression(
+        PlannerQuery(RegularSinglePlannerQuery(
+          queryGraph = QueryGraph(
+            patternNodes = Set("a", "x"),
+            argumentIds = Set("a")
+          )
+        )),
+        "EXISTS { MATCH (a), (x) }"
+      )(pos)
+
+      val plan = ctx.strategy.planInnerOfExistsSubquery(exists, LabelInfo.empty, ctx)
+      val planAgain = ctx.strategy.planInnerOfExistsSubquery(exists, LabelInfo.empty, ctx)
+      val planWithDifferentLabelInfo =
+        ctx.strategy.planInnerOfExistsSubquery(exists, LabelInfo("a" -> Set(labelName("REL"))), ctx)
+
+      (plan eq planAgain) shouldBe true
+      (plan eq planWithDifferentLabelInfo) shouldBe false
+    }
+  }
+
+  test("should not cache the result of EXISTS subquery planning when caching is disabled") {
+    val monitor = mock[IDPQueryGraphSolverMonitor]
+
+    new given {
+      queryGraphSolver = createQueryGraphSolver(
+        monitor = monitor,
+        solverConfig = ExpandOnlyIDPSolverConfig,
+        existSubqueryPlanner = ExistsSubqueryPlanner
+      )
+    }.withLogicalPlanningContext { (_, ctx) =>
+      val exists = ExistsIRExpression(
+        PlannerQuery(RegularSinglePlannerQuery(
+          queryGraph = QueryGraph(
+            patternNodes = Set("a", "x"),
+            argumentIds = Set("a")
+          )
+        )),
+        "EXISTS { MATCH (a), (x) }"
+      )(pos)
+
+      val plan = ctx.strategy.planInnerOfExistsSubquery(exists, LabelInfo.empty, ctx)
+      val planAgain = ctx.strategy.planInnerOfExistsSubquery(exists, LabelInfo.empty, ctx)
+
+      (plan eq planAgain) shouldBe false
+    }
+  }
+
   private def createQueryGraphSolver(
     monitor: IDPQueryGraphSolverMonitor,
-    solverConfig: SingleComponentIDPSolverConfig
+    solverConfig: SingleComponentIDPSolverConfig,
+    existSubqueryPlanner: ExistsSubqueryPlanner = ExistsSubqueryPlannerWithCaching()
   ) =
-    IDPQueryGraphSolver(SingleComponentPlanner(solverConfig)(monitor), cartesianProductsOrValueJoins)(monitor)
+    IDPQueryGraphSolver(
+      SingleComponentPlanner(solverConfig)(monitor),
+      cartesianProductsOrValueJoins,
+      existSubqueryPlanner
+    )(monitor)
 }

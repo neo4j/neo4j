@@ -19,9 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 trait QueryGraphSolver {
 
@@ -30,4 +33,10 @@ trait QueryGraphSolver {
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
   ): BestPlans
+
+  def planInnerOfExistsSubquery(
+    subquery: ExistsIRExpression,
+    labelInfo: LabelInfo,
+    context: LogicalPlanningContext
+  ): LogicalPlan
 }

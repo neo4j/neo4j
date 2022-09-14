@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner
@@ -27,8 +28,10 @@ import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.SatisfiedF
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.orderSatisfaction
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.planShortestPaths
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 trait IDPQueryGraphSolverMonitor extends IDPSolverMonitor {
@@ -104,7 +107,8 @@ object IDPQueryGraphSolver {
  */
 case class IDPQueryGraphSolver(
   singleComponentSolver: SingleComponentPlannerTrait,
-  componentConnector: JoinDisconnectedQueryGraphComponents
+  componentConnector: JoinDisconnectedQueryGraphComponents,
+  existsSubqueryPlanner: ExistsSubqueryPlanner
 )(monitor: IDPQueryGraphSolverMonitor)
     extends QueryGraphSolver {
 
@@ -122,6 +126,14 @@ case class IDPQueryGraphSolver(
         planComponents(components, interestingOrderConfig, context, kit)
 
     connectComponentsAndSolveOptionalMatch(plannedComponents, queryGraph, interestingOrderConfig, context, kit)
+  }
+
+  override def planInnerOfExistsSubquery(
+    subquery: ExistsIRExpression,
+    labelInfo: LabelInfo,
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+    existsSubqueryPlanner.planInnerOfExistsSubquery(subquery, labelInfo, context)
   }
 
   private def kitWithShortestPathSupport(kit: QueryPlannerKit, context: LogicalPlanningContext) =

@@ -207,6 +207,7 @@ class CypherPlannerTest extends CypherFunSuite {
           CypherPlannerConfiguration.defaults(),
           planner,
           componentConnector,
+          disableExistsSubqueryCaching = false,
           mock[Monitors]
         )
 

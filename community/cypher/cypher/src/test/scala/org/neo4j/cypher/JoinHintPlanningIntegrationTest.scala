@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolve
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolverMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlannerWithCaching
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
@@ -40,7 +41,8 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
   test("NodeHashJoin is planned in IDP planner") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
     val planner1 = SingleComponentPlanner(solverConfig = DefaultIDPSolverConfig)(monitor)
-    val solver = IDPQueryGraphSolver(planner1, cartesianProductsOrValueJoins)(monitor)
+    val solver =
+      IDPQueryGraphSolver(planner1, cartesianProductsOrValueJoins, ExistsSubqueryPlannerWithCaching())(monitor)
 
     testPlanner(solver)
   }

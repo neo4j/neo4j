@@ -57,6 +57,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolve
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlannerWithCaching
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
@@ -131,7 +132,7 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
       val solverMonitor = mock[IDPQueryGraphSolverMonitor]
       val singleComponentPlanner = SingleComponentPlanner(solverConfig)(solverMonitor)
       val connectorPlanner = ComponentConnectorPlanner(singleComponentPlanner, solverConfig)(solverMonitor)
-      new IDPQueryGraphSolver(singleComponentPlanner, connectorPlanner)(solverMonitor)
+      IDPQueryGraphSolver(singleComponentPlanner, connectorPlanner, ExistsSubqueryPlannerWithCaching())(solverMonitor)
     }
   }
 
@@ -144,7 +145,7 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
       val solverMonitor = mock[IDPQueryGraphSolverMonitor]
       val singleComponentPlanner = SingleComponentPlanner(solverConfig)(solverMonitor)
       val connectorPlanner = cartesianProductsOrValueJoins
-      new IDPQueryGraphSolver(singleComponentPlanner, connectorPlanner)(solverMonitor)
+      IDPQueryGraphSolver(singleComponentPlanner, connectorPlanner, ExistsSubqueryPlannerWithCaching())(solverMonitor)
     }
   }
 

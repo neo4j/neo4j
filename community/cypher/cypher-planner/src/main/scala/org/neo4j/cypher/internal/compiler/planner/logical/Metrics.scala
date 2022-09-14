@@ -158,12 +158,14 @@ object Metrics {
    * A node can have multiple labels at the same time. If labelInfo("n") = Set(LabelName("Foo"), LabelName("Bar")), then n:Foo AND n:Bar.
    */
   type LabelInfo = Map[String, Set[LabelName]]
+  val LabelInfo: Map.type = Map
 
   /**
    * A relationship can only have one type. If labelInfo("r") = RelTypeName("Foo"), then we are certain that r:Foo.
    * If a relationship is given with multiple OR'ed types, such as ()-[:T1|T2]-(), then none of those types should be present in this map.
    */
   type RelTypeInfo = Map[String, RelTypeName]
+  val RelTypeInfo: Map.type = Map
 }
 
 trait ExpressionEvaluator {

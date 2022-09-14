@@ -59,6 +59,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolve
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlannerWithCaching
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Parameter
@@ -123,6 +125,7 @@ object CypherPlanner {
     config: CypherPlannerConfiguration,
     plannerOption: CypherPlannerOption,
     connectComponentsPlannerOption: CypherConnectComponentsPlannerOption,
+    disableExistsSubqueryCaching: Boolean,
     monitors: Monitors
   ): IDPQueryGraphSolver = {
     val plannerName: CostBasedPlannerName =
@@ -154,7 +157,12 @@ object CypherPlanner {
         ComponentConnectorPlanner(singleComponentPlanner, solverConfig)(monitor)
       case CypherConnectComponentsPlannerOption.greedy => cartesianProductsOrValueJoins
     }
-    IDPQueryGraphSolver(singleComponentPlanner, componentConnectorPlanner)(monitor)
+
+    val existsSubqueryPlanner =
+      if (disableExistsSubqueryCaching) ExistsSubqueryPlanner
+      else ExistsSubqueryPlannerWithCaching()
+
+    IDPQueryGraphSolver(singleComponentPlanner, componentConnectorPlanner, existsSubqueryPlanner)(monitor)
   }
 
 }
@@ -340,7 +348,13 @@ case class CypherPlanner(
       Some(options.offset),
       monitors,
       CachedSimpleMetricsFactory,
-      createQueryGraphSolver(config, plannerOption, options.queryOptions.connectComponentsPlanner, monitors),
+      createQueryGraphSolver(
+        config,
+        plannerOption,
+        options.queryOptions.connectComponentsPlanner,
+        options.queryOptions.debugOptions.disableExistsSubqueryCaching,
+        monitors
+      ),
       config,
       maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
       clock,
