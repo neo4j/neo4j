@@ -346,29 +346,37 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             }
             return approximate(parseFractional(y, pos) * 12, 0, 0, 0);
         }
-        long months = optLong(y) * 12;
+
+        long years = optLong(y);
+        long monthsAcc = safeMultiply(years, 12, "years=%d", years);
         if ((pos = fractionPoint(m)) >= 0) {
             if (w != null || d != null || t != null) {
                 return null;
             }
-            return approximate(months + parseFractional(m, pos), 0, 0, 0);
+            return approximate(monthsAcc + parseFractional(m, pos), 0, 0, 0);
         }
-        months += optLong(m);
+
+        long months = optLong(m);
+        monthsAcc = safeAdd(monthsAcc, months, "years=%d, months=%d", years, months);
         if ((pos = fractionPoint(w)) >= 0) {
             if (d != null || t != null) {
                 return null;
             }
-            return approximate(months, parseFractional(w, pos) * 7, 0, 0);
+            return approximate(monthsAcc, parseFractional(w, pos) * 7, 0, 0);
         }
-        long days = optLong(w) * 7;
+
+        long weeks = optLong(w);
+        long daysAcc = safeMultiply(weeks, 7, "weeks=%d", weeks);
         if ((pos = fractionPoint(d)) >= 0) {
             if (t != null) {
                 return null;
             }
-            return approximate(months, days + parseFractional(d, pos), 0, 0);
+            return approximate(monthsAcc, daysAcc + parseFractional(d, pos), 0, 0);
         }
-        days += optLong(d);
-        return parseDuration(sign, months, days, matcher, false, "hours", "minutes", "seconds", "subseconds");
+
+        long days = optLong(d);
+        daysAcc = safeAdd(days, daysAcc, "weeks=%d, days=%d", weeks, days);
+        return parseDuration(sign, monthsAcc, daysAcc, matcher, false, "hours", "minutes", "seconds", "subseconds");
     }
 
     private static DurationValue parseDateDuration(String year, Matcher matcher, boolean time) {
@@ -450,7 +458,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                 throw new InvalidArgumentException("seconds out of range: " + seconds);
             }
         }
-        seconds += hours * 3600 + minutes * 60;
+
         long nanos = optLong(n);
         if (nanos != 0) {
             for (int i = n.length(); i < 9; i++) {
@@ -460,7 +468,16 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                 nanos = -nanos;
             }
         }
-        return duration(sign * months, sign * days, sign * seconds, sign * nanos);
+
+        long secondsAcc;
+        try {
+            secondsAcc = Math.addExact(seconds, Math.multiplyExact(hours, 3600L));
+            secondsAcc = Math.addExact(secondsAcc, Math.multiplyExact(minutes, 60L));
+        } catch (java.lang.ArithmeticException e) {
+            throw invalidDuration(months, days, hours, minutes, seconds, nanos, e);
+        }
+
+        return duration(sign * months, sign * days, sign * secondsAcc, sign * nanos);
     }
 
     private static double parseFractional(String input, int pos) {
@@ -902,6 +919,24 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         return (long) d;
     }
 
+    private static long safeAdd(long x, long y, String msg, Object... args) {
+        try {
+            return Math.addExact(y, x);
+        } catch (ArithmeticException e) {
+            throw new InvalidArgumentException(
+                    "Invalid value for duration, will cause overflow. Value was " + String.format(msg, args), e);
+        }
+    }
+
+    private static long safeMultiply(long x, long y, String msg, Object... args) {
+        try {
+            return Math.multiplyExact(x, y);
+        } catch (ArithmeticException e) {
+            throw new InvalidArgumentException(
+                    "Invalid value for duration, will cause overflow. Value was " + String.format(msg, args), e);
+        }
+    }
+
     private static Temporal assertValidPlus(Temporal temporal, long amountToAdd, TemporalUnit unit) {
         try {
             return temporal.plus(amountToAdd, unit);
@@ -934,6 +969,15 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                 String.format(
                         "Invalid value for duration, will cause overflow. Value was months=%d, days=%d, seconds=%d, nanos=%d",
                         months, days, seconds, nanos),
+                e);
+    }
+
+    private static InvalidArgumentException invalidDuration(
+            long months, long days, long hours, long minutes, long seconds, long nanos, Exception e) {
+        return new InvalidArgumentException(
+                String.format(
+                        "Invalid value for duration, will cause overflow. Value was months=%d, days=%d, hours=%d, minutes=%d, seconds=%d, nanos=%d",
+                        months, days, hours, minutes, seconds, nanos),
                 e);
     }
 

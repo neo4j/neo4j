@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.Pair.pair;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateValue.date;
+import static org.neo4j.values.storable.DurationValue.MAX_VALUE;
 import static org.neo4j.values.storable.DurationValue.between;
 import static org.neo4j.values.storable.DurationValue.duration;
 import static org.neo4j.values.storable.DurationValue.durationBetween;
@@ -587,6 +588,91 @@ class DurationValueTest {
         long months = Long.MIN_VALUE / TemporalUtil.AVG_SECONDS_PER_MONTH;
         long seconds = Long.MIN_VALUE - months * TemporalUtil.AVG_SECONDS_PER_MONTH;
         assertConstructorThrows(months, 0, seconds - 1, 0);
+    }
+
+    @Test
+    void shouldThrowOnParsingYearsOverflow() {
+        long years = Long.MAX_VALUE;
+        InvalidArgumentException e =
+                assertThrows(InvalidArgumentException.class, () -> DurationValue.parse("P" + years + "Y"));
+        assertThat(e.getMessage()).contains("Invalid value for duration").contains("years=" + years);
+    }
+
+    @Test
+    void shouldThrowOnParsingYearAndMonthOverflow() {
+        long years = 1;
+        long months = Long.MAX_VALUE;
+        InvalidArgumentException e = assertThrows(
+                InvalidArgumentException.class, () -> DurationValue.parse("P" + years + "Y" + months + "M"));
+        assertThat(e.getMessage())
+                .contains("Invalid value for duration")
+                .contains("years=" + years)
+                .contains("months=" + months);
+    }
+
+    @Test
+    void shouldThrowOnParsingWeeksOverflow() {
+        long weeks = Long.MAX_VALUE;
+        InvalidArgumentException e =
+                assertThrows(InvalidArgumentException.class, () -> DurationValue.parse("P" + weeks + "W"));
+        assertThat(e.getMessage()).contains("Invalid value for duration").contains("weeks=" + weeks);
+    }
+
+    @Test
+    void shouldThrowOnParsingWeeksAndDaysOverflow() {
+        long weeks = 1;
+        long days = Long.MAX_VALUE;
+        InvalidArgumentException e =
+                assertThrows(InvalidArgumentException.class, () -> DurationValue.parse("P" + weeks + "W" + days + "D"));
+        assertThat(e.getMessage())
+                .contains("Invalid value for duration")
+                .contains("weeks=" + weeks)
+                .contains("days=" + days);
+    }
+
+    @Test
+    void shouldThrowOnParsingHoursOverflow() {
+        long hours = Long.MAX_VALUE;
+        InvalidArgumentException e =
+                assertThrows(InvalidArgumentException.class, () -> DurationValue.parse("PT" + hours + "H"));
+        assertThat(e.getMessage()).contains("Invalid value for duration").contains("hours=" + hours);
+    }
+
+    @Test
+    void shouldThrowOnParsingHoursAndSecondsOverflow() {
+        long hours = 1;
+        long seconds = Long.MAX_VALUE;
+        InvalidArgumentException e = assertThrows(
+                InvalidArgumentException.class, () -> DurationValue.parse("PT" + hours + "H" + seconds + "S"));
+        assertThat(e.getMessage())
+                .contains("Invalid value for duration")
+                .contains("hours=" + hours)
+                .contains("seconds=" + seconds);
+    }
+
+    @Test
+    void shouldThrowOnMinutesOverflow() {
+        long minutes = Long.MAX_VALUE;
+        InvalidArgumentException e =
+                assertThrows(InvalidArgumentException.class, () -> DurationValue.parse("PT" + minutes + "M"));
+        assertThat(e.getMessage()).contains("Invalid value for duration").contains("minutes=" + minutes);
+    }
+
+    @Test
+    void shouldParseMaxNumberOfSeconds() {
+        DurationValue value = DurationValue.parse("PT" + Long.MAX_VALUE + ".999999999S");
+        assertEquals(MAX_VALUE, value);
+    }
+
+    @Test
+    void shouldParseFractions() {
+        assertEquals(DurationValue.duration(6, 0, 0, 0), DurationValue.parse("P0.5Y"));
+        assertEquals(DurationValue.duration(1, 15, 18873, 0), DurationValue.parse("P1.5M"));
+        assertEquals(DurationValue.duration(0, 17, 43200, 0), DurationValue.parse("P2.5W"));
+        assertEquals(DurationValue.duration(0, 3, 43200, 0), DurationValue.parse("P3.5D"));
+        assertEquals(DurationValue.duration(16, 15, 18873, 0), DurationValue.parse("P1Y4.5M"));
+        assertEquals(DurationValue.duration(13, 38, 43200, 0), DurationValue.parse("P1Y1M5.5W"));
+        assertEquals(DurationValue.duration(13, 6, 43200, 0), DurationValue.parse("P1Y1M6.5D"));
     }
 
     private static void assertConstructorThrows(long months, long days, long seconds, long nanos) {
