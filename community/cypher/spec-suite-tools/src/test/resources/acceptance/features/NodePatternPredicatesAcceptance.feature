@@ -155,7 +155,7 @@ Feature: NodePatternPredicates
       WITH 1 AS x
       RETURN [(a:A WHERE a.prop > x)-[r]-(b:B) | a.prop] AS result
       """
-    Then the result should be, in any order:
+    Then the result should be (ignoring element order for lists):
       | result |
       | [2, 3] |
     And no side effects
