@@ -408,15 +408,10 @@ public class CsvInput implements Input {
     }
 
     public static Extractor<?> idExtractor(IdType idType, Extractors extractors) {
-        switch (idType) {
-            case STRING:
-                return extractors.string();
-            case INTEGER:
-            case ACTUAL:
-                return extractors.long_();
-            default:
-                throw new IllegalArgumentException("Unsupported id type " + idType);
-        }
+        return switch (idType) {
+            case STRING -> extractors.string();
+            case INTEGER, ACTUAL -> extractors.long_();
+        };
     }
 
     public interface Monitor extends Header.Monitor {

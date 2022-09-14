@@ -90,73 +90,31 @@ public class CsvInputParser implements Closeable {
                     continue;
                 }
 
-                switch (entry.type()) {
-                    case ID:
-                        switch (idType) {
-                            case STRING:
-                            case INTEGER:
-                                doContinue = visitor.id(value, entry.group());
-                                if (entry.name() != null) {
-                                    doContinue = visitor.property(entry.name(), value);
-                                }
-                                break;
-                            case ACTUAL:
-                                doContinue = visitor.id((Long) value);
-                                break;
-                            default:
-                                throw new IllegalArgumentException(idType.name());
+                doContinue = switch (entry.type()) {
+                    case ID -> switch (idType) {
+                        case STRING, INTEGER -> {
+                            var result = visitor.id(value, entry.group());
+                            if (entry.name() != null) {
+                                result = visitor.property(entry.name(), value);
+                            }
+                            yield result;
                         }
-                        break;
-                    case START_ID:
-                        switch (idType) {
-                            case STRING:
-                                doContinue = visitor.startId(value, entry.group());
-                                break;
-                            case INTEGER:
-                                doContinue = visitor.startId(value, entry.group());
-                                break;
-                            case ACTUAL:
-                                doContinue = visitor.startId((Long) value);
-                                break;
-                            default:
-                                throw new IllegalArgumentException(idType.name());
-                        }
-                        break;
-                    case END_ID:
-                        switch (idType) {
-                            case STRING:
-                                doContinue = visitor.endId(value, entry.group());
-                                break;
-                            case INTEGER:
-                                doContinue = visitor.endId(value, entry.group());
-                                break;
-                            case ACTUAL:
-                                doContinue = visitor.endId((Long) value);
-                                break;
-                            default:
-                                throw new IllegalArgumentException(idType.name());
-                        }
-                        break;
-                    case TYPE:
-                        doContinue = visitor.type((String) value);
-                        break;
-                    case PROPERTY:
-                        // TODO since PropertyStore#encodeValue takes Object there's no point splitting up
-                        // into different primitive types
-                        if (!isEmptyArray(value)) {
-                            doContinue = visitor.property(entry.name(), value);
-                        }
-                        break;
-                    case LABEL:
-                        if (value.getClass().isArray()) {
-                            doContinue = visitor.labels((String[]) value);
-                        } else {
-                            doContinue = visitor.labels(new String[] {(String) value});
-                        }
-                        break;
-                    default:
-                        throw new IllegalArgumentException(entry.type().toString());
-                }
+                        case ACTUAL -> visitor.id((Long) value);
+                    };
+                    case START_ID -> switch (idType) {
+                        case STRING, INTEGER -> visitor.startId(value, entry.group());
+                        case ACTUAL -> visitor.startId((Long) value);
+                    };
+                    case END_ID -> switch (idType) {
+                        case STRING, INTEGER -> visitor.endId(value, entry.group());
+                        case ACTUAL -> visitor.endId((Long) value);
+                    };
+                    case TYPE -> visitor.type((String) value);
+                    case PROPERTY -> !isEmptyArray(value) && visitor.property(entry.name(), value);
+                    case LABEL -> value.getClass().isArray()
+                            ? visitor.labels((String[]) value)
+                            : visitor.labels(new String[] {(String) value});
+                    default -> throw new IllegalArgumentException(entry.type().toString());};
 
                 if (mark.isEndOfLine()) {
                     // We're at the end of the line, break and return an entity with what we have.
