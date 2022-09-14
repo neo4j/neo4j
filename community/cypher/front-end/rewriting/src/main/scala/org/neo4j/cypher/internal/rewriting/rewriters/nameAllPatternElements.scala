@@ -22,8 +22,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
-import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInMatch
-import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInPatternComprehension
+import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -65,8 +64,7 @@ case object nameAllPatternElements extends StepSequencer.Step with ASTRewriterFa
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def postConditions: Set[StepSequencer.Condition] = Set(
-    noUnnamedPatternElementsInMatch,
-    noUnnamedPatternElementsInPatternComprehension
+    noUnnamedNodesAndRelationships
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(

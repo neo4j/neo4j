@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
-import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInPatternComprehension
+import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -37,7 +37,7 @@ case object NoNamedPathsInPatternComprehensions extends StepSequencer.Condition
 
 case object inlineNamedPathsInPatternComprehensions extends Step with ASTRewriterFactory {
 
-  override def preConditions: Set[StepSequencer.Condition] = Set(noUnnamedPatternElementsInPatternComprehension)
+  override def preConditions: Set[StepSequencer.Condition] = Set(noUnnamedNodesAndRelationships)
 
   override def postConditions: Set[StepSequencer.Condition] = Set(NoNamedPathsInPatternComprehensions)
 

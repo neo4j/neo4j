@@ -21,8 +21,8 @@ import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
-import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInMatch
+import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -32,15 +32,15 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.topDown
 
-case object NoPredicatesInNamedPartsOfMatchPattern extends StepSequencer.Condition
+case object NoNodeOrRelationshipPredicates extends StepSequencer.Condition
 
-case object normalizeMatchPredicates extends StepSequencer.Step with ASTRewriterFactory {
+case object normalizePredicates extends StepSequencer.Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    noUnnamedPatternElementsInMatch // unnamed pattern cannot be rewritten, so they need to handled first
+    noUnnamedNodesAndRelationships // unnamed pattern cannot be rewritten, so they need to handled first
   )
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(NoPredicatesInNamedPartsOfMatchPattern)
+  override def postConditions: Set[StepSequencer.Condition] = Set(NoNodeOrRelationshipPredicates)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
@@ -50,10 +50,10 @@ case object normalizeMatchPredicates extends StepSequencer.Step with ASTRewriter
     cypherExceptionFactory: CypherExceptionFactory,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter =
-    normalizeMatchPredicates(MatchPredicateNormalizer.defaultNormalizer(anonymousVariableNameGenerator))
+    normalizePredicates(MatchPredicateNormalizer.defaultNormalizer(anonymousVariableNameGenerator))
 }
 
-case class normalizeMatchPredicates(normalizer: MatchPredicateNormalizer) extends Rewriter {
+case class normalizePredicates(normalizer: MatchPredicateNormalizer) extends Rewriter {
   override def apply(that: AnyRef): AnyRef = instance(that)
 
   private val rewriter = Rewriter.lift {
@@ -72,7 +72,17 @@ case class normalizeMatchPredicates(normalizer: MatchPredicateNormalizer) extend
         pattern = pattern.endoRewrite(topDown(Rewriter.lift(normalizer.replace))),
         where = newWhere
       )(m.position)
+
+    case p: PatternComprehension =>
+      val predicates = normalizer.extractAllFrom(p.pattern)
+      val rewrittenPredicates = predicates ++ p.predicate
+      val newPredicate: Option[Expression] = rewrittenPredicates.reduceOption(And(_, _)(p.position))
+
+      p.copy(
+        pattern = p.pattern.endoRewrite(topDown(Rewriter.lift(normalizer.replace))),
+        predicate = newPredicate
+      )(p.position, p.outerScope)
   }
 
-  private val instance = topDown(rewriter, _.isInstanceOf[Expression])
+  private val instance = topDown(rewriter)
 }

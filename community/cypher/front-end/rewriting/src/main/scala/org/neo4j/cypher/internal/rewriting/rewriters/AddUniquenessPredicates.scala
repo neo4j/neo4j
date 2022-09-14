@@ -48,8 +48,7 @@ import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.expressions.SymbolicName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
-import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInMatch
-import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInPatternComprehension
+import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates.getRelTypesToConsider
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates.overlaps
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
@@ -178,8 +177,7 @@ case class AddUniquenessPredicates(anonymousVariableNameGenerator: AnonymousVari
 case object AddUniquenessPredicates extends Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    noUnnamedPatternElementsInMatch,
-    noUnnamedPatternElementsInPatternComprehension
+    noUnnamedNodesAndRelationships
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(RelationshipUniquenessPredicatesInMatchAndMerge)

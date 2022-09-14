@@ -16,23 +16,25 @@
  */
 package org.neo4j.cypher.internal.rewriting.conditions
 
-import org.neo4j.cypher.internal.expressions.PatternComprehension
-import org.neo4j.cypher.internal.expressions.PatternElement
-import org.neo4j.cypher.internal.expressions.RelationshipsPattern
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 
-case object noUnnamedPatternElementsInPatternComprehension extends ValidatingCondition {
+case object noUnnamedNodesAndRelationships extends ValidatingCondition {
+
+  def apply(that: Any): Seq[String] = {
+    that.folder.treeFold(Seq.empty[String]) {
+      // We do not name nodes in relationships in shortest path expression
+      case _: ShortestPathExpression => acc => SkipChildren(acc)
+      case rel @ RelationshipPattern(None, _, _, _, _, _) => acc =>
+          SkipChildren(acc :+ s"RelationshipPattern at ${rel.position} is unnamed")
+      case node @ NodePattern(None, _, _, _) => acc =>
+          SkipChildren(acc :+ s"NodePattern at ${node.position} is unnamed")
+    }
+  }
 
   override def name: String = productPrefix
-
-  override def apply(that: Any): Seq[String] = that.folder.treeFold(Seq.empty[String]) {
-    case expr: PatternComprehension if containsUnNamedPatternElement(expr.pattern) =>
-      acc => SkipChildren(acc :+ s"Expression $expr contains pattern elements which are not named")
-  }
-
-  private def containsUnNamedPatternElement(expr: RelationshipsPattern) = expr.folder.treeExists {
-    case p: PatternElement => p.variable.isEmpty
-  }
 }

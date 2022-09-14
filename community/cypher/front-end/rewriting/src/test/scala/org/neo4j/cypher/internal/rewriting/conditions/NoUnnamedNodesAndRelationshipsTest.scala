@@ -26,19 +26,22 @@ import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.ShortestPathExpression
+import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class NoUnnamedPatternElementsInMatchTest extends CypherFunSuite with AstConstructionTestSupport {
+class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  private val condition: Any => Seq[String] = noUnnamedPatternElementsInMatch
+  private val condition: Any => Seq[String] = noUnnamedNodesAndRelationships
 
   test("unhappy when a node pattern is unnamed") {
     val nodePattern: NodePattern = node(None)
@@ -123,8 +126,8 @@ class NoUnnamedPatternElementsInMatchTest extends CypherFunSuite with AstConstru
     )) _
 
     condition(ast) shouldBe Seq(
-      s"NodePattern at ${nodePattern.position} is unnamed",
-      s"RelationshipPattern at ${relationshipPattern.position} is unnamed"
+      s"RelationshipPattern at ${relationshipPattern.position} is unnamed",
+      s"NodePattern at ${nodePattern.position} is unnamed"
     )
   }
 
@@ -155,9 +158,11 @@ class NoUnnamedPatternElementsInMatchTest extends CypherFunSuite with AstConstru
     condition(ast) shouldBe empty
   }
 
-  test("should leave where clause alone") {
+  test("unhappy when there are unnamed node and relationship patterns in a pattern expression") {
+    val nodePattern: NodePattern = node(None)
+    val relationshipPattern: RelationshipPattern = relationship(None)
     val where: Where =
-      Where(PatternExpression(RelationshipsPattern(chain(node(None), relationship(None), node(None))) _)(
+      Where(PatternExpression(RelationshipsPattern(chain(nodePattern, relationshipPattern, nodePattern)) _)(
         Set.empty
       )) _
     val ast: ASTNode = SingleQuery(Seq(
@@ -183,7 +188,67 @@ class NoUnnamedPatternElementsInMatchTest extends CypherFunSuite with AstConstru
       ) _
     )) _
 
-    condition(ast) shouldBe empty
+    condition(ast) shouldBe Seq(
+      s"NodePattern at ${nodePattern.position} is unnamed",
+      s"RelationshipPattern at ${relationshipPattern.position} is unnamed",
+      s"NodePattern at ${nodePattern.position} is unnamed"
+    )
+
+  }
+
+  test("should detect an unnamed pattern element in comprehension") {
+    val nodePattern: NodePattern = node(None)
+    val relationshipPattern: RelationshipPattern = relationship(None)
+    val input = PatternComprehension(
+      None,
+      RelationshipsPattern(
+        RelationshipChain(
+          nodePattern,
+          relationshipPattern,
+          nodePattern
+        ) _
+      ) _,
+      None,
+      literalString("foo")
+    )(pos, Set.empty)
+
+    condition(input) should equal(Seq(
+      s"NodePattern at ${nodePattern.position} is unnamed",
+      s"RelationshipPattern at ${relationshipPattern.position} is unnamed",
+      s"NodePattern at ${nodePattern.position} is unnamed"
+    ))
+  }
+
+  test("should not react to fully named pattern comprehension") {
+    val input = PatternComprehension(
+      Some(varFor("p")),
+      RelationshipsPattern(
+        RelationshipChain(
+          NodePattern(Some(varFor("a")), None, None, None) _,
+          RelationshipPattern(Some(varFor("r")), None, None, None, None, SemanticDirection.OUTGOING) _,
+          NodePattern(Some(varFor("b")), None, None, None) _
+        ) _
+      ) _,
+      None,
+      literalString("foo")
+    )(pos, Set.empty)
+
+    condition(input) shouldBe empty
+  }
+
+  test("should not react to unnamed elements in shortest path expression") {
+    val input = ShortestPathExpression(
+      ShortestPaths(
+        RelationshipChain(
+          node(None),
+          relationship(None),
+          node(None)
+        )(pos),
+        single = true
+      )(pos)
+    )
+
+    condition(input) shouldBe empty
   }
 
   private def chain(left: SimplePattern, rel: RelationshipPattern, right: NodePattern): RelationshipChain = {

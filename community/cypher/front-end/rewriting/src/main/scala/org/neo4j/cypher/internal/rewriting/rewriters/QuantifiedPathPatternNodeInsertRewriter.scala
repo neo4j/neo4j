@@ -23,8 +23,7 @@ import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.PathFactor
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
-import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInMatch
-import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInPatternComprehension
+import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -59,8 +58,7 @@ case object QuantifiedPathPatternNodeInsertRewriter extends StepSequencer.Step w
   override def invalidatedConditions: Set[StepSequencer.Condition] =
     SemanticInfoAvailable ++ Set(
       // we potentially introduce unnamed pattern nodes
-      noUnnamedPatternElementsInMatch,
-      noUnnamedPatternElementsInPatternComprehension
+      noUnnamedNodesAndRelationships
     )
 
   val instance: Rewriter = topDown(Rewriter.lift {

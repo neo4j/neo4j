@@ -76,8 +76,7 @@ case class normalizeHasLabelsAndHasType(semanticState: SemanticState) extends Ha
 case object normalizeHasLabelsAndHasType extends StepSequencer.Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    NoPredicatesInNamedPartsOfMatchPattern, // We first need to extract predicates from Pattern in MATCH ...
-    NoNodePatternPredicatesInPatternComprehension // ... and patterns in PatternComprehensions
+    NoNodeOrRelationshipPredicates // We first need to extract predicates from nodes and relationships
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(HasLabelsOrTypesReplacedIfPossible)

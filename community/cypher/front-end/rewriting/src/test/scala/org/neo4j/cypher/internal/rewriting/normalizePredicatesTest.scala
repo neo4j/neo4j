@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
-import org.neo4j.cypher.internal.rewriting.rewriters.normalizeMatchPredicates
+import org.neo4j.cypher.internal.rewriting.rewriters.normalizePredicates
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
@@ -32,14 +32,14 @@ import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class normalizeMatchPredicatesTest extends CypherFunSuite with TestName {
+class normalizePredicatesTest extends CypherFunSuite with TestName {
 
   private val prettifier = Prettifier(ExpressionStringifier(_.asCanonicalStringVal))
 
   def rewriter(semanticState: SemanticState): Rewriter = inSequence(
     LabelExpressionPredicateNormalizer.instance,
     normalizeHasLabelsAndHasType(semanticState),
-    normalizeMatchPredicates.getRewriter(
+    normalizePredicates.getRewriter(
       semanticState,
       Map.empty,
       OpenCypherExceptionFactory(None),
@@ -218,5 +218,33 @@ class normalizeMatchPredicatesTest extends CypherFunSuite with TestName {
 
   test("MATCH ()-[r:A|B|C]->() RETURN r") {
     assertRewrite("MATCH ()-[r:A|B|C]->() RETURN r")
+  }
+
+  test("RETURN [(a WHERE a.prop > 123)-->(b) | a] AS result") {
+    assertRewrite("RETURN [(a)-->(b) WHERE a.prop > 123 | a] AS result")
+  }
+
+  test("RETURN [(a WHERE a.prop > 123)-->(b WHERE b.prop < 42) | a] AS result") {
+    assertRewrite("RETURN [(a)-->(b) WHERE a.prop > 123 AND b.prop < 42 | a] AS result")
+  }
+
+  test("RETURN [(a WHERE a.prop < 123)-->(b WHERE b.prop > 42) WHERE a.prop <> b.prop | a] AS result") {
+    assertRewrite("RETURN [(a)-->(b) WHERE (a.prop < 123 AND b.prop > 42) AND a.prop <> b.prop | a] AS result")
+  }
+
+  test("RETURN [(a)-[r WHERE r.prop > 123]->(b) | r] AS result") {
+    assertRewrite("RETURN [(a)-[r]->(b) WHERE r.prop > 123 | r] AS result")
+  }
+
+  test("RETURN [(a)-[r WHERE r.prop > 123]->()<-[s WHERE s.otherProp = \"ok\"]-(b) | r] AS result") {
+    assertRewrite("RETURN [(a)-[r]->()<-[s]-(b) WHERE r.prop > 123 AND s.otherProp = \"ok\" | r] AS result")
+  }
+
+  test("RETURN [(a:A&!B)-->(b) | a] AS result") {
+    assertRewrite("RETURN [(a)-->(b) WHERE a:A AND not a:B | a] AS result")
+  }
+
+  test("RETURN [(a {prop: 5})-[r {prop: 5}]->(b) | a] AS result") {
+    assertRewrite("RETURN [(a)-[r]->(b) WHERE a.prop = 5 AND r.prop = 5 | a] AS result")
   }
 }
