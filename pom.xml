@@ -139,7 +139,7 @@
     <required.maven.version>3.8.2</required.maven.version>
     <jackson.version>2.13.3</jackson.version>
     <jackson-databind.version>2.13.3</jackson-databind.version>
-    <amazon-sdk.version>1.11.1022</amazon-sdk.version>
+    <amazon-sdk.version>1.12.301</amazon-sdk.version>
     <guava.version>31.1-jre</guava.version>
     <awaitility.version>4.2.0</awaitility.version>
     <log4j.version>2.18.0</log4j.version>
@@ -1619,9 +1619,9 @@
       </dependency>
       <!-- used by benchmark-infra module -->
       <dependency>
-      	<groupId>com.amazonaws</groupId>
-      	<artifactId>aws-java-sdk-batch</artifactId>
-      	<version>${amazon-sdk.version}</version>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-batch</artifactId>
+        <version>${amazon-sdk.version}</version>
       </dependency>
       <dependency>
         <groupId>com.amazonaws</groupId>
@@ -1634,14 +1634,14 @@
         <version>${amazon-sdk.version}</version>
       </dependency>
       <dependency>
-      	<groupId>com.amazonaws</groupId>
-      	<artifactId>aws-java-sdk-s3</artifactId>
-      	<version>${amazon-sdk.version}</version>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-s3</artifactId>
+        <version>${amazon-sdk.version}</version>
       </dependency>
       <dependency>
-      	<groupId>com.amazonaws</groupId>
-      	<artifactId>aws-java-sdk-secretsmanager</artifactId>
-      	<version>${amazon-sdk.version}</version>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-secretsmanager</artifactId>
+        <version>${amazon-sdk.version}</version>
       </dependency>
       <dependency>
         <groupId>com.amazonaws</groupId>
