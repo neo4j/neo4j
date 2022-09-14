@@ -28,16 +28,16 @@ package org.neo4j.memory;
  * release calls will go back to get routed to the outer scoped memory tracker again.
  * <p>
  * There is also support for explicitly forcing recording allocation and release of heap memory on the outer scope with
- * the {@link OuterInnerHeapMemoryTracker} interface.
+ * the {@link DualScopedHeapMemoryTracker} interface.
  * <p>
  * This class is intended to simplify the management of recording allocations over inner transactions.
  */
-public class OuterInnerScopedMemoryTracker extends ScopedMemoryTracker implements OuterInnerHeapMemoryTracker {
+public class RebindableDualScopedMemoryTracker extends ScopedMemoryTracker implements DualScopedHeapMemoryTracker {
     private MemoryTracker innerDelegate;
     private long innerTrackedNative;
     private long innerTrackedHeap;
 
-    public OuterInnerScopedMemoryTracker(MemoryTracker outerDelegate) {
+    public RebindableDualScopedMemoryTracker(MemoryTracker outerDelegate) {
         super(outerDelegate);
     }
 

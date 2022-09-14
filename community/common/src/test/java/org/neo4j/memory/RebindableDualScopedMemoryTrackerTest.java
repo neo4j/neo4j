@@ -24,9 +24,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
-class OuterInnerScopedMemoryTrackerTest {
+class RebindableDualScopedMemoryTrackerTest {
     private final MemoryTracker memoryTracker = new LocalMemoryTracker();
-    private final OuterInnerScopedMemoryTracker scopedMemoryTracker = new OuterInnerScopedMemoryTracker(memoryTracker);
+    private final RebindableDualScopedMemoryTracker scopedMemoryTracker =
+            new RebindableDualScopedMemoryTracker(memoryTracker);
 
     @Test
     void delegatesToOuterParentByDefault() {

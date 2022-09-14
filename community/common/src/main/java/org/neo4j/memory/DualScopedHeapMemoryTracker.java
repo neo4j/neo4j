@@ -21,11 +21,13 @@ package org.neo4j.memory;
 
 /**
  * An interface that enables explicitly recording allocation and release of heap memory on
- * the outer scope of an {@link OuterInnerScopedMemoryTracker}.
+ * the outer scope of an {@link RebindableDualScopedMemoryTracker}.
+ *
+ * This functionality is required for queries that contain CALL IN TRANSACTIONS.
  */
-public interface OuterInnerHeapMemoryTracker {
+public interface DualScopedHeapMemoryTracker {
     /**
-     * Record an allocation of heap memory on the outer scope.
+     * Record an allocation of heap memory on the outer transactional scope.
      *
      * @param bytes the number of bytes about to be allocated.
      * @throws MemoryLimitExceededException if the current quota would be exceeded by allocating the provided number of bytes.
@@ -33,7 +35,7 @@ public interface OuterInnerHeapMemoryTracker {
     void allocateHeapOuter(long bytes);
 
     /**
-     * Record the release of heap memory on the outer scope. This should be called when we forget about a reference and
+     * Record the release of heap memory on the outer transactional scope. This should be called when we forget about a reference and
      * that particular object will be garbage collected.
      *
      * @param bytes number of released bytes

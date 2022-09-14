@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.runtime.memory
 
 import org.neo4j.cypher.internal.runtime.memory.TransactionBoundMemoryTrackerForOperatorProvider.TransactionBoundMemoryTracker
 import org.neo4j.cypher.result.OperatorProfile
+import org.neo4j.memory.DualScopedHeapMemoryTracker
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.memory.HeapMemoryTracker
 import org.neo4j.memory.MemoryTracker
-import org.neo4j.memory.OuterInnerHeapMemoryTracker
 import org.neo4j.memory.ScopedMemoryTracker
 
 /**
@@ -73,7 +73,7 @@ object TransactionBoundMemoryTrackerForOperatorProvider {
   class TransactionBoundMemoryTracker(
     transactionMemoryTracker: MemoryTracker,
     queryGlobalMemoryTracker: HeapMemoryTracker
-  ) extends ScopedMemoryTracker(transactionMemoryTracker) with OuterInnerHeapMemoryTracker {
+  ) extends ScopedMemoryTracker(transactionMemoryTracker) with DualScopedHeapMemoryTracker {
 
     override def allocateHeap(bytes: Long): Unit = {
       // Forward to transaction memory tracker
@@ -90,7 +90,7 @@ object TransactionBoundMemoryTrackerForOperatorProvider {
     }
 
     override def allocateHeapOuter(bytes: Long): Unit = transactionMemoryTracker match {
-      case x: OuterInnerHeapMemoryTracker =>
+      case x: DualScopedHeapMemoryTracker =>
         x.allocateHeapOuter(bytes)
         queryGlobalMemoryTracker.allocateHeap(bytes)
       case _ =>
@@ -98,7 +98,7 @@ object TransactionBoundMemoryTrackerForOperatorProvider {
     }
 
     override def releaseHeapOuter(bytes: Long): Unit = transactionMemoryTracker match {
-      case x: OuterInnerHeapMemoryTracker =>
+      case x: DualScopedHeapMemoryTracker =>
         x.releaseHeapOuter(bytes)
         queryGlobalMemoryTracker.releaseHeap(bytes)
       case _ =>
