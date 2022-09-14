@@ -342,7 +342,10 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     val maxIterationTime = 1 // the goal here is to force compaction as fast as possible
     val queryGraphSolver =
-      QueryGraphSolverWithGreedyConnectComponents.queryGraphSolver(new ConfigurableIDPSolverConfig(1, maxIterationTime))
+      QueryGraphSolverWithGreedyConnectComponents.queryGraphSolver(
+        new ConfigurableIDPSolverConfig(1, maxIterationTime),
+        disableExistsSubqueryCaching = false
+      )
 
     planFor(
       """WITH 20000 AS param1, 5000 AS param2

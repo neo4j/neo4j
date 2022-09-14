@@ -34,6 +34,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.DPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.DefaultIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.JoinDisconnectedQueryGraphComponents
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlannerWithCaching
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACING
@@ -303,5 +305,25 @@ class CypherPlannerTest extends CypherFunSuite {
     // To protect from future changes, lets make sure we find anonymous variables in both cases
     withAnons should not be empty
     whereAnons should not be empty
+  }
+
+  test("should be able to disable exists subquery caching") {
+    val solverWithCaching = CypherPlanner.createQueryGraphSolver(
+      CypherPlannerConfiguration.defaults(),
+      CypherPlannerOption.default,
+      CypherConnectComponentsPlannerOption.default,
+      disableExistsSubqueryCaching = false,
+      mock[Monitors]
+    )
+    solverWithCaching.existsSubqueryPlanner shouldBe an[ExistsSubqueryPlannerWithCaching]
+
+    val solverWithoutCaching = CypherPlanner.createQueryGraphSolver(
+      CypherPlannerConfiguration.defaults(),
+      CypherPlannerOption.default,
+      CypherConnectComponentsPlannerOption.default,
+      disableExistsSubqueryCaching = true,
+      mock[Monitors]
+    )
+    solverWithoutCaching.existsSubqueryPlanner shouldBe ExistsSubqueryPlanner
   }
 }

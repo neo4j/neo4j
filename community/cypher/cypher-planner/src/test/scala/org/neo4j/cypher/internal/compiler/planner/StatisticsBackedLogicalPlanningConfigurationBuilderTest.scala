@@ -20,10 +20,15 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.graphcounts.GraphCountsJson
+import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexCapabilities
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getProvidesOrder
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getWithValues
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolver
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlannerWithCaching
+import org.neo4j.cypher.internal.options.CypherDebugOption
 import org.neo4j.internal.schema.IndexCapability
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
@@ -151,6 +156,23 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends AnyFunSuit
           indexCapability = indexCapability(indexProvider)
         )
       }
+    }
+  }
+
+  test("should be able to control EXISTS subquery caching from tests") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .build()
+    val plannerWithDebugFlag = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .enableDebugOption(CypherDebugOption.disableExistsSubqueryCaching)
+      .build()
+
+    planner.queryGraphSolver() should beLike {
+      case IDPQueryGraphSolver(_, _, ExistsSubqueryPlannerWithCaching()) => ()
+    }
+    plannerWithDebugFlag.queryGraphSolver() should beLike {
+      case IDPQueryGraphSolver(_, _, ExistsSubqueryPlanner) => ()
     }
   }
 }

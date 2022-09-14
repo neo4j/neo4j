@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.RelDef
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getProvidesOrder
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getWithValues
+import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ConfigurableIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
@@ -921,18 +922,10 @@ class StatisticsBackedLogicalPlanningConfiguration(
       plannerConfiguration.planningPointIndexesEnabled
     )
 
-    val iDPSolverConfig =
-      new ConfigurableIDPSolverConfig(plannerConfiguration.idpMaxTableSize, plannerConfiguration.idpIterationDuration)
-
     val context = ContextHelper.create(
       planContext = planContext,
       cypherExceptionFactory = exceptionFactory,
-      queryGraphSolver =
-        if (options.connectComponentsPlanner) {
-          LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents.queryGraphSolver(iDPSolverConfig)
-        } else {
-          LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents.queryGraphSolver(iDPSolverConfig)
-        },
+      queryGraphSolver = queryGraphSolver(plannerConfiguration),
       metrics = metrics,
       config = plannerConfiguration,
       logicalPlanIdGen = idGen,
@@ -954,4 +947,25 @@ class StatisticsBackedLogicalPlanningConfiguration(
 
   def planBuilder(): LogicalPlanBuilder = new LogicalPlanBuilder(wholePlan = true, resolver)
   def subPlanBuilder(): LogicalPlanBuilder = new LogicalPlanBuilder(wholePlan = false, resolver)
+
+  def queryGraphSolver(): QueryGraphSolver = {
+    queryGraphSolver(CypherPlannerConfiguration.withSettings(settings))
+  }
+
+  def queryGraphSolver(plannerConfiguration: CypherPlannerConfiguration): QueryGraphSolver = {
+    val iDPSolverConfig =
+      new ConfigurableIDPSolverConfig(plannerConfiguration.idpMaxTableSize, plannerConfiguration.idpIterationDuration)
+
+    if (options.connectComponentsPlanner) {
+      LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents.queryGraphSolver(
+        iDPSolverConfig,
+        options.debug.disableExistsSubqueryCaching
+      )
+    } else {
+      LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents.queryGraphSolver(
+        iDPSolverConfig,
+        options.debug.disableExistsSubqueryCaching
+      )
+    }
+  }
 }

@@ -57,6 +57,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolve
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlannerWithCaching
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
@@ -119,33 +120,51 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
 
   sealed trait QueryGraphSolverSetup {
     def queryGraphSolver(): QueryGraphSolver
-    def queryGraphSolver(solverConfig: SingleComponentIDPSolverConfig): QueryGraphSolver
+
+    def queryGraphSolver(
+      solverConfig: SingleComponentIDPSolverConfig,
+      disableExistsSubqueryCaching: Boolean
+    ): QueryGraphSolver
     def useIdpConnectComponents: Boolean
   }
 
   case object QueryGraphSolverWithIDPConnectComponents extends QueryGraphSolverSetup {
     val useIdpConnectComponents: Boolean = true
 
-    def queryGraphSolver(): QueryGraphSolver = queryGraphSolver(DefaultIDPSolverConfig)
+    def queryGraphSolver(): QueryGraphSolver =
+      queryGraphSolver(DefaultIDPSolverConfig, disableExistsSubqueryCaching = false)
 
-    def queryGraphSolver(solverConfig: SingleComponentIDPSolverConfig): QueryGraphSolver = {
+    def queryGraphSolver(
+      solverConfig: SingleComponentIDPSolverConfig,
+      disableExistsSubqueryCaching: Boolean
+    ): QueryGraphSolver = {
       val solverMonitor = mock[IDPQueryGraphSolverMonitor]
       val singleComponentPlanner = SingleComponentPlanner(solverConfig)(solverMonitor)
       val connectorPlanner = ComponentConnectorPlanner(singleComponentPlanner, solverConfig)(solverMonitor)
-      IDPQueryGraphSolver(singleComponentPlanner, connectorPlanner, ExistsSubqueryPlannerWithCaching())(solverMonitor)
+      val existsPlanner =
+        if (disableExistsSubqueryCaching) ExistsSubqueryPlanner
+        else ExistsSubqueryPlannerWithCaching()
+      IDPQueryGraphSolver(singleComponentPlanner, connectorPlanner, existsPlanner)(solverMonitor)
     }
   }
 
   case object QueryGraphSolverWithGreedyConnectComponents extends QueryGraphSolverSetup {
     val useIdpConnectComponents: Boolean = false
 
-    def queryGraphSolver(): QueryGraphSolver = queryGraphSolver(DefaultIDPSolverConfig)
+    def queryGraphSolver(): QueryGraphSolver =
+      queryGraphSolver(DefaultIDPSolverConfig, disableExistsSubqueryCaching = false)
 
-    def queryGraphSolver(solverConfig: SingleComponentIDPSolverConfig): QueryGraphSolver = {
+    def queryGraphSolver(
+      solverConfig: SingleComponentIDPSolverConfig,
+      disableExistsSubqueryCaching: Boolean
+    ): QueryGraphSolver = {
       val solverMonitor = mock[IDPQueryGraphSolverMonitor]
       val singleComponentPlanner = SingleComponentPlanner(solverConfig)(solverMonitor)
       val connectorPlanner = cartesianProductsOrValueJoins
-      IDPQueryGraphSolver(singleComponentPlanner, connectorPlanner, ExistsSubqueryPlannerWithCaching())(solverMonitor)
+      val existsPlanner =
+        if (disableExistsSubqueryCaching) ExistsSubqueryPlanner
+        else ExistsSubqueryPlannerWithCaching()
+      IDPQueryGraphSolver(singleComponentPlanner, connectorPlanner, existsPlanner)(solverMonitor)
     }
   }
 
