@@ -77,6 +77,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     semanticCheckFold(pattern.patternParts)(declareVariables(ctx)) chain
       semanticCheckFold(pattern.patternParts)(checkElementPredicates(ctx)) chain
       semanticCheckFold(pattern.patternParts)(check(ctx)) chain
+      semanticCheckFold(pattern.patternParts)(checkMinimumNodeCount) chain
       ensureNoReferencesOutFromQuantifiedPath(pattern) chain
       ensureNoDuplicateRelationships(pattern)
 
@@ -162,8 +163,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
           checkNoQuantifiedPathPatterns(x.patternPart)
 
       case x: EveryPath =>
-        check(ctx, x.element) chain
-          checkMinimumNodeCount(x)
+        check(ctx, x.element)
 
       case x: ShortestPaths =>
         def checkContext: SemanticCheck =
@@ -250,8 +250,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
           checkKnownEnds chain
           checkLength chain
           checkRelVariablesUnknown chain
-          check(ctx, x.element) chain
-          checkMinimumNodeCount(x)
+          check(ctx, x.element)
     }
 
   private def checkNoQuantifiedPathPatterns(x: PatternPart) = {
@@ -341,7 +340,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
             )
           } chain
           checkQuantifier(quantifier) chain
-          check(ctx, pattern.element)
+          check(ctx)(pattern)
 
       case ParenthesizedPath(NamedPatternPart(variable, _)) =>
         error("Sub-path assignment is currently not supported outside quantified path patterns.", variable.position)
@@ -351,7 +350,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
           path.position
         )
       case ParenthesizedPath(pattern) =>
-        check(ctx, pattern.element)
+        check(ctx)(pattern)
     }
 
   private def getTypeString(factor: PathFactor) = factor match {

@@ -109,6 +109,12 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
     )
   }
 
+  test("MATCH shortestPath( ((a)-[]->(b))+ ) RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+      "shortestPath(...) requires a pattern containing a single relationship"
+    )
+  }
+
   test("MATCH (shortestPath((a)-[]->(b))) RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       // this is the error message that we ultimately expect
