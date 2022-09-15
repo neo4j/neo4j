@@ -70,7 +70,6 @@ import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsReplace
-import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NoWait
@@ -747,12 +746,19 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           .map(wrapInWait(_, dbName, waitUntilComplete))
           .map(plans.LogSystemCommand(_, prettifier.asString(c)))
 
-      // ALTER DATABASE foo [IF EXISTS] SET ACCESS {READ ONLY | READ WRITE}
+      // ALTER DATABASE foo [IF EXISTS] [SET ACCESS {READ ONLY | READ WRITE}] [SET TOPOLOGY n PRIMARY [m SECONDARY]]
       case c @ AlterDatabase(dbName, ifExists, access, topology) =>
-        val assertAllowed = plans.AssertAllowedDbmsActions(
-          plans.AssertNotBlockedDatabaseManagement(AlterDatabaseAction),
-          SetDatabaseAccessAction
-        )
+        val assertAllowed = (access, topology) match {
+          case (Some(_), None) => plans.AssertAllowedDbmsActions(
+              plans.AssertNotBlockedDatabaseManagement(AlterDatabaseAction),
+              SetDatabaseAccessAction
+            )
+          // Don't have any individual privilege for ALTER TOPOLOGY, included in ALTER DATABASE
+          case _ => plans.AssertAllowedDbmsActions(
+              plans.AssertNotBlockedDatabaseManagement(AlterDatabaseAction),
+              AlterDatabaseAction
+            )
+        }
         val source =
           if (ifExists) plans.DoNothingIfDatabaseNotExists(
             assertAllowed,

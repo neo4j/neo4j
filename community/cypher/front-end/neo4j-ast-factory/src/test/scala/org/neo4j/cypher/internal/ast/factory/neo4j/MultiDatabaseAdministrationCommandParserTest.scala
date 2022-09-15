@@ -495,6 +495,25 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     )
   }
 
+  test("CREATE DATABASE foo TOPOLOGY $param PRIMARY") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input '$': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 30 (offset: 29))"""
+    )
+  }
+
+  test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY $param SECONDARY") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input '$': expected
+        |  "NOWAIT"
+        |  "OPTIONS"
+        |  "WAIT"
+        |  <EOF>
+        |  <UNSIGNED_DECIMAL_INTEGER> (line 1, column 40 (offset: 39))""".stripMargin
+    )
+  }
+
   test("CREATE DATABASE alias") {
     yields(_ => ast.CreateDatabase(literal("alias"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None)(pos))
   }
@@ -757,7 +776,32 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     )
   }
 
+  test("ALTER DATABASE foo SET TOPOLOGY $param PRIMARY") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input '$': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 33 (offset: 32))"""
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY $param SECONDARY") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input '$': expected "SET", <EOF> or <UNSIGNED_DECIMAL_INTEGER> (line 1, column 43 (offset: 42))"""
+    )
+  }
+
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 1 SECONDARY") {
+    assertAst(
+      ast.AlterDatabase(
+        literalFoo,
+        ifExists = false,
+        None,
+        Some(Topology(1, Some(1)))
+      )(pos)
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY 1 SECONDARY 1 PRIMARY") {
     assertAst(
       ast.AlterDatabase(
         literalFoo,
@@ -783,6 +827,17 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("ALTER DATABASE foo SET ACCESS READ WRITE SET TOPOLOGY 1 PRIMARY 1 SECONDARY") {
+    assertAst(
+      ast.AlterDatabase(
+        literalFoo,
+        ifExists = false,
+        Some(ast.ReadWriteAccess),
+        Some(Topology(1, Some(1)))
+      )(pos)
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 1 SECONDARY SET ACCESS READ WRITE") {
     assertAst(
       ast.AlterDatabase(
         literalFoo,
