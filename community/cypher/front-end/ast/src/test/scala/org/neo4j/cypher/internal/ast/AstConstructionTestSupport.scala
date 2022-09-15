@@ -886,3 +886,5 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     override def writeTo(extractor: LiteralExtractor): Unit = ???
   }
 }
+
+object AstConstructionTestSupport extends AstConstructionTestSupport

@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
+import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.ReduceExpression
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -2669,5 +2670,33 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         .allNodeScan("a")
         .build()
     )
+  }
+
+  test("should plan many predicates containing pattern expressions as a single selection") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:REL]-()", 10)
+      .build()
+
+    val q =
+      """
+        |MATCH (a)-->(b)
+        |WHERE
+        |  (a.name = 'a' AND (a)-[:REL]->(b)) OR
+        |  (b.name = 'b' AND (a)-[:REL]->(b)) OR
+        |  (a.id = 123 AND (a)-[:REL]->(b)) OR
+        |  (b.id = 321 AND (a)-[:REL]->(b)) OR
+        |  (a.prop < 321 AND (a)-[:REL]->(b)) OR
+        |  (b.prop > 321 AND (a)-[:REL]->(b)) OR
+        |  (a.otherProp <> 321 AND (a)-[:REL]->(b))
+        |RETURN *
+      """.stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+    plan should beLike {
+      case Selection(Ands(SetExtractor(Ors(predicates))), _) =>
+        predicates.size shouldBe 7
+    }
   }
 }

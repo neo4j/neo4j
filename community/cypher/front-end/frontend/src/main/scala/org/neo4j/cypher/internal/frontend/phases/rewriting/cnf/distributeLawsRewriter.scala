@@ -17,7 +17,9 @@
 package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 
 import org.neo4j.cypher.internal.expressions.And
+import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Or
+import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
@@ -33,12 +35,24 @@ import org.neo4j.cypher.internal.util.bottomUp
 case class distributeLawsRewriter()(implicit monitor: AstRewritingMonitor) extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = {
-    if (dnfCounts(that) < distributeLawsRewriter.DNF_CONVERSION_LIMIT) {
+    if (dnfCounts(that) < conversionLimit(that)) {
       instance(that)
     } else {
       monitor.abortedRewritingDueToLargeDNF(that)
       that
     }
+  }
+
+  private def conversionLimit(ast: AnyRef): Int = {
+    val containsExpensiveExpressions = ast.folder.treeExists {
+      // duplicating too many pattern expressions can result in a very long planning time
+      case _: PatternExpression |
+        _: ExistsExpression => true
+    }
+    if (containsExpensiveExpressions)
+      distributeLawsRewriter.DNF_CONVERSION_LIMIT / 2
+    else
+      distributeLawsRewriter.DNF_CONVERSION_LIMIT
   }
 
   private def dnfCounts(value: Any) = value.folder.treeFold(1) {
