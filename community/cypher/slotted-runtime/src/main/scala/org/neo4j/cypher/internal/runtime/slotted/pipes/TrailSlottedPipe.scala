@@ -56,13 +56,14 @@ case class TrailSlottedPipe(
   inner: Pipe,
   repetition: Repetition,
   startSlot: Slot,
-  endOffset: Option[Int],
+  endOffset: Int,
   innerStarOffset: Int,
   innerEndSlot: Slot,
   groupNodes: Set[GroupSlot],
   groupRelationships: Set[GroupSlot],
-  allRelationships: Set[Slot],
-  allRelationshipGroups: Set[Slot],
+  innerRelationships: Set[Slot],
+  previouslyBoundRelationships: Set[Slot],
+  previouslyBoundRelationshipGroups: Set[Slot],
   slots: SlotConfiguration,
   rhsSlots: SlotConfiguration,
   argumentSize: SlotConfiguration.Size
@@ -78,8 +79,13 @@ case class TrailSlottedPipe(
   private val groupRelGetters = groupRelationships.map { case GroupSlot(s, _) =>
     makeGetPrimitiveRelationshipFromSlotFunctionFor(s)
   }.toArray
-  private val allRelGetters = allRelationships.map(s => makeGetPrimitiveRelationshipFromSlotFunctionFor(s)).toArray
-  private val allRelGroupsGetters = allRelationshipGroups.map(s => makeGetValueFromSlotFunctionFor(s)).toArray
+  private val innerRelGetters = innerRelationships.map(s => makeGetPrimitiveRelationshipFromSlotFunctionFor(s)).toArray
+
+  private val previouslyBoundRelGetters =
+    previouslyBoundRelationships.map(s => makeGetPrimitiveRelationshipFromSlotFunctionFor(s)).toArray
+
+  private val previouslyBoundRelGroupGetters =
+    previouslyBoundRelationshipGroups.map(s => makeGetValueFromSlotFunctionFor(s)).toArray
   private val groupNodeSetters = groupNodes.map { case GroupSlot(_, s) => makeSetValueInSlotFunctionFor(s) }.toArray
 
   private val groupRelSetters = groupRelationships.map { case GroupSlot(_, s) =>
@@ -120,7 +126,12 @@ case class TrailSlottedPipe(
             val stack = newArrayDeque[TrailState](tracker)
             if (repetition.max.isGreaterThan(0)) {
               val relationshipsSeen = HeapTrackingCollections.newLongSet(tracker)
-              val ig = allRelGroupsGetters.iterator
+              val ir = previouslyBoundRelGetters.iterator
+              while (ir.hasNext) {
+                relationshipsSeen.add(ir.next().applyAsLong(outerRow))
+              }
+
+              val ig = previouslyBoundRelGroupGetters.iterator
               while (ig.hasNext) {
                 val i = castOrFail[ListValue](ig.next().apply(outerRow)).iterator()
                 while (i.hasNext) {
@@ -159,8 +170,8 @@ case class TrailSlottedPipe(
 
                     var allRelationshipsUnique = true
                     var i = 0
-                    while (allRelationshipsUnique && i < allRelGetters.length) {
-                      val r = allRelGetters(i)
+                    while (allRelationshipsUnique && i < innerRelGetters.length) {
+                      val r = innerRelGetters(i)
                       // TODO optimization: allRelationships is a superset of RHS rels, we should only check RHS rels as only they can change
                       if (!newSet.add(r.applyAsLong(row))) {
                         allRelationshipsUnique = false
@@ -196,8 +207,8 @@ case class TrailSlottedPipe(
                   innerResult = inner.createResults(innerState).filter(row => {
                     var relationshipsAreUnique = true
                     var i = 0
-                    while (relationshipsAreUnique && i < allRelGetters.length) {
-                      val r = allRelGetters(i)
+                    while (relationshipsAreUnique && i < innerRelGetters.length) {
+                      val r = innerRelGetters(i)
                       // TODO optimization: allRelationships is a superset of RHS rels, we should only check RHS rels as only they can change
                       if (trailState.relationshipsSeen.contains(r.applyAsLong(row))) {
                         relationshipsAreUnique = false
@@ -265,7 +276,7 @@ case class TrailSlottedPipe(
       groupRelSetters(i)(row, newGroupRels.get(i))
       i += 1
     }
-    endOffset.foreach(o => row.setLongAt(o, innerEndNode))
+    row.setLongAt(endOffset, innerEndNode)
   }
 }
 

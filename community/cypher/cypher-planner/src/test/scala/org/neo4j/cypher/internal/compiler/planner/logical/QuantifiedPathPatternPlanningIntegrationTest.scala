@@ -53,13 +53,14 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       min = 0,
       max = Unlimited,
       start = "a",
-      end = Some("b"),
+      end = "b",
       innerStart = "  n@1",
       innerEnd = "  UNNAMED0",
       groupNodes = Set(("  n@1", "  n@4")),
       groupRelationships = Set(("  r@2", "  r@3")),
-      allRelationships = Set("  r@2"),
-      allRelationshipGroups = Set()
+      innerRelationships = Set("  r@2"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
     )
 
     plan should equal(
@@ -79,13 +80,14 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       min = 0,
       max = Unlimited,
       start = "u",
-      end = Some("anon_1"),
+      end = "anon_1",
       innerStart = "n",
       innerEnd = "m",
       groupNodes = Set(("n", "n"), ("m", "m")),
       groupRelationships = Set(),
-      allRelationships = Set("anon_0"),
-      allRelationshipGroups = Set()
+      innerRelationships = Set("anon_0"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
     )
 
     plan should equal(
@@ -106,13 +108,14 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       min = 0,
       max = Unlimited,
       start = "u",
-      end = Some("anon_0"),
+      end = "anon_0",
       innerStart = "m",
       innerEnd = "n",
       groupNodes = Set(("n", "n"), ("m", "m")),
       groupRelationships = Set(),
-      allRelationships = Set("anon_1"),
-      allRelationshipGroups = Set()
+      innerRelationships = Set("anon_1"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
     )
 
     plan should equal(
@@ -133,13 +136,14 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       min = 1,
       max = Unlimited,
       start = "anon_0",
-      end = Some("anon_2"),
+      end = "anon_2",
       innerStart = "n",
       innerEnd = "m",
       groupNodes = Set(("n", "n"), ("m", "m")),
       groupRelationships = Set(),
-      allRelationships = Set("anon_1"),
-      allRelationshipGroups = Set()
+      innerRelationships = Set("anon_1"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
     )
 
     plan should equal(
@@ -161,13 +165,14 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       min = 1,
       max = Unlimited,
       start = "anon_0",
-      end = Some("anon_2"),
+      end = "anon_2",
       innerStart = "n",
       innerEnd = "m",
       groupNodes = Set(("n", "n"), ("m", "m")),
       groupRelationships = Set(),
-      allRelationships = Set("anon_1"),
-      allRelationshipGroups = Set()
+      innerRelationships = Set("anon_1"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
     )
     plan should equal(
       planner.subPlanBuilder()
@@ -187,13 +192,14 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       min = 0,
       max = UpperBound.Limited(5),
       start = "anon_0",
-      end = Some("anon_2"),
+      end = "anon_2",
       innerStart = "n",
       innerEnd = "m",
       groupNodes = Set(("n", "n"), ("m", "m")),
       groupRelationships = Set(),
-      allRelationships = Set("anon_1"),
-      allRelationshipGroups = Set()
+      innerRelationships = Set("anon_1"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
     )
 
     plan should equal(
@@ -214,13 +220,14 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       min = 1,
       max = UpperBound.Limited(5),
       start = "anon_0",
-      end = Some("anon_2"),
+      end = "anon_2",
       innerStart = "n",
       innerEnd = "m",
       groupNodes = Set(("n", "n"), ("m", "m")),
       groupRelationships = Set(),
-      allRelationships = Set("anon_1"),
-      allRelationshipGroups = Set()
+      innerRelationships = Set("anon_1"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
     )
 
     plan should equal(
@@ -241,13 +248,14 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       min = 1,
       max = Unlimited,
       start = "a",
-      end = Some("anon_0"),
+      end = "anon_0",
       innerStart = "m",
       innerEnd = "n",
       groupNodes = Set(("n", "n"), ("m", "m")),
       groupRelationships = Set(),
-      allRelationships = Set("anon_1"),
-      allRelationshipGroups = Set()
+      innerRelationships = Set("anon_1"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
     )
 
     plan should equal(
@@ -274,13 +282,14 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       min = 1,
       max = Unlimited,
       start = "n",
-      end = Some("anon_8"),
+      end = "anon_8",
       innerStart = "n_inner",
       innerEnd = "m_inner",
       groupNodes = Set(("n_inner", "n_inner"), ("m_inner", "m_inner")),
       groupRelationships = Set(("r_inner", "r_inner")),
-      allRelationships = Set("r_inner"),
-      allRelationshipGroups = Set()
+      innerRelationships = Set("r_inner"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
     )
 
     plan should equal(

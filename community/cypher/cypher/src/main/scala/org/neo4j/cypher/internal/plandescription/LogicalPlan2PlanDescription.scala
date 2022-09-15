@@ -1962,7 +1962,7 @@ case class LogicalPlan2PlanDescription(
       case _: MultiNodeIndexSeek | _: AssertingMultiNodeIndexSeek | _: SubqueryForeach =>
         PlanDescriptionImpl(id = plan.id, plan.productPrefix, children, Seq.empty, variables, withRawCardinalities)
 
-      case Trail(_, _, repetition, _, _, _, _, _, _, _, _) =>
+      case Trail(_, _, repetition, _, _, _, _, _, _, _, _, _) =>
         val repString = repetition match {
           case Repetition(min, Limited(n)) => s"{$min, $n}"
           case Repetition(min, Unlimited)  => s"{$min, *}"

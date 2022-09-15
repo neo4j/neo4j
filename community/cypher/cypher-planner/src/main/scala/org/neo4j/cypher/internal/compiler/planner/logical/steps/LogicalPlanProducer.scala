@@ -939,7 +939,7 @@ case class LogicalPlanProducer(
         right = innerPlan,
         repetition = pattern.repetition,
         start = startBinding.outer,
-        end = Some(endBinding.outer),
+        end = endBinding.outer,
         innerStart = startBinding.inner,
         innerEnd = endBinding.inner,
         nodeVariableGroupings = pattern.nodeVariableGroupings.map { case VariableGrouping(singleton, group) =>
@@ -949,8 +949,9 @@ case class LogicalPlanProducer(
           case VariableGrouping(singleton, group) =>
             plans.VariableGrouping(singleton, group)
         },
-        allRelationships = pattern.pattern.patternRelationships.map(_.name),
-        allRelationshipGroups = Set.empty
+        innerRelationships = pattern.pattern.patternRelationships.map(_.name),
+        previouslyBoundRelationships = Set.empty, // TODO: implement these when planning uniqueness checks
+        previouslyBoundRelationshipGroups = Set.empty
       ),
       solved,
       providedOrder,

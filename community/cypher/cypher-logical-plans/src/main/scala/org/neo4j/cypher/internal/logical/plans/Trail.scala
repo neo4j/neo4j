@@ -38,30 +38,30 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *                                      [[innerEnd]] will eventually be projected to [[end]] (if present).
  * @param nodeVariableGroupings         node variables to aggregate
  * @param relationshipVariableGroupings relationship variables to aggregate
- * @param allRelationships              these are a superset of all relationship variables in the inner pattern.
- *                                      relationship uniqueness must be enforced between these relationships and those in [[allRelationshipGroups]]
- * @param allRelationshipGroups         relationship group variables originating from previous [[Trail]] or [[VarLengthExpand]] operators.
- *                                      relationship uniqueness must be enforced between these relationships and those in [[allRelationships]].
- */
+ * @param innerRelationships    all inner relationships, whether they get projected or not
+ * @param previouslyBoundRelationships all relationship variables of the same MATCH that are present in lhs
+ * @param previouslyBoundRelationshipGroups all relationship group variables of the same MATCH that are present in lhs
+*/
 case class Trail(
   override val left: LogicalPlan,
   override val right: LogicalPlan,
   repetition: Repetition,
   start: String,
-  end: Option[String],
+  end: String,
   innerStart: String,
   innerEnd: String,
   nodeVariableGroupings: Set[VariableGrouping],
   relationshipVariableGroupings: Set[VariableGrouping],
-  allRelationships: Set[String],
-  allRelationshipGroups: Set[String]
+  innerRelationships: Set[String],
+  previouslyBoundRelationships: Set[String],
+  previouslyBoundRelationshipGroups: Set[String]
 )(implicit idGen: IdGen)
     extends LogicalBinaryPlan(idGen) with ApplyPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override val availableSymbols: Set[String] =
-    left.availableSymbols ++ end + start ++ nodeVariableGroupings.map(_.groupName) ++ relationshipVariableGroupings.map(
+    left.availableSymbols + end + start ++ nodeVariableGroupings.map(_.groupName) ++ relationshipVariableGroupings.map(
       _.groupName
     )
 }

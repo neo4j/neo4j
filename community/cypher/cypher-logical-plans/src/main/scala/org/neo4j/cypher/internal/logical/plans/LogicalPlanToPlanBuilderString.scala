@@ -493,8 +493,9 @@ object LogicalPlanToPlanBuilderString {
           innerEnd,
           groupNodes,
           groupRelationships,
-          allRelationships,
-          allRelationshipGroups
+          innerRelationships,
+          previouslyBoundRelationships,
+          previouslyBoundRelationshipGroups
         ) =>
         def groupEntitiesString(groupEntities: Set[VariableGrouping]): String =
           groupEntities.map(g => s"(${wrapInQuotations(g.singletonName)}, ${wrapInQuotations(g.groupName)})").mkString(
@@ -502,14 +503,14 @@ object LogicalPlanToPlanBuilderString {
           )
 
         val trailParameters =
-          s"""${repetition.min}, ${repetition.max}, "$start", ${end.map(
-            wrapInQuotations
-          )}, "$innerStart", "$innerEnd", """ +
+          s"""${repetition.min}, ${repetition.max}, "$start", "$end", "$innerStart", "$innerEnd", """ +
             s"Set(${groupEntitiesString(groupNodes)}), Set(${groupEntitiesString(groupRelationships)}), " +
-            s"Set(${wrapInQuotationsAndMkString(allRelationships)}), " +
-            s"Set(${wrapInQuotationsAndMkString(allRelationshipGroups)})"
+            s"Set(${wrapInQuotationsAndMkString(innerRelationships)}), " +
+            s"Set(${wrapInQuotationsAndMkString(previouslyBoundRelationships)}), " +
+            s"Set(${wrapInQuotationsAndMkString(previouslyBoundRelationshipGroups)})"
 
         s"TrailParameters($trailParameters)"
+
       case NodeByIdSeek(idName, ids, argumentIds) =>
         val idsString: String = idsStr(ids)
         s""" ${wrapInQuotations(idName)}, Set(${wrapInQuotationsAndMkString(argumentIds)}), $idsString """.trim

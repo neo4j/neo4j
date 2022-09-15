@@ -1389,22 +1389,25 @@ class SlottedPipeMapper(
           innerEnd,
           groupNodes,
           groupRelationships,
-          allRelationships,
-          allRelationshipGroups
+          innerRelationships,
+          previouslyBoundRelationships,
+          previouslyBoundRelationshipGroups
         ) =>
         val rhsSlots = slotConfigs(rhs.id)
+        val lhsSlots = slotConfigs(lhs.id)
         TrailSlottedPipe(
           lhs,
           rhs,
           repetition,
           slots(start),
-          end.map(e => slots.getLongOffsetFor(e)),
+          slots.getLongOffsetFor(end),
           rhsSlots.getLongOffsetFor(innerStart),
           rhsSlots(innerEnd),
           groupNodes.map(n => GroupSlot(rhsSlots(n.singletonName), slots(n.groupName))),
           groupRelationships.map(r => GroupSlot(rhsSlots(r.singletonName), slots(r.groupName))),
-          allRelationships.map(r => rhsSlots(r)),
-          allRelationshipGroups.map(r => rhsSlots(r)),
+          innerRelationships.map(r => rhsSlots(r)),
+          previouslyBoundRelationships.map(r => lhsSlots(r)),
+          previouslyBoundRelationshipGroups.map(r => lhsSlots(r)),
           slots,
           rhsSlots,
           argumentSize

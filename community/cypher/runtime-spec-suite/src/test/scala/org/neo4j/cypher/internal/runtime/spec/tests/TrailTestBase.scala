@@ -45,13 +45,14 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     min = 0,
     max = Limited(2),
     start = "me",
-    end = Some("you"),
+    end = "you",
     innerStart = "a_inner",
     innerEnd = "b_inner",
     groupNodes = Set(("a_inner", "a"), ("b_inner", "b")),
     groupRelationships = Set(("r_inner", "r")),
-    allRelationships = Set("r_inner"),
-    allRelationshipGroups = Set()
+    innerRelationships = Set("r_inner"),
+    previouslyBoundRelationships = Set.empty,
+    previouslyBoundRelationshipGroups = Set.empty
   )
 
   test("should respect upper limit") {
@@ -79,7 +80,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     )
   }
 
-  test("should handle missing end-node") {
+  test("should handle unused anonymous end-node") {
     // (n1:START) → (n2) → (n3) → (n4)
     val (n1, n2, n3, n4, r12, r23, r34) = smallChainGraph
 
@@ -87,13 +88,14 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       min = 0,
       max = Limited(2),
       start = "me",
-      end = None,
+      end = "anon",
       innerStart = "a_inner",
       innerEnd = "b_inner",
       groupNodes = Set(("a_inner", "a"), ("b_inner", "b")),
       groupRelationships = Set(("r_inner", "r")),
-      allRelationships = Set("r_inner"),
-      allRelationshipGroups = Set()
+      innerRelationships = Set("r_inner"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
     )
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -124,13 +126,14 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       min = 2,
       max = Limited(2),
       start = "me",
-      end = Some("you"),
+      end = "you",
       innerStart = "a_inner",
       innerEnd = "b_inner",
       groupNodes = Set(("a_inner", "a"), ("b_inner", "b")),
       groupRelationships = Set(("r_inner", "r")),
-      allRelationships = Set("r_inner"),
-      allRelationshipGroups = Set()
+      innerRelationships = Set("r_inner"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
     )
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -174,13 +177,14 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       min = 0,
       max = Unlimited,
       start = "me",
-      end = Some("you"),
+      end = "you",
       innerStart = "a_inner",
       innerEnd = "b_inner",
       groupNodes = Set(("a_inner", "a"), ("b_inner", "b")),
       groupRelationships = Set(("r_inner", "r")),
-      allRelationships = Set("r_inner"),
-      allRelationshipGroups = Set()
+      innerRelationships = Set("r_inner"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
     )
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -232,13 +236,14 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       min = 0,
       max = Unlimited,
       start = "me",
-      end = Some("you"),
+      end = "you",
       innerStart = "a_inner",
       innerEnd = "b_inner",
       groupNodes = Set(("a_inner", "a"), ("b_inner", "b")),
       groupRelationships = Set(("r_inner", "r")),
-      allRelationships = Set("r_inner", "ranon"),
-      allRelationshipGroups = Set()
+      innerRelationships = Set("r_inner", "ranon"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
     )
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -313,13 +318,14 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       min = 0,
       max = Limited(0),
       start = "me",
-      end = Some("you"),
+      end = "you",
       innerStart = "a_inner",
       innerEnd = "b_inner",
       groupNodes = Set(("a_inner", "a"), ("b_inner", "b")),
       groupRelationships = Set(("r_inner", "r")),
-      allRelationships = Set("r_inner"),
-      allRelationshipGroups = Set()
+      innerRelationships = Set("r_inner"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
     )
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "a", "b", "r")
@@ -419,25 +425,27 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       min = 0,
       max = Limited(1),
       start = "anon",
-      end = Some("you"),
+      end = "you",
       innerStart = "c_inner",
       innerEnd = "d_inner",
       groupNodes = Set(("c_inner", "c"), ("d_inner", "d")),
       groupRelationships = Set(("rr_inner", "rr")),
-      allRelationships = Set("rr_inner"),
-      allRelationshipGroups = Set("r")
+      innerRelationships = Set("rr_inner"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set("r")
     )
     val `(me:START) [(a)-[r]->(b)]{0,1} (anon)` = TrailParameters(
       min = 0,
       max = Limited(1),
       start = "me",
-      end = Some("anon"),
+      end = "anon",
       innerStart = "a_inner",
       innerEnd = "b_inner",
       groupNodes = Set(("a_inner", "a"), ("b_inner", "b")),
       groupRelationships = Set(("r_inner", "r")),
-      allRelationships = Set("r_inner"),
-      allRelationshipGroups = Set()
+      innerRelationships = Set("r_inner"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
     )
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -478,15 +486,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     //          (n1)
     //        ↗     ↘
     //      (n3) <- (n2)
-    val (n1, n2, n3, r12, r23, r31) = given {
-      val n1 = tx.createNode(label("START"))
-      val n2 = tx.createNode()
-      val n3 = tx.createNode()
-      val r12 = n1.createRelationshipTo(n2, RelationshipType.withName("R"))
-      val r23 = n2.createRelationshipTo(n3, RelationshipType.withName("R"))
-      val r31 = n3.createRelationshipTo(n1, RelationshipType.withName("R"))
-      (n1, n2, n3, r12, r23, r31)
-    }
+    val (n1, n2, n3, r12, r23, r31) = smallCircularGraph
 
     // given: (me:START) [(a)-[r]->(b)]{0,2} [(c)-[rr]->(d)]{0,2} (you)
     // which becomes: (me:START) [(a)-[r]->(b)]{0,2} (anon) [(c)-[rr]->(d)]{0,2} (you)
@@ -495,25 +495,27 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       min = 0,
       max = Limited(2),
       start = "anon",
-      end = Some("you"),
+      end = "you",
       innerStart = "c_inner",
       innerEnd = "d_inner",
       groupNodes = Set(("c_inner", "c"), ("d_inner", "d")),
       groupRelationships = Set(("rr_inner", "rr")),
-      allRelationships = Set("rr_inner"),
-      allRelationshipGroups = Set("r")
+      innerRelationships = Set("rr_inner"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set("r")
     )
     val `(me:START) [(a)-[r]->(b)]{0,2} (anon)` = TrailParameters(
       min = 0,
       max = Limited(2),
       start = "me",
-      end = Some("anon"),
+      end = "anon",
       innerStart = "a_inner",
       innerEnd = "b_inner",
       groupNodes = Set(("a_inner", "a"), ("b_inner", "b")),
       groupRelationships = Set(("r_inner", "r")),
-      allRelationships = Set("r_inner"),
-      allRelationshipGroups = Set()
+      innerRelationships = Set("r_inner"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
     )
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -558,6 +560,48 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     )
   }
 
+  test("should respect relationship uniqueness of previous relationships") {
+    // given
+    //          (n1)
+    //        ↗     ↘
+    //      (n3) <- (n2)
+    val (n1, n2, n3, r12, r23, r31) = smallCircularGraph
+
+    // given: MATCH (a:START)-[e]->(b) (()-[f]->(c))+
+    // MATCH (a)-[e]->(b) (b)((anon_inner)-[f_inner]-(c_inner))+ (anon_end)
+
+    val `(anon_start) (()-[f]->(c){1,*} (anon_end)` = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "b",
+      end = "anon_end",
+      innerStart = "anon_inner",
+      innerEnd = "c_inner",
+      groupNodes = Set(("c_inner", "c")),
+      groupRelationships = Set(("f_inner", "f")),
+      innerRelationships = Set("f_inner"),
+      previouslyBoundRelationships = Set("e"),
+      previouslyBoundRelationshipGroups = Set.empty
+    )
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "e", "b", "f", "c")
+      .trail(`(anon_start) (()-[f]->(c){1,*} (anon_end)`)
+      .|.expandAll("(anon_inner)-[f_inner]->(c_inner)")
+      .|.argument("anon_inner")
+      .filter("a:START")
+      .allRelationshipsScan("(a)-[e]->(b)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("a", "e", "b", "f", "c").withRows(
+      Seq(
+        Array(n1, r12, n2, listOf(r23), listOf(n3)),
+        Array(n1, r12, n2, listOf(r23, r31), listOf(n3, n1))
+      )
+    )
+  }
+
   private def listOf(values: AnyRef*) = java.util.List.of(values: _*)
 
   // (n1) → (n2) → (n3) → (n4)
@@ -573,6 +617,21 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
         chain.relationshipAt(1),
         chain.relationshipAt(2)
       )
+    }
+  }
+
+  //          (n1)
+  //        ↗     ↘
+  //      (n3) <- (n2)
+  private def smallCircularGraph: (Node, Node, Node, Relationship, Relationship, Relationship) = {
+    given {
+      val n1 = tx.createNode(label("START"))
+      val n2 = tx.createNode()
+      val n3 = tx.createNode()
+      val r12 = n1.createRelationshipTo(n2, RelationshipType.withName("R"))
+      val r23 = n2.createRelationshipTo(n3, RelationshipType.withName("R"))
+      val r31 = n3.createRelationshipTo(n1, RelationshipType.withName("R"))
+      (n1, n2, n3, r12, r23, r31)
     }
   }
 }

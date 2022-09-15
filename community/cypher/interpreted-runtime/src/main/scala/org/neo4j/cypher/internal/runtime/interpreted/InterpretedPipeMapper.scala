@@ -1436,8 +1436,9 @@ case class InterpretedPipeMapper(
           innerEnd,
           groupNodes,
           groupRelationships,
-          allRelationships,
-          allRelationshipGroups
+          innerRelationships,
+          previouslyBoundRelationships,
+          previouslyBoundRelationshipGroups
         ) =>
         TrailPipe(
           lhs,
@@ -1449,8 +1450,9 @@ case class InterpretedPipeMapper(
           innerEnd,
           groupNodes,
           groupRelationships,
-          allRelationships,
-          allRelationshipGroups
+          innerRelationships,
+          previouslyBoundRelationships,
+          previouslyBoundRelationshipGroups
         )(id = id)
 
       case x =>

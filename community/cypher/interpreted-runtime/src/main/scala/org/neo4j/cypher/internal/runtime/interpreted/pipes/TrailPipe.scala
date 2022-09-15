@@ -62,20 +62,21 @@ case class TrailPipe(
   inner: Pipe,
   repetition: Repetition,
   start: String,
-  end: Option[String],
+  end: String,
   innerStart: String,
   innerEnd: String,
   groupNodes: Set[VariableGrouping],
   groupRelationships: Set[VariableGrouping],
-  allRelationships: Set[String],
-  allRelationshipGroups: Set[String]
+  innerRelationships: Set[String],
+  previouslyBoundRelationships: Set[String],
+  previouslyBoundRelationshipGroups: Set[String]
 )(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
   private val groupNodeNames = groupNodes.toArray.sortBy(_.singletonName)
   private val groupRelationshipNames = groupRelationships.toArray.sortBy(_.singletonName)
   private val emptyGroupNodes = emptyLists(groupNodes.size)
   private val emptyGroupRelationships = emptyLists(groupRelationships.size)
-  private val allRelationshipsArray = allRelationships.toArray
+  private val innerRelationshipsArray = innerRelationships.toArray
 
   override protected def internalCreateResults(
     input: ClosingIterator[CypherRow],
@@ -91,7 +92,11 @@ case class TrailPipe(
               val stack = newArrayDeque[TrailState](tracker)
               if (repetition.max.isGreaterThan(0)) {
                 val relationshipsSeen = HeapTrackingCollections.newLongSet(tracker)
-                val ig = allRelationshipGroups.iterator
+                val ir = previouslyBoundRelationships.iterator
+                while (ir.hasNext) {
+                  relationshipsSeen.add(castOrFail[VirtualRelationshipValue](outerRow.getByName(ir.next())).id())
+                }
+                val ig = previouslyBoundRelationshipGroups.iterator
                 while (ig.hasNext) {
                   val i = castOrFail[ListValue](outerRow.getByName(ig.next())).iterator()
                   while (i.hasNext) {
@@ -131,8 +136,8 @@ case class TrailPipe(
 
                       var allRelationshipsUnique = true
                       var i = 0
-                      while (allRelationshipsUnique && i < allRelationshipsArray.length) {
-                        val r = allRelationshipsArray(i)
+                      while (allRelationshipsUnique && i < innerRelationshipsArray.length) {
+                        val r = innerRelationshipsArray(i)
                         // TODO optimization: allRelationships is a superset of RHS rels, we should only check RHS rels as only they can change
                         if (!newSet.add(castOrFail[VirtualRelationshipValue](row.getByName(r)).id())) {
                           allRelationshipsUnique = false
@@ -169,8 +174,8 @@ case class TrailPipe(
                     innerResult = inner.createResults(innerState).filter(row => {
                       var relationshipsAreUnique = true
                       var i = 0
-                      while (relationshipsAreUnique && i < allRelationshipsArray.length) {
-                        val r = allRelationshipsArray(i)
+                      while (relationshipsAreUnique && i < innerRelationshipsArray.length) {
+                        val r = innerRelationshipsArray(i)
                         // TODO optimization: allRelationships is a superset of RHS rels, we should only check RHS rels as only they can change
                         if (
                           trailState.relationshipsSeen.contains(
@@ -217,7 +222,7 @@ case class TrailPipe(
     newGroupRels: HeapTrackingArrayList[ListValue],
     innerEndNode: VirtualNodeValue
   ): collection.Seq[(String, AnyValue)] = {
-    val newSize = newGroupNodes.size() + newGroupRels.size() + end.size
+    val newSize = newGroupNodes.size() + newGroupRels.size() + 1 // +1 for end node
     val res = new Array[(String, AnyValue)](newSize)
     var i = 0
     while (i < newGroupNodes.size()) {
@@ -230,7 +235,7 @@ case class TrailPipe(
       j += 1
       i += 1
     }
-    end.foreach(e => res(i) = (e, innerEndNode))
+    res(i) = (end, innerEndNode)
     res
   }
 }

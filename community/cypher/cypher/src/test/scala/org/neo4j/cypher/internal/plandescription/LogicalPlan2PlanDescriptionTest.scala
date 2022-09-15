@@ -5246,12 +5246,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           rhsLP,
           Repetition(0, Unlimited),
           "start",
-          Some("end"),
+          "end",
           "  UNNAMED111",
           "  UNNAMED112",
           Set(VariableGrouping("  UNNAMED111", "a"), VariableGrouping("  UNNAMED112", "b")),
           Set(VariableGrouping("  UNNAMED113", "r")),
           Set("r"),
+          Set.empty,
           Set.empty
         ),
         2345.0
