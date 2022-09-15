@@ -322,7 +322,11 @@ object Neo4jExceptionToExecutionFailed {
       )
     )
       INVALID_AGGREGATION
-    else if (msg.startsWith("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN"))
+    else if (
+      msg.startsWith(
+        "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN"
+      )
+    )
       UNDEFINED_VARIABLE
     else if (msg.startsWith("Order by column contains implicit grouping expressions"))
       AMBIGUOUS_AGGREGATION_EXPRESSION
