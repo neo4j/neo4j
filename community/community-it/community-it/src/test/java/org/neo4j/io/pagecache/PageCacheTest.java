@@ -56,7 +56,6 @@ import static org.neo4j.test.ThreadTestUtils.fork;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
-import java.io.Flushable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -365,10 +364,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             BinaryLatch limiterBlockLatch = new BinaryLatch();
             var ioController = new EmptyIOController() {
                 @Override
-                public void maybeLimitIO(int recentlyCompletedIOs, Flushable flushable, FileFlushEvent flushEvent) {
+                public void maybeLimitIO(int recentlyCompletedIOs, FileFlushEvent flushEvent) {
                     limiterStartLatch.release();
                     limiterBlockLatch.await();
-                    super.maybeLimitIO(recentlyCompletedIOs, flushable, flushEvent);
+                    super.maybeLimitIO(recentlyCompletedIOs, flushEvent);
                 }
             };
             try (PagedFile pfA =
@@ -6121,7 +6120,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
 
         @Override
-        public void maybeLimitIO(int recentlyCompletedIOs, Flushable flushable, FileFlushEvent flushEvent) {
+        public void maybeLimitIO(int recentlyCompletedIOs, FileFlushEvent flushEvent) {
             ioCounter.addAndGet(recentlyCompletedIOs * pagesPerFlush);
             callbackCounter.getAndIncrement();
         }
@@ -6137,10 +6136,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
 
         @Override
-        public void maybeLimitIO(int recentlyCompletedIOs, Flushable flushable, FileFlushEvent flushEvent) {
+        public void maybeLimitIO(int recentlyCompletedIOs, FileFlushEvent flushEvent) {
             closeLatch.countDown();
             limiterBlockLatch.await();
-            super.maybeLimitIO(recentlyCompletedIOs, flushable, flushEvent);
+            super.maybeLimitIO(recentlyCompletedIOs, flushEvent);
         }
     }
 }

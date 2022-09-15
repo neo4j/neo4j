@@ -34,7 +34,6 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.proc.ProcessUtil.start;
 
 import java.io.BufferedReader;
-import java.io.Flushable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -707,7 +706,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
         private final AtomicLong externalIOCounter = new AtomicLong();
 
         @Override
-        public void maybeLimitIO(int recentlyCompletedIOs, Flushable flushable, FileFlushEvent flushes) {
+        public void maybeLimitIO(int recentlyCompletedIOs, FileFlushEvent flushes) {
             // empty
         }
 

@@ -19,14 +19,13 @@
  */
 package org.neo4j.io.pagecache;
 
-import java.io.Flushable;
 import java.io.IOException;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 
 /**
  * IOController instances used by page file to control speed of data flushing when {@link PageCache#flushAndForce(DatabaseFlushEvent)} invoked.
- * As part of flush controller's {@link #maybeLimitIO(int, Flushable, FileFlushEvent)} method is invoked on regular intervals.
+ * As part of flush controller's {@link #maybeLimitIO(int, FileFlushEvent)} method is invoked on regular intervals.
  * <p/>
  * This allows the controller to measure the rate of IO (including io performed by other system parts), and inject sleeps, pauses or flushes into the process.
  * The flushes are in this case referring to the underlying hardware.
@@ -46,17 +45,14 @@ public interface IOController {
     /**
      * Invoked at regular intervals during flushing of the {@link PageCache} or {@link PagedFile}s.
      * <p/>
-     * The implementation is allowed to force changes to the storage device using the given {@link Flushable}, or
-     * to perform {@link Thread#sleep(long) sleeps}, as it desires. It is not allowed to throw
+     * The implementation is allowed to perform {@link Thread#sleep(long) sleeps}, as it desires. It is not allowed to throw
      * {@link InterruptedException}, however. Those should be dealt with by catching them and re-interrupting the
      * current thread, or by wrapping them in {@link IOException}s.
      *
      * @param recentlyCompletedIOs The number of IOs completed by caller since the last call to this method.
-     * @param flushable A {@link Flushable} instance that can flush any relevant dirty system buffers, to help smooth
-     * out the IO load on the storage device.
      * @param flushEvent A {@link FileFlushEvent} event that describes ongoing io represented by flushable instance.
      */
-    void maybeLimitIO(int recentlyCompletedIOs, Flushable flushable, FileFlushEvent flushEvent);
+    void maybeLimitIO(int recentlyCompletedIOs, FileFlushEvent flushEvent);
 
     /**
      * Report any external IO that could be taken into account during evaluation of limits, to inject pauses or sleeps.

@@ -614,7 +614,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                             flushes,
                             forClosing);
                     flushes.reportIO(numberOfBuffers);
-                    limiter.maybeLimitIO(numberOfBuffers, this, flushes);
+                    limiter.maybeLimitIO(numberOfBuffers, flushes);
                     pagesGrabbed = 0;
                     nextSequentialAddress = -1;
                     numberOfBuffers = 0;
@@ -637,7 +637,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                         flushes,
                         forClosing);
                 flushes.reportIO(numberOfBuffers);
-                limiter.maybeLimitIO(numberOfBuffers, this, flushes);
+                limiter.maybeLimitIO(numberOfBuffers, flushes);
                 flushPerChunk++;
             }
             chunkEvent.chunkFlushed(notModifiedPages, flushPerChunk, buffersPerChunk, mergesPerChunk);
