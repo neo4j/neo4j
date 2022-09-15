@@ -1421,7 +1421,11 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     plan should equal(planner.subPlanBuilder()
       .emptyResult()
       .deleteNode(expr)
-      .eager(ListSet(EagernessReason.ReadDeleteConflict("nodes")))
+      .eager(ListSet(
+        EagernessReason.ReadDeleteConflict("nodes"),
+        EagernessReason.ReadDeleteConflict("a"),
+        EagernessReason.ReadDeleteConflict("b")
+      ))
       .projection("[n] AS nodes")
       .allNodeScan("n")
       .build())
@@ -1454,8 +1458,17 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     plan should equal(planner.subPlanBuilder()
       .emptyResult()
       .deleteRelationship(expr)
-      .eager(ListSet(EagernessReason.ReadDeleteConflict("rels")))
+      .eager(ListSet(
+        EagernessReason.ReadDeleteConflict("rels"),
+        EagernessReason.ReadDeleteConflict("a"),
+        EagernessReason.ReadDeleteConflict("b")
+      ))
       .projection("[r] AS rels")
+      .eager(ListSet(
+        EagernessReason.ReadDeleteConflict("anon_0"),
+        EagernessReason.ReadDeleteConflict("rels"),
+        EagernessReason.ReadDeleteConflict("anon_1")
+      ))
       .allRelationshipsScan("(anon_0)-[r]->(anon_1)")
       .build())
   }
@@ -1488,8 +1501,17 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     plan should equal(planner.subPlanBuilder()
       .emptyResult()
       .deleteExpression(expr)
-      .eager(ListSet(EagernessReason.ReadDeleteConflict("rels")))
+      .eager(ListSet(
+        EagernessReason.ReadDeleteConflict("rels"),
+        EagernessReason.ReadDeleteConflict("a"),
+        EagernessReason.ReadDeleteConflict("b")
+      ))
       .projection("{rel: r} AS rels")
+      .eager(ListSet(
+        EagernessReason.ReadDeleteConflict("anon_0"),
+        EagernessReason.ReadDeleteConflict("rels"),
+        EagernessReason.ReadDeleteConflict("anon_1")
+      ))
       .allRelationshipsScan("(anon_0)-[r]->(anon_1)")
       .build())
   }

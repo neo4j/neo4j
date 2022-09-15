@@ -53,6 +53,12 @@ trait UpdateGraph {
     case _: ContainerIndex => true
   }
 
+  private def getMaybeQueryGraph: Option[QueryGraph] =
+    this match {
+      case qg: QueryGraph => Some(qg)
+      case _              => None
+    }
+
   /*
    * Finds all nodes being created with CREATE ...
    */
@@ -265,7 +271,7 @@ trait UpdateGraph {
           noLabelOrPropOverlap ||
           // MATCH (A&B|!C) CREATE (:A:B)
           (labelsOnCurrentNode.nonEmpty && labelExpressionsOverlap(
-            qgWithInfo,
+            qgWithInfo.queryGraph,
             labelsToCreate,
             NodesToCheckOverlap(None, currentNode.name)
           )) ||
@@ -295,12 +301,17 @@ trait UpdateGraph {
    * @return
    */
   private def labelExpressionsOverlap(
-    qgWithInfo: QgWithLeafInfo,
+    selectedQg: QueryGraph,
     possibleLabelCombinations: Set[Set[LabelName]],
     nodes: NodesToCheckOverlap
   ): Boolean = {
-    val predicates = qgWithInfo.queryGraph.selections.predicates.map(_.expr) ++
-      qgWithInfo.queryGraph.optionalMatches.map(_.selections).flatMap(_.predicates).map(_.expr)
+    val updatingQg = getMaybeQueryGraph.toSet
+    val predicates = updatingQg.flatMap(qg =>
+      qg.selections.predicates.map(_.expr) ++
+        qg.optionalMatches.map(_.selections).flatMap(_.predicates).map(_.expr)
+    ) ++
+      selectedQg.selections.predicates.map(_.expr) ++
+      selectedQg.optionalMatches.map(_.selections).flatMap(_.predicates).map(_.expr)
 
     predicates.forall { expression =>
       possibleLabelCombinations.exists(labels =>
@@ -471,16 +482,18 @@ trait UpdateGraph {
   private def deleteLabelExpressionOverlap(qgWithInfo: QgWithLeafInfo)(implicit
   semanticTable: SemanticTable): Seq[EagernessReason.Reason] = {
     val relevantNodes = qgWithInfo.nonArgumentPatternNodes(semanticTable)
-    val deletedNodes = relevantNodes.filter(relNode => identifiersToDelete.contains(relNode.name))
+    val deletedNodes = relevantNodes.filter(relNode => identifiersToDelete.contains(relNode.name)) ++
+      identifiersToDelete.filterNot(relevantNodes.map(_.name)).map(StableIdentifier(_, isIdStable = false))
     val unstableNodesToDelete = deletedNodes.filterNot(_.isStable).map(_.name).toSeq
     lazy val nodesWithLabelOverlap = relevantNodes.filterNot(_.isStable)
       .flatMap(unstableNode => deletedNodes.map((unstableNode, _)))
       .filter { case (unstableNode, deletedNode) =>
-        unstableNode.name == deletedNode.name || getDeleteOverlapWithLabelExpression(
-          qgWithInfo,
-          unstableNode,
-          deletedNode
-        )
+        unstableNode.name == deletedNode.name ||
+          getDeleteOverlapWithLabelExpression(
+            qgWithInfo,
+            unstableNode,
+            deletedNode
+          )
       }
       .flatMap { case (unstableNode, deletedNode) => Set(unstableNode.name, deletedNode.name) }
 
@@ -517,8 +530,11 @@ trait UpdateGraph {
     unstableNode: QgWithLeafInfo.Identifier,
     deletedNode: QgWithLeafInfo.Identifier
   ) = {
+    val updatingQg = getMaybeQueryGraph.toSet
     val unstableLabels = qgWithInfo.queryGraph.allPossibleLabelsOnNode(unstableNode.name)
-    val labelsInDeleteExpression = qgWithInfo.allPossibleLabelsOnNode(deletedNode.name)
+    val labelsInDeleteExpression = qgWithInfo.allPossibleLabelsOnNode(deletedNode.name) ++ updatingQg.flatMap(
+      _.allPossibleLabelsOnNode(deletedNode.name)
+    )
     val uniqueLabels = unstableLabels ++ labelsInDeleteExpression
     lazy val allSubsetsOfAllLabels = uniqueLabels.subsets()
     lazy val nodes = NodesToCheckOverlap(Some(deletedNode.name), unstableNode.name)
@@ -527,7 +543,7 @@ trait UpdateGraph {
 
     uniqueLabels.size > labelSizeLimit ||
     allSubsetsOfAllLabels.isEmpty ||
-    allSubsetsOfAllLabels.exists(labels => labelExpressionsOverlap(qgWithInfo, Set(labels), nodes))
+    allSubsetsOfAllLabels.exists(labels => labelExpressionsOverlap(qgWithInfo.queryGraph, Set(labels), nodes))
   }
 
   def removeLabelOverlap(qgWithInfo: QgWithLeafInfo)(implicit
