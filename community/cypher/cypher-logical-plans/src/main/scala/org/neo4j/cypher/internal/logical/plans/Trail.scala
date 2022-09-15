@@ -70,6 +70,6 @@ case class Trail(
  * Describes a variable that is exposed from a QuantifiedPath.
  *
  * @param singletonName the name of the singleton variable inside the QuantifiedPath.
- * @param groupname the name of the group variable exposed outside of the QuantifiedPath.
+ * @param groupName the name of the group variable exposed outside of the QuantifiedPath.
  */
 case class VariableGrouping(singletonName: String, groupName: String)
