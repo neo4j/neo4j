@@ -599,6 +599,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("Enable disable the GC stall monitor.")
+    public static final Setting<Boolean> vm_pause_monitor_enabled =
+            newBuilder("internal.vm_pause_monitor.enabled", BOOL, true).build();
+
+    @Internal
     @Description("VM pause monitor measurement duration")
     public static final Setting<Duration> vm_pause_monitor_measurement_duration = newBuilder(
                     "internal.vm_pause_monitor.measurement_duration", DURATION, ofMillis(200))
@@ -951,13 +956,13 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
 
     @Description("Whether or not to do parallel index writes during online transaction application")
     @Internal
-    public static Setting<Boolean> parallel_index_updates_apply = newBuilder(
+    public static final Setting<Boolean> parallel_index_updates_apply = newBuilder(
                     "internal.dbms.parallel_index_updates_apply", BOOL, false)
             .build();
 
     @Description("Whether to offload buffered IDs for freeing to disk, rather than to keep them in memory")
     @Internal
-    public static Setting<Boolean> buffered_ids_offload =
+    public static final Setting<Boolean> buffered_ids_offload =
             newBuilder("internal.dbms.id_buffering.offload_to_disk", BOOL, true).build();
 
     @Internal

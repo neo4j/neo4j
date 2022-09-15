@@ -212,8 +212,13 @@ public class GlobalModule {
         systemGraphComponents = tryResolveOrCreate(SystemGraphComponents.class, SystemGraphComponents::new);
         globalDependencies.satisfyDependency(systemGraphComponents);
 
-        globalLife.add(new VmPauseMonitorComponent(
-                globalConfig, logService.getInternalLog(VmPauseMonitorComponent.class), jobScheduler, globalMonitors));
+        if (globalConfig.get(GraphDatabaseInternalSettings.vm_pause_monitor_enabled)) {
+            globalLife.add(new VmPauseMonitorComponent(
+                    globalConfig,
+                    logService.getInternalLog(VmPauseMonitorComponent.class),
+                    jobScheduler,
+                    globalMonitors));
+        }
 
         globalAvailabilityGuard = new CompositeDatabaseAvailabilityGuard(globalClock, globalConfig);
         globalDependencies.satisfyDependency(globalAvailabilityGuard);
