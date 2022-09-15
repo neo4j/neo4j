@@ -1216,6 +1216,34 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     }) should be(false)
   }
 
+  test("should plan many predicates containing pattern expressions as a single selection") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:REL]-()", 10)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
+      .build()
+
+    val q =
+      """
+        |MATCH (a)-->(b)
+        |WHERE
+        |  (a.name = 'a' AND (a)-[:REL]->(b)) OR
+        |  (b.name = 'b' AND (a)-[:REL]->(b)) OR
+        |  (a.id = 123 AND (a)-[:REL]->(b)) OR
+        |  (b.id = 321 AND (a)-[:REL]->(b)) OR
+        |  (a.prop < 321 AND (a)-[:REL]->(b)) OR
+        |  (b.prop > 321 AND (a)-[:REL]->(b)) OR
+        |  (a.otherProp <> 321 AND (a)-[:REL]->(b))
+        |RETURN *
+      """.stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+    plan should beLike {
+      case Selection(_, Expand(_: AllNodesScan, _, _, _, _, _, _))=> ()
+    }
+  }
+
   private def containsArgumentOnly(queryGraph: QueryGraph): Boolean =
     queryGraph.argumentIds.nonEmpty && queryGraph.patternNodes.isEmpty && queryGraph.patternRelationships.isEmpty
 }

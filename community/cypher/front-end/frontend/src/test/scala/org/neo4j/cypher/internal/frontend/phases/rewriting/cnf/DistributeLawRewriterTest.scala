@@ -16,12 +16,17 @@
  */
 package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 
+import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
-import org.neo4j.cypher.internal.expressions.Or
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.patternExpression
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.varFor
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
 import org.neo4j.cypher.internal.rewriting.PredicateTestSupport
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+
+import scala.annotation.tailrec
 
 class DistributeLawRewriterTest extends CypherFunSuite with PredicateTestSupport {
 
@@ -65,7 +70,22 @@ class DistributeLawRewriterTest extends CypherFunSuite with PredicateTestSupport
     if (result == fullOr) verify(monitor).abortedRewriting(fullOr)
   }
 
-  private def combineUntilLimit(start: Or, limit: Int): Or =
+  test("should rewrite small expression containing pattern expressions") {
+    val pat = patternExpression(varFor("a"), varFor("b"))
+    val exp = combineUntilLimit(and(P, pat), limit = 2)
+    rewriter.apply(exp)
+    verify(monitor, never()).abortedRewritingDueToLargeDNF(exp)
+  }
+
+  test("should abort rewriting larger expression containing pattern expressions") {
+    val pat = patternExpression(varFor("a"), varFor("b"))
+    val exp = combineUntilLimit(and(P, pat), limit = 4)
+    rewriter.apply(exp)
+    verify(monitor).abortedRewritingDueToLargeDNF(exp)
+  }
+
+  @tailrec
+  private def combineUntilLimit(start: Expression, limit: Int): Expression =
     if (limit > 0)
       combineUntilLimit(or(start, and(P, Q)), limit - 1)
     else
