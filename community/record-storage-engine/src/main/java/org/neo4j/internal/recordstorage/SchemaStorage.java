@@ -39,6 +39,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.SchemaRulesAccessor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
@@ -58,7 +59,7 @@ import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-public class SchemaStorage implements SchemaRuleAccess {
+public class SchemaStorage implements SchemaRuleAccess, SchemaRulesAccessor {
     private final SchemaStore schemaStore;
     private final TokenHolders tokenHolders;
 
@@ -100,9 +101,13 @@ public class SchemaStorage implements SchemaRuleAccess {
 
     @Override
     public IndexDescriptor[] indexGetForSchema(SchemaDescriptorSupplier supplier, StoreCursors storeCursors) {
-        SchemaDescriptor schema = supplier.schema();
+        return indexesGetForDescriptor(supplier.schema(), storeCursors);
+    }
+
+    @Override
+    public IndexDescriptor[] indexesGetForDescriptor(SchemaDescriptor descriptor, StoreCursors storeCursors) {
         return indexRules(streamAllSchemaRules(false, storeCursors))
-                .filter(rule -> rule.schema().equals(schema))
+                .filter(rule -> rule.schema().equals(descriptor))
                 .toArray(IndexDescriptor[]::new);
     }
 
@@ -117,9 +122,7 @@ public class SchemaStorage implements SchemaRuleAccess {
     @Override
     public ConstraintDescriptor constraintsGetSingle(ConstraintDescriptor descriptor, StoreCursors storeCursors)
             throws SchemaRuleNotFoundException, DuplicateSchemaRuleException {
-        ConstraintDescriptor[] rules = constraintRules(streamAllSchemaRules(false, storeCursors))
-                .filter(descriptor::equals)
-                .toArray(ConstraintDescriptor[]::new);
+        ConstraintDescriptor[] rules = constraintsGetForDescriptor(descriptor, storeCursors);
         if (rules.length == 0) {
             throw new SchemaRuleNotFoundException(descriptor, tokenHolders);
         }
@@ -127,6 +130,14 @@ public class SchemaStorage implements SchemaRuleAccess {
             throw new DuplicateSchemaRuleException(descriptor, tokenHolders);
         }
         return rules[0];
+    }
+
+    @Override
+    public ConstraintDescriptor[] constraintsGetForDescriptor(
+            ConstraintDescriptor descriptor, StoreCursors storeCursors) {
+        return constraintRules(streamAllSchemaRules(false, storeCursors))
+                .filter(descriptor::equals)
+                .toArray(ConstraintDescriptor[]::new);
     }
 
     @Override

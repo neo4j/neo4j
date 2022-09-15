@@ -66,6 +66,7 @@ import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreIdUsage;
 import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreRecords;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.SchemaCache;
+import org.neo4j.internal.schema.SchemaRulesAccessor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
@@ -716,5 +717,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     @Override
     public StorageEngineIndexingBehaviour indexingBehaviour() {
         return indexingBehaviour;
+    }
+
+    @Override
+    public SchemaRulesAccessor schemaRulesAccessor() {
+        return new SchemaStorage(neoStores.getSchemaStore(), tokenHolders);
     }
 }
