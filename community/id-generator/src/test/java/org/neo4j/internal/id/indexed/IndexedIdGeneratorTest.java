@@ -102,6 +102,7 @@ import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.internal.id.TestIdType;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -131,6 +132,9 @@ class IndexedIdGeneratorTest {
     private TestDirectory directory;
 
     @Inject
+    private FileSystemAbstraction fileSystem;
+
+    @Inject
     private PageCache pageCache;
 
     @Inject
@@ -158,6 +162,7 @@ class IndexedIdGeneratorTest {
             IdSlotDistribution slotDistribution) {
         idGenerator = new IndexedIdGenerator(
                 pageCache,
+                fileSystem,
                 file,
                 immediate(),
                 TestIdType.TEST,
@@ -201,6 +206,7 @@ class IndexedIdGeneratorTest {
 
         try (var customGenerator = new IndexedIdGenerator(
                 pageCache,
+                fileSystem,
                 file,
                 immediate(),
                 TestIdType.TEST,
@@ -228,6 +234,7 @@ class IndexedIdGeneratorTest {
 
         try (var reopenedGenerator = new IndexedIdGenerator(
                 pageCache,
+                fileSystem,
                 file,
                 immediate(),
                 TestIdType.TEST,
@@ -677,6 +684,7 @@ class IndexedIdGeneratorTest {
         when(highIdSupplier.getAsLong()).thenReturn(highId);
         idGenerator = new IndexedIdGenerator(
                 pageCache,
+                fileSystem,
                 file,
                 immediate(),
                 TestIdType.TEST,
@@ -711,6 +719,7 @@ class IndexedIdGeneratorTest {
         when(highIdSupplier.getAsLong()).thenReturn(101L);
         idGenerator = new IndexedIdGenerator(
                 pageCache,
+                fileSystem,
                 file,
                 immediate(),
                 TestIdType.TEST,
@@ -739,6 +748,7 @@ class IndexedIdGeneratorTest {
                 IllegalStateException.class,
                 () -> new IndexedIdGenerator(
                         pageCache,
+                        fileSystem,
                         file,
                         immediate(),
                         TestIdType.TEST,
@@ -763,6 +773,7 @@ class IndexedIdGeneratorTest {
         Path file = directory.file("existing");
         new IndexedIdGenerator(
                         pageCache,
+                        fileSystem,
                         file,
                         immediate(),
                         TestIdType.TEST,
@@ -783,6 +794,7 @@ class IndexedIdGeneratorTest {
         // Start in readOnly mode
         try (IndexedIdGenerator readOnlyGenerator = new IndexedIdGenerator(
                 pageCache,
+                fileSystem,
                 file,
                 immediate(),
                 TestIdType.TEST,
@@ -807,6 +819,7 @@ class IndexedIdGeneratorTest {
         Path file = directory.file("existing");
         var indexedIdGenerator = new IndexedIdGenerator(
                 pageCache,
+                fileSystem,
                 file,
                 immediate(),
                 TestIdType.TEST,
@@ -828,6 +841,7 @@ class IndexedIdGeneratorTest {
         // Start in readOnly mode should not throw
         try (var readOnlyGenerator = new IndexedIdGenerator(
                 pageCache,
+                fileSystem,
                 file,
                 immediate(),
                 TestIdType.TEST,
@@ -1076,6 +1090,7 @@ class IndexedIdGeneratorTest {
     void tracePageCacheOnIdGeneratorStartWithoutRebuild() throws IOException {
         try (var prepareIndexWithoutRebuild = new IndexedIdGenerator(
                 pageCache,
+                fileSystem,
                 file,
                 immediate(),
                 TestIdType.TEST,
@@ -1094,6 +1109,7 @@ class IndexedIdGeneratorTest {
         }
         try (var idGenerator = new IndexedIdGenerator(
                 pageCache,
+                fileSystem,
                 file,
                 immediate(),
                 TestIdType.TEST,
@@ -1341,6 +1357,7 @@ class IndexedIdGeneratorTest {
         Path file = directory.file("existing");
         var indexedIdGenerator = new IndexedIdGenerator(
                 pageCache,
+                fileSystem,
                 file,
                 immediate(),
                 TestIdType.TEST,
@@ -1361,6 +1378,7 @@ class IndexedIdGeneratorTest {
         // Start in readOnly mode
         try (var readOnlyGenerator = new IndexedIdGenerator(
                 pageCache,
+                fileSystem,
                 file,
                 immediate(),
                 TestIdType.TEST,
@@ -1472,6 +1490,7 @@ class IndexedIdGeneratorTest {
         Path file = directory.file("existing");
         var indexedIdGenerator = new IndexedIdGenerator(
                 pageCache,
+                fileSystem,
                 file,
                 immediate(),
                 TestIdType.TEST,
@@ -1492,6 +1511,7 @@ class IndexedIdGeneratorTest {
         // Start in readOnly mode
         try (var readOnlyGenerator = new IndexedIdGenerator(
                 pageCache,
+                fileSystem,
                 file,
                 immediate(),
                 TestIdType.TEST,

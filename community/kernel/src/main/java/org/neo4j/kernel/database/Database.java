@@ -463,6 +463,7 @@ public class Database extends AbstractDatabase {
         // Schema indexes
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore(
                 databasePageCache,
+                fs,
                 databaseLayout,
                 recoveryCleanupWorkCollector,
                 readOnlyDatabaseChecker,

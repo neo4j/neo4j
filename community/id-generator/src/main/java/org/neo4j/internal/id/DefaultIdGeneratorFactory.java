@@ -132,6 +132,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
         // highId not used when opening an IndexedIdGenerator
         return new IndexedIdGenerator(
                 pageCache,
+                fs,
                 fileName,
                 recoveryCleanupWorkCollector,
                 idType,
@@ -175,6 +176,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
 
         IndexedIdGenerator generator = new IndexedIdGenerator(
                 pageCache,
+                fs,
                 fileName,
                 recoveryCleanupWorkCollector,
                 idType,

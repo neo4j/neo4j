@@ -177,6 +177,7 @@ class GBPTreeCountsStoreTest {
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         GBPTreeCountsStore.dump(
                 pageCache,
+                fs,
                 countsStoreFile(),
                 new PrintStream(out),
                 new CursorContextFactory(cacheTracer, EMPTY),

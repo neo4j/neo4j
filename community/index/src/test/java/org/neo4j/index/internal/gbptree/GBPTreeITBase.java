@@ -84,7 +84,7 @@ abstract class GBPTreeITBase<KEY, VALUE> {
                 fileSystem, config().withPageSize(pageSize).withAccessChecks(true));
         var openOptions = getOpenOptions();
         layout = getLayout(random, GBPTreeTestUtil.calculatePayloadSize(pageCache, openOptions));
-        index = new GBPTreeBuilder<>(pageCache, testDirectory.file("index"), layout)
+        index = new GBPTreeBuilder<>(pageCache, fileSystem, testDirectory.file("index"), layout)
                 .with(openOptions)
                 .build();
     }

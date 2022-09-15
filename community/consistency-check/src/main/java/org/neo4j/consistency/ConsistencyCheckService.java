@@ -451,6 +451,7 @@ public class ConsistencyCheckService {
                         storageEngineFactory.getStoreOpenOptions(fileSystem, pageCache, databaseLayout, contextFactory);
                 final var statisticsStore = new IndexStatisticsStore(
                         pageCache,
+                        fileSystem,
                         databaseLayout,
                         recoveryCleanupWorkCollector,
                         readOnly(),

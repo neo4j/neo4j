@@ -44,6 +44,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -72,11 +73,14 @@ class TokenIndexUpdaterTest {
     @Inject
     private TestDirectory directory;
 
+    @Inject
+    private FileSystemAbstraction fileSystem;
+
     private GBPTree<TokenScanKey, TokenScanValue> tree;
 
     @BeforeEach
     void openTree() {
-        tree = new GBPTreeBuilder<>(pageCache, directory.file("file"), new TokenScanLayout()).build();
+        tree = new GBPTreeBuilder<>(pageCache, fileSystem, directory.file("file"), new TokenScanLayout()).build();
     }
 
     @AfterEach

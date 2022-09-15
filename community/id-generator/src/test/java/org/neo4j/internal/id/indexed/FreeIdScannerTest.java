@@ -54,6 +54,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.internal.id.IdSlotDistribution.Slot;
 import org.neo4j.internal.id.indexed.IndexedIdGenerator.InternalMarker;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -76,6 +77,9 @@ class FreeIdScannerTest {
     @Inject
     TestDirectory directory;
 
+    @Inject
+    private FileSystemAbstraction fileSystem;
+
     private IdRangeLayout layout;
     private GBPTree<IdRangeKey, IdRange> tree;
 
@@ -88,7 +92,7 @@ class FreeIdScannerTest {
     @BeforeEach
     void beforeEach() {
         this.layout = new IdRangeLayout(IDS_PER_ENTRY);
-        this.tree = new GBPTreeBuilder<>(pageCache, directory.file("file.id"), layout).build();
+        this.tree = new GBPTreeBuilder<>(pageCache, fileSystem, directory.file("file.id"), layout).build();
     }
 
     @AfterEach

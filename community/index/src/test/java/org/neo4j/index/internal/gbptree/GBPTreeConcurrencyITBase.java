@@ -109,7 +109,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY, VALUE> {
                 fileSystem, config().withPageSize(pageSize).withAccessChecks(true));
         var openOptions = getOpenOptions();
         layout = getLayout(random, GBPTreeTestUtil.calculatePayloadSize(pageCache, openOptions));
-        return this.index = new GBPTreeBuilder<>(pageCache, testDirectory.file("index"), layout)
+        return this.index = new GBPTreeBuilder<>(pageCache, fileSystem, testDirectory.file("index"), layout)
                 .with(openOptions)
                 .build();
     }

@@ -155,6 +155,7 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
 
     public static void dump(
             PageCache pageCache,
+            FileSystemAbstraction fileSystem,
             Path file,
             PrintStream out,
             CursorContextFactory contextFactory,
@@ -163,6 +164,7 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
             throws IOException {
         GBPTreeGenericCountsStore.dump(
                 pageCache,
+                fileSystem,
                 file,
                 out,
                 DEFAULT_DATABASE_NAME,

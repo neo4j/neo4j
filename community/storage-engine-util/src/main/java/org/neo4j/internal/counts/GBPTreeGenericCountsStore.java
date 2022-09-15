@@ -109,6 +109,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
     private final int highMarkCacheSize;
     protected volatile CountsChanges changes = createCountChanges();
     private final TxIdInformation txIdInformation;
+    private final FileSystemAbstraction fileSystem;
     private final InternalLogProvider userLogProvider;
     private volatile boolean started;
 
@@ -128,6 +129,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
             PageCacheTracer pageCacheTracer,
             ImmutableSet<OpenOption> openOptions)
             throws IOException {
+        this.fileSystem = fileSystem;
         this.userLogProvider = userLogProvider;
         this.readOnlyChecker = readOnlyChecker;
         this.name = name;
@@ -199,6 +201,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
         try {
             return new GBPTree<>(
                     pageCache,
+                    fileSystem,
                     file,
                     layout,
                     GBPTree.NO_MONITOR,
@@ -501,6 +504,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
      * Dumps the contents of a counts store.
      *
      * @param pageCache {@link PageCache} to use to map the counts store file into.
+     * @param fileSystem
      * @param file {@link Path} pointing out the counts store.
      * @param out to print to.
      * @param databaseName name of the database tree belongs to.
@@ -512,6 +516,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
      */
     protected static void dump(
             PageCache pageCache,
+            FileSystemAbstraction fileSystem,
             Path file,
             PrintStream out,
             String databaseName,
@@ -531,6 +536,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
         // Now open it and dump its contents
         try (GBPTree<CountsKey, CountsValue> tree = new GBPTree<>(
                 pageCache,
+                fileSystem,
                 file,
                 new CountsLayout(),
                 GBPTree.NO_MONITOR,

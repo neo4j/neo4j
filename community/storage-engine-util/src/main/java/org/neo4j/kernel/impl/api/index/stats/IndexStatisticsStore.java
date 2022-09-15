@@ -39,6 +39,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.index.internal.gbptree.Writer;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -66,6 +67,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
     private static final IndexStatisticsKey HIGHEST_KEY = new IndexStatisticsKey(Long.MAX_VALUE);
 
     private final PageCache pageCache;
+    private final FileSystemAbstraction fileSystem;
     private final Path path;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final String databaseName;
@@ -80,6 +82,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
 
     public IndexStatisticsStore(
             PageCache pageCache,
+            FileSystemAbstraction fileSystem,
             DatabaseLayout databaseLayout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseReadOnlyChecker readOnlyChecker,
@@ -89,6 +92,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
             throws IOException {
         this(
                 pageCache,
+                fileSystem,
                 databaseLayout.pathForStore(CommonDatabaseStores.INDEX_STATISTICS),
                 recoveryCleanupWorkCollector,
                 readOnlyChecker,
@@ -100,6 +104,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
 
     public IndexStatisticsStore(
             PageCache pageCache,
+            FileSystemAbstraction fileSystem,
             Path path,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseReadOnlyChecker readOnlyChecker,
@@ -109,6 +114,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
             ImmutableSet<OpenOption> openOptions)
             throws IOException {
         this.pageCache = pageCache;
+        this.fileSystem = fileSystem;
         this.path = path;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.databaseName = databaseName;
@@ -123,6 +129,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
         try {
             tree = new GBPTree<>(
                     pageCache,
+                    fileSystem,
                     path,
                     layout,
                     GBPTree.NO_MONITOR,

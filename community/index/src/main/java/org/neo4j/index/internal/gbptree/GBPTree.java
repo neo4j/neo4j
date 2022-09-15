@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -45,6 +46,7 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
 
     public GBPTree(
             PageCache pageCache,
+            FileSystemAbstraction fileSystem,
             Path indexFile,
             Layout<KEY, VALUE> layout,
             Monitor monitor,
@@ -60,6 +62,7 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
             throws MetadataMismatchException {
         super(
                 pageCache,
+                fileSystem,
                 indexFile,
                 layout,
                 monitor,

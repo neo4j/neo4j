@@ -42,6 +42,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -70,6 +71,9 @@ class IndexStatisticsStoreTest {
     @Inject
     private TestDirectory testDirectory;
 
+    @Inject
+    private FileSystemAbstraction fileSystem;
+
     private IndexStatisticsStore store;
     private final PageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
     private CursorContextFactory contextFactory;
@@ -89,6 +93,7 @@ class IndexStatisticsStoreTest {
     private IndexStatisticsStore openStore(String fileName) throws IOException {
         var statisticsStore = new IndexStatisticsStore(
                 pageCache,
+                fileSystem,
                 testDirectory.file(fileName),
                 immediate(),
                 writable(),
@@ -273,6 +278,7 @@ class IndexStatisticsStoreTest {
                 Exception.class,
                 () -> new IndexStatisticsStore(
                         pageCache,
+                        fileSystem,
                         testDirectory.file("non-existing"),
                         immediate(),
                         readOnly(),

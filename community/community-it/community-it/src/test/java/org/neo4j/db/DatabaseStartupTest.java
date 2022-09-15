@@ -37,6 +37,7 @@ import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilderImplementation;
 import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
@@ -67,6 +68,16 @@ class DatabaseStartupTest {
 
     @Inject
     private Neo4jLayout neoLayout;
+
+    @Test
+    void startStop() {
+        for (int i = 0; i < 50; i++) {
+            DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder(neoLayout).build();
+            GraphDatabaseService db = dbms.database(DEFAULT_DATABASE_NAME);
+            assertTrue(db.isAvailable());
+            dbms.shutdown();
+        }
+    }
 
     @Test
     void startDatabaseWithWrongVersionShouldFail() throws Throwable {

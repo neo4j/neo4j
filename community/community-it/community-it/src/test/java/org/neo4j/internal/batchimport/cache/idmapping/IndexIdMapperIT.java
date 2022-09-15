@@ -140,6 +140,7 @@ class IndexIdMapperIT {
         fs.mkdirs(layout.databaseDirectory());
         indexStatisticsStore = life.add(new IndexStatisticsStore(
                 pageCache,
+                fs,
                 RecordDatabaseLayout.convert(layout),
                 immediate(),
                 writable(),

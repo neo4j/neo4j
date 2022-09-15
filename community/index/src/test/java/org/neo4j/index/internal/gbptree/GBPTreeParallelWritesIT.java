@@ -42,7 +42,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
@@ -64,6 +64,9 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
     private TestDirectory directory;
 
     @Inject
+    private FileSystemAbstraction fileSystem;
+
+    @Inject
     private RandomSupport random;
 
     private DefaultPageCacheTracer pageCacheTracer;
@@ -73,8 +76,7 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
     void start() {
         pageCacheTracer = new DefaultPageCacheTracer();
         pageCache = PageCacheSupportExtension.getPageCache(
-                new DefaultFileSystemAbstraction(),
-                config().withPageSize(256).withAccessChecks(true).withTracer(pageCacheTracer));
+                fileSystem, config().withPageSize(256).withAccessChecks(true).withTracer(pageCacheTracer));
     }
 
     @AfterEach
@@ -94,7 +96,7 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
         var openOptions = getOpenOptions();
 
         var layout = getLayout(random, GBPTreeTestUtil.calculatePayloadSize(pageCache, openOptions));
-        try (var index = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout)
+        try (var index = new GBPTreeBuilder<>(pageCache, fileSystem, directory.file("index"), layout)
                 .with(pageCacheTracer)
                 .with(openOptions)
                 .build()) {
@@ -165,7 +167,7 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
         // given
         var openOptions = getOpenOptions();
         var layout = getLayout(random, GBPTreeTestUtil.calculatePayloadSize(pageCache, openOptions));
-        try (var tree = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout)
+        try (var tree = new GBPTreeBuilder<>(pageCache, fileSystem, directory.file("index"), layout)
                 .with(openOptions)
                 .build()) {
             var numTasks = 10_000;

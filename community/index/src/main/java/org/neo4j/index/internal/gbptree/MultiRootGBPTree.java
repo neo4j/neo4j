@@ -57,6 +57,7 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.ConsistencyCheckState;
 import org.neo4j.index.internal.gbptree.RootLayer.TreeRootsVisitor;
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
@@ -475,16 +476,13 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
     protected final RootLayerSupport rootLayerSupport;
 
     /**
-     * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.
-     * If the index doesn't exist it will be created and the {@link Layout} and {@code pageSize} will
-     * be written in index header.
-     * If the index exists it will be opened and the {@link Layout} will be matched with the information
-     * in the header. At the very least {@link Layout#identifier()} will be matched.
+     * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist. If the index doesn't exist it will be
+     * created and the {@link Layout} and {@code pageSize} will be written in index header. If the index exists it will be opened and the {@link Layout} will be
+     * matched with the information in the header. At the very least {@link Layout#identifier()} will be matched.
      * <p>
-     * On start, tree can be in a clean or dirty state. If dirty, it will
-     * {@link #createCleanupJob(RecoveryCleanupWorkCollector, boolean)} and clean crashed pointers as part of constructor. Tree is only clean if
-     * since last time it was opened it was {@link #close()}  closed} without any non-checkpointed changes present.
-     * Correct usage pattern of the GBPTree is:
+     * On start, tree can be in a clean or dirty state. If dirty, it will {@link #createCleanupJob(RecoveryCleanupWorkCollector, boolean)} and clean crashed
+     * pointers as part of constructor. Tree is only clean if since last time it was opened it was {@link #close()}  closed} without any non-checkpointed
+     * changes present. Correct usage pattern of the GBPTree is:
      *
      * <pre>
      *     try ( GBPTree tree = new GBPTree(...) )
@@ -493,7 +491,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
      *         tree.checkpoint( ... );
      *     }
      * </pre>
-     *
+     * <p>
      * Expected state after first time tree is opened, where initial state is created:
      * <ul>
      * <li>StateA
@@ -525,6 +523,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
      * </ul>
      *
      * @param pageCache {@link PageCache} to use to map index file
+     * @param fileSystem
      * @param indexFile {@link Path} containing the actual index
      * @param layout {@link Layout} to use in the tree, this must match the existing layout
      * we're just opening the index
@@ -541,6 +540,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
      */
     public MultiRootGBPTree(
             PageCache pageCache,
+            FileSystemAbstraction fileSystem,
             Path indexFile,
             Layout<KEY, VALUE> layout,
             Monitor monitor,

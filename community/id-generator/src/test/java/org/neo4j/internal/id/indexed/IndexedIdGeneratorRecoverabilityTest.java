@@ -244,6 +244,7 @@ class IndexedIdGeneratorRecoverabilityTest {
     private IndexedIdGenerator instantiateFreelist() {
         return new IndexedIdGenerator(
                 pageCache,
+                fs,
                 testDirectory.file(ID_FILE_NAME),
                 immediate(),
                 ID_TYPE,

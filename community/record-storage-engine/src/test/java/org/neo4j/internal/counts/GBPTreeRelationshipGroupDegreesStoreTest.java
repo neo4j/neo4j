@@ -180,6 +180,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
         ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
         GBPTreeRelationshipGroupDegreesStore.dump(
                 pageCache,
+                fs,
                 countsStoreFile(),
                 new PrintStream(out),
                 CONTEXT_FACTORY,

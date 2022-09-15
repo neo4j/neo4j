@@ -296,7 +296,7 @@ class PartitionedSeekTest {
     }
 
     private GBPTree<MutableLong, MutableLong> instantiateTree() {
-        return new GBPTreeBuilder<>(pageCache, treeFile, layout).build();
+        return new GBPTreeBuilder<>(pageCache, fileSystem, treeFile, layout).build();
     }
 
     private void shouldPartitionTree(

@@ -32,6 +32,7 @@ import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -46,6 +47,9 @@ class SizeEstimationTest {
 
     @Inject
     private TestDirectory testDirectory;
+
+    @Inject
+    private FileSystemAbstraction fileSystem;
 
     @Inject
     private PageCache pageCache;
@@ -73,7 +77,7 @@ class SizeEstimationTest {
     }
 
     private <KEY, VALUE> void assertEstimateSizeCorrectly(TestLayout<KEY, VALUE> layout) throws IOException {
-        try (GBPTree<KEY, VALUE> tree = new GBPTreeBuilder<>(pageCache, testDirectory.file("tree"), layout)
+        try (GBPTree<KEY, VALUE> tree = new GBPTreeBuilder<>(pageCache, fileSystem, testDirectory.file("tree"), layout)
                 .with(getOpenOptions())
                 .build()) {
             // given

@@ -693,6 +693,7 @@ class NeoStoresTest {
                 // Return a special id generator which will throw exception on close
                 return new IndexedIdGenerator(
                         pageCache,
+                        fs,
                         fileName,
                         immediate(),
                         idType,

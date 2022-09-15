@@ -508,6 +508,7 @@ public final class Recovery {
 
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore(
                 databasePageCache,
+                fs,
                 databaseLayout,
                 recoveryCleanupCollector,
                 readOnlyChecker,

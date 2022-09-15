@@ -86,6 +86,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
         Path storeFile = indexFiles.getStoreFile();
         tree = new GBPTree<>(
                 pageCache,
+                fileSystem,
                 storeFile,
                 layout,
                 monitor,

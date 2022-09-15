@@ -2160,7 +2160,7 @@ class GBPTreeTest {
     }
 
     protected GBPTreeBuilder<SingleRoot, MutableLong, MutableLong> index(PageCache pageCache) {
-        return new GBPTreeBuilder<SingleRoot, MutableLong, MutableLong>(pageCache, indexFile, layout)
+        return new GBPTreeBuilder<SingleRoot, MutableLong, MutableLong>(pageCache, fileSystem, indexFile, layout)
                 .with(getOpenOptions());
     }
 

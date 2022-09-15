@@ -95,6 +95,7 @@ public class GBPTreeBootstrapper implements Closeable {
             Layouts layouts = layoutBootstrapper.bootstrap(meta);
             MultiRootGBPTree<?, ?, ?> tree = new MultiRootGBPTree<>(
                     pageCache,
+                    fs,
                     file,
                     layouts.dataLayout(),
                     NO_MONITOR,

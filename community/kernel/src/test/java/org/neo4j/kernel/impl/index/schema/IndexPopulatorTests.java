@@ -356,7 +356,7 @@ abstract class IndexPopulatorTests<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE>
     private void assertHeader(InternalIndexState expectedState, String failureMessage, boolean messageTruncated)
             throws IOException {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader(failureByte());
-        try (GBPTree<KEY, VALUE> ignored = new GBPTreeBuilder<>(pageCache, indexFiles.getStoreFile(), layout)
+        try (GBPTree<KEY, VALUE> ignored = new GBPTreeBuilder<>(pageCache, fs, indexFiles.getStoreFile(), layout)
                 .with(headerReader)
                 .build()) {
             switch (expectedState) {

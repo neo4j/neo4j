@@ -62,6 +62,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
@@ -88,6 +89,9 @@ class MultiRootGBPTreeTest {
     private TestDirectory directory;
 
     @Inject
+    private FileSystemAbstraction fileSystem;
+
+    @Inject
     private PageCache pageCache;
 
     private MultiRootGBPTree<RawBytes, RawBytes, RawBytes> tree;
@@ -98,6 +102,7 @@ class MultiRootGBPTreeTest {
         PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
         tree = new MultiRootGBPTree<>(
                 pageCache,
+                fileSystem,
                 directory.file("tree"),
                 layout,
                 NO_MONITOR,
@@ -437,6 +442,7 @@ class MultiRootGBPTreeTest {
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         assertThatThrownBy(() -> new MultiRootGBPTree<>(
                         pageCache,
+                        fileSystem,
                         directory.file("tree"),
                         layout,
                         NO_MONITOR,
@@ -463,6 +469,7 @@ class MultiRootGBPTreeTest {
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         assertThatThrownBy(() -> new MultiRootGBPTree<>(
                         pageCache,
+                        fileSystem,
                         directory.file("tree"),
                         wrongDataLayout,
                         NO_MONITOR,
@@ -490,6 +497,7 @@ class MultiRootGBPTreeTest {
             PageCacheTracer cacheTracer = PageCacheTracer.NULL;
             new MultiRootGBPTree<>(
                             pageCache,
+                            fileSystem,
                             file,
                             dataLayout,
                             NO_MONITOR,

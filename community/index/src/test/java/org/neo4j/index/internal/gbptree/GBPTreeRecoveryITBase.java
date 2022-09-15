@@ -400,7 +400,7 @@ abstract class GBPTreeRecoveryITBase<KEY, VALUE> {
     }
 
     private GBPTree<KEY, VALUE> createIndex(PageCache pageCache, Path file) {
-        return new GBPTreeBuilder<>(pageCache, file, layout)
+        return new GBPTreeBuilder<>(pageCache, fs, file, layout)
                 .with(getOpenOptions())
                 .build();
     }

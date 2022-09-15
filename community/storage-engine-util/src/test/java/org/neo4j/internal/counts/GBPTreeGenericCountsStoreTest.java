@@ -588,7 +588,7 @@ class GBPTreeGenericCountsStoreTest {
         assertThrows(
                 NoSuchFileException.class,
                 () -> GBPTreeCountsStore.dump(
-                        pageCache, file, System.out, CONTEXT_FACTORY, PageCacheTracer.NULL, immutable.empty()));
+                        pageCache, fs, file, System.out, CONTEXT_FACTORY, PageCacheTracer.NULL, immutable.empty()));
 
         // then
         assertFalse(fs.fileExists(file));

@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.TestIdType;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -68,6 +69,9 @@ class LargeFreelistCreationDeletionIT {
     @Inject
     private TestDirectory directory;
 
+    @Inject
+    private FileSystemAbstraction fileSystem;
+
     @Test
     void shouldAlternateLargeCreationsAndDeletionsAndNotLoseIds() throws Throwable {
         long[][] allocatedIds = new long[THREADS][];
@@ -80,6 +84,7 @@ class LargeFreelistCreationDeletionIT {
             // Create
             try (var freelist = new IndexedIdGenerator(
                     pageCache,
+                    fileSystem,
                     directory.file("file.id"),
                     immediate(),
                     TestIdType.TEST,

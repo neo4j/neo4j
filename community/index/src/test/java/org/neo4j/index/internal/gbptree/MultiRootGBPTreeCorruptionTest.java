@@ -72,7 +72,7 @@ class MultiRootGBPTreeCorruptionTest {
                 new SingleFilePageSwapperFactory(fs, NULL, INSTANCE),
                 jobScheduler,
                 config(10_000).pageSize(256));
-        tree = new GBPTreeBuilder<>(pageCache, directory.file("tree"), dataLayout, rootLayout).buildMultiRoot();
+        tree = new GBPTreeBuilder<>(pageCache, fs, directory.file("tree"), dataLayout, rootLayout).buildMultiRoot();
     }
 
     @AfterEach

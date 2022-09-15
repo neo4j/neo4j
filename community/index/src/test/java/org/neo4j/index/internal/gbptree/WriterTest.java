@@ -32,6 +32,7 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -45,12 +46,16 @@ class WriterTest {
     @Inject
     private TestDirectory directory;
 
+    @Inject
+    private FileSystemAbstraction fileSystem;
+
     private GBPTree<MutableLong, MutableLong> tree;
 
     @BeforeEach
     void setupTree() {
         tree = new GBPTreeBuilder<>(
                         pageCache,
+                        fileSystem,
                         directory.file("tree"),
                         longLayout().withFixedSize(true).build())
                 .build();

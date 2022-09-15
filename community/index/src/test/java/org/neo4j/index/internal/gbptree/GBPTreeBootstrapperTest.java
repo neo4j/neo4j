@@ -99,7 +99,7 @@ class GBPTreeBootstrapperTest {
     void createTreeFilesWithDifferentPageSizes(TestSetup testSetup) throws IOException {
         setupTest(testSetup);
 
-        try (GBPTree<MutableLong, MutableLong> tree = new GBPTreeBuilder<>(pageCache, storeFile, layout)
+        try (GBPTree<MutableLong, MutableLong> tree = new GBPTreeBuilder<>(pageCache, fs, storeFile, layout)
                 .with(Sets.immutable.of(PageCacheOpenOptions.BIG_ENDIAN))
                 .build()) {
             tree.checkpoint(FileFlushEvent.NULL, CursorContext.NULL_CONTEXT);

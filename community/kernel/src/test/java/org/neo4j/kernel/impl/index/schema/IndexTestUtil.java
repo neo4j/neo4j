@@ -122,7 +122,7 @@ public abstract class IndexTestUtil<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE
     }
 
     GBPTree<KEY, VALUE> getTree() {
-        return new GBPTreeBuilder<>(pageCache, indexFiles.getStoreFile(), layout).build();
+        return new GBPTreeBuilder<>(pageCache, fs, indexFiles.getStoreFile(), layout).build();
     }
 
     void assertFilePresent() {

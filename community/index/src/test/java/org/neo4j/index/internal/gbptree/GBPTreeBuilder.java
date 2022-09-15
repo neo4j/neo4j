@@ -33,6 +33,7 @@ import java.util.function.Consumer;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -47,7 +48,8 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
  * @param <VALUE> type of value in {@link GBPTree}
  */
 public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
-    private PageCache pageCache;
+    private final PageCache pageCache;
+    private final FileSystemAbstraction fileSystem;
     private Path path;
     private Monitor monitor = NO_MONITOR;
     private Header.Reader headerReader = NO_HEADER_READER;
@@ -59,15 +61,22 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
     private PageCacheTracer pageCacheTracer = NULL;
     private ImmutableSet<OpenOption> openOptions = immutable.empty();
 
-    public GBPTreeBuilder(PageCache pageCache, Path path, Layout<KEY, VALUE> dataLayout) {
-        with(pageCache);
+    public GBPTreeBuilder(
+            PageCache pageCache, FileSystemAbstraction fileSystem, Path path, Layout<KEY, VALUE> dataLayout) {
+        this.pageCache = pageCache;
+        this.fileSystem = fileSystem;
         with(path);
         with(dataLayout);
     }
 
     public GBPTreeBuilder(
-            PageCache pageCache, Path path, Layout<KEY, VALUE> dataLayout, KeyLayout<ROOT_KEY> rootLayout) {
-        with(pageCache);
+            PageCache pageCache,
+            FileSystemAbstraction fileSystem,
+            Path path,
+            Layout<KEY, VALUE> dataLayout,
+            KeyLayout<ROOT_KEY> rootLayout) {
+        this.pageCache = pageCache;
+        this.fileSystem = fileSystem;
         with(path);
         with(dataLayout);
         withRootLayout(rootLayout);
@@ -85,11 +94,6 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
 
     public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(Path file) {
         this.path = file;
-        return this;
-    }
-
-    public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(PageCache pageCache) {
-        this.pageCache = pageCache;
         return this;
     }
 
@@ -133,6 +137,7 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
                 new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY);
         return new GBPTree<>(
                 pageCache,
+                fileSystem,
                 path,
                 dataLayout,
                 monitor,
@@ -151,6 +156,7 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
         var cursorContextFactory = new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY);
         return new MultiRootGBPTree<>(
                 pageCache,
+                fileSystem,
                 path,
                 dataLayout,
                 monitor,

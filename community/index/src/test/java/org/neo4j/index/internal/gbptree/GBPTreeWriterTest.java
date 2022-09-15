@@ -34,6 +34,7 @@ import java.util.List;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -56,6 +57,9 @@ class GBPTreeWriterTest {
     private TestDirectory directory;
 
     @Inject
+    private FileSystemAbstraction fileSystem;
+
+    @Inject
     private PageCache pageCache;
 
     private final SimpleLongLayout layout =
@@ -65,7 +69,7 @@ class GBPTreeWriterTest {
     void shouldReInitializeTreeLogicWithSameSplitRatioAsInitiallySet0() throws IOException {
         TreeHeightTracker treeHeightTracker = new TreeHeightTracker();
         try (GBPTree<MutableLong, MutableLong> gbpTree = new GBPTreeBuilder<>(
-                        pageCache, directory.file("index"), layout)
+                        pageCache, fileSystem, directory.file("index"), layout)
                 .with(treeHeightTracker)
                 .build()) {
             try (var writer = gbpTree.writer(W_SPLIT_KEEP_ALL_RIGHT | W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
@@ -91,7 +95,7 @@ class GBPTreeWriterTest {
     void shouldReInitializeTreeLogicWithSameSplitRatioAsInitiallySet1() throws IOException {
         TreeHeightTracker treeHeightTracker = new TreeHeightTracker();
         try (GBPTree<MutableLong, MutableLong> gbpTree = new GBPTreeBuilder<>(
-                        pageCache, directory.file("index"), layout)
+                        pageCache, fileSystem, directory.file("index"), layout)
                 .with(treeHeightTracker)
                 .build()) {
             try (var writer = gbpTree.writer(W_SPLIT_KEEP_ALL_LEFT | W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
@@ -120,7 +124,7 @@ class GBPTreeWriterTest {
 
         assertZeroCursor(cursorContext);
 
-        try (var gbpTree = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout).build();
+        try (var gbpTree = new GBPTreeBuilder<>(pageCache, fileSystem, directory.file("index"), layout).build();
                 var treeWriter = gbpTree.writer(W_SPLIT_KEEP_ALL_RIGHT, cursorContext)) {
             treeWriter.merge(new MutableLong(0), new MutableLong(1), ValueMergers.overwrite());
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
@@ -139,7 +143,7 @@ class GBPTreeWriterTest {
 
         assertZeroCursor(cursorContext);
 
-        try (var gbpTree = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout).build();
+        try (var gbpTree = new GBPTreeBuilder<>(pageCache, fileSystem, directory.file("index"), layout).build();
                 var treeWriter = gbpTree.writer(W_SPLIT_KEEP_ALL_RIGHT, cursorContext)) {
             treeWriter.put(new MutableLong(0), new MutableLong(1));
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
@@ -156,7 +160,7 @@ class GBPTreeWriterTest {
         var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
         var cursorContext = contextFactory.create("trackPageCacheAccessOnRemove");
 
-        try (var gbpTree = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout).build();
+        try (var gbpTree = new GBPTreeBuilder<>(pageCache, fileSystem, directory.file("index"), layout).build();
                 var treeWriter = gbpTree.writer(W_SPLIT_KEEP_ALL_RIGHT, cursorContext)) {
             treeWriter.put(new MutableLong(0), new MutableLong(0));
             var cursorTracer = cursorContext.getCursorTracer();
@@ -187,7 +191,7 @@ class GBPTreeWriterTest {
 
         assertZeroCursor(cursorContext);
 
-        try (var gbpTree = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout).build();
+        try (var gbpTree = new GBPTreeBuilder<>(pageCache, fileSystem, directory.file("index"), layout).build();
                 var treeWriter = gbpTree.writer(W_SPLIT_KEEP_ALL_RIGHT, cursorContext)) {
             treeWriter.remove(new MutableLong(0));
             var cursorTracer = cursorContext.getCursorTracer();
@@ -205,7 +209,7 @@ class GBPTreeWriterTest {
 
         assertZeroCursor(cursorContext);
 
-        try (var gbpTree = new GBPTreeBuilder<>(pageCache, directory.file("index"), layout).build();
+        try (var gbpTree = new GBPTreeBuilder<>(pageCache, fileSystem, directory.file("index"), layout).build();
                 var treeWriter = gbpTree.writer(W_SPLIT_KEEP_ALL_RIGHT | W_BATCHED_SINGLE_THREADED, cursorContext)) {
             // empty, we check that closing everything register unpins event
         }

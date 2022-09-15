@@ -59,6 +59,9 @@ class GBPTreePartialCreateFuzzIT {
     private TestDirectory testDirectory;
 
     @Inject
+    private FileSystemAbstraction fileSystem;
+
+    @Inject
     private PageCache pageCache;
 
     @Test
@@ -91,7 +94,7 @@ class GBPTreePartialCreateFuzzIT {
 
         // check constructor
         try {
-            new GBPTreeBuilder<>(pageCache, file, layout).build().close();
+            new GBPTreeBuilder<>(pageCache, fileSystem, file, layout).build().close();
         } catch (MetadataMismatchException | IOException e) {
             // It's OK if the process was destroyed
             assertNotEquals(0, exitCode);
@@ -107,7 +110,7 @@ class GBPTreePartialCreateFuzzIT {
                     new SingleFilePageSwapperFactory(fs, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE);
             try (PageCache pageCache = new MuninnPageCache(swapper, jobScheduler, config(10))) {
                 fs.deleteFile(file);
-                new GBPTreeBuilder<>(pageCache, file, longLayout().build())
+                new GBPTreeBuilder<>(pageCache, fs, file, longLayout().build())
                         .build()
                         .close();
             }

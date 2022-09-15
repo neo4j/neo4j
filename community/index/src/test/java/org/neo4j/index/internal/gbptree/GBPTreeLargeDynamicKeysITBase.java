@@ -42,6 +42,7 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.string.UTF8;
@@ -61,6 +62,9 @@ abstract class GBPTreeLargeDynamicKeysITBase {
 
     @Inject
     private TestDirectory testDirectory;
+
+    @Inject
+    FileSystemAbstraction fileSystem;
 
     protected abstract PageCache getPageCache();
 
@@ -282,7 +286,7 @@ abstract class GBPTreeLargeDynamicKeysITBase {
 
     private GBPTree<RawBytes, RawBytes> createIndex() {
         // some random padding
-        return new GBPTreeBuilder<>(getPageCache(), testDirectory.file("index"), layout)
+        return new GBPTreeBuilder<>(getPageCache(), fileSystem, testDirectory.file("index"), layout)
                 .with(getOpenOptions())
                 .build();
     }

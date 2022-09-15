@@ -263,7 +263,7 @@ public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
     @Override
     protected void createStoreFile(Path storeFile) throws IOException {
         List<Long> initialKeys = initialKeys();
-        try (GBPTree<KEY, VALUE> tree = new GBPTreeBuilder<>(pageCache, storeFile, layout)
+        try (GBPTree<KEY, VALUE> tree = new GBPTreeBuilder<>(pageCache, globalFs, storeFile, layout)
                 .with(openOptions)
                 .build()) {
             try (Writer<KEY, VALUE> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
@@ -281,7 +281,7 @@ public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
     @SuppressWarnings("EmptyTryBlock")
     @Override
     protected void verifyFormat(Path storeFile) throws IOException, FormatViolationException {
-        try (GBPTree<KEY, VALUE> ignored = new GBPTreeBuilder<>(pageCache, storeFile, layout)
+        try (GBPTree<KEY, VALUE> ignored = new GBPTreeBuilder<>(pageCache, globalFs, storeFile, layout)
                 .with(openOptions)
                 .build()) {
         } catch (MetadataMismatchException e) {
@@ -291,7 +291,7 @@ public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
 
     @Override
     public void verifyContent(Path storeFile) throws IOException {
-        try (GBPTree<KEY, VALUE> tree = new GBPTreeBuilder<>(pageCache, storeFile, layout)
+        try (GBPTree<KEY, VALUE> tree = new GBPTreeBuilder<>(pageCache, globalFs, storeFile, layout)
                 .with(openOptions)
                 .build()) {
             {

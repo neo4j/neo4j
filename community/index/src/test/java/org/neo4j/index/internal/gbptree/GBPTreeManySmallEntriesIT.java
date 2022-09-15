@@ -31,6 +31,7 @@ import org.apache.commons.lang3.mutable.MutableShort;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.RandomSupport;
@@ -49,6 +50,9 @@ class GBPTreeManySmallEntriesIT {
     private TestDirectory directory;
 
     @Inject
+    private FileSystemAbstraction fileSystem;
+
+    @Inject
     private RandomSupport random;
 
     @ParameterizedTest
@@ -57,7 +61,7 @@ class GBPTreeManySmallEntriesIT {
         Layout<MutableShort, Void> layout = new TinyLayout(fixedSizeLayout);
         List<MutableShort> expected = new ArrayList<>();
         try (GBPTree<MutableShort, Void> tree =
-                new GBPTreeBuilder<>(pageCache, directory.file("index"), layout).build()) {
+                new GBPTreeBuilder<>(pageCache, fileSystem, directory.file("index"), layout).build()) {
             // given
             int count = 10_000;
             try (Writer<MutableShort, Void> writer = tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {

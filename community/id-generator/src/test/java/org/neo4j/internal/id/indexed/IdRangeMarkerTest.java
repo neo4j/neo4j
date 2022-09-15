@@ -50,6 +50,7 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.id.IdValidator;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -63,6 +64,9 @@ class IdRangeMarkerTest {
     @Inject
     TestDirectory directory;
 
+    @Inject
+    FileSystemAbstraction fileSystem;
+
     private final int idsPerEntry = 128;
     private final IdRangeLayout layout = new IdRangeLayout(idsPerEntry);
     private final AtomicLong highestWritternId = new AtomicLong();
@@ -70,7 +74,7 @@ class IdRangeMarkerTest {
 
     @BeforeEach
     void instantiateTree() {
-        this.tree = new GBPTreeBuilder<>(pageCache, directory.file("file.id"), layout).build();
+        this.tree = new GBPTreeBuilder<>(pageCache, fileSystem, directory.file("file.id"), layout).build();
     }
 
     @AfterEach

@@ -60,6 +60,7 @@ import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -274,6 +275,7 @@ public class IndexedIdGenerator implements IdGenerator {
      */
     private final AtomicLong highestWrittenId = new AtomicLong();
 
+    private final FileSystemAbstraction fileSystem;
     private final Path path;
 
     /**
@@ -296,6 +298,7 @@ public class IndexedIdGenerator implements IdGenerator {
 
     public IndexedIdGenerator(
             PageCache pageCache,
+            FileSystemAbstraction fileSystem,
             Path path,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             IdType idType,
@@ -310,6 +313,7 @@ public class IndexedIdGenerator implements IdGenerator {
             ImmutableSet<OpenOption> openOptions,
             IdSlotDistribution slotDistribution,
             PageCacheTracer tracer) {
+        this.fileSystem = fileSystem;
         this.path = path;
         this.readOnlyChecker = readOnlyChecker;
         this.contextFactory = contextFactory;
@@ -389,6 +393,7 @@ public class IndexedIdGenerator implements IdGenerator {
                     new HeaderWriter(highId::get, highestWrittenId::get, STARTING_GENERATION, idsPerEntry);
             return new GBPTree<>(
                     pageCache,
+                    fileSystem,
                     path,
                     layout,
                     GBPTree.NO_MONITOR,
@@ -688,12 +693,14 @@ public class IndexedIdGenerator implements IdGenerator {
     /**
      * Dumps the contents of an {@link IndexedIdGenerator} as human-readable text.
      *
-     * @param pageCache {@link PageCache} to map id generator in.
-     * @param path {@link Path} pointing to the id generator.
+     * @param pageCache  {@link PageCache} to map id generator in.
+     * @param fileSystem
+     * @param path       {@link Path} pointing to the id generator.
      * @throws IOException if the file was missing or some other I/O error occurred.
      */
     public static void dump(
             PageCache pageCache,
+            FileSystemAbstraction fileSystem,
             Path path,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
@@ -705,6 +712,7 @@ public class IndexedIdGenerator implements IdGenerator {
         IdRangeLayout layout = new IdRangeLayout(header.idsPerEntry);
         try (GBPTree<IdRangeKey, IdRange> tree = new GBPTree<>(
                 pageCache,
+                fileSystem,
                 path,
                 layout,
                 GBPTree.NO_MONITOR,

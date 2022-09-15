@@ -849,7 +849,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
     }
 
     private GBPTreeBuilder<SingleRoot, KEY, VALUE> index(Layout<KEY, VALUE> layout) {
-        return new GBPTreeBuilder<>(pageCache, indexFile, layout);
+        return new GBPTreeBuilder<>(pageCache, fs, indexFile, layout);
     }
 
     private GBPTreePointerType randomPointerType(int keyCount, boolean isLeaf) {

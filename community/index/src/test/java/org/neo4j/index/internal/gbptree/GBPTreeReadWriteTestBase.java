@@ -184,7 +184,7 @@ abstract class GBPTreeReadWriteTestBase<KEY, VALUE> {
     }
 
     private GBPTree<KEY, VALUE> index() {
-        return new GBPTreeBuilder<>(pageCache, indexFile, layout)
+        return new GBPTreeBuilder<>(pageCache, fs, indexFile, layout)
                 .with(getOpenOptions())
                 .build();
     }

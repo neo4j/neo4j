@@ -165,6 +165,7 @@ public class TokenIndex implements ConsistencyCheckable {
         MultiRootGBPTree.Monitor monitor = treeMonitor();
         index = new GBPTree<>(
                 pageCache,
+                fs,
                 indexFiles.getStoreFile(),
                 new TokenScanLayout(),
                 monitor,
