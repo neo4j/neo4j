@@ -539,3 +539,5 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   }
 
 }
+
+object AstConstructionTestSupport extends AstConstructionTestSupport
