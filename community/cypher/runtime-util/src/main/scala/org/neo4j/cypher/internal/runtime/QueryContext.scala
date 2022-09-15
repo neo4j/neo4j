@@ -673,7 +673,7 @@ trait Expander {
 }
 
 trait UserDefinedAggregator {
-  def update(args: IndexedSeq[AnyValue]): Unit
+  def update(args: Array[AnyValue]): Unit
   def result: AnyValue
 }
 

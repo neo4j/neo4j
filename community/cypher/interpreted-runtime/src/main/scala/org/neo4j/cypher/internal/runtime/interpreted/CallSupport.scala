@@ -95,8 +95,8 @@ object CallSupport {
     new UserDefinedAggregator {
       override def result: AnyValue = aggregator.result()
 
-      override def update(args: IndexedSeq[AnyValue]): Unit = {
-        aggregator.update(args.toArray)
+      override def update(args: Array[AnyValue]): Unit = {
+        aggregator.update(args)
       }
     }
   }

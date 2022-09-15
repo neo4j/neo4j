@@ -42,9 +42,13 @@ abstract class AggregationFunctionInvocation(arguments: IndexedSeq[Expression])
       }
 
       override def apply(data: ReadableRow, state: QueryState): Unit = {
-        val argValues = arguments.map(arg => {
-          arg(data, state)
-        })
+        val length = arguments.length
+        val argValues = new Array[AnyValue](length)
+        var i = 0
+        while (i < length) {
+          argValues(i) = arguments(i).apply(data, state)
+          i += 1
+        }
         aggregator(state).update(argValues)
       }
 
