@@ -25,7 +25,6 @@ import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.Predicates.notNull;
 import static org.neo4j.server.startup.BootloaderOsAbstraction.UNKNOWN_PID;
-import static org.neo4j.server.startup.VerboseCommand.ARG_VERBOSE;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -349,9 +348,6 @@ abstract class Bootloader implements AutoCloseable {
             super(entrypoint, environment, extensions, expandCommands, verbose);
             if (expandCommands) {
                 this.additionalArgs.add(ARG_EXPAND_COMMANDS);
-            }
-            if (verbose) {
-                this.additionalArgs.add(ARG_VERBOSE);
             }
         }
 
