@@ -592,47 +592,6 @@ class OtherLabelExpressionSemanticAnalysisTest
     )
   }
 
-  // Mixed quantifier in same statement
-  test("MATCH (n) RETURN [(n)-->+(m) | m], [(n)-[*3]-(m) | m]") {
-    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
-    the[SyntaxException].thrownBy(
-      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
-    ).getMessage should include("Invalid input '+': expected \"(\"")
-    // runSemanticAnalysis().errorMessages shouldEqual Seq(
-    //   "Mixing defining the length of a relationship on the inside or the outside of a relationship is not allowed. This relationship can be expressed as '--{3}'"
-    // )
-  }
-
-  // ... on same element pattern
-  test("MATCH ()-[r:A*]->*() RETURN r") {
-    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
-    the[SyntaxException].thrownBy(
-      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
-    ).getMessage should include("Invalid input '*': expected \"(\"")
-    // runSemanticAnalysis().errorMessages shouldEqual Seq(
-    //   "Defining the length of a relationship on the inside or the outside of a relationship is not allowed."
-    // )
-  }
-
-  test("MATCH ()-[r:A*1..2]->{1,2}() RETURN r") {
-    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
-    the[SyntaxException].thrownBy(
-      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
-    ).getMessage should include("Invalid input '{': expected \"(\"")
-    // runSemanticAnalysis().errorMessages shouldEqual Seq(
-    //   "Defining the length of a relationship on the inside or the outside of a relationship is not allowed. This relationship can be expressed as '-[r:A]->{1,2}'"
-    // )
-  }
-
-  // ... in different statements
-  test("MATCH (s)-[:A*2..2]->(n) MATCH (n)-[:B]->{2}(t) RETURN s.p AS sp, t.p AS tp") {
-    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
-    the[SyntaxException].thrownBy(
-      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
-    ).getMessage should include("Invalid input '{': expected \"(\"")
-    // runSemanticAnalysis().errors shouldBe empty
-  }
-
   // Mixing pre-GPM label expression with QPP does not raise SyntaxError
   test("MATCH ({p: 1})-->() ((:R:T)--()){1,2} ()-->(m) RETURN m.p as mp") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty

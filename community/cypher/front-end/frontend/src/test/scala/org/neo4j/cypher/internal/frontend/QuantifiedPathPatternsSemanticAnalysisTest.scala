@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.frontend
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTPath
@@ -105,7 +106,8 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
   test("MATCH (p = shortestPath((a)-[]->(b)))+ RETURN p") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       "Assigning a path in a quantified path pattern is not yet supported.",
-      "shortestPath is only allowed as a top-level element and not inside a quantified path pattern"
+      "shortestPath is only allowed as a top-level element and not inside a quantified path pattern",
+      "Mixing variable-length relationships ('-[*]-') with quantified relationships ('()-->*()') or quantified path patterns ('(()-->())*') is not allowed."
     )
   }
 
@@ -215,13 +217,15 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
 
   ignore("MATCH ((a)-->(b)-[r]->*(c))+ RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "Quantified path patterns are not allowed to be nested."
+      "Quantified path patterns are not allowed to be nested.",
+      "Mixing variable-length relationships ('-[*]-') with quantified relationships ('()-->*()') or quantified path patterns ('(()-->())*') is not allowed."
     )
   }
 
   test("MATCH ((a)-[*]->(b))+ RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "Variable length relationships cannot be part of a quantified path pattern."
+      "Variable length relationships cannot be part of a quantified path pattern.",
+      "Mixing variable-length relationships ('-[*]-') with quantified relationships ('()-->*()') or quantified path patterns ('(()-->())*') is not allowed."
     )
   }
 
@@ -469,6 +473,76 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       "Assigning a path with a quantified path pattern is not yet supported."
     )
+  }
+
+  // Mixing with legacy var-length
+
+  // Different clauses
+  test("MATCH (x)-[*]->(y) MATCH ((a)-[]->(b))+ RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+  }
+
+  // Mixed quantifier in same pattern element
+  test("MATCH (x)-[*]->(y) ((a)-[]->(b))+ RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+      "Mixing variable-length relationships ('-[*]-') with quantified relationships ('()-->*()') or quantified path patterns ('(()-->())*') is not allowed."
+    )
+  }
+
+  // Two legacy var-length
+  test("MATCH (x)-[*]->(y) ((a)-[]->(b))+ (n)-[*]->(m) RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+      "Mixing variable-length relationships ('-[*]-') with quantified relationships ('()-->*()') or quantified path patterns ('(()-->())*') is not allowed.",
+      "Mixing variable-length relationships ('-[*]-') with quantified relationships ('()-->*()') or quantified path patterns ('(()-->())*') is not allowed."
+    )
+  }
+
+  // Mixed quantifier in same clause
+  test("MATCH (x)-[*]->(y), ((a)-[]->(b))+ RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+      "Mixing variable-length relationships ('-[*]-') with quantified relationships ('()-->*()') or quantified path patterns ('(()-->())*') is not allowed."
+    )
+  }
+
+  // Mixed quantifier (quantified relationship) in same clause
+  test("MATCH (n) RETURN [(n)-->+(m) | m], [(n)-[*3]-(m) | m]") {
+    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
+    the[SyntaxException].thrownBy(
+      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
+    ).getMessage should include("Invalid input '+': expected \"(\"")
+    // runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+    //   "Mixing variable-length relationships ('-[*]-') with quantified relationships ('()-->*()') or quantified path patterns ('(()-->())*') is not allowed. This relationship can be expressed as '--{3}'"
+    // )
+  }
+
+  // ... on same element pattern
+  test("MATCH ()-[r:A*]->*() RETURN r") {
+    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
+    the[SyntaxException].thrownBy(
+      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
+    ).getMessage should include("Invalid input '*': expected \"(\"")
+    // runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+    //   "Mixing variable-length relationships ('-[*]-') with quantified relationships ('()-->*()') or quantified path patterns ('(()-->())*') is not allowed."
+    // )
+  }
+
+  test("MATCH ()-[r:A*1..2]->{1,2}() RETURN r") {
+    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
+    the[SyntaxException].thrownBy(
+      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
+    ).getMessage should include("Invalid input '{': expected \"(\"")
+    // runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+    //   "Mixing variable-length relationships ('-[*]-') with quantified relationships ('()-->*()') or quantified path patterns ('(()-->())*') is not allowed. This relationship can be expressed as '-[r:A]->{1,2}'"
+    // )
+  }
+
+  // ... in different statements
+  test("MATCH (s)-[:A*2..2]->(n) MATCH (n)-[:B]->{2}(t) RETURN s.p AS sp, t.p AS tp") {
+    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
+    the[SyntaxException].thrownBy(
+      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
+    ).getMessage should include("Invalid input '{': expected \"(\"")
+    // runSemanticAnalysis().errors shouldBe empty
   }
 
   // pattern comprehension

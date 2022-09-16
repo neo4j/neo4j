@@ -73,6 +73,7 @@ import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.ProcedureName
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
@@ -101,7 +102,7 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
-sealed trait Clause extends ASTNode with SemanticCheckable {
+sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
   def name: String
 
   def returnColumns: List[LogicalVariable] = List.empty
@@ -113,7 +114,8 @@ sealed trait Clause extends ASTNode with SemanticCheckable {
 
   final override def semanticCheck: SemanticCheck =
     clauseSpecificSemanticCheck chain
-      fromFunction(checkIfMixingLabelExpressionWithOldSyntax)
+      fromFunction(checkIfMixingLabelExpressionWithOldSyntax) chain
+      checkIfMixingLegacyVarLengthWithQPPs
 
   private val stringifier = ExpressionStringifier()
 
@@ -121,7 +123,7 @@ sealed trait Clause extends ASTNode with SemanticCheckable {
     def unapplySeq[T](s: Set[T]): Option[Seq[T]] = Some(s.toSeq)
   }
 
-  def checkIfMixingLabelExpressionWithOldSyntax(state: SemanticState): SemanticCheckResult = {
+  private def checkIfMixingLabelExpressionWithOldSyntax(state: SemanticState): SemanticCheckResult = {
     val partition = this.folder.treeFold(LabelExpressionsPartition()) {
       case NodePattern(_, Some(le), _, _) => acc =>
           TraverseChildren(sortLabelExpressionIntoPartition(
@@ -179,10 +181,28 @@ sealed trait Clause extends ASTNode with SemanticCheckable {
     }
   }
 
+  private def checkIfMixingLegacyVarLengthWithQPPs: SemanticCheck = {
+    val legacyVarLengthRelationships = this.folder.fold(Seq.empty[RelationshipPattern]) {
+      case r @ RelationshipPattern(_, _, Some(_), _, _, _) => _ :+ r
+    }
+    val hasQPP = this.folder.treeExists {
+      case _: QuantifiedPath => true
+    }
+
+    when(hasQPP) {
+      legacyVarLengthRelationships.foldSemanticCheck { legacyVarLengthRelationship =>
+        error(
+          "Mixing variable-length relationships ('-[*]-') with quantified relationships ('()-->*()') or quantified path patterns ('(()-->())*') is not allowed.",
+          legacyVarLengthRelationship.position
+        )
+      }
+    }
+  }
+
   def clauseSpecificSemanticCheck: SemanticCheck
 }
 
-sealed trait UpdateClause extends Clause with SemanticAnalysisTooling {
+sealed trait UpdateClause extends Clause {
   override def returnColumns: List[LogicalVariable] = List.empty
 }
 
