@@ -75,7 +75,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   def check(ctx: SemanticContext, pattern: Pattern): SemanticCheck =
     semanticCheckFold(pattern.patternParts)(declareVariables(ctx)) chain
-      semanticCheckFold(pattern.patternParts)(checkElementPredicates(ctx)) chain
       semanticCheckFold(pattern.patternParts)(check(ctx)) chain
       semanticCheckFold(pattern.patternParts)(checkMinimumNodeCount) chain
       ensureNoReferencesOutFromQuantifiedPath(pattern) chain
@@ -83,57 +82,8 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   def check(ctx: SemanticContext, pattern: RelationshipsPattern): SemanticCheck =
     declareVariables(ctx, pattern.element) chain
-      checkElementPredicates(ctx, pattern.element) chain
       check(ctx, pattern.element) chain
       ensureNoDuplicateRelationships(pattern)
-
-  def checkElementPredicates(ctx: SemanticContext)(part: PatternPart): SemanticCheck =
-    checkElementPredicates(ctx, part.element)
-
-  def checkElementPredicates(ctx: SemanticContext, part: PatternElement): SemanticCheck =
-    part match {
-      case x: RelationshipChain =>
-        checkElementPredicates(ctx, x.element) chain
-          checkRelationshipPatternPredicates(ctx, x.relationship) chain
-          checkElementPredicates(ctx, x.rightNode)
-
-      case x: NodePattern =>
-        x.predicate.foldSemanticCheck { predicate =>
-          when(ctx != SemanticContext.Match) {
-            error(
-              s"Node pattern predicates are not allowed in ${ctx.name}, but only in MATCH clause or inside a pattern comprehension",
-              predicate.position
-            )
-          } chain withScopedState {
-            Where.checkExpression(predicate)
-          }
-        }
-      case PathConcatenation(factors) =>
-        factors.map(checkElementPredicates(ctx, _)).reduce(_ chain _)
-
-      case QuantifiedPath(pattern, _, _) =>
-        checkElementPredicates(ctx, pattern.element)
-
-      case ParenthesizedPath(pattern) =>
-        checkElementPredicates(ctx, pattern.element)
-    }
-
-  private def checkRelationshipPatternPredicates(ctx: SemanticContext, pattern: RelationshipPattern): SemanticCheck =
-    pattern.predicate.foldSemanticCheck { predicate =>
-      when(ctx != SemanticContext.Match) {
-        error(
-          s"Relationship pattern predicates are not allowed in ${ctx.name}, but only in MATCH clause or inside a pattern comprehension",
-          predicate.position
-        )
-      } chain pattern.length.foldSemanticCheck { _ =>
-        error(
-          "Relationship pattern predicates are not supported for variable-length relationships.",
-          predicate.position
-        )
-      } ifOkChain withScopedState {
-        Where.checkExpression(predicate)
-      }
-    }
 
   def declareVariables(ctx: SemanticContext)(part: PatternPart): SemanticCheck =
     part match {
@@ -284,7 +234,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     }
   }
 
-  private def check(ctx: SemanticContext, element: PatternElement): SemanticCheck =
+  def check(ctx: SemanticContext, element: PatternElement): SemanticCheck =
     element match {
       case x: RelationshipChain =>
         check(ctx, x.element) chain
@@ -293,7 +243,8 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
       case x: NodePattern =>
         checkNodeProperties(ctx, x.properties) chain
-          checkLabelExpressions(ctx, x.labelExpression)
+          checkLabelExpressions(ctx, x.labelExpression) chain
+          checkNodePredicate(ctx, x.predicate)
 
       case PathConcatenation(factors) =>
         factors.map(check(ctx, _)).reduce(_ chain _) chain
@@ -479,6 +430,23 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
           SemanticExpressionCheck.checkLabelExpression(Some(RELATIONSHIP_TYPE), labelExpression)
       }
 
+    def checkPredicate(ctx: SemanticContext, relationshipPattern: RelationshipPattern): SemanticCheck =
+      relationshipPattern.predicate.foldSemanticCheck { predicate =>
+        when(ctx != SemanticContext.Match) {
+          error(
+            s"Relationship pattern predicates are not allowed in ${ctx.name}, but only in MATCH clause or inside a pattern comprehension",
+            predicate.position
+          )
+        } chain relationshipPattern.length.foldSemanticCheck { _ =>
+          error(
+            "Relationship pattern predicates are not supported for variable-length relationships.",
+            predicate.position
+          )
+        } ifOkChain withScopedState {
+          Where.checkExpression(predicate)
+        }
+      }
+
     checkNoVarLengthWhenUpdating chain
       checkForLegacyTypeSeparator chain
       checkForQuantifiedLabelExpression chain
@@ -486,6 +454,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       checkProperties chain
       checkValidPropertyKeyNamesInPattern(x.properties) chain
       checkLabelExpressions(ctx, x.labelExpression) chain
+      checkPredicate(ctx, x) chain
       checkNotUndirectedWhenCreating
   }
 
@@ -608,14 +577,28 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       SemanticExpressionCheck.simple(properties) chain
       expectType(CTMap.covariant, properties)
 
+  private def checkNodePredicate(ctx: SemanticContext, predicate: Option[Expression]): SemanticCheck =
+    predicate.foldSemanticCheck { predicate =>
+      when(ctx != SemanticContext.Match) {
+        error(
+          s"Node pattern predicates are not allowed in ${ctx.name}, but only in MATCH clause or inside a pattern comprehension",
+          predicate.position
+        )
+      } chain withScopedState {
+        Where.checkExpression(predicate)
+      }
+    }
+
   private def checkLabelExpressions(
     ctx: SemanticContext,
     labelExpression: Option[LabelExpression]
   ): SemanticCheck =
     labelExpression.foldSemanticCheck { labelExpression =>
-      when(ctx != SemanticContext.Match && labelExpression.containsGpmSpecificLabelExpression) {
+      when(
+        labelExpression.containsGpmSpecificLabelExpression && (ctx != SemanticContext.Match && ctx != SemanticContext.Expression)
+      ) {
         error(
-          s"Label expressions in patterns are not allowed in ${ctx.name}, but only in MATCH clause",
+          s"Label expressions in patterns are not allowed in ${ctx.name}, but only in MATCH clause and in expressions",
           labelExpression.position
         )
       } chain

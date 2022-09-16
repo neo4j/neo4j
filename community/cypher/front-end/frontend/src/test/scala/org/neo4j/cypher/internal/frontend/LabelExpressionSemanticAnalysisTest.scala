@@ -34,13 +34,13 @@ abstract class LabelExpressionSemanticAnalysisTestSuiteWithStatement(statement: 
 
   test("(n:A&B)") {
     runSemanticAnalysis().errorMessages shouldEqual Seq(
-      s"Label expressions in patterns are not allowed in $statement, but only in MATCH clause"
+      s"Label expressions in patterns are not allowed in $statement, but only in MATCH clause and in expressions"
     )
   }
 
   test("(n:A|B)") {
     runSemanticAnalysis().errorMessages shouldEqual Seq(
-      s"Label expressions in patterns are not allowed in $statement, but only in MATCH clause"
+      s"Label expressions in patterns are not allowed in $statement, but only in MATCH clause and in expressions"
     )
   }
 
@@ -181,6 +181,24 @@ class OtherLabelExpressionSemanticAnalysisTest
     runSemanticAnalysis().errorMessages shouldEqual Seq(
       "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B."
     )
+  }
+
+  test("MATCH (n:A)-[]-(m) WHERE (m:(A&B)|C)--() RETURN *") {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
+  test("MATCH (a), (b) WITH shortestPath((a:A|B)-[:REL*]->(b:B|C)) AS p RETURN length(p) AS result") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Label expressions in shortestPath are not allowed in expression"
+    )
+  }
+
+  test("MATCH (a), (b) WITH shortestPath((a:A)-[:A]->(b:B)) AS p RETURN length(p) AS result") {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
+  test("MATCH (a), (b) RETURN [(a:A|B)-[:REL*]->(b:B|C) | 1] AS p") {
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   test("MATCH (n:A&B)-[]-(m) WHERE (m:A:B)--() RETURN *") {

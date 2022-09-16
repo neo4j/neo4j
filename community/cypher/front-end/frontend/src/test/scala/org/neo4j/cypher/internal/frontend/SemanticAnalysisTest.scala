@@ -399,6 +399,16 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectNoErrorsFrom(query)
   }
 
+  test("should allow node pattern predicates in shortest path to refer to other nodes") {
+    val query = "MATCH (a), (b) MATCH shortestPath( (a)-->(b WHERE c.prop = 42) ), (c) RETURN count(*) AS result"
+    expectNoErrorsFrom(query)
+  }
+
+  test("should allow node property predicates in shortest path to refer to other nodes") {
+    val query = "MATCH (a), (b) MATCH shortestPath( (a)-->(b {prop: c.prop}) ), (c) RETURN count(*) AS result"
+    expectNoErrorsFrom(query)
+  }
+
   test("should not allow node pattern predicates in CREATE") {
     val query = "CREATE (n WHERE n.prop = 123)"
     expectErrorsFrom(
@@ -481,27 +491,6 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
         SemanticError(
           "Node pattern predicates are not allowed in expression, but only in MATCH clause or inside a pattern comprehension",
           InputPosition(50, 3, 35)
-        )
-      )
-    )
-  }
-
-  test("should not allow label expressions in shortestPath expression") {
-    val query =
-      """
-        |MATCH (a), (b)
-        |WITH shortestPath((a:A|B)-[:REL*]->(b:B|C)) AS p
-        |RETURN length(p) AS result""".stripMargin
-    expectErrorsFrom(
-      query,
-      Set(
-        SemanticError(
-          "Label expressions in patterns are not allowed in expression, but only in MATCH clause",
-          InputPosition(38, 3, 23)
-        ),
-        SemanticError(
-          "Label expressions in patterns are not allowed in expression, but only in MATCH clause",
-          InputPosition(55, 3, 40)
         )
       )
     )

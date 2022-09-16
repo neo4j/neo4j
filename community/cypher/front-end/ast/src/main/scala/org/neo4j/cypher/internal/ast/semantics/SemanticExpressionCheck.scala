@@ -422,15 +422,21 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         SemanticCheck.success
 
       case x: ShortestPathExpression =>
-        SemanticPatternCheck.checkElementPredicates(Pattern.SemanticContext.Expression)(x.pattern) chain
-          SemanticPatternCheck.declareVariables(Pattern.SemanticContext.Expression)(x.pattern) chain
+        SemanticPatternCheck.declareVariables(Pattern.SemanticContext.Expression)(x.pattern) chain
           SemanticPatternCheck.check(Pattern.SemanticContext.Expression)(x.pattern) chain
+          when(x.pattern.element.folder.treeExists {
+            case le: LabelExpression if le.containsGpmSpecificLabelExpression => true
+          }) {
+            error("Label expressions in shortestPath are not allowed in expression", x.position)
+          } chain
           specifyType(if (x.pattern.single) CTPath else CTList(CTPath), x)
 
       case x: PatternExpression =>
         SemanticState.recordCurrentScope(x) chain
           withScopedState {
+            // Check with Pattern.SemanticContext.Match so that we do not get "Variable not defined" error for new variables ...
             SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain {
+              // ... and instead check for introduced variables here in an extra check
               (state: SemanticState) =>
                 {
                   val errors = x.pattern.element.allVariables.toSeq.collect {
@@ -447,8 +453,10 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
                 }
             }
           } chain
-          specifyType(CTList(CTPath), x) chain
-          SemanticPatternCheck.checkElementPredicates(Pattern.SemanticContext.Expression, x.pattern.element)
+          specifyType(CTList(CTPath), x) chain {
+            // Check the relationshipChain again with Pattern.SemanticContext.Expression to generate errors for node and relationship predicates
+            SemanticPatternCheck.check(Pattern.SemanticContext.Expression, x.pattern.element)
+          }
 
       case x: IterablePredicateExpression =>
         FilteringExpressions.checkPredicateDefined(x) chain
