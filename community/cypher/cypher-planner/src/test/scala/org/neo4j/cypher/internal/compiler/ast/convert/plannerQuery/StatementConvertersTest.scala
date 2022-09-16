@@ -1890,4 +1890,32 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     )))
   }
 
+  test("should convert a quantified pattern with a where clause") {
+    val query = buildSinglePlannerQuery("MATCH ((n)-[r]->(m) WHERE n.prop > m.prop)+ RETURN 1")
+    query.queryGraph shouldBe QueryGraph(
+      patternNodes = Set("anon_0", "anon_1"),
+      quantifiedPathPatterns = Set(
+        QuantifiedPathPattern(
+          leftBinding = NodeBinding("n", "anon_0"),
+          rightBinding = NodeBinding("m", "anon_1"),
+          pattern = QueryGraph(
+            patternNodes = Set("n", "m"),
+            patternRelationships =
+              Set(PatternRelationship(
+                "r",
+                ("n", "m"),
+                SemanticDirection.OUTGOING,
+                Seq.empty,
+                SimplePatternLength
+              )),
+            selections = Selections.from(greaterThan(prop("n", "prop"), prop("m", "prop")))
+          ),
+          repetition = Repetition(min = 1, max = UpperBound.Unlimited),
+          nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
+          relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
+        )
+      )
+    )
+  }
+
 }

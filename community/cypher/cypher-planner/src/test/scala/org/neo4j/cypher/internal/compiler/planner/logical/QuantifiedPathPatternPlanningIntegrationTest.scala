@@ -34,8 +34,12 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   private val planner = plannerBuilder()
     .setAllNodesCardinality(10)
     .setAllRelationshipsCardinality(10)
-    .setRelationshipCardinality("()-[:R]->()", 10)
     .setLabelCardinality("User", 5)
+    .setLabelCardinality("N", 5)
+    .setLabelCardinality("NN", 5)
+    .setRelationshipCardinality("()-[:R]->()", 10)
+    .setRelationshipCardinality("(:N)-[]->()", 10)
+    .setRelationshipCardinality("(:NN)-[]->()", 10)
     .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
     .build()
 
@@ -264,6 +268,65 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         .|.expandAll("(m)<-[anon_1]-(n)")
         .|.argument("m")
         .allRelationshipsScan("(a)-[anon_2]-(b)")
+        .build()
+    )
+  }
+
+  test("Should plan quantified path pattern with a WHERE clause") {
+    val query = "MATCH ((n)-[]->(m) WHERE n.prop > m.prop)+ RETURN n, m"
+
+    val plan = planner.plan(query).stripProduceResults
+    val `((n)-[]->(m))+` = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "anon_0",
+      end = "anon_2",
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(),
+      innerRelationships = Set("anon_1"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
+    )
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .trail(`((n)-[]->(m))+`)
+        .|.filter("n.prop > m.prop")
+        .|.expandAll("(n)-[anon_1]->(m)")
+        .|.argument("n")
+        .allNodeScan("anon_0")
+        .build()
+    )
+  }
+
+  test("Should plan quantified path pattern with inlined predicates") {
+    val query = "MATCH ((n:N&NN {prop: 5} WHERE n.foo > 0)-[r:!REL WHERE r.prop > 0]->(m))+ RETURN n, m"
+
+    val plan = planner.plan(query).stripProduceResults
+    val `((n)-[r]->(m))+` = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "anon_0",
+      end = "anon_1",
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
+    )
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .trail(`((n)-[r]->(m))+`)
+        .|.filter("not r:REL", "r.prop > 0")
+        .|.expandAll("(n)-[r]->(m)")
+        .|.filter("n:N", "n:NN", "n.prop = 5", "n.foo > 0")
+        .|.argument("n")
+        .allNodeScan("anon_0")
         .build()
     )
   }

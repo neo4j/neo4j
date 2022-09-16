@@ -210,7 +210,7 @@ object PatternConverters {
         patternNodes = content.nodeIds.toSet,
         patternRelationships = content.rels.toSet,
         argumentIds = Set.empty,
-        selections = Selections.empty
+        selections = Selections.from(quantifiedPath.optionalWhereExpression)
       )
 
       val variableGroupings = quantifiedPath.variableGroupings

@@ -1857,7 +1857,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def trail(
     trailParameters: TrailParameters
-  ): IMPL =
+  ): IMPL = {
+    // This one comes in as an argument, so we need to declare it as a node here
+    newNode(varFor(trailParameters.innerStart))
+    // This is the node we "expand-to" , so we need to declare it as a node here
+    newNode(varFor(trailParameters.end))
+
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
       Trail(
         lhs,
@@ -1874,8 +1879,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         trailParameters.previouslyBoundRelationshipGroups
       )(_)
     ))
+  }
 
-  // SHIP IP
+  // SHIP IT
 
   protected def buildLogicalPlan(): LogicalPlan = tree.build()
 
