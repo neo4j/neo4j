@@ -71,7 +71,12 @@ case class FunctionInvocation(
 
   override def asCanonicalStringVal = s"$name(${args.map(_.asCanonicalStringVal).mkString(",")})"
 
-  override def isConstantForQuery: Boolean = !needsToBeResolved && isDeterministic && args.forall(_.isConstantForQuery)
+  override def isConstantForQuery: Boolean =
+    !needsToBeResolved &&
+      isDeterministic &&
+      function != functions.File &&
+      function != functions.Linenumber &&
+      args.forall(_.isConstantForQuery)
 }
 
 case class FunctionName(name: String)(val position: InputPosition) extends SymbolicName {

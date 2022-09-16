@@ -23,8 +23,9 @@ import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.internal.schema
 import org.neo4j.values.storable.FloatingPointValue
+import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.ValueGroup
-import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.NO_VALUE
 
 object KernelAPISupport {
 
@@ -32,14 +33,18 @@ object KernelAPISupport {
    * Returns true if the specified property index query would never return any results
    */
   def isImpossibleIndexQuery(query: PropertyIndexQuery): Boolean = query match {
-    case null => true
-    case p: PropertyIndexQuery.ExactPredicate => p.value() match {
-        case Values.NO_VALUE        => true
-        case fp: FloatingPointValue => fp.isNaN
-        case _                      => false
-      }
+    case null                                    => true
+    case p: PropertyIndexQuery.ExactPredicate    => impossibleExactValue(p.value())
     case p: PropertyIndexQuery.RangePredicate[_] => p.valueGroup() == ValueGroup.NO_VALUE
     case _                                       => false
+  }
+
+  def impossibleExactValue(value: Value): Boolean = value match {
+    case null                   => true
+    case NO_VALUE               => true
+    case fp: FloatingPointValue => fp.isNaN
+    case _                      => false
+
   }
 
   def asKernelIndexOrder(indexOrder: plans.IndexOrder): schema.IndexOrder =

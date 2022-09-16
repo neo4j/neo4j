@@ -29,7 +29,8 @@ case class MapProjection(
 case class DesugaredMapProjection(variable: LogicalVariable, items: Seq[LiteralEntry], includeAllProps: Boolean)(
   val position: InputPosition
 ) extends Expression {
-  override def isConstantForQuery: Boolean = items.forall(_.isConstantForQuery)
+  // we need the variable to read
+  override def isConstantForQuery: Boolean = false
 }
 
 sealed trait MapProjectionElement extends Expression
@@ -40,11 +41,13 @@ case class LiteralEntry(key: PropertyKeyName, exp: Expression)(val position: Inp
 }
 
 case class VariableSelector(id: Variable)(val position: InputPosition) extends MapProjectionElement {
-  override def isConstantForQuery: Boolean = true
+  // we need the variable to read
+  override def isConstantForQuery: Boolean = false
 }
 
 case class PropertySelector(id: Variable)(val position: InputPosition) extends MapProjectionElement {
-  override def isConstantForQuery: Boolean = true
+  // we need the variable to read
+  override def isConstantForQuery: Boolean = false
 }
 
 case class AllPropertiesSelector()(val position: InputPosition) extends MapProjectionElement {
