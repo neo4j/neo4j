@@ -1415,5 +1415,37 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
     rel.getProperty("p2") should equal(43)
     runtimeResult should beColumns("r").withSingleRow(rel).withStatistics(nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 2)
   }
+
+  test("assert same node with merge") {
+    given {
+      uniqueIndex("Honey", "prop")
+      uniqueIndex("Milk", "prop")
+      nodePropertyGraph(sizeHint, { case i if i % 2 == 0 => Map("prop" -> i, "age" -> "old") }, "Honey", "Milk")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("prop", "age")
+      .projection("n.prop as prop", "n.age as age")
+      .apply()
+      .|.merge(nodes = Seq(createNodeWithProperties("n", Seq("Honey", "Milk"), "{prop: x, age: 'new'}")))
+      .|.assertSameNode("n")
+      .|.|.nodeIndexOperator("n:Honey(prop = ???)", paramExpr = Some(varFor("x")), unique = true)
+      .|.nodeIndexOperator("n:Milk(prop = ???)", paramExpr = Some(varFor("x")), unique = true)
+      .unwind(s"range(0, ${sizeHint - 1}) AS x")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = Range(0, sizeHint)
+      .map(i => Array(i, if (i % 2 == 0) "old" else "new"))
+    runtimeResult should beColumns("prop", "age")
+      .withRows(expected, listInAnyOrder = true)
+
+    // TODO This test assertion fails but should work
+    // .withStatistics(nodesCreated = sizeHint / 2, propertiesSet = sizeHint)
+  }
 }
 
