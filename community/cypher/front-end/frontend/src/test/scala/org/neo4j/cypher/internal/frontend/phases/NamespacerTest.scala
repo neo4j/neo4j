@@ -65,20 +65,20 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
               )(pos)),
               plusQuantifier,
               Set(
-                VariableGrouping(varFor("  x@0"), varFor("  x@3"))(pos),
-                VariableGrouping(varFor("  y@1"), varFor("  y@2"))(pos)
+                VariableGrouping(varFor("  x@0"), varFor("  x@2"))(pos),
+                VariableGrouping(varFor("  y@1"), varFor("  y@3"))(pos)
               )
             )(pos),
             nodePat(Some("  UNNAMED1"))
           ),
-          Some(where(equals(varFor("  x@3"), literalInt(0))))
+          Some(where(equals(varFor("  x@2"), literalInt(0))))
         ),
         with_(aliasedReturnItem(literalString("1"), "  x@4")).copy(
-          where = Some(where(isNotNull(varFor("  y@2"))))
+          where = Some(where(isNotNull(varFor("  y@3"))))
         )(pos),
         return_(aliasedReturnItem(varFor("  x@4")))
       ))(pos),
-      List(varFor("  x@0"), varFor("  x@3"), varFor("  x@4"), varFor("  y@1"), varFor("  y@2"))
+      List(varFor("  x@0"), varFor("  x@2"), varFor("  x@4"), varFor("  y@1"),  varFor("  y@3"))
     ),
     TestCase(
       "MATCH (n), (x) WHERE [x in n.prop WHERE x = 2] RETURN x AS x",

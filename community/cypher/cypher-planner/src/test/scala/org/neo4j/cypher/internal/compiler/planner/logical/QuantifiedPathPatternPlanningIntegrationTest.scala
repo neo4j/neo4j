@@ -56,8 +56,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       end = "b",
       innerStart = "  n@1",
       innerEnd = "  UNNAMED0",
-      groupNodes = Set(("  n@1", "  n@4")),
-      groupRelationships = Set(("  r@2", "  r@3")),
+      groupNodes = Set(("  n@1", "  n@3")),
+      groupRelationships = Set(("  r@2", "  r@4")),
       innerRelationships = Set("  r@2"),
       previouslyBoundRelationships = Set.empty,
       previouslyBoundRelationshipGroups = Set.empty
