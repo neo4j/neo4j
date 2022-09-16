@@ -42,36 +42,36 @@ class ConnectionRegistryTest {
 
     @BeforeEach
     void prepareRegistry() {
-        this.connectionTracker = Mockito.mock(NetworkConnectionTracker.class);
-        this.logProvider = new AssertableLogProvider();
+        connectionTracker = Mockito.mock(NetworkConnectionTracker.class);
+        logProvider = new AssertableLogProvider();
 
-        this.connectionRegistry = new ConnectionRegistry(CONNECTOR_ID, this.connectionTracker, this.logProvider);
+        connectionRegistry = new ConnectionRegistry(CONNECTOR_ID, connectionTracker, logProvider);
     }
 
     @Test
     void allocateIdShouldDelegateToConnectionTracker() {
-        Mockito.doReturn("some-id").when(this.connectionTracker).newConnectionId(CONNECTOR_ID);
+        Mockito.doReturn("some-id").when(connectionTracker).newConnectionId(CONNECTOR_ID);
 
-        var connectionId = this.connectionRegistry.allocateId();
+        var connectionId = connectionRegistry.allocateId();
 
         Assertions.assertThat(connectionId).isNotNull().isNotBlank().isEqualTo("some-id");
 
-        Mockito.verify(this.connectionTracker).newConnectionId(CONNECTOR_ID);
-        Mockito.verifyNoMoreInteractions(this.connectionTracker);
+        Mockito.verify(connectionTracker).newConnectionId(CONNECTOR_ID);
+        Mockito.verifyNoMoreInteractions(connectionTracker);
 
-        LogAssertions.assertThat(this.logProvider).doesNotHaveAnyLogs();
+        LogAssertions.assertThat(logProvider).doesNotHaveAnyLogs();
     }
 
     @Test
     void registerShouldDelegateToConnectionTracker() {
         var connection = ConnectionMockFactory.newInstance(CONNECTION_ID);
 
-        this.connectionRegistry.register(connection);
+        connectionRegistry.register(connection);
 
-        Mockito.verify(this.connectionTracker).add(connection);
-        Mockito.verifyNoMoreInteractions(this.connectionTracker);
+        Mockito.verify(connectionTracker).add(connection);
+        Mockito.verifyNoMoreInteractions(connectionTracker);
 
-        LogAssertions.assertThat(this.logProvider)
+        LogAssertions.assertThat(logProvider)
                 .forLevel(AssertableLogProvider.Level.DEBUG)
                 .forClass(ConnectionRegistry.class)
                 .containsMessageWithArguments("[%s] Registered connection", CONNECTION_ID);
@@ -81,12 +81,12 @@ class ConnectionRegistryTest {
     void unregisterShouldDelegateToConnectionTracker() {
         var connection = ConnectionMockFactory.newInstance(CONNECTION_ID);
 
-        this.connectionRegistry.unregister(connection);
+        connectionRegistry.unregister(connection);
 
-        Mockito.verify(this.connectionTracker).remove(connection);
-        Mockito.verifyNoMoreInteractions(this.connectionTracker);
+        Mockito.verify(connectionTracker).remove(connection);
+        Mockito.verifyNoMoreInteractions(connectionTracker);
 
-        LogAssertions.assertThat(this.logProvider)
+        LogAssertions.assertThat(logProvider)
                 .forLevel(AssertableLogProvider.Level.DEBUG)
                 .forClass(ConnectionRegistry.class)
                 .containsMessageWithArguments("[%s] Removed connection", CONNECTION_ID);
@@ -103,8 +103,8 @@ class ConnectionRegistryTest {
                 .build();
         var connection2 = ConnectionMockFactory.newFactory().withIdling(false).build();
 
-        this.connectionRegistry.register(connection1);
-        this.connectionRegistry.register(connection2);
+        connectionRegistry.register(connection1);
+        connectionRegistry.register(connection2);
 
         Mockito.verify(connection1).id();
         Mockito.verifyNoMoreInteractions(connection1);
@@ -112,11 +112,11 @@ class ConnectionRegistryTest {
         Mockito.verify(connection2).id();
         Mockito.verifyNoMoreInteractions(connection2);
 
-        Mockito.verify(this.connectionTracker).add(connection1);
-        Mockito.verify(this.connectionTracker).add(connection2);
-        Mockito.verifyNoMoreInteractions(this.connectionTracker);
+        Mockito.verify(connectionTracker).add(connection1);
+        Mockito.verify(connectionTracker).add(connection2);
+        Mockito.verifyNoMoreInteractions(connectionTracker);
 
-        this.connectionRegistry.stopIdling();
+        connectionRegistry.stopIdling();
 
         Mockito.verify(connection1, Mockito.times(3)).id();
         Mockito.verify(connection1).isIdling();
@@ -128,22 +128,22 @@ class ConnectionRegistryTest {
         Mockito.verify(connection2).isIdling();
         Mockito.verifyNoMoreInteractions(connection2);
 
-        Mockito.verify(this.connectionTracker).remove(connection1);
-        Mockito.verifyNoMoreInteractions(this.connectionTracker);
+        Mockito.verify(connectionTracker).remove(connection1);
+        Mockito.verifyNoMoreInteractions(connectionTracker);
 
-        LogAssertions.assertThat(this.logProvider)
+        LogAssertions.assertThat(logProvider)
                 .forLevel(AssertableLogProvider.Level.INFO)
                 .forClass(ConnectionRegistry.class)
                 .containsMessageWithArguments("Stopping remaining idle connections for connector %s", CONNECTOR_ID);
-        LogAssertions.assertThat(this.logProvider)
+        LogAssertions.assertThat(logProvider)
                 .forLevel(AssertableLogProvider.Level.DEBUG)
                 .forClass(ConnectionRegistry.class)
                 .containsMessageWithArguments("[%s] Stopping idle connection", CONNECTION_ID);
-        LogAssertions.assertThat(this.logProvider)
+        LogAssertions.assertThat(logProvider)
                 .forLevel(AssertableLogProvider.Level.DEBUG)
                 .forClass(ConnectionRegistry.class)
                 .containsMessageWithArguments("[%s] Stopped idle connection", CONNECTION_ID);
-        LogAssertions.assertThat(this.logProvider)
+        LogAssertions.assertThat(logProvider)
                 .forLevel(AssertableLogProvider.Level.INFO)
                 .forClass(ConnectionRegistry.class)
                 .containsMessageWithArguments("Stopped %d idling connections for connector %s", 1, CONNECTOR_ID);
@@ -163,19 +163,19 @@ class ConnectionRegistryTest {
                 .build();
         var connection2 = ConnectionMockFactory.newFactory().withIdling(true).build();
 
-        this.connectionRegistry.register(connection1);
-        this.connectionRegistry.register(connection2);
-        this.connectionRegistry.stopIdling();
+        connectionRegistry.register(connection1);
+        connectionRegistry.register(connection2);
+        connectionRegistry.stopIdling();
 
         Mockito.verify(connection1).close();
         Mockito.verify(connection2).close();
 
         Mockito.verify(future).get();
 
-        Mockito.verify(this.connectionTracker).remove(connection1);
-        Mockito.verify(this.connectionTracker).remove(connection2);
+        Mockito.verify(connectionTracker).remove(connection1);
+        Mockito.verify(connectionTracker).remove(connection2);
 
-        LogAssertions.assertThat(this.logProvider)
+        LogAssertions.assertThat(logProvider)
                 .forLevel(AssertableLogProvider.Level.WARN)
                 .forClass(ConnectionRegistry.class)
                 .containsMessageWithException(
@@ -196,19 +196,19 @@ class ConnectionRegistryTest {
                 .build();
         var connection2 = ConnectionMockFactory.newFactory().withIdling(true).build();
 
-        this.connectionRegistry.register(connection1);
-        this.connectionRegistry.register(connection2);
-        this.connectionRegistry.stopIdling();
+        connectionRegistry.register(connection1);
+        connectionRegistry.register(connection2);
+        connectionRegistry.stopIdling();
 
         Mockito.verify(connection1).close();
         Mockito.verify(connection2).close();
 
         Mockito.verify(future).get();
 
-        Mockito.verify(this.connectionTracker).remove(connection1);
-        Mockito.verify(this.connectionTracker).remove(connection2);
+        Mockito.verify(connectionTracker).remove(connection1);
+        Mockito.verify(connectionTracker).remove(connection2);
 
-        LogAssertions.assertThat(this.logProvider)
+        LogAssertions.assertThat(logProvider)
                 .forLevel(AssertableLogProvider.Level.WARN)
                 .forClass(ConnectionRegistry.class)
                 .containsMessageWithException("[" + CONNECTION_ID + "] Clean shutdown of connection has failed", cause);
@@ -230,14 +230,14 @@ class ConnectionRegistryTest {
                 .withCloseFuture(future2)
                 .build();
 
-        this.connectionRegistry.register(connection1);
-        this.connectionRegistry.register(connection2);
+        connectionRegistry.register(connection1);
+        connectionRegistry.register(connection2);
 
-        Mockito.verify(this.connectionTracker).add(connection1);
-        Mockito.verify(this.connectionTracker).add(connection2);
-        Mockito.verifyNoMoreInteractions(this.connectionTracker);
+        Mockito.verify(connectionTracker).add(connection1);
+        Mockito.verify(connectionTracker).add(connection2);
+        Mockito.verifyNoMoreInteractions(connectionTracker);
 
-        this.connectionRegistry.stopAll();
+        connectionRegistry.stopAll();
 
         Mockito.verify(connection1, Mockito.times(3)).id();
         Mockito.verify(connection1).close();
@@ -251,23 +251,23 @@ class ConnectionRegistryTest {
         Mockito.verify(future2).get();
         Mockito.verifyNoMoreInteractions(connection2);
 
-        Mockito.verify(this.connectionTracker).remove(connection1);
-        Mockito.verify(this.connectionTracker).remove(connection2);
-        Mockito.verifyNoMoreInteractions(this.connectionTracker);
+        Mockito.verify(connectionTracker).remove(connection1);
+        Mockito.verify(connectionTracker).remove(connection2);
+        Mockito.verifyNoMoreInteractions(connectionTracker);
 
-        LogAssertions.assertThat(this.logProvider)
+        LogAssertions.assertThat(logProvider)
                 .forLevel(AssertableLogProvider.Level.INFO)
                 .forClass(ConnectionRegistry.class)
                 .containsMessageWithArguments("Stopping %d connections for connector %s", 2, CONNECTOR_ID);
-        LogAssertions.assertThat(this.logProvider)
+        LogAssertions.assertThat(logProvider)
                 .forLevel(AssertableLogProvider.Level.DEBUG)
                 .forClass(ConnectionRegistry.class)
                 .containsMessageWithArguments("[%s] Stopping connection", CONNECTION_ID);
-        LogAssertions.assertThat(this.logProvider)
+        LogAssertions.assertThat(logProvider)
                 .forLevel(AssertableLogProvider.Level.DEBUG)
                 .forClass(ConnectionRegistry.class)
                 .containsMessageWithArguments("[%s] Stopped connection", CONNECTION_ID);
-        LogAssertions.assertThat(this.logProvider)
+        LogAssertions.assertThat(logProvider)
                 .forLevel(AssertableLogProvider.Level.INFO)
                 .forClass(ConnectionRegistry.class)
                 .containsMessageWithArguments("Stopped all remaining connections for connector %s", CONNECTOR_ID);
@@ -286,19 +286,19 @@ class ConnectionRegistryTest {
                 .build();
         var connection2 = ConnectionMockFactory.newInstance();
 
-        this.connectionRegistry.register(connection1);
-        this.connectionRegistry.register(connection2);
-        this.connectionRegistry.stopAll();
+        connectionRegistry.register(connection1);
+        connectionRegistry.register(connection2);
+        connectionRegistry.stopAll();
 
         Mockito.verify(connection1).close();
         Mockito.verify(connection2).close();
 
         Mockito.verify(future).get();
 
-        Mockito.verify(this.connectionTracker).remove(connection1);
-        Mockito.verify(this.connectionTracker).remove(connection2);
+        Mockito.verify(connectionTracker).remove(connection1);
+        Mockito.verify(connectionTracker).remove(connection2);
 
-        LogAssertions.assertThat(this.logProvider)
+        LogAssertions.assertThat(logProvider)
                 .forLevel(AssertableLogProvider.Level.WARN)
                 .forClass(ConnectionRegistry.class)
                 .containsMessageWithException(
@@ -318,19 +318,19 @@ class ConnectionRegistryTest {
                 .build();
         var connection2 = ConnectionMockFactory.newInstance();
 
-        this.connectionRegistry.register(connection1);
-        this.connectionRegistry.register(connection2);
-        this.connectionRegistry.stopAll();
+        connectionRegistry.register(connection1);
+        connectionRegistry.register(connection2);
+        connectionRegistry.stopAll();
 
         Mockito.verify(connection1).close();
         Mockito.verify(connection2).close();
 
         Mockito.verify(future).get();
 
-        Mockito.verify(this.connectionTracker).remove(connection1);
-        Mockito.verify(this.connectionTracker).remove(connection2);
+        Mockito.verify(connectionTracker).remove(connection1);
+        Mockito.verify(connectionTracker).remove(connection2);
 
-        LogAssertions.assertThat(this.logProvider)
+        LogAssertions.assertThat(logProvider)
                 .forLevel(AssertableLogProvider.Level.WARN)
                 .forClass(ConnectionRegistry.class)
                 .containsMessageWithException("[" + CONNECTION_ID + "] Clean shutdown of connection has failed", cause);

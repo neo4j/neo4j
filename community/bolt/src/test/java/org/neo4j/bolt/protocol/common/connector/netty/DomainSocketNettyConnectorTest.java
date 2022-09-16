@@ -23,7 +23,6 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.unix.DomainSocketAddress;
 import io.netty.util.concurrent.DefaultThreadFactory;
-import java.io.File;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.SocketAddress;
@@ -33,7 +32,6 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Assumptions;
@@ -64,54 +62,54 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
     protected void prepareDependencies() {
         super.prepareDependencies();
 
-        this.config = Mockito.spy(Config.defaults());
-        this.allocator = ByteBufAllocator.DEFAULT;
+        config = Mockito.spy(Config.defaults());
+        allocator = ByteBufAllocator.DEFAULT;
 
         // currently NIO does not provide support for domain sockets (despite JDK support) thus limiting this
         // functionality to compatible versions of Linux based operating systems as well as certain versions of Mac OS
         var epollTransport = new EpollConnectorTransport();
         if (epollTransport.isAvailable()) {
-            this.transport = epollTransport;
+            transport = epollTransport;
         } else {
             var kqueueTransport = new KqueueConnectorTransport();
             if (kqueueTransport.isAvailable()) {
-                this.transport = kqueueTransport;
+                transport = kqueueTransport;
             }
         }
 
-        Assumptions.assumeTrue(this.transport != null);
+        Assumptions.assumeTrue(transport != null);
 
-        this.bossGroup = this.transport.createEventLoopGroup(new DefaultThreadFactory("bolt-network"));
-        this.workerGroup = this.bossGroup; // currently shared in production code
+        bossGroup = transport.createEventLoopGroup(new DefaultThreadFactory("bolt-network"));
+        workerGroup = bossGroup; // currently shared in production code
     }
 
     @BeforeEach
     void deleteDomainSocket() throws IOException {
         // ensure that no files are left over from a previously crashed JVM instance
-        Files.deleteIfExists(Paths.get(FILE_NAME));
+        Files.deleteIfExists(Path.of(FILE_NAME));
     }
 
     @Override
     protected DomainSocketNettyConnector createConnector(SocketAddress address) {
         return new DomainSocketNettyConnector(
                 CONNECTOR_ID,
-                new File(((DomainSocketAddress) address).path()),
-                this.config,
-                this.memoryPool,
-                this.allocator,
-                this.bossGroup,
-                this.workerGroup,
-                this.transport,
-                this.connectionFactory,
-                this.connectionTracker,
-                this.protocolRegistry,
-                this.authentication,
-                this.authConfigProvider,
-                this.defaultDatabaseResolver,
-                this.connectionHintProvider,
+                Path.of(((DomainSocketAddress) address).path()),
+                config,
+                memoryPool,
+                allocator,
+                bossGroup,
+                workerGroup,
+                transport,
+                connectionFactory,
+                connectionTracker,
+                protocolRegistry,
+                authentication,
+                authConfigProvider,
+                defaultDatabaseResolver,
+                connectionHintProvider,
                 Mockito.mock(BookmarkParser.class),
-                this.logging,
-                this.logging);
+                logging,
+                logging);
     }
 
     @Override
@@ -121,13 +119,13 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
 
     @Test
     void shouldBindSpecifiedAddress() throws Exception {
-        this.connector = this.createConnector();
+        connector = createConnector();
 
-        Assertions.assertThat(this.connector.address()).isNull();
+        Assertions.assertThat(connector.address()).isNull();
 
-        this.connector.start();
+        connector.start();
 
-        var address = this.connector.address();
+        var address = connector.address();
 
         Assertions.assertThat(address)
                 .isNotNull()
@@ -143,8 +141,8 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
             channel.connect(UnixDomainSocketAddress.of(((DomainSocketAddress) address).path()));
         }
 
-        this.connector.stop();
-        this.connector = null;
+        connector.stop();
+        connector = null;
 
         Assertions.assertThat(path).doesNotExist();
     }
@@ -154,37 +152,37 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
         Assertions.assertThatExceptionOfType(IllegalArgumentException.class)
                 .isThrownBy(() -> new DomainSocketNettyConnector(
                         CONNECTOR_ID,
-                        new File(FILE_NAME),
-                        this.config,
-                        this.memoryPool,
-                        this.allocator,
-                        this.bossGroup,
-                        this.workerGroup,
+                        Path.of(FILE_NAME),
+                        config,
+                        memoryPool,
+                        allocator,
+                        bossGroup,
+                        workerGroup,
                         new NioConnectorTransport(),
-                        this.connectionFactory,
-                        this.connectionTracker,
-                        this.protocolRegistry,
-                        this.authentication,
-                        this.authConfigProvider,
-                        this.defaultDatabaseResolver,
-                        this.connectionHintProvider,
+                        connectionFactory,
+                        connectionTracker,
+                        protocolRegistry,
+                        authentication,
+                        authConfigProvider,
+                        defaultDatabaseResolver,
+                        connectionHintProvider,
                         Mockito.mock(BookmarkParser.class),
-                        this.logging,
-                        this.logging))
+                        logging,
+                        logging))
                 .withMessageContaining("Unsupported transport: NIO does not support domain sockets")
                 .withNoCause();
     }
 
     @Test
     void shouldFailWithPortBindErrorWhenPortConflicts() {
-        var bindAddress = this.getDefaultAddress();
+        var bindAddress = getDefaultAddress();
 
         try (var ignored = ServerSocketChannel.open(StandardProtocolFamily.UNIX)
                 .bind(UnixDomainSocketAddress.of(((DomainSocketAddress) bindAddress).path()))) {
-            this.connector = this.createConnector(bindAddress);
+            connector = createConnector(bindAddress);
 
             Assertions.assertThatExceptionOfType(PortBindException.class)
-                    .isThrownBy(() -> this.connector.start())
+                    .isThrownBy(() -> connector.start())
                     .withRootCauseInstanceOf(BindException.class);
         } catch (Exception e) {
             throw new RuntimeException(e);

@@ -59,45 +59,44 @@ class SocketNettyConnectorTest extends AbstractNettyConnectorTest<SocketNettyCon
     protected void prepareDependencies() {
         super.prepareDependencies();
 
-        this.config = Mockito.spy(Config.defaults());
-        this.connectorPortRegister = Mockito.mock(ConnectorPortRegister.class);
-        this.allocator = ByteBufAllocator.DEFAULT;
-        this.transport = new NioConnectorTransport();
-        this.bossGroup = this.transport.createEventLoopGroup(new DefaultThreadFactory("bolt-network"));
-        this.workerGroup = this.bossGroup; // currently shared in production code
+        config = Mockito.spy(Config.defaults());
+        connectorPortRegister = Mockito.mock(ConnectorPortRegister.class);
+        allocator = ByteBufAllocator.DEFAULT;
+        transport = new NioConnectorTransport();
+        bossGroup = transport.createEventLoopGroup(new DefaultThreadFactory("bolt-network"));
+        workerGroup = bossGroup; // currently shared in production code
     }
 
     @AfterEach
     void cleanupDependencies() {
-        this.bossGroup.shutdownNow();
-        // this.workerGroup.shutdownNow();
+        bossGroup.shutdownNow();
     }
 
     protected SocketNettyConnector createConnector(SocketAddress bindAddress) {
         return new SocketNettyConnector(
                 CONNECTOR_ID,
                 bindAddress,
-                this.config,
+                config,
                 ConnectorType.BOLT,
-                this.connectorPortRegister,
-                this.memoryPool,
-                this.allocator,
-                this.bossGroup,
-                this.workerGroup,
-                this.transport,
-                this.connectionFactory,
-                this.connectionTracker,
+                connectorPortRegister,
+                memoryPool,
+                allocator,
+                bossGroup,
+                workerGroup,
+                transport,
+                connectionFactory,
+                connectionTracker,
                 null,
                 false,
                 true,
-                this.protocolRegistry,
-                this.authentication,
-                this.authConfigProvider,
-                this.defaultDatabaseResolver,
-                this.connectionHintProvider,
+                protocolRegistry,
+                authentication,
+                authConfigProvider,
+                defaultDatabaseResolver,
+                connectionHintProvider,
                 Mockito.mock(BookmarkParser.class),
-                this.logging,
-                this.logging);
+                logging,
+                logging);
     }
 
     @Override
@@ -107,13 +106,13 @@ class SocketNettyConnectorTest extends AbstractNettyConnectorTest<SocketNettyCon
 
     @Test
     void shouldBindToSpecifiedAddress() throws Exception {
-        this.connector = this.createConnector();
+        connector = createConnector();
 
-        Assertions.assertThat(this.connector.address()).isNull();
+        Assertions.assertThat(connector.address()).isNull();
 
-        this.connector.start();
+        connector.start();
 
-        var address = this.connector.address();
+        var address = connector.address();
 
         // ensure that the server binds to the address we told it to bind to with a randomly assigned port
         Assertions.assertThat(address)
@@ -129,31 +128,31 @@ class SocketNettyConnectorTest extends AbstractNettyConnectorTest<SocketNettyCon
                 .isNotEqualTo(0);
 
         try (var connection = new Socket()) {
-            connection.connect(this.connector.address());
+            connection.connect(connector.address());
         }
     }
 
     @Test
     void shouldRegisterWithPortRegister() throws Exception {
-        this.connector = this.createConnector();
-        this.connector.start();
+        connector = createConnector();
+        connector.start();
 
-        var address = this.connector.address();
+        var address = connector.address();
 
         Assertions.assertThat(address).isNotNull().isInstanceOf(InetSocketAddress.class);
 
-        Mockito.verify(this.connectorPortRegister).register(ConnectorType.BOLT, (InetSocketAddress) address);
+        Mockito.verify(connectorPortRegister).register(ConnectorType.BOLT, (InetSocketAddress) address);
     }
 
     @Test
     void shouldFailWithPortBindErrorWhenPortConflicts() throws IOException {
-        try (var channel = ServerSocketChannel.open().bind(this.getDefaultAddress())) {
+        try (var channel = ServerSocketChannel.open().bind(getDefaultAddress())) {
             var bindAddress = channel.getLocalAddress();
 
-            this.connector = this.createConnector(bindAddress);
+            connector = createConnector(bindAddress);
 
             Assertions.assertThatExceptionOfType(PortBindException.class)
-                    .isThrownBy(() -> this.connector.start())
+                    .isThrownBy(() -> connector.start())
                     .withRootCauseInstanceOf(BindException.class);
         }
     }

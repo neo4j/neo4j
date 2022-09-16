@@ -52,7 +52,7 @@ public abstract class AbstractNettyConnector extends AbstractConnector {
 
     private Channel channel;
 
-    public AbstractNettyConnector(
+    AbstractNettyConnector(
             String id,
             SocketAddress bindAddress,
             MemoryPool memoryPool,
@@ -81,8 +81,8 @@ public abstract class AbstractNettyConnector extends AbstractConnector {
                 bookmarkParser,
                 internalLogProvider);
         this.bindAddress = bindAddress;
-        this.userLog = userLogProvider.getLog(this.getClass());
-        this.log = internalLogProvider.getLog(this.getClass());
+        this.userLog = userLogProvider.getLog(getClass());
+        this.log = internalLogProvider.getLog(getClass());
     }
 
     /**
@@ -93,7 +93,7 @@ public abstract class AbstractNettyConnector extends AbstractConnector {
      * @return a thread group.
      */
     protected EventLoopGroup bossGroup() {
-        return this.workerGroup();
+        return workerGroup();
     }
 
     /**
@@ -156,32 +156,32 @@ public abstract class AbstractNettyConnector extends AbstractConnector {
 
     @Override
     public void start() throws Exception {
-        if (this.channel != null) {
-            throw new IllegalStateException("Connector " + this.id() + " is already running");
+        if (channel != null) {
+            throw new IllegalStateException("Connector " + id() + " is already running");
         }
 
-        this.onStart();
+        onStart();
 
         var bootstrap = new ServerBootstrap()
-                .channel(this.channelType())
-                .group(this.bossGroup(), this.workerGroup())
-                .childHandler(this.channelInitializer());
+                .channel(channelType())
+                .group(bossGroup(), workerGroup())
+                .childHandler(channelInitializer());
 
-        this.configureServer(bootstrap);
+        configureServer(bootstrap);
 
-        var f = bootstrap.bind(this.bindAddress);
+        var f = bootstrap.bind(bindAddress);
         try {
             f.await();
         } catch (InterruptedException ex) {
-            throw new PortBindException(this.bindAddress, ex);
+            throw new PortBindException(bindAddress, ex);
         }
 
         if (!f.isSuccess()) {
-            throw new PortBindException(this.bindAddress, f.cause());
+            throw new PortBindException(bindAddress, f.cause());
         }
 
-        this.channel = f.channel();
-        this.onChannelBound(this.channel);
+        channel = f.channel();
+        onChannelBound(channel);
         logStartupMessage();
     }
 
@@ -198,11 +198,11 @@ public abstract class AbstractNettyConnector extends AbstractConnector {
         }
 
         super.stop();
-        this.onChannelClose(channel);
+        onChannelClose(channel);
 
         var f = channel.close().awaitUninterruptibly();
         if (!f.isSuccess()) {
-            this.log.warn("Failed to close channel " + channel + " for connector " + this.id(), f.cause());
+            log.warn("Failed to close channel " + channel + " for connector " + id(), f.cause());
         }
     }
 

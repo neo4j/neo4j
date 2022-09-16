@@ -28,6 +28,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPoint;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
+import io.netty.util.internal.logging.InternalLoggerFactory;
 import java.lang.reflect.RecordComponent;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -36,6 +37,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
+import org.neo4j.bolt.transport.Netty4LoggerFactory;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.Edition;
@@ -387,6 +389,11 @@ public class DatabaseManagementServiceFactory {
             AbstractEditionModule edition,
             BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
             DatabaseIdRepository databaseIdRepository) {
+
+        // Must be called before loading any Netty classes in order to override the factory
+        InternalLoggerFactory.setDefaultFactory(
+                new Netty4LoggerFactory(globalModule.getLogService().getInternalLogProvider()));
+
         return new BoltServer(
                 globalModule.getDbmsInfo(),
                 boltGraphDatabaseManagementServiceSPI,

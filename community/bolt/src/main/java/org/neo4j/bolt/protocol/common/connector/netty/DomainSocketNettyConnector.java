@@ -19,13 +19,14 @@
  */
 package org.neo4j.bolt.protocol.common.connector.netty;
 
+import static org.neo4j.util.Preconditions.checkArgument;
+
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.ServerChannel;
 import io.netty.channel.unix.DomainSocketAddress;
-import java.io.File;
 import java.io.IOException;
 import java.net.BindException;
 import java.nio.file.Files;
@@ -55,7 +56,7 @@ import org.neo4j.server.config.AuthConfigProvider;
  * is provided through the socket file itself and will thus occur on OS level.
  */
 public class DomainSocketNettyConnector extends AbstractNettyConnector {
-    private final File file;
+    private final Path path;
     private final Config config;
     private final ByteBufAllocator allocator;
     private final ConnectorTransport transport;
@@ -63,9 +64,9 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
     private final EventLoopGroup workerGroup;
     private final InternalLogProvider logging;
 
-    public DomainSocketNettyConnector(
+    DomainSocketNettyConnector(
             String id,
-            File file,
+            Path path,
             Config config,
             MemoryPool memoryPool,
             ByteBufAllocator allocator,
@@ -84,7 +85,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
             InternalLogProvider logging) {
         super(
                 id,
-                new DomainSocketAddress(file),
+                new DomainSocketAddress(path.toFile()),
                 memoryPool,
                 connectionFactory,
                 connectionTracker,
@@ -97,12 +98,11 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
                 bookmarkParser,
                 userLogProvider,
                 logging);
-        if (transport.getDomainSocketChannelType() == null) {
-            throw new IllegalArgumentException(
-                    "Unsupported transport: " + transport.getName() + " does not support domain sockets");
-        }
+        checkArgument(
+                transport.getDomainSocketChannelType() != null,
+                "Unsupported transport: " + transport.getName() + " does not support domain sockets");
 
-        this.file = file;
+        this.path = path;
         this.config = config;
         this.allocator = allocator;
         this.transport = transport;
@@ -113,7 +113,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
 
     public DomainSocketNettyConnector(
             String id,
-            File file,
+            Path path,
             Config config,
             MemoryPool memoryPool,
             ByteBufAllocator allocator,
@@ -131,7 +131,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
             InternalLogProvider logging) {
         this(
                 id,
-                file,
+                path,
                 config,
                 memoryPool,
                 allocator,
@@ -152,45 +152,44 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
 
     @Override
     protected EventLoopGroup bossGroup() {
-        return this.bossGroup;
+        return bossGroup;
     }
 
     @Override
     protected EventLoopGroup workerGroup() {
-        return this.workerGroup;
+        return workerGroup;
     }
 
     @Override
     protected Class<? extends ServerChannel> channelType() {
-        return this.transport.getDomainSocketChannelType();
+        return transport.getDomainSocketChannelType();
     }
 
     @Override
     protected ChannelInitializer<Channel> channelInitializer() {
-        return new BoltChannelInitializer(this.config, this, this.allocator, this.logging);
+        return new BoltChannelInitializer(config, this, allocator, logging);
     }
 
     @Override
     protected void onStart() throws Exception {
         super.onStart();
 
-        if (this.file.exists()) {
-            if (!this.config.get(BoltConnectorInternalSettings.unsupported_loopback_delete)) {
+        if (Files.exists(path)) {
+            if (!config.get(BoltConnectorInternalSettings.unsupported_loopback_delete)) {
                 throw new PortBindException(
-                        this.bindAddress,
-                        new BindException("Loopback listen file: " + this.file.getPath() + " already exists."));
+                        bindAddress, new BindException("Loopback listen file: " + path + " already exists."));
             }
 
             try {
-                Files.deleteIfExists(Path.of(file.getPath()));
+                Files.deleteIfExists(path);
             } catch (IOException ex) {
-                throw new PortBindException(this.bindAddress, ex);
+                throw new PortBindException(bindAddress, ex);
             }
         }
     }
 
     @Override
     protected void logStartupMessage() {
-        userLog.info("Bolt (loopback) enabled on file %s", file);
+        userLog.info("Bolt (loopback) enabled on file %s", path);
     }
 }

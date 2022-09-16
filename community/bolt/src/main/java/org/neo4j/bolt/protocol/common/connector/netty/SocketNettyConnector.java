@@ -163,39 +163,39 @@ public class SocketNettyConnector extends AbstractNettyConnector {
 
     @Override
     protected EventLoopGroup bossGroup() {
-        return this.bossGroup;
+        return bossGroup;
     }
 
     @Override
     protected EventLoopGroup workerGroup() {
-        return this.workerGroup;
+        return workerGroup;
     }
 
     @Override
     protected Class<? extends ServerChannel> channelType() {
-        return this.transport.getSocketChannelType();
+        return transport.getSocketChannelType();
     }
 
     @Override
     protected ChannelInitializer<Channel> channelInitializer() {
-        return new BoltChannelInitializer(this.config, this, this.allocator, this.sslContext, this.logging);
+        return new BoltChannelInitializer(config, this, allocator, sslContext, logging);
     }
 
     @Override
     protected void configureServer(ServerBootstrap bootstrap) {
         super.configureServer(bootstrap);
 
-        bootstrap.childOption(ChannelOption.SO_KEEPALIVE, this.enableTcpKeepAlive);
+        bootstrap.childOption(ChannelOption.SO_KEEPALIVE, enableTcpKeepAlive);
     }
 
     @Override
     protected void onChannelBound(Channel channel) {
-        this.portRegister.register(this.connectorType, (InetSocketAddress) this.address());
+        portRegister.register(connectorType, (InetSocketAddress) address());
     }
 
     @Override
     protected void onChannelClose(Channel channel) {
-        this.portRegister.deregister(this.connectorType);
+        portRegister.deregister(connectorType);
     }
 
     @Override

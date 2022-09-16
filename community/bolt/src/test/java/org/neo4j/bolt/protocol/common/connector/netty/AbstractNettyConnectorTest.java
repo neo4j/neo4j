@@ -50,15 +50,15 @@ public abstract class AbstractNettyConnectorTest<C extends AbstractNettyConnecto
 
     @BeforeEach
     protected void prepareDependencies() {
-        this.memoryPool = Mockito.mock(MemoryPool.class, Mockito.RETURNS_MOCKS);
-        this.connectionFactory = Mockito.mock(Connection.Factory.class);
-        this.connectionTracker = Mockito.mock(NetworkConnectionTracker.class);
-        this.protocolRegistry = Mockito.mock(BoltProtocolRegistry.class);
-        this.authentication = Mockito.mock(Authentication.class);
-        this.authConfigProvider = Mockito.mock(AuthConfigProvider.class);
-        this.defaultDatabaseResolver = Mockito.mock(DefaultDatabaseResolver.class);
-        this.connectionHintProvider = Mockito.mock(ConnectionHintProvider.class);
-        this.logging = new AssertableLogProvider();
+        memoryPool = Mockito.mock(MemoryPool.class, Mockito.RETURNS_MOCKS);
+        connectionFactory = Mockito.mock(Connection.Factory.class);
+        connectionTracker = Mockito.mock(NetworkConnectionTracker.class);
+        protocolRegistry = Mockito.mock(BoltProtocolRegistry.class);
+        authentication = Mockito.mock(Authentication.class);
+        authConfigProvider = Mockito.mock(AuthConfigProvider.class);
+        defaultDatabaseResolver = Mockito.mock(DefaultDatabaseResolver.class);
+        connectionHintProvider = Mockito.mock(ConnectionHintProvider.class);
+        logging = new AssertableLogProvider();
     }
 
     @AfterEach
@@ -95,6 +95,6 @@ public abstract class AbstractNettyConnectorTest<C extends AbstractNettyConnecto
      * @return a default address.
      */
     protected C createConnector() {
-        return this.createConnector(this.getDefaultAddress());
+        return createConnector(getDefaultAddress());
     }
 }

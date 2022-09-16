@@ -22,6 +22,7 @@ package org.neo4j.bolt;
 import static org.neo4j.bolt.protocol.common.connection.DefaultConnectionHintProvider.connectionHintProviderFunction;
 import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 import static org.neo4j.configuration.ssl.SslPolicyScope.CLUSTER;
+import static org.neo4j.function.Suppliers.lazySingleton;
 
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -29,8 +30,6 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslProvider;
 import io.netty.util.internal.PlatformDependent;
-import io.netty.util.internal.logging.InternalLoggerFactory;
-import java.io.File;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.ExecutorService;
@@ -66,7 +65,6 @@ import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.security.basic.BasicAuthentication;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.transport.BoltMemoryPool;
-import org.neo4j.bolt.transport.Netty4LoggerFactory;
 import org.neo4j.buffer.CentralBufferMangerHolder;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -79,6 +77,7 @@ import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.connectors.CommonConnectorConfig;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.ConnectorType;
+import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.database.DatabaseIdRepository;
@@ -98,12 +97,11 @@ import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.VisibleForTesting;
 
 public class BoltServer extends LifecycleAdapter {
-
     @VisibleForTesting
-    public static final PooledByteBufAllocator NETTY_BUF_ALLOCATOR =
-            new PooledByteBufAllocator(PlatformDependent.directBufferPreferred());
+    public static final Suppliers.Lazy<PooledByteBufAllocator> NETTY_BUF_ALLOCATOR =
+            lazySingleton(() -> new PooledByteBufAllocator(PlatformDependent.directBufferPreferred()));
 
-    private DbmsInfo dbmsInfo;
+    private final DbmsInfo dbmsInfo;
     private final JobScheduler jobScheduler;
     private final ConnectorPortRegister connectorPortRegister;
     private final NetworkConnectionTracker connectionTracker;
@@ -125,8 +123,6 @@ public class BoltServer extends LifecycleAdapter {
     private final AuthConfigProvider authConfigProvider;
     private final InternalLog log;
     private final BookmarkParser bookmarkParser;
-
-    private final InternalLog userLog;
 
     private final LifeSupport connectorLife = new LifeSupport();
     private BoltMemoryPool memoryPool;
@@ -180,7 +176,6 @@ public class BoltServer extends LifecycleAdapter {
         this.sslPolicyLoader = dependencyResolver.resolveDependency(SslPolicyLoader.class);
         this.authConfigProvider = dependencyResolver.resolveDependency(AuthConfigProvider.class);
         this.log = logService.getInternalLog(BoltServer.class);
-        this.userLog = logService.getUserLog(BoltServer.class);
 
         var customBookmarkParser = boltGraphDatabaseManagementServiceSPI
                 .getCustomBookmarkFormatParser()
@@ -228,32 +223,26 @@ public class BoltServer extends LifecycleAdapter {
     }
 
     private boolean isEnabled() {
-        return this.config.get(BoltConnector.enabled);
+        return config.get(BoltConnector.enabled);
     }
 
     @Override
     public void init() {
-        // TODO: Move to an earlier stage within the application initialization
-        InternalLoggerFactory.setDefaultFactory(new Netty4LoggerFactory(logService.getInternalLogProvider()));
-
-        this.memoryPool = new BoltMemoryPool(memoryPools, NETTY_BUF_ALLOCATOR.metric());
+        if (!isEnabled()) {
+            return;
+        }
 
         if (config.get(CommonConnectorConfig.ocsp_stapling_enabled)) {
             enableOcspStapling();
-            this.log.info("Enabled OCSP stapling support");
-        }
-
-        if (!this.isEnabled()) {
-            return;
+            log.info("Enabled OCSP stapling support");
         }
 
         jobScheduler.setThreadFactory(Group.BOLT_NETWORK_IO, NettyThreadFactory::new);
 
-        // permit all transport implementations so long as native transports have not been explicitly disabled in the
-        // application configuration
-        var permitNativeTransports = this.config.get(BoltConnectorInternalSettings.use_native_transport);
         Predicate<ConnectorTransport> filter;
-        if (permitNativeTransports) {
+        if (config.get(BoltConnectorInternalSettings.use_native_transport)) {
+            // permit all transport implementations so long as native transports have not been explicitly disabled in
+            // the application configuration
             filter = transport -> true;
         } else {
             filter = Predicate.not(ConnectorTransport::isNative);
@@ -264,139 +253,139 @@ public class BoltServer extends LifecycleAdapter {
         var transport = ConnectorTransport.selectOptimal(filter)
                 .orElseThrow(() ->
                         new IllegalStateException("No transport implementations available within current environment"));
-        this.log.info("Using connector transport %s", transport.getName());
+        log.info("Using connector transport %s", transport.getName());
 
-        this.eventLoopGroup = transport.createEventLoopGroup(this.jobScheduler.threadFactory(Group.BOLT_NETWORK_IO));
-        this.executorService = this.executorServiceFactory.create();
-        this.metricsMonitor = this.monitors.newMonitor(BoltConnectionMetricsMonitor.class);
+        eventLoopGroup = transport.createEventLoopGroup(jobScheduler.threadFactory(Group.BOLT_NETWORK_IO));
+        executorService = executorServiceFactory.create();
+        metricsMonitor = monitors.newMonitor(BoltConnectionMetricsMonitor.class);
 
-        var connectionFactory = this.createConnectionFactory();
+        ByteBufAllocator allocator = getBufferAllocator();
+        var connectionFactory = createConnectionFactory();
 
         if (config.get(BoltConnectorInternalSettings.enable_loopback_auth)) {
-            this.registerConnector(this.createDomainSocketConnector(
-                    connectionFactory, transport, createAuthentication(this.loopbackAuthManager)));
+            registerConnector(createDomainSocketConnector(
+                    connectionFactory, transport, createAuthentication(loopbackAuthManager), allocator));
 
-            this.log.info("Configured loopback (domain socket) Bolt connector");
+            log.info("Configured loopback (domain socket) Bolt connector");
         }
 
-        var listenAddress = this.config.get(BoltConnector.listen_address).socketAddress();
-        var level = this.config.get(BoltConnector.encryption_level);
-        var encryptionRequired = level == EncryptionLevel.REQUIRED;
+        var listenAddress = config.get(BoltConnector.listen_address).socketAddress();
+        var encryptionLevel = config.get(BoltConnector.encryption_level);
+        boolean encryptionRequired = encryptionLevel == EncryptionLevel.REQUIRED;
 
         SslContext sslContext = null;
-        if (level != EncryptionLevel.DISABLED) {
-            if (!this.sslPolicyLoader.hasPolicyForSource(BOLT)) {
-                throw new IllegalStateException(
-                        "Requested encryption level " + level + " for Bolt connector but no SSL policy was given");
+        if (encryptionLevel != EncryptionLevel.DISABLED) {
+            if (!sslPolicyLoader.hasPolicyForSource(BOLT)) {
+                throw new IllegalStateException("Requested encryption level " + encryptionLevel
+                        + " for Bolt connector but no SSL policy was given");
             }
 
             try {
-                sslContext = this.sslPolicyLoader.getPolicy(BOLT).nettyServerContext();
+                sslContext = sslPolicyLoader.getPolicy(BOLT).nettyServerContext();
             } catch (SSLException ex) {
                 throw new IllegalStateException("Failed to load SSL policy for Bolt connector", ex);
             }
         }
 
-        this.registerConnector(this.createSocketConnector(
+        registerConnector(createSocketConnector(
                 listenAddress,
                 connectionFactory,
                 encryptionRequired,
                 transport,
                 sslContext,
                 createAuthentication(externalAuthManager),
-                ConnectorType.BOLT));
+                ConnectorType.BOLT,
+                allocator));
 
-        this.log.info("Configured external Bolt connector with listener address %s", listenAddress);
+        log.info("Configured external Bolt connector with listener address %s", listenAddress);
 
-        var isRoutingEnabled = config.get(GraphDatabaseSettings.routing_enabled);
+        boolean isRoutingEnabled = config.get(GraphDatabaseSettings.routing_enabled);
         if (isRoutingEnabled && dbmsInfo == DbmsInfo.ENTERPRISE) {
             SocketAddress internalListenAddress;
-            if (this.config.isExplicitlySet(GraphDatabaseSettings.routing_listen_address)) {
+            if (config.isExplicitlySet(GraphDatabaseSettings.routing_listen_address)) {
                 internalListenAddress =
                         config.get(GraphDatabaseSettings.routing_listen_address).socketAddress();
             } else {
                 internalListenAddress = new InetSocketAddress(
-                        this.config.get(BoltConnector.listen_address).getHostname(),
-                        this.config
-                                .get(GraphDatabaseSettings.routing_listen_address)
-                                .getPort());
+                        config.get(BoltConnector.listen_address).getHostname(),
+                        config.get(GraphDatabaseSettings.routing_listen_address).getPort());
             }
 
             var internalEncryptionRequired = false;
             SslContext internalSslContext = null;
 
-            if (this.sslPolicyLoader.hasPolicyForSource(CLUSTER)) {
+            if (sslPolicyLoader.hasPolicyForSource(CLUSTER)) {
                 internalEncryptionRequired = true;
 
                 try {
-                    internalSslContext = this.sslPolicyLoader.getPolicy(CLUSTER).nettyServerContext();
+                    internalSslContext = sslPolicyLoader.getPolicy(CLUSTER).nettyServerContext();
                 } catch (SSLException ex) {
                     throw new IllegalStateException(
                             "Failed to load SSL policy for server side routing within Bolt: Cluster policy", ex);
                 }
             }
 
-            this.registerConnector(this.createSocketConnector(
+            registerConnector(createSocketConnector(
                     internalListenAddress,
                     connectionFactory,
                     internalEncryptionRequired,
                     transport,
                     internalSslContext,
                     createAuthentication(internalAuthManager),
-                    ConnectorType.INTRA_BOLT));
+                    ConnectorType.INTRA_BOLT,
+                    allocator));
 
-            this.log.info("Configured internal Bolt connector with listener address %s", internalListenAddress);
+            log.info("Configured internal Bolt connector with listener address %s", internalListenAddress);
         }
 
-        this.log.info("Bolt server loaded");
-        this.connectorLife.init();
+        log.info("Bolt server loaded");
+        connectorLife.init();
     }
 
     @Override
     public void start() throws Exception {
-        if (!this.isEnabled()) {
+        if (!isEnabled()) {
             return;
         }
 
-        this.connectorLife.start();
-        this.log.info("Bolt server started");
+        connectorLife.start();
+        log.info("Bolt server started");
     }
 
     @Override
     public void stop() throws Exception {
-        if (!this.isEnabled()) {
+        if (!isEnabled()) {
             return;
         }
 
         log.info("Requested Bolt server shutdown");
-        this.connectorLife.stop();
+        connectorLife.stop();
     }
 
     @Override
     public void shutdown() {
-        if (this.isEnabled()) {
+        if (isEnabled()) {
             log.info("Shutting down Bolt server");
 
             // send shutdown notifications to all of our connectors in order to perform the necessary shutdown
             // procedures for the remaining connections
-            this.connectorLife.shutdown();
+            connectorLife.shutdown();
 
             // once the remaining connections have been shut down, we'll request a graceful shutdown from the network
             // thread pool
             // TODO: Force shutdown if timeout exceeded?
-            this.eventLoopGroup.shutdownGracefully().awaitUninterruptibly();
-            this.eventLoopGroup
+            eventLoopGroup.shutdownGracefully().awaitUninterruptibly();
+            eventLoopGroup
                     .shutdownGracefully(
-                            this.config.get(GraphDatabaseInternalSettings.netty_server_shutdown_quiet_period),
-                            this.config
-                                    .get(GraphDatabaseInternalSettings.netty_server_shutdown_timeout)
+                            config.get(GraphDatabaseInternalSettings.netty_server_shutdown_quiet_period),
+                            config.get(GraphDatabaseInternalSettings.netty_server_shutdown_timeout)
                                     .toSeconds(),
                             TimeUnit.SECONDS)
                     .syncUninterruptibly();
 
             // also make sure that our executor service is cleanly shut down - there should be no remaining jobs present
             // as connectors will kill any remaining jobs forcefully as part of their shutdown procedures
-            var remainingJobs = this.executorService.shutdownNow();
+            var remainingJobs = executorService.shutdownNow();
             if (!remainingJobs.isEmpty()) {
                 log.warn("Forcefully killed %d remaining Bolt jobs to fulfill shutdown request", remainingJobs.size());
             }
@@ -404,7 +393,9 @@ public class BoltServer extends LifecycleAdapter {
             log.info("Bolt server has been shut down");
         }
 
-        this.memoryPool.close();
+        if (memoryPool != null) {
+            memoryPool.close();
+        }
     }
 
     private ByteBufAllocator getBufferAllocator() {
@@ -414,21 +405,24 @@ public class BoltServer extends LifecycleAdapter {
             return centralBufferMangerHolder.getNettyBufferAllocator();
         }
 
-        connectorLife.add(new BoltMemoryPoolLifeCycleAdapter(memoryPool));
-        return NETTY_BUF_ALLOCATOR;
+        PooledByteBufAllocator allocator = NETTY_BUF_ALLOCATOR.get();
+        BoltMemoryPool pool = new BoltMemoryPool(memoryPools, allocator.metric());
+        connectorLife.add(new BoltMemoryPoolLifeCycleAdapter(pool));
+        memoryPool = pool;
+        return allocator;
     }
 
     private void registerConnector(Connector connector) {
         // append a listener which handles the creation of metrics
-        connector.registerListener(new MetricsConnectorListener(this.metricsMonitor));
+        connector.registerListener(new MetricsConnectorListener(metricsMonitor));
 
         // if an authentication timeout has been configured, we'll register a listener which appends the necessary
         // timeout handlers with the network pipelines upon connection creation
         var authenticationTimeout =
-                this.config.get(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout);
+                config.get(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_timeout);
         if (!authenticationTimeout.isZero()) {
             connector.registerListener(new AuthenticationTimeoutConnectorListener(
-                    authenticationTimeout, this.logService.getInternalLogProvider()));
+                    authenticationTimeout, logService.getInternalLogProvider()));
         }
 
         // if keep-alive have been configured, we'll register a listener which appends the necessary handlers to the
@@ -439,14 +433,14 @@ public class BoltServer extends LifecycleAdapter {
             connector.registerListener(new KeepAliveConnectorListener(
                     keepAliveMechanism != BoltConnector.KeepAliveRequestType.ALL,
                     keepAliveInterval,
-                    this.logService.getInternalLogProvider()));
+                    logService.getInternalLogProvider()));
         }
 
-        this.connectorLife.add(connector);
+        connectorLife.add(connector);
     }
 
     private Connection.Factory createConnectionFactory() {
-        return new AtomicSchedulingConnection.Factory(this.executorService, this.clock, this.logService);
+        return new AtomicSchedulingConnection.Factory(executorService, clock, logService);
     }
 
     private static Authentication createAuthentication(AuthManager authManager) {
@@ -454,7 +448,7 @@ public class BoltServer extends LifecycleAdapter {
     }
 
     private void enableOcspStapling() {
-        if (SslProvider.JDK.equals(this.config.get(SslSystemSettings.netty_ssl_provider))) {
+        if (SslProvider.JDK.equals(config.get(SslSystemSettings.netty_ssl_provider))) {
             // currently the only way to enable OCSP server stapling for JDK is through this property
             System.setProperty("jdk.tls.server.enableStatusRequestExtension", "true");
         } else {
@@ -470,60 +464,61 @@ public class BoltServer extends LifecycleAdapter {
             ConnectorTransport transport,
             SslContext sslContext,
             Authentication authentication,
-            ConnectorType connectorType) {
+            ConnectorType connectorType,
+            ByteBufAllocator allocator) {
         return new SocketNettyConnector(
                 BoltConnector.NAME,
                 bindAddress,
-                this.config,
+                config,
                 connectorType,
-                this.connectorPortRegister,
-                this.memoryPool,
-                this.getBufferAllocator(),
-                this.eventLoopGroup,
+                connectorPortRegister,
+                memoryPool,
+                allocator,
+                eventLoopGroup,
                 transport,
                 connectionFactory,
-                this.connectionTracker,
+                connectionTracker,
                 sslContext,
                 encryptionRequired,
                 config.get(BoltConnectorInternalSettings.tcp_keep_alive),
-                this.protocolRegistry,
+                protocolRegistry,
                 authentication,
-                this.authConfigProvider,
-                this.defaultDatabaseResolver,
-                this.connectionHintProvider,
-                this.bookmarkParser,
-                this.logService.getUserLogProvider(),
-                this.logService.getInternalLogProvider());
+                authConfigProvider,
+                defaultDatabaseResolver,
+                connectionHintProvider,
+                bookmarkParser,
+                logService.getUserLogProvider(),
+                logService.getInternalLogProvider());
     }
 
     private Connector createDomainSocketConnector(
-            Connection.Factory connectionFactory, ConnectorTransport transport, Authentication authentication) {
-        if (this.config.get(BoltConnectorInternalSettings.unsupported_loopback_listen_file) == null) {
+            Connection.Factory connectionFactory,
+            ConnectorTransport transport,
+            Authentication authentication,
+            ByteBufAllocator allocator) {
+        if (config.get(BoltConnectorInternalSettings.unsupported_loopback_listen_file) == null) {
             throw new IllegalArgumentException(
                     "A file has not been specified for use with the loopback domain socket.");
         }
 
-        var file = new File(config.get(BoltConnectorInternalSettings.unsupported_loopback_listen_file)
-                .toString());
-
         return new DomainSocketNettyConnector(
                 BoltConnectorInternalSettings.LOOPBACK_NAME,
-                file,
-                this.config,
-                this.memoryPool,
-                this.getBufferAllocator(),
-                this.eventLoopGroup,
+                config.get(BoltConnectorInternalSettings.unsupported_loopback_listen_file),
+                config,
+                memoryPool,
+                allocator,
+                eventLoopGroup,
                 transport,
                 connectionFactory,
-                this.connectionTracker,
-                this.protocolRegistry,
+                connectionTracker,
+                protocolRegistry,
                 authentication,
-                this.authConfigProvider,
-                this.defaultDatabaseResolver,
-                this.connectionHintProvider,
-                this.bookmarkParser,
-                this.logService.getUserLogProvider(),
-                this.logService.getInternalLogProvider());
+                authConfigProvider,
+                defaultDatabaseResolver,
+                connectionHintProvider,
+                bookmarkParser,
+                logService.getUserLogProvider(),
+                logService.getInternalLogProvider());
     }
 
     private static class BoltMemoryPoolLifeCycleAdapter extends LifecycleAdapter {
