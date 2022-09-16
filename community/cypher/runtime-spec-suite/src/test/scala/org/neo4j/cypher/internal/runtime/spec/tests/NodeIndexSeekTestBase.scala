@@ -72,6 +72,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         "x:Honey(prop = ???)",
         paramExpr = Some(toExpression(lookFor)),
@@ -103,6 +104,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         "x:Honey(prop = ???)",
         paramExpr = Some(toExpression(propertyValue)),
@@ -123,6 +125,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator("x:Honey(prop = ???)", paramExpr = Some(nullLiteral), indexType = index.indexType)
       .build()
 
@@ -140,6 +143,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         "x:Honey(prop = ??? OR ???)",
         paramExpr = lookFor.map(toExpression),
@@ -161,6 +165,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         "x:Honey(prop IN ???)",
         paramExpr = Some(nullLiteral),
@@ -182,6 +187,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         "x:Honey(prop IN ???)",
         paramExpr = Some(listOf(toExpression(someValues.head), nullLiteral, toExpression(someValues(1)))),
@@ -207,6 +213,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         "x:Honey(prop IN ???)",
         paramExpr = Some(listOf(toExpression(lookForExisting), nullLiteral, toExpression(lookForRandom))),
@@ -298,6 +305,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         "x:Honey(prop = ???)",
         paramExpr = Some(mapOfInt(("foo", 20))),
@@ -321,6 +329,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         "x:Honey(prop IN ???)",
         paramExpr = Some(listOf(mapOfInt(("foo", 20)), mapOfInt(("foo", 30)))),
@@ -345,6 +354,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         "x:Honey(prop IN ???)",
         paramExpr = Some(listOf(mapOfInt(("foo", 20)), toExpression(lookFor))),
@@ -370,6 +380,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         "x:Honey(prop = ???)",
         unique = true,
@@ -396,6 +407,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         "x:Honey(prop = ??? OR ???)",
         unique = true,
@@ -422,6 +434,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         "x:Honey(prop = ??? OR ???)",
         paramExpr = Seq(toExpression(lookFor), nullLiteral),
@@ -446,6 +459,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         s"x:Honey(prop > ???)",
         paramExpr = Some(toExpression(largerThan)),
@@ -467,6 +481,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         s"x:Honey(prop > ???)",
         paramExpr = Some(mapOfInt(("a", 1))),
@@ -495,6 +510,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(s"x:L(boolean > ???)", paramExpr = Some(falseLiteral), indexType = index.indexType)
       .build()
 
@@ -519,6 +535,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(s"x:L(boolean >= ???)", paramExpr = Some(falseLiteral), indexType = index.indexType)
       .build()
 
@@ -543,6 +560,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(s"x:L(boolean < ???)", paramExpr = Some(falseLiteral), indexType = index.indexType)
       .build()
 
@@ -567,6 +585,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(s"x:L(boolean <= ???)", paramExpr = Some(falseLiteral), indexType = index.indexType)
       .build()
 
@@ -591,6 +610,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(s"x:L(boolean > ???)", paramExpr = Some(trueLiteral), indexType = index.indexType)
       .build()
 
@@ -615,6 +635,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(s"x:L(boolean >= ???)", paramExpr = Some(trueLiteral), indexType = index.indexType)
       .build()
 
@@ -639,6 +660,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(s"x:L(boolean < ???)", paramExpr = Some(trueLiteral), indexType = index.indexType)
       .build()
 
@@ -661,6 +683,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(s"x:L(boolean <= ???)", paramExpr = Some(trueLiteral), indexType = index.indexType)
       .build()
 
@@ -678,6 +701,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         s"x:Honey(??? > prop < ???)",
         paramExpr = someProps.map(toExpression),
@@ -708,6 +732,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(s"x:Honey(1 > prop < 'foo')", indexType = index.indexType)
       .build()
 
@@ -725,6 +750,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         s"x:Honey(??? >= prop < ???)",
         paramExpr = Seq(toExpression(lessThanValue), toExpression(lessThanValue)),
@@ -747,6 +773,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         s"x:Honey(??? < prop > ???)",
         paramExpr = Seq(toExpression(greaterThanValue), toExpression(greaterThanValue)),
@@ -786,6 +813,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         s"x:Honey(??? <= prop > ???)",
         paramExpr = Seq(toExpression(someProperty), toExpression(someProperty)),
@@ -816,6 +844,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator("x:Honey(prop = 10, prop2 = '10')", indexType = index.indexType)
       .build()
 
@@ -841,6 +870,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator("x:Honey(prop = '0', prop2 = '0')", indexType = index.indexType)
       .build()
 
@@ -867,6 +897,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator("x:Honey(prop = 10 OR 20, prop2 = '10' OR '30')", indexType = index.indexType)
       .build()
 
@@ -894,6 +925,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator("x:Honey(prop = 10, prop2)", indexType = index.indexType)
       .build()
 
@@ -920,6 +952,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         "x:Honey(prop IN ???, prop2 = '10')",
         indexType = index.indexType,
@@ -948,6 +981,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator("x:Honey(prop = '10', prop2 > '10')", indexType = index.indexType)
       .build()
 
@@ -973,6 +1007,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator("x:Honey(prop > 10, prop2)", indexType = index.indexType)
       .build()
 
@@ -999,6 +1034,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         "x:Honey(prop = 10, prop2 = ???)",
         paramExpr = Some(nullLiteral),
@@ -1028,6 +1064,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         "x:Honey(prop = 10, prop2 > ???)",
         paramExpr = Some(nullLiteral),
@@ -1057,6 +1094,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         "x:Honey(prop = 10 OR ???, prop2)",
         paramExpr = Some(nullLiteral),
@@ -1383,6 +1421,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         "x:Honey(prop = ???)",
         paramExpr = Some(listOf(literalInt(20))),
@@ -1407,6 +1446,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         s"x:Honey(prop > ???)",
         paramExpr = Some(toExpression(someProp)),
@@ -1433,6 +1473,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         "x:Honey(prop)",
         customQueryExpression = Some(ManyQueryExpression(listOf(someProps.map(toExpression): _*))),
@@ -1577,6 +1618,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(s"x:Honey(prop = $propToFind)", unique = true, indexType = IndexType.RANGE)
       .build(readOnly = false)
 
@@ -1604,6 +1646,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(s"x:Honey(prop1 = $propToFind, prop2 = '$propToFind')", unique = true)
       .build(readOnly = false)
 
@@ -1631,6 +1674,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(s"x:Honey(prop = $propToFind)", unique = true)
       .build(readOnly = false)
 
@@ -1657,6 +1701,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(s"x:Honey(prop = $propToFind)", unique = true)
       .build()
 
@@ -1683,6 +1728,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator("x:Honey(prop = 20)", unique = true)
       .build(readOnly = false)
 
@@ -1709,6 +1755,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator("x:Honey(prop1 = 20, prop2 = '20')", unique = true)
       .build(readOnly = false)
 
@@ -1735,6 +1782,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator("x:Honey(prop = 20 OR 20)", unique = true)
       .build(readOnly = false)
 
@@ -1764,6 +1812,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator("x:Honey(prop1 = 20, prop2 = '20')", unique = true)
       .build()
 
@@ -1790,6 +1839,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(s"x:Honey(prop1 > ${sizeHint / 2}, prop2)", unique = true)
       .build()
 
@@ -1816,6 +1866,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator("x:Honey(prop = 20 OR 30)", unique = true)
       .build(readOnly = false)
 
@@ -1846,6 +1897,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator("x:Honey(prop = 10, prop2 = '10')", unique = true, indexType = IndexType.RANGE)
       .build(readOnly = false)
 
@@ -1872,6 +1924,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator("x:Honey(prop = 10, prop2 = '10')", unique = true)
       .build(readOnly = false)
 
@@ -1950,6 +2003,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator(
         "x:Honey(prop)",
         customQueryExpression = Some(ManyQueryExpression(listOf(Seq(-1L, 0L, 1L, 10L, 20L).map(literalInt(_)): _*))),
@@ -2036,6 +2090,7 @@ trait SerialEnterpriseNodeIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
+      .filter("true")
       .nodeIndexOperator("x:Honey(prop1 = 10, prop2 = ???)", unique = true, paramExpr = Some(nullLiteral))
       .build(readOnly = false)
 
