@@ -78,7 +78,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
         )(pos),
         return_(aliasedReturnItem(varFor("  x@4")))
       ))(pos),
-      List(varFor("  x@0"), varFor("  x@2"), varFor("  x@4"), varFor("  y@1"),  varFor("  y@3"))
+      List(varFor("  x@0"), varFor("  x@2"), varFor("  x@4"), varFor("  y@1"), varFor("  y@3"))
     ),
     TestCase(
       "MATCH (n), (x) WHERE [x in n.prop WHERE x = 2] RETURN x AS x",
