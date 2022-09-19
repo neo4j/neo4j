@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
-import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.time.Clocks;
@@ -34,10 +33,7 @@ class ExecutingQueryFactoryTest {
     @Test
     void executingQueryWithNoTransactionBindingShouldNotExplode() {
         // GIVEN
-        var factory = new ExecutingQueryFactory(
-                Clocks.nanoClock(),
-                new AtomicReference<>(CpuClock.NOT_AVAILABLE),
-                Config.newBuilder().build());
+        var factory = new ExecutingQueryFactory(Clocks.nanoClock(), new AtomicReference<>(CpuClock.NOT_AVAILABLE));
         var executingQuery = factory.createUnbound(
                 "<query text>",
                 MapValue.EMPTY,

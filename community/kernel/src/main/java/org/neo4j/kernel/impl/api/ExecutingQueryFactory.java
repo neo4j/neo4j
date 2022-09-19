@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.resources.CpuClock;
@@ -33,12 +32,10 @@ public class ExecutingQueryFactory {
     private static final AtomicLong lastQueryId = new AtomicLong();
     private final SystemNanoClock clock;
     private final AtomicReference<CpuClock> cpuClockRef;
-    private final Config config;
 
-    public ExecutingQueryFactory(SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef, Config config) {
+    public ExecutingQueryFactory(SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef) {
         this.clock = clock;
         this.cpuClockRef = cpuClockRef;
-        this.config = config;
     }
 
     public ExecutingQuery createForStatement(StatementInfo statement, String queryText, MapValue queryParameters) {

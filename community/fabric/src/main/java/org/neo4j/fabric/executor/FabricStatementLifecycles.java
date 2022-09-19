@@ -50,8 +50,7 @@ public class FabricStatementLifecycles {
             SystemNanoClock systemNanoClock) {
         this.databaseContextProvider = databaseContextProvider;
         this.dbmsMonitor = dbmsMonitors.newMonitor(QueryExecutionMonitor.class);
-        this.executingQueryFactory =
-                new ExecutingQueryFactory(systemNanoClock, setupCpuClockAtomicReference(config), config);
+        this.executingQueryFactory = new ExecutingQueryFactory(systemNanoClock, setupCpuClockAtomicReference(config));
     }
 
     private static AtomicReference<CpuClock> setupCpuClockAtomicReference(Config config) {

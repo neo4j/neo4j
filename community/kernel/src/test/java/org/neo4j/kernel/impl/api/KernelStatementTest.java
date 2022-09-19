@@ -136,7 +136,7 @@ class KernelStatementTest {
 
     @Test
     void trackSequentialQueriesInStatement() {
-        var queryFactory = new ExecutingQueryFactory(Clocks.nanoClock(), cpuClockRef, Config.defaults());
+        var queryFactory = new ExecutingQueryFactory(Clocks.nanoClock(), cpuClockRef);
         var transaction = mock(KernelTransactionImplementation.class, RETURNS_DEEP_STUBS);
         var statement = createStatement(transaction);
         statement.initialize(mock(Locks.Client.class), CursorContext.NULL_CONTEXT, 100);
