@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.PathExpression
+import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -214,6 +215,25 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
       )
       .expand("(a)-[r*1..3]->(b)")
       .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build()
+  }
+
+  test("should be able to solve two variable length relationships in one pattern") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(1000)
+      .setLabelCardinality("A", 100)
+      .setRelationshipCardinality("()-[]->(:A)", 100)
+      .build()
+
+    val plan = planner.plan("MATCH (a:A)<-[r*]-(b)-[r2*]-(c) RETURN a,r")
+
+    plan shouldEqual planner.planBuilder()
+      .produceResults("a", "r")
+      .filter("NONE(anon_0 IN r WHERE anon_0 IN r2)")
+      .expand("(b)-[r2*]-(c)")
+      .expand("(a)<-[r*]-(b)", projectedDir = INCOMING)
+      .nodeByLabelScan("a", "A")
       .build()
   }
 }

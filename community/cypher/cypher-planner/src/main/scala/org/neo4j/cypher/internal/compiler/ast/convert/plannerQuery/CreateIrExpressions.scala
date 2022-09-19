@@ -59,7 +59,7 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
   private val pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression
   private val stringifier = ExpressionStringifier(_.asCanonicalStringVal)
   private val patternNormalizer = PredicateNormalizer.defaultNormalizer(anonymousVariableNameGenerator)
-  private val addUniquenessPredicates = AddUniquenessPredicates(anonymousVariableNameGenerator)
+  private val addUniquenessPredicates = AddUniquenessPredicates
 
   /**
    * MatchPredicateNormalizer invalidates some conditions that are usually fixed by later rewriters.

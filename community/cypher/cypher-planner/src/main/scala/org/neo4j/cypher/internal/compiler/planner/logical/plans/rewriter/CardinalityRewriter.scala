@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.Attributes
@@ -48,7 +49,8 @@ case object CardinalityRewriter extends LogicalPlanRewriter with StepSequencer.S
     cardinalities: Cardinalities,
     effectiveCardinalities: EffectiveCardinalities,
     providedOrders: ProvidedOrders,
-    otherAttributes: Attributes[LogicalPlan]
+    otherAttributes: Attributes[LogicalPlan],
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter =
     recordEffectiveOutputCardinality(context.executionModel, cardinalities, effectiveCardinalities, providedOrders)
 

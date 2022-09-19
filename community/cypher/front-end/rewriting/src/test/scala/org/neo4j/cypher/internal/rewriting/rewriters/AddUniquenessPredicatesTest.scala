@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.rewriting
+package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.LabelExpression
@@ -26,12 +26,13 @@ import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.LabelExpression.Negation
 import org.neo4j.cypher.internal.expressions.LabelExpression.Wildcard
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
+import org.neo4j.cypher.internal.rewriting.RewriteTest
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates.evaluate
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates.getRelTypesToConsider
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
@@ -41,6 +42,9 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import scala.annotation.tailrec
 
 class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
+
+  private def disjoint(lhs: String, rhs: String): String =
+    s"NONE(`  UNNAMED0` IN $lhs WHERE `  UNNAMED0` IN $rhs)"
 
   test("does not introduce predicate not needed") {
     assertIsNotRewritten("RETURN 42")
@@ -62,7 +66,7 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
 
     assertRewrite(
       "MATCH (a)-[r1*0..1]->(b)-[r2*0..1]->(c) RETURN *",
-      "MATCH (a)-[r1*0..1]->(b)-[r2*0..1]->(c) WHERE NONE(`  UNNAMED0` IN r1 WHERE `  UNNAMED0` IN r2) RETURN *"
+      s"MATCH (a)-[r1*0..1]->(b)-[r2*0..1]->(c) WHERE ${disjoint("r1", "r2")} RETURN *"
     )
   }
 
@@ -178,7 +182,10 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
     )
   }
 
-  def rewriterUnderTest: Rewriter = AddUniquenessPredicates(new AnonymousVariableNameGenerator)
+  def rewriterUnderTest: Rewriter = inSequence(
+    AddUniquenessPredicates,
+    UniquenessRewriter(new AnonymousVariableNameGenerator)
+  )
 }
 
 class AddUniquenessPredicatesPropertyTest extends CypherFunSuite with ScalaCheckPropertyChecks

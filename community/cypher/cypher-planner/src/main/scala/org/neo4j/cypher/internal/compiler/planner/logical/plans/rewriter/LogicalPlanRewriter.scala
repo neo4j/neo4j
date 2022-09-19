@@ -34,6 +34,8 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.rewriting.rewriters.UniquenessRewriter
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.Attributes
@@ -58,7 +60,8 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
     cardinalities: Cardinalities,
     effectiveCardinalities: EffectiveCardinalities,
     providedOrders: ProvidedOrders,
-    otherAttributes: Attributes[LogicalPlan]
+    otherAttributes: Attributes[LogicalPlan],
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter =
     fixedPoint(context.cancellationChecker)(
       inSequence(context.cancellationChecker)(
@@ -83,7 +86,8 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
           otherAttributes.withAlso(effectiveCardinalities, solveds, providedOrders)
         ),
         combineHasLabels,
-        truncateDatabaseDeeagerizer
+        truncateDatabaseDeeagerizer,
+        UniquenessRewriter(anonymousVariableNameGenerator)
       )
     )
 
@@ -122,7 +126,8 @@ trait LogicalPlanRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
     cardinalities: Cardinalities,
     effectiveCardinalities: EffectiveCardinalities,
     providedOrders: ProvidedOrders,
-    otherAttributes: Attributes[LogicalPlan]
+    otherAttributes: Attributes[LogicalPlan],
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
@@ -135,7 +140,8 @@ trait LogicalPlanRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
         from.planningAttributes.cardinalities,
         from.planningAttributes.effectiveCardinalities,
         from.planningAttributes.providedOrders,
-        otherAttributes
+        otherAttributes,
+        from.anonymousVariableNameGenerator
       )
     )
     from.copy(maybeLogicalPlan = Some(rewritten))

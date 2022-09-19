@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.expressions.CountStar
+import org.neo4j.cypher.internal.expressions.Disjoint
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
@@ -610,9 +611,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     ))
     query.queryGraph.patternNodes should equal(Set("a", "b", "c"))
 
-    val inner = in(varFor("anon_0"), varFor("r2"))
-    val outer = noneInList(varFor("anon_0"), varFor("r"), inner)
-    val predicate = Predicate(Set("r2", "r"), outer)
+    val disjoint = Disjoint(varFor("r"), varFor("r2"))(pos)
+    val predicate = Predicate(Set("r2", "r"), disjoint)
 
     query.queryGraph.selections should equal(Selections(Set(predicate)))
     query.horizon should equal(RegularQueryProjection(Map(

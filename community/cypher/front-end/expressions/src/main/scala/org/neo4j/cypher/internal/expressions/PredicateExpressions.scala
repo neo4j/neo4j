@@ -367,3 +367,14 @@ case class HasDegree(node: Expression, relType: Option[RelTypeName], dir: Semant
 case class AssertIsNode(lhs: Expression)(val position: InputPosition) extends BooleanExpression {
   override def isConstantForQuery: Boolean = lhs.isConstantForQuery
 }
+
+/**
+ * Tests whether the elements in the two lists given are disjoint, that is, none of the elements from one list
+ * also exist in the other list.
+ *
+ * @param lhs first list
+ * @param rhs second list
+ */
+case class Disjoint(lhs: LogicalVariable, rhs: LogicalVariable)(val position: InputPosition) extends BooleanExpression {
+  override def isConstantForQuery: Boolean = lhs.isConstantForQuery && rhs.isConstantForQuery
+}

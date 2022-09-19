@@ -838,7 +838,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       LabelExpressionPredicateNormalizer.instance,
       normalizeExistsPatternExpressions(orgAstState),
       normalizeHasLabelsAndHasType(orgAstState),
-      AddUniquenessPredicates(anonymousVariableNameGenerator),
+      AddUniquenessPredicates,
       flattenBooleanOperators,
       insertWithBetweenOptionalMatchAndMatch.instance
     ))
