@@ -45,7 +45,7 @@ class DatabaseConfigTest {
     void shouldHandleRegisterDynamicUpdateListenersConcurrently() throws Throwable {
         // given
         NamedDatabaseId namedDatabaseId = from(DEFAULT_DATABASE_NAME, UUID.randomUUID());
-        DatabaseConfig dbConfig = new DatabaseConfig(Collections.emptyMap(), Config.defaults(), namedDatabaseId);
+        DatabaseConfig dbConfig = new DatabaseConfig(Collections.emptyMap(), Config.defaults());
         Setting<GraphDatabaseSettings.TransactionTracingLevel> setting =
                 GraphDatabaseSettings.transaction_tracing_level;
         int threads =
@@ -77,7 +77,7 @@ class DatabaseConfigTest {
     void shouldBeAbleToBuildConfigFromDatabaseConfig() {
         // Given
         Config globalConfig = Config.defaults(initial_default_database, "foo");
-        Config dbConfig = new DatabaseConfig(Map.of(), globalConfig, from(DEFAULT_DATABASE_NAME, UUID.randomUUID()));
+        Config dbConfig = new DatabaseConfig(Map.of(), globalConfig);
         // When
         Config newConfig = Config.newBuilder().fromConfig(dbConfig).build();
         // Then
@@ -89,8 +89,7 @@ class DatabaseConfigTest {
         // given
         Config globalConfig = mock(Config.class);
         LifeSupport life = new LifeSupport();
-        DatabaseConfig databaseConfig =
-                life.add(new DatabaseConfig(Map.of(), globalConfig, from(DEFAULT_DATABASE_NAME, UUID.randomUUID())));
+        DatabaseConfig databaseConfig = life.add(new DatabaseConfig(Map.of(), globalConfig));
         life.init();
         SettingChangeListener<Boolean> listener = mock(SettingChangeListener.class);
         databaseConfig.addListener(GraphDatabaseSettings.read_only_database_default, listener);

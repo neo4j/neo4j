@@ -69,8 +69,7 @@ public class DefaultDatabaseContextFactory extends AbstractDatabaseContextFactor
         private final StandaloneDatabaseContext context;
 
         private Creator(NamedDatabaseId namedDatabaseId, DatabaseOptions databaseOptions) {
-            var databaseConfig =
-                    new DatabaseConfig(databaseOptions.settings(), globalModule.getGlobalConfig(), namedDatabaseId);
+            var databaseConfig = new DatabaseConfig(databaseOptions.settings(), globalModule.getGlobalConfig());
             var contextFactory = createContextFactory(databaseConfig, namedDatabaseId);
             var creationContext = new ModularDatabaseCreationContext(
                     databaseOptions.mode(),

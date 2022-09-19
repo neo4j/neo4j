@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.InternalLog;
 
@@ -35,8 +34,7 @@ public class DatabaseConfig extends Config implements Lifecycle {
     private Map<Setting<Object>, Collection<SettingChangeListener<Object>>> registeredListeners =
             new ConcurrentHashMap<>();
 
-    public DatabaseConfig(
-            Map<Setting<?>, Object> databaseSpecificSettings, Config globalConfig, NamedDatabaseId namedDatabaseId) {
+    public DatabaseConfig(Map<Setting<?>, Object> databaseSpecificSettings, Config globalConfig) {
         this.databaseSpecificSettings = databaseSpecificSettings;
         this.globalConfig = globalConfig;
         overriddenSettings = null;
