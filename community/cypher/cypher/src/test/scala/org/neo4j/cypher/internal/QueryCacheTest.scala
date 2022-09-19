@@ -164,12 +164,12 @@ class QueryCacheTest extends CypherFunSuite {
     // Then
     valueFromCache2 should equal(compiled(key))
     valueFromCache2.compiledWithExpressionCodeGen should equal(true)
-    o.verify(tracer).queryCacheMiss(key, "")
+    o.verify(tracer).queryCacheHit(key, "")
     o.verify(tracer).queryCompileWithExpressionCodeGen(key, "")
     verifyNoMoreInteractions(tracer)
   }
 
-  test("if item is stale we should miss the cache") {
+  test("if item is stale we should recalculate") {
     // Given
     val tracer = newTracer()
     val secondsSinceReplan = 17
@@ -192,7 +192,7 @@ class QueryCacheTest extends CypherFunSuite {
     valueFromCache.compiledWithExpressionCodeGen should equal(false)
 
     o.verify(tracer).queryCacheStale(key, secondsSinceReplan, "", None)
-    o.verify(tracer).queryCacheMiss(key, "")
+    o.verify(tracer).queryCacheHit(key, "")
     o.verify(tracer).queryCompile(key, "")
     verifyNoMoreInteractions(tracer)
   }
@@ -249,7 +249,7 @@ class QueryCacheTest extends CypherFunSuite {
   }
 
   test(
-    "if item is stale but was compiled with expression code generation we should miss the cached and directly compile with expression code generation"
+    "if item is stale but was compiled with expression code generation we should directly compile with expression code generation"
   ) {
     // Given
     val tracer = newTracer()
@@ -302,7 +302,7 @@ class QueryCacheTest extends CypherFunSuite {
     v3 should equal(compiled(key))
     v3.compiledWithExpressionCodeGen should equal(true)
     o.verify(tracer).queryCacheStale(key, secondsSinceReplan, "", None)
-    o.verify(tracer).queryCacheMiss(key, "")
+    o.verify(tracer).queryCacheHit(key, "")
     o.verify(tracer).queryCompileWithExpressionCodeGen(key, "")
     verifyNoMoreInteractions(tracer)
   }

@@ -210,7 +210,7 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
 
           replanStrategy match {
             case CypherReplanOption.force =>
-              compileWithExpressionCodeGenAndCache(queryKey, compiler, metaData)
+              compileWithExpressionCodeGenAndCache(queryKey, compiler, metaData, hitCache = true)
             case CypherReplanOption.skip =>
               hit(queryKey, cachedValue, metaData)
             case CypherReplanOption.default =>
@@ -224,8 +224,8 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
                 case Stale(secondsSincePlan, maybeReason) =>
                   tracer.queryCacheStale(queryKey, secondsSincePlan, metaData, maybeReason)
                   if (cachedValue.recompiledWithExpressionCodeGen)
-                    compileWithExpressionCodeGenAndCache(queryKey, compiler, metaData)
-                  else compileAndCache(queryKey, compiler, metaData)
+                    compileWithExpressionCodeGenAndCache(queryKey, compiler, metaData, hitCache = true)
+                  else compileAndCache(queryKey, compiler, metaData, hitCache = true)
               }
           }
       }

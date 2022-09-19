@@ -289,16 +289,16 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"String: cacheMiss: CacheKey($query,$empty_parameters,false)",
       s"String: cacheCompile: CacheKey($query,$empty_parameters,false)",
       // 2nd run
-      s"AST:    cacheMiss",
+      s"AST:    cacheHit",
       s"AST:    cacheCompileWithExpressionCodeGen", // replan=force calls into a method for immediate recompilation, even though recompilation is doing the same steps in the AST cache, but the tracer calls are unaware of that.
       executionPlanCacheKeyMiss, // we will miss here since we need to have reached the recompilation limit
-      s"String: cacheMiss: CacheKey($query,$empty_parameters,false)",
+      s"String: cacheHit: CacheKey($query,$empty_parameters,false)",
       s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,$empty_parameters,false)",
       // 3rd run
-      s"AST:    cacheMiss",
+      s"AST:    cacheHit",
       s"AST:    cacheCompileWithExpressionCodeGen",
       executionPlanCacheKeyHit, // since we get the same plan we will have a hit here
-      s"String: cacheMiss: CacheKey($query,$empty_parameters,false)",
+      s"String: cacheHit: CacheKey($query,$empty_parameters,false)",
       s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,$empty_parameters,false)"
     ))
   }

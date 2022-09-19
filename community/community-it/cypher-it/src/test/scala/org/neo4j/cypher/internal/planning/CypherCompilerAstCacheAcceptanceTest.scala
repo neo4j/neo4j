@@ -357,7 +357,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery(query)
 
     // then
-    counter.counts should equal(CacheCounts(misses = 2, flushes = 1, evicted = 1, compilations = 2))
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, evicted = 1, compilations = 2))
   }
 
   // This test is only added to communicate that we're aware of this behaviour and consider it
@@ -386,7 +386,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery(query)
 
     // then
-    counter.counts should equal(CacheCounts(misses = 2, flushes = 1, evicted = 1, compilations = 2))
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, evicted = 1, compilations = 2))
   }
 
   test("should not evict query because of unrelated statistics change") {
