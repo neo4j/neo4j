@@ -26,6 +26,9 @@ trait OperatorExpression {
   def canonicalOperatorSymbol: String = self.productPrefix.toUpperCase
 }
 
+/**
+ * expression that is built up like `<OPERATOR> <rhs>`
+ */
 trait LeftUnaryOperatorExpression extends OperatorExpression {
   self: Expression =>
 
@@ -36,6 +39,9 @@ trait LeftUnaryOperatorExpression extends OperatorExpression {
   override def isConstantForQuery: Boolean = rhs.isConstantForQuery
 }
 
+/**
+ * expression that is built up like `<lhs> <OPERATOR>`
+ */
 trait RightUnaryOperatorExpression extends OperatorExpression {
   self: Expression =>
 
@@ -45,6 +51,9 @@ trait RightUnaryOperatorExpression extends OperatorExpression {
   override def isConstantForQuery: Boolean = lhs.isConstantForQuery
 }
 
+/**
+ * expression that is built up like `<lhs> <OPERATOR> <rhs>`
+ */
 trait BinaryOperatorExpression extends OperatorExpression {
   self: Expression =>
 
