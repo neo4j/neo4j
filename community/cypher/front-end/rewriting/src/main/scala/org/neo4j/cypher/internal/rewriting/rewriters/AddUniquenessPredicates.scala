@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.LabelExpression
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonConjunction
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonDisjunction
@@ -141,20 +142,17 @@ case class AddUniquenessPredicates(anonymousVariableNameGenerator: AnonymousVari
           Not(Equals(x.variable.copyId, y.variable.copyId)(pos))(pos)
 
         case (true, false) =>
-          val innerY = Variable(anonymousVariableNameGenerator.nextName)(y.variable.position)
-          NoneIterablePredicate(innerY, y.variable.copyId, Some(Equals(x.variable.copyId, innerY.copyId)(pos)))(pos)
+          Not(In(x.variable.copyId, y.variable.copyId)(pos))(pos)
 
         case (false, true) =>
-          val innerX = Variable(anonymousVariableNameGenerator.nextName)(x.variable.position)
-          NoneIterablePredicate(innerX, x.variable.copyId, Some(Equals(innerX.copyId, y.variable.copyId)(pos)))(pos)
+          Not(In(y.variable.copyId, x.variable.copyId)(pos))(pos)
 
         case (false, false) =>
           val innerX = Variable(anonymousVariableNameGenerator.nextName)(x.variable.position)
-          val innerY = Variable(anonymousVariableNameGenerator.nextName)(y.variable.position)
           NoneIterablePredicate(
             innerX,
             x.variable.copyId,
-            Some(AnyIterablePredicate(innerY, y.variable.copyId, Some(Equals(innerX.copyId, innerY.copyId)(pos)))(pos))
+            Some(In(innerX.copyId, y.variable.copyId)(pos))
           )(pos)
       }
     }

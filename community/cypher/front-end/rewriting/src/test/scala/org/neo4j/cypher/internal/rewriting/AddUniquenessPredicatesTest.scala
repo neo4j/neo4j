@@ -52,17 +52,17 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
   test("uniqueness check is done between relationships of simple and variable pattern lengths") {
     assertRewrite(
       "MATCH (a)-[r1]->(b)-[r2*0..1]->(c) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2*0..1]->(c) WHERE NONE(`  UNNAMED0` IN r2 WHERE r1 = `  UNNAMED0`) RETURN *"
+      "MATCH (a)-[r1]->(b)-[r2*0..1]->(c) WHERE NOT r1 IN r2 RETURN *"
     )
 
     assertRewrite(
       "MATCH (a)-[r1*0..1]->(b)-[r2]->(c) RETURN *",
-      "MATCH (a)-[r1*0..1]->(b)-[r2]->(c) WHERE NONE(`  UNNAMED0` IN r1 WHERE `  UNNAMED0` = r2) RETURN *"
+      "MATCH (a)-[r1*0..1]->(b)-[r2]->(c) WHERE NOT r2 IN r1 RETURN *"
     )
 
     assertRewrite(
       "MATCH (a)-[r1*0..1]->(b)-[r2*0..1]->(c) RETURN *",
-      "MATCH (a)-[r1*0..1]->(b)-[r2*0..1]->(c) WHERE NONE(`  UNNAMED0` IN r1 WHERE ANY(`  UNNAMED1` IN r2 WHERE `  UNNAMED0` = `  UNNAMED1`)) RETURN *"
+      "MATCH (a)-[r1*0..1]->(b)-[r2*0..1]->(c) WHERE NONE(`  UNNAMED0` IN r1 WHERE `  UNNAMED0` IN r2) RETURN *"
     )
   }
 
@@ -156,25 +156,25 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
 
   test("ignores shortestPath relationships for uniqueness") {
     assertRewrite(
-      "MATCH (a)-[r1]->(b), shortestPath((a)-[r]->(b)) RETURN *",
-      "MATCH (a)-[r1]->(b), shortestPath((a)-[r]->(b)) RETURN *"
+      "MATCH (a)-[r1]->(b), shortestPath((a)-[r*]->(b)) RETURN *",
+      "MATCH (a)-[r1]->(b), shortestPath((a)-[r*]->(b)) RETURN *"
     )
 
     assertRewrite(
-      "MATCH (a)-[r1]->(b)-[r2]->(c), shortestPath((a)-[r]->(b)) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2]->(c), shortestPath((a)-[r]->(b)) WHERE not(r1 = r2) RETURN *"
+      "MATCH (a)-[r1]->(b)-[r2]->(c), shortestPath((a)-[r*]->(b)) RETURN *",
+      "MATCH (a)-[r1]->(b)-[r2]->(c), shortestPath((a)-[r*]->(b)) WHERE not(r1 = r2) RETURN *"
     )
   }
 
   test("ignores allShortestPaths relationships for uniqueness") {
     assertRewrite(
-      "MATCH (a)-[r1]->(b), allShortestPaths((a)-[r]->(b)) RETURN *",
-      "MATCH (a)-[r1]->(b), allShortestPaths((a)-[r]->(b)) RETURN *"
+      "MATCH (a)-[r1]->(b), allShortestPaths((a)-[r*]->(b)) RETURN *",
+      "MATCH (a)-[r1]->(b), allShortestPaths((a)-[r*]->(b)) RETURN *"
     )
 
     assertRewrite(
-      "MATCH (a)-[r1]->(b)-[r2]->(c), allShortestPaths((a)-[r]->(b)) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2]->(c), allShortestPaths((a)-[r]->(b)) WHERE not(r1 = r2) RETURN *"
+      "MATCH (a)-[r1]->(b)-[r2]->(c), allShortestPaths((a)-[r*]->(b)) RETURN *",
+      "MATCH (a)-[r1]->(b)-[r2]->(c), allShortestPaths((a)-[r*]->(b)) WHERE not(r1 = r2) RETURN *"
     )
   }
 
