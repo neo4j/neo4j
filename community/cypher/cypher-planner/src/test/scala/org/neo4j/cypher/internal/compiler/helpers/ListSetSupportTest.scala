@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.compiler.helpers.ListSetSupport.RichListSet
-import org.scalatest.FunSuite
-import org.scalatest.Matchers
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
 import scala.collection.immutable.ListSet
 
-class ListSetSupportTest extends FunSuite with Matchers {
+class ListSetSupportTest extends AnyFunSuite with Matchers {
 
   test("group strings by length preserving order") {
     val strings = ListSet("foo", "", "a", "bar", "", "b", "a")

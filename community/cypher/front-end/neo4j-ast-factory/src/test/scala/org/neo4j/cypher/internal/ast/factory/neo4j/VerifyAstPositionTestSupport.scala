@@ -41,7 +41,7 @@ import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.scalatest.Assertions
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 
 import scala.language.implicitConversions
 

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 import org.scalatest.Assertion
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 
 trait PrettifierTestUtils extends Matchers {
 

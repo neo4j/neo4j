@@ -28,6 +28,11 @@ Apache Software License, Version 2.0
   org.opentest4j:opentest4j
   Scala Compiler
   scala-collection-compat
+  scala-xml
+  scalacheck-1.16
+  scalactic
+  scalatest-compatible
+  scalatest-core
 ------------------------------------------------------------------------------
 
                                  Apache License

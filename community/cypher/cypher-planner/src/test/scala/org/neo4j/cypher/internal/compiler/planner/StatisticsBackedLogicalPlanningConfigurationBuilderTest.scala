@@ -26,11 +26,11 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getWithValues
 import org.neo4j.internal.schema.IndexCapability
 import org.neo4j.internal.schema.IndexType
-import org.scalatest.FunSuite
-import org.scalatest.Matchers.contain
-import org.scalatest.Matchers.convertToAnyShouldWrapper
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers.contain
+import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
-class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends FunSuite
+class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends AnyFunSuite
     with StatisticsBackedLogicalPlanningSupport {
 
   /**

@@ -7,14 +7,31 @@ Apache Software License, Version 2.0
   Apache Commons Lang
   Byte Buddy (without dependencies)
   Byte Buddy agent
+  junit-4.13
+  mockito-4.6
   openCypher TCK API
   openCypher TCK Features and Graphs
   org.apiguardian:apiguardian-api
   org.opentest4j:opentest4j
+  Scala Compiler
   scala-collection-compat
   scala-xml
   scalactic
   scalatest
+  scalatest-compatible
+  scalatest-core
+  scalatest-diagrams
+  scalatest-featurespec
+  scalatest-flatspec
+  scalatest-freespec
+  scalatest-funspec
+  scalatest-funsuite
+  scalatest-matchers-core
+  scalatest-mustmatchers
+  scalatest-propspec
+  scalatest-refspec
+  scalatest-shouldmatchers
+  scalatest-wordspec
 ------------------------------------------------------------------------------
 
                                  Apache License

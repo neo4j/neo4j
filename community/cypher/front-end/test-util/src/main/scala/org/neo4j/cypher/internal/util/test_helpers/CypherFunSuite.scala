@@ -21,14 +21,12 @@ import org.mockito.ArgumentCaptor
 import org.scalatest.Args
 import org.scalatest.Assertions
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.FunSuiteLike
-import org.scalatest.Matchers
 import org.scalatest.Status
 import org.scalatest.Suite
+import org.scalatest.funsuite.AnyFunSuiteLike
+import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.junit.JUnitRunner
 import org.scalatestplus.mockito.MockitoSugar
-
-import scala.reflect.Manifest
 
 @RunWith(classOf[JUnitRunner])
 abstract class CypherFunSuite
@@ -36,7 +34,7 @@ abstract class CypherFunSuite
     with Assertions
     with CypherTestSupport
     with MockitoSugar
-    with FunSuiteLike
+    with AnyFunSuiteLike
     with Matchers
     with BeforeAndAfterEach {
 

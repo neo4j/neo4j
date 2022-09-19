@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.planmatching
 
-import org.scalatest.FunSuite
-import org.scalatest.Matchers.convertToAnyShouldWrapper
-import org.scalatest.Matchers.not
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
+import org.scalatest.matchers.should.Matchers.not
 
-class PlanMatcherTest extends FunSuite {
+class PlanMatcherTest extends AnyFunSuite {
 
   test("should be able to convert plan matcher with several regex arguments into plan description") {
     // should not throw

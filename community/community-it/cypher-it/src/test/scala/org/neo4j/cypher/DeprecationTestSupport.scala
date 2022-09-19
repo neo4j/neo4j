@@ -24,8 +24,8 @@ import org.neo4j.graphdb.InputPosition
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.impl.notification.NotificationCode
 import org.neo4j.graphdb.impl.notification.NotificationDetail
-import org.scalatest.Matchers
 import org.scalatest.Suite
+import org.scalatest.matchers.should.Matchers
 
 trait DeprecationTestSupport extends Suite with Matchers {
 

@@ -30,15 +30,15 @@ import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.virtual.VirtualValues.list
 import org.neo4j.values.virtual.VirtualValues.map
-import org.scalatest.FunSuiteLike
-import org.scalatest.Matchers
+import org.scalatest.funsuite.AnyFunSuiteLike
+import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.junit.JUnitRunner
 
 import java.lang.Math.PI
 import java.lang.Math.sin
 
 @RunWith(classOf[JUnitRunner])
-class SimpleInternalExpressionEvaluatorTest extends FunSuiteLike with Matchers {
+class SimpleInternalExpressionEvaluatorTest extends AnyFunSuiteLike with Matchers {
 
   test("parse literals") {
     val evaluator = new SimpleInternalExpressionEvaluator

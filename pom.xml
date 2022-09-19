@@ -127,6 +127,7 @@
     <scala.version>2.13.8</scala.version>
     <scala.binary.version>2.13</scala.binary.version>
     <scala.plugin.recompileMode>all</scala.plugin.recompileMode>
+    <scala.test.version>3.2.13</scala.test.version>
     <asm.version>9.3</asm.version>
     <metrics.version>4.2.10</metrics.version>
     <scala.target.vm>17</scala.target.vm>
@@ -1242,7 +1243,7 @@
       <dependency>
         <groupId>org.scalatest</groupId>
         <artifactId>scalatest_${scala.binary.version}</artifactId>
-        <version>3.0.9</version>
+        <version>${scala.test.version}</version>
         <scope>test</scope>
         <exclusions>
           <exclusion>
@@ -1254,6 +1255,24 @@
             <groupId>org.scala-lang</groupId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest-funsuite_${scala.binary.version}</artifactId>
+        <version>${scala.test.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.scalatestplus</groupId>
+        <artifactId>junit-4-13_${scala.binary.version}</artifactId>
+        <version>${scala.test.version}.0</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.scalatestplus</groupId>
+        <artifactId>mockito-4-6_${scala.binary.version}</artifactId>
+        <version>${scala.test.version}.0</version>
+        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.scalautils</groupId>
@@ -1272,9 +1291,9 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>org.scalacheck</groupId>
-        <artifactId>scalacheck_${scala.binary.version}</artifactId>
-        <version>1.14.3</version>
+        <groupId>org.scalatestplus</groupId>
+        <artifactId>scalacheck-1-16_${scala.binary.version}</artifactId>
+        <version>${scala.test.version}.0</version>
         <scope>test</scope>
       </dependency>
       <dependency>

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.Assertion
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 
 class simplifyIterablePredicatesTest extends CypherFunSuite with Matchers with RewriteTest
     with AstRewritingTestSupport {

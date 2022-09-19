@@ -35,10 +35,10 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
-import org.scalatest.FunSuite
-import org.scalatest.Matchers
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class ValidSymbolicNamesInLabelExpressionsTest extends FunSuite with Matchers {
+class ValidSymbolicNamesInLabelExpressionsTest extends AnyFunSuite with Matchers {
 
   test("A NodePattern can contain a Label in its label expression") {
     val labelName = LabelName("A")(InputPosition.NONE)

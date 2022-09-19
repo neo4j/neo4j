@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.collector
 
-import org.scalatest.FunSuite
-import org.scalatest.Matchers.convertToAnyShouldWrapper
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
-class DataCollectorMatchersTest extends FunSuite {
+class DataCollectorMatchersTest extends AnyFunSuite {
 
   test("arraySafeEquals") {
     DataCollectorMatchers.arraySafeEquals(Array(), Seq()) shouldBe true

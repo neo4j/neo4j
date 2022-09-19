@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.util.test_helpers.FeatureQueryTest
 import org.neo4j.cypher.internal.util.test_helpers.FeatureTest
 import org.opencypher.tools.tck.api.Scenario
 import org.scalatest.Assertion
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 
 class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers {
 

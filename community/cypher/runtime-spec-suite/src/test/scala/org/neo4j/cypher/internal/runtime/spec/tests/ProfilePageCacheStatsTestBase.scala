@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.kernel.api.KernelTransaction
-import org.scalatest.FunSuiteLike
+import org.scalatest.funsuite.AnyFunSuiteLike
 
 abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
   canFuseOverPipelines: Boolean,
@@ -297,7 +297,7 @@ trait UpdatingProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext] {
   }
 }
 
-trait TransactionForeachPageCacheStatsTestBase[CONTEXT <: RuntimeContext] extends FunSuiteLike {
+trait TransactionForeachPageCacheStatsTestBase[CONTEXT <: RuntimeContext] extends AnyFunSuiteLike {
   self: ProfilePageCacheStatsTestBase[CONTEXT] =>
 
   test("should profile page cache stats of plan with transactionForeach") {
