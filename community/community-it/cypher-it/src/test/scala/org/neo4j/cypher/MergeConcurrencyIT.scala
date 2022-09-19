@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.kernel.DeadlockDetectedException
+
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
 class MergeConcurrencyIT extends ExecutionEngineFunSuite {
@@ -197,5 +199,42 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
       tx.getNodeById(n1.getId).getRelationships.asScala.size should equal(1)
       tx.getNodeById(n2.getId).getRelationships.asScala.size should equal(1)
     } )
+  }
+
+  test("should handle ten simultaneous threads with multi seek") {
+    // Given a constraint on :Label(id), create a linked list
+    execute("CREATE CONSTRAINT ON (n:Philosopher) ASSERT n.id IS UNIQUE")
+    execute("CREATE CONSTRAINT ON (n:BlackSmith) ASSERT n.id IS UNIQUE")
+    execute("CREATE CONSTRAINT ON (n:Farmer) ASSERT n.id IS UNIQUE")
+
+    var exceptionsThrown = List.empty[Throwable]
+    val q =
+      """
+        |MERGE (a:Philosopher:BlackSmith:Farmer {id:$id})
+        |MERGE (b:Philosopher:BlackSmith:Farmer {id:$id+1})
+        |""".stripMargin
+
+    val runner = new Runnable {
+      def run(): Unit = {
+        try {
+          (1 to nodeCount) foreach {
+            x => execute(q, "id" -> x)
+          }
+        } catch {
+          case _: DeadlockDetectedException =>
+          // The enterprise Deadlock Detection can have false positives. Ignore.
+          case e: Throwable => exceptionsThrown = exceptionsThrown :+ e
+        }
+      }
+    }
+
+    val threads: Seq[Thread] = 0 until threadCount map (_ => new Thread(runner))
+
+    threads.foreach(_.start())
+    threads.foreach(_.join())
+    exceptionsThrown.foreach(throw _)
+
+    // Check that we haven't created duplicate nodes or duplicate relationships
+    execute("match (a) with a.id as id, count(*) as c where c > 1 return *") shouldBe empty
   }
 }
