@@ -185,10 +185,30 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         .produceResults("r")
         .apply()
         .|.projectEndpoints("(a)-[r*1..]->(b2)", startInScope = true, endInScope = false)
+        .|.filter("all(anon_0 IN r WHERE single(anon_1 IN r WHERE anon_0 = anon_1))")
         .|.argument("a", "r")
         .limit(1)
         .expand("(a)-[r*1..]->(b)")
         .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should test a var-length relationship that came from a made up list for uniqueness ") {
+
+    val plan = planner.plan("MATCH ()-[r]->() MATCH ()-[q]->() WITH [r,q] AS rs MATCH (a)-[rs*]->(b) RETURN a, b")
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("a", "b")
+        .apply()
+        .|.projectEndpoints("(a)-[rs*1..]->(b)", startInScope = false, endInScope = false)
+        .|.filter("all(anon_4 IN rs WHERE single(anon_5 IN rs WHERE anon_4 = anon_5))")
+        .|.argument("rs")
+        .projection("[r, q] AS rs")
+        .cartesianProduct()
+        .|.allRelationshipsScan("(anon_2)-[q]->(anon_3)")
+        .allRelationshipsScan("(anon_0)-[r]->(anon_1)")
         .build()
     )
   }

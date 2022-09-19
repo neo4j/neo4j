@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.expressions.SymbolicName
+import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
@@ -73,20 +74,12 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory with Re
   private val rewriter = Rewriter.lift {
     case m @ Match(_, pattern: Pattern, _, where: Option[Where]) =>
       val uniqueRels: Seq[UniqueRel] = collectUniqueRels(pattern)
-      if (uniqueRels.size < 2) {
-        m
-      } else {
-        val newWhere = addPredicate(m, uniqueRels, where)
-        m.copy(where = newWhere)(m.position)
-      }
+      val newWhere = addPredicate(m, uniqueRels, where)
+      m.copy(where = newWhere)(m.position)
     case m @ Merge(pattern: PatternPart, _, where: Option[Where]) =>
       val uniqueRels: Seq[UniqueRel] = collectUniqueRels(pattern)
-      if (uniqueRels.size < 2) {
-        m
-      } else {
-        val newWhere = addPredicate(m, uniqueRels, where)
-        m.copy(where = newWhere)(m.position)
-      }
+      val newWhere = addPredicate(m, uniqueRels, where)
+      m.copy(where = newWhere)(m.position)
   }
 
   private def addPredicate(clause: Clause, uniqueRels: Seq[UniqueRel], where: Option[Where]): Option[Where] = {
@@ -128,8 +121,8 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory with Re
     createPredicatesFor(uniqueRels, pos).reduceOption(expressions.And(_, _)(pos))
   }
 
-  def createPredicatesFor(uniqueRels: Seq[UniqueRel], pos: InputPosition): Seq[Expression] =
-    for {
+  def createPredicatesFor(uniqueRels: Seq[UniqueRel], pos: InputPosition): Seq[Expression] = {
+    val interRelUniqueness = for {
       x <- uniqueRels
       y <- uniqueRels if x.name < y.name && !x.isAlwaysDifferentFrom(y)
     } yield {
@@ -147,6 +140,13 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory with Re
           Disjoint(x.variable.copyId, y.variable.copyId)(pos)
       }
     }
+
+    val intraRelUniqueness = for {
+      x <- uniqueRels if !x.singleLength
+    } yield Unique(x.variable.copyId)(pos)
+
+    interRelUniqueness ++ intraRelUniqueness
+  }
 
   case class UniqueRel(variable: LogicalVariable, labelExpression: Option[LabelExpression], singleLength: Boolean) {
     def name: String = variable.name
@@ -213,7 +213,10 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory with Re
     }
   }
 
-  private[rewriters] def overlaps(relTypesToConsider: Seq[SymbolicName], labelExpression: Option[LabelExpression]): Seq[SymbolicName] = {
+  private[rewriters] def overlaps(
+    relTypesToConsider: Seq[SymbolicName],
+    labelExpression: Option[LabelExpression]
+  ): Seq[SymbolicName] = {
     relTypesToConsider.filter(relType => labelExpression.forall(le => evaluate(le, relType).result))
   }
 

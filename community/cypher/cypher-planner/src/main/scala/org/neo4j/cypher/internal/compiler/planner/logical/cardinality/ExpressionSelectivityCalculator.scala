@@ -68,6 +68,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.True
+import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.PrefixRange
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
@@ -189,6 +190,12 @@ case class ExpressionSelectivityCalculator(
     // Implicit relation uniqueness predicates
     case Not(Equals(lhs: Variable, rhs: Variable)) if areRelationships(semanticTable, lhs, rhs) =>
       DEFAULT_REL_UNIQUENESS_SELECTIVITY // This should not be the default. Instead, we should figure
+
+    case _: Unique =>
+      // These are currently only generated for var-length or QPP uniqueness predicates and
+      // those are already included in the calculations in PatternRelationshipMultiplierCalculator.
+      // We should revisit this when doing Cardinality estimation for QPPs.
+      Selectivity.ONE
 
     // WHERE NOT [...]
     case Not(inner) =>

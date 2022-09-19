@@ -16,16 +16,20 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
+import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Disjoint
+import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
+import org.neo4j.cypher.internal.expressions.SingleIterablePredicate
+import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 
 /**
- * Removes [[Disjoint]] predicates into expressions that the runtime can evaluate.
+ * Removes [[Disjoint]] and [[Unique]] predicates into expressions that the runtime can evaluate.
  */
 case class UniquenessRewriter(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends Rewriter {
   private val instance = topDown(Rewriter.lift {
@@ -33,9 +37,22 @@ case class UniquenessRewriter(anonymousVariableNameGenerator: AnonymousVariableN
       val innerX = Variable(anonymousVariableNameGenerator.nextName)(x.position)
       NoneIterablePredicate(
         innerX,
-        x.copyId,
-        Some(In(innerX.copyId, y.copyId)(d.position))
+        x,
+        Some(In(innerX.copyId, y)(d.position))
       )(d.position)
+
+    case u @ Unique(list) =>
+      val element1 = Variable(anonymousVariableNameGenerator.nextName)(list.position)
+      val element2 = Variable(anonymousVariableNameGenerator.nextName)(list.position)
+      AllIterablePredicate(
+        element1,
+        list,
+        Some(SingleIterablePredicate(
+          element2,
+          list.copyId,
+          Some(Equals(element1.copyId, element2.copyId)(list.position))
+        )(u.position))
+      )(u.position)
   })
 
   override def apply(value: AnyRef): AnyRef = instance(value)

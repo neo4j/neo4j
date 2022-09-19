@@ -109,6 +109,7 @@ import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Subtract
 import org.neo4j.cypher.internal.expressions.UnaryAdd
 import org.neo4j.cypher.internal.expressions.UnarySubtract
+import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
@@ -284,6 +285,11 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x @ Disjoint(lhs, rhs) =>
         check(ctx, x.arguments) chain
           expectType(CTList(CTAny).covariant, lhs) chain
+          expectType(CTList(CTAny).covariant, rhs) chain
+          specifyType(CTBoolean, x)
+
+      case x @ Unique(rhs) =>
+        check(ctx, x.arguments) chain
           expectType(CTList(CTAny).covariant, rhs) chain
           specifyType(CTBoolean, x)
 

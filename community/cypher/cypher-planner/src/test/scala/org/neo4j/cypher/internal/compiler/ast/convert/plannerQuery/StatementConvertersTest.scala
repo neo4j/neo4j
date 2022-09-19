@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.DistinctQueryProjection
@@ -555,7 +556,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship("r", ("a", "b"), BOTH, Seq(relTypeName("Type")), VarPatternLength(1, None))
     ))
     query.queryGraph.patternNodes should equal(Set("a", "b"))
-    query.queryGraph.selections should equal(Selections())
+    query.queryGraph.selections should equal(Selections.from(Unique(varFor("r"))(pos)))
     query.horizon should equal(RegularQueryProjection(Map(
       "a" -> varFor("a"),
       "r" -> varFor("r")
@@ -569,7 +570,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship("r2", ("b", "c"), OUTGOING, Seq(relTypeName("FRIEND")), VarPatternLength(0, Some(1)))
     ))
     query.queryGraph.patternNodes should equal(Set("a", "b", "c"))
-    query.queryGraph.selections should equal(Selections())
+    query.queryGraph.selections should equal(Selections.from(Seq(Unique(varFor("r1"))(pos), Unique(varFor("r2"))(pos))))
     query.horizon should equal(RegularQueryProjection(Map(
       "a" -> varFor("a"),
       "b" -> varFor("b"),
@@ -583,7 +584,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship("r", ("a", "b"), BOTH, Seq(relTypeName("Type")), VarPatternLength(3, None))
     ))
     query.queryGraph.patternNodes should equal(Set("a", "b"))
-    query.queryGraph.selections should equal(Selections())
+    query.queryGraph.selections should equal(Selections.from(Unique(varFor("r"))(pos)))
     query.horizon should equal(RegularQueryProjection(Map(
       "a" -> varFor("a"),
       "r" -> varFor("r")
@@ -596,7 +597,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship("r", ("a", "b"), BOTH, Seq(relTypeName("Type")), VarPatternLength.fixed(5))
     ))
     query.queryGraph.patternNodes should equal(Set("a", "b"))
-    query.queryGraph.selections should equal(Selections())
+    query.queryGraph.selections should equal(Selections.from(Unique(varFor("r"))(pos)))
     query.horizon should equal(RegularQueryProjection(Map(
       "a" -> varFor("a"),
       "r" -> varFor("r")
@@ -611,10 +612,11 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     ))
     query.queryGraph.patternNodes should equal(Set("a", "b", "c"))
 
-    val disjoint = Disjoint(varFor("r"), varFor("r2"))(pos)
-    val predicate = Predicate(Set("r2", "r"), disjoint)
-
-    query.queryGraph.selections should equal(Selections(Set(predicate)))
+    query.queryGraph.selections should equal(Selections.from(Seq(
+      Unique(varFor("r"))(pos),
+      Unique(varFor("r2"))(pos),
+      Disjoint(varFor("r"), varFor("r2"))(pos)
+    )))
     query.horizon should equal(RegularQueryProjection(Map(
       "a" -> varFor("a"),
       "r" -> varFor("r")

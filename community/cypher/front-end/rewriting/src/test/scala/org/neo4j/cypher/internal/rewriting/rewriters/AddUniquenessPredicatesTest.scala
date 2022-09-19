@@ -46,6 +46,9 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
   private def disjoint(lhs: String, rhs: String): String =
     s"NONE(`  UNNAMED0` IN $lhs WHERE `  UNNAMED0` IN $rhs)"
 
+  private def unique(rhs: String, unnamedOffset: Int = 0): String =
+    s"ALL(`  UNNAMED$unnamedOffset` IN $rhs WHERE SINGLE(`  UNNAMED${unnamedOffset + 1}` IN $rhs WHERE `  UNNAMED$unnamedOffset` = `  UNNAMED${unnamedOffset + 1}`))"
+
   test("does not introduce predicate not needed") {
     assertIsNotRewritten("RETURN 42")
     assertIsNotRewritten("MATCH (n) RETURN n")
@@ -53,20 +56,27 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
     assertIsNotRewritten("MATCH (n)-[r1]->(m) MATCH (m)-[r2]->(x) RETURN x")
   }
 
+  test("uniqueness check is done for one variable length relationship") {
+    assertRewrite(
+      "MATCH (b)-[r*0..1]->(c) RETURN *",
+      s"MATCH (b)-[r*0..1]->(c) WHERE ${unique("r")} RETURN *"
+    )
+  }
+
   test("uniqueness check is done between relationships of simple and variable pattern lengths") {
     assertRewrite(
       "MATCH (a)-[r1]->(b)-[r2*0..1]->(c) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2*0..1]->(c) WHERE NOT r1 IN r2 RETURN *"
+      s"MATCH (a)-[r1]->(b)-[r2*0..1]->(c) WHERE NOT r1 IN r2 AND ${unique("r2")} RETURN *"
     )
 
     assertRewrite(
       "MATCH (a)-[r1*0..1]->(b)-[r2]->(c) RETURN *",
-      "MATCH (a)-[r1*0..1]->(b)-[r2]->(c) WHERE NOT r2 IN r1 RETURN *"
+      s"MATCH (a)-[r1*0..1]->(b)-[r2]->(c) WHERE NOT r2 IN r1 AND ${unique("r1")} RETURN *"
     )
 
     assertRewrite(
       "MATCH (a)-[r1*0..1]->(b)-[r2*0..1]->(c) RETURN *",
-      s"MATCH (a)-[r1*0..1]->(b)-[r2*0..1]->(c) WHERE ${disjoint("r1", "r2")} RETURN *"
+      s"MATCH (a)-[r1*0..1]->(b)-[r2*0..1]->(c) WHERE ${disjoint("r1", "r2")} AND ${unique("r2", 1)} AND ${unique("r1", 3)} RETURN *"
     )
   }
 
