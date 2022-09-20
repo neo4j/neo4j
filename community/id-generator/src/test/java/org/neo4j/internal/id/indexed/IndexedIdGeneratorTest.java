@@ -73,6 +73,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.stream.Stream;
 import org.eclipse.collections.api.iterator.MutableLongIterator;
@@ -522,20 +523,24 @@ class IndexedIdGeneratorTest {
     }
 
     @Test
-    void shouldCheckpointAfterRebuild() throws IOException {
+    void shouldNotCheckpointAfterRebuild() throws IOException {
         // given
         open();
 
         // when
-        idGenerator.start(freeIds(10, 20, 30), NULL_CONTEXT);
+        var freeIdsFirstCall = freeIds(10, 20, 30);
+        idGenerator.start(freeIdsFirstCall, NULL_CONTEXT);
+        assertThat(freeIdsFirstCall.wasCalled).isTrue();
         stop();
         open();
-        idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
+        var freeIdsSecondCall = freeIds(11, 21, 31);
+        idGenerator.start(freeIdsSecondCall, NULL_CONTEXT);
+        assertThat(freeIdsSecondCall.wasCalled).isTrue();
 
         // then
-        assertEquals(10L, idGenerator.nextId(NULL_CONTEXT));
-        assertEquals(20L, idGenerator.nextId(NULL_CONTEXT));
-        assertEquals(30L, idGenerator.nextId(NULL_CONTEXT));
+        assertEquals(11L, idGenerator.nextId(NULL_CONTEXT));
+        assertEquals(21L, idGenerator.nextId(NULL_CONTEXT));
+        assertEquals(31L, idGenerator.nextId(NULL_CONTEXT));
     }
 
     @Test
@@ -543,6 +548,7 @@ class IndexedIdGeneratorTest {
         // given
         open();
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
+        idGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         idGenerator.close();
         open();
 
@@ -817,7 +823,7 @@ class IndexedIdGeneratorTest {
     @Test
     void shouldStartInReadOnlyModeIfEmpty() throws IOException {
         Path file = directory.file("existing");
-        var indexedIdGenerator = new IndexedIdGenerator(
+        try (var indexedIdGenerator = new IndexedIdGenerator(
                 pageCache,
                 fileSystem,
                 file,
@@ -833,10 +839,10 @@ class IndexedIdGeneratorTest {
                 NO_MONITOR,
                 getOpenOptions(),
                 SINGLE_IDS,
-                PageCacheTracer.NULL);
-        indexedIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
-        indexedIdGenerator.close();
-        // Never start id generator means it will need rebuild on next start
+                PageCacheTracer.NULL)) {
+            indexedIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
+            indexedIdGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
+        }
 
         // Start in readOnly mode should not throw
         try (var readOnlyGenerator = new IndexedIdGenerator(
@@ -904,7 +910,7 @@ class IndexedIdGeneratorTest {
         verify(monitor).allocatedFromReused(reusedId, 1);
         idGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         // two times, one in start and one now in checkpoint
-        verify(monitor, times(2)).checkpoint(anyLong(), anyLong());
+        verify(monitor, times(1)).checkpoint(anyLong(), anyLong());
         idGenerator.clearCache(NULL_CONTEXT);
         verify(monitor).clearingCache();
         verify(monitor).clearedCache();
@@ -1081,8 +1087,8 @@ class IndexedIdGeneratorTest {
 
             // 2 state pages involved into checkpoint (twice) + one more pin/hit/unpin on maintenance + range marker
             // writer
-            assertThat(cursorTracer.pins()).isEqualTo(6);
-            assertThat(cursorTracer.unpins()).isEqualTo(6);
+            assertThat(cursorTracer.pins()).isEqualTo(1);
+            assertThat(cursorTracer.unpins()).isEqualTo(1);
         }
     }
 
@@ -1355,7 +1361,7 @@ class IndexedIdGeneratorTest {
     private void assertOperationPermittedInReadOnlyMode(Function<IndexedIdGenerator, Executable> operation)
             throws IOException {
         Path file = directory.file("existing");
-        var indexedIdGenerator = new IndexedIdGenerator(
+        try (var indexedIdGenerator = new IndexedIdGenerator(
                 pageCache,
                 fileSystem,
                 file,
@@ -1371,9 +1377,10 @@ class IndexedIdGeneratorTest {
                 NO_MONITOR,
                 getOpenOptions(),
                 SINGLE_IDS,
-                PageCacheTracer.NULL);
-        indexedIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
-        indexedIdGenerator.close();
+                PageCacheTracer.NULL)) {
+            indexedIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
+            indexedIdGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
+        }
 
         // Start in readOnly mode
         try (var readOnlyGenerator = new IndexedIdGenerator(
@@ -1488,7 +1495,7 @@ class IndexedIdGeneratorTest {
     private void assertOperationThrowInReadOnlyMode(Function<IndexedIdGenerator, Executable> operation)
             throws IOException {
         Path file = directory.file("existing");
-        var indexedIdGenerator = new IndexedIdGenerator(
+        try (var indexedIdGenerator = new IndexedIdGenerator(
                 pageCache,
                 fileSystem,
                 file,
@@ -1504,9 +1511,10 @@ class IndexedIdGeneratorTest {
                 NO_MONITOR,
                 getOpenOptions(),
                 SINGLE_IDS,
-                PageCacheTracer.NULL);
-        indexedIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
-        indexedIdGenerator.close();
+                PageCacheTracer.NULL)) {
+            indexedIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
+            indexedIdGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
+        }
 
         // Start in readOnly mode
         try (var readOnlyGenerator = new IndexedIdGenerator(
@@ -1557,13 +1565,8 @@ class IndexedIdGeneratorTest {
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
     }
 
-    private static FreeIds freeIds(long... freeIds) {
-        return visitor -> {
-            for (long freeId : freeIds) {
-                visitor.accept(freeId);
-            }
-            return freeIds[freeIds.length - 1];
-        };
+    private static RecordingFreeIds freeIds(long... freeIds) {
+        return new RecordingFreeIds(freeIds);
     }
 
     private Runnable freer(ConcurrentLinkedQueue<Allocation> allocations, ConcurrentSparseLongBitSet expectedInUse) {
@@ -1730,6 +1733,24 @@ class IndexedIdGeneratorTest {
         @Override
         public String toString() {
             return format("{id:%d, slots:%d}", id, size);
+        }
+    }
+
+    private static class RecordingFreeIds implements FreeIds {
+        private boolean wasCalled;
+        private final long[] freeIds;
+
+        RecordingFreeIds(long... freeIds) {
+            this.freeIds = freeIds;
+        }
+
+        @Override
+        public long accept(LongConsumer visitor) throws IOException {
+            wasCalled = true;
+            for (long freeId : freeIds) {
+                visitor.accept(freeId);
+            }
+            return freeIds[freeIds.length - 1];
         }
     }
 }

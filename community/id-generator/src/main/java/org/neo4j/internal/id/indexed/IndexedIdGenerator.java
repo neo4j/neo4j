@@ -572,11 +572,6 @@ public class IndexedIdGenerator implements IdGenerator {
                 highId.set(highestId + 1);
                 highestWrittenId.set(highestId);
             }
-            // We can checkpoint here since the free ids we read are committed
-            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
-                checkpoint(flushEvent, cursorContext);
-            }
-            atLeastOneIdOnFreelist.set(true);
         }
 
         started = true;

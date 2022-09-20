@@ -311,7 +311,7 @@ class CheckPointerIntegrationTest {
             LogAssertions.assertThat(logProvider)
                     .forClass(CheckPointerImpl.class)
                     .containsMessages(
-                            " Checkpoint flushed 30 pages (2% of total available pages), in 30 IOs. Checkpoint performed with IO limit: unlimited, paused in total");
+                            " Checkpoint flushed 40 pages (3% of total available pages), in 40 IOs. Checkpoint performed with IO limit: unlimited, paused in total");
 
         } finally {
             managementService.shutdown();
@@ -354,7 +354,7 @@ class CheckPointerIntegrationTest {
             LogAssertions.assertThat(logProvider)
                     .forClass(CheckPointerImpl.class)
                     .containsMessages(
-                            "Checkpoint flushed 73 pages (7% of total available pages), in 46 IOs. Checkpoint performed with IO limit: unlimited, paused in total");
+                            "Checkpoint flushed 78 pages (7% of total available pages), in 51 IOs. Checkpoint performed with IO limit: unlimited, paused in total");
 
         } finally {
             managementService.shutdown();

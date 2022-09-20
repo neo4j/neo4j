@@ -176,12 +176,9 @@ class IndexedIdGeneratorRecoverabilityTest {
             freelist.start(NO_FREE_IDS, NULL_CONTEXT);
 
             // Here we expected that id1 and id2 will be reusable, even if they weren't marked as such in the previous
-            // session
-            // Making changes to the tree entry where they live will update the generation and all of a sudden the
-            // reusable bits
-            // in that entry will matter when we want to allocate. This is why we now want to make a change to that tree
-            // entry
-            // and after that do an allocation to see if we still get them.
+            // session Making changes to the tree entry where they live will update the generation and all of a
+            // sudden the reusable bits in that entry will matter when we want to allocate. This is why we now want
+            // to make a change to that tree entry and after that do an allocation to see if we still get them.
             markDeleted(freelist, id3);
 
             final ImmutableLongSet reused =
@@ -207,17 +204,22 @@ class IndexedIdGeneratorRecoverabilityTest {
             // Recovery
             markUsed(freelist, id, neighbourId);
             markDeleted(freelist, id, neighbourId);
-            // Neo4j does this on recovery, setHighId and checkpoint
-            freelist.setHighId(neighbourId + 1);
-            freelist.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT); // mostly to get the generation persisted
+            freelist.start(
+                    visitor -> {
+                        visitor.accept(id);
+                        visitor.accept(neighbourId);
+                        return neighbourId;
+                    },
+                    NULL_CONTEXT);
+            freelist.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
 
             // Normal operations
-            freelist.start(NO_FREE_IDS, NULL_CONTEXT);
             markFree(freelist, id);
             freelist.maintenance(NULL_CONTEXT);
             long idAfterRecovery = freelist.nextId(NULL_CONTEXT);
             assertEquals(id, idAfterRecovery);
             markUsed(freelist, id);
+            // Crash (no checkpoint)
         }
 
         try (IdGenerator freelist = instantiateFreelist()) {
