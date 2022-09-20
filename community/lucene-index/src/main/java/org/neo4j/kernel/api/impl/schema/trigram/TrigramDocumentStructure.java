@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema.trigram;
 
-import static org.apache.lucene.document.Field.Store.YES;
+import static org.apache.lucene.document.Field.Store.NO;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
@@ -42,10 +42,8 @@ class TrigramDocumentStructure {
 
     static Document createLuceneDocument(long id, Value value) {
         var document = new Document();
-        var idField = new StringField(ENTITY_ID_KEY, "", YES);
-        idField.setStringValue(Long.toString(id));
-        var idValueField = new NumericDocValuesField(ENTITY_ID_KEY, 0L);
-        idValueField.setLongValue(id);
+        var idField = new StringField(ENTITY_ID_KEY, Long.toString(id), NO);
+        var idValueField = new NumericDocValuesField(ENTITY_ID_KEY, id);
         document.add(idField);
         document.add(idValueField);
         if (value.valueGroup() == ValueGroup.TEXT) {
@@ -55,10 +53,6 @@ class TrigramDocumentStructure {
         }
 
         return document;
-    }
-
-    static long getNodeId(Document from) {
-        return Long.parseLong(from.get(ENTITY_ID_KEY));
     }
 
     private static class TrigramField extends Field {

@@ -86,9 +86,12 @@ public class DocValuesCollector extends SimpleCollector {
     }
 
     public IndexProgressor getIndexProgressor(String field, IndexProgressor.EntityValueClient client) {
-        return new LongValuesIndexProgressor(getMatchingDocs(), getTotalHits(), field, client);
+        return new LongValuesIndexProgressor(getMatchingDocs(), getTotalHits(), field, client::acceptEntity);
     }
 
+    public IndexProgressor getIndexProgressor(String field, EntityConsumer entityConsumer) {
+        return new LongValuesIndexProgressor(getMatchingDocs(), getTotalHits(), field, entityConsumer);
+    }
     /**
      * @param field the field that contains the values
      * @return an iterator over all NumericDocValues from the given field, in highest-to-lowest relevance order.
@@ -323,19 +326,24 @@ public class DocValuesCollector extends SimpleCollector {
         }
     }
 
+    @FunctionalInterface
+    public interface EntityConsumer {
+        boolean acceptEntity(long reference, float score, Value... values);
+    }
+
     private static class LongValuesIndexProgressor extends LongValuesSource implements IndexProgressor {
-        private final EntityValueClient client;
+        private final EntityConsumer entityConsumer;
 
         LongValuesIndexProgressor(
-                Iterable<MatchingDocs> allMatchingDocs, int totalHits, String field, EntityValueClient client) {
+                Iterable<MatchingDocs> allMatchingDocs, int totalHits, String field, EntityConsumer entityConsumer) {
             super(allMatchingDocs, totalHits, field);
-            this.client = client;
+            this.entityConsumer = entityConsumer;
         }
 
         @Override
         public boolean next() {
             while (fetchNextEntityId()) {
-                if (client.acceptEntity(next, score, (Value[]) null)) {
+                if (entityConsumer.acceptEntity(next, score, (Value[]) null)) {
                     return true;
                 }
             }

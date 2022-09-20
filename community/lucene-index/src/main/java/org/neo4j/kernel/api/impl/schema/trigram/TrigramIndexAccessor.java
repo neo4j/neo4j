@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.schema.trigram;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.function.ToLongFunction;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
@@ -29,7 +28,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexAccessor;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
-import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -57,12 +55,12 @@ class TrigramIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexReader,
     @Override
     public BoundedIterable<Long> newAllEntriesValueReader(
             long fromIdInclusive, long toIdExclusive, CursorContext cursorContext) {
-        return super.newAllEntriesReader(TrigramDocumentStructure::getNodeId, fromIdInclusive, toIdExclusive);
-    }
-
-    @Override
-    public IndexEntriesReader[] newAllEntriesValueReader(ToLongFunction<Document> entityIdReader, int numPartitions) {
-        return super.newAllEntriesValueReader(TrigramDocumentStructure::getNodeId, numPartitions);
+        try {
+            return ((TrigramIndexReader) luceneIndex.getIndexReader())
+                    .newAllEntriesValueReader(fromIdInclusive, toIdExclusive);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override
@@ -98,13 +96,7 @@ class TrigramIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexReader,
 
         @Override
         protected void change(long entityId, Value[] values) {
-            try {
-                Term term = TrigramDocumentStructure.newTermForChangeOrRemove(entityId);
-                Document document = TrigramDocumentStructure.createLuceneDocument(entityId, values[0]);
-                writer.updateOrDeleteDocument(term, document);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+            addIdempotent(entityId, values);
         }
 
         @Override

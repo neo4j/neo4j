@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.impl.schema.trigram.TrigramTokenStream.CodePointBuff
 
 class TrigramQueryFactory {
     static Query getById(long entityId) {
-        var term = new Term(TrigramDocumentStructure.ENTITY_ID_KEY, "" + entityId);
+        var term = TrigramDocumentStructure.newTermForChangeOrRemove(entityId);
         return new TermQuery(term);
     }
 
