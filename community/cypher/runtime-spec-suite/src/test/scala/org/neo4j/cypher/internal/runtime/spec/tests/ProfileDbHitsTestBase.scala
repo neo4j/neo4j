@@ -67,13 +67,13 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   val costOfRelationshipTypeLookup: Long, // the reported dbHits for finding the id of a relationship type
   val costOfCompositeUniqueIndexCursorRow: Long, // the reported dbHits for finding one row from a composite unique index
   cartesianProductChunkSize: Long, // The size of a LHS chunk for cartesian product
-  val canReuseAllNodesScanLookup: Boolean, // operator following AllNodesScan does not need to lookup node again
+  val canReuseAllScanLookup: Boolean, // operator following AllNodesScan or RelationshipScan does not need to lookup node again
   val canFuseOverPipelines: Boolean,
   val useWritesWithProfiling: Boolean // writes with profiling count dbHits for each element of the input array and ignore when no actual write was performed e.g. there is no addLabel write when label already exists on the node
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("HasLabel on top of AllNodesScan") {
-    val cost = if (canReuseAllNodesScanLookup) costOfLabelCheck - 1 else costOfLabelCheck
+    val cost = if (canReuseAllScanLookup) costOfLabelCheck - 1 else costOfLabelCheck
     hasLabelOnTopOfLeaf(_.allNodeScan("n"), expression = "n:Label", cost)
   }
 
@@ -82,7 +82,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("IS NOT NULL on top of AllNodesScan") {
-    val cost = if (canReuseAllNodesScanLookup) costOfPropertyExists - 1 else costOfPropertyExists
+    val cost = if (canReuseAllScanLookup) costOfPropertyExists - 1 else costOfPropertyExists
     hasLabelOnTopOfLeaf(_.allNodeScan("n"), expression = "n.prop IS NOT NULL", cost)
   }
 
@@ -122,7 +122,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("HasType on top of RelationshipTypeScan") {
-    hasTypeOnTopOfLeaf(_.relationshipTypeScan("()-[r:R]->()"), hasTypePerRowCost = 1)
+    val cost = if (canReuseAllScanLookup) 0 else 1
+    hasTypeOnTopOfLeaf(_.relationshipTypeScan("()-[r:R]->()"), hasTypePerRowCost = cost)
   }
 
   private def hasTypeOnTopOfLeaf(leaf: LogicalQueryBuilder => LogicalQueryBuilder, hasTypePerRowCost: Int) = {
