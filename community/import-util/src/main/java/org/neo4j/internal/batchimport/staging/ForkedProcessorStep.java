@@ -115,7 +115,7 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T> {
     }
 
     private void awaitAllCompleted() {
-        while (head.get() != tail.get()) {
+        while (head.get() != tail.get() && panic == null) {
             PARK.park(receiverThread = Thread.currentThread());
         }
     }

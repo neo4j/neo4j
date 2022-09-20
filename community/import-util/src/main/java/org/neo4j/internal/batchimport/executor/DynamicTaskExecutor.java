@@ -27,6 +27,7 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.neo4j.function.Suppliers;
@@ -37,7 +38,6 @@ import org.neo4j.function.Suppliers;
  */
 public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL> {
     private final BlockingQueue<Task<LOCAL>> queue;
-    private final ParkStrategy parkStrategy;
     private final String processorThreadNamePrefix;
 
     @SuppressWarnings("unchecked")
@@ -53,7 +53,6 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL> {
             int initialProcessorCount,
             int maxProcessorCount,
             int maxQueueSize,
-            ParkStrategy parkStrategy,
             String processorThreadNamePrefix,
             Supplier<LOCAL> initialLocalState,
             ProcessorScheduler scheduler) {
@@ -63,7 +62,6 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL> {
         assert this.maxProcessorCount >= initialProcessorCount
                 : "Unexpected initial processor count " + initialProcessorCount + " for max " + maxProcessorCount;
 
-        this.parkStrategy = parkStrategy;
         this.processorThreadNamePrefix = processorThreadNamePrefix;
         this.initialLocalState = initialLocalState;
         this.queue = new ArrayBlockingQueue<>(maxQueueSize);
@@ -137,26 +135,14 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL> {
             return;
         }
 
-        while (!queue.isEmpty() && panic.get() == null /*all bets are off in the event of panic*/) {
-            parkAWhile();
-        }
         this.shutDown = true;
-        while (anyAlive() && panic.get() == null /*all bets are off in the event of panic*/) {
-            parkAWhile();
-        }
-    }
-
-    private boolean anyAlive() {
-        for (Processor processor : processors) {
-            if (!processor.ended) {
-                return true;
+        try {
+            for (var processor : processors) {
+                processor.endSignal.await();
             }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
-        return false;
-    }
-
-    private void parkAWhile() {
-        parkStrategy.park(Thread.currentThread());
     }
 
     public static <T> Supplier<T> noLocalState() {
@@ -167,17 +153,17 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL> {
         // In addition to the global shutDown flag in the executor each processor has a local flag
         // so that an individual processor can be shut down, for example when reducing number of processors
         private volatile boolean processorShutDown;
-        private volatile boolean ended;
+        private final CountDownLatch endSignal = new CountDownLatch(1);
 
         @Override
         public void run() {
             try {
                 // Initialized here since it's the thread itself that needs to call it
                 final LOCAL threadLocalState = initialLocalState.get();
-                while (!shutDown && !processorShutDown) {
+                while (shouldContinue()) {
                     Task<LOCAL> task;
                     try {
-                        task = queue.poll(10, MILLISECONDS);
+                        task = queue.poll(1, MILLISECONDS);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         break;
@@ -188,14 +174,20 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL> {
                             task.run(threadLocalState);
                         } catch (Throwable e) {
                             receivePanic(e);
-                            close();
                             throw new RuntimeException(e);
                         }
                     }
                 }
             } finally {
-                ended = true;
+                endSignal.countDown();
             }
+        }
+
+        private boolean shouldContinue() {
+            if (processorShutDown || panic.get() != null) {
+                return false;
+            }
+            return !shutDown || !queue.isEmpty();
         }
     }
 }

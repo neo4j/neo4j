@@ -67,7 +67,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T> {
     public void start(int orderingGuarantees) {
         super.start(orderingGuarantees);
         this.executor = new DynamicTaskExecutor<>(
-                1, maxProcessors, config.maxQueueSize(), PARK, name(), Sender::new, control.scheduler());
+                1, maxProcessors, config.maxQueueSize(), name(), Sender::new, control.scheduler());
     }
 
     @Override
