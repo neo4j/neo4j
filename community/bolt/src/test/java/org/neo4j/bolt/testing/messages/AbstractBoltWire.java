@@ -129,7 +129,7 @@ public abstract class AbstractBoltWire implements BoltWire {
     }
 
     @Override
-    public ByteBuf begin(String db, String impersonatedUser, Collection<String> bookmarks) {
+    public ByteBuf begin(String db, String impersonatedUser, Collection<String> bookmarks, String transactionType) {
         var meta = new HashMap<String, Object>();
         if (db != null) {
             meta.put("db", db);

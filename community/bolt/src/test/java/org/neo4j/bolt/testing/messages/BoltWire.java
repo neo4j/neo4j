@@ -72,22 +72,22 @@ public interface BoltWire {
     ByteBuf hello(Map<String, Object> meta, RoutingContext context);
 
     default ByteBuf begin() {
-        return begin(null, null, null);
+        return begin(null, null, null, null);
     }
 
     default ByteBuf begin(String db) {
-        return this.begin(db, null, null);
+        return this.begin(db, null, null, null);
     }
 
     default ByteBuf begin(Collection<String> bookmarks) {
-        return this.begin(null, null, bookmarks);
+        return this.begin(null, null, bookmarks, null);
     }
 
     default ByteBuf begin(String db, String impersonatedUser) {
-        return this.begin(db, impersonatedUser, null);
+        return this.begin(db, impersonatedUser, null, null);
     }
 
-    ByteBuf begin(String db, String impersonatedUser, Collection<String> bookmarks);
+    ByteBuf begin(String db, String impersonatedUser, Collection<String> bookmarks, String transactionType);
 
     default ByteBuf discard() {
         return this.discard(-1);

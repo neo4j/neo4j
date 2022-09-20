@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
 import static org.neo4j.packstream.testing.PackstreamBufAssertions.assertThat;
+import static org.neo4j.values.storable.Values.longValue;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -256,6 +257,34 @@ public class BoltV50TransportIT extends AbstractBoltITBase {
                         .containsString("Europe/Berlin")
                         .asBuffer()
                         .hasNoRemainingReadableBytes())
+                .receivesSuccess();
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("argumentsProvider")
+    void shouldAcceptTransactionType(TransportConnection.Factory connectionFactory) throws Exception {
+        this.connectAndHandshake(connectionFactory);
+
+        connection
+                .send(wire.begin("neo4j", null, null, "implicit"))
+                .send(wire.run("RETURN 1"))
+                .send(wire.pull())
+                .send(wire.commit())
+                .send(wire.begin("neo4j", null, null, "nonsense"))
+                .send(wire.run("RETURN 1"))
+                .send(wire.pull())
+                .send(wire.commit());
+
+        assertThat(connection)
+                .receivesSuccess()
+                .receivesSuccess()
+                .receivesRecord(longValue(1))
+                .receivesSuccess()
+                .receivesSuccess()
+                .receivesSuccess()
+                .receivesSuccess()
+                .receivesRecord(longValue(1))
+                .receivesSuccess()
                 .receivesSuccess();
     }
 

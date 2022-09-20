@@ -19,8 +19,14 @@
  */
 package org.neo4j.bolt.testing.messages;
 
+import io.netty.buffer.ByteBuf;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.v50.BoltProtocolV50;
+import org.neo4j.packstream.io.PackstreamBuf;
+import org.neo4j.packstream.struct.StructHeader;
 
 public final class BoltV50Wire extends AbstractBoltWire {
 
@@ -31,5 +37,27 @@ public final class BoltV50Wire extends AbstractBoltWire {
     @Override
     protected String getUserAgent() {
         return "BoltWire/5.0";
+    }
+
+    @Override
+    public ByteBuf begin(String db, String impersonatedUser, Collection<String> bookmarks, String transactionType) {
+        var meta = new HashMap<String, Object>();
+        if (db != null) {
+            meta.put("db", db);
+        }
+        if (impersonatedUser != null) {
+            meta.put("imp_user", impersonatedUser);
+        }
+        if (bookmarks != null) {
+            meta.put("bookmarks", new ArrayList<>(bookmarks));
+        }
+        if (transactionType != null) {
+            meta.put("tx_type", transactionType);
+        }
+
+        return PackstreamBuf.allocUnpooled()
+                .writeStructHeader(new StructHeader(1, MESSAGE_TAG_BEGIN))
+                .writeMap(meta)
+                .getTarget();
     }
 }
