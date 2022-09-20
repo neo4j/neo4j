@@ -468,8 +468,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship("r2", ("b", "c"), OUTGOING, Seq.empty, SimplePatternLength)
     ))
     query.queryGraph.patternNodes should equal(Set("a", "b", "c"))
-    val predicate = Predicate(Set("r", "r2"), not(equals(varFor("r"), varFor("r2"))))
-    query.queryGraph.selections.predicates should equal(Set(predicate))
+    query.queryGraph.selections should equal(Selections.from(not(equals(varFor("r2"), varFor("r")))))
     query.horizon should equal(RegularQueryProjection(Map(
       "a" -> varFor("a"),
       "r" -> varFor("r"),
@@ -484,8 +483,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship("r2", ("b", "a"), OUTGOING, Seq.empty, SimplePatternLength)
     ))
     query.queryGraph.patternNodes should equal(Set("a", "b"))
-    val predicate = Predicate(Set("r", "r2"), not(equals(varFor("r"), varFor("r2"))))
-    query.queryGraph.selections.predicates should equal(Set(predicate))
+    query.queryGraph.selections should equal(Selections.from(not(equals(varFor("r2"), varFor("r")))))
     query.horizon should equal(RegularQueryProjection(Map(
       "a" -> varFor("a"),
       "r" -> varFor("r")
@@ -499,8 +497,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship("r2", ("b", "c"), BOTH, Seq.empty, SimplePatternLength)
     ))
     query.queryGraph.patternNodes should equal(Set("a", "b", "c"))
-    val predicate = Predicate(Set("r", "r2"), not(equals(varFor("r"), varFor("r2"))))
-    query.queryGraph.selections.predicates should equal(Set(predicate))
+    query.queryGraph.selections should equal(Selections.from(not(equals(varFor("r2"), varFor("r")))))
     query.horizon should equal(RegularQueryProjection(Map(
       "a" -> varFor("a"),
       "r" -> varFor("r")
@@ -615,7 +612,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.selections should equal(Selections.from(Seq(
       Unique(varFor("r"))(pos),
       Unique(varFor("r2"))(pos),
-      Disjoint(varFor("r"), varFor("r2"))(pos)
+      Disjoint(varFor("r2"), varFor("r"))(pos)
     )))
     query.horizon should equal(RegularQueryProjection(Map(
       "a" -> varFor("a"),
@@ -1560,7 +1557,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
               ),
             argumentIds = Set("m"),
             selections = Selections.from(Seq(
-              not(equals(r2, r3))
+              not(equals(r3, r2))
             ))
           )
         ),
@@ -1594,7 +1591,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
           relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
         )
-      )
+      ),
+      selections = Selections.from(unique(varFor("r")))
     )
   }
 
@@ -1610,7 +1608,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
             patternNodes = Set("anon_1", "anon_3"),
             patternRelationships =
               Set(PatternRelationship(
-                "anon_2",
+                "anon_5",
                 ("anon_1", "anon_3"),
                 SemanticDirection.OUTGOING,
                 Seq.empty,
@@ -1619,9 +1617,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           ),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
           nodeVariableGroupings = Set.empty,
-          relationshipVariableGroupings = Set.empty
+          relationshipVariableGroupings = Set(VariableGrouping("anon_5", "anon_6"))
         )
-      )
+      ),
+      selections = Selections.from(unique(varFor("anon_6")))
     )
   }
 
@@ -1648,7 +1647,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
           relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
         )
-      )
+      ),
+      selections = Selections.from(unique(varFor("r")))
     )
   }
 
@@ -1661,7 +1661,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         PatternRelationship("r3", ("x", "y"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
       ),
       selections = Selections.from(Set(
-        not(equals(varFor("r1"), varFor("r3")))
+        not(equals(varFor("r1"), varFor("r3"))),
+        unique(varFor("r2")),
+        not(in(varFor("r1"), varFor("r2"))),
+        not(in(varFor("r3"), varFor("r2")))
       )),
       quantifiedPathPatterns = Set(
         QuantifiedPathPattern(
@@ -1713,7 +1716,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
           relationshipVariableGroupings = Set(VariableGrouping("r2", "r2"))
         )
-      )
+      ),
+      selections = Selections.from(unique(varFor("r2")))
     )
   }
 
@@ -1721,7 +1725,11 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("MATCH ((n)-[r1]->(m))+ ((x)-[r2]->(y)){,3} RETURN 1")
     query.queryGraph shouldBe QueryGraph(
       patternNodes = Set("anon_0", "anon_1", "anon_2"),
-      selections = Selections.empty,
+      selections = Selections.from(Seq(
+        unique(varFor("r1")),
+        unique(varFor("r2")),
+        disjoint(varFor("r1"), varFor("r2"))
+      )),
       quantifiedPathPatterns = Set(
         QuantifiedPathPattern(
           leftBinding = NodeBinding("n", "anon_0"),
@@ -1767,7 +1775,11 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("MATCH ((a)-[r1]->(b)-[r2]->(c)){5} ((x)-[r3]->(y))+ RETURN 1")
     query.queryGraph shouldBe QueryGraph(
       patternNodes = Set("anon_0", "anon_1", "anon_2"),
-      selections = Selections.empty,
+      selections = Selections.from(Seq(
+        disjoint(add(varFor("r1"), varFor("r2")), varFor("r3")),
+        unique(add(varFor("r1"), varFor("r2"))),
+        unique(varFor("r3"))
+      )),
       quantifiedPathPatterns = Set(
         QuantifiedPathPattern(
           leftBinding = NodeBinding("a", "anon_0"),
@@ -1790,7 +1802,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
                   Seq.empty,
                   SimplePatternLength
                 )
-              )
+              ),
+            selections = Selections.from(not(equals(varFor("r2"), varFor("r1"))))
           ),
           repetition = Repetition(min = 5, max = UpperBound.Limited(5)),
           nodeVariableGroupings =
@@ -1843,7 +1856,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
             nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
             relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
           )
-        )
+        ),
+        selections = Selections.from(unique(varFor("r")))
       ))
     )
   }
@@ -1883,7 +1897,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           QueryGraph(
             argumentIds = Set("a"),
             patternNodes = Set("a", m_outer),
-            quantifiedPathPatterns = Set(qpp)
+            quantifiedPathPatterns = Set(qpp),
+            selections = Selections.from(unique(varFor("r")))
           )
         ),
         existsVariableName,
@@ -1916,7 +1931,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
           relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
         )
-      )
+      ),
+      selections = Selections.from(unique(varFor("r")))
     )
   }
 

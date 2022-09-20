@@ -488,7 +488,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         .produceResults("n")
         .apply()
         .|.optional("m", "anon_0", "n")
-        .|.filter("role:Role", "not anon_1 = anon_2")
+        .|.filter("role:Role", "not anon_2 = anon_1")
         .|.expandAll("(middle)-[anon_2]->(role)")
         .|.expandAll("(n)-[anon_1]->(middle)")
         .|.argument("n")
@@ -1214,7 +1214,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val expandB = Expand(scanA, "a", INCOMING, Seq.empty, "b", "rB", ExpandAll)
     val selectionB = Selection(Seq(hasLabels("b", "B")), expandB)
     val expandC = Expand(selectionB, "a", INCOMING, Seq.empty, "c", "rC", ExpandAll)
-    val selectionC = Selection(Seq(hasLabels("c", "C"), not(equals(varFor("rB"), varFor("rC")))), expandC)
+    val selectionC = Selection(Seq(hasLabels("c", "C"), not(equals(varFor("rC"), varFor("rB")))), expandC)
     val expected = selectionC
 
     plan should equal(expected)

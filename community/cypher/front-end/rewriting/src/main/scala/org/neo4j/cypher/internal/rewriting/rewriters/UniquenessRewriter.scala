@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.util.topDown
  * Removes [[Disjoint]] and [[Unique]] predicates into expressions that the runtime can evaluate.
  */
 case class UniquenessRewriter(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends Rewriter {
+
   private val instance = topDown(Rewriter.lift {
     case d @ Disjoint(x, y) =>
       val innerX = Variable(anonymousVariableNameGenerator.nextName)(x.position)
@@ -49,7 +50,7 @@ case class UniquenessRewriter(anonymousVariableNameGenerator: AnonymousVariableN
         list,
         Some(SingleIterablePredicate(
           element2,
-          list.copyId,
+          list.endoRewrite(copyVariables),
           Some(Equals(element1.copyId, element2.copyId)(list.position))
         )(u.position))
       )(u.position)

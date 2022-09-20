@@ -131,10 +131,12 @@ object QuantifiedPath {
     quantifier: GraphPatternQuantifier,
     optionalWhereExpression: Option[Expression]
   )(position: InputPosition): QuantifiedPath = {
-    val entityBindings = part.allVariables.map { innerVar =>
-      VariableGrouping(innerVar.copyId, innerVar.withPosition(position))(position)
-    }
+    val entityBindings = part.allVariables.map(getGrouping(_, position))
     QuantifiedPath(part, quantifier, optionalWhereExpression, entityBindings)(position)
+  }
+
+  def getGrouping(innerVar: LogicalVariable, qppPosition: InputPosition): VariableGrouping = {
+    VariableGrouping(innerVar.copyId, innerVar.withPosition(qppPosition))(qppPosition)
   }
 }
 

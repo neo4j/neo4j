@@ -100,7 +100,7 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
     }
 
     // Create predicates for relationship uniqueness
-    val uniqueRels = addUniquenessPredicates.collectUniqueRels(pattern)
+    val uniqueRels = addUniquenessPredicates.collectRelationships(pattern)
     val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, pattern.position)
     // Extract inlined predicates
     val extractedPredicates: Seq[Expression] =

@@ -1733,7 +1733,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     val plan = planner.plan(q).stripProduceResults
 
     val expectedNestedPlan = planner.subPlanBuilder()
-      .filter("not anon_0 = anon_2")
+      .filter("not anon_2 = anon_0")
       .expand("(anon_1)-[anon_2]->(anon_3)")
       .expand("(n)-[anon_0]->(anon_1)")
       .argument("n")
@@ -1942,7 +1942,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       planner.planBuilder()
         .produceResults("a")
         .semiApply()
-        .|.filter("not anon_0 = anon_2") // This filter upholds rel uniqueness
+        .|.filter("not anon_2 = anon_0") // This filter upholds rel uniqueness
         .|.expandAll("(anon_1)-[anon_2]->(anon_3)")
         .|.expandAll("(a)-[anon_0]->(anon_1)")
         .|.argument("a")
@@ -1958,7 +1958,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         .produceResults("props")
         .rollUpApply("props", "anon_2")
         .|.projection("c.prop AS anon_2")
-        .|.filter("not anon_0 = anon_1") // This filter upholds rel uniqueness
+        .|.filter("not anon_1 = anon_0") // This filter upholds rel uniqueness
         .|.expandAll("(b)-[anon_1]->(c)")
         .|.expandAll("(a)-[anon_0]->(b)")
         .|.argument("a")
@@ -2140,10 +2140,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         .|.projectEndpoints("(n)-[r]->(m)", startInScope = true, endInScope = true)
         .|.projectEndpoints("(o)-[r2]->(m)", startInScope = true, endInScope = true)
         .|.projectEndpoints("(m)-[r3]->(q)", startInScope = true, endInScope = true)
-        .|.filter("n.foo > 5", "not r = r3", "not r = r2", "not r2 = r3")
+        .|.filter("n.foo > 5", "not r = r3", "not r = r2", "not r3 = r2")
         .|.argument("n", "m", "q", "r2", "r", "r3", "o")
         .expandAll("(m)<-[r]-(n)")
-        .filter("not r2 = r3")
+        .filter("not r3 = r2")
         .expandAll("(m)<-[r2]-(o)")
         .allRelationshipsScan("(m)-[r3]->(q)")
         .build()
@@ -2156,7 +2156,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       planner.planBuilder()
         .produceResults("m", "n", "r")
         .semiApply()
-        .|.filter("not r2 = r3")
+        .|.filter("not r3 = r2")
         .|.expandAll("(m)<-[r2]-(o)")
         .|.expandAll("(m)-[r3]->(q)")
         .|.argument("m")

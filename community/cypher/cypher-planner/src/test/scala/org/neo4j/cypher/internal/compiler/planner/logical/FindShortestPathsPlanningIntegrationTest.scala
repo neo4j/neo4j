@@ -71,7 +71,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
       cfg.plan("MATCH (a:X)<-[r1]-(b)-[r2]->(c:X), p = shortestPath((a)-[r]->(c)) RETURN p").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .shortestPath("(a)-[r*1..1]->(c)", pathName = Some("p"))
-      .filter("not r1 = r2")
+      .filter("not r2 = r1")
       .nodeHashJoin("b")
       .|.expandAll("(c)<-[r2]-(b)")
       .|.nodeByLabelScan("c", "X")

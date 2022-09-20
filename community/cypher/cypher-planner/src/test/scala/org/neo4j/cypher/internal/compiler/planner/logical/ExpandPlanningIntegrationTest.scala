@@ -99,7 +99,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
 
     val plan = cfg.plan("MATCH (a:A)-[r1]->(b)<-[r2]-(a) RETURN r1, r2").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .filter("not r1 = r2")
+      .filter("not r2 = r1")
       .expandInto("(a)-[r1]->(b)")
       .expandAll("(a)-[r2]->(b)")
       .nodeByLabelScan("a", "A")
@@ -230,7 +230,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
 
     plan shouldEqual planner.planBuilder()
       .produceResults("a", "r")
-      .filter("NONE(anon_0 IN r WHERE anon_0 IN r2)")
+      .filter("NONE(anon_0 IN r2 WHERE anon_0 IN r)")
       .expand("(b)-[r2*]-(c)")
       .expand("(a)<-[r*]-(b)", projectedDir = INCOMING)
       .nodeByLabelScan("a", "A")

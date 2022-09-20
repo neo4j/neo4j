@@ -375,7 +375,7 @@ case class AssertIsNode(lhs: Expression)(val position: InputPosition) extends Bo
  * @param lhs first list
  * @param rhs second list
  */
-case class Disjoint(lhs: LogicalVariable, rhs: LogicalVariable)(val position: InputPosition) extends BooleanExpression {
+case class Disjoint(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression {
   override def isConstantForQuery: Boolean = lhs.isConstantForQuery && rhs.isConstantForQuery
 }
 
@@ -385,6 +385,6 @@ case class Disjoint(lhs: LogicalVariable, rhs: LogicalVariable)(val position: In
  *
  * @param rhs the list to test
  */
-case class Unique(rhs: LogicalVariable)(val position: InputPosition) extends BooleanExpression {
+case class Unique(rhs: Expression)(val position: InputPosition) extends BooleanExpression {
   override def isConstantForQuery: Boolean = rhs.isConstantForQuery
 }

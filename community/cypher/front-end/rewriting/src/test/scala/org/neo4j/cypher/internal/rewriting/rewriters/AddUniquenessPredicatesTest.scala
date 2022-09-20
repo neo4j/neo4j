@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.expressions.LabelExpression
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonConjunction
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonDisjunction
@@ -25,7 +26,9 @@ import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.LabelExpression.Negation
 import org.neo4j.cypher.internal.expressions.LabelExpression.Wildcard
+import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.rewriting.RewriteTest
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates.evaluate
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates.getRelTypesToConsider
@@ -73,59 +76,88 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
       "MATCH (a)-[r1*0..1]->(b)-[r2]->(c) RETURN *",
       s"MATCH (a)-[r1*0..1]->(b)-[r2]->(c) WHERE NOT r2 IN r1 AND ${unique("r1")} RETURN *"
     )
+  }
+
+  test("no uniqueness check between relationships of simple and variable pattern lengths of different type") {
+    assertRewrite(
+      "MATCH (a)-[r1:R1]->(b)-[r2:R2*0..1]->(c) RETURN *",
+      s"MATCH (a)-[r1:R1]->(b)-[r2:R2*0..1]->(c) WHERE ${unique("r2")} RETURN *"
+    )
 
     assertRewrite(
+      "MATCH (a)-[r1:R1*0..1]->(b)-[r2:R2]->(c) RETURN *",
+      s"MATCH (a)-[r1:R1*0..1]->(b)-[r2:R2]->(c) WHERE ${unique("r1")} RETURN *"
+    )
+
+    assertRewrite(
+      "MATCH (a)-[r1:R1]->(b)-[r2:R2*0..1]->(c)-[r3:R1|R2*0..1]->(d) RETURN *",
+      s"""MATCH (a)-[r1:R1]->(b)-[r2:R2*0..1]->(c)-[r3:R1|R2*0..1]->(d) 
+         |WHERE ${disjoint("r3", "r2")} AND NOT r1 IN r3 AND ${unique("r3", 1)} AND ${unique("r2", 3)} 
+         |RETURN *""".stripMargin
+    )
+  }
+
+  test("uniqueness check is done between relationships of variable and variable pattern lengths") {
+    assertRewrite(
       "MATCH (a)-[r1*0..1]->(b)-[r2*0..1]->(c) RETURN *",
-      s"MATCH (a)-[r1*0..1]->(b)-[r2*0..1]->(c) WHERE ${disjoint("r1", "r2")} AND ${unique("r2", 1)} AND ${unique("r1", 3)} RETURN *"
+      s"""MATCH (a)-[r1*0..1]->(b)-[r2*0..1]->(c)
+         |WHERE ${disjoint("r2", "r1")} AND ${unique("r2", 1)} AND ${unique("r1", 3)}
+         |RETURN *""".stripMargin
+    )
+  }
+
+  test("no uniqueness check between relationships of variable and variable pattern lengths of different type") {
+    assertRewrite(
+      "MATCH (a)-[r1:R1*0..1]->(b)-[r2:R2*0..1]->(c) RETURN *",
+      s"""MATCH (a)-[r1:R1*0..1]->(b)-[r2:R2*0..1]->(c) 
+         |WHERE ${unique("r2")} AND ${unique("r1", 2)} 
+         |RETURN *""".stripMargin
     )
   }
 
   test("uniqueness check is done between relationships") {
     assertRewrite(
       "MATCH (a)-[r1]->(b)-[r2]->(c) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2]->(c) WHERE not(r1 = r2) RETURN *"
+      "MATCH (a)-[r1]->(b)-[r2]->(c) WHERE NOT(r2 = r1) RETURN *"
     )
 
     assertRewrite(
       "MATCH (a)-[r1]->(b)-[r2]->(c)-[r3]->(d) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2]->(c)-[r3]->(d) WHERE not(r2 = r3) AND not(r1 = r3) AND not(r1 = r2) RETURN *"
+      "MATCH (a)-[r1]->(b)-[r2]->(c)-[r3]->(d) WHERE NOT(r3 = r2) AND NOT(r3 = r1) AND NOT(r2 = r1) RETURN *"
     )
 
     assertRewrite(
       "MATCH (a)-[r1]->(b), (b)-[r2]->(c), (c)-[r3]->(d) RETURN *",
-      "MATCH (a)-[r1]->(b), (b)-[r2]->(c), (c)-[r3]->(d) WHERE not(r1 = r2) AND not(r1 = r3) AND not(r2 = r3) RETURN *"
+      "MATCH (a)-[r1]->(b), (b)-[r2]->(c), (c)-[r3]->(d) WHERE NOT(r1 = r2) AND NOT(r1 = r3) AND NOT(r2 = r3) RETURN *"
     )
   }
 
   test("no uniqueness check between relationships of different type") {
-    assertRewrite(
-      "MATCH (a)-[r1:X]->(b)-[r2:Y]->(c) RETURN *",
-      "MATCH (a)-[r1:X]->(b)-[r2:Y]->(c) RETURN *"
-    )
+    assertIsNotRewritten("MATCH (a)-[r1:X]->(b)-[r2:Y]->(c) RETURN *")
 
     assertRewrite(
       "MATCH (a)-[r1:X]->(b)-[r2:X|Y]->(c) RETURN *",
-      "MATCH (a)-[r1:X]->(b)-[r2:X|Y]->(c) WHERE not(r1 = r2) RETURN *"
+      "MATCH (a)-[r1:X]->(b)-[r2:X|Y]->(c) WHERE NOT(r2 = r1) RETURN *"
     )
 
     assertRewrite(
       "MATCH (a)-[r1]->(b)-[r2:X]->(c) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2:X]->(c) WHERE not(r1 = r2) RETURN *"
+      "MATCH (a)-[r1]->(b)-[r2:X]->(c) WHERE NOT(r2 = r1) RETURN *"
     )
 
     assertRewrite(
       "MATCH (a)-[r1]->(b)-[r2]->(c) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2]->(c) WHERE not(r1 = r2) RETURN *"
+      "MATCH (a)-[r1]->(b)-[r2]->(c) WHERE NOT(r2 = r1) RETURN *"
     )
 
     assertRewrite(
       "MATCH (a)-[r1]->(b)-[r2:%]->(c) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2:%]->(c) WHERE not(r1 = r2) RETURN *"
+      "MATCH (a)-[r1]->(b)-[r2:%]->(c) WHERE NOT(r2 = r1) RETURN *"
     )
 
     assertRewrite(
       "MATCH (a)-[r1:%]->(b)-[r2:%]->(c) RETURN *",
-      "MATCH (a)-[r1:%]->(b)-[r2:%]->(c) WHERE not(r1 = r2) RETURN *"
+      "MATCH (a)-[r1:%]->(b)-[r2:%]->(c) WHERE NOT(r2 = r1) RETURN *"
     )
 
     assertIsNotRewritten("MATCH (a)-[r1]->(b)-[r2:!%]->(c) RETURN *")
@@ -134,10 +166,167 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
 
     assertRewrite(
       "MATCH (a)-[r1]->(b)-[r2:!X]->(c) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2:!X]->(c) WHERE not(r1 = r2) RETURN *"
+      "MATCH (a)-[r1]->(b)-[r2:!X]->(c) WHERE NOT(r2 = r1) RETURN *"
     )
 
     assertIsNotRewritten("MATCH (a)-[r1:A&B]->(b)-[r2:B&C]->(c) RETURN *")
+  }
+
+  test("uniqueness check is done for a single length-one QPP") {
+    assertRewrite(
+      "MATCH (b) (()-[r]->()){0,1} (c) RETURN *",
+      s"MATCH (b) (()-[r]->()){0,1} (c) WHERE ${unique("r")} RETURN *"
+    )
+  }
+
+  test(
+    "uniqueness check for a single length-one QPP with unnamed relationship variable promotes unnamed variable to grouping"
+  ) {
+    // GIVEN
+    val query = "MATCH (b) (()-->(m)){0,1} (c) RETURN *"
+    val parsed = parseForRewriting(query)
+    SemanticChecker.check(parsed)
+
+    // WHEN
+    val result = parsed.endoRewrite(inSequence(
+      nameAllPatternElements(new AnonymousVariableNameGenerator),
+      AddUniquenessPredicates
+    ))
+
+    // THEN
+    val qpp = result.folder.treeFindByClass[QuantifiedPath].get
+    // all three elements of the QPP should be included in the grouping
+    qpp.variableGroupings should have size 2 // the relationship and m, but not the anonymous node
+    // ... and have the right position (that of the qpp)
+    qpp.variableGroupings.map(_.group.position).foreach { pos =>
+      pos should equal(qpp.position)
+    }
+
+    // As the unique(...) predicate references a relationship group variable from the qpp, we need to make sure that this has the right position
+    // so that the semantic table can correctly infer this to be a list of relationships and does not confuse it with the variable inside the qpp
+    // which is of type relationship.
+    val unique = result.folder.treeFindByClass[Unique].get
+    unique.rhs.position should be(qpp.position)
+  }
+
+  test("uniqueness check is done for a single length-two QPP") {
+    assertRewrite(
+      "MATCH (b) (()-[r1]->()-[r2]->()){0,1} (c) RETURN *",
+      s"MATCH (b) (()-[r1]->()-[r2]->() WHERE NOT (r2 = r1)){0,1} (c) WHERE ${unique("r1 + r2")} RETURN *"
+    )
+  }
+
+  test("uniqueness check is done for a single length-three QPP") {
+    assertRewrite(
+      "MATCH (b) (()-[r1]->()-[r2]->()-[r3]->()){0,1} (c) RETURN *",
+      s"""MATCH (b) (()-[r1]->()-[r2]->()-[r3]->() WHERE NOT(r3 = r2) AND NOT(r3 = r1) AND NOT(r2 = r1)){0,1} (c)
+         |WHERE ${unique("r1 + r2 + r3")}
+         |RETURN *""".stripMargin
+    )
+  }
+
+  test("uniqueness check is done between relationships of simple lengths and QPPs") {
+    assertRewrite(
+      "MATCH (a)-[r1]->(b) (()-[r2]->())* RETURN *",
+      s"MATCH (a)-[r1]->(b) (()-[r2]->())* WHERE NOT r1 IN r2 AND ${unique("r2")} RETURN *"
+    )
+
+    assertRewrite(
+      "MATCH (a)-[r1]->(b) (()-[r2]->()-[r3]->())* RETURN *",
+      s"""MATCH (a)-[r1]->(b) (()-[r2]->()-[r3]->() WHERE NOT (r3 = r2))* 
+         |WHERE NOT r1 IN (r2 + r3) AND ${unique("r2 + r3")}
+         |RETURN *""".stripMargin
+    )
+
+    assertRewrite(
+      "MATCH ((a)-[r1]->())* (b)-[r2]->(c) RETURN *",
+      s"MATCH ((a)-[r1]->())* (b)-[r2]->(c) WHERE NOT r2 IN r1 AND ${unique("r1")} RETURN *"
+    )
+
+    assertRewrite(
+      "MATCH (a)-[r1]->(b) (()-[r2]->()-[r3]->())* (c)-[r4]->(d) RETURN *",
+      s"""MATCH (a)-[r1]->(b) (()-[r2]->()-[r3]->() WHERE NOT (r3 = r2))* (c)-[r4]->(d)
+         |WHERE NOT r1 IN (r2 + r3) AND NOT r1 = r4 AND NOT r4 IN (r2 + r3) AND ${unique("r2 + r3")}
+         |RETURN *""".stripMargin
+    )
+  }
+
+  test("no uniqueness check between relationships of simple lengths and QPPs of different type") {
+    assertRewrite(
+      "MATCH (a)-[r1:R1]->(b) (()-[r2:R2]->())* RETURN *",
+      s"MATCH (a)-[r1:R1]->(b) (()-[r2:R2]->())* WHERE ${unique("r2")} RETURN *"
+    )
+
+    assertRewrite(
+      "MATCH (a)-[r1:R1]->(b) (()-[r2:R2]->()-[r3:R3]->())* RETURN *",
+      s"""MATCH (a)-[r1:R1]->(b) (()-[r2:R2]->()-[r3:R3]->())* 
+         |WHERE ${unique("r2 + r3")}
+         |RETURN *""".stripMargin
+    )
+
+    assertRewrite(
+      "MATCH (a)-[r1:R1]->(b) (()-[r2:R2]->()-[r3:R1]->())* RETURN *",
+      s"""MATCH (a)-[r1:R1]->(b) (()-[r2:R2]->()-[r3:R1]->())* 
+         |WHERE NOT r1 IN r3 AND ${unique("r2 + r3")}
+         |RETURN *""".stripMargin
+    )
+
+    assertRewrite(
+      "MATCH (a)-[r1:R1]->(b) (()-[r2:R2]->())* (()-[r3:R1]->())* RETURN *",
+      s"""MATCH (a)-[r1:R1]->(b) (()-[r2:R2]->())* (()-[r3:R1]->())*
+         |WHERE NOT r1 IN r3 AND ${unique("r2")} AND ${unique("r3", 2)}
+         |RETURN *""".stripMargin
+    )
+  }
+
+  test("uniqueness check is done between QPPs and QPPs") {
+    assertRewrite(
+      "MATCH (()-[r1]->())+ (()-[r2]->())+ RETURN *",
+      s"""MATCH (()-[r1]->())+ (()-[r2]->())+ 
+         |WHERE ${disjoint("r1", "r2")} AND ${unique("r1", 1)} AND ${unique("r2", 3)}
+         |RETURN *""".stripMargin
+    )
+
+    assertRewrite(
+      "MATCH (()-[r1]->()-[r2]->())+ (()-[r3]->()-[r4]->())+ RETURN *",
+      s"""MATCH (()-[r1]->()-[r2]->() WHERE NOT (r2 = r1))+ (()-[r3]->()-[r4]->() WHERE NOT (r4 = r3))+ 
+         |WHERE ${disjoint("r1 + r2", "r3 + r4")} AND ${unique("r1 + r2", 1)} AND ${unique("r3 + r4", 3)}
+         |RETURN *""".stripMargin
+    )
+  }
+
+  test("no uniqueness check between QPPs and QPPs of different type") {
+    assertRewrite(
+      "MATCH (()-[r1:R1]->())+ (()-[r2:R2]->())+ RETURN *",
+      s"""MATCH (()-[r1:R1]->())+ (()-[r2:R2]->())+ 
+         |WHERE ${unique("r1")} AND ${unique("r2", 2)}
+         |RETURN *""".stripMargin
+    )
+
+    // Here there is no overlap between the first and the second QPP, so no need for a disjoint.
+    assertRewrite(
+      "MATCH (()-[r1:R1]->()-[r2:R2]->())+ (()-[r3:R3]->()-[r4:R4]->())+ RETURN *",
+      s"""MATCH (()-[r1:R1]->()-[r2:R2]->())+ (()-[r3:R3]->()-[r4:R4]->())+ 
+         |WHERE ${unique("r1 + r2")} AND ${unique("r3 + r4", 2)}
+         |RETURN *""".stripMargin
+    )
+
+    // Here relationships overlap pairwise.
+    // But since the trail operator puts everything into one big set anyway, we put all relationships in disjoint.
+    assertRewrite(
+      "MATCH (()-[r1:R1]->()-[r2:R2]->())+ (()-[r3:R1]->()-[r4:R2]->())+ RETURN *",
+      s"""MATCH (()-[r1:R1]->()-[r2:R2]->())+ (()-[r3:R1]->()-[r4:R2]->())+ 
+         |WHERE ${disjoint("r1 + r2", "r3 + r4")} AND ${unique("r1 + r2", 1)} AND ${unique("r3 + r4", 3)}
+         |RETURN *""".stripMargin
+    )
+
+    // Here some relationships overlap.
+    assertRewrite(
+      "MATCH (()-[r1:R1]->()-[r2:R2]->())+ (()-[r3:R1]->()-[r4:R4]->())+ RETURN *",
+      s"""MATCH (()-[r1:R1]->()-[r2:R2]->())+ (()-[r3:R1]->()-[r4:R4]->())+ 
+         |WHERE ${disjoint("r1", "r3")} AND ${unique("r1 + r2", 1)} AND ${unique("r3 + r4", 3)}
+         |RETURN *""".stripMargin
+    )
   }
 
   test("getRelTypesToConsider should return all relevant relationship types") {
@@ -176,7 +365,7 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
 
     assertRewrite(
       "MATCH (a)-[r1]->(b)-[r2]->(c), shortestPath((a)-[r*]->(b)) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2]->(c), shortestPath((a)-[r*]->(b)) WHERE not(r1 = r2) RETURN *"
+      "MATCH (a)-[r1]->(b)-[r2]->(c), shortestPath((a)-[r*]->(b)) WHERE not(r2 = r1) RETURN *"
     )
   }
 
@@ -188,7 +377,7 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
 
     assertRewrite(
       "MATCH (a)-[r1]->(b)-[r2]->(c), allShortestPaths((a)-[r*]->(b)) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2]->(c), allShortestPaths((a)-[r*]->(b)) WHERE not(r1 = r2) RETURN *"
+      "MATCH (a)-[r1]->(b)-[r2]->(c), allShortestPaths((a)-[r*]->(b)) WHERE not(r2 = r1) RETURN *"
     )
   }
 

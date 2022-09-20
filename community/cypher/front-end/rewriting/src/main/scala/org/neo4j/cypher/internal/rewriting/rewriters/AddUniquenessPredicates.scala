@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.Where
@@ -55,6 +54,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenNewAccForSiblings
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -72,86 +72,150 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory with Re
   override def apply(that: AnyRef): AnyRef = instance(that)
 
   private val rewriter = Rewriter.lift {
-    case m @ Match(_, pattern: Pattern, _, where: Option[Where]) =>
-      val uniqueRels: Seq[UniqueRel] = collectUniqueRels(pattern)
-      val newWhere = addPredicate(m, uniqueRels, where)
+    case m @ Match(_, pattern: Pattern, _, where) =>
+      val rels: Seq[NodeConnection] = collectRelationships(pattern)
+      val newWhere = withPredicates(m, rels, where)
       m.copy(where = newWhere)(m.position)
-    case m @ Merge(pattern: PatternPart, _, where: Option[Where]) =>
-      val uniqueRels: Seq[UniqueRel] = collectUniqueRels(pattern)
-      val newWhere = addPredicate(m, uniqueRels, where)
+    case m @ Merge(pattern: PatternPart, _, where) =>
+      val rels: Seq[NodeConnection] = collectRelationships(pattern)
+      val newWhere = withPredicates(m, rels, where)
       m.copy(where = newWhere)(m.position)
+    case qpp @ QuantifiedPath(patternPart, _, where, _) =>
+      val rels = collectRelationships(patternPart)
+      val newWhere = withPredicates(qpp, rels, where.map(Where(_)(qpp.position))).map(_.expression)
+
+      // We will generate Unique predicates for every relationship in a QPP.
+      // If the relationship has an anonymous name, it is not yet included in the variableGroupings.
+      // Since the Unique predicate lives outside of the QPP and needs to see the group variable, we need to add those
+      // variables to the set of variableGroupings.
+      val allRelationshipVariables = qpp.part.folder.treeCollect {
+        case RelationshipPattern(Some(relVar), _, _, _, _, _) => relVar
+      }.toSet
+      val notYetExportedSingletonVars = allRelationshipVariables -- qpp.variableGroupings.map(_.singleton)
+      val newGroupings = notYetExportedSingletonVars.map(QuantifiedPath.getGrouping(_, qpp.position))
+      qpp.copy(optionalWhereExpression = newWhere, variableGroupings = qpp.variableGroupings ++ newGroupings)(
+        qpp.position
+      )
   }
 
-  private def addPredicate(clause: Clause, uniqueRels: Seq[UniqueRel], where: Option[Where]): Option[Where] = {
-    val maybePredicate: Option[Expression] = createPredicateFor(uniqueRels, clause.position)
+  private def withPredicates(pattern: ASTNode, rels: Seq[NodeConnection], where: Option[Where]): Option[Where] = {
+    val maybePredicate: Option[Expression] = createPredicateFor(rels, pattern.position)
     val newWhere: Option[Where] = (where, maybePredicate) match {
       case (Some(oldWhere), Some(newPredicate)) =>
-        Some(oldWhere.copy(expression = And(oldWhere.expression, newPredicate)(clause.position))(clause.position))
+        Some(oldWhere.copy(expression = And(oldWhere.expression, newPredicate)(pattern.position))(pattern.position))
 
       case (None, Some(newPredicate)) =>
-        Some(Where(expression = newPredicate)(clause.position))
+        Some(Where(expression = newPredicate)(pattern.position))
 
       case (oldWhere, None) => oldWhere
     }
+
     newWhere
   }
 
   private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
 
-  def collectUniqueRels(pattern: ASTNode): Seq[UniqueRel] =
-    pattern.folder.treeFold(Seq.empty[UniqueRel]) {
+  def collectRelationships(pattern: ASTNode): Seq[NodeConnection] =
+    pattern.folder.treeFold(Seq.empty[NodeConnection]) {
       case _: ScopeExpression =>
         acc => SkipChildren(acc)
 
-      case _: QuantifiedPath =>
-        acc => SkipChildren(acc)
+      case qpp: QuantifiedPath =>
+        acc =>
+          TraverseChildrenNewAccForSiblings(
+            Seq.empty[SingleRelationship],
+            innerAcc => {
+              // Make sure that predicates we generate for QPPs use the group variable, not the singleton variable.
+              // To ensure this, we need to change the position to that of the QPP.
+              val innerRelsWithFixedPositions = innerAcc.asInstanceOf[Seq[SingleRelationship]]
+                .map(x => x.copy(variable = x.variable.withPosition(qpp.position)))
+              acc :+ RelationshipGroup(innerRelsWithFixedPositions)
+            }
+          )
 
       case _: ShortestPaths =>
         acc => SkipChildren(acc)
 
-      case RelationshipChain(_, patRel @ RelationshipPattern(optIdent, labelExpression, _, _, _, _), _) =>
+      case RelationshipChain(_, RelationshipPattern(optIdent, labelExpression, None, _, _, _), _) =>
         acc => {
           val ident =
             optIdent.getOrElse(throw new IllegalStateException("This rewriter cannot work with unnamed patterns"))
-          TraverseChildren(acc :+ UniqueRel(ident, labelExpression, patRel.isSingleLength))
+          TraverseChildren(acc :+ SingleRelationship(ident, labelExpression))
+        }
+
+      case RelationshipChain(_, RelationshipPattern(optIdent, labelExpression, Some(_), _, _, _), _) =>
+        acc => {
+          val ident =
+            optIdent.getOrElse(throw new IllegalStateException("This rewriter cannot work with unnamed patterns"))
+          TraverseChildren(acc :+ RelationshipGroup(Seq(SingleRelationship(ident, labelExpression))))
         }
     }
 
-  private def createPredicateFor(uniqueRels: Seq[UniqueRel], pos: InputPosition): Option[Expression] = {
-    createPredicatesFor(uniqueRels, pos).reduceOption(expressions.And(_, _)(pos))
+  private def createPredicateFor(nodeConnections: Seq[NodeConnection], pos: InputPosition): Option[Expression] = {
+    createPredicatesFor(nodeConnections, pos).reduceOption(expressions.And(_, _)(pos))
   }
 
-  def createPredicatesFor(uniqueRels: Seq[UniqueRel], pos: InputPosition): Seq[Expression] = {
-    val interRelUniqueness = for {
-      x <- uniqueRels
-      y <- uniqueRels if x.name < y.name && !x.isAlwaysDifferentFrom(y)
-    } yield {
-      (x.singleLength, y.singleLength) match {
-        case (true, true) =>
-          Not(Equals(x.variable.copyId, y.variable.copyId)(pos))(pos)
+  def createPredicatesFor(nodeConnections: Seq[NodeConnection], pos: InputPosition): Seq[Expression] = {
+    val pairs = for {
+      (x, i) <- nodeConnections.zipWithIndex
+      y <- nodeConnections.drop(i + 1)
+    } yield (x, y)
 
-        case (true, false) =>
-          Not(In(x.variable.copyId, y.variable.copyId)(pos))(pos)
+    val interRelUniqueness = pairs.collect {
+      case (x: SingleRelationship, y: SingleRelationship) if !x.isAlwaysDifferentFrom(y) =>
+        Seq(Not(Equals(x.variable.copyId, y.variable.copyId)(pos))(pos))
 
-        case (false, true) =>
-          Not(In(y.variable.copyId, x.variable.copyId)(pos))(pos)
+      case (x: SingleRelationship, y: RelationshipGroup) =>
+        y.innerRelationships
+          .filterNot(_.isAlwaysDifferentFrom(x))
+          .map(_.variable.copyId)
+          .reduceRightOption[Expression]((y, x) => expressions.Add(x, y)(pos))
+          .map { innerY =>
+            Not(In(x.variable.copyId, innerY)(pos))(pos)
+          }
 
-        case (false, false) =>
-          Disjoint(x.variable.copyId, y.variable.copyId)(pos)
-      }
+      case (x: RelationshipGroup, y: SingleRelationship) =>
+        x.innerRelationships
+          .filterNot(_.isAlwaysDifferentFrom(y))
+          .map(_.variable.copyId)
+          .reduceRightOption[Expression]((y, x) => expressions.Add(x, y)(pos))
+          .map { innerX =>
+            Not(In(y.variable.copyId, innerX)(pos))(pos)
+          }
+
+      case (x: RelationshipGroup, y: RelationshipGroup) =>
+        val xRels = x.innerRelationships.filter(innerX => y.innerRelationships.exists(!_.isAlwaysDifferentFrom(innerX)))
+        val yRels = y.innerRelationships.filter(innerY => x.innerRelationships.exists(!_.isAlwaysDifferentFrom(innerY)))
+        Option.when(xRels.nonEmpty && yRels.nonEmpty) {
+          val xList = reduceLists(xRels.map(_.variable.copyId), pos)
+          val yList = reduceLists(yRels.map(_.variable.copyId), pos)
+          Disjoint(xList, yList)(pos)
+        }
+    }.flatten
+
+    val intraRelUniqueness = nodeConnections.collect {
+      case rg: RelationshipGroup =>
+        val singleList = reduceLists(rg.innerRelationships.map(_.variable.copyId), pos)
+        Unique(singleList)(pos)
     }
-
-    val intraRelUniqueness = for {
-      x <- uniqueRels if !x.singleLength
-    } yield Unique(x.variable.copyId)(pos)
 
     interRelUniqueness ++ intraRelUniqueness
   }
 
-  case class UniqueRel(variable: LogicalVariable, labelExpression: Option[LabelExpression], singleLength: Boolean) {
+  private def reduceLists(vars: Seq[LogicalVariable], pos: InputPosition): Expression =
+    vars.reduceRight[Expression]((y, x) => expressions.Add(x, y)(pos))
+
+  sealed trait NodeConnection
+
+  case class RelationshipGroup(innerRelationships: Seq[SingleRelationship]) extends NodeConnection
+
+  case class SingleRelationship(
+    variable: LogicalVariable,
+    labelExpression: Option[LabelExpression]
+  ) extends NodeConnection {
     def name: String = variable.name
 
-    def isAlwaysDifferentFrom(other: UniqueRel): Boolean = {
+    def isAlwaysDifferentFrom(other: SingleRelationship): Boolean = {
       val relTypesToConsider =
         getRelTypesToConsider(labelExpression).concat(getRelTypesToConsider(other.labelExpression)).distinct
       val labelExpressionOverlaps = overlaps(relTypesToConsider, labelExpression)

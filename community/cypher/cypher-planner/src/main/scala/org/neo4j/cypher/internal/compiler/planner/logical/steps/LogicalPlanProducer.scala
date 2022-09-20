@@ -903,8 +903,7 @@ case class LogicalPlanProducer(
       val solved = solveds.get(source.id).asSinglePlannerQuery.amendQueryGraph(_
         .addPatternRelationship(pattern)
         .addPredicates(solvedPredicates.toSeq: _*)
-        .addPredicates(uniquePredicate)
-      )
+        .addPredicates(uniquePredicate))
 
       val solver = SubqueryExpressionSolver.solverFor(source, context)
 
@@ -955,10 +954,15 @@ case class LogicalPlanProducer(
     endBinding: NodeBinding,
     maybeHiddenFilter: Option[Expression],
     context: LogicalPlanningContext,
-    innerPlan: LogicalPlan
+    innerPlan: LogicalPlan,
+    predicates: Seq[Expression],
+    previouslyBoundRelationships: Set[String],
+    previouslyBoundRelationshipGroups: Set[String]
   ): LogicalPlan = {
+
     val solved = solveds.get(source.id).asSinglePlannerQuery.amendQueryGraph(_
-      .addQuantifiedPathPattern(pattern))
+      .addQuantifiedPathPattern(pattern)
+      .addPredicates(predicates: _*))
 
     val providedOrder = providedOrders.get(source.id).fromLeft
     val trailPlan = annotate(
@@ -978,8 +982,8 @@ case class LogicalPlanProducer(
             plans.VariableGrouping(singleton, group)
         },
         innerRelationships = pattern.pattern.patternRelationships.map(_.name),
-        previouslyBoundRelationships = Set.empty, // TODO: implement these when planning uniqueness checks
-        previouslyBoundRelationshipGroups = Set.empty
+        previouslyBoundRelationships = previouslyBoundRelationships,
+        previouslyBoundRelationshipGroups = previouslyBoundRelationshipGroups
       ),
       solved,
       providedOrder,

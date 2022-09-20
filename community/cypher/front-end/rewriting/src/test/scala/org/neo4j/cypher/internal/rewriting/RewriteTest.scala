@@ -36,7 +36,7 @@ trait RewriteTest {
     val (expected, result) = getRewrite(originalQuery, expectedQuery)
     assert(
       result === expected,
-      s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}"
+      s"\n$originalQuery\nshould be rewritten to:\n${prettifier.asString(expected)}\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}"
     )
   }
 

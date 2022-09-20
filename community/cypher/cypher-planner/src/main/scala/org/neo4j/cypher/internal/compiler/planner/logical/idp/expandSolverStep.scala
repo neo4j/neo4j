@@ -25,7 +25,13 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.Q
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSinglePatternSide
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSingleProjectEndpoints
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.expressions.Add
+import org.neo4j.cypher.internal.expressions.Disjoint
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.Unique
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
@@ -242,7 +248,15 @@ object expandSolverStep {
       case rel: PatternRelationship =>
         produceLogicalPlan(qg, rel, sourcePlan, nodeId, availableSymbols, context)
       case qpp: QuantifiedPathPattern =>
-        produceLogicalPlan(qpp, sourcePlan, nodeId, availableSymbols, context, qppInnerPlans)
+        produceLogicalPlan(
+          qpp,
+          sourcePlan,
+          nodeId,
+          availableSymbols,
+          context,
+          qppInnerPlans,
+          qg.selections.flatPredicates
+        )
     }
   }
 
@@ -301,13 +315,23 @@ object expandSolverStep {
     }
   }
 
+  object VariableList {
+
+    def unapply(arg: Any): Option[Set[String]] = arg match {
+      case Variable(name)    => Some(Set(name))
+      case Add(part1, part2) => unapply(part1).map(_ ++ unapply(part2).getOrElse(Set.empty))
+      case _                 => None
+    }
+  }
+
   private def produceLogicalPlan(
     quantifiedPathPattern: QuantifiedPathPattern,
     sourcePlan: LogicalPlan,
     startNode: String,
     availableSymbols: Set[String],
     context: LogicalPlanningContext,
-    qppInnerPlans: QPPInnerPlans
+    qppInnerPlans: QPPInnerPlans,
+    predicates: Seq[Expression]
   ): LogicalPlan = {
     val fromLeft = startNode == quantifiedPathPattern.left
     val trailOption = TrailOption(quantifiedPathPattern, fromLeft)
@@ -330,6 +354,45 @@ object expandSolverStep {
         None
       }
 
+    val groupingRelationshipNames = quantifiedPathPattern.relationshipVariableGroupings.map(_.groupName)
+
+    def isBound(variable: String): Boolean = {
+      sourcePlan.availableSymbols.contains(variable)
+    }
+
+    /**
+     * A solved predicate that expresses some relationship uniqueness.
+     *
+     * @param solvedPredicate                   the predicate to mark as solved.
+     * @param previouslyBoundRelationships      previously bound relationship variable names that are used by Trail to solve the predicate.
+     * @param previouslyBoundRelationshipGroups previously bound relationship group variable names that are used by Trail to solve the predicate.
+     */
+    case class SolvedUniquenessPredicate(
+      solvedPredicate: Expression,
+      previouslyBoundRelationships: Option[String] = None,
+      previouslyBoundRelationshipGroups: Set[String] = Set.empty
+    )
+
+    val uniquenessPredicates = predicates.collect {
+      case uniquePred @ Unique(VariableList(list)) if list.subsetOf(groupingRelationshipNames) =>
+        SolvedUniquenessPredicate(uniquePred)
+
+      case disjointPred @ Disjoint(VariableList(list1), VariableList(list2))
+        if list1.subsetOf(groupingRelationshipNames) && list2.forall(isBound) =>
+        SolvedUniquenessPredicate(disjointPred, previouslyBoundRelationshipGroups = list2)
+      case disjointPred @ Disjoint(VariableList(list1), VariableList(list2))
+        if list2.subsetOf(groupingRelationshipNames) && list1.forall(isBound) =>
+        SolvedUniquenessPredicate(disjointPred, previouslyBoundRelationshipGroups = list1)
+
+      case notInPred @ Not(In(Variable(singletonVariable), VariableList(groupedVariables)))
+        if groupedVariables.subsetOf(groupingRelationshipNames) && isBound(singletonVariable) =>
+        SolvedUniquenessPredicate(notInPred, previouslyBoundRelationships = Some(singletonVariable))
+    }
+
+    val solvedPredicates = uniquenessPredicates.map(_.solvedPredicate)
+    val previouslyBoundRelationships = uniquenessPredicates.flatMap(_.previouslyBoundRelationships).toSet
+    val previouslyBoundRelationshipGroups = uniquenessPredicates.flatMap(_.previouslyBoundRelationshipGroups).toSet
+
     context.logicalPlanProducer.planTrail(
       source = sourcePlan,
       pattern = quantifiedPathPattern,
@@ -337,7 +400,10 @@ object expandSolverStep {
       endBinding = endBinding,
       maybeHiddenFilter = maybeHiddenFilter,
       context = context,
-      innerPlan
+      innerPlan,
+      predicates = solvedPredicates,
+      previouslyBoundRelationships,
+      previouslyBoundRelationshipGroups
     )
   }
 }
