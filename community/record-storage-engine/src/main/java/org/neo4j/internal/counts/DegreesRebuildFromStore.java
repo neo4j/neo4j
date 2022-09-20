@@ -92,6 +92,10 @@ public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesS
     @Override
     public void rebuild(
             RelationshipGroupDegreesStore.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+        if (neoStores.getRelationshipGroupStore().isEmpty()) {
+            return;
+        }
+
         log.warn("Missing relationship degrees store, rebuilding it.");
         NumberArrayFactory numberArrayFactory = NumberArrayFactories.auto(
                 pageCache,

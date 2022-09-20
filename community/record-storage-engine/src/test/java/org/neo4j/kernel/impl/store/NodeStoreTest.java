@@ -461,6 +461,36 @@ class NodeStoreTest {
         assertThat(e.getMessage(), containsString(loadedRecord.toString()));
     }
 
+    @Test
+    void shouldSayEmptyIfNoRecords() {
+        // given
+        nodeStore = newNodeStore(fs);
+
+        // when
+        var empty = nodeStore.isEmpty();
+
+        // then
+        assertTrue(empty);
+    }
+
+    @Test
+    void shouldSayNotEmptyIfHasRecords() {
+        // given
+        nodeStore = newNodeStore(fs);
+        var record = nodeStore.newRecord();
+        record.initialize(true, 1, true, 2, NO_LABELS_FIELD.longValue());
+        record.setId(nodeStore.nextId(NULL_CONTEXT));
+        try (var storeCursor = storeCursors.writeCursor(NODE_CURSOR)) {
+            nodeStore.updateRecord(record, storeCursor, NULL_CONTEXT, storeCursors);
+        }
+
+        // when
+        var empty = nodeStore.isEmpty();
+
+        // then
+        assertFalse(empty);
+    }
+
     private NodeStore newNodeStore(FileSystemAbstraction fs) {
         pageCache = pageCacheExtension.getPageCache(fs);
         return newNodeStore(fs, pageCache);

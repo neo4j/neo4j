@@ -521,6 +521,15 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     }
 
     /**
+     * @return {@code true} if this store has no records in it, i.e. is empty. Otherwise {@code false}.
+     * This is different than checking if {@link #getHighId()} is larger than 0, since some stores may have
+     * records in the beginning that are reserved, see {@link #getNumberOfReservedLowIds()}.
+     */
+    public boolean isEmpty() {
+        return getHighId() == getNumberOfReservedLowIds();
+    }
+
+    /**
      * Sets the store state to started, which is a state which either means that:
      * <ul>
      *     <li>store was opened on a previous clean shutdown where no recovery was required</li>
