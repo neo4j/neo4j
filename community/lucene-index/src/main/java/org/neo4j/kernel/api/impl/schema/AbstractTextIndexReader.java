@@ -36,9 +36,7 @@ import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
-import org.neo4j.kernel.api.impl.schema.sampler.LuceneIndexSampler;
 import org.neo4j.kernel.api.index.IndexProgressor;
-import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
@@ -59,11 +57,6 @@ public abstract class AbstractTextIndexReader implements ValueIndexReader {
         this.searcherReference = searcherReference;
         this.samplingConfig = samplingConfig;
         this.taskCoordinator = taskCoordinator;
-    }
-
-    @Override
-    public IndexSampler createSampler() {
-        return new LuceneIndexSampler(getIndexSearcher(), taskCoordinator, samplingConfig);
     }
 
     @Override

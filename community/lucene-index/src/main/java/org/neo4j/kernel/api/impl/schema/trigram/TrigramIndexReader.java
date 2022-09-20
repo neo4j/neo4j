@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.schema.AbstractTextIndexReader;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
+import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
@@ -49,6 +50,11 @@ public class TrigramIndexReader extends AbstractTextIndexReader {
             IndexSamplingConfig samplingConfig,
             TaskCoordinator taskCoordinator) {
         super(descriptor, searcherReference, samplingConfig, taskCoordinator);
+    }
+
+    @Override
+    public IndexSampler createSampler() {
+        return new TrigramIndexSampler(getIndexSearcher());
     }
 
     @Override
