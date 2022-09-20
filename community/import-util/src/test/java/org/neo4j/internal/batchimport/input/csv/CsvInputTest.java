@@ -1333,8 +1333,7 @@ class CsvInputTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     void shouldFailOnUnparsableNodeHeader() {
         // given
         Iterable<DataFactory> data = datas(data(":SOMETHING,abcde#rtg:123,"));
@@ -1358,8 +1357,7 @@ class CsvInputTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     void shouldFailOnUnparsableRelationshipHeader() {
         // given
         Iterable<DataFactory> data = datas(data(":SOMETHING,abcde#rtg:123,"));
@@ -1383,8 +1381,7 @@ class CsvInputTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     void shouldFailOnUndefinedGroupInRelationshipHeader() {
         // given
         Iterable<DataFactory> nodeData = datas(data(":ID(left)"), data(":ID(right)"));
@@ -1409,8 +1406,7 @@ class CsvInputTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     void shouldFailOnGlobalGroupInRelationshipHeaderIfNoGLobalGroupInNodeHeader() {
         // given
         Iterable<DataFactory> nodeData = datas(data(":ID(left)"), data(":ID(right)"));
@@ -1435,8 +1431,7 @@ class CsvInputTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     void shouldReportDuplicateNodeSourceFiles() {
         // given
         String sourceDescription = "The single data source";
@@ -1471,8 +1466,7 @@ class CsvInputTest {
         verify(monitor).duplicateSourceFile(sourceDescription);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     void shouldReportDuplicateRelationshipSourceFiles() {
         // given
         String sourceDescription = "The single data source";
@@ -1508,8 +1502,7 @@ class CsvInputTest {
         verify(monitor).duplicateSourceFile(sourceDescription);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     void shouldReportDuplicateSourceFileUsedAsBothNodeAndRelationshipSourceFile() {
         // given
         String sourceDescription = "The single data source";
@@ -1566,8 +1559,7 @@ class CsvInputTest {
         };
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     void shouldNormalizeTypes() throws IOException {
         // given
         Iterable<DataFactory> nodeData = datas(
@@ -1598,8 +1590,7 @@ class CsvInputTest {
         verifyNoMoreInteractions(monitor);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     void shouldCalculateCorrectEstimatesForZippedInputFile() throws IOException {
         // GIVEN
         IdType idType = STRING;
@@ -1615,8 +1606,7 @@ class CsvInputTest {
         assertEstimatesEquals(uncompressedEstimates, compressedEstimates, 0);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     void shouldCalculateCorrectEstimatesForGZippedInputFile() throws IOException {
         // GIVEN
         IdType idType = STRING;
@@ -1636,8 +1626,7 @@ class CsvInputTest {
         assertEstimatesEquals(uncompressedEstimates, compressedEstimates, 0.01);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     void shouldReportNoNodeLabels() {
         // given
         String sourceDescription = "source";
@@ -1671,8 +1660,7 @@ class CsvInputTest {
         verify(monitor).noNodeLabelsSpecified(sourceDescription);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     void shouldNotReportNoNodeLabelsIfDecorated() {
         // given
         String sourceDescription = "source";
@@ -1706,8 +1694,7 @@ class CsvInputTest {
         verify(monitor, never()).noRelationshipTypeSpecified(sourceDescription);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     void shouldReportNoRelationshipType() {
         // given
         String sourceDescription = "source";
@@ -1742,8 +1729,7 @@ class CsvInputTest {
         verify(monitor).noRelationshipTypeSpecified(sourceDescription);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     void shouldNotReportNoRelationshipTypeIfDecorated() {
         // given
         String sourceDescription = "source";
@@ -1778,8 +1764,7 @@ class CsvInputTest {
         verify(monitor, never()).noRelationshipTypeSpecified(sourceDescription);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     void shouldReportDuplicateNodeHeader() throws FileNotFoundException {
         // GIVEN
         Path file = directory.file("node-header");
@@ -1806,8 +1791,7 @@ class CsvInputTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     void shouldReportDuplicateRelationshipHeader() throws FileNotFoundException {
         // GIVEN
         Path file = directory.file("relationship-header");

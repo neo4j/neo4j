@@ -280,11 +280,9 @@ class StageTest {
     }
 
     private class ChaosMonkey {
-        private final int performance = random.nextInt(0, 50);
-
         void makeChaos() {
             try {
-                Thread.sleep(performance);
+                Thread.sleep(ThreadLocalRandom.current().nextInt(0, 10));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }

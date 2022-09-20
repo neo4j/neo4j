@@ -25,11 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLongArray;
-import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 import org.neo4j.test.Race;
 
 class HighestIdTest {
-    @RepeatedTest(100)
+    @Test
     void shouldKeepHighest() throws Throwable {
         // GIVEN
         Race race = new Race();
@@ -41,7 +41,7 @@ class HighestIdTest {
             int cc = c;
             race.addContestant(new Runnable() {
                 boolean run;
-                ThreadLocalRandom random = ThreadLocalRandom.current();
+                final ThreadLocalRandom random = ThreadLocalRandom.current();
 
                 @Override
                 public void run() {
