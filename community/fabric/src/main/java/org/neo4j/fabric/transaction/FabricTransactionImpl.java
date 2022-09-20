@@ -22,6 +22,7 @@ package org.neo4j.fabric.transaction;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -65,6 +66,7 @@ public class FabricTransactionImpl
     private final FabricTransactionInfo transactionInfo;
     private final TransactionBookmarkManager bookmarkManager;
     private final Catalog catalogSnapshot;
+    private final Map<Catalog.Graph, Location> locationCache;
     private final ErrorReporter errorReporter;
     private final TransactionManager transactionManager;
     private final FabricConfig fabricConfig;
@@ -93,6 +95,7 @@ public class FabricTransactionImpl
         this.fabricConfig = fabricConfig;
         this.bookmarkManager = bookmarkManager;
         this.catalogSnapshot = catalogSnapshot;
+        this.locationCache = new HashMap<>();
         this.id = ID_GENERATOR.incrementAndGet();
 
         try {
@@ -159,6 +162,11 @@ public class FabricTransactionImpl
     @Override
     public DatabaseReference getSessionDatabaseReference() {
         return transactionInfo.getSessionDatabaseReference();
+    }
+
+    @Override
+    public Location getOrComputeLocation(Catalog.Graph graph, Supplier<Location> locationOf) {
+        return locationCache.computeIfAbsent(graph, g -> locationOf.get());
     }
 
     @Override

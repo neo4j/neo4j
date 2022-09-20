@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,7 +35,6 @@ import java.util.stream.IntStream;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
 import org.neo4j.cypher.internal.FullyParsedQuery;
-import org.neo4j.cypher.internal.ast.CatalogName;
 import org.neo4j.cypher.internal.ast.GraphSelection;
 import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.fabric.config.FabricConfig;
@@ -65,7 +63,6 @@ import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DatabaseReference;
-import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.values.AnyValue;
@@ -79,7 +76,6 @@ import org.neo4j.values.virtual.VirtualValues;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import scala.collection.immutable.List$;
 
 public class FabricExecutor {
     public static final String WRITING_IN_READ_NOT_ALLOWED_MSG = "Writing in read access mode not allowed";
@@ -189,30 +185,6 @@ public class FabricExecutor {
             if (rollbackFailure != failure) {
                 failure.addSuppressed(rollbackFailure);
             }
-        }
-    }
-
-    /**
-     * This is a hack to be able to get an InternalTransaction for the TestFabricTransaction tx wrapper
-     */
-    @Deprecated
-    public InternalTransaction forceKernelTxCreation(FabricTransaction fabricTransaction) {
-        try {
-            var dbRef = (DatabaseReference.Internal)
-                    fabricTransaction.getTransactionInfo().getSessionDatabaseReference();
-            var dbName = dbRef.alias().name();
-            var graph = catalogManager.currentCatalog().resolveGraph(CatalogName.apply(dbName, List$.MODULE$.empty()));
-            var location = (Location.Local) catalogManager.locationOf(dbRef, graph, false, false);
-            var internalTransaction = new CompletableFuture<InternalTransaction>();
-            fabricTransaction.execute(ctx -> {
-                FabricKernelTransaction fabricKernelTransaction =
-                        ctx.getLocal().getOrCreateTx(location, TransactionMode.MAYBE_WRITE);
-                internalTransaction.complete(fabricKernelTransaction.getInternalTransaction());
-                return StatementResults.initial();
-            });
-            return internalTransaction.get();
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to force open local transaction", e);
         }
     }
 
@@ -357,13 +329,15 @@ public class FabricExecutor {
 
             var transactionMode = getTransactionMode(fragment.queryType(), graph.toString());
 
-            MapValue parameters = addParamsFromRecord(queryParams, argumentValues, asJava(fragment.parameters()));
-
-            var location = catalogManager.locationOf(
-                    ctx.getSessionDatabaseReference(),
+            var location = ctx.getOrComputeLocation(
                     graph,
-                    transactionMode.requiresWrite(),
-                    routingContext.isServerRoutingEnabled());
+                    () -> catalogManager.locationOf(
+                            ctx.getSessionDatabaseReference(),
+                            graph,
+                            transactionMode.requiresWrite(),
+                            routingContext.isServerRoutingEnabled()));
+
+            MapValue parameters = addParamsFromRecord(queryParams, argumentValues, asJava(fragment.parameters()));
 
             if (location instanceof Location.Local local) {
                 FragmentResult input = run(fragment.input(), argument);

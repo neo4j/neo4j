@@ -75,9 +75,9 @@ public class BoltFabricDatabaseManagementService implements BoltGraphDatabaseMan
             throws UnavailableException, DatabaseNotFoundException {
         memoryTracker.allocateHeap(BoltFabricDatabaseService.SHALLOW_SIZE);
 
-        var database = fabricDatabaseManager.getDatabaseReference(databaseName);
+        var databaseReference = fabricDatabaseManager.getDatabaseReference(databaseName);
         return new BoltFabricDatabaseService(
-                database,
+                databaseReference,
                 fabricExecutor,
                 config,
                 transactionManager,

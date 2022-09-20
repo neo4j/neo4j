@@ -64,12 +64,8 @@ public class FabricDatabaseManager {
         return multiGraphEverywhere;
     }
 
-    public DatabaseReference getDatabaseReference(String databaseNameRaw) throws UnavailableException {
-        var ref = databaseReferenceRepo.getByAlias(databaseNameRaw).orElseThrow(databaseNotFound(databaseNameRaw));
-        if (ref instanceof DatabaseReference.Internal internal) {
-            assertInternalDatabaseAvailable(internal);
-        }
-        return ref;
+    public DatabaseReference getDatabaseReference(String databaseNameRaw) {
+        return databaseReferenceRepo.getByAlias(databaseNameRaw).orElseThrow(databaseNotFound(databaseNameRaw));
     }
 
     public GraphDatabaseAPI getDatabaseFacade(String databaseNameRaw) throws UnavailableException {
