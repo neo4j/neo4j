@@ -28,15 +28,33 @@ import java.util.concurrent.TimeoutException;
 import org.apache.commons.lang3.StringUtils;
 import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.LifecycleMethodExecutionExceptionHandler;
 import org.junit.jupiter.api.extension.TestWatcher;
 
-public class VerboseTimeoutExceptionExtension implements TestWatcher {
+public class VerboseTimeoutExceptionExtension implements TestWatcher, LifecycleMethodExecutionExceptionHandler {
     @Override
     public void testFailed(ExtensionContext context, Throwable cause) {
+        handleFailure(context.getDisplayName(), context.getRequiredTestMethod().getName(), cause);
+    }
+
+    private void handleFailure(String displayName, String testMethod, Throwable cause) {
         if (isTimeout(cause)) {
-            cause.addSuppressed(new ThreadDump(format(
-                    "Test %s-%s timed out. ", context.getRequiredTestMethod().getName(), context.getDisplayName())));
+            cause.addSuppressed(new ThreadDump(format("Test %s-%s timed out. ", displayName, testMethod)));
         }
+    }
+
+    @Override
+    public void handleBeforeAllMethodExecutionException(ExtensionContext context, Throwable throwable)
+            throws Throwable {
+        handleFailure(context.getDisplayName(), "BeforeAll", throwable);
+        throw throwable;
+    }
+
+    @Override
+    public void handleBeforeEachMethodExecutionException(ExtensionContext context, Throwable throwable)
+            throws Throwable {
+        handleFailure(context.getDisplayName(), "BeforeEach", throwable);
+        throw throwable;
     }
 
     private static boolean isTimeout(Throwable throwable) {
