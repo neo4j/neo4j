@@ -82,17 +82,7 @@ public class Config implements Configuration {
             String.format(" Cleanup the config or disable '%s' to continue.", strict_config_validation.name());
     private static final String LEGACY_4_X_DBMS_JVM_ADDITIONAL = "dbms.jvm.additional";
     private static final List<String> SUPPORTED_NAMESPACES = List.of(
-            "dbms.",
-            "db.",
-            "browser.",
-            "server.",
-            "internal.",
-            "client.",
-            "initial.",
-            // temporary namespaces
-            "fabric.",
-            "gds.",
-            "apoc.");
+            "dbms.", "db.", "browser.", "server.", "internal.", "client.", "initial.", "fabric.", "gds.", "apoc.");
 
     public static final class Builder {
         // We use tree sets with comparators for setting classes and migrators to have
