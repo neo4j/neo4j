@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.helpers
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.HasAnyLabel
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.HasTypes
@@ -56,6 +57,34 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
               HasTypes(Variable("r"), Seq(RelTypeName("R"))),
               HasLabelsOrTypes(Variable("v"), Seq(LabelOrRelTypeName("V")))
             )),
+            _
+          ),
+          _
+        ) =>
+    }
+  }
+
+  test("Label filters should produce hasAnyLabel instead of OR as label disjunctions are planned this way") {
+    val planWithFilter = new LogicalPlanBuilder()
+      .produceResults("anon_3")
+      .filter("anon_3:B|C")
+      .input(nodes = Seq("anon_3"))
+      .build()
+
+    planWithFilter should beLike {
+      case ProduceResult(
+          Selection(
+            Ands(
+              SetExtractor(
+                HasAnyLabel(
+                  Variable("anon_3"),
+                  Seq(
+                    LabelName("B"),
+                    LabelName("C")
+                  )
+                )
+              )
+            ),
             _
           ),
           _

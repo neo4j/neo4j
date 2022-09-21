@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder.FakeLeafPlan
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.combineHasLabels
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
@@ -65,7 +66,7 @@ class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new Log
   }
 
   override protected def rewriteExpression(expr: Expression): Expression =
-    expr.endoRewrite(hasLabelsAndHasTypeNormalizer)
+    expr.endoRewrite(hasLabelsAndHasTypeNormalizer).endoRewrite(combineHasLabels)
 
   def withCardinality(x: Double): LogicalPlanBuilder = {
     cardinalities.set(idOfLastPlan, Cardinality(x))
