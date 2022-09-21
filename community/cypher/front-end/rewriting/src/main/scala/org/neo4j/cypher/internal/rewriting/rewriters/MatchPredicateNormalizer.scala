@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 /**
- * A helper trait used by `normalizeMatchPredicates` and `normalizePatternComprehensionPredicates`.
+ * A helper trait used by `normalizePredicates`.
  */
 trait MatchPredicateNormalizer {
 
