@@ -78,6 +78,8 @@ class ConfigurationTest {
 
         // then
         long expected = Math.round((freeMachineMemory - maxMemory) * (percent / 100D));
-        assertThat(memory).isEqualTo(expected);
+        assertThat(memory)
+                .as("Machine free memory: " + freeMachineMemory + ", max: " + maxMemory)
+                .isEqualTo(expected);
     }
 }
