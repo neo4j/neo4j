@@ -1819,7 +1819,7 @@ class CsvInputTest {
     }
 
     @Test
-    void shouldParseReferencedNodeSchemaWithoutExplicitLabelOptionData() throws FileNotFoundException {
+    void shouldThrowOnReferencedNodeSchemaWithoutExplicitLabelOptionData() throws FileNotFoundException {
         // given
         Path file = directory.file("relationship-header");
         try (PrintWriter writer = new PrintWriter(file.toFile())) {
@@ -1839,10 +1839,10 @@ class CsvInputTest {
             // when
             var tokenHolders = new TokenHolders(
                     tokenHolder(Map.of("myId", 4)), tokenHolder(Map.of("Person", 2)), tokenHolder(Map.of()));
-            var schema = input.referencedNodeSchema(tokenHolders);
 
             // then
-            Assertions.assertThat(schema).isEqualTo(Map.of("Person", SchemaDescriptors.forLabel(2, 4)));
+            Assertions.assertThatThrownBy(() -> input.referencedNodeSchema(tokenHolders))
+                    .hasMessageContaining("No label was specified");
         }
     }
 

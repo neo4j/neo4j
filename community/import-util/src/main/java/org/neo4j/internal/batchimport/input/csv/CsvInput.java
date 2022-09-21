@@ -47,7 +47,6 @@ import org.neo4j.csv.reader.MultiReadable;
 import org.neo4j.internal.batchimport.InputIterable;
 import org.neo4j.internal.batchimport.InputIterator;
 import org.neo4j.internal.batchimport.input.Collector;
-import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.Input;
@@ -367,24 +366,21 @@ public class CsvInput implements Input {
                 .ifPresent(entry -> {
                     var options = entry.rawOptions();
                     var labelName = options.get("label");
-                    if (labelName == null) {
-                        // No explicit label specified, use the group name, if it's explicitly specified
-                        checkState(
-                                entry.group() != Group.GLOBAL,
-                                "No label was specified for the referenced node "
-                                        + "index schema definition and no explicit group was set in %s",
-                                entry);
-                        labelName = entry.group().name();
-                    }
+                    checkState(labelName != null, "No label was specified for the node index in '%s'", entry);
                     var keyName = entry.name();
-                    checkState(
-                            keyName != null,
-                            "No property key was specified for the referenced node index schema definition in %s",
-                            entry);
+                    checkState(keyName != null, "No property key was specified for node index in '%s'", entry);
                     var label = tokenHolders.labelTokens().getIdByName(labelName);
                     var key = tokenHolders.propertyKeyTokens().getIdByName(keyName);
-                    checkState(label != TokenConstants.NO_TOKEN, "Label '%s' not found", labelName);
-                    checkState(key != TokenConstants.NO_TOKEN, "Property key '%s' not found", keyName);
+                    checkState(
+                            label != TokenConstants.NO_TOKEN,
+                            "Label '%s' for node index specified in '%s' does not exist",
+                            labelName,
+                            entry);
+                    checkState(
+                            key != TokenConstants.NO_TOKEN,
+                            "Property key '%s' for node index specified in '%s' does not exist",
+                            keyName,
+                            entry);
                     var prev = result.put(entry.group().name(), SchemaDescriptors.forLabel(label, key));
                     checkState(prev == null, "Multiple indexes for group " + entry.group());
                 });

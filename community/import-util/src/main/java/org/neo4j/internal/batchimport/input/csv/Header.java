@@ -19,10 +19,13 @@
  */
 package org.neo4j.internal.batchimport.input.csv;
 
+import static java.lang.String.format;
+
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractor;
@@ -75,6 +78,7 @@ public class Header {
     }
 
     public record Entry(
+            String rawEntry,
             String name,
             Type type,
             Group group,
@@ -83,9 +87,40 @@ public class Header {
             // This can be used to encapsulate the parameters set in the header for spatial and temporal columns
             // It's a more optimized, or 'compiled' version of the rawOptions
             CSVHeaderInformation optionalParameter) {
-
         public Entry(String name, Type type, Group group, Extractor<?> extractor) {
-            this(name, type, group, extractor, Collections.emptyMap(), null);
+            this(null, name, type, group, extractor);
+        }
+
+        public Entry(String rawEntry, String name, Type type, Group group, Extractor<?> extractor) {
+            this(rawEntry, name, type, group, extractor, Collections.emptyMap(), null);
+        }
+
+        @Override
+        public String toString() {
+            if (rawEntry != null) {
+                return rawEntry;
+            }
+            return format(
+                    "Entry[name:%s, type:%s, group:%s, options:%s, optionalParameter:%s]",
+                    name, type, group, rawOptions, optionalParameter);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Entry entry = (Entry) o;
+            return Objects.equals(name, entry.name)
+                    && type == entry.type
+                    && Objects.equals(group, entry.group)
+                    && Objects.equals(extractor, entry.extractor)
+                    && rawOptions.equals(entry.rawOptions)
+                    && Objects.equals(optionalParameter, entry.optionalParameter);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, type, group, extractor, rawOptions, optionalParameter);
         }
     }
 
@@ -118,9 +153,9 @@ public class Header {
                 first = false;
             }
 
-            out.println(String.format(
-                    "  Property type of '%s' normalized from '%s' --> '%s' in %s",
-                    name, fromType, toType, sourceDescription));
+            out.printf(
+                    "  Property type of '%s' normalized from '%s' --> '%s' in %s%n",
+                    name, fromType, toType, sourceDescription);
         }
     }
 }

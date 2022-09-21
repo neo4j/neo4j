@@ -390,7 +390,7 @@ public class DataFactoriesTest {
             Extractor<?> extractor,
             Map<String, String> rawOptions,
             CSVHeaderInformation optionalParameter) {
-        return new Header.Entry(name, type, groups.getOrCreate(null), extractor, rawOptions, optionalParameter);
+        return new Header.Entry(null, name, type, groups.getOrCreate(null), extractor, rawOptions, optionalParameter);
     }
 
     private Header.Entry entry(
@@ -400,7 +400,8 @@ public class DataFactoriesTest {
             Extractor<?> extractor,
             Map<String, String> rawOptions,
             CSVHeaderInformation optionalParameter) {
-        return new Header.Entry(name, type, groups.getOrCreate(groupName), extractor, rawOptions, optionalParameter);
+        return new Header.Entry(
+                null, name, type, groups.getOrCreate(groupName), extractor, rawOptions, optionalParameter);
     }
 
     private Header.Entry entry(String name, Type type, String groupName, Extractor<?> extractor) {

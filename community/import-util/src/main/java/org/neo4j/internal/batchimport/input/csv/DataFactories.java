@@ -187,11 +187,10 @@ public class DataFactories {
             int delimiter = config.delimiter();
             List<Entry> columns = new ArrayList<>();
             for (int i = 0; !mark.isEndOfLine() && dataSeeker.seek(mark, delimiter); i++) {
-                String entryString = dataSeeker.tryExtract(mark, extractors.string());
-                HeaderEntrySpec spec =
-                        !extractors.string().isEmpty(entryString) ? parseHeaderEntrySpec(entryString) : null;
+                String rawEntry = dataSeeker.tryExtract(mark, extractors.string());
+                HeaderEntrySpec spec = !extractors.string().isEmpty(rawEntry) ? parseHeaderEntrySpec(rawEntry) : null;
                 if (spec == null || Type.IGNORE.name().equals(spec.type())) {
-                    columns.add(new Entry(null, Type.IGNORE, Group.GLOBAL, null));
+                    columns.add(new Entry(rawEntry, null, Type.IGNORE, Group.GLOBAL, null));
                 } else {
                     columns.add(entryFactory.create(
                             dataSeeker.sourceDescription(), i, spec, extractors, idExtractor, groups, monitor));
@@ -316,10 +315,11 @@ public class DataFactories {
                 Monitor monitor);
     }
 
-    private static HeaderEntrySpec parseHeaderEntrySpec(String rawHeaderField) {
-        // rawHeaderField specification: <name><:type>(<group>){<options>}
+    private static HeaderEntrySpec parseHeaderEntrySpec(String rawEntry) {
+        // rawEntry specification: <name><:type>(<group>){<options>}
         // example: id:ID(persons){option1:something,option2:'something else'}
 
+        String rawHeaderField = rawEntry;
         String name;
         String type = null;
         String groupName = null;
@@ -365,10 +365,10 @@ public class DataFactories {
         // The name
         name = rawHeaderField.isEmpty() ? null : rawHeaderField;
 
-        return new HeaderEntrySpec(name, type, groupName, options);
+        return new HeaderEntrySpec(rawEntry, name, type, groupName, options);
     }
 
-    record HeaderEntrySpec(String name, String type, String group, Map<String, String> options) {}
+    record HeaderEntrySpec(String rawEntry, String name, String type, String group, Map<String, String> options) {}
 
     interface HeaderEntryFactory {
         Entry create(
@@ -418,7 +418,8 @@ public class DataFactories {
                     optionalParameter = parseOptionalParameter(extractor, spec.options());
                 }
             }
-            return new Header.Entry(spec.name(), type, group, extractor, spec.options(), optionalParameter);
+            return new Header.Entry(
+                    spec.rawEntry(), spec.name(), type, group, extractor, spec.options(), optionalParameter);
         }
     }
 
@@ -461,7 +462,8 @@ public class DataFactories {
                     optionalParameter = parseOptionalParameter(extractor, spec.options());
                 }
             }
-            return new Header.Entry(spec.name(), type, group, extractor, spec.options(), optionalParameter);
+            return new Header.Entry(
+                    spec.rawEntry(), spec.name(), type, group, extractor, spec.options(), optionalParameter);
         }
     }
 

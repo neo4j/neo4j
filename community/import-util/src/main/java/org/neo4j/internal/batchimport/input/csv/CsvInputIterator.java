@@ -167,6 +167,7 @@ class CsvInputIterator implements SourceTraceability, Closeable {
                             ZoneId::systemDefault,
                             (sourceDescription, entryIndex, spec, extractors, idExtractor, groups, monitor) ->
                                     new Header.Entry(
+                                            spec.rawEntry(),
                                             spec.name(),
                                             spec.type() == null ? Type.PROPERTY : Type.valueOf(spec.type()),
                                             Group.GLOBAL,
