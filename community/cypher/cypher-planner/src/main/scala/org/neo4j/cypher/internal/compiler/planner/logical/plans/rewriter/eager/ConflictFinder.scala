@@ -107,7 +107,7 @@ object ConflictFinder {
           readsAndWrites.reads.filterExpressions
         )((x, _) => x)
       labelSet <- labelCombinations
-      if LabelExpressionEvaluator.labelExpressionEvaluator(
+      if LabelExpressionEvaluator.labelAndPropertyExpressionEvaluator(
         expression,
         NodesToCheckOverlap(None, variable.name),
         labelSet.map(_.name)
