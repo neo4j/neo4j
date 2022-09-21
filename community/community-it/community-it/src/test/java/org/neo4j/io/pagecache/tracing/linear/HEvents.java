@@ -222,6 +222,16 @@ class HEvents {
         }
 
         @Override
+        public long limitedNumberOfTimes() {
+            return 0;
+        }
+
+        @Override
+        public long limitedMillis() {
+            return 0;
+        }
+
+        @Override
         public long pagesFlushed() {
             return 0;
         }
@@ -232,7 +242,7 @@ class HEvents {
         }
 
         @Override
-        public void throttle(long millis) {}
+        public void throttle(long recentlyCompletedIOs, long millis) {}
 
         @Override
         public void reportIO(int completedIOs) {}

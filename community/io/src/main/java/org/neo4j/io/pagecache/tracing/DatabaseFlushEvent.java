@@ -31,6 +31,8 @@ public class DatabaseFlushEvent implements AutoCloseablePageCacheTracerEvent {
     private long pagesFlushed;
     private long ioPerformed;
     private long ioLimit;
+    private long timesLimited;
+    private long millisLimited;
     private final FileFlushEvent flushEvent;
 
     public DatabaseFlushEvent(FileFlushEvent flushEvent) {
@@ -40,6 +42,8 @@ public class DatabaseFlushEvent implements AutoCloseablePageCacheTracerEvent {
     public void reset() {
         pagesFlushed = 0;
         ioPerformed = 0;
+        timesLimited = 0;
+        millisLimited = 0;
         ioLimit = 0;
         flushEvent.reset();
     }
@@ -48,6 +52,8 @@ public class DatabaseFlushEvent implements AutoCloseablePageCacheTracerEvent {
     public void close() {
         pagesFlushed += flushEvent.pagesFlushed();
         ioPerformed += flushEvent.ioPerformed();
+        timesLimited += flushEvent.limitedNumberOfTimes();
+        millisLimited += flushEvent.limitedMillis();
     }
 
     public FileFlushEvent beginFileFlush(PageSwapper swapper) {
@@ -68,6 +74,14 @@ public class DatabaseFlushEvent implements AutoCloseablePageCacheTracerEvent {
 
     public long getIoLimit() {
         return ioLimit;
+    }
+
+    public long getTimesLimited() {
+        return timesLimited;
+    }
+
+    public long getMillisLimited() {
+        return millisLimited;
     }
 
     public void ioControllerLimit(long configuredLimit) {

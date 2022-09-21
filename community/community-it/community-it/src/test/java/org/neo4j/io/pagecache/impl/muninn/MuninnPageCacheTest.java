@@ -2146,6 +2146,16 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
             }
 
             @Override
+            public long limitedNumberOfTimes() {
+                return 0;
+            }
+
+            @Override
+            public long limitedMillis() {
+                return 0;
+            }
+
+            @Override
             public long pagesFlushed() {
                 return 0;
             }
@@ -2156,7 +2166,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
             }
 
             @Override
-            public void throttle(long millis) {}
+            public void throttle(long recentlyCompletedIOs, long millis) {}
 
             @Override
             public void reportIO(int completedIOs) {}

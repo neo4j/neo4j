@@ -56,6 +56,16 @@ public interface FileFlushEvent extends AutoCloseablePageCacheTracerEvent {
         }
 
         @Override
+        public long limitedNumberOfTimes() {
+            return 0;
+        }
+
+        @Override
+        public long limitedMillis() {
+            return 0;
+        }
+
+        @Override
         public long pagesFlushed() {
             return 0;
         }
@@ -66,7 +76,7 @@ public interface FileFlushEvent extends AutoCloseablePageCacheTracerEvent {
         }
 
         @Override
-        public void throttle(long millis) {}
+        public void throttle(long recentlyCompletedIOs, long millis) {}
 
         @Override
         public void reportIO(int completedIOs) {}
@@ -107,6 +117,16 @@ public interface FileFlushEvent extends AutoCloseablePageCacheTracerEvent {
     long ioPerformed();
 
     /**
+     * Number of times flush was limited by io controller since last {@link #reset()}
+     */
+    long limitedNumberOfTimes();
+
+    /**
+     * Number of milliseconds flush event was paused by io controller since last {@link #reset()}
+     */
+    long limitedMillis();
+
+    /**
      * Number of pages flushed by this event after last {@link #reset()}
      */
     long pagesFlushed();
@@ -119,9 +139,11 @@ public interface FileFlushEvent extends AutoCloseablePageCacheTracerEvent {
 
     /**
      * Throttle this flush event
-     * @param millis millis to throttle this flush event
+     *
+     * @param recentlyCompletedIOs number of recently completed io
+     * @param millis               millis to throttle this flush event
      */
-    void throttle(long millis);
+    void throttle(long recentlyCompletedIOs, long millis);
 
     /**
      * Report number of completed io operations by this flush event

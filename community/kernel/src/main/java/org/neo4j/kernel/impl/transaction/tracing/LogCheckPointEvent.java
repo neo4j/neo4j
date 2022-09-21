@@ -67,6 +67,16 @@ public interface LogCheckPointEvent extends LogForceEvents, LogRotateEvents, Aut
         }
 
         @Override
+        public long getTimesPaused() {
+            return 0;
+        }
+
+        @Override
+        public long getMillisPaused() {
+            return 0;
+        }
+
+        @Override
         public long getConfiguredIOLimit() {
             return 0;
         }
@@ -111,6 +121,16 @@ public interface LogCheckPointEvent extends LogForceEvents, LogRotateEvents, Aut
      * Number of IOs performed by the last checkpoint event. 0 if no checkpoints were performed yet.
      */
     long getIOsPerformed();
+
+    /**
+     * Number of times the last checkpoint event was paused by io controller.
+     */
+    long getTimesPaused();
+
+    /**
+     * Number of milliseconds the last checkpoint event was paused by io controller.
+     */
+    long getMillisPaused();
 
     /**
      * Last observed io limit during the last checkpoint event. 0 if no checkpoints were performed yet and -1 if IO was not limited.

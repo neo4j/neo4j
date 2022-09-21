@@ -197,6 +197,26 @@ class DefaultPageCacheTracerTest {
     }
 
     @Test
+    void countThrottling() {
+        for (int i = 0; i < 10; i++) {
+            DatabaseFlushEvent databaseFlush = tracer.beginDatabaseFlush();
+            databaseFlush.reset();
+            try (databaseFlush) {
+                try (FileFlushEvent fileFlushEvent = databaseFlush.beginFileFlush()) {
+                    fileFlushEvent.throttle(10, 14);
+                    fileFlushEvent.throttle(7, 10);
+                }
+                try (FileFlushEvent fileFlushEvent = databaseFlush.beginFileFlush()) {
+                    fileFlushEvent.throttle(1, 4);
+                    fileFlushEvent.throttle(2, 5);
+                }
+            }
+            assertEquals(4, databaseFlush.getTimesLimited());
+            assertEquals(33, databaseFlush.getMillisLimited());
+        }
+    }
+
+    @Test
     void shouldCalculateHitRatio() {
         assertThat(tracer.hitRatio()).as("hitRation").isCloseTo(0d, within(0.0001));
         tracer.hits(3);

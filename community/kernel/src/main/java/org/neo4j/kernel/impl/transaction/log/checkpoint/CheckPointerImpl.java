@@ -46,7 +46,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
     private static final String CHECKPOINT_TAG = "checkpoint";
     private static final long NO_TRANSACTION_ID = -1;
     private static final String IO_DETAILS_TEMPLATE =
-            "Checkpoint flushed %d pages (%d%% of total available pages), in %d IOs. Checkpoint performed with IO limit: %s.";
+            "Checkpoint flushed %d pages (%d%% of total available pages), in %d IOs. Checkpoint performed with IO limit: %s, paused in total %d times( %d millis).";
     private static final String UNLIMITED_IO_CONTROLLER_LIMIT = "unlimited";
 
     private final CheckpointAppender checkpointAppender;
@@ -211,7 +211,9 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
                 checkpointEvent.getPagesFlushed(),
                 (int) (flushRatio * 100),
                 checkpointEvent.getIOsPerformed(),
-                ioLimitDescription(ioLimit));
+                ioLimitDescription(ioLimit),
+                checkpointEvent.getTimesPaused(),
+                checkpointEvent.getMillisPaused());
         return checkpointReason + " checkpoint completed in " + duration(durationMillis) + ". " + ioDetails;
     }
 

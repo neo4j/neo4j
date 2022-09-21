@@ -126,6 +126,16 @@ public class DefaultTracer implements DatabaseTracer {
     }
 
     @Override
+    public long lastCheckpointIOLimitedTimes() {
+        return logCheckPointEvent.getTimesPaused();
+    }
+
+    @Override
+    public long lastCheckpointIOLimitedMillis() {
+        return logCheckPointEvent.getMillisPaused();
+    }
+
+    @Override
     public LogCheckPointEvent beginCheckPoint() {
         return logCheckPointEvent;
     }

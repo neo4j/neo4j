@@ -39,7 +39,7 @@ class CountingLogCheckPointEvent implements LogCheckPointEvent {
     private final long maxPages;
     private final BiConsumer<LogPosition, LogPosition> logFileAppendConsumer;
     private final CountingLogRotateEvent countingLogRotateEvent;
-    private volatile LastCheckpointInfo lastCheckpointInfo = new LastCheckpointInfo(0, 0, 0, 0);
+    private volatile LastCheckpointInfo lastCheckpointInfo = new LastCheckpointInfo(0, 0, 0, 0, 0, 0);
     private final DatabaseFlushEvent databaseFlushEvent;
 
     CountingLogCheckPointEvent(
@@ -60,7 +60,9 @@ class CountingLogCheckPointEvent implements LogCheckPointEvent {
                 checkpointMillis,
                 databaseFlushEvent.pagesFlushed(),
                 databaseFlushEvent.ioPerformed(),
-                databaseFlushEvent.getIoLimit());
+                databaseFlushEvent.getIoLimit(),
+                databaseFlushEvent.getTimesLimited(),
+                databaseFlushEvent.getMillisLimited());
     }
 
     @Override
@@ -87,6 +89,16 @@ class CountingLogCheckPointEvent implements LogCheckPointEvent {
     @Override
     public long getIOsPerformed() {
         return lastCheckpointInfo.performedIO();
+    }
+
+    @Override
+    public long getTimesPaused() {
+        return lastCheckpointInfo.timesPaused();
+    }
+
+    @Override
+    public long getMillisPaused() {
+        return lastCheckpointInfo.millisPaused();
     }
 
     @Override
@@ -129,5 +141,6 @@ class CountingLogCheckPointEvent implements LogCheckPointEvent {
         return countingLogRotateEvent;
     }
 
-    private record LastCheckpointInfo(long timeMillis, long pagesFlushed, long performedIO, long ioLimit) {}
+    private record LastCheckpointInfo(
+            long timeMillis, long pagesFlushed, long performedIO, long ioLimit, long timesPaused, long millisPaused) {}
 }

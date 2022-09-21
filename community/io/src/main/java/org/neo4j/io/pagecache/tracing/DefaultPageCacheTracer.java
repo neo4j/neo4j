@@ -52,8 +52,8 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
 
     protected final LongAdder evictionExceptions = new LongAdder();
     protected final LongAdder iopqPerformed = new LongAdder();
-    protected final LongAdder ioLimitedTimes = new LongAdder();
-    protected final LongAdder ioLimitedMillis = new LongAdder();
+    protected final LongAdder globalLimitTimes = new LongAdder();
+    protected final LongAdder globalLimitedMillis = new LongAdder();
     protected final LongAdder openedCursors = new LongAdder();
     protected final LongAdder closedCursors = new LongAdder();
     protected final LongAdder copiedPages = new LongAdder();
@@ -231,12 +231,12 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
 
     @Override
     public long ioLimitedTimes() {
-        return ioLimitedTimes.sum();
+        return globalLimitTimes.sum();
     }
 
     @Override
     public long ioLimitedMillis() {
-        return ioLimitedMillis.sum();
+        return globalLimitedMillis.sum();
     }
 
     @Override
@@ -271,8 +271,8 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
 
     @Override
     public void limitIO(long millis) {
-        ioLimitedTimes.increment();
-        ioLimitedMillis.add(millis);
+        globalLimitTimes.increment();
+        globalLimitedMillis.add(millis);
     }
 
     @Override
@@ -436,10 +436,14 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
 
         private final PageCacheFlushEvent flushEvent = new PageCacheFlushEvent();
         private long ioPerformed;
+        private long limitTimes;
+        private long limitMillis;
 
         @Override
         public void reset() {
             ioPerformed = 0;
+            limitTimes = 0;
+            limitMillis = 0;
             flushEvent.reset();
         }
 
@@ -470,9 +474,11 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
         }
 
         @Override
-        public void throttle(long millis) {
-            ioLimitedTimes.increment();
-            ioLimitedMillis.add(millis);
+        public void throttle(long recentlyCompletedIOs, long millis) {
+            limitTimes++;
+            limitMillis += millis;
+            globalLimitTimes.add(1);
+            globalLimitedMillis.add(millis);
         }
 
         @Override
@@ -484,6 +490,16 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
         @Override
         public long ioPerformed() {
             return ioPerformed;
+        }
+
+        @Override
+        public long limitedNumberOfTimes() {
+            return limitTimes;
+        }
+
+        @Override
+        public long limitedMillis() {
+            return limitMillis;
         }
 
         @Override

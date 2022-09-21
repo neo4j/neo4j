@@ -55,4 +55,14 @@ public interface CheckpointCounters {
      * @return Last observed value of io limited during the last checkpoint
      */
     long lastCheckpointIOLimit();
+
+    /**
+     * Number of times last checkpoint IOs was limited by io controller
+     */
+    long lastCheckpointIOLimitedTimes();
+
+    /**
+     * Number of millis last checkpoint IOs was limited by io controller
+     */
+    long lastCheckpointIOLimitedMillis();
 }

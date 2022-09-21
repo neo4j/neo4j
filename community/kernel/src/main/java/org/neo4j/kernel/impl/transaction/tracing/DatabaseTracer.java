@@ -55,6 +55,16 @@ public interface DatabaseTracer extends TransactionTracer, CheckPointTracer {
         }
 
         @Override
+        public long lastCheckpointIOLimitedTimes() {
+            return 0;
+        }
+
+        @Override
+        public long lastCheckpointIOLimitedMillis() {
+            return 0;
+        }
+
+        @Override
         public LogFileCreateEvent createLogFile() {
             return LogFileCreateEvent.NULL;
         }
