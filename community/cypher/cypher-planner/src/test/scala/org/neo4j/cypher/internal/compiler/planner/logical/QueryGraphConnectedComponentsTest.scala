@@ -284,14 +284,25 @@ class QueryGraphConnectedComponentsTest
   }
 
   test("single quantified path pattern") {
-    // (a) [(a_inner)-[r1]->(b_inner)]* (b)
+    // (a) ((a_inner)-[r1]->(b_inner))* (b)
     val singleQuantifiedPathPatternQG = QueryGraph(patternNodes = Set(A, B), quantifiedPathPatterns = Set(qpp(A, B)))
 
     singleQuantifiedPathPatternQG.connectedComponents shouldBe Seq(singleQuantifiedPathPatternQG)
   }
 
+  test("quantified path pattern should pull in predicates") {
+    // (a) ((a_inner)-[r1]->(b_inner))* (b) WHERE r1 IS NOT NULL
+    val qppUnderTest = qpp(A, B)
+    val predicate = isNotNull(varFor(qppUnderTest.relationshipVariableGroupings.head.groupName))
+    val singleQuantifiedPathPatternQG = QueryGraph.empty
+      .addQuantifiedPathPattern(qppUnderTest)
+      .addPredicates(predicate)
+
+    singleQuantifiedPathPatternQG.connectedComponents shouldBe Seq(singleQuantifiedPathPatternQG)
+  }
+
   test("single quantified path pattern and path pattern") {
-    // (a)-[r]->(b) [(b_inner)-[r1]->(c_inner)]* (c)
+    // (a)-[r]->(b) ((b_inner)-[r1]->(c_inner))* (c)
     val singleQuantifiedPathPatternQG =
       QueryGraph(
         patternNodes = Set(A, B, C),
@@ -303,7 +314,7 @@ class QueryGraphConnectedComponentsTest
   }
 
   test("single quantified path pattern and path pattern in separate components") {
-    // (a)-[r1]->(b), (c) [(c_inner)-[]->(d_inner)]+ (d)
+    // (a)-[r1]->(b), (c) ((c_inner)-[]->(d_inner))+ (d)
     val singleQuantifiedPathPatternQG =
       QueryGraph(
         patternNodes = Set(A, B, C, D),

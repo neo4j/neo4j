@@ -53,11 +53,13 @@ final case class QuantifiedPathPattern(
 
   override val nodes: (String, String) = (left, right)
 
-  override lazy val coveredIds: Set[String] = coveredNodeIds
+  override lazy val coveredIds: Set[String] = coveredNodeIds ++ groupings
 
   override def toString: String = {
     s"QPP($leftBinding, $rightBinding, $pattern, $repetition, $nodeVariableGroupings, $relationshipVariableGroupings)"
   }
 
   val dependencies: Set[String] = pattern.dependencies
+
+  val groupings: Set[String] = nodeVariableGroupings.map(_.groupName) ++ relationshipVariableGroupings.map(_.groupName)
 }

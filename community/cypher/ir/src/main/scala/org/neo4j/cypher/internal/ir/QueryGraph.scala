@@ -294,7 +294,7 @@ case class QueryGraph(
     coveredIdsForPatterns ++
       argumentIds ++
       shortestPathPatterns.flatMap(_.name) ++
-      quantifiedPathPatterns.flatMap(_.pattern.idsWithoutOptionalMatchesOrUpdates)
+      quantifiedPathPatterns.flatMap(_.groupings)
 
   /**
    * All variables that are bound after this QG has been matched
@@ -365,11 +365,13 @@ case class QueryGraph(
       }
       val shortestPathIds = shortestPaths.flatMap(p => Set(p.rel.name) ++ p.name)
       val allIds = coveredIds ++ argumentIds ++ shortestPathIds
+
       val predicates = selections.predicates.filter(_.dependencies.subsetOf(allIds))
-      val filteredHints = hints.filter(h => h.variables.forall(variable => coveredIds.contains(variable.name)))
-      qg.withSelections(Selections(predicates)).withArgumentIds(argumentIds).addHints(filteredHints).addShortestPaths(
-        shortestPaths.toIndexedSeq: _*
-      )
+      val filteredHints = hints.filter(_.variables.forall(variable => coveredIds.contains(variable.name)))
+      qg.withSelections(Selections(predicates))
+        .withArgumentIds(argumentIds)
+        .addHints(filteredHints)
+        .addShortestPaths(shortestPaths.toIndexedSeq: _*)
     }
 
     /*
