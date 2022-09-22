@@ -59,7 +59,7 @@ class StaticIndexProviderMapTest {
                 new Dependencies());
         map.init();
 
-        assertThat(map.getTextIndexProvider()).isEqualTo(textIndexProvider);
+        assertThat(map.getTextIndexProvider()).isEqualTo(trigramIndexProvider);
         assertThat(map.getFulltextProvider()).isEqualTo(fulltextIndexProvider);
         assertThat(map.getTokenIndexProvider()).isEqualTo(tokenIndexProvider);
         assertThat(map.getDefaultProvider()).isEqualTo(rangeIndexProvider);

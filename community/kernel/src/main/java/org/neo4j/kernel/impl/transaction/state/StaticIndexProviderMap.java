@@ -100,7 +100,7 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
 
     @Override
     public IndexProvider getTextIndexProvider() {
-        return textIndexProvider;
+        return trigramIndexProvider != null ? trigramIndexProvider : textIndexProvider;
     }
 
     @Override

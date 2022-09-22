@@ -153,7 +153,7 @@ class IndexDefinitionToStringTest {
                     textLabelProperty,
                     "IndexDefinition[label:Label on:prop] "
                             + "(Index( id=%d, name='textLabelPropertyIndex', type='TEXT', "
-                            + "schema=(:Label {prop}), indexProvider='text-1.0' ))");
+                            + "schema=(:Label {prop}), indexProvider='text-2.0' ))");
             assertIndexString(
                     pointLabelProperty,
                     "IndexDefinition[label:Label on:prop] "
@@ -184,7 +184,7 @@ class IndexDefinitionToStringTest {
                     textRelTypeProperty,
                     "IndexDefinition[relationship type:TYPE on:prop] "
                             + "(Index( id=%d, name='textRelTypePropertyIndex', type='TEXT', "
-                            + "schema=()-[:TYPE {prop}]-(), indexProvider='text-1.0' ))");
+                            + "schema=()-[:TYPE {prop}]-(), indexProvider='text-2.0' ))");
             assertIndexString(
                     pointRelTypeProperty,
                     "IndexDefinition[relationship type:TYPE on:prop] "
