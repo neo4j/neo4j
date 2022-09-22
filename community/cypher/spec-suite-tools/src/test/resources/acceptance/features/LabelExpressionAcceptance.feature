@@ -42,7 +42,7 @@ Feature: LabelExpressionAcceptance
       WITH n ORDER BY size(labels(n)), labels(n)
       RETURN collect(n) AS result
       """
-    Then the result should be, in any order:
+    Then the result should be (ignoring element order for lists):
       | result   |
       | <result> |
     And no side effects
@@ -85,7 +85,7 @@ Feature: LabelExpressionAcceptance
       WITH n ORDER BY size(labels(n)), labels(n)
       RETURN collect(n) AS result
       """
-    Then the result should be, in any order:
+    Then the result should be (ignoring element order for lists):
       | result   |
       | <result> |
     And no side effects
@@ -120,7 +120,7 @@ Feature: LabelExpressionAcceptance
       WITH n ORDER BY size(labels(n)), labels(n)
       RETURN collect(n) AS result
       """
-    Then the result should be, in any order:
+    Then the result should be (ignoring element order for lists):
       | result   |
       | <result> |
     And no side effects
