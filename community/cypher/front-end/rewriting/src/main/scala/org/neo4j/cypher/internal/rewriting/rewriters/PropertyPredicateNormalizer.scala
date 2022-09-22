@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 
 case class PropertyPredicateNormalizer(anonymousVariableNameGenerator: AnonymousVariableNameGenerator)
-  extends PredicateNormalizer {
+    extends PredicateNormalizer {
 
   override val extract: PartialFunction[AnyRef, IndexedSeq[Expression]] = {
     case NodePattern(Some(id), _, Some(props), _) if !isParameter(props) =>
