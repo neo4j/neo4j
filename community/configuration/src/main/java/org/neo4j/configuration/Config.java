@@ -84,6 +84,21 @@ public class Config implements Configuration {
     private static final List<String> SUPPORTED_NAMESPACES = List.of(
             "dbms.", "db.", "browser.", "server.", "internal.", "client.", "initial.", "fabric.", "gds.", "apoc.");
 
+    @SuppressWarnings("unchecked")
+    private static final Collection<Class<SettingsDeclaration>> DEFAULT_SETTING_CLASSES =
+            Services.loadAll(SettingsDeclaration.class).stream()
+                    .map(c -> (Class<SettingsDeclaration>) c.getClass())
+                    .toList();
+
+    @SuppressWarnings("unchecked")
+    private static final Collection<Class<GroupSetting>> DEFAULT_GROUP_SETTING_CLASSES =
+            Services.loadAll(GroupSetting.class).stream()
+                    .map(c -> (Class<GroupSetting>) c.getClass())
+                    .toList();
+
+    private static final Collection<SettingMigrator> DEFAULT_SETTING_MIGRATORS =
+            Services.loadAll(SettingMigrator.class);
+
     public static final class Builder {
         // We use tree sets with comparators for setting classes and migrators to have
         // some defined order in which settings classes are processed and migrators are applied
@@ -491,7 +506,11 @@ public class Config implements Configuration {
      * @return a new builder.
      */
     public static Builder newBuilder() {
-        return newBuilder(Builder.class.getClassLoader());
+        Builder builder = new Builder();
+        DEFAULT_SETTING_CLASSES.forEach(builder::addSettingsClass);
+        DEFAULT_GROUP_SETTING_CLASSES.forEach(builder::addGroupSettingClass);
+        DEFAULT_SETTING_MIGRATORS.forEach(builder::addMigrator);
+        return builder;
     }
 
     /**
