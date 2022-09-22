@@ -459,8 +459,11 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     val result = profile(logicalQuery, runtime)
     consume(result)
-
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should be(sizeHint / 10 + 1)
+    val expectedDbHits: Int = runtimeUsed match {
+      case Slotted | Interpreted | Pipelined => sizeHint / 10 + 1
+      case Parallel                          => 2 * sizeHint / 10 + 1
+    }
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should be(expectedDbHits)
   }
 
   test("should profile dbHits of directed relationship index range seek") {
@@ -482,8 +485,11 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     val result = profile(logicalQuery, runtime)
     consume(result)
-
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should be(sizeHint / 10 / 2 + 1)
+    val expectedDbHits: Int = runtimeUsed match {
+      case Slotted | Interpreted | Pipelined => sizeHint / 10 / 2 + 1
+      case Parallel                          => sizeHint / 10 + 1
+    }
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should be(expectedDbHits)
   }
 
   test("should profile dbHits of directed relationship multiple index exact seek") {
