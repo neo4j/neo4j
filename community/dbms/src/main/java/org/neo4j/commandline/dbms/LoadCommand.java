@@ -101,9 +101,10 @@ public class LoadCommand extends AbstractAdminCommand {
     private boolean info;
 
     private final Loader loader;
-    public static String SYSTEM_ERR_MESSAGE = "WARNING! You are loading a dump of Neo4j's internal system database.%n"
-            + "This system database dump may contain unwanted metadata for the DBMS it was taken from;%n"
-            + "Loading it should only be done after consulting the Neo4j Operations Manual.%n";
+    public static String SYSTEM_ERR_MESSAGE =
+            String.format("WARNING! You are loading a dump of Neo4j's internal system database.%n"
+                    + "This system database dump may contain unwanted metadata for the DBMS it was taken from;%n"
+                    + "Loading it should only be done after consulting the Neo4j Operations Manual.%n");
 
     public LoadCommand(ExecutionContext ctx, Loader loader) {
         super(ctx);
