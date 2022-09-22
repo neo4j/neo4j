@@ -307,7 +307,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
         val indexCapability = indexDef.indexType match {
           case IndexType.Range => IndexCapabilities.range
-          case IndexType.Text  => IndexCapabilities.text_1_0
+          case IndexType.Text  => IndexCapabilities.text_2_0
           case IndexType.Point => IndexCapabilities.point
         }
 

@@ -39,7 +39,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends AnyFunSuit
   val unsupportedIndexTypes: Set[IndexType] = Set(IndexType.LOOKUP, IndexType.FULLTEXT)
 
   private def indexCapability(indexType: IndexType): IndexCapability = indexType match {
-    case IndexType.TEXT  => IndexCapabilities.text_1_0
+    case IndexType.TEXT  => IndexCapabilities.text_2_0
     case IndexType.RANGE => IndexCapabilities.range
     case IndexType.POINT => IndexCapabilities.point
   }

@@ -375,7 +375,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
     maybeIndexCapability match {
       case Some(value) => value
       case None => indexType match {
-          case graphdb.schema.IndexType.TEXT  => IndexCapabilities.text_1_0
+          case graphdb.schema.IndexType.TEXT  => IndexCapabilities.text_2_0
           case graphdb.schema.IndexType.RANGE => IndexCapabilities.range
           case graphdb.schema.IndexType.POINT => IndexCapabilities.point
           case graphdb.schema.IndexType.LOOKUP =>
