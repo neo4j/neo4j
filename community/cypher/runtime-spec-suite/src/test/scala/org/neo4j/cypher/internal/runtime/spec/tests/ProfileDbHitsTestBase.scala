@@ -814,7 +814,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    val fusedCostOfGetPropertyChain = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
+    val fusedCostOfGetPropertyChain = if (canReuseAllScanLookup) 0 else costOfGetPropertyChain
     val expectedFilterDbHits = sizeHint * (fusedCostOfGetPropertyChain + costOfProperty)
     val expectedAllNodesScanDbHits = runtimeUsed match {
       case Interpreted | Slotted | Pipelined => sizeHint + 1
@@ -879,7 +879,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    val fusedCostOfGetPropertyChain = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
+    val fusedCostOfGetPropertyChain = if (canReuseAllScanLookup) 0 else costOfGetPropertyChain
     queryProfile.operatorProfile(1).dbHits() shouldBe 0 // projection
     queryProfile.operatorProfile(
       2
@@ -905,7 +905,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe 0 // projection
-    val costOfPropertyReads = (if (canFuseOverPipelines) 0 else costOfGetPropertyChain) + 2 * costOfProperty
+    val costOfPropertyReads = (if (canReuseAllScanLookup) 0 else costOfGetPropertyChain) + 2 * costOfProperty
     queryProfile.operatorProfile(2).dbHits() shouldBe (sizeHint * costOfPropertyReads) // cacheProperties
   }
 
@@ -933,7 +933,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    val fusedCostOfGetPropertyChain = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
+    val fusedCostOfGetPropertyChain = if (canReuseAllScanLookup) 0 else costOfGetPropertyChain
     val expectedSecondFilterDbHits = (size / 2 * size) * (costOfGetPropertyChain + costOfProperty)
     val expectedFirstFilterDbHits = size * size * (fusedCostOfGetPropertyChain + costOfProperty)
     val expectedAllNodeScanRHS = runtimeUsed match {
@@ -966,7 +966,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    val fusedCostOfGetPropertyChain = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
+    val fusedCostOfGetPropertyChain = if (canReuseAllScanLookup) 0 else costOfGetPropertyChain
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() should be(
       sizeHint * (2 * (fusedCostOfGetPropertyChain + costOfProperty) + (fusedCostOfGetPropertyChain + costOfProperty))
@@ -987,7 +987,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    val fusedCostOfGetPropertyChain = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
+    val fusedCostOfGetPropertyChain = if (canReuseAllScanLookup) 0 else costOfGetPropertyChain
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe sizeHint * (fusedCostOfGetPropertyChain + costOfProperty)
   }
@@ -1008,7 +1008,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    val fusedCostOfGetPropertyChain = if (canFuseOverPipelines) 0 else costOfGetPropertyChain
+    val fusedCostOfGetPropertyChain = if (canReuseAllScanLookup) 0 else costOfGetPropertyChain
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint *
       ((fusedCostOfGetPropertyChain + costOfProperty) // first prop in chain
