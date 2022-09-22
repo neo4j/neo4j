@@ -77,15 +77,21 @@ public class DataGeneratorInput implements Input {
     private final long seed;
     private final Header nodeHeader;
     private final Header relationshipHeader;
-    private final Groups groups = new Groups();
+    private final Groups groups;
 
     public DataGeneratorInput(
-            DataDistribution dataDistribution, IdType idType, long seed, Header nodeHeader, Header relationshipHeader) {
+            DataDistribution dataDistribution,
+            IdType idType,
+            long seed,
+            Header nodeHeader,
+            Header relationshipHeader,
+            Groups groups) {
         this.dataDistribution = dataDistribution;
         this.idType = idType;
         this.seed = seed;
         this.nodeHeader = nodeHeader;
         this.relationshipHeader = relationshipHeader;
+        this.groups = groups;
     }
 
     public static DataDistribution data(long nodeCount, long relationshipCount) {
@@ -193,24 +199,25 @@ public class DataGeneratorInput implements Input {
         return new double[] {propertiesPerEntity, propertySizePerEntity};
     }
 
-    public static Header bareboneNodeHeader(IdType idType, Extractors extractors) {
-        return bareboneNodeHeader(null, idType, extractors);
+    public static Header bareboneNodeHeader(IdType idType, Group group, Extractors extractors) {
+        return bareboneNodeHeader(null, idType, group, extractors);
     }
 
     public static Header bareboneNodeHeader(
-            String idKey, IdType idType, Extractors extractors, Entry... additionalEntries) {
+            String idKey, IdType idType, Group group, Extractors extractors, Entry... additionalEntries) {
         List<Entry> entries = new ArrayList<>();
-        entries.add(new Entry(idKey, Type.ID, Group.GLOBAL, idExtractor(idType, extractors)));
-        entries.add(new Entry(null, Type.LABEL, Group.GLOBAL, extractors.stringArray()));
+        entries.add(new Entry(idKey, Type.ID, group, idExtractor(idType, extractors)));
+        entries.add(new Entry(null, Type.LABEL, null, extractors.stringArray()));
         entries.addAll(asList(additionalEntries));
         return new Header(entries.toArray(new Entry[0]));
     }
 
-    public static Header bareboneRelationshipHeader(IdType idType, Extractors extractors, Entry... additionalEntries) {
+    public static Header bareboneRelationshipHeader(
+            IdType idType, Group group, Extractors extractors, Entry... additionalEntries) {
         List<Entry> entries = new ArrayList<>();
-        entries.add(new Entry(null, Type.START_ID, Group.GLOBAL, idExtractor(idType, extractors)));
-        entries.add(new Entry(null, Type.END_ID, Group.GLOBAL, idExtractor(idType, extractors)));
-        entries.add(new Entry(null, Type.TYPE, Group.GLOBAL, extractors.string()));
+        entries.add(new Entry(null, Type.START_ID, group, idExtractor(idType, extractors)));
+        entries.add(new Entry(null, Type.END_ID, group, idExtractor(idType, extractors)));
+        entries.add(new Entry(null, Type.TYPE, null, extractors.string()));
         entries.addAll(asList(additionalEntries));
         return new Header(entries.toArray(new Entry[0]));
     }

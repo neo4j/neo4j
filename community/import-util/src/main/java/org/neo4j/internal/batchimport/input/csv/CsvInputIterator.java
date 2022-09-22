@@ -41,7 +41,6 @@ import org.neo4j.csv.reader.Source;
 import org.neo4j.csv.reader.Source.Chunk;
 import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.internal.batchimport.input.Collector;
-import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.csv.Header.Monitor;
@@ -170,7 +169,7 @@ class CsvInputIterator implements SourceTraceability, Closeable {
                                             spec.rawEntry(),
                                             spec.name(),
                                             spec.type() == null ? Type.PROPERTY : Type.valueOf(spec.type()),
-                                            Group.GLOBAL,
+                                            null,
                                             extractors.string()),
                             Header.NO_MONITOR);
                     // OK were able to parse this line as a header, skip it

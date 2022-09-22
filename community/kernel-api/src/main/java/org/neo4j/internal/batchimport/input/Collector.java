@@ -29,9 +29,9 @@ import java.util.Map;
  */
 public interface Collector extends AutoCloseable {
     void collectBadRelationship(
-            Object startId, String startIdGroup, String type, Object endId, String endIdGroup, Object specificValue);
+            Object startId, Group startIdGroup, String type, Object endId, Group endIdGroup, Object specificValue);
 
-    void collectDuplicateNode(Object id, long actualId, String group);
+    void collectDuplicateNode(Object id, long actualId, Group group);
 
     void collectNodeViolatingConstraint(
             Object id, long actualId, Map<String, Object> properties, String constraintDescription);
@@ -63,14 +63,14 @@ public interface Collector extends AutoCloseable {
         @Override
         public void collectBadRelationship(
                 Object startId,
-                String startIdGroup,
+                Group startIdGroup,
                 String type,
                 Object endId,
-                String endIdGroup,
+                Group endIdGroup,
                 Object specificValue) {}
 
         @Override
-        public void collectDuplicateNode(Object id, long actualId, String group) {}
+        public void collectDuplicateNode(Object id, long actualId, Group group) {}
 
         @Override
         public void collectNodeViolatingConstraint(
@@ -98,19 +98,14 @@ public interface Collector extends AutoCloseable {
 
         @Override
         public void collectBadRelationship(
-                Object startId,
-                String startIdGroup,
-                String type,
-                Object endId,
-                String endIdGroup,
-                Object specificValue) {
+                Object startId, Group startIdGroup, String type, Object endId, Group endIdGroup, Object specificValue) {
             throw new IllegalStateException(format(
                     "Bad relationship (%s:%s)-[%s]->(%s:%s) %s",
                     startId, startIdGroup, type, endId, endIdGroup, specificValue));
         }
 
         @Override
-        public void collectDuplicateNode(Object id, long actualId, String group) {
+        public void collectDuplicateNode(Object id, long actualId, Group group) {
             throw new IllegalStateException(format("Bad duplicate node %s:%s id:%d", id, group, actualId));
         }
 

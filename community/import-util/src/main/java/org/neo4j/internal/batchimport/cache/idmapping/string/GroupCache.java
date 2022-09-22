@@ -26,7 +26,6 @@ import static org.neo4j.internal.helpers.Numbers.unsignedShortToInt;
 
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
-import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.memory.MemoryTracker;
 
 /**
@@ -40,15 +39,15 @@ public interface GroupCache extends AutoCloseable {
     @Override
     void close();
 
-    GroupCache GLOBAL = new GroupCache() {
+    GroupCache SINGLE = new GroupCache() {
         @Override
-        public void set(long nodeId, int groupId) { // no need
-            assert groupId == Group.GLOBAL.id();
+        public void set(long nodeId, int groupId) {
+            assert groupId == 0;
         }
 
         @Override
         public int get(long nodeId) {
-            return Group.GLOBAL.id();
+            return 0;
         }
 
         @Override
@@ -104,7 +103,7 @@ public interface GroupCache extends AutoCloseable {
     static GroupCache select(
             NumberArrayFactory factory, int chunkSize, int numberOfGroups, MemoryTracker memoryTracker) {
         if (numberOfGroups == 0) {
-            return GLOBAL;
+            return SINGLE;
         }
         if (numberOfGroups <= 0x100) {
             return new ByteGroupCache(factory, chunkSize, memoryTracker);

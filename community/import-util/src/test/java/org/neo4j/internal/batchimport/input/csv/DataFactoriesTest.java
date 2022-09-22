@@ -57,6 +57,7 @@ public class DataFactoriesTest {
             Configuration.TABS.toBuilder().withBufferSize(BUFFER_SIZE).build();
 
     private final Groups groups = new Groups();
+    private final Group globalGroup = groups.getOrCreate(null);
 
     @Test
     public void shouldParseDefaultNodeFileHeaderCorrectly() throws Exception {
@@ -71,7 +72,7 @@ public class DataFactoriesTest {
         // THEN
         assertArrayEquals(
                 array(
-                        entry("ID", Type.ID, CsvInput.idExtractor(idType, extractors)),
+                        entry("ID", Type.ID, globalGroup, CsvInput.idExtractor(idType, extractors)),
                         entry("label-one", Type.LABEL, extractors.stringArray()),
                         entry("also-labels", Type.LABEL, extractors.stringArray()),
                         entry("name", Type.PROPERTY, extractors.string()),
@@ -101,7 +102,7 @@ public class DataFactoriesTest {
         // THEN
         assertArrayEquals(
                 array(
-                        entry("ID", Type.ID, CsvInput.idExtractor(idType, extractors)),
+                        entry("ID", Type.ID, globalGroup, CsvInput.idExtractor(idType, extractors)),
                         entry("longArray", Type.PROPERTY, extractors.longArray()),
                         entry(
                                 "pointArray",
@@ -138,8 +139,8 @@ public class DataFactoriesTest {
         // THEN
         assertArrayEquals(
                 array(
-                        entry(null, Type.START_ID, CsvInput.idExtractor(idType, extractors)),
-                        entry(null, Type.END_ID, CsvInput.idExtractor(idType, extractors)),
+                        entry(null, Type.START_ID, globalGroup, CsvInput.idExtractor(idType, extractors)),
+                        entry(null, Type.END_ID, globalGroup, CsvInput.idExtractor(idType, extractors)),
                         entry("type", Type.TYPE, extractors.string()),
                         entry("date", Type.PROPERTY, extractors.long_()),
                         entry("more", Type.PROPERTY, extractors.longArray())),
@@ -161,8 +162,8 @@ public class DataFactoriesTest {
         // THEN
         assertArrayEquals(
                 array(
-                        entry(null, Type.START_ID, CsvInput.idExtractor(idType, extractors)),
-                        entry(null, Type.END_ID, CsvInput.idExtractor(idType, extractors)),
+                        entry(null, Type.START_ID, globalGroup, CsvInput.idExtractor(idType, extractors)),
+                        entry(null, Type.END_ID, globalGroup, CsvInput.idExtractor(idType, extractors)),
                         entry("type", Type.TYPE, extractors.string()),
                         entry("longArray", Type.PROPERTY, extractors.longArray()),
                         entry(
@@ -200,7 +201,7 @@ public class DataFactoriesTest {
         // THEN
         assertArrayEquals(
                 array(
-                        entry("one", Type.ID, extractors.long_()),
+                        entry("one", Type.ID, globalGroup, extractors.long_()),
                         entry("two", Type.PROPERTY, extractors.string()),
                         entry(null, Type.IGNORE, null),
                         entry("date", Type.PROPERTY, extractors.long_())),
@@ -223,7 +224,7 @@ public class DataFactoriesTest {
     }
 
     @Test
-    public void shouldFailForDuplicateIdHeaderEntries() throws Exception {
+    public void shouldFailForDuplicateIdHeaderEntries() {
         // GIVEN
         CharSeeker seeker = seeker("one:id\ttwo:id");
         IdType idType = IdType.ACTUAL;
@@ -231,8 +232,8 @@ public class DataFactoriesTest {
 
         var e = assertThrows(DuplicateHeaderException.class, () -> defaultFormatNodeFileHeader()
                 .create(seeker, TABS, idType, groups));
-        assertEquals(entry("one", Type.ID, extractors.long_()), e.getFirst());
-        assertEquals(entry("two", Type.ID, extractors.long_()), e.getOther());
+        assertEquals(entry("one", Type.ID, globalGroup, extractors.long_()), e.getFirst());
+        assertEquals(entry("two", Type.ID, globalGroup, extractors.long_()), e.getOther());
     }
 
     @Test
@@ -271,7 +272,7 @@ public class DataFactoriesTest {
         // THEN
         assertArrayEquals(
                 array(
-                        entry("id", Type.ID, extractors.long_()),
+                        entry("id", Type.ID, globalGroup, extractors.long_()),
                         entry("name", Type.PROPERTY, extractors.string()),
                         entry("birth_date", Type.PROPERTY, extractors.long_())),
                 header.entries());
@@ -296,8 +297,8 @@ public class DataFactoriesTest {
         // THEN
         assertArrayEquals(
                 array(
-                        entry(null, Type.START_ID, "GroupOne", CsvInput.idExtractor(idType, extractors)),
-                        entry(null, Type.END_ID, "GroupTwo", CsvInput.idExtractor(idType, extractors)),
+                        entry(null, Type.START_ID, groups.get("GroupOne"), CsvInput.idExtractor(idType, extractors)),
+                        entry(null, Type.END_ID, groups.get("GroupTwo"), CsvInput.idExtractor(idType, extractors)),
                         entry("type", Type.TYPE, extractors.string()),
                         entry("date", Type.PROPERTY, extractors.long_()),
                         entry("more", Type.PROPERTY, extractors.longArray())),
@@ -344,7 +345,29 @@ public class DataFactoriesTest {
                         entry(
                                 "id",
                                 Type.ID,
-                                "myGroup",
+                                groups.get("myGroup"),
+                                extractors.long_(),
+                                Map.of("myFirstKey", "10", "mySecondKey", "Some string"),
+                                null),
+                        entry(null, Type.LABEL, extractors.stringArray())));
+    }
+
+    @Test
+    void shouldParseHeaderOptionsMapEvenWhenItIsBeforeTheGroup() {
+        // GIVEN
+        var seeker = seeker("id:ID{myFirstKey:10,mySecondKey:\"Some string\"}(myGroup)\t:LABEL");
+
+        // WHEN
+        var header = defaultFormatNodeFileHeader().create(seeker, TABS, IdType.ACTUAL, groups);
+
+        // THEN
+        var extractors = new Extractors(';');
+        assertThat(header.entries())
+                .isEqualTo(array(
+                        entry(
+                                "id",
+                                Type.ID,
+                                groups.get("myGroup"),
                                 extractors.long_(),
                                 Map.of("myFirstKey", "10", "mySecondKey", "Some string"),
                                 null),
@@ -366,11 +389,27 @@ public class DataFactoriesTest {
                         entry(
                                 "id",
                                 Type.ID,
-                                Group.GLOBAL.name(),
+                                globalGroup,
                                 extractors.long_(),
                                 Map.of("myFirstKey", "10", "mySecondKey", "Some string"),
                                 null),
                         entry(null, Type.LABEL, extractors.stringArray())));
+    }
+
+    @Test
+    void shouldCreateGroupWithSpecificIdType() {
+        // GIVEN
+        var seeker = seeker("id:ID(MyGroup){id-type:long}");
+
+        // WHEN
+        var header = defaultFormatNodeFileHeader().create(seeker, TABS, IdType.STRING, groups);
+
+        // THEN
+        var extractors = new Extractors(';');
+        var group = groups.get("MyGroup");
+        assertThat(header.entries())
+                .isEqualTo(array(entry("id", Type.ID, group, extractors.long_(), Map.of("id-type", "long"), null)));
+        assertThat(group.specificIdType()).isEqualTo("long");
     }
 
     private static final Configuration SEEKER_CONFIG =
@@ -390,21 +429,20 @@ public class DataFactoriesTest {
             Extractor<?> extractor,
             Map<String, String> rawOptions,
             CSVHeaderInformation optionalParameter) {
-        return new Header.Entry(null, name, type, groups.getOrCreate(null), extractor, rawOptions, optionalParameter);
+        return new Header.Entry(null, name, type, null, extractor, rawOptions, optionalParameter);
     }
 
     private Header.Entry entry(
             String name,
             Type type,
-            String groupName,
+            Group group,
             Extractor<?> extractor,
             Map<String, String> rawOptions,
             CSVHeaderInformation optionalParameter) {
-        return new Header.Entry(
-                null, name, type, groups.getOrCreate(groupName), extractor, rawOptions, optionalParameter);
+        return new Header.Entry(null, name, type, group, extractor, rawOptions, optionalParameter);
     }
 
-    private Header.Entry entry(String name, Type type, String groupName, Extractor<?> extractor) {
-        return new Header.Entry(name, type, groups.getOrCreate(groupName), extractor);
+    private Header.Entry entry(String name, Type type, Group group, Extractor<?> extractor) {
+        return new Header.Entry(name, type, group, extractor);
     }
 }

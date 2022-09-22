@@ -22,12 +22,19 @@ package org.neo4j.internal.batchimport.input;
 public interface ReadableGroups {
     Group get(int id);
 
+    Group get(String name);
+
     int size();
 
     ReadableGroups EMPTY = new ReadableGroups() {
         @Override
         public Group get(int id) {
-            throw new IllegalArgumentException("No id " + id);
+            throw new IllegalArgumentException("No group by id " + id);
+        }
+
+        @Override
+        public Group get(String name) {
+            throw new IllegalArgumentException("No group by name '" + name + "'");
         }
 
         @Override

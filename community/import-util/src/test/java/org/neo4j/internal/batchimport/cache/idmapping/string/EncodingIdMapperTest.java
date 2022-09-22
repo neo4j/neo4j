@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -35,7 +34,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.count;
 import static org.neo4j.internal.batchimport.cache.idmapping.string.EncodingIdMapper.NO_MONITOR;
-import static org.neo4j.internal.batchimport.input.Group.GLOBAL;
 import static org.neo4j.internal.helpers.progress.ProgressListener.NONE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -76,6 +74,7 @@ public class EncodingIdMapperTest {
     private RandomSupport random;
 
     private final Groups groups = new Groups();
+    private final Group globalGroup = groups.getOrCreate(null);
 
     private static Stream<Integer> data() {
         Collection<Integer> data = new ArrayList<>();
@@ -98,7 +97,7 @@ public class EncodingIdMapperTest {
 
         // WHEN
         for (long nodeId = 0; nodeId < count; nodeId++) {
-            idMapper.put(inputIdLookup.lookupProperty(nodeId), nodeId, Group.GLOBAL);
+            idMapper.put(inputIdLookup.lookupProperty(nodeId), nodeId, globalGroup);
         }
         idMapper.prepare(inputIdLookup, mock(Collector.class), NONE);
 
@@ -106,7 +105,7 @@ public class EncodingIdMapperTest {
         for (long nodeId = 0; nodeId < count; nodeId++) {
             // the UUIDs here will be generated in the same sequence as above because we reset the random
             Object id = inputIdLookup.lookupProperty(nodeId);
-            if (idMapper.get(id, Group.GLOBAL) == IdMapper.ID_NOT_FOUND) {
+            if (idMapper.get(id, globalGroup) == IdMapper.ID_NOT_FOUND) {
                 fail("Couldn't find " + id + " even though I added it just previously");
             }
         }
@@ -120,7 +119,7 @@ public class EncodingIdMapperTest {
         idMapper.prepare(null, mock(Collector.class), NONE);
 
         // WHEN
-        long id = idMapper.get("123", Group.GLOBAL);
+        long id = idMapper.get("123", globalGroup);
 
         // THEN
         assertEquals(IdMapper.ID_NOT_FOUND, id);
@@ -135,7 +134,7 @@ public class EncodingIdMapperTest {
         idMapper.prepare(null, mock(Collector.class), progress);
 
         // WHEN
-        long id = idMapper.get("123", Group.GLOBAL);
+        long id = idMapper.get("123", globalGroup);
 
         // THEN
         assertEquals(IdMapper.ID_NOT_FOUND, id);
@@ -149,13 +148,13 @@ public class EncodingIdMapperTest {
         IdMapper mapper = mapper(new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR, processors);
 
         // WHEN
-        mapper.put("123", 0, Group.GLOBAL);
-        mapper.put("456", 1, Group.GLOBAL);
+        mapper.put("123", 0, globalGroup);
+        mapper.put("456", 1, globalGroup);
         mapper.prepare(null, mock(Collector.class), NONE);
 
         // THEN
-        assertEquals(1L, mapper.get("456", Group.GLOBAL));
-        assertEquals(0L, mapper.get("123", Group.GLOBAL));
+        assertEquals(1L, mapper.get("456", globalGroup));
+        assertEquals(0L, mapper.get("123", globalGroup));
     }
 
     @Test
@@ -164,12 +163,12 @@ public class EncodingIdMapperTest {
         IdMapper mapper = mapper(new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR, 1);
 
         // WHEN
-        mapper.put("1", 1, Group.GLOBAL);
+        mapper.put("1", 1, globalGroup);
         mapper.prepare(null, mock(Collector.class), NONE);
 
         // THEN
-        assertEquals(1L, mapper.get("1", Group.GLOBAL));
-        assertEquals(-1L, mapper.get("", Group.GLOBAL));
+        assertEquals(1L, mapper.get("1", globalGroup));
+        assertEquals(-1L, mapper.get("", globalGroup));
     }
 
     @Test
@@ -178,13 +177,13 @@ public class EncodingIdMapperTest {
         IdMapper mapper = mapper(new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR, 1);
 
         // WHEN
-        mapper.put("P_Évora", 0, Group.GLOBAL);
-        mapper.put("P_Setúbal", 1, Group.GLOBAL);
+        mapper.put("P_Évora", 0, globalGroup);
+        mapper.put("P_Setúbal", 1, globalGroup);
         mapper.prepare(null, mock(Collector.class), NONE);
 
         // THEN
-        assertEquals(1L, mapper.get("P_Setúbal", Group.GLOBAL));
-        assertEquals(0L, mapper.get("P_Évora", Group.GLOBAL));
+        assertEquals(1L, mapper.get("P_Setúbal", globalGroup));
+        assertEquals(0L, mapper.get("P_Évora", globalGroup));
     }
 
     @ParameterizedTest(name = "processors:{0}")
@@ -198,14 +197,14 @@ public class EncodingIdMapperTest {
         // WHEN
         ValueGenerator values = new ValueGenerator(type.data(random.random()));
         for (int nodeId = 0; nodeId < size; nodeId++) {
-            mapper.put(values.lookupProperty(nodeId), nodeId, Group.GLOBAL);
+            mapper.put(values.lookupProperty(nodeId), nodeId, globalGroup);
         }
         mapper.prepare(values, mock(Collector.class), NONE);
 
         // THEN
         for (int nodeId = 0; nodeId < size; nodeId++) {
             Object value = values.values.get(nodeId);
-            assertEquals(nodeId, mapper.get(value, Group.GLOBAL), "Expected " + value + " to map to " + nodeId);
+            assertEquals(nodeId, mapper.get(value, globalGroup), "Expected " + value + " to map to " + nodeId);
         }
     }
 
@@ -216,7 +215,7 @@ public class EncodingIdMapperTest {
         IdMapper mapper = mapper(new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR, processors);
         PropertyValueLookup values = values("10", "9", "10");
         for (int i = 0; i < 3; i++) {
-            mapper.put(values.lookupProperty(i), i, Group.GLOBAL);
+            mapper.put(values.lookupProperty(i), i, globalGroup);
         }
 
         // WHEN
@@ -224,7 +223,7 @@ public class EncodingIdMapperTest {
         mapper.prepare(values, collector, NONE);
 
         // THEN
-        verify(collector).collectDuplicateNode("10", 2, Group.GLOBAL.name());
+        verify(collector).collectDuplicateNode("10", 2, globalGroup);
         verifyNoMoreInteractions(collector);
     }
 
@@ -238,7 +237,7 @@ public class EncodingIdMapperTest {
         IdMapper mapper = mapper(encoder, Radix.STRING, monitor, processors);
         PropertyValueLookup ids = values("10", "9");
         for (int i = 0; i < 2; i++) {
-            mapper.put(ids.lookupProperty(i), i, Group.GLOBAL);
+            mapper.put(ids.lookupProperty(i), i, globalGroup);
         }
 
         // WHEN
@@ -249,8 +248,8 @@ public class EncodingIdMapperTest {
         // THEN
         verifyNoMoreInteractions(collector);
         verify(monitor).numberOfCollisions(2);
-        assertEquals(0L, mapper.get("10", Group.GLOBAL));
-        assertEquals(1L, mapper.get("9", Group.GLOBAL));
+        assertEquals(0L, mapper.get("10", globalGroup));
+        assertEquals(1L, mapper.get("9", globalGroup));
         // 7 times since SPLIT+SORT+DETECT+RESOLVE+SPLIT+SORT,DEDUPLICATE
         verify(progress, times(7)).close();
     }
@@ -454,7 +453,7 @@ public class EncodingIdMapperTest {
             if (!random.nextBoolean()) {
                 Long id = (long) i;
                 ids.add(id);
-                mapper.put(id, i, Group.GLOBAL);
+                mapper.put(id, i, globalGroup);
             }
         }
 
@@ -463,7 +462,7 @@ public class EncodingIdMapperTest {
 
         // THEN
         for (Object id : ids) {
-            assertEquals(((Long) id).longValue(), mapper.get(id, Group.GLOBAL));
+            assertEquals(((Long) id).longValue(), mapper.get(id, globalGroup));
         }
     }
 
@@ -484,7 +483,7 @@ public class EncodingIdMapperTest {
         }
         // fed to the IdMapper
         for (Object inputId : ids) {
-            mapper.put(inputId, nodeId++, Group.GLOBAL);
+            mapper.put(inputId, nodeId++, globalGroup);
         }
 
         // WHEN
@@ -492,7 +491,7 @@ public class EncodingIdMapperTest {
         mapper.prepare(values(ids.toArray()), collector, NONE);
 
         // THEN
-        verify(collector, times(high)).collectDuplicateNode(any(Object.class), anyLong(), anyString());
+        verify(collector, times(high)).collectDuplicateNode(any(Object.class), anyLong(), any());
         assertEquals(high, count(mapper.leftOverDuplicateNodesIds()));
     }
 
@@ -510,7 +509,7 @@ public class EncodingIdMapperTest {
             String inputId = UUID.randomUUID().toString();
             for (int i = 0; i < 2; i++) {
                 ids.add(inputId);
-                mapper.put(inputId, id++, Group.GLOBAL);
+                mapper.put(inputId, id++, globalGroup);
             }
         }
 
@@ -543,7 +542,7 @@ public class EncodingIdMapperTest {
                 long nodeId = nextNodeId++;
                 cursor++;
 
-                idMapper.put(inputIdLookup.lookupProperty(nodeId), nodeId, Group.GLOBAL);
+                idMapper.put(inputIdLookup.lookupProperty(nodeId), nodeId, globalGroup);
             }
         });
 
@@ -556,7 +555,7 @@ public class EncodingIdMapperTest {
         int countWithGapsWorstCase = count + batchSize * processors;
         int correctHits = 0;
         for (long nodeId = 0; nodeId < countWithGapsWorstCase; nodeId++) {
-            long result = idMapper.get(inputIdLookup.lookupProperty(nodeId), Group.GLOBAL);
+            long result = idMapper.get(inputIdLookup.lookupProperty(nodeId), globalGroup);
             if (result != -1) {
                 assertEquals(nodeId, result);
                 correctHits++;
@@ -581,7 +580,7 @@ public class EncodingIdMapperTest {
         long count = 1_000;
         for (long id = 0; id < count; id++) {
             long nodeId = id * 2;
-            idMapper.put(id, nodeId, Group.GLOBAL);
+            idMapper.put(id, nodeId, globalGroup);
         }
 
         // WHEN
@@ -625,7 +624,7 @@ public class EncodingIdMapperTest {
         int count = nThreads * 1_000;
         MutableLong nextNodeId = new MutableLong();
         for (long id = 0; id < count; id++) {
-            idMapper.put(id, nextNodeId.getAndAdd(random.nextInt(50, 100)), GLOBAL);
+            idMapper.put(id, nextNodeId.getAndAdd(random.nextInt(50, 100)), globalGroup);
         }
 
         // when
@@ -833,17 +832,12 @@ public class EncodingIdMapperTest {
 
         @Override
         public void collectBadRelationship(
-                Object startId,
-                String startIdGroup,
-                String type,
-                Object endId,
-                String endIdGroup,
-                Object specificValue) {
+                Object startId, Group startIdGroup, String type, Object endId, Group endIdGroup, Object specificValue) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void collectDuplicateNode(Object id, long actualId, String group) {
+        public void collectDuplicateNode(Object id, long actualId, Group group) {
             count++;
         }
 

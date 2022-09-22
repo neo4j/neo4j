@@ -116,7 +116,7 @@ public class CsvInput implements Input {
                 memoryTracker);
     }
 
-    CsvInput(
+    public CsvInput(
             Iterable<DataFactory> nodeDataFactory,
             Header.Factory nodeHeaderFactory,
             Iterable<DataFactory> relationshipDataFactory,

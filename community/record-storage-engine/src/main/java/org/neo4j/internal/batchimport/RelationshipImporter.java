@@ -168,10 +168,10 @@ public class RelationshipImporter extends EntityImporter {
                     relationshipRecord.getId(),
                     (entityId, tokens, properties, constraintDescription) -> badCollector.collectBadRelationship(
                             startId,
-                            group(startIdGroup).name(),
+                            startIdGroup,
                             type,
                             endId,
-                            group(endIdGroup).name(),
+                            endIdGroup,
                             relationshipRecord.getFirstNode() == IdMapper.ID_NOT_FOUND ? startId : endId))) {
                 if (doubleRecordUnits) {
                     // simply reserve one id for this relationship to grow during linking stage
@@ -203,10 +203,10 @@ public class RelationshipImporter extends EntityImporter {
             }
             badCollector.collectBadRelationship(
                     startId,
-                    group(startIdGroup).name(),
+                    startIdGroup,
                     type,
                     endId,
-                    group(endIdGroup).name(),
+                    endIdGroup,
                     relationshipRecord.getFirstNode() == IdMapper.ID_NOT_FOUND ? startId : endId);
             entityPropertyCount = 0;
         }
@@ -229,13 +229,7 @@ public class RelationshipImporter extends EntityImporter {
     }
 
     private String relationshipDataString() {
-        return format(
-                "start:%s (%s) type:%s end:%s (%s)",
-                startId,
-                group(startIdGroup).name(),
-                type,
-                endId,
-                group(endIdGroup).name());
+        return format("start:%s (%s) type:%s end:%s (%s)", startId, startIdGroup, type, endId, endIdGroup);
     }
 
     @Override

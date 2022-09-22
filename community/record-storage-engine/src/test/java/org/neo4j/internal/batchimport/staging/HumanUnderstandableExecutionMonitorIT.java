@@ -52,6 +52,8 @@ import org.neo4j.internal.batchimport.cache.PageCacheArrayFactoryMonitor;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.DataGeneratorInput;
+import org.neo4j.internal.batchimport.input.Group;
+import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.batchimport.staging.HumanUnderstandableExecutionMonitor.ImportStage;
@@ -96,12 +98,15 @@ class HumanUnderstandableExecutionMonitorIT {
                 new HumanUnderstandableExecutionMonitor(progress, nullStream, nullStream);
         IdType idType = IdType.INTEGER;
         DataGeneratorInput.DataDistribution dataDistribution = DataGeneratorInput.data(NODE_COUNT, RELATIONSHIP_COUNT);
+        Groups groups = new Groups();
+        Group group = groups.getOrCreate(null);
         Input input = new DataGeneratorInput(
                 dataDistribution,
                 idType,
                 random.seed(),
-                bareboneNodeHeader(idType, new Extractors(';')),
-                bareboneRelationshipHeader(idType, new Extractors(';')));
+                bareboneNodeHeader(idType, group, new Extractors(';')),
+                bareboneRelationshipHeader(idType, group, new Extractors(';')),
+                groups);
         Configuration configuration = new Configuration.Overridden(Configuration.DEFAULT) {
             @Override
             public long pageCacheMemory() {

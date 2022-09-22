@@ -190,7 +190,7 @@ public class DataFactories {
                 String rawEntry = dataSeeker.tryExtract(mark, extractors.string());
                 HeaderEntrySpec spec = !extractors.string().isEmpty(rawEntry) ? parseHeaderEntrySpec(rawEntry) : null;
                 if (spec == null || Type.IGNORE.name().equals(spec.type())) {
-                    columns.add(new Entry(rawEntry, null, Type.IGNORE, Group.GLOBAL, null));
+                    columns.add(new Entry(rawEntry, null, Type.IGNORE, null, null));
                 } else {
                     columns.add(entryFactory.create(
                             dataSeeker.sourceDescription(), i, spec, extractors, idExtractor, groups, monitor));
@@ -202,31 +202,22 @@ public class DataFactories {
         }
     }
 
-    private abstract static class AbstractDefaultFileHeaderParser implements Header.Factory {
+    private abstract static class AbstractDefaultFileHeaderParser implements Header.Factory, HeaderEntryFactory {
         private final Type[] mandatoryTypes;
         private final Supplier<ZoneId> defaultTimeZone;
         private final boolean normalizeTypes;
-        private final HeaderEntryFactory entryFactory;
 
         AbstractDefaultFileHeaderParser(
-                Supplier<ZoneId> defaultTimeZone,
-                boolean createGroups,
-                boolean normalizeTypes,
-                Type... mandatoryTypes) {
+                Supplier<ZoneId> defaultTimeZone, boolean normalizeTypes, Type... mandatoryTypes) {
             this.defaultTimeZone = defaultTimeZone;
             this.normalizeTypes = normalizeTypes;
             this.mandatoryTypes = mandatoryTypes;
-            this.entryFactory = (sourceDescription, entryIndex, spec, extractors, idExtractor, groups, monitor) -> {
-                Group group = createGroups ? groups.getOrCreate(spec.group()) : groups.get(spec.group());
-                return entry(sourceDescription, entryIndex, spec, group, extractors, idExtractor, monitor);
-            };
         }
 
         @Override
         public Header create(
                 CharSeeker dataSeeker, Configuration config, IdType idType, Groups groups, Monitor monitor) {
-            Entry[] entries =
-                    parseHeaderEntries(dataSeeker, config, idType, groups, defaultTimeZone, entryFactory, monitor);
+            Entry[] entries = parseHeaderEntries(dataSeeker, config, idType, groups, defaultTimeZone, this, monitor);
             validateHeader(entries, dataSeeker);
             return new Header(entries);
         }
@@ -300,19 +291,6 @@ public class DataFactories {
             }
             return extractor;
         }
-
-        /**
-         * @param idExtractor we supply the id extractor explicitly because it's a configuration,
-         * or at least input-global concern and not a concern of this particular header.
-         */
-        protected abstract Header.Entry entry(
-                String sourceDescription,
-                int index,
-                HeaderEntrySpec spec,
-                Group group,
-                Extractors extractors,
-                Extractor<?> idExtractor,
-                Monitor monitor);
     }
 
     private static HeaderEntrySpec parseHeaderEntrySpec(String rawEntry) {
@@ -337,7 +315,7 @@ public class DataFactories {
                 String rawOptions =
                         rawHeaderField.substring(optionsStartIndex, optionsEndIndex + 1); // including the curlies
                 options = Value.parseStringMap(rawOptions);
-                rawHeaderField = rawHeaderField.substring(0, optionsStartIndex);
+                rawHeaderField = cutOut(rawHeaderField, optionsStartIndex, optionsEndIndex);
             }
         }
 
@@ -349,7 +327,7 @@ public class DataFactories {
                 Preconditions.checkState(
                         groupEndIndex != -1 && groupEndIndex > groupStartIndex, "Expected a closing ')'");
                 groupName = rawHeaderField.substring(groupStartIndex + 1, groupEndIndex);
-                rawHeaderField = rawHeaderField.substring(0, groupStartIndex);
+                rawHeaderField = cutOut(rawHeaderField, groupStartIndex, groupEndIndex);
             }
         }
 
@@ -368,6 +346,17 @@ public class DataFactories {
         return new HeaderEntrySpec(rawEntry, name, type, groupName, options);
     }
 
+    private static String cutOut(String string, int startIndex, int endIndex) {
+        var result = new StringBuilder();
+        if (startIndex > 0) {
+            result.append(string, 0, startIndex);
+        }
+        if (endIndex + 1 < string.length()) {
+            result.append(string.substring(endIndex + 1));
+        }
+        return result.toString();
+    }
+
     record HeaderEntrySpec(String rawEntry, String name, String type, String group, Map<String, String> options) {}
 
     interface HeaderEntryFactory {
@@ -383,30 +372,34 @@ public class DataFactories {
 
     private static class DefaultNodeFileHeaderParser extends AbstractDefaultFileHeaderParser {
         DefaultNodeFileHeaderParser(Supplier<ZoneId> defaultTimeZone, boolean normalizeTypes) {
-            super(defaultTimeZone, true, normalizeTypes);
+            super(defaultTimeZone, normalizeTypes);
         }
 
         @Override
-        protected Header.Entry entry(
+        public Entry create(
                 String sourceDescription,
-                int index,
+                int entryIndex,
                 HeaderEntrySpec spec,
-                Group group,
                 Extractors extractors,
-                Extractor<?> idExtractor,
+                Extractor<?> defaultIdExtractor,
+                Groups groups,
                 Monitor monitor) {
             // For nodes it's simply ID,LABEL,PROPERTY. typeSpec can be either ID,LABEL or a type of property,
             // like 'int' or 'string_array' or similar, or empty for 'string' property.
             Type type;
             Extractor<?> extractor;
             CSVHeaderInformation optionalParameter = null;
+            Group group = null;
             if (spec.type() == null) {
                 type = Type.PROPERTY;
                 extractor = extractors.string();
             } else {
                 if (spec.type().equalsIgnoreCase(Type.ID.name())) {
                     type = Type.ID;
-                    extractor = idExtractor;
+                    group = groups.getOrCreate(spec.group(), spec.options().get("id-type"));
+                    extractor = group.specificIdType() != null
+                            ? parsePropertyType(group.specificIdType(), extractors)
+                            : defaultIdExtractor;
                 } else if (spec.type().equalsIgnoreCase(Type.LABEL.name())) {
                     type = Type.LABEL;
                     extractor = extractors.stringArray();
@@ -426,31 +419,33 @@ public class DataFactories {
     private static class DefaultRelationshipFileHeaderParser extends AbstractDefaultFileHeaderParser {
         DefaultRelationshipFileHeaderParser(Supplier<ZoneId> defaultTimeZone, boolean normalizeTypes) {
             // Don't have TYPE as mandatory since a decorator could provide that
-            super(defaultTimeZone, false, normalizeTypes, Type.START_ID, Type.END_ID);
+            super(defaultTimeZone, normalizeTypes, Type.START_ID, Type.END_ID);
         }
 
         @Override
-        protected Header.Entry entry(
+        public Entry create(
                 String sourceDescription,
-                int index,
+                int entryIndex,
                 HeaderEntrySpec spec,
-                Group group,
                 Extractors extractors,
-                Extractor<?> idExtractor,
+                Extractor<?> defaultIdExtractor,
+                Groups groups,
                 Monitor monitor) {
             Type type;
             Extractor<?> extractor;
             CSVHeaderInformation optionalParameter = null;
+            Group group = null;
             if (spec.type() == null) { // Property
                 type = Type.PROPERTY;
                 extractor = extractors.string();
             } else {
-                if (spec.type().equalsIgnoreCase(Type.START_ID.name())) {
-                    type = Type.START_ID;
-                    extractor = idExtractor;
-                } else if (spec.type().equalsIgnoreCase(Type.END_ID.name())) {
-                    type = Type.END_ID;
-                    extractor = idExtractor;
+                if (spec.type().equalsIgnoreCase(Type.START_ID.name())
+                        || spec.type().equalsIgnoreCase(Type.END_ID.name())) {
+                    type = Type.valueOf(spec.type().toUpperCase());
+                    group = groups.get(spec.group());
+                    extractor = group.specificIdType() != null
+                            ? parsePropertyType(group.specificIdType(), extractors)
+                            : defaultIdExtractor;
                 } else if (spec.type().equalsIgnoreCase(Type.TYPE.name())) {
                     type = Type.TYPE;
                     extractor = extractors.string();
@@ -485,7 +480,7 @@ public class DataFactories {
         try {
             return extractors.valueOf(typeSpec);
         } catch (IllegalArgumentException e) {
-            throw new HeaderException("Unable to parse header", e);
+            throw new HeaderException("Unable to parse header, unknown property type '" + typeSpec + "'", e);
         }
     }
 

@@ -22,13 +22,14 @@ package org.neo4j.internal.batchimport.cache.idmapping.string;
 import static java.lang.String.format;
 
 import org.neo4j.internal.batchimport.input.DataException;
+import org.neo4j.internal.batchimport.input.Group;
 
 public class DuplicateInputIdException extends DataException {
-    public DuplicateInputIdException(Object id, String groupName) {
-        super(message(id, groupName));
+    public DuplicateInputIdException(Object id, Group group) {
+        super(message(id, group));
     }
 
-    public static String message(Object id, String groupName) {
-        return format("Id '%s' is defined more than once in group '%s'", id, groupName);
+    public static String message(Object id, Group group) {
+        return format("Id '%s' is defined more than once in group '%s'", id, group);
     }
 }

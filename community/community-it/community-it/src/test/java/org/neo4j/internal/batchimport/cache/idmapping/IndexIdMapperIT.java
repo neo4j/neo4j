@@ -25,7 +25,6 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.input.Collector.STRICT;
-import static org.neo4j.internal.batchimport.input.Group.GLOBAL;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
@@ -105,6 +104,7 @@ class IndexIdMapperIT {
     private TestDirectory directory;
 
     private final Groups groups = new Groups();
+    private final Group globalGroup = groups.getOrCreate(null);
     private final Map<String, IndexAccessor> accessors = new HashMap<>();
     private final Map<String, IndexDescriptor> descriptors = new HashMap<>();
     private final LifeSupport life = new LifeSupport();
@@ -165,23 +165,24 @@ class IndexIdMapperIT {
                 openOptions,
                 Configuration.DEFAULT,
                 NULL,
-                indexStatisticsStore);
+                indexStatisticsStore,
+                groups);
     }
 
     @Test
     void shouldGetAndPutOnSingleIndex() throws Exception {
         // given
-        buildInitialIndex(GLOBAL, 1L, 0, 0, sequentialNodes(0, 100));
+        buildInitialIndex(globalGroup, 1L, 0, 0, sequentialNodes(0, 100));
         start();
 
         // when
-        put(1234567, GLOBAL);
+        put(1234567, globalGroup);
         prepare(STRICT);
 
         // then
-        assertId(0, GLOBAL);
-        assertId(12, GLOBAL);
-        assertId(1234567, GLOBAL);
+        assertId(0, globalGroup);
+        assertId(12, globalGroup);
+        assertId(1234567, globalGroup);
     }
 
     @Test
@@ -225,8 +226,8 @@ class IndexIdMapperIT {
         // then
         assertId(9, group1);
         assertId(123, group2);
-        verify(collector).collectDuplicateNode(ID_FUNCTION.valueOf(duplicateNode1), duplicateNode1, group1.name());
-        verify(collector).collectDuplicateNode(ID_FUNCTION.valueOf(duplicateNode2), duplicateNode2, group2.name());
+        verify(collector).collectDuplicateNode(ID_FUNCTION.valueOf(duplicateNode1), duplicateNode1, group1);
+        verify(collector).collectDuplicateNode(ID_FUNCTION.valueOf(duplicateNode2), duplicateNode2, group2);
         assertThat(asLongSet(idMapper.leftOverDuplicateNodesIds()))
                 .isEqualTo(LongSets.immutable.of(duplicateNode1, duplicateNode2));
     }
@@ -245,20 +246,20 @@ class IndexIdMapperIT {
         prepare(collector);
 
         // then
-        verify(collector).collectDuplicateNode("110", 102, group.name());
+        verify(collector).collectDuplicateNode("110", 102, group);
     }
 
     @Test
     void shouldStoreIncrementalIndexStatistics() throws Exception {
         // given
         var indexId = 1L;
-        buildInitialIndex(GLOBAL, indexId, 0, 0, sequentialNodes(0, 100));
+        buildInitialIndex(globalGroup, indexId, 0, 0, sequentialNodes(0, 100));
         start();
 
         // when
         var count = 10;
         for (int i = 0; i < count; i++) {
-            put(1234567 + i, GLOBAL);
+            put(1234567 + i, globalGroup);
         }
         prepare(STRICT);
 
@@ -304,7 +305,7 @@ class IndexIdMapperIT {
             throws IOException, IndexEntryConflictException {
         var indexProvider = indexProviders.getDefaultProvider();
         var descriptor = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(labelId, propertyKeyId))
-                .withName(group.name())
+                .withName(group.descriptiveName())
                 .withIndexProvider(indexProvider.getProviderDescriptor())
                 .materialise(indexId);
         var indexSamplingConfig = new IndexSamplingConfig(Config.defaults());

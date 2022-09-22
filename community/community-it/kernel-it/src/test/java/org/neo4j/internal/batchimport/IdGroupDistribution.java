@@ -61,7 +61,7 @@ public class IdGroupDistribution {
         for (int i = 0; i < groupCounts.length; i++) {
             at += groupCounts[i];
             if (nodeInOrder < at) {
-                return groups.get(1 + i);
+                return groups.get(i);
             }
         }
         throw new IllegalArgumentException("Strange, couldn't find group for node (import order) " + nodeInOrder

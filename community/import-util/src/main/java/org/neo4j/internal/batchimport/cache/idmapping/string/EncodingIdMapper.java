@@ -610,8 +610,7 @@ public class EncodingIdMapper implements IdMapper {
             Object inputId = collisionValues.get(offset);
             long nonDuplicateNodeId = detector.add(nodeId, inputId);
             if (nonDuplicateNodeId != -1) { // Duplicate
-                collector.collectDuplicateNode(
-                        inputId, nodeId, groups.get(groupId).name());
+                collector.collectDuplicateNode(inputId, nodeId, groups.get(groupId));
                 trackerCache.markAsDuplicate(nodeId);
                 unmarkAsCollision(nonDuplicateNodeId);
             }

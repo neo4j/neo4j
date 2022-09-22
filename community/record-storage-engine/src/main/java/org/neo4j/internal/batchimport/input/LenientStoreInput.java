@@ -48,6 +48,7 @@ public class LenientStoreInput implements Input {
     private final CursorContextFactory contextFactory;
     private final ReadBehaviour readBehaviour;
     private final Groups groups = new Groups();
+    private final Group inputGroup = groups.getOrCreate(null);
 
     public LenientStoreInput(
             NeoStores neoStores,
@@ -77,7 +78,8 @@ public class LenientStoreInput implements Input {
                         tokenHolders,
                         contextFactory,
                         new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT),
-                        compactNodeIdSpace);
+                        compactNodeIdSpace,
+                        inputGroup);
             }
         };
     }
@@ -93,7 +95,8 @@ public class LenientStoreInput implements Input {
                         propertyStore,
                         tokenHolders,
                         contextFactory,
-                        new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT));
+                        new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT),
+                        inputGroup);
             }
         };
     }

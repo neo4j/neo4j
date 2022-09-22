@@ -49,6 +49,7 @@ import org.neo4j.internal.batchimport.PropertyValueLookup;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
+import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -86,6 +87,7 @@ public class IndexIdMapper implements IdMapper {
     private final Configuration configuration;
     private final PageCacheTracer pageCacheTracer;
     private final IndexStatisticsStore indexStatisticsStore;
+    private final ReadableGroups groups;
     private final ThreadLocal<Map<String, Index>> threadLocal;
     private final List<Index> indexes = new CopyOnWriteArrayList<>();
     private final Map<String, Populator> populators = new HashMap<>();
@@ -102,7 +104,8 @@ public class IndexIdMapper implements IdMapper {
             ImmutableSet<OpenOption> openOptions,
             Configuration configuration,
             PageCacheTracer pageCacheTracer,
-            IndexStatisticsStore indexStatisticsStore)
+            IndexStatisticsStore indexStatisticsStore,
+            ReadableGroups groups)
             throws IOException {
         this.accessors = accessors;
         this.tempIndexes = tempIndexes;
@@ -113,6 +116,7 @@ public class IndexIdMapper implements IdMapper {
         this.configuration = configuration;
         this.pageCacheTracer = pageCacheTracer;
         this.indexStatisticsStore = indexStatisticsStore;
+        this.groups = groups;
         this.threadLocal = ThreadLocal.withInitial(HashMap::new);
         this.bufferFactory = new ByteBufferFactory(
                 UnsafeDirectByteBufferAllocator::new,
@@ -188,7 +192,7 @@ public class IndexIdMapper implements IdMapper {
             @Override
             public IndexEntryConflictAction indexEntryConflict(long firstEntityId, long otherEntityId, Value[] values) {
                 duplicateNodeIds.add(otherEntityId);
-                collector.collectDuplicateNode(values[0].asObjectCopy(), otherEntityId, entry.getKey());
+                collector.collectDuplicateNode(values[0].asObjectCopy(), otherEntityId, groups.get(entry.getKey()));
                 return IndexEntryConflictAction.DELETE;
             }
         };

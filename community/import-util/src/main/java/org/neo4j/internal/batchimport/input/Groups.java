@@ -19,55 +19,58 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-import static java.util.Arrays.asList;
+import static org.neo4j.util.Preconditions.checkState;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Mapping from name to {@link Group}. Assigns proper {@link Group#id() ids} to created groups.
  */
 public class Groups implements ReadableGroups {
-    static final int LOWEST_NONGLOBAL_ID = 1;
-
     private final Map<String, Group> byName = new HashMap<>();
-    private final List<Group> byId = new ArrayList<>(asList(Group.GLOBAL));
-    private int nextId = LOWEST_NONGLOBAL_ID;
+    private final List<Group> byId = new ArrayList<>();
+    private int nextId = 0;
 
     public Groups() {}
 
     /**
-     * @param name group name or {@code null} for a {@link Group#GLOBAL global group}.
+     * {@link #getOrCreate(String, String)} w/o specific {@link IdType}.
+     */
+    public Group getOrCreate(String name) {
+        return getOrCreate(name, null);
+    }
+
+    /**
+     * @param name group name or {@code null} for the "global" group.
+     * @param specificIdType optional type that IDs in this group should be parsed as,
+     * otherwise if {@code null} the globally defined {@link IdType} is used.
      * @return {@link Group} for the given name. If the group doesn't already exist it will be created
-     * with a new id. If {@code name} is {@code null} then the {@link Group#GLOBAL global group} is returned.
+     * with a new id. If {@code name} is {@code null} then the "global" group is returned.
      * This method also prevents mixing global and non-global groups, i.e. if first call is {@code null},
      * then consecutive calls have to specify {@code null} name as well. The same holds true for non-null values.
      */
-    public synchronized Group getOrCreate(String name) {
-        if (isGlobalGroup(name)) {
-            return Group.GLOBAL;
-        }
-
+    public synchronized Group getOrCreate(String name, String specificIdType) {
         Group group = byName.get(name);
         if (group == null) {
-            byName.put(name, group = new Group.Adapter(nextId++, name));
+            byName.put(name, group = new Group(nextId++, name, specificIdType));
             byId.add(group);
+        } else {
+            checkState(
+                    Objects.equals(specificIdType, group.specificIdType()),
+                    "Group '%s' has different specific type %s in different places. Was created with '%s' and later used with '%s'",
+                    group.name(),
+                    group.specificIdType(),
+                    specificIdType);
         }
         return group;
     }
 
-    private static boolean isGlobalGroup(String name) {
-        return name == null || Group.GLOBAL.name().equals(name);
-    }
-
     public synchronized Group get(String name) {
-        if (isGlobalGroup(name)) {
-            return Group.GLOBAL;
-        }
-
         Group group = byName.get(name);
         if (group == null) {
             throw new HeaderException("Group '" + name + "' not found. Available groups are: " + groupNames());

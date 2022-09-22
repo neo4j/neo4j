@@ -52,6 +52,7 @@ public abstract class LenientStoreInputChunk implements InputChunk {
     protected final ReadBehaviour readBehaviour;
     protected final TokenHolders tokenHolders;
     protected final PageCursor cursor;
+    protected final Group group;
     private final CursorContext cursorContext;
     private final MutableLongSet seenPropertyRecordIds = LongSets.mutable.empty();
     private final MutableIntSet seenPropertyKeyIds = IntSets.mutable.empty();
@@ -64,7 +65,8 @@ public abstract class LenientStoreInputChunk implements InputChunk {
             TokenHolders tokenHolders,
             CursorContextFactory contextFactory,
             StoreCursors storeCursors,
-            PageCursor cursor) {
+            PageCursor cursor,
+            Group group) {
         this.readBehaviour = readBehaviour;
         this.propertyStore = propertyStore;
         this.tokenHolders = tokenHolders;
@@ -73,6 +75,7 @@ public abstract class LenientStoreInputChunk implements InputChunk {
         this.cursor = cursor;
         this.propertyCursor = storeCursors.readCursor(PROPERTY_CURSOR);
         this.propertyRecord = propertyStore.newRecord();
+        this.group = group;
     }
 
     void setChunkRange(long startId, long endId) {

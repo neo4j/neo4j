@@ -19,9 +19,8 @@
  */
 package org.neo4j.internal.batchimport.input;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
@@ -37,7 +36,7 @@ class GroupsTest {
         for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
             race.addContestant(() -> {
                 Group group = groups.getOrCreate(name);
-                assertEquals(Groups.LOWEST_NONGLOBAL_ID, group.id());
+                assertEquals(0, group.id());
             });
         }
 
@@ -46,27 +45,33 @@ class GroupsTest {
 
         // THEN
         Group otherGroup = groups.getOrCreate("MyOtherGroup");
-        assertEquals(Groups.LOWEST_NONGLOBAL_ID + 1, otherGroup.id());
+        assertThat(otherGroup.id()).isEqualTo(1);
     }
 
     @Test
     void shouldSupportMixedGroupModeInGetOrCreate() {
         // given
         Groups groups = new Groups();
-        assertEquals(Group.GLOBAL, groups.getOrCreate(null));
+        var globalGroup = groups.getOrCreate(null);
 
         // when
-        assertNotEquals(Group.GLOBAL, groups.getOrCreate("Something"));
+        var otherGroup = groups.getOrCreate("Something");
+
+        // then
+        assertThat(otherGroup).isNotEqualTo(globalGroup);
     }
 
     @Test
     void shouldSupportMixedGroupModeInGetOrCreate2() {
         // given
         Groups groups = new Groups();
-        assertNotEquals(Group.GLOBAL, groups.getOrCreate("Something"));
+        var otherGroup = groups.getOrCreate("Something");
 
         // when
-        assertEquals(Group.GLOBAL, groups.getOrCreate(null));
+        var globalGroup = groups.getOrCreate(null);
+
+        // then
+        assertThat(globalGroup).isNotEqualTo(otherGroup);
     }
 
     @Test
@@ -80,7 +85,7 @@ class GroupsTest {
         Group gottenGroup = groups.get(name);
 
         // then
-        assertSame(createdGroup, gottenGroup);
+        assertThat(gottenGroup).isEqualTo(createdGroup);
     }
 
     @Test
@@ -93,17 +98,8 @@ class GroupsTest {
         Group group = groups.get(null);
 
         // then
-        assertSame(Group.GLOBAL, group);
-    }
-
-    @Test
-    void shouldSupportMixedGroupModeInGet() {
-        // given
-        Groups groups = new Groups();
-        groups.getOrCreate("Something");
-
-        // when
-        assertEquals(Group.GLOBAL, groups.get(null));
+        assertThat(group.name()).isNull();
+        assertThat(group.descriptiveName()).isEqualTo("global id space");
     }
 
     @Test

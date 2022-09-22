@@ -27,7 +27,6 @@ import java.util.Map;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.DataImporter.Monitor;
-import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.internal.id.IdGenerator.Marker;
@@ -245,9 +244,5 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter {
         try (var marker = store.getIdGenerator().marker(cursorContext)) {
             marker.markDeleted(id);
         }
-    }
-
-    static Group group(Group group) {
-        return group != null ? group : Group.GLOBAL;
     }
 }

@@ -35,6 +35,8 @@ import org.neo4j.internal.helpers.ArrayUtil;
 
 class InputEntityDecoratorsTest {
     private final InputEntity entity = new InputEntity();
+    private final Groups groups = new Groups();
+    private final Group group = groups.getOrCreate(null);
 
     @Test
     void shouldProvideDefaultRelationshipType() throws Exception {
@@ -44,7 +46,7 @@ class InputEntityDecoratorsTest {
                 InputEntityDecorators.defaultRelationshipType(defaultType).apply(entity);
 
         // WHEN
-        relationship(relationship, "source", 1, 0, InputEntity.NO_PROPERTIES, null, "start", "end", null, null);
+        relationship(relationship, "source", 1, 0, InputEntity.NO_PROPERTIES, null, "start", "end", group, null, null);
 
         // THEN
         assertEquals(defaultType, entity.stringType);
@@ -59,7 +61,8 @@ class InputEntityDecoratorsTest {
 
         // WHEN
         String customType = "CUSTOM_TYPE";
-        relationship(relationship, "source", 1, 0, InputEntity.NO_PROPERTIES, null, "start", "end", customType, null);
+        relationship(
+                relationship, "source", 1, 0, InputEntity.NO_PROPERTIES, null, "start", "end", group, customType, null);
 
         // THEN
         assertEquals(customType, entity.stringType);
@@ -74,7 +77,8 @@ class InputEntityDecoratorsTest {
 
         // WHEN
         int typeId = 5;
-        relationship(relationship, "source", 1, 0, InputEntity.NO_PROPERTIES, null, "start", "end", null, typeId);
+        relationship(
+                relationship, "source", 1, 0, InputEntity.NO_PROPERTIES, null, "start", "end", group, null, typeId);
 
         // THEN
         Assertions.assertTrue(entity.hasIntType);
@@ -88,7 +92,7 @@ class InputEntityDecoratorsTest {
         InputEntityVisitor node = InputEntityDecorators.additiveLabels(toAdd).apply(entity);
 
         // WHEN
-        node(node, "source", 1, 0, "id", InputEntity.NO_PROPERTIES, null, InputEntity.NO_LABELS, null);
+        node(node, "source", 1, 0, "id", group, InputEntity.NO_PROPERTIES, null, InputEntity.NO_LABELS, null);
 
         // THEN
         assertArrayEquals(toAdd, entity.labels());
@@ -102,7 +106,7 @@ class InputEntityDecoratorsTest {
 
         // WHEN
         String[] nodeLabels = new String[] {"SomeOther"};
-        node(node, "source", 1, 0, "id", InputEntity.NO_PROPERTIES, null, nodeLabels, null);
+        node(node, "source", 1, 0, "id", group, InputEntity.NO_PROPERTIES, null, nodeLabels, null);
 
         // THEN
         assertEquals(asSet(ArrayUtil.union(toAdd, nodeLabels)), asSet(entity.labels()));
@@ -116,7 +120,7 @@ class InputEntityDecoratorsTest {
 
         // WHEN
         long labelField = 123L;
-        node(node, "source", 1, 0, "id", InputEntity.NO_PROPERTIES, null, null, labelField);
+        node(node, "source", 1, 0, "id", group, InputEntity.NO_PROPERTIES, null, null, labelField);
 
         // THEN
         assertEquals(0, entity.labels().length);
@@ -147,13 +151,14 @@ class InputEntityDecoratorsTest {
             long lineNumber,
             long position,
             Object id,
+            Group group,
             Object[] properties,
             Long propertyId,
             String[] labels,
             Long labelField)
             throws IOException {
         applyProperties(entity, properties, propertyId);
-        entity.id(id, Group.GLOBAL);
+        entity.id(id, group);
         if (labelField != null) {
             entity.labelField(labelField);
         } else {
@@ -171,12 +176,13 @@ class InputEntityDecoratorsTest {
             Long propertyId,
             Object startNode,
             Object endNode,
+            Group group,
             String type,
             Integer typeId)
             throws IOException {
         applyProperties(entity, properties, propertyId);
-        entity.startId(startNode, Group.GLOBAL);
-        entity.endId(endNode, Group.GLOBAL);
+        entity.startId(startNode, group);
+        entity.endId(endNode, group);
         if (typeId != null) {
             entity.type(typeId);
         } else if (type != null) {

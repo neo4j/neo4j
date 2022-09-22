@@ -55,6 +55,7 @@ class LenientStoreInputChunkTest {
     private final PropertyStore propertyStore = mock(PropertyStore.class);
     private final ReadBehaviour readBehaviour = mock(ReadBehaviour.class);
     private final TokenHolders tokenHolders = mock(TokenHolders.class);
+    private final Group group = new Group(0, "group", null);
 
     @BeforeEach
     void setUp() {
@@ -170,7 +171,8 @@ class LenientStoreInputChunkTest {
                 tokenHolders,
                 NULL_CONTEXT_FACTORY,
                 StoreCursors.NULL,
-                mock(PageCursor.class)) {
+                mock(PageCursor.class),
+                group) {
             @Override
             void readAndVisit(long id, InputEntityVisitor visitor, StoreCursors storeCursors) {}
 

@@ -114,7 +114,7 @@ public final class BadCollector implements Collector {
 
     @Override
     public void collectBadRelationship(
-            Object startId, String startIdGroup, String type, Object endId, String endIdGroup, Object specificValue) {
+            Object startId, Group startIdGroup, String type, Object endId, Group endIdGroup, Object specificValue) {
         collect(new RelationshipsProblemReporter(startId, startIdGroup, type, endId, endIdGroup, specificValue));
     }
 
@@ -124,7 +124,7 @@ public final class BadCollector implements Collector {
     }
 
     @Override
-    public void collectDuplicateNode(final Object id, long actualId, final String group) {
+    public void collectDuplicateNode(Object id, long actualId, Group group) {
         collect(new NodesProblemReporter(id, group));
     }
 
@@ -195,18 +195,13 @@ public final class BadCollector implements Collector {
         private String message;
         private final Object specificValue;
         private final Object startId;
-        private final String startIdGroup;
+        private final Group startIdGroup;
         private final String type;
         private final Object endId;
-        private final String endIdGroup;
+        private final Group endIdGroup;
 
         RelationshipsProblemReporter(
-                Object startId,
-                String startIdGroup,
-                String type,
-                Object endId,
-                String endIdGroup,
-                Object specificValue) {
+                Object startId, Group startIdGroup, String type, Object endId, Group endIdGroup, Object specificValue) {
             super(BAD_RELATIONSHIPS);
             this.startId = startId;
             this.startIdGroup = startIdGroup;
@@ -246,9 +241,9 @@ public final class BadCollector implements Collector {
 
     private static class NodesProblemReporter extends ProblemReporter {
         private final Object id;
-        private final String group;
+        private final Group group;
 
-        NodesProblemReporter(Object id, String group) {
+        NodesProblemReporter(Object id, Group group) {
             super(DUPLICATE_NODES);
             this.id = id;
             this.group = group;

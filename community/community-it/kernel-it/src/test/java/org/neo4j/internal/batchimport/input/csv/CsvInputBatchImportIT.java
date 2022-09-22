@@ -89,6 +89,7 @@ import org.neo4j.internal.batchimport.Monitor;
 import org.neo4j.internal.batchimport.ParallelBatchImporter;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
+import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.batchimport.input.InputEntity;
@@ -164,21 +165,24 @@ class CsvInputBatchImportIT {
                     new IndexImporterFactoryImpl(),
                     INSTANCE,
                     NULL_CONTEXT_FACTORY);
-            List<InputEntity> nodeData = randomNodeData();
-            List<InputEntity> relationshipData = randomRelationshipData(nodeData);
+            Groups groups = new Groups();
+            var group = groups.getOrCreate(null);
+            List<InputEntity> nodeData = randomNodeData(group);
+            List<InputEntity> relationshipData = randomRelationshipData(nodeData, group);
 
             // WHEN
             importer.doImport(csv(
                     nodeDataAsFile(nodeData),
                     relationshipDataAsFile(relationshipData),
                     IdType.STRING,
-                    lowBufferSize(COMMAS)));
+                    lowBufferSize(COMMAS),
+                    groups));
             // THEN
             verifyImportedData(nodeData, relationshipData);
         }
     }
 
-    static Input csv(Path nodes, Path relationships, IdType idType, Configuration configuration) {
+    static Input csv(Path nodes, Path relationships, IdType idType, Configuration configuration, Groups groups) {
         return new CsvInput(
                 DataFactories.datas(DataFactories.data(InputEntityDecorators.NO_DECORATOR, defaultCharset(), nodes)),
                 DataFactories.defaultFormatNodeFileHeader(testDefaultTimeZone, false),
@@ -189,6 +193,7 @@ class CsvInputBatchImportIT {
                 configuration,
                 false,
                 CsvInput.NO_MONITOR,
+                groups,
                 INSTANCE);
     }
 
@@ -200,11 +205,11 @@ class CsvInputBatchImportIT {
     // Below is code for generating import data
     // ======================================================
 
-    private List<InputEntity> randomNodeData() {
+    private List<InputEntity> randomNodeData(Group group) {
         List<InputEntity> nodes = new ArrayList<>();
         for (int i = 0; i < 300; i++) {
             InputEntity node = new InputEntity();
-            node.id(UUID.randomUUID().toString(), Group.GLOBAL);
+            node.id(UUID.randomUUID().toString(), group);
             node.property("name", "Node " + i);
             node.property("pointA", "\"   { x : -4.2, y : " + i % 90 + ", crs: WGS-84 } \"");
             node.property("pointB", "\" { x : -8, y : " + i + " } \"");
@@ -304,12 +309,12 @@ class CsvInputBatchImportIT {
         writer.write(string + "\n");
     }
 
-    private List<InputEntity> randomRelationshipData(List<InputEntity> nodeData) {
+    private List<InputEntity> randomRelationshipData(List<InputEntity> nodeData, Group group) {
         List<InputEntity> relationships = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             InputEntity relationship = new InputEntity();
-            relationship.startId(nodeData.get(random.nextInt(nodeData.size())).id(), Group.GLOBAL);
-            relationship.endId(nodeData.get(random.nextInt(nodeData.size())).id(), Group.GLOBAL);
+            relationship.startId(nodeData.get(random.nextInt(nodeData.size())).id(), group);
+            relationship.endId(nodeData.get(random.nextInt(nodeData.size())).id(), group);
             relationship.type("TYPE_" + random.nextInt(3));
             relationships.add(relationship);
         }

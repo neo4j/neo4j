@@ -42,6 +42,7 @@ import static org.neo4j.csv.reader.Configuration.TABS;
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.internal.batchimport.input.Collector.EMPTY;
 import static org.neo4j.internal.batchimport.input.IdType.ACTUAL;
+import static org.neo4j.internal.batchimport.input.IdType.INTEGER;
 import static org.neo4j.internal.batchimport.input.IdType.STRING;
 import static org.neo4j.internal.batchimport.input.InputEntityDecorators.NO_DECORATOR;
 import static org.neo4j.internal.batchimport.input.InputEntityDecorators.additiveLabels;
@@ -142,6 +143,7 @@ class CsvInputTest {
 
     private final InputEntity visitor = new InputEntity();
     private final Groups groups = new Groups();
+    private final Group globalGroup = groups.getOrCreate(null);
     private InputChunk chunk;
     private InputIterator referenceData;
 
@@ -149,7 +151,7 @@ class CsvInputTest {
     @ValueSource(booleans = {true, false})
     void shouldProvideNodesFromCsvInput(boolean allowMultilineFields) throws Exception {
         // GIVEN
-        IdType idType = ACTUAL;
+        IdType idType = INTEGER;
         Iterable<DataFactory> data = dataIterable(data("123,Mattias Persson,HACKER"));
         Input input = new CsvInput(
                 data,
@@ -259,7 +261,7 @@ class CsvInputTest {
                         entry("kills", Type.PROPERTY, extractors.int_())),
                 datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL,
+                INTEGER,
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
@@ -285,7 +287,7 @@ class CsvInputTest {
                 header(entry(null, Type.ID, extractors.long_()), entry("name", Type.PROPERTY, extractors.string())),
                 datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL,
+                INTEGER,
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
@@ -342,7 +344,7 @@ class CsvInputTest {
                 defaultFormatNodeFileHeader(),
                 datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL,
+                INTEGER,
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
@@ -372,10 +374,11 @@ class CsvInputTest {
                 defaultFormatNodeFileHeader(),
                 dataIterable,
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL,
+                INTEGER,
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
+                groups,
                 INSTANCE);
 
         // WHEN/THEN
@@ -407,8 +410,8 @@ class CsvInputTest {
         // WHEN
         try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
             // THEN
-            assertNextNode(nodes, null, new Object[] {"name", "Mattias", "level", 1}, labels());
-            assertNextNode(nodes, null, new Object[] {"name", "Johan", "level", 2}, labels());
+            assertNextNode(nodes, null, null, new Object[] {"name", "Mattias", "level", 1}, labels());
+            assertNextNode(nodes, null, null, new Object[] {"name", "Johan", "level", 2}, labels());
             assertFalse(readNext(nodes));
         }
     }
@@ -435,7 +438,7 @@ class CsvInputTest {
         try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
             // THEN
             assertNextNode(nodes, "abc", new Object[] {"name", "Mattias", "level", 1}, labels());
-            assertNextNode(nodes, null, new Object[] {"name", "Johan", "level", 2}, labels());
+            assertNextNode(nodes, null, null, new Object[] {"name", "Johan", "level", 2}, labels());
             assertFalse(readNext(nodes));
         }
     }
@@ -462,7 +465,7 @@ class CsvInputTest {
         try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
             // THEN
             assertNextNode(nodes, "abc", new Object[] {"id", "abc", "name", "Mattias", "level", 1}, labels());
-            assertNextNode(nodes, null, new Object[] {"name", "Johan", "level", 2}, labels());
+            assertNextNode(nodes, null, null, new Object[] {"name", "Johan", "level", 2}, labels());
             assertFalse(readNext(nodes));
         }
     }
@@ -483,13 +486,14 @@ class CsvInputTest {
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
+                groups,
                 INSTANCE);
 
         // WHEN
         try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
             // THEN
-            assertNextNode(nodes, 0L, new Object[] {"name", "Mattias", "level", 1}, labels());
-            assertNextNode(nodes, 1L, new Object[] {"name", "Johan", "level", 2}, labels());
+            assertNextNode(nodes, null, 0L, new Object[] {"name", "Mattias", "level", 1}, labels());
+            assertNextNode(nodes, null, 1L, new Object[] {"name", "Johan", "level", 2}, labels());
             assertFalse(readNext(nodes));
         }
     }
@@ -507,7 +511,7 @@ class CsvInputTest {
                 defaultFormatNodeFileHeader(),
                 datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL,
+                INTEGER,
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
@@ -535,7 +539,7 @@ class CsvInputTest {
                 defaultFormatNodeFileHeader(),
                 datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL,
+                INTEGER,
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
@@ -562,7 +566,7 @@ class CsvInputTest {
                 defaultFormatNodeFileHeader(),
                 datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL,
+                INTEGER,
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
@@ -601,7 +605,7 @@ class CsvInputTest {
                 defaultFormatNodeFileHeader(),
                 datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL,
+                INTEGER,
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
@@ -629,7 +633,7 @@ class CsvInputTest {
                 defaultFormatNodeFileHeader(),
                 datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL,
+                INTEGER,
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
@@ -660,7 +664,7 @@ class CsvInputTest {
                 defaultFormatNodeFileHeader(),
                 datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL,
+                INTEGER,
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
@@ -689,7 +693,7 @@ class CsvInputTest {
                 defaultFormatNodeFileHeader(),
                 datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL,
+                INTEGER,
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
@@ -716,7 +720,7 @@ class CsvInputTest {
                 defaultFormatNodeFileHeader(),
                 datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL,
+                INTEGER,
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
@@ -754,7 +758,7 @@ class CsvInputTest {
                 defaultFormatNodeFileHeader(),
                 datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL,
+                INTEGER,
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
@@ -793,7 +797,7 @@ class CsvInputTest {
                 defaultFormatNodeFileHeader(),
                 datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL,
+                INTEGER,
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
@@ -836,7 +840,7 @@ class CsvInputTest {
                 defaultFormatNodeFileHeader(),
                 datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL,
+                INTEGER,
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
@@ -879,7 +883,7 @@ class CsvInputTest {
                 defaultFormatNodeFileHeader(),
                 datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL,
+                INTEGER,
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
@@ -914,7 +918,7 @@ class CsvInputTest {
                 defaultFormatNodeFileHeader(),
                 datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL,
+                INTEGER,
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
@@ -949,7 +953,7 @@ class CsvInputTest {
                 defaultFormatNodeFileHeader(),
                 datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL,
+                INTEGER,
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
@@ -982,7 +986,7 @@ class CsvInputTest {
                     null,
                     null,
                     null,
-                    ACTUAL,
+                    INTEGER,
                     config(allowMultilineFields).toBuilder()
                             .withDelimiter(',')
                             .withArrayDelimiter(',')
@@ -1008,7 +1012,7 @@ class CsvInputTest {
                     null,
                     null,
                     null,
-                    ACTUAL,
+                    INTEGER,
                     config(allowMultilineFields).toBuilder()
                             .withDelimiter(',')
                             .withArrayDelimiter(';')
@@ -1035,7 +1039,7 @@ class CsvInputTest {
                     null,
                     null,
                     null,
-                    ACTUAL,
+                    INTEGER,
                     config(allowMultilineFields).toBuilder()
                             .withQuotationCharacter(';')
                             .build(),
@@ -1056,7 +1060,6 @@ class CsvInputTest {
         // GIVEN
         IdType idType = IdType.INTEGER;
         Iterable<DataFactory> data = dataIterable(data("123,one\n" + "456,two"));
-        Groups groups = new Groups();
         Group group = groups.getOrCreate("MyGroup");
         Input input = new CsvInput(
                 data,
@@ -1069,6 +1072,7 @@ class CsvInputTest {
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
+                groups,
                 INSTANCE);
 
         // WHEN/THEN
@@ -1085,7 +1089,6 @@ class CsvInputTest {
         // GIVEN
         IdType idType = IdType.INTEGER;
         Iterable<DataFactory> data = dataIterable(data("123,TYPE,234\n" + "345,TYPE,456"));
-        Groups groups = new Groups();
         Group startNodeGroup = groups.getOrCreate("StartGroup");
         Group endNodeGroup = groups.getOrCreate("EndGroup");
         Iterable<DataFactory> nodeHeader =
@@ -1102,6 +1105,7 @@ class CsvInputTest {
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
+                groups,
                 INSTANCE);
 
         // WHEN/THEN
@@ -1126,10 +1130,11 @@ class CsvInputTest {
                 defaultFormatNodeFileHeader(),
                 dataIterable,
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL,
+                INTEGER,
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
+                groups,
                 INSTANCE);
 
         // WHEN
@@ -1186,6 +1191,7 @@ class CsvInputTest {
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
+                groups,
                 INSTANCE);
 
         // WHEN
@@ -1322,6 +1328,7 @@ class CsvInputTest {
                 config(allowMultilineFields),
                 false,
                 NO_MONITOR,
+                groups,
                 INSTANCE);
 
         // WHEN
@@ -1496,6 +1503,7 @@ class CsvInputTest {
                 COMMAS,
                 false,
                 monitor,
+                groups,
                 INSTANCE);
 
         // then
@@ -1723,6 +1731,7 @@ class CsvInputTest {
                 COMMAS,
                 false,
                 monitor,
+                groups,
                 INSTANCE);
 
         // then
@@ -1758,6 +1767,7 @@ class CsvInputTest {
                 COMMAS,
                 false,
                 monitor,
+                groups,
                 INSTANCE);
 
         // then
@@ -1810,6 +1820,7 @@ class CsvInputTest {
                     COMMAS,
                     false,
                     NO_MONITOR,
+                    groups,
                     INSTANCE);
             fail("Should have failed");
         } catch (DuplicateHeaderException e) {
@@ -1975,7 +1986,7 @@ class CsvInputTest {
     private void assertNextRelationship(
             InputIterator relationship, Object startNode, Object endNode, String type, Object[] properties)
             throws IOException {
-        assertRelationship(relationship, Group.GLOBAL, startNode, Group.GLOBAL, endNode, type, properties);
+        assertRelationship(relationship, globalGroup, startNode, globalGroup, endNode, type, properties);
     }
 
     private void assertRelationship(
@@ -1998,13 +2009,13 @@ class CsvInputTest {
 
     private void assertNextNode(InputIterator data, Object id, Object[] properties, Set<String> labels)
             throws IOException {
-        assertNextNode(data, Group.GLOBAL, id, properties, labels);
+        assertNextNode(data, globalGroup, id, properties, labels);
     }
 
     private void assertNextNode(InputIterator data, Group group, Object id, Object[] properties, Set<String> labels)
             throws IOException {
         assertTrue(readNext(data));
-        assertEquals(group.id(), visitor.idGroup.id());
+        assertEquals(group, visitor.idGroup);
         assertEquals(id, visitor.id());
         assertArrayEquals(properties, visitor.properties());
         assertEquals(labels, asSet(visitor.labels()));

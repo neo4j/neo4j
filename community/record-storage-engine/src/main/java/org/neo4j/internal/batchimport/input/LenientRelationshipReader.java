@@ -42,14 +42,16 @@ class LenientRelationshipReader extends LenientStoreInputChunk {
             PropertyStore propertyStore,
             TokenHolders tokenHolders,
             CursorContextFactory contextFactory,
-            StoreCursors storeCursors) {
+            StoreCursors storeCursors,
+            Group group) {
         super(
                 readBehaviour,
                 propertyStore,
                 tokenHolders,
                 contextFactory,
                 storeCursors,
-                storeCursors.readCursor(RELATIONSHIP_CURSOR));
+                storeCursors.readCursor(RELATIONSHIP_CURSOR),
+                group);
         this.relationshipStore = relationshipStore;
         this.record = relationshipStore.newRecord();
     }
@@ -65,8 +67,8 @@ class LenientRelationshipReader extends LenientStoreInputChunk {
                     .name();
             if (readBehaviour.shouldIncludeRelationship(relationshipTypeName)) {
                 visitor.type(relationshipTypeName);
-                visitor.startId(record.getFirstNode(), Group.GLOBAL);
-                visitor.endId(record.getSecondNode(), Group.GLOBAL);
+                visitor.startId(record.getFirstNode(), group);
+                visitor.endId(record.getSecondNode(), group);
                 visitPropertyChainNoThrow(
                         visitor, record, EntityType.RELATIONSHIP, new String[] {relationshipTypeName});
                 visitor.endOfEntity();

@@ -47,14 +47,16 @@ class LenientNodeReader extends LenientStoreInputChunk {
             TokenHolders tokenHolders,
             CursorContextFactory cursorFactory,
             StoreCursors storeCursors,
-            boolean compactNodeStore) {
+            boolean compactNodeStore,
+            Group group) {
         super(
                 readBehaviour,
                 propertyStore,
                 tokenHolders,
                 cursorFactory,
                 storeCursors,
-                storeCursors.readCursor(NODE_CURSOR));
+                storeCursors.readCursor(NODE_CURSOR),
+                group);
         this.nodeStore = nodeStore;
         this.record = nodeStore.newRecord();
         this.compactNodeStore = compactNodeStore;
@@ -70,11 +72,11 @@ class LenientNodeReader extends LenientStoreInputChunk {
             if (readBehaviour.shouldIncludeNode(labels)) {
                 labels = readBehaviour.filterLabels(labels);
                 if (compactNodeStore) {
-                    // this is the variant where read node ID will map 1-to-1 with created node ID
-                    visitor.id(id, Group.GLOBAL);
-                } else {
                     // this is the variant where the target store will generate new IDs
-                    visitor.id(id, Group.GLOBAL, cursorContext -> id);
+                    visitor.id(id, group);
+                } else {
+                    // this is the variant where read node ID will map 1-to-1 with created node ID
+                    visitor.id(id, group, cursorContext -> id);
                 }
                 visitor.labels(labels);
                 visitPropertyChainNoThrow(visitor, record, EntityType.NODE, labels);
