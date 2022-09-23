@@ -564,6 +564,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def plusQuantifier: PlusQuantifier = PlusQuantifier()(pos)
 
+  def starQuantifier: StarQuantifier = StarQuantifier()(pos)
+
   def patternExpression(nodeVar1: Variable, nodeVar2: Variable): PatternExpression =
     PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(nodeVar1), None, None, None)(pos),

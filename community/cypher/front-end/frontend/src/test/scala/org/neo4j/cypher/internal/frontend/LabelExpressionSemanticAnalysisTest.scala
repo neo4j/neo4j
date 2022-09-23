@@ -193,7 +193,7 @@ class OtherLabelExpressionSemanticAnalysisTest
     )
   }
 
-  test("MATCH (a), (b) WITH shortestPath((a:A)-[:A]->(b:B)) AS p RETURN length(p) AS result") {
+  test("MATCH (a), (b) WITH shortestPath((a:A)-[:A*]->(b:B)) AS p RETURN length(p) AS result") {
     runSemanticAnalysis().errors shouldBe empty
   }
 

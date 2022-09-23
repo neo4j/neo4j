@@ -17,7 +17,9 @@
 package org.neo4j.cypher.internal.ast.prettifier
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
@@ -266,6 +268,22 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
       Some(falseLiteral),
       BOTH
     )(pos)
+
+    patternStringifier(pattern) shouldEqual testName
+  }
+
+  test("((n)-[r]->(m) WHERE n.prop = m.prop)*") {
+    val pattern = quantifiedPath(
+      EveryPath(
+        RelationshipChain(
+          nodePat(Some("n")),
+          relPat(Some("r")),
+          nodePat(Some("m"))
+        )(pos)
+      ),
+      starQuantifier,
+      optionalWhereExpression = Some(equals(prop("n", "prop"), prop("m", "prop")))
+    )
 
     patternStringifier(pattern) shouldEqual testName
   }

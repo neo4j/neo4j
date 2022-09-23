@@ -245,7 +245,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       case x: NodePattern =>
         checkNodeProperties(ctx, x.properties) chain
           checkLabelExpressions(ctx, x.labelExpression) chain
-          checkNodePredicate(ctx, x.predicate)
+          checkPredicate(ctx, x)
 
       case PathConcatenation(factors) =>
         factors.map(check(ctx, _)).reduce(_ chain _) chain
@@ -595,14 +595,14 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       SemanticExpressionCheck.simple(properties) chain
       expectType(CTMap.covariant, properties)
 
-  private def checkNodePredicate(ctx: SemanticContext, predicate: Option[Expression]): SemanticCheck =
-    predicate.foldSemanticCheck { predicate =>
+  private def checkPredicate(ctx: SemanticContext, pattern: NodePattern): SemanticCheck =
+    pattern.predicate.foldSemanticCheck { predicate =>
       when(ctx != SemanticContext.Match) {
         error(
           s"Node pattern predicates are not allowed in ${ctx.name}, but only in MATCH clause or inside a pattern comprehension",
           predicate.position
         )
-      } chain withScopedState {
+      } ifOkChain withScopedState {
         Where.checkExpression(predicate)
       }
     }
