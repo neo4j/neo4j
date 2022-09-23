@@ -83,7 +83,10 @@ public abstract class AnyValue implements Measurable {
      * @return {@code true} if at least one operand is NaN
      */
     public static boolean hasNaNOperand(AnyValue value1, AnyValue value2) {
-        return (value1 instanceof FloatingPointValue && ((FloatingPointValue) value1).isNaN())
-                || (value2 instanceof FloatingPointValue && ((FloatingPointValue) value2).isNaN());
+        return isNaN(value1) || isNaN(value2);
+    }
+
+    public static boolean isNaN(AnyValue value) {
+        return value instanceof FloatingPointValue && ((FloatingPointValue) value).isNaN();
     }
 }

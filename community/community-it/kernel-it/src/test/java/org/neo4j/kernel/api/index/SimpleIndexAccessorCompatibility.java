@@ -28,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.allEntries;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.boundingBox;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exists;
@@ -747,6 +748,114 @@ abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibili
 
         shouldRangeSeekInOrderWithExpectedSize(
                 IndexOrder.DESCENDING, RangeSeekMode.OPEN_START, 6, o0, o1, o2, o3, o4, o5, o6);
+    }
+
+    // Exact match with extreme values (NaN, +Inf, -Inf)
+    @Test
+    void shouldExactMatchPositiveInfinity() throws Exception {
+        updateAndCommit(List.of(add(1L, descriptor, Double.POSITIVE_INFINITY)));
+        assertThat(query(exact(1, Double.POSITIVE_INFINITY))).containsExactly(1L);
+    }
+
+    @Test
+    void shouldExactMatchNegativeInfinity() throws Exception {
+        updateAndCommit(List.of(add(1L, descriptor, Double.NEGATIVE_INFINITY)));
+        assertThat(query(exact(1, Double.NEGATIVE_INFINITY))).containsExactly(1L);
+    }
+
+    @Test
+    void shouldNotExactMatchNaN() throws Exception {
+        updateAndCommit(List.of(add(1L, descriptor, Double.NaN)));
+        assertThat(query(exact(1, Double.NaN))).isEmpty();
+    }
+
+    // Range with +Inf
+    @Test
+    void shouldFindPositiveInfinityInOpenEndRange() throws Exception {
+        updateAndCommit(List.of(add(1L, descriptor, Double.POSITIVE_INFINITY)));
+        assertThat(query(range(1, 0, true, null, false))).containsExactly(1L);
+    }
+
+    @Test
+    void shouldFindPositiveInfinityInRangeToPositiveInfinityInclusive() throws Exception {
+        updateAndCommit(List.of(add(1L, descriptor, Double.POSITIVE_INFINITY)));
+        assertThat(query(range(1, 0, true, Double.POSITIVE_INFINITY, true))).containsExactly(1L);
+    }
+
+    @Test
+    void shouldNotFindPositiveInfinityInRangeToPositiveInfinityExclusive() throws Exception {
+        updateAndCommit(List.of(add(1L, descriptor, Double.POSITIVE_INFINITY)));
+        assertThat(query(range(1, 0, true, Double.POSITIVE_INFINITY, false))).isEmpty();
+    }
+
+    // Range with -Inf
+    @Test
+    void shouldFindNegativeInfinityInOpenStartRange() throws Exception {
+        updateAndCommit(List.of(add(1L, descriptor, Double.NEGATIVE_INFINITY)));
+        assertThat(query(range(1, null, true, 0, false))).containsExactly(1L);
+    }
+
+    @Test
+    void shouldFindNegativeInfinityInRangeFromNegativeInfinityInclusive() throws Exception {
+        updateAndCommit(List.of(add(1L, descriptor, Double.NEGATIVE_INFINITY)));
+        assertThat(query(range(1, Double.NEGATIVE_INFINITY, true, 0, false))).containsExactly(1L);
+    }
+
+    @Test
+    void shouldNotFindNegativeInfinityInRangeFromNegativeInfinityExclusive() throws Exception {
+        updateAndCommit(List.of(add(1L, descriptor, Double.NEGATIVE_INFINITY)));
+        assertThat(query(range(1, Double.NEGATIVE_INFINITY, false, 0, false))).isEmpty();
+    }
+
+    // Range with NaN
+    @Test
+    void shouldNotFindNaNInAnyRange() throws Exception {
+        updateAndCommit(List.of(add(1L, descriptor, Double.NaN)));
+        assertThat(query(range(1, Double.NaN, true, null, true))).isEmpty();
+        assertThat(query(range(1, Double.NaN, true, null, false))).isEmpty();
+        assertThat(query(range(1, Double.NaN, false, null, true))).isEmpty();
+        assertThat(query(range(1, Double.NaN, false, null, false))).isEmpty();
+        assertThat(query(range(1, null, true, Double.NaN, true))).isEmpty();
+        assertThat(query(range(1, null, true, Double.NaN, false))).isEmpty();
+        assertThat(query(range(1, null, false, Double.NaN, true))).isEmpty();
+        assertThat(query(range(1, null, false, Double.NaN, false))).isEmpty();
+    }
+
+    @Test
+    void shouldNotFindAnythingInRangeWithToNaN() throws Exception {
+        updateAndCommit(List.of(
+                add(1L, descriptor, Double.NEGATIVE_INFINITY),
+                add(2L, descriptor, Long.MIN_VALUE),
+                add(3L, descriptor, 0),
+                add(4L, descriptor, Long.MAX_VALUE),
+                add(5L, descriptor, Double.POSITIVE_INFINITY),
+                add(6L, descriptor, Double.NaN)));
+        assertThat(query(range(1, null, true, Double.NaN, true))).isEmpty();
+        assertThat(query(range(1, null, false, Double.NaN, false))).isEmpty();
+        assertThat(query(range(1, Double.NaN, true, null, true))).isEmpty();
+        assertThat(query(range(1, Double.NaN, false, null, false))).isEmpty();
+    }
+
+    // Exists with extreme values (NaN, +Inf, -Inf)
+    @Test
+    void shouldFindExtremeValueInExistsScan() throws Exception {
+        updateAndCommit(List.of(
+                add(3L, descriptor, Double.NEGATIVE_INFINITY),
+                add(2L, descriptor, Double.POSITIVE_INFINITY),
+                add(1L, descriptor, Double.NaN)));
+        assertThat(queryNoSort(exists(1))).containsExactly(3L, 2L, 1L);
+    }
+
+    // Index scan (all entries) with extreme values (NaN, +Inf, -Inf)
+    @Test
+    void shouldFindExtremeValueInAllEntriesScan() throws Exception {
+        Object o0 = Double.NaN;
+        Object o1 = Double.POSITIVE_INFINITY;
+        Object o2 = Double.NEGATIVE_INFINITY;
+
+        updateAndCommit(List.of(add(1L, descriptor, o0), add(2L, descriptor, o1), add(3L, descriptor, o2)));
+
+        assertThat(queryNoSort(allEntries())).containsExactly(3L, 2L, 1L);
     }
 
     private void shouldRangeSeekInOrder(IndexOrder order, Object... objects) throws Exception {

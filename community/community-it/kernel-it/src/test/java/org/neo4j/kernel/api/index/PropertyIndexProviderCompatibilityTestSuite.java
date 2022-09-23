@@ -199,7 +199,6 @@ abstract class PropertyIndexProviderCompatibilityTestSuite extends IndexProvider
                     Arrays.asList(
                             Values.of("string1"),
                             Values.of(42),
-                            Values.of(Double.NaN),
                             Values.of(true),
                             Values.of(new char[] {'a', 'z'}),
                             Values.of(new String[] {"arrayString1", "arraysString2"}),

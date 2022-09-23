@@ -70,7 +70,11 @@ public abstract class PropertyIndexQuery implements IndexQuery {
      * @return an {@link PropertyIndexQuery} instance to be used for querying an index.
      */
     public static ExactPredicate exact(int propertyKeyId, Object value) {
-        return new ExactPredicate(propertyKeyId, value);
+        var exactValue = value instanceof Value ? (Value) value : Values.of(value);
+        if (Value.isNaN(exactValue)) {
+            return new IncomparableExactPredicate(propertyKeyId, exactValue);
+        }
+        return new ExactPredicate(propertyKeyId, exactValue);
     }
 
     /**
@@ -85,7 +89,7 @@ public abstract class PropertyIndexQuery implements IndexQuery {
      */
     public static RangePredicate<?> range(
             int propertyKeyId, Number from, boolean fromInclusive, Number to, boolean toInclusive) {
-        return new NumberRangePredicate(
+        return range(
                 propertyKeyId,
                 from == null ? null : Values.numberValue(from),
                 fromInclusive,
@@ -111,8 +115,13 @@ public abstract class PropertyIndexQuery implements IndexQuery {
 
         ValueGroup valueGroup = requireNonNullElse(from, to).valueGroup();
         return switch (valueGroup) {
-            case NUMBER -> new NumberRangePredicate(
-                    propertyKeyId, (NumberValue) from, fromInclusive, (NumberValue) to, toInclusive);
+            case NUMBER -> Value.hasNaNOperand(from, to)
+                    // When the range bounds are explicitly set to NaN, we don't want to find anything
+                    // because any comparison with NaN is false.
+                    ? new IncomparableRangePredicate<>(
+                            propertyKeyId, ValueGroup.NUMBER, from, fromInclusive, to, toInclusive)
+                    : new NumberRangePredicate(
+                            propertyKeyId, (NumberValue) from, fromInclusive, (NumberValue) to, toInclusive);
 
             case TEXT -> new TextRangePredicate(
                     propertyKeyId, (TextValue) from, fromInclusive, (TextValue) to, toInclusive);
@@ -293,12 +302,12 @@ public abstract class PropertyIndexQuery implements IndexQuery {
         }
     }
 
-    public static final class ExactPredicate extends PropertyIndexQuery {
+    public static class ExactPredicate extends PropertyIndexQuery {
         private final Value exactValue;
 
-        private ExactPredicate(int propertyKeyId, Object value) {
+        private ExactPredicate(int propertyKeyId, Value value) {
             super(propertyKeyId);
-            this.exactValue = value instanceof Value ? (Value) value : Values.of(value);
+            this.exactValue = value;
         }
 
         @Override
@@ -386,8 +395,11 @@ public abstract class PropertyIndexQuery implements IndexQuery {
     public static final class NumberRangePredicate extends RangePredicate<NumberValue> {
         private NumberRangePredicate(
                 int propertyKeyId, NumberValue from, boolean fromInclusive, NumberValue to, boolean toInclusive) {
+            // A little something about NaN.
             // For range queries with numbers we need to redefine the upper bound from NaN to positive infinity.
             // The reason is that we do not want to find NaNs for seeks, but for full scans we do.
+            // The index will treat open upper bound (null) as scan to highest possible value. According to the index
+            // this is NaN, but we don't want to include that so we translate null to Double.POSITIVE_INFINITY here.
             super(
                     propertyKeyId,
                     ValueGroup.NUMBER,
@@ -481,21 +493,42 @@ public abstract class PropertyIndexQuery implements IndexQuery {
     }
 
     /**
-     * Some value types are defined as incomparable and range seek must always return empty result for any range of those types.
+     * Some value types and values are defined as incomparable and range seek must always return empty result for any range of those types.
      * This is how the behaviour is defined by the Cypher value spec.
      * <p>
-     * Incomparable types:
+     * Incomparable types and values:
      * <ul>
      *     <li>{@link ValueGroup#DURATION}</li>
      *     <li>{@link ValueGroup#DURATION_ARRAY}</li>
      *     <li>{@link ValueGroup#GEOMETRY}</li>
      *     <li>{@link ValueGroup#GEOMETRY_ARRAY}</li>
+     *     <li>{@link Values#NaN}</li>
      * </ul>
      */
     public static class IncomparableRangePredicate<T extends Value> extends RangePredicate<Value> {
         private IncomparableRangePredicate(
                 int propertyKeyId, ValueGroup valueGroup, T from, boolean fromInclusive, T to, boolean toInclusive) {
             super(propertyKeyId, valueGroup, from, fromInclusive, to, toInclusive);
+        }
+
+        @Override
+        public boolean acceptsValue(Value value) {
+            return false;
+        }
+    }
+
+    /**
+     * Some values are defined as incomparable and exact seek must always return empty result for those predicates.
+     * This is how the behaviour is defined by the Cypher value spec.
+     * <p>
+     * Incomparable values:
+     * <ul>
+     *     <li>{@link Values#NaN}</li>
+     * </ul>
+     */
+    public static class IncomparableExactPredicate extends ExactPredicate {
+        private IncomparableExactPredicate(int propertyKeyId, Value value) {
+            super(propertyKeyId, value);
         }
 
         @Override

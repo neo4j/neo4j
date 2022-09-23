@@ -31,6 +31,8 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.IncomparableExactPredicate;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.IncomparableRangePredicate;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -192,8 +194,8 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
     }
 
     private boolean isEmptyResultQuery(PropertyIndexQuery... predicates) {
-        for (int i = 0; i < predicates.length; i++) {
-            if (predicates[i] instanceof PropertyIndexQuery.IncomparableRangePredicate) {
+        for (PropertyIndexQuery predicate : predicates) {
+            if (predicate instanceof IncomparableRangePredicate || predicate instanceof IncomparableExactPredicate) {
                 return true;
             }
         }

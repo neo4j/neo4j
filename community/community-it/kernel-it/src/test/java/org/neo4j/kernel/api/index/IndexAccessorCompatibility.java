@@ -111,6 +111,12 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
     }
 
     protected List<Long> query(PropertyIndexQuery... predicates) throws Exception {
+        var list = queryNoSort(predicates);
+        Collections.sort(list);
+        return list;
+    }
+
+    protected List<Long> queryNoSort(PropertyIndexQuery... predicates) throws Exception {
         try (ValueIndexReader reader = accessor.newValueReader()) {
             SimpleEntityValueClient nodeValueClient = new SimpleEntityValueClient();
             reader.query(
@@ -122,7 +128,6 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
                     list.add(entityId);
                 }
             }
-            Collections.sort(list);
             return list;
         }
     }
