@@ -24,12 +24,18 @@ import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.Xor
+import org.neo4j.cypher.internal.ir.CreatesPropertyKeys
 
 object LabelExpressionEvaluator {
 
@@ -54,27 +60,44 @@ object LabelExpressionEvaluator {
    * x.prop = 5            None              Expression is unknown
    * (x:A) AND (z:A)       None              z is in the given set of nodes
    *
-   * @param labelExpression - the label expression to evaluate.
+   * @param expression - the expression to evaluate.
    * @param nodes - the nodes of interest, returns None if any other node is encountered.
    * @param labels - the labels evaluated to true, all other labels will be evaluated to false.
+   * @param propertiesToCreate - the created node and property
    * @return - the evaluated expression value or None if the expression is unknown.
    */
-  def labelExpressionEvaluator(
-    labelExpression: Expression,
+  def labelAndPropertyExpressionEvaluator(
+    expression: Expression,
     nodes: NodesToCheckOverlap,
-    labels: Set[String]
+    labels: Set[String],
+    propertiesToCreate: Option[CreatesPropertyKeys] = None
   ): TailRecOption[Boolean] = {
-    labelExpression match {
+    expression match {
       case HasLabels(Variable(node), hasLabels) if nodes.contains(node) =>
         TailRecOption.some(labels.exists(hasLabels.map(_.name).contains))
+      case Property(Variable(node), pkn @ PropertyKeyName(_)) if (nodes.matchedNode == node) =>
+        TailRecOption.some(propertiesToCreate.exists(_.overlaps(pkn)))
+      case IsNull(Property(Variable(node), pkn @ PropertyKeyName(_))) =>
+        TailRecOption.some(nodes.matchedNode == node && !propertiesToCreate.exists(_.overlaps(pkn)))
+      case IsNotNull(Property(Variable(node), pkn @ PropertyKeyName(_))) =>
+        TailRecOption.some(nodes.matchedNode == node && propertiesToCreate.exists(_.overlaps(pkn)))
+      case In(Property(Variable(node), pkn @ PropertyKeyName(_)), _) if (nodes.matchedNode == node) =>
+        TailRecOption.some(propertiesToCreate.exists(_.overlaps(pkn)))
+      case In(_, Property(Variable(node), pkn @ PropertyKeyName(_))) if (nodes.matchedNode == node) =>
+        TailRecOption.some(propertiesToCreate.exists(_.overlaps(pkn)))
       case And(lhs, rhs) => TailRecOption.tailcall(evalBinFunc(nodes, lhs, rhs, labels, (lhs, rhs) => lhs && rhs))
       case Or(lhs, rhs)  => TailRecOption.tailcall(evalBinFunc(nodes, lhs, rhs, labels, (lhs, rhs) => lhs || rhs))
-      case Not(expr)     => TailRecOption.tailcall(labelExpressionEvaluator(expr, nodes, labels)).map(!_)
+      case Not(expr) =>
+        TailRecOption.tailcall(labelAndPropertyExpressionEvaluator(expr, nodes, labels, propertiesToCreate)).map(!_)
       case Ors(exprs) =>
-        TailRecOption.traverse(exprs)(expr => labelExpressionEvaluator(expr, nodes, labels))
+        TailRecOption.traverse(exprs)(expr =>
+          labelAndPropertyExpressionEvaluator(expr, nodes, labels, propertiesToCreate)
+        )
           .map(_.contains(true))
       case Ands(exprs) =>
-        TailRecOption.traverse(exprs)(expr => labelExpressionEvaluator(expr, nodes, labels))
+        TailRecOption.traverse(exprs)(expr =>
+          labelAndPropertyExpressionEvaluator(expr, nodes, labels, propertiesToCreate)
+        )
           .map(!_.contains(false))
       case Xor(lhs, rhs)       => evalBinFunc(nodes, lhs, rhs, labels, (lhs, rhs) => lhs ^ rhs)
       case Equals(lhs, rhs)    => evalBinFunc(nodes, lhs, rhs, labels, (lhs, rhs) => lhs == rhs)
@@ -91,7 +114,7 @@ object LabelExpressionEvaluator {
     op: (Boolean, Boolean) => Boolean
   ): TailRecOption[Boolean] =
     for {
-      lhs <- TailRecOption.tailcall(labelExpressionEvaluator(a, nodes, labels))
-      rhs <- TailRecOption.tailcall(labelExpressionEvaluator(b, nodes, labels))
+      lhs <- TailRecOption.tailcall(labelAndPropertyExpressionEvaluator(a, nodes, labels))
+      rhs <- TailRecOption.tailcall(labelAndPropertyExpressionEvaluator(b, nodes, labels))
     } yield op(lhs, rhs)
 }

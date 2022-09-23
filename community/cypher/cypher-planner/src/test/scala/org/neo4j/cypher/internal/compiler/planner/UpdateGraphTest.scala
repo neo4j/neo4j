@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -91,11 +92,23 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe Seq.empty
   }
 
-  test("overlap when properties don't overlap but labels explicitly do") {
+  test("Don't overlap when properties don't overlap but labels explicitly do for simple predicates") {
     //MATCH (a:L {foo: 42}) CREATE (a:L) assuming `a` is unstable
     val selections = Selections.from(Seq(
       In(Variable("a")(pos),Property(Variable("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos),
       HasLabels(Variable("a")(pos), Seq(LabelName("L")(pos)))(pos)))
+    val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
+
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe List()
+  }
+
+  test("Overlap when properties don't overlap but labels explicitly do for difficult predicates") {
+    // MATCH (a:L {foo < 42}) CREATE (a:L) assuming `a` is unstable
+    val selections = Selections.from(Seq(
+      LessThan(Variable("a")(pos), Property(Variable("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos),
+      HasLabels(Variable("a")(pos), Seq(LabelName("L")(pos)))(pos)
+    ))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
