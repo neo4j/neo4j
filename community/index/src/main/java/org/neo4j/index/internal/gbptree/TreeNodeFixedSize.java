@@ -121,7 +121,8 @@ class TreeNodeFixedSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
     }
 
     @Override
-    void keyValueAt(PageCursor cursor, KEY intoKey, VALUE intoValue, int pos, CursorContext cursorContext) {
+    void keyValueAt(
+            PageCursor cursor, KEY intoKey, ValueHolder<VALUE> intoValue, int pos, CursorContext cursorContext) {
         keyAt(cursor, intoKey, pos, LEAF, cursorContext);
         valueAt(cursor, intoValue, pos, cursorContext);
     }
@@ -198,9 +199,10 @@ class TreeNodeFixedSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
     }
 
     @Override
-    VALUE valueAt(PageCursor cursor, VALUE value, int pos, CursorContext cursorContext) {
+    ValueHolder<VALUE> valueAt(PageCursor cursor, ValueHolder<VALUE> value, int pos, CursorContext cursorContext) {
         cursor.setOffset(valueOffset(pos));
-        layout.readValue(cursor, value, FIXED_SIZE_VALUE);
+        layout.readValue(cursor, value.value, FIXED_SIZE_VALUE);
+        value.defined = true;
         return value;
     }
 

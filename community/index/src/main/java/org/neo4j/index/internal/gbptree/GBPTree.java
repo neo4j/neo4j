@@ -37,7 +37,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 /**
  * Merely a convenience for a single-root {@link MultiRootGBPTree}.
- *
+ * <p>
  * A {@link GBPTree} has a special write mode {@link #writer(int, CursorContext)} when passing in {@link DataTree#W_BATCHED_SINGLE_THREADED}
  * which is more efficient when inserting consecutive entries. The single writer cannot co-exist with other parallel writers.
  */
@@ -60,6 +60,41 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer)
             throws MetadataMismatchException {
+        this(
+                pageCache,
+                fileSystem,
+                indexFile,
+                layout,
+                monitor,
+                headerReader,
+                headerWriter,
+                recoveryCleanupWorkCollector,
+                readOnlyChecker,
+                openOptions,
+                databaseName,
+                name,
+                contextFactory,
+                pageCacheTracer,
+                TreeNodeLayoutFactory.getInstance());
+    }
+
+    public GBPTree(
+            PageCache pageCache,
+            FileSystemAbstraction fileSystem,
+            Path indexFile,
+            Layout<KEY, VALUE> layout,
+            Monitor monitor,
+            Header.Reader headerReader,
+            Consumer<PageCursor> headerWriter,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            ImmutableSet<OpenOption> openOptions,
+            String databaseName,
+            String name,
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
+            TreeNodeLayoutFactory treeNodeLayoutFactory)
+            throws MetadataMismatchException {
         super(
                 pageCache,
                 fileSystem,
@@ -75,7 +110,8 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
                 name,
                 contextFactory,
                 singleRoot(),
-                pageCacheTracer);
+                pageCacheTracer,
+                treeNodeLayoutFactory);
         access = rootLayer.access(SingleRoot.SINGLE_ROOT);
     }
 

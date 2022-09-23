@@ -105,10 +105,11 @@ public class Meta {
         this.rootLayoutMinorVersion = rootLayoutMinorVersion;
     }
 
-    static Meta from(int payloadSize, Layout<?, ?> dataLayout, Layout<?, ?> rootLayout) {
-        Factory dataFormat = TreeNodeSelector.selectByLayout(dataLayout);
+    static Meta from(
+            int payloadSize, Layout<?, ?> dataLayout, Layout<?, ?> rootLayout, TreeNodeSelector treeNodeSelector) {
+        var dataFormat = treeNodeSelector.selectByLayout(dataLayout);
         if (rootLayout != null) {
-            Factory rootFormat = TreeNodeSelector.selectByLayout(rootLayout);
+            var rootFormat = treeNodeSelector.selectByLayout(rootLayout);
             return new Meta(
                     dataFormat.formatIdentifier(),
                     dataFormat.formatVersion(),
@@ -199,12 +200,12 @@ public class Meta {
     }
 
     public void verify(Layout<?, ?> dataLayout, RootLayerConfiguration<?> rootLayerConfiguration) {
-        verify(dataLayout, rootLayerConfiguration.rootLayout());
+        verify(dataLayout, rootLayerConfiguration.rootLayout(), DefaultTreeNodeSelector.selector());
     }
 
-    public void verify(Layout<?, ?> dataLayout, Layout<?, ?> rootLayout) {
+    public void verify(Layout<?, ?> dataLayout, Layout<?, ?> rootLayout, TreeNodeSelector treeNodeSelector) {
         if (rootLayout != null) {
-            Factory rootFormat = TreeNodeSelector.selectByLayout(rootLayout);
+            Factory rootFormat = treeNodeSelector.selectByLayout(rootLayout);
             if (rootFormat.formatIdentifier() != rootFormatIdentifier
                     || rootFormat.formatVersion() != rootFormatVersion) {
                 throw new MetadataMismatchException(format(
@@ -251,7 +252,7 @@ public class Meta {
                     rootLayout.minorVersion()));
         }
 
-        Factory dataFormatByLayout = TreeNodeSelector.selectByLayout(dataLayout);
+        Factory dataFormatByLayout = treeNodeSelector.selectByLayout(dataLayout);
         if (dataFormatByLayout.formatIdentifier() != dataFormatIdentifier
                 || dataFormatByLayout.formatVersion() != dataFormatVersion) {
             throw new MetadataMismatchException(format(

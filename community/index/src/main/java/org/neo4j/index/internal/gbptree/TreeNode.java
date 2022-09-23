@@ -44,6 +44,21 @@ abstract class TreeNode<KEY, VALUE> {
         NO_NEED_DEFRAG
     }
 
+    /**
+     * Holds VALUE and `defined` flag. See {@link #valueAt(PageCursor, ValueHolder, int, CursorContext)}
+     * and {@link #keyValueAt(PageCursor, Object, ValueHolder, int, CursorContext)}
+     * @param <VALUE>
+     */
+    static class ValueHolder<VALUE> {
+        VALUE value;
+        boolean defined;
+
+        public ValueHolder(VALUE value) {
+            this.value = value;
+            this.defined = false;
+        }
+    }
+
     private static final int LAYER_TYPE_SHIFT = 4;
     private static final int LAYER_TYPE_MASK = (1 << LAYER_TYPE_SHIFT) - 1;
     private static final int TREE_NODE_MASK = (1 << (Byte.SIZE - LAYER_TYPE_SHIFT)) - 1;
@@ -272,7 +287,12 @@ abstract class TreeNode<KEY, VALUE> {
 
     abstract KEY keyAt(PageCursor cursor, KEY into, int pos, Type type, CursorContext cursorContext);
 
-    abstract void keyValueAt(PageCursor cursor, KEY intoKey, VALUE intoValue, int pos, CursorContext cursorContext);
+    /**
+     * Reads key and value at the specified position. If {@link ValueHolder#defined} is set to false, key-value pair should be ignored as value can contain outdated data,
+     * though it still can be used for the purposes of the key-value size calculation, i.e. in {@link #totalSpaceOfKeyValue(Object, Object)}
+     */
+    abstract void keyValueAt(
+            PageCursor cursor, KEY intoKey, ValueHolder<VALUE> intoValue, int pos, CursorContext cursorContext);
 
     abstract void insertKeyAndRightChildAt(
             PageCursor cursor,
@@ -329,7 +349,12 @@ abstract class TreeNode<KEY, VALUE> {
      */
     abstract boolean setKeyAtInternal(PageCursor cursor, KEY key, int pos);
 
-    abstract VALUE valueAt(PageCursor cursor, VALUE value, int pos, CursorContext cursorContext);
+    /**
+     * Reads value at the specified position. If {@link ValueHolder#defined} is set to false, value should be ignored as it can contain outdated data,
+     * though it still can be used for the purposes of the key-value size calculation, i.e. in {@link #totalSpaceOfKeyValue(Object, Object)}
+     */
+    abstract ValueHolder<VALUE> valueAt(
+            PageCursor cursor, ValueHolder<VALUE> value, int pos, CursorContext cursorContext);
 
     /**
      * Overwrite value at position with given value.

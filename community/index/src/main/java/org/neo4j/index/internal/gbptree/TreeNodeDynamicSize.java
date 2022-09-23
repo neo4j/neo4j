@@ -269,9 +269,11 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
     }
 
     @Override
-    void keyValueAt(PageCursor cursor, KEY intoKey, VALUE intoValue, int pos, CursorContext cursorContext) {
+    void keyValueAt(
+            PageCursor cursor, KEY intoKey, ValueHolder<VALUE> intoValue, int pos, CursorContext cursorContext) {
         placeCursorAtActualKey(cursor, pos, LEAF);
 
+        intoValue.defined = true;
         long keyValueSize = readKeyValueSize(cursor, msbIsOffload);
         int keySize = extractKeySize(keyValueSize);
         int valueSize = extractValueSize(keyValueSize);
@@ -279,7 +281,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
         if (offload) {
             long offloadId = DynamicSizeUtil.readOffloadId(cursor);
             try {
-                offloadStore.readKeyValue(offloadId, intoKey, intoValue, cursorContext);
+                offloadStore.readKeyValue(offloadId, intoKey, intoValue.value, cursorContext);
             } catch (IOException e) {
                 cursor.setCursorException("Failed to read keyValue from offload, cause: " + e.getMessage());
             }
@@ -289,7 +291,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
                 return;
             }
             layout.readKey(cursor, intoKey, keySize);
-            layout.readValue(cursor, intoValue, valueSize);
+            layout.readValue(cursor, intoValue.value, valueSize);
         }
     }
 
@@ -509,10 +511,11 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
     }
 
     @Override
-    VALUE valueAt(PageCursor cursor, VALUE into, int pos, CursorContext cursorContext) {
+    ValueHolder<VALUE> valueAt(PageCursor cursor, ValueHolder<VALUE> into, int pos, CursorContext cursorContext) {
         placeCursorAtActualKey(cursor, pos, LEAF);
 
         // Read value
+        into.defined = true;
         long keyValueSize = readKeyValueSize(cursor, msbIsOffload);
         int keySize = extractKeySize(keyValueSize);
         int valueSize = extractValueSize(keyValueSize);
@@ -520,7 +523,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
         if (offload) {
             long offloadId = readOffloadId(cursor);
             try {
-                offloadStore.readValue(offloadId, into, cursorContext);
+                offloadStore.readValue(offloadId, into.value, cursorContext);
             } catch (IOException e) {
                 cursor.setCursorException("Failed to read value from offload, cause: " + e.getMessage());
             }
@@ -530,7 +533,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
                 return into;
             }
             progressCursor(cursor, keySize);
-            layout.readValue(cursor, into, valueSize);
+            layout.readValue(cursor, into.value, valueSize);
         }
         return into;
     }

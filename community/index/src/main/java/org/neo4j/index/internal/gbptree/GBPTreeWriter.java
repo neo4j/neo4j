@@ -286,7 +286,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
 
     @Override
     public V remove(K key) {
-        V removedValue = layout.newValue();
+        var removedValue = new TreeNode.ValueHolder<>(layout.newValue());
         InternalTreeLogic.RemoveResult result;
         try {
             // Try optimistic mode
@@ -336,7 +336,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
         }
 
         checkOutOfBounds(cursor);
-        return result == InternalTreeLogic.RemoveResult.REMOVED ? removedValue : null;
+        return result == InternalTreeLogic.RemoveResult.REMOVED && removedValue.defined ? removedValue.value : null;
     }
 
     private void handleStructureChanges(CursorContext cursorContext) throws IOException {

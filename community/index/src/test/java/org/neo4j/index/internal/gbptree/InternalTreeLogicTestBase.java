@@ -1866,13 +1866,13 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
 
     private void assertKeyAssociatedWithValue(KEY key, VALUE expectedValue) {
         KEY readKey = layout.newKey();
-        VALUE readValue = layout.newValue();
+        var readValue = new TreeNode.ValueHolder<>(layout.newValue());
         int search =
                 KeySearch.search(readCursor, node, LEAF, key, readKey, TreeNode.keyCount(readCursor), NULL_CONTEXT);
         assertThat(KeySearch.isHit(search)).isTrue();
         int keyPos = KeySearch.positionOf(search);
         node.valueAt(readCursor, readValue, keyPos, NULL_CONTEXT);
-        assertEqualsValue(expectedValue, readValue);
+        assertEqualsValue(expectedValue, readValue.value);
     }
 
     private void assertKeyNotFound(KEY key, TreeNode.Type type) {
@@ -1978,18 +1978,18 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
     }
 
     private VALUE valueAt(long nodeId, int pos) {
-        VALUE readValue = layout.newValue();
+        var readValue = new TreeNode.ValueHolder<>(layout.newValue());
         long prevId = readCursor.getCurrentPageId();
         try {
             readCursor.next(nodeId);
-            return node.valueAt(readCursor, readValue, pos, NULL_CONTEXT);
+            return node.valueAt(readCursor, readValue, pos, NULL_CONTEXT).value;
         } finally {
             readCursor.next(prevId);
         }
     }
 
     private VALUE valueAt(int pos) {
-        return node.valueAt(readCursor, layout.newValue(), pos, NULL_CONTEXT);
+        return node.valueAt(readCursor, new TreeNode.ValueHolder<>(layout.newValue()), pos, NULL_CONTEXT).value;
     }
 
     void insert(KEY key, VALUE value) throws IOException {
@@ -2025,7 +2025,14 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
     }
 
     private void remove(KEY key, VALUE into) throws IOException {
-        treeLogic.remove(cursor, structurePropagation, key, into, stableGeneration, unstableGeneration, NULL_CONTEXT);
+        treeLogic.remove(
+                cursor,
+                structurePropagation,
+                key,
+                new TreeNode.ValueHolder<>(into),
+                stableGeneration,
+                unstableGeneration,
+                NULL_CONTEXT);
         handleAfterChange();
     }
 

@@ -249,16 +249,16 @@ public class GBPTreeStructure<ROOT_KEY, DATA_KEY, DATA_VALUE> {
             int i)
             throws IOException {
         DATA_KEY key = dataLayout.newKey();
-        DATA_VALUE value = dataLayout.newValue();
+        var value = new TreeNode.ValueHolder<>(dataLayout.newValue());
         long offloadId;
         long child = -1;
         do {
             TreeNode.Type type = isLeaf ? LEAF : INTERNAL;
             offloadId = dataTreeNode.offloadIdAt(cursor, i, type);
-            dataTreeNode.keyAt(cursor, key, i, type, cursorContext);
             if (isLeaf) {
-                dataTreeNode.valueAt(cursor, value, i, cursorContext);
+                dataTreeNode.keyValueAt(cursor, key, value, i, cursorContext);
             } else {
+                dataTreeNode.keyAt(cursor, key, i, type, cursorContext);
                 child = pointer(dataTreeNode.childAt(cursor, i, stableGeneration, unstableGeneration));
             }
         } while (cursor.shouldRetry());
@@ -266,7 +266,7 @@ public class GBPTreeStructure<ROOT_KEY, DATA_KEY, DATA_VALUE> {
         visitor.position(i);
         if (isLeaf) {
             visitor.key(key, isLeaf, offloadId);
-            visitor.value(value);
+            visitor.value(value.value);
         } else {
             visitor.child(child);
             visitor.key(key, isLeaf, offloadId);
@@ -281,7 +281,7 @@ public class GBPTreeStructure<ROOT_KEY, DATA_KEY, DATA_VALUE> {
             int i)
             throws IOException {
         ROOT_KEY key = rootLayout.newKey();
-        RootMappingValue value = rootLayout.newValue();
+        var value = new TreeNode.ValueHolder<>(rootLayout.newValue());
         long offloadId;
         long child = -1;
         do {
@@ -298,7 +298,7 @@ public class GBPTreeStructure<ROOT_KEY, DATA_KEY, DATA_VALUE> {
         visitor.position(i);
         if (isLeaf) {
             visitor.rootKey(key, isLeaf, offloadId);
-            visitor.rootMapping(value.rootId, value.rootGeneration);
+            visitor.rootMapping(value.value.rootId, value.value.rootGeneration);
         } else {
             visitor.child(child);
             visitor.rootKey(key, isLeaf, offloadId);

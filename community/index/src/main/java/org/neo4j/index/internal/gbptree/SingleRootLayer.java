@@ -41,17 +41,22 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
     private final SingleDataTree singleRootAccess;
     private volatile Root root;
 
-    SingleRootLayer(RootLayerSupport support, Layout<KEY, VALUE> layout, boolean created, CursorContext cursorContext)
+    SingleRootLayer(
+            RootLayerSupport support,
+            Layout<KEY, VALUE> layout,
+            boolean created,
+            CursorContext cursorContext,
+            TreeNodeSelector treeNodeSelector)
             throws IOException {
         this.support = support;
         this.layout = layout;
 
         if (created) {
-            support.writeMeta(null, layout, cursorContext);
+            support.writeMeta(null, layout, cursorContext, treeNodeSelector);
         } else {
-            support.readMeta(cursorContext).verify(layout, (Layout<?, ?>) null);
+            support.readMeta(cursorContext).verify(layout, (Layout<?, ?>) null, treeNodeSelector);
         }
-        TreeNodeSelector.Factory format = TreeNodeSelector.selectByLayout(layout);
+        var format = treeNodeSelector.selectByLayout(layout);
         OffloadStoreImpl<KEY, VALUE> offloadStore = support.buildOffload(layout);
         this.treeNode = format.create(support.payloadSize(), layout, offloadStore);
         this.singleRootAccess = new SingleDataTree();

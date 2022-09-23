@@ -98,7 +98,7 @@ class InternalTreeLogic<KEY, VALUE> {
     private final Layout<KEY, VALUE> layout;
     private final KEY newKeyPlaceHolder;
     private final KEY readKey;
-    private final VALUE readValue;
+    private final TreeNode.ValueHolder<VALUE> readValue;
     private final Monitor monitor;
     private final TreeWriterCoordination coordination;
     final byte layerType;
@@ -174,7 +174,7 @@ class InternalTreeLogic<KEY, VALUE> {
         this.layout = layout;
         this.newKeyPlaceHolder = layout.newKey();
         this.readKey = layout.newKey();
-        this.readValue = layout.newValue();
+        this.readValue = new TreeNode.ValueHolder<>(layout.newValue());
         this.monitor = monitor;
         this.coordination = coordination;
         this.layerType = layerType;
@@ -682,16 +682,23 @@ class InternalTreeLogic<KEY, VALUE> {
             throws IOException {
         // This key already exists, what shall we do? ask the valueMerger
         bTreeNode.valueAt(cursor, readValue, pos, cursorContext);
-        int totalSpaceBefore = bTreeNode.totalSpaceOfKeyValue(key, readValue);
-        ValueMerger.MergeResult mergeResult = valueMerger.merge(readKey, key, readValue, value);
-        if (mergeResult == ValueMerger.MergeResult.UNCHANGED) {
-            return true;
+        int totalSpaceBefore = bTreeNode.totalSpaceOfKeyValue(key, readValue.value);
+        var mergeResult = ValueMerger.MergeResult.REPLACED;
+        if (readValue.defined) {
+            mergeResult = valueMerger.merge(readKey, key, readValue.value, value);
+            if (mergeResult == ValueMerger.MergeResult.UNCHANGED) {
+                return true;
+            }
         }
 
         // Check the value size diff with coordination because the size could be reduced and may cause underflow
-        int totalSpaceAfter = mergeResult == ValueMerger.MergeResult.MERGED
-                ? bTreeNode.totalSpaceOfKeyValue(key, readValue)
-                : mergeResult == ValueMerger.MergeResult.REPLACED ? bTreeNode.totalSpaceOfKeyValue(key, value) : 0;
+        int totalSpaceAfter =
+                switch (mergeResult) {
+                    case MERGED -> bTreeNode.totalSpaceOfKeyValue(key, readValue.value);
+                    case REPLACED -> bTreeNode.totalSpaceOfKeyValue(key, value);
+                    default -> 0;
+                };
+
         int valueShrinkSize = totalSpaceBefore - totalSpaceAfter;
         if (!coordination.beforeRemovalFromLeaf(valueShrinkSize)) {
             return false;
@@ -700,7 +707,7 @@ class InternalTreeLogic<KEY, VALUE> {
         createSuccessorIfNeeded(cursor, structurePropagation, UPDATE_MID_CHILD, stableGeneration, unstableGeneration);
         if (mergeResult == ValueMerger.MergeResult.REPLACED || mergeResult == ValueMerger.MergeResult.MERGED) {
             // First try to write the merged value right in there
-            VALUE mergedValue = mergeResult == ValueMerger.MergeResult.REPLACED ? value : readValue;
+            var mergedValue = mergeResult == ValueMerger.MergeResult.REPLACED ? value : readValue.value;
             boolean couldOverwrite = bTreeNode.setValueAt(cursor, mergedValue, pos);
             if (!couldOverwrite) {
                 // Value could not be overwritten in a simple way because they differ in size.
@@ -965,7 +972,7 @@ class InternalTreeLogic<KEY, VALUE> {
             PageCursor cursor,
             StructurePropagation<KEY> structurePropagation,
             KEY key,
-            VALUE into,
+            TreeNode.ValueHolder<VALUE> into,
             long stableGeneration,
             long unstableGeneration,
             CursorContext cursorContext)
@@ -1315,7 +1322,7 @@ class InternalTreeLogic<KEY, VALUE> {
             PageCursor cursor,
             StructurePropagation<KEY> structurePropagation,
             KEY key,
-            VALUE into,
+            TreeNode.ValueHolder<VALUE> into,
             long stableGeneration,
             long unstableGeneration,
             CursorContext cursorContext)
@@ -1330,7 +1337,7 @@ class InternalTreeLogic<KEY, VALUE> {
         }
 
         bTreeNode.valueAt(cursor, into, pos, cursorContext);
-        if (!coordination.beforeRemovalFromLeaf(bTreeNode.totalSpaceOfKeyValue(key, into))) {
+        if (!coordination.beforeRemovalFromLeaf(bTreeNode.totalSpaceOfKeyValue(key, into.value))) {
             return RemoveResult.FAIL;
         }
         createSuccessorIfNeeded(cursor, structurePropagation, UPDATE_MID_CHILD, stableGeneration, unstableGeneration);

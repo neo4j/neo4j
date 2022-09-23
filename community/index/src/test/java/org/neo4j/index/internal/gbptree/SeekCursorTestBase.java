@@ -1961,7 +1961,7 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
 
             // THEN
             List<Long> expected = allKeysOnLevel(level, 0, i);
-            assertThat(readBySeeker).isEqualTo(expected);
+            assertThat(readBySeeker).as("seek at level " + level).isEqualTo(expected);
         }
     }
 
@@ -2201,7 +2201,7 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
                 cursor,
                 structurePropagation,
                 key(key),
-                layout.newValue(),
+                new TreeNode.ValueHolder<>(layout.newValue()),
                 stableGeneration,
                 unstableGeneration,
                 NULL_CONTEXT);

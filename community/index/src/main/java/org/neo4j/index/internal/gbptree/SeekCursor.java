@@ -188,7 +188,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
     /**
      * Value instances to use for reading values from current node.
      */
-    private VALUE[] mutableValues;
+    private TreeNode.ValueHolder<VALUE>[] mutableValues;
 
     /**
      * Index into {@link #mutableKeys}/{@link #mutableValues}, i.e. which key/value to consider as result next.
@@ -492,9 +492,9 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
         int batchSize = exactMatch ? 1 : maxReadAhead;
         if (mutableKeys == null || batchSize > mutableKeys.length) {
             this.mutableKeys = (KEY[]) new Object[batchSize];
-            this.mutableValues = (VALUE[]) new Object[batchSize];
+            this.mutableValues = new TreeNode.ValueHolder[batchSize];
             this.mutableKeys[0] = layout.newKey();
-            this.mutableValues[0] = layout.newValue();
+            this.mutableValues[0] = new TreeNode.ValueHolder<>(layout.newValue());
         }
         this.ended = false;
         this.pos = 0;
@@ -639,7 +639,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
                 if (cachedIndex + 1 < cachedLength
                         && !(concurrentWriteHappened = cursor.shouldRetry())) { // FAST, key/value is readily available
                     cachedIndex++;
-                    if (resultOnTrack) {
+                    if (resultOnTrack && isValueDefined()) {
                         return true;
                     }
                     if (isResultKey()) {
@@ -737,7 +737,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
                     if (mutableKeys[cachedLength] == null) {
                         // Lazy instantiation of key/value
                         mutableKeys[cachedLength] = layout.newKey();
-                        mutableValues[cachedLength] = layout.newValue();
+                        mutableValues[cachedLength] = new TreeNode.ValueHolder<>(layout.newValue());
                     }
                     if (!isInternal) {
                         bTreeNode.keyValueAt(
@@ -1076,6 +1076,10 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
             return false;
         }
 
+        // key found, but value is undefined, skip it
+        if (!isValueDefined()) {
+            return false;
+        }
         // A hit, it's within the range we search for
         if (first) {
             // Setting first to false include an additional check for coming potential
@@ -1085,6 +1089,14 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
             first = false;
         }
         return true;
+    }
+
+    /**
+     * @return true if key-value pair at current cachedIndex should be visible by users of the seeker.
+     * When at internal node, there are no values and all keys should be visible.
+     */
+    private boolean isValueDefined() {
+        return isInternal || mutableValues[cachedIndex].defined;
     }
 
     /**
@@ -1232,7 +1244,8 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
     @Override
     public VALUE value() {
         assertHasResult();
-        return mutableValues[cachedIndex];
+        assert mutableValues[cachedIndex].defined;
+        return mutableValues[cachedIndex].value;
     }
 
     @Override

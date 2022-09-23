@@ -39,7 +39,7 @@ class GBPTreeMetaTest {
                 .withMajorVersion(10)
                 .withMinorVersion(100)
                 .build();
-        Meta written = Meta.from(PAGE_SIZE, layout, null);
+        Meta written = Meta.from(PAGE_SIZE, layout, null, DefaultTreeNodeSelector.selector());
         int offset = cursor.getOffset();
         written.write(cursor);
 
@@ -83,7 +83,7 @@ class GBPTreeMetaTest {
                 .withMajorVersion(11)
                 .withMinorVersion(101)
                 .build();
-        Meta written = Meta.from(PAGE_SIZE, dataLayout, rootLayout);
+        Meta written = Meta.from(PAGE_SIZE, dataLayout, rootLayout, DefaultTreeNodeSelector.selector());
         int offset = cursor.getOffset();
         written.write(cursor);
 

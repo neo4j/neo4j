@@ -81,7 +81,8 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             int rootCacheSizeInBytes,
             boolean created,
             CursorContext cursorContext,
-            CursorContextFactory contextFactory)
+            CursorContextFactory contextFactory,
+            TreeNodeSelector treeNodeSelector)
             throws IOException {
         Preconditions.checkState(
                 hashCodeSeemsImplemented(rootLayout), "Root layout doesn't seem to have a hashCode() implementation");
@@ -94,13 +95,13 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         this.rootMappingCache = new AtomicReferenceArray<>(max(numCachedRoots, 10));
 
         if (created) {
-            support.writeMeta(this.rootLayout, dataLayout, cursorContext);
+            support.writeMeta(this.rootLayout, dataLayout, cursorContext, treeNodeSelector);
         } else {
-            support.readMeta(cursorContext).verify(dataLayout, this.rootLayout);
+            support.readMeta(cursorContext).verify(dataLayout, this.rootLayout, treeNodeSelector);
         }
 
-        TreeNodeSelector.Factory rootMappingFormat = TreeNodeSelector.selectByLayout(this.rootLayout);
-        TreeNodeSelector.Factory format = TreeNodeSelector.selectByLayout(dataLayout);
+        var rootMappingFormat = treeNodeSelector.selectByLayout(this.rootLayout);
+        var format = treeNodeSelector.selectByLayout(dataLayout);
         OffloadStoreImpl<ROOT_KEY, RootMappingValue> rootOffloadStore = support.buildOffload(this.rootLayout);
         OffloadStoreImpl<DATA_KEY, DATA_VALUE> dataOffloadStore = support.buildOffload(dataLayout);
         this.rootTreeNode = rootMappingFormat.create(support.payloadSize(), this.rootLayout, rootOffloadStore);

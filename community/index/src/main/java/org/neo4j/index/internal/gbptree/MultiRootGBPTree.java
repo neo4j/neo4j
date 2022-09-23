@@ -557,7 +557,8 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             String name,
             CursorContextFactory contextFactory,
             RootLayerConfiguration<ROOT_KEY> rootLayerConfiguration,
-            PageCacheTracer pageCacheTracer)
+            PageCacheTracer pageCacheTracer,
+            TreeNodeLayoutFactory treeNodeLayoutFactory)
             throws MetadataMismatchException {
         this.indexFile = indexFile;
         this.monitor = monitor;
@@ -575,6 +576,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             closed = false;
             this.freeList = new FreeListIdProvider(pagedFile.payloadSize(), IdSpace.MIN_TREE_NODE_ID);
             TreeNodeLatchService latchService = new TreeNodeLatchService();
+            var treeNodeSelector = treeNodeLayoutFactory.createSelector(engineOpenOptions);
             this.rootLayerSupport = new RootLayerSupport(
                     pagedFile,
                     generationSupplier,
@@ -586,9 +588,10 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
                     checkpointLock,
                     writerLock,
                     changesSinceLastCheckpoint,
-                    name);
+                    name,
+                    treeNodeSelector);
             this.rootLayer = rootLayerConfiguration.buildRootLayer(
-                    rootLayerSupport, layout, created, cursorContext, contextFactory);
+                    rootLayerSupport, layout, created, cursorContext, contextFactory, treeNodeSelector);
 
             // Create or load state
             if (created) {
@@ -611,6 +614,42 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         } catch (Throwable e) {
             throw exitConstructor(e);
         }
+    }
+
+    public MultiRootGBPTree(
+            PageCache pageCache,
+            FileSystemAbstraction fileSystem,
+            Path indexFile,
+            Layout<KEY, VALUE> layout,
+            Monitor monitor,
+            Header.Reader headerReader,
+            Consumer<PageCursor> headerWriter,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            ImmutableSet<OpenOption> engineOpenOptions,
+            String databaseName,
+            String name,
+            CursorContextFactory contextFactory,
+            RootLayerConfiguration<ROOT_KEY> rootLayerConfiguration,
+            PageCacheTracer pageCacheTracer)
+            throws MetadataMismatchException {
+        this(
+                pageCache,
+                fileSystem,
+                indexFile,
+                layout,
+                monitor,
+                headerReader,
+                headerWriter,
+                recoveryCleanupWorkCollector,
+                readOnlyChecker,
+                engineOpenOptions,
+                databaseName,
+                name,
+                contextFactory,
+                rootLayerConfiguration,
+                pageCacheTracer,
+                TreeNodeLayoutFactory.getInstance());
     }
 
     private RuntimeException exitConstructor(Throwable throwable) {

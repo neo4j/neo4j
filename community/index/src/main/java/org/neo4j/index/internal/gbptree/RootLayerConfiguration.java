@@ -41,7 +41,8 @@ public abstract sealed class RootLayerConfiguration<ROOT_KEY>
             Layout<KEY, VALUE> dataLayout,
             boolean created,
             CursorContext cursorContext,
-            CursorContextFactory contextFactory)
+            CursorContextFactory contextFactory,
+            TreeNodeSelector treeNodeSelector)
             throws IOException;
 
     abstract Layout<ROOT_KEY, RootMappingValue> rootLayout();
@@ -54,9 +55,10 @@ public abstract sealed class RootLayerConfiguration<ROOT_KEY>
                 Layout<KEY, VALUE> dataLayout,
                 boolean created,
                 CursorContext cursorContext,
-                CursorContextFactory contextFactory)
+                CursorContextFactory contextFactory,
+                TreeNodeSelector treeNodeSelector)
                 throws IOException {
-            return new SingleRootLayer<>(rootLayerSupport, dataLayout, created, cursorContext);
+            return new SingleRootLayer<>(rootLayerSupport, dataLayout, created, cursorContext, treeNodeSelector);
         }
 
         @Override
@@ -80,7 +82,8 @@ public abstract sealed class RootLayerConfiguration<ROOT_KEY>
                 Layout<KEY, VALUE> dataLayout,
                 boolean created,
                 CursorContext cursorContext,
-                CursorContextFactory contextFactory)
+                CursorContextFactory contextFactory,
+                TreeNodeSelector treeNodeSelector)
                 throws IOException {
             return new MultiRootLayer<>(
                     rootLayerSupport,
@@ -89,7 +92,8 @@ public abstract sealed class RootLayerConfiguration<ROOT_KEY>
                     rootMappingCacheSize,
                     created,
                     cursorContext,
-                    contextFactory);
+                    contextFactory,
+                    treeNodeSelector);
         }
 
         @Override

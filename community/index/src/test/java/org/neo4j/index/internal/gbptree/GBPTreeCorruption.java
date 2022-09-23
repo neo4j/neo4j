@@ -146,7 +146,7 @@ public final class GBPTreeCorruption {
             KEY key = layout.newKey();
             VALUE value = layout.newValue();
             node.keyAt(cursor, key, higherKeyPos, TreeNode.Type.LEAF, NULL_CONTEXT);
-            node.valueAt(cursor, value, higherKeyPos, NULL_CONTEXT);
+            node.valueAt(cursor, new TreeNode.ValueHolder<>(value), higherKeyPos, NULL_CONTEXT);
 
             // Remove key and value, may need to defragment node to make sure we have room for insert later
             node.removeKeyValueAt(
@@ -253,7 +253,7 @@ public final class GBPTreeCorruption {
         return (cursor, layout, node, treeState) -> {
             // Record value so that we can reinsert it together with key later
             VALUE value = layout.newValue();
-            node.valueAt(cursor, value, keyPos, NULL_CONTEXT);
+            node.valueAt(cursor, new TreeNode.ValueHolder<>(value), keyPos, NULL_CONTEXT);
 
             // Remove key and value, may need to defragment node to make sure we have room for insert later
             node.removeKeyValueAt(

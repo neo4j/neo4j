@@ -60,6 +60,7 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
     private DatabaseReadOnlyChecker readOnlyChecker = DatabaseReadOnlyChecker.writable();
     private PageCacheTracer pageCacheTracer = NULL;
     private ImmutableSet<OpenOption> openOptions = immutable.empty();
+    private TreeNodeLayoutFactory treeNodeLayoutFactory = TreeNodeLayoutFactory.getInstance();
 
     public GBPTreeBuilder(
             PageCache pageCache, FileSystemAbstraction fileSystem, Path path, Layout<KEY, VALUE> dataLayout) {
@@ -80,6 +81,7 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
         with(path);
         with(dataLayout);
         withRootLayout(rootLayout);
+        treeNodeLayoutFactory = TreeNodeLayoutFactory.getInstance();
     }
 
     public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(Layout<KEY, VALUE> layout) {
@@ -132,6 +134,11 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
         return this;
     }
 
+    public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(TreeNodeLayoutFactory treeNodeLayoutFactory) {
+        this.treeNodeLayoutFactory = treeNodeLayoutFactory;
+        return this;
+    }
+
     public GBPTree<KEY, VALUE> build() {
         CursorContextFactory cursorContextFactory =
                 new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY);
@@ -149,7 +156,8 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
                 DEFAULT_DATABASE_NAME,
                 "test tree",
                 cursorContextFactory,
-                pageCacheTracer);
+                pageCacheTracer,
+                treeNodeLayoutFactory);
     }
 
     public MultiRootGBPTree<ROOT_KEY, KEY, VALUE> buildMultiRoot() {
@@ -169,6 +177,7 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
                 "test tree",
                 cursorContextFactory,
                 RootLayerConfiguration.multipleRoots(rootLayout, (int) kibiBytes(10)),
-                pageCacheTracer);
+                pageCacheTracer,
+                treeNodeLayoutFactory);
     }
 }

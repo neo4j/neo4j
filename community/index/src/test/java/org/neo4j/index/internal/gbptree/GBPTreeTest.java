@@ -270,7 +270,7 @@ class GBPTreeTest {
                 payloadSize = pagedFile.payloadSize();
                 assertTrue(cursor.next());
 
-                Meta newMeta = Meta.from(unreasonablePageSize, layout, null);
+                Meta newMeta = Meta.from(unreasonablePageSize, layout, null, DefaultTreeNodeSelector.selector());
 
                 cursor.setOffset(0);
                 newMeta.write(cursor);

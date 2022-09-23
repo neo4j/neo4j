@@ -23,48 +23,7 @@ package org.neo4j.index.internal.gbptree;
  * Able to select implementation of {@link TreeNode} to use in different scenarios, should be used in favor of directly
  * instantiating {@link TreeNode} instances.
  */
-class TreeNodeSelector {
-    /**
-     * Creates {@link TreeNodeFixedSize} instances.
-     */
-    private static final Factory FIXED = new Factory() {
-        @Override
-        public <KEY, VALUE> TreeNode<KEY, VALUE> create(
-                int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore) {
-            return new TreeNodeFixedSize<>(pageSize, layout);
-        }
-
-        @Override
-        public byte formatIdentifier() {
-            return TreeNodeFixedSize.FORMAT_IDENTIFIER;
-        }
-
-        @Override
-        public byte formatVersion() {
-            return TreeNodeFixedSize.FORMAT_VERSION;
-        }
-    };
-
-    /**
-     * Creates {@link TreeNodeDynamicSize} instances.
-     */
-    private static final Factory DYNAMIC = new Factory() {
-        @Override
-        public <KEY, VALUE> TreeNode<KEY, VALUE> create(
-                int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore) {
-            return new TreeNodeDynamicSize<>(pageSize, layout, offloadStore);
-        }
-
-        @Override
-        public byte formatIdentifier() {
-            return TreeNodeDynamicSize.FORMAT_IDENTIFIER;
-        }
-
-        @Override
-        public byte formatVersion() {
-            return TreeNodeDynamicSize.FORMAT_VERSION;
-        }
-    };
+public interface TreeNodeSelector {
 
     /**
      * Selects a format based on the given {@link Layout}.
@@ -72,10 +31,7 @@ class TreeNodeSelector {
      * @param layout {@link Layout} dictating which {@link TreeNode} to instantiate.
      * @return a {@link Factory} capable of instantiating the selected format.
      */
-    static Factory selectByLayout(Layout<?, ?> layout) {
-        // For now the selection is done in a simple fashion, by looking at layout.fixedSize().
-        return layout.fixedSize() ? FIXED : DYNAMIC;
-    }
+    Factory selectByLayout(Layout<?, ?> layout);
 
     /**
      * Able to instantiate {@link TreeNode} of a specific format and version.

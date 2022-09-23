@@ -67,7 +67,8 @@ class RootLayerSupport {
             ReadWriteLock checkpointLock,
             ReadWriteLock writerLock,
             AtomicBoolean changesSinceLastCheckpoint,
-            String treeName) {
+            String treeName,
+            TreeNodeSelector treeNodeSelector) {
         this.pagedFile = pagedFile;
         this.generationSupplier = generationSupplier;
         this.exceptionDecorator = exceptionDecorator;
@@ -268,8 +269,13 @@ class RootLayerSupport {
         }
     }
 
-    void writeMeta(Layout<?, ?> rootLayout, Layout<?, ?> dataLayout, CursorContext cursorContext) throws IOException {
-        Meta meta = Meta.from(payloadSize, dataLayout, rootLayout);
+    void writeMeta(
+            Layout<?, ?> rootLayout,
+            Layout<?, ?> dataLayout,
+            CursorContext cursorContext,
+            TreeNodeSelector treeNodeSelector)
+            throws IOException {
+        Meta meta = Meta.from(payloadSize, dataLayout, rootLayout, treeNodeSelector);
         try (PageCursor metaCursor = openMetaPageCursor(pagedFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext)) {
             meta.write(metaCursor);
         }

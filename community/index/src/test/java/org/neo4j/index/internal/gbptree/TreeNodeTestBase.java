@@ -174,7 +174,8 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
         // THEN
         KEY actualKey = node.keyAt(cursor, readKey, 0, LEAF, NULL_CONTEXT);
         assertKeyEquals(firstKey, actualKey);
-        assertValueEquals(firstValue, node.valueAt(cursor, readValue, 0, NULL_CONTEXT));
+        assertValueEquals(
+                firstValue, node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), 0, NULL_CONTEXT).value);
 
         // WHEN
         KEY secondKey = key(3);
@@ -185,9 +186,11 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
 
         // THEN
         assertKeyEquals(firstKey, node.keyAt(cursor, readKey, 0, LEAF, NULL_CONTEXT));
-        assertValueEquals(firstValue, node.valueAt(cursor, readValue, 0, NULL_CONTEXT));
+        assertValueEquals(
+                firstValue, node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), 0, NULL_CONTEXT).value);
         assertKeyEquals(secondKey, node.keyAt(cursor, readKey, 1, LEAF, NULL_CONTEXT));
-        assertValueEquals(secondValue, node.valueAt(cursor, readValue, 1, NULL_CONTEXT));
+        assertValueEquals(
+                secondValue, node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), 1, NULL_CONTEXT).value);
 
         // WHEN
         KEY removedKey = key(2);
@@ -198,11 +201,14 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
 
         // THEN
         assertKeyEquals(firstKey, node.keyAt(cursor, readKey, 0, LEAF, NULL_CONTEXT));
-        assertValueEquals(firstValue, node.valueAt(cursor, readValue, 0, NULL_CONTEXT));
+        assertValueEquals(
+                firstValue, node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), 0, NULL_CONTEXT).value);
         assertKeyEquals(removedKey, node.keyAt(cursor, readKey, 1, LEAF, NULL_CONTEXT));
-        assertValueEquals(removedValue, node.valueAt(cursor, readValue, 1, NULL_CONTEXT));
+        assertValueEquals(
+                removedValue, node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), 1, NULL_CONTEXT).value);
         assertKeyEquals(secondKey, node.keyAt(cursor, readKey, 2, LEAF, NULL_CONTEXT));
-        assertValueEquals(secondValue, node.valueAt(cursor, readValue, 2, NULL_CONTEXT));
+        assertValueEquals(
+                secondValue, node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), 2, NULL_CONTEXT).value);
 
         // WHEN
         node.removeKeyValueAt(cursor, 1, 3, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
@@ -210,9 +216,11 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
 
         // THEN
         assertKeyEquals(firstKey, node.keyAt(cursor, readKey, 0, LEAF, NULL_CONTEXT));
-        assertValueEquals(firstValue, node.valueAt(cursor, readValue, 0, NULL_CONTEXT));
+        assertValueEquals(
+                firstValue, node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), 0, NULL_CONTEXT).value);
         assertKeyEquals(secondKey, node.keyAt(cursor, readKey, 1, LEAF, NULL_CONTEXT));
-        assertValueEquals(secondValue, node.valueAt(cursor, readValue, 1, NULL_CONTEXT));
+        assertValueEquals(
+                secondValue, node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), 1, NULL_CONTEXT).value);
 
         // WHEN
         VALUE overwriteValue = value(666);
@@ -222,9 +230,11 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
 
         // THEN
         assertKeyEquals(firstKey, node.keyAt(cursor, readKey, 0, LEAF, NULL_CONTEXT));
-        assertValueEquals(overwriteValue, node.valueAt(cursor, readValue, 0, NULL_CONTEXT));
+        assertValueEquals(
+                overwriteValue, node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), 0, NULL_CONTEXT).value);
         assertKeyEquals(secondKey, node.keyAt(cursor, readKey, 1, LEAF, NULL_CONTEXT));
-        assertValueEquals(secondValue, node.valueAt(cursor, readValue, 1, NULL_CONTEXT));
+        assertValueEquals(
+                secondValue, node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), 1, NULL_CONTEXT).value);
     }
 
     @Test
@@ -544,7 +554,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
                 if (expectedKeyCount > 0) { // there are things to remove
                     int position = random.nextInt(expectedKeyCount);
                     node.keyAt(cursor, readKey, position, LEAF, NULL_CONTEXT);
-                    node.valueAt(cursor, readValue, position, NULL_CONTEXT);
+                    node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), position, NULL_CONTEXT);
                     node.removeKeyValueAt(
                             cursor, position, expectedKeyCount, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
                     KEY expectedKey = expectedKeys.remove(position);
@@ -582,7 +592,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
                     "Key differ with expected, actualKey=" + actualKey + ", expectedKey=" + expectedKey);
 
             VALUE expectedValue = expectedValues.get(i);
-            node.valueAt(cursor, actualValue, i, NULL_CONTEXT);
+            node.valueAt(cursor, new TreeNode.ValueHolder<>(actualValue), i, NULL_CONTEXT);
             assertEquals(
                     0,
                     layout.compareValue(expectedValue, actualValue),
