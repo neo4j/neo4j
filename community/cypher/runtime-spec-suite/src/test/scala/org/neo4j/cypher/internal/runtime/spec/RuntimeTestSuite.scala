@@ -142,6 +142,13 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
     edition = edition.copyWith(configs: _*)
   }
 
+  private[this] var runtimeTestParameters: RuntimeTestParameters = _
+
+  def setRuntimeTestParameters(params: RuntimeTestParameters): Unit = {
+    require(runtimeTestSupport == null)
+    runtimeTestParameters = params
+  }
+
   protected def restartDB(): Unit = {
     managementService = edition.newGraphManagementService()
     graphDb = managementService.database(DEFAULT_DATABASE_NAME)
@@ -151,6 +158,9 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   protected def createRuntimeTestSupport(): Unit = {
     logProvider.clear()
     runtimeTestSupport = createRuntimeTestSupport(graphDb, edition, workloadMode, logProvider)
+    if (runtimeTestParameters != null) {
+      runtimeTestSupport.setRuntimeTestParameters(runtimeTestParameters)
+    }
     runtimeTestSupport.start()
     runtimeTestSupport.startTx()
   }
@@ -397,7 +407,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   }
 
   /**
-   * Call this to ensure that everything is commited and a new TX is opened. Be sure to not
+   * Call this to ensure that everything is committed and a new TX is opened. Be sure to not
    * use data from the previous tx afterwards. If you need to, get them again from the new
    * tx by id.
    */
@@ -818,17 +828,57 @@ abstract class StaticGraphRuntimeTestSuite[CONTEXT <: RuntimeContext](
   protected def createGraph(): Unit
 }
 
-case class RecordingRuntimeResult(runtimeResult: RuntimeResult, recordingQuerySubscriber: RecordingQuerySubscriber) {
-
-  def awaitAll(): IndexedSeq[Array[AnyValue]] = {
-    runtimeResult.consumeAll()
-    runtimeResult.close()
-    recordingQuerySubscriber.getOrThrow().asScala.toIndexedSeq
-  }
-
+trait RuntimeTestResult {
+  def runtimeResult: RuntimeResult
+  def resultConsumptionController: RuntimeTestResultConsumptionController
   def pageCacheHits: Long = runtimeResult.asInstanceOf[ClosingRuntimeResult].pageCacheHits
   def pageCacheMisses: Long = runtimeResult.asInstanceOf[ClosingRuntimeResult].pageCacheMisses
+}
 
+trait RuntimeTestResultConsumptionController {
+  def consume(runtimeResult: RuntimeResult)
+}
+
+case object ConsumeAllThenCloseResultConsumer extends RuntimeTestResultConsumptionController {
+
+  override def consume(runtimeResult: RuntimeResult): Unit = {
+    runtimeResult.consumeAll()
+    runtimeResult.close()
+  }
+}
+
+case class ConsumeNByNThenCloseResultConsumer(nRowsPerRequest: Int) extends RuntimeTestResultConsumptionController {
+
+  override def consume(runtimeResult: RuntimeResult): Unit = {
+    do {
+      runtimeResult.request(nRowsPerRequest)
+    } while (runtimeResult.await())
+    runtimeResult.close()
+  }
+}
+
+case class ConsumeSlowlyNByNThenCloseResultConsumer(nRowsPerRequest: Int, sleepNanos: Int)
+    extends RuntimeTestResultConsumptionController {
+
+  override def consume(runtimeResult: RuntimeResult): Unit = {
+    do {
+      Thread.sleep(0L, sleepNanos)
+      runtimeResult.request(nRowsPerRequest)
+    } while (runtimeResult.await())
+    runtimeResult.close()
+  }
+}
+
+case class RecordingRuntimeResult(
+  runtimeResult: RuntimeResult,
+  recordingQuerySubscriber: RecordingQuerySubscriber,
+  resultConsumptionController: RuntimeTestResultConsumptionController = ConsumeAllThenCloseResultConsumer
+) extends RuntimeTestResult {
+
+  def awaitAll(): IndexedSeq[Array[AnyValue]] = {
+    resultConsumptionController.consume(runtimeResult)
+    recordingQuerySubscriber.getOrThrow().asScala.toIndexedSeq
+  }
 }
 
 object RecordingRuntimeResult {
@@ -839,18 +889,15 @@ object RecordingRuntimeResult {
 
 case class NonRecordingRuntimeResult(
   runtimeResult: RuntimeResult,
-  nonRecordingQuerySubscriber: NonRecordingQuerySubscriber
-) {
+  nonRecordingQuerySubscriber: NonRecordingQuerySubscriber,
+  resultConsumptionController: RuntimeTestResultConsumptionController = ConsumeAllThenCloseResultConsumer
+) extends RuntimeTestResult {
 
   def awaitAll(): Long = {
-    runtimeResult.consumeAll()
-    runtimeResult.close()
+    resultConsumptionController.consume(runtimeResult)
     nonRecordingQuerySubscriber.assertNoErrors()
     nonRecordingQuerySubscriber.recordCount()
   }
-
-  def pageCacheHits: Long = runtimeResult.asInstanceOf[ClosingRuntimeResult].pageCacheHits
-  def pageCacheMisses: Long = runtimeResult.asInstanceOf[ClosingRuntimeResult].pageCacheMisses
 }
 
 case class TestSubscriberRuntimeResult(runtimeResult: RuntimeResult, testSubscriber: TestSubscriber) {

@@ -22,30 +22,30 @@ package org.neo4j.kernel.impl.query;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.values.AnyValue;
 
-/**
- * A QuerySubscriber that only counts completed records.
- *
- * NOTE: This does not consume records with something like Blackhole, so should not be used for CPU profiling.
- */
-public class NonRecordingQuerySubscriber implements QuerySubscriber {
-    private Throwable throwable;
-    private QueryStatistics statistics;
-    private long count;
-
+public class ChainableQuerySubscriberProbe implements QuerySubscriberProbe {
     private final QuerySubscriberProbe probe;
+    private QuerySubscriberProbe next;
 
-    public NonRecordingQuerySubscriber(QuerySubscriberProbe probe) {
+    public ChainableQuerySubscriberProbe(QuerySubscriberProbe probe) {
         this.probe = probe;
     }
 
-    public NonRecordingQuerySubscriber() {
+    public ChainableQuerySubscriberProbe() {
         this.probe = null;
+    }
+
+    public ChainableQuerySubscriberProbe chain(QuerySubscriberProbe probe) {
+        next = probe;
+        return this;
     }
 
     @Override
     public void onResult(int numberOfFields) {
         if (probe != null) {
             probe.onResult(numberOfFields);
+        }
+        if (next != null) {
+            next.onResult(numberOfFields);
         }
     }
 
@@ -54,12 +54,18 @@ public class NonRecordingQuerySubscriber implements QuerySubscriber {
         if (probe != null) {
             probe.onRecord();
         }
+        if (next != null) {
+            next.onRecord();
+        }
     }
 
     @Override
     public void onField(int offset, AnyValue value) {
         if (probe != null) {
             probe.onField(offset, value);
+        }
+        if (next != null) {
+            next.onField(offset, value);
         }
     }
 
@@ -68,7 +74,9 @@ public class NonRecordingQuerySubscriber implements QuerySubscriber {
         if (probe != null) {
             probe.onRecordCompleted();
         }
-        count++;
+        if (next != null) {
+            next.onRecordCompleted();
+        }
     }
 
     @Override
@@ -76,8 +84,8 @@ public class NonRecordingQuerySubscriber implements QuerySubscriber {
         if (probe != null) {
             probe.onError(throwable);
         }
-        if (this.throwable == null) {
-            this.throwable = throwable;
+        if (next != null) {
+            next.onError(throwable);
         }
     }
 
@@ -86,20 +94,8 @@ public class NonRecordingQuerySubscriber implements QuerySubscriber {
         if (probe != null) {
             probe.onResultCompleted(statistics);
         }
-        this.statistics = statistics;
-    }
-
-    public void assertNoErrors() throws Throwable {
-        if (throwable != null) {
-            throw throwable;
+        if (next != null) {
+            next.onResultCompleted(statistics);
         }
-    }
-
-    public long recordCount() {
-        return count;
-    }
-
-    public QueryStatistics queryStatistics() {
-        return statistics;
     }
 }

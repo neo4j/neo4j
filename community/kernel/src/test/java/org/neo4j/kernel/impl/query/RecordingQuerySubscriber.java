@@ -31,26 +31,52 @@ public class RecordingQuerySubscriber implements QuerySubscriber {
     private Throwable throwable;
     private QueryStatistics statistics = QueryStatistics.EMPTY;
 
+    private final QuerySubscriberProbe probe;
+
+    public RecordingQuerySubscriber(QuerySubscriberProbe probe) {
+        this.probe = probe;
+    }
+
+    public RecordingQuerySubscriber() {
+        this.probe = null;
+    }
+
     @Override
     public void onResult(int numberOfFields) {
+        if (probe != null) {
+            probe.onResult(numberOfFields);
+        }
         this.current = new AnyValue[numberOfFields];
     }
 
     @Override
-    public void onRecord() {}
+    public void onRecord() {
+        if (probe != null) {
+            probe.onRecord();
+        }
+    }
 
     @Override
     public void onField(int offset, AnyValue value) {
+        if (probe != null) {
+            probe.onField(offset, value);
+        }
         current[offset] = value;
     }
 
     @Override
     public void onRecordCompleted() {
+        if (probe != null) {
+            probe.onRecordCompleted();
+        }
         all.add(Arrays.copyOf(current, current.length));
     }
 
     @Override
     public void onError(Throwable throwable) {
+        if (probe != null) {
+            probe.onError(throwable);
+        }
         if (this.throwable == null) {
             this.throwable = throwable;
         }
@@ -58,6 +84,9 @@ public class RecordingQuerySubscriber implements QuerySubscriber {
 
     @Override
     public void onResultCompleted(QueryStatistics statistics) {
+        if (probe != null) {
+            probe.onResultCompleted(statistics);
+        }
         this.statistics = statistics;
     }
 

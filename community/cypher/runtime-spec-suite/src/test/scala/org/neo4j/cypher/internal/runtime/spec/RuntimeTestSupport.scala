@@ -60,9 +60,11 @@ import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.locking.Locks
+import org.neo4j.kernel.impl.query.ChainableQuerySubscriberProbe
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.NonRecordingQuerySubscriber
 import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.kernel.impl.query.QuerySubscriberProbe
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.lifecycle.LifeSupport
@@ -103,6 +105,142 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
 
   private var _tx: InternalTransaction = _
   private var _txContext: TransactionalContext = _
+
+  private[this] var runtimeTestParameters: RuntimeTestParameters = RuntimeTestParameters()
+
+  def setRuntimeTestParameters(params: RuntimeTestParameters): Unit = {
+    runtimeTestParameters = params
+  }
+
+  private def createQuerySubscriberProbe(params: RuntimeTestParameters): QuerySubscriberProbe = {
+    var probe: ChainableQuerySubscriberProbe = null
+
+    def addProbe(nextProbe: QuerySubscriberProbe): Unit = {
+      val nextChainable = new ChainableQuerySubscriberProbe(nextProbe)
+      probe =
+        if (probe == null) {
+          nextChainable
+        } else {
+          probe.chain(nextChainable)
+        }
+    }
+
+    // Slow sleeping subscriber probe
+    if (params.sleepSubscriber.isDefined) {
+      addProbe(new QuerySubscriberProbe {
+        private[this] var count: Long = 0L
+
+        override def onRecordCompleted(): Unit = {
+          count += 1L;
+          val sleepPerNRows = params.sleepSubscriber.get
+          if (count % sleepPerNRows.perNRows == 0) {
+            try {
+              Thread.sleep(0L, sleepPerNRows.sleepNanos)
+            } catch {
+              case e: InterruptedException => // Ignore
+            }
+          }
+        }
+      })
+    }
+
+    // Slow busy-waiting subscriber probe
+    if (params.busySubscriber) {
+      addProbe(new QuerySubscriberProbe {
+        override def onRecordCompleted(): Unit = {
+          var i = 0
+          while (i < 1000000000) {
+            Thread.onSpinWait()
+            i += 1
+          }
+        }
+      })
+    }
+
+    // Print progress probe
+    if (params.printProgress.isDefined) {
+      val printEveryNRows = params.printProgress.get
+      addProbe(new QuerySubscriberProbe {
+        private[this] var count: Long = 0L
+
+        override def onRecordCompleted(): Unit = {
+          count += 1L;
+          if (count % printEveryNRows.everyNRows == 0) {
+            val printCount = if (printEveryNRows.printRowCount) count.toString else ""
+            print(s"${printEveryNRows.messagePrefix}$printCount${printEveryNRows.messageSuffix}")
+          }
+        }
+      })
+    }
+
+    // Print config probe
+    if (params.printConfig) {
+      addProbe(new QuerySubscriberProbe {
+        var shouldPrint: Boolean = false
+
+        override def onResultCompleted(statistics: QueryStatistics): Unit = {
+          printConfig()
+        }
+
+        override def onError(throwable: Throwable): Unit = {
+          printConfig()
+        }
+
+        private def printConfig(): Unit = {
+          val nl = System.lineSeparator()
+          if (shouldPrint) {
+            print("\nTest config:\n${edition.configs.mkString(nl)}${nl}\n\n")
+            shouldPrint = false
+          }
+        }
+      })
+    }
+
+    // Kill transaction probe
+    params.killTransactionAfterRows match {
+      case Some(n) =>
+        addProbe(new QuerySubscriberProbe {
+          private[this] var count: Long = 0L
+
+          override def onRecordCompleted(): Unit = {
+            count += 1L;
+            if (count == n) {
+              println("TERMINATE")
+              _tx.terminate()
+            }
+          }
+        })
+
+      case None => // Do nothing
+    }
+    probe
+  }
+
+  private def newRecordingQuerySubscriber: RecordingQuerySubscriber = {
+    new RecordingQuerySubscriber(createQuerySubscriberProbe(runtimeTestParameters))
+  }
+
+  private def newNonRecordingQuerySubscriber: NonRecordingQuerySubscriber = {
+    new NonRecordingQuerySubscriber(createQuerySubscriberProbe(runtimeTestParameters))
+  }
+
+  private def newRecordingRuntimeResult(
+    runtimeResult: RuntimeResult,
+    recordingQuerySubscriber: RecordingQuerySubscriber
+  ): RecordingRuntimeResult = {
+    RecordingRuntimeResult(runtimeResult, recordingQuerySubscriber, runtimeTestParameters.resultConsumptionController)
+  }
+
+  private def newNonRecordingRuntimeResult(
+    runtimeResult: RuntimeResult,
+    nonRecordingQuerySubscriber: NonRecordingQuerySubscriber
+  ): NonRecordingRuntimeResult = {
+    NonRecordingRuntimeResult(
+      runtimeResult,
+      nonRecordingQuerySubscriber,
+      runtimeTestParameters.resultConsumptionController
+    )
+  }
 
   def start(): Unit = {
     lifeSupport.init()
@@ -175,7 +313,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     readOnly: Boolean = true,
     implicitTx: Boolean = false
   ): RecordingRuntimeResult = {
-    val subscriber = new RecordingQuerySubscriber
+    val subscriber = newRecordingQuerySubscriber
     val result = run(
       executablePlan,
       NoInput,
@@ -185,7 +323,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       readOnly,
       implicitTx = implicitTx
     )
-    RecordingRuntimeResult(result, subscriber)
+    newRecordingRuntimeResult(result, subscriber)
   }
 
   override def execute(
@@ -193,9 +331,9 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     runtime: CypherRuntime[CONTEXT],
     inputStream: InputDataStream
   ): RecordingRuntimeResult = {
-    val subscriber = new RecordingQuerySubscriber
+    val subscriber = newRecordingQuerySubscriber
     val result = runLogical(logicalQuery, runtime, inputStream, (_, result) => result, subscriber, profile = false)
-    RecordingRuntimeResult(result, subscriber)
+    newRecordingRuntimeResult(result, subscriber)
   }
 
   override def execute(
@@ -211,13 +349,13 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     parameters: Map[String, Any] = Map.empty,
     profileAssertion: Option[QueryProfile => Unit] = None
   ): IndexedSeq[Array[AnyValue]] = {
-    val subscriber = new RecordingQuerySubscriber
+    val subscriber = newRecordingQuerySubscriber
     runTransactionally(
       logicalQuery,
       runtime,
       NoInput,
       (_, result) => {
-        val recordingRuntimeResult = RecordingRuntimeResult(result, subscriber)
+        val recordingRuntimeResult = newRecordingRuntimeResult(result, subscriber)
         val seq = recordingRuntimeResult.awaitAll()
         profileAssertion.foreach(_(recordingRuntimeResult.runtimeResult.queryProfile()))
         recordingRuntimeResult.runtimeResult.close()
@@ -235,13 +373,13 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     parameters: Map[String, Any] = Map.empty,
     profileAssertion: Option[QueryProfile => Unit] = None
   ): Long = {
-    val subscriber = new NonRecordingQuerySubscriber
+    val subscriber = newNonRecordingQuerySubscriber
     runTransactionallyAndRollback[Long](
       logicalQuery,
       runtime,
       NoInput,
       (_, result) => {
-        val nonRecordingRuntimeResult = NonRecordingRuntimeResult(result, subscriber)
+        val nonRecordingRuntimeResult = newNonRecordingRuntimeResult(result, subscriber)
         val seq = nonRecordingRuntimeResult.awaitAll()
         profileAssertion.foreach(_(nonRecordingRuntimeResult.runtimeResult.queryProfile()))
         nonRecordingRuntimeResult.runtimeResult.close()
@@ -258,9 +396,9 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     runtime: CypherRuntime[CONTEXT],
     inputDataStream: InputDataStream = NoInput
   ): RecordingRuntimeResult = {
-    val subscriber = new RecordingQuerySubscriber
+    val subscriber = newRecordingQuerySubscriber
     val result = runLogical(logicalQuery, runtime, inputDataStream, (_, result) => result, subscriber, profile = true)
-    RecordingRuntimeResult(result, subscriber)
+    newRecordingRuntimeResult(result, subscriber)
   }
 
   override def profile(
@@ -268,9 +406,9 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     inputDataStream: InputDataStream,
     readOnly: Boolean
   ): RecordingRuntimeResult = {
-    val subscriber = new RecordingQuerySubscriber
+    val subscriber = newRecordingQuerySubscriber
     val result = run(executionPlan, inputDataStream, (_, result) => result, subscriber, profile = true, readOnly)
-    RecordingRuntimeResult(result, subscriber)
+    newRecordingRuntimeResult(result, subscriber)
   }
 
   override def profileNonRecording(
@@ -278,9 +416,9 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     runtime: CypherRuntime[CONTEXT],
     inputDataStream: InputDataStream = NoInput
   ): NonRecordingRuntimeResult = {
-    val subscriber = new NonRecordingQuerySubscriber
+    val subscriber = newNonRecordingQuerySubscriber
     val result = runLogical(logicalQuery, runtime, inputDataStream, (_, result) => result, subscriber, profile = true)
-    NonRecordingRuntimeResult(result, subscriber)
+    newNonRecordingRuntimeResult(result, subscriber)
   }
 
   override def profileWithSubscriber(
@@ -297,7 +435,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     runtime: CypherRuntime[CONTEXT],
     input: InputValues
   ): (RecordingRuntimeResult, CONTEXT) = {
-    val subscriber = new RecordingQuerySubscriber
+    val subscriber = newRecordingQuerySubscriber
     val (result, context) = runLogical(
       logicalQuery,
       runtime,
@@ -306,7 +444,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       subscriber,
       profile = false
     )
-    (RecordingRuntimeResult(result, subscriber), context)
+    (newRecordingRuntimeResult(result, subscriber), context)
   }
 
   override def executeAndContextNonRecording(
@@ -314,7 +452,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     runtime: CypherRuntime[CONTEXT],
     input: InputValues
   ): (NonRecordingRuntimeResult, CONTEXT) = {
-    val subscriber = new NonRecordingQuerySubscriber
+    val subscriber = newNonRecordingQuerySubscriber
     val (result, context) = runLogical(
       logicalQuery,
       runtime,
@@ -323,7 +461,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       subscriber,
       profile = false
     )
-    (NonRecordingRuntimeResult(result, subscriber), context)
+    (newNonRecordingRuntimeResult(result, subscriber), context)
   }
 
   override def executeAndExplain(
@@ -331,7 +469,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     runtime: CypherRuntime[CONTEXT],
     input: InputValues
   ): (RecordingRuntimeResult, InternalPlanDescription) = {
-    val subscriber = new RecordingQuerySubscriber
+    val subscriber = newRecordingQuerySubscriber
     val executionPlan = buildPlan(logicalQuery, runtime)
     val result = run(
       executionPlan,
@@ -356,7 +494,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
         )
       planDescriptionBuilder.explain()
     }
-    (RecordingRuntimeResult(result, subscriber), executionPlanDescription)
+    (newRecordingRuntimeResult(result, subscriber), executionPlanDescription)
   }
 
   // PRIVATE EXECUTE HELPER METHODS
