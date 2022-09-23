@@ -30,7 +30,7 @@ public class StoreIdDecodeUtils {
     private StoreIdDecodeUtils() {}
 
     public static String decodeId(StoreIdProvider storeIdProvider) throws NoSuchAlgorithmException {
-        var storeIdString = storeIdProvider.getExternalStoreId().toString();
+        var storeIdString = storeIdProvider.getExternalStoreId().getId().toString();
         var messageDigest = MessageDigest.getInstance(DEFAULT_ALGORITHM);
         messageDigest.update(storeIdString.getBytes());
         return HexString.encodeHexString(messageDigest.digest());
