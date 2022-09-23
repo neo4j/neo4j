@@ -27,20 +27,16 @@ import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunctions
-import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.LabelExpression.Negation
 import org.neo4j.cypher.internal.expressions.LabelExpression.Wildcard
-import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
-import org.neo4j.cypher.internal.expressions.RelationshipChain
-import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -75,69 +71,60 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   private val rLessPred = lessThan(prop(r.name, "foo"), literalInt(10))
   private val oPred = greaterThan(prop(o.name, "foo"), literalInt(5))
 
-  private val n_r_m = RelationshipsPattern(RelationshipChain(
-    NodePattern(Some(n), None, None, None)(pos),
-    RelationshipPattern(Some(r), None, None, None, None, BOTH)(pos),
-    NodePattern(Some(m), None, None, None)(pos)
-  )(pos))(pos)
+  private val n_r_m = RelationshipsPattern(relationshipChain(
+    nodePat(Some("n")),
+    relPat(Some("r"), direction = BOTH),
+    nodePat(Some("m"))
+  ))(pos)
 
-  private val n_r_m_withLabelDisjunction = RelationshipsPattern(RelationshipChain(
-    NodePattern(Some(n), None, None, None)(pos),
-    RelationshipPattern(Some(r), None, None, None, None, BOTH)(pos),
-    NodePattern(Some(m), Some(Disjunctions(Seq(Leaf(labelName("M")), Leaf(labelName("MM"))))(pos)), None, None)(pos)
-  )(pos))(pos)
+  private val n_r_m_withLabelDisjunction = RelationshipsPattern(relationshipChain(
+    nodePat(Some("n")),
+    relPat(Some("r"), direction = BOTH),
+    nodePat(Some("m"), Some(labelDisjunction(labelLeaf("M"), labelLeaf("MM"))))
+  ))(pos)
 
-  private val n_r25_m = RelationshipsPattern(RelationshipChain(
-    NodePattern(Some(n), None, None, None)(pos),
-    RelationshipPattern(
-      Some(r),
-      None,
-      Some(Some(expressions.Range(Some(literalUnsignedInt(2)), Some(literalUnsignedInt(5)))(pos))),
-      None,
-      None,
-      BOTH
-    )(pos),
-    NodePattern(Some(m), None, None, None)(pos)
-  )(pos))(pos)
+  private val n_r25_m = RelationshipsPattern(relationshipChain(
+    nodePat(Some("n")),
+    relPat(
+      name = Some("r"),
+      length = Some(Some(expressions.Range(Some(literalUnsignedInt(2)), Some(literalUnsignedInt(5)))(pos))),
+      direction = BOTH
+    ),
+    nodePat(Some("m"))
+  ))(pos)
 
-  private val n_r_m_withPreds = RelationshipsPattern(RelationshipChain(
-    RelationshipChain(
-      NodePattern(Some(n), None, None, None)(pos),
-      RelationshipPattern(
-        Some(r),
-        Some(Disjunctions(Seq(Leaf(relTypeName("R")), Leaf(relTypeName("P"))))(pos)),
-        None,
-        Some(mapOfInt("prop" -> 5)),
-        Some(rPred),
-        OUTGOING
-      )(pos),
-      NodePattern(Some(m), None, None, None)(pos)
-    )(pos),
-    RelationshipPattern(Some(r2), None, None, None, None, INCOMING)(pos),
-    NodePattern(
-      Some(o),
+  private val n_r_m_withPreds = RelationshipsPattern(relationshipChain(
+    nodePat(Some("n")),
+    relPat(
+      name = Some("r"),
+      labelExpression = Some(labelDisjunction(labelRelTypeLeaf("R"), labelRelTypeLeaf("P"))),
+      properties = Some(mapOfInt("prop" -> 5)),
+      predicates = Some(rPred)
+    ),
+    nodePat(Some("m")),
+    relPat(Some("r2"), direction = INCOMING),
+    nodePat(
+      Some("o"),
       Some(Negation(Wildcard()(pos))(pos)),
       Some(mapOfInt("prop" -> 5)),
       Some(oPred)
-    )(pos)
-  )(pos))(pos)
+    )
+  ))(pos)
 
   // { (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) }
   private val n_r_m_r2_o_r3_q = Pattern(Seq(
-    EveryPath(RelationshipChain(
+    EveryPath(relationshipChain(
       nodePat(Some("n")),
       relPat(Some("r")),
       nodePat(Some("m"))
-    )(pos)),
-    EveryPath(RelationshipChain(
-      RelationshipChain(
-        nodePat(Some("o")),
-        relPat(Some("r2")),
-        nodePat(Some("m"))
-      )(pos),
+    )),
+    EveryPath(relationshipChain(
+      nodePat(Some("o")),
+      relPat(Some("r2")),
+      nodePat(Some("m")),
       relPat(Some("r3")),
       nodePat(Some("q"))
-    )(pos))
+    ))
   ))(pos)
 
   private def makeAnonymousVariableNameGenerator(): AnonymousVariableNameGenerator = new AnonymousVariableNameGenerator
@@ -206,7 +193,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             patternNodes = Set(n.name, m.name),
             argumentIds = Set(n.name),
             patternRelationships =
-              Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, VarPatternLength(2, Some(5))))
+              Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, VarPatternLength(2, Some(5)))),
+            selections = Selections.from(Unique(varFor("r"))(pos))
           ),
           Some(RegularQueryProjection(Map(variableToCollectName -> pathExpression)))
         ),
@@ -244,7 +232,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               PatternRelationship(r2.name, (m.name, o.name), INCOMING, Seq.empty, SimplePatternLength)
             ),
             selections = Selections.from(Seq(
-              not(equals(r, r2)),
+              not(equals(r2, r)),
               andedPropertyInequalities(rPred),
               andedPropertyInequalities(oPred),
               equals(prop(r.name, "prop"), literalInt(5)),
@@ -422,7 +410,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               PatternRelationship(r2.name, (m.name, o.name), INCOMING, Seq.empty, SimplePatternLength)
             ),
             selections = Selections.from(Seq(
-              not(equals(r, r2)),
+              not(equals(r2, r)),
               andedPropertyInequalities(rPred),
               andedPropertyInequalities(oPred),
               equals(prop(r.name, "prop"), literalInt(5)),
@@ -461,7 +449,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             selections = Selections.from(Seq(
               not(equals(r, r3)),
               not(equals(r, r2)),
-              not(equals(r2, r3))
+              not(equals(r3, r2))
             ))
           ),
           None
@@ -494,7 +482,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             selections = Selections.from(Seq(
               not(equals(r, r3)),
               not(equals(r, r2)),
-              not(equals(r2, r3)),
+              not(equals(r3, r2)),
               andedPropertyInequalities(rPred)
             ))
           ),
@@ -579,7 +567,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               PatternRelationship(r2.name, (m.name, o.name), INCOMING, Seq.empty, SimplePatternLength)
             ),
             selections = Selections.from(Seq(
-              not(equals(r, r2)),
+              not(equals(r2, r)),
               andedPropertyInequalities(rPred),
               andedPropertyInequalities(oPred),
               equals(prop(r.name, "prop"), literalInt(5)),
@@ -663,7 +651,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             selections = Selections.from(Seq(
               not(equals(r, r2)),
               not(equals(r, r3)),
-              not(equals(r2, r3))
+              not(equals(r3, r2))
             ))
           ),
           horizon =

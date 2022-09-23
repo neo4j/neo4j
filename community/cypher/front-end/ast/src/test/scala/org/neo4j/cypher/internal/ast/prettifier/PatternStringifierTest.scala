@@ -17,10 +17,6 @@
 package org.neo4j.cypher.internal.ast.prettifier
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.expressions.EveryPath
-import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.RelationshipChain
-import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
@@ -33,127 +29,109 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
   private val patternStringifier = PatternStringifier(expressionStringifier)
 
   test("(n:Foo:Bar {prop: 'test'} WHERE r.otherProp > 123)") {
-    val pattern = NodePattern(
-      Some(varFor("n")),
-      Some(labelColonConjunction(
+    val pattern = nodePat(
+      name = Some("n"),
+      labelExpression = Some(labelColonConjunction(
         labelLeaf("Foo"),
         labelLeaf("Bar")
       )),
-      Some(mapOf("prop" -> literalString("test"))),
-      Some(greaterThan(prop("r", "otherProp"), literalInt(123)))
-    )(pos)
+      properties = Some(mapOf("prop" -> literalString("test"))),
+      predicates = Some(greaterThan(prop("r", "otherProp"), literalInt(123)))
+    )
 
     patternStringifier(pattern) shouldEqual testName
   }
 
   test("(n:Foo:Bar:Baz)") {
     val pattern = nodePat(
-      Some("n"),
-      Some(labelColonConjunction(labelColonConjunction(labelLeaf("Foo"), labelLeaf("Bar")), labelLeaf("Baz")))
+      name = Some("n"),
+      labelExpression = Some(labelColonConjunction(labelColonConjunction(labelLeaf("Foo"), labelLeaf("Bar")), labelLeaf("Baz")))
     )
+
     patternStringifier(pattern) shouldEqual testName
   }
 
   test("(n:(Foo|Bar)&Baz)") {
     val pattern =
       nodePat(Some("n"), Some(labelConjunction(labelDisjunction(labelLeaf("Foo"), labelLeaf("Bar")), labelLeaf("Baz"))))
+
     patternStringifier(pattern) shouldEqual testName
   }
 
   test("(n:(Foo&Bar)|Baz)") {
     val pattern =
       nodePat(Some("n"), Some(labelDisjunction(labelConjunction(labelLeaf("Foo"), labelLeaf("Bar")), labelLeaf("Baz"))))
+
     patternStringifier(pattern) shouldEqual testName
   }
 
   test("({prop: 'test'})") {
-    val pattern = NodePattern(
-      None,
-      None,
-      Some(mapOf("prop" -> literalString("test"))),
-      None
-    )(pos)
+    val pattern = nodePat(
+      properties = Some(mapOf("prop" -> literalString("test")))
+    )
 
     patternStringifier(pattern) shouldEqual testName
   }
 
   // A bit extreme but ensures that the space before WHERE is only added when necessary
   test("(WHERE false)") {
-    val pattern = NodePattern(
-      None,
-      None,
-      None,
-      Some(falseLiteral)
-    )(pos)
+    val pattern = nodePat(
+      predicates = Some(falseLiteral)
+    )
 
     patternStringifier(pattern) shouldEqual testName
   }
 
   test("()") {
-    val pattern = NodePattern(
-      None,
-      None,
-      None,
-      None
-    )(pos)
+    val pattern = nodePat()
 
     patternStringifier(pattern) shouldEqual testName
   }
 
   test("(:A&B)") {
-    val pattern = NodePattern(
-      None,
-      Some(
+    val pattern = nodePat(
+      labelExpression = Some(
         labelConjunction(
           labelLeaf("A"),
           labelLeaf("B")
         )
-      ),
-      None,
-      None
-    )(pos)
+      )
+    )
 
     patternStringifier(pattern) shouldEqual testName
   }
 
   test("(:!A&B)") {
-    val pattern = NodePattern(
-      None,
-      Some(
+    val pattern = nodePat(
+      labelExpression = Some(
         labelConjunction(
           labelNegation(labelLeaf("A")),
           labelLeaf("B")
         )
-      ),
-      None,
-      None
-    )(pos)
+      )
+    )
 
     patternStringifier(pattern) shouldEqual testName
   }
 
   test("(:!(A&B))") {
-    val pattern = NodePattern(
-      None,
-      Some(
+    val pattern = nodePat(
+      labelExpression = Some(
         labelNegation(
           labelConjunction(
             labelLeaf("A"),
             labelLeaf("B")
           )
         )
-      ),
-      None,
-      None
-    )(pos)
+      )
+    )
 
     patternStringifier(pattern) shouldEqual testName
   }
 
   test("(:(A|A)&B)") {
-    val pattern = NodePattern(
-      None,
-      Some(
+    val pattern = nodePat(
+      labelExpression = Some(
         labelConjunction(
           labelDisjunction(
             labelLeaf("A"),
@@ -161,18 +139,15 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
           ),
           labelLeaf("B")
         )
-      ),
-      None,
-      None
-    )(pos)
+      )
+    )
 
     patternStringifier(pattern) shouldEqual testName
   }
 
   test("(:!!(A&B)|(C&B))") {
-    val pattern = NodePattern(
-      None,
-      Some(
+    val pattern = nodePat(
+      labelExpression = Some(
         labelDisjunction(
           labelNegation(
             labelNegation(
@@ -184,18 +159,15 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
             labelLeaf("B")
           )
         )
-      ),
-      None,
-      None
-    )(pos)
+      )
+    )
 
     patternStringifier(pattern) shouldEqual testName
   }
 
   test("(:!!(((A&B)|C)&B))") {
-    val pattern = NodePattern(
-      None,
-      Some(
+    val pattern = nodePat(
+      labelExpression = Some(
         labelNegation(
           labelNegation(
             labelConjunction(
@@ -207,79 +179,65 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
             )
           )
         )
-      ),
-      None,
-      None
-    )(pos)
+      )
+    )
 
     patternStringifier(pattern) shouldEqual testName
   }
 
   test("-[r:Foo|Bar*1..5 {prop: 'test'} WHERE r.otherProp > 123]->") {
-    val pattern = RelationshipPattern(
-      Some(varFor("r")),
-      Some(labelDisjunction(labelRelTypeLeaf("Foo"), labelRelTypeLeaf("Bar"))),
-      Some(Some(range(Some(1), Some(5)))),
-      Some(mapOf("prop" -> literalString("test"))),
-      Some(greaterThan(prop("r", "otherProp"), literalInt(123))),
-      OUTGOING
-    )(pos)
+    val pattern = relPat(
+      name = Some("r"),
+      labelExpression = Some(labelDisjunction(labelRelTypeLeaf("Foo"), labelRelTypeLeaf("Bar"))),
+      length = Some(Some(range(Some(1), Some(5)))),
+      properties = Some(mapOf("prop" -> literalString("test"))),
+      predicates = Some(greaterThan(prop("r", "otherProp"), literalInt(123))),
+      direction = OUTGOING
+    )
 
     patternStringifier(pattern) shouldEqual testName
   }
 
   test("<-[r:Foo|Bar|Baz*]-") {
-    val pattern = RelationshipPattern(
-      Some(varFor("r")),
-      Some(labelDisjunctions(Seq(
+    val pattern = relPat(
+      name = Some("r"),
+      labelExpression = Some(labelDisjunctions(Seq(
         labelRelTypeLeaf("Foo"),
         labelRelTypeLeaf("Bar"),
         labelRelTypeLeaf("Baz")
       ))),
-      Some(None),
-      None,
-      None,
-      INCOMING
-    )(pos)
+      length = Some(None),
+      direction = INCOMING
+    )
 
     patternStringifier(pattern) shouldEqual testName
   }
 
   test("-[{prop: 'test'}]-") {
-    val pattern = RelationshipPattern(
-      None,
-      None,
-      None,
-      Some(mapOf("prop" -> literalString("test"))),
-      None,
-      BOTH
-    )(pos)
+    val pattern = relPat(
+      properties = Some(mapOf("prop" -> literalString("test"))),
+      direction = BOTH
+    )
 
     patternStringifier(pattern) shouldEqual testName
   }
 
   // A bit extreme but ensures that the space before WHERE is only added when necessary
   test("-[WHERE false]-") {
-    val pattern = RelationshipPattern(
-      None,
-      None,
-      None,
-      None,
-      Some(falseLiteral),
-      BOTH
-    )(pos)
+    val pattern = relPat(
+      predicates = Some(falseLiteral),
+      direction = BOTH
+    )
 
     patternStringifier(pattern) shouldEqual testName
   }
 
   test("((n)-[r]->(m) WHERE n.prop = m.prop)*") {
     val pattern = quantifiedPath(
-      EveryPath(
-        RelationshipChain(
-          nodePat(Some("n")),
-          relPat(Some("r")),
-          nodePat(Some("m"))
-        )(pos)
+      relationshipChain(
+        nodePat(Some("n")),
+        relPat(Some("r")),
+        nodePat(Some("m"))
       ),
       starQuantifier,
       optionalWhereExpression = Some(equals(prop("n", "prop"), prop("m", "prop")))

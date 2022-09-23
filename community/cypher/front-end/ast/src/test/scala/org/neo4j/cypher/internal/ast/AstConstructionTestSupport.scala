@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
+import org.neo4j.cypher.internal.expressions.Disjoint
 import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
@@ -89,15 +90,14 @@ import org.neo4j.cypher.internal.expressions.NumberLiteral
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Parameter
-import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PathFactor
 import org.neo4j.cypher.internal.expressions.PathStep
 import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.PatternAtom
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
-import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.PlusQuantifier
 import org.neo4j.cypher.internal.expressions.Pow
 import org.neo4j.cypher.internal.expressions.ProcedureName
@@ -128,8 +128,10 @@ import org.neo4j.cypher.internal.expressions.Subtract
 import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.expressions.UnaryAdd
 import org.neo4j.cypher.internal.expressions.UnarySubtract
+import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.expressions.functions.Avg
 import org.neo4j.cypher.internal.expressions.functions.Collect
@@ -559,15 +561,42 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def pathConcatenation(factors: PathFactor*): PathConcatenation = PathConcatenation(factors)(pos)
 
   def quantifiedPath(
-    part: PatternPart,
+    relChain: RelationshipChain,
     quantifier: GraphPatternQuantifier,
     optionalWhereExpression: Option[Expression] = None
   ): QuantifiedPath =
-    QuantifiedPath(part, quantifier, optionalWhereExpression)(pos)
+    QuantifiedPath(EveryPath(relChain), quantifier, optionalWhereExpression)(pos)
+
+  def quantifiedPath(
+    relChain: RelationshipChain,
+    quantifier: GraphPatternQuantifier,
+    optionalWhereExpression: Option[Expression],
+    variableGroupings: Set[VariableGrouping]
+  ): QuantifiedPath =
+    QuantifiedPath(EveryPath(relChain), quantifier, optionalWhereExpression)(pos)
+
+  def relationshipChain(patternAtoms: PatternAtom*): RelationshipChain =
+    patternAtoms.length match {
+      case 0 | 1 | 2 => throw new IllegalArgumentException()
+      case 3 => RelationshipChain(
+          patternAtoms(0).asInstanceOf[NodePattern],
+          patternAtoms(1).asInstanceOf[RelationshipPattern],
+          patternAtoms(2).asInstanceOf[NodePattern]
+        )(pos)
+      case _ =>
+        RelationshipChain(
+          relationshipChain(patternAtoms.dropRight(2): _*),
+          patternAtoms.dropRight(1).last.asInstanceOf[RelationshipPattern],
+          patternAtoms.last.asInstanceOf[NodePattern]
+        )(pos)
+    }
 
   def plusQuantifier: PlusQuantifier = PlusQuantifier()(pos)
 
   def starQuantifier: StarQuantifier = StarQuantifier()(pos)
+
+  def variableGrouping(singleton: String, group: String): VariableGrouping =
+    VariableGrouping(varFor(singleton), varFor(group))(pos)
 
   def patternExpression(nodeVar1: Variable, nodeVar2: Variable): PatternExpression =
     PatternExpression(RelationshipsPattern(RelationshipChain(
@@ -760,6 +789,12 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     default: Option[Expression],
     alternatives: (Expression, Expression)*
   ): CaseExpression = CaseExpression(expression, alternatives.toIndexedSeq, default)(pos)
+
+  def unique(list: Expression): Unique =
+    Unique(list)(pos)
+
+  def disjoint(lhs: Expression, rhs: Expression): Disjoint =
+    Disjoint(lhs, rhs)(pos)
 
   implicit class ExpressionOps(expr: Expression) {
     def as(name: String): ReturnItem = AliasedReturnItem(expr, varFor(name))(pos, isAutoAliased = false)
