@@ -44,6 +44,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -58,6 +59,8 @@ import org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.ConsistencyChe
 import org.neo4j.index.internal.gbptree.RootLayer.TreeRootsVisitor;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
@@ -68,6 +71,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.util.VisibleForTesting;
 
 /**
@@ -717,12 +721,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         TreeState state = TreeStatePair.selectNewestValidState(states);
         try (PageCursor cursor = pagedFile.io(state.pageId(), PF_SHARED_READ_LOCK, cursorContext)) {
             PageCursorUtil.goTo(cursor, "header data", state.pageId());
-            doReadHeader(
-                    headerReader,
-                    cursor,
-                    openOptions.contains(PageCacheOpenOptions.BIG_ENDIAN)
-                            ? ByteOrder.BIG_ENDIAN
-                            : ByteOrder.LITTLE_ENDIAN);
+            doReadHeader(headerReader, cursor, getEndianness(openOptions));
         }
         generation = Generation.generation(state.stableGeneration(), state.unstableGeneration());
         rootLayer.setRoot(new Root(state.rootId(), state.rootGeneration()));
@@ -734,6 +733,69 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         int freeListReadPos = state.freeListReadPos();
         freeList.initialize(lastId, freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos);
         clean = state.isClean();
+    }
+
+    public static <T extends Header.Reader> Optional<T> readHeader(
+            FileSystemAbstraction fileSystem, Path indexFile, T headerReader, ImmutableSet<OpenOption> openOptions) {
+        if (fileSystem.fileExists(indexFile)) {
+            try (StoreChannel channel = fileSystem.read(indexFile);
+                    var scopedBuffer =
+                            new NativeScopedBuffer(512, getEndianness(openOptions), EmptyMemoryTracker.INSTANCE)) {
+                ByteBuffer buffer = scopedBuffer.getBuffer();
+
+                // Read metadata to determine page size
+                Meta meta = getMeta(buffer, channel);
+                int pageSize = meta.getPayloadSize();
+
+                // Read both states
+                TreeState stateA = getTreeState(buffer, channel, pageSize, IdSpace.STATE_PAGE_A);
+                TreeState stateB = getTreeState(buffer, channel, pageSize, IdSpace.STATE_PAGE_B);
+
+                // Determine which one is stable
+                TreeState state = TreeStatePair.selectNewestValidState(Pair.of(stateA, stateB));
+
+                readEmbeddedHeader(headerReader, channel, buffer, pageSize, state);
+                return Optional.of(headerReader);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static void readEmbeddedHeader(
+            Header.Reader headerReader, StoreChannel channel, ByteBuffer buffer, int pageSize, TreeState state)
+            throws IOException {
+        buffer.clear().limit(Integer.BYTES);
+        long headerPosition = state.pageId() * pageSize + TreeState.SIZE;
+        channel.position(headerPosition);
+        channel.readAll(buffer);
+        int headerSize = buffer.flip().getInt();
+        buffer.clear().limit(headerSize);
+        channel.readAll(buffer);
+        buffer.flip();
+        headerReader.read(buffer);
+    }
+
+    private static ByteOrder getEndianness(ImmutableSet<OpenOption> openOptions) {
+        return openOptions.contains(PageCacheOpenOptions.BIG_ENDIAN) ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN;
+    }
+
+    private static Meta getMeta(ByteBuffer buffer, StoreChannel channel) throws IOException {
+        buffer.clear().limit(Meta.META_SIZE);
+        channel.position(IdSpace.META_PAGE_ID);
+        channel.readAll(buffer);
+        buffer.flip();
+        return Meta.read(buffer);
+    }
+
+    private static TreeState getTreeState(ByteBuffer buffer, StoreChannel read, int pageSize, long statePage)
+            throws IOException {
+        buffer.clear().limit(TreeState.SIZE);
+        read.position(pageSize * statePage);
+        read.readAll(buffer);
+        buffer.flip();
+        return TreeState.read(statePage, buffer);
     }
 
     /**
@@ -762,12 +824,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             TreeState state = TreeStatePair.selectNewestValidState(states);
             try (PageCursor cursor = pagedFile.io(state.pageId(), PF_SHARED_READ_LOCK, cursorContext)) {
                 PageCursorUtil.goTo(cursor, "header data", state.pageId());
-                doReadHeader(
-                        headerReader,
-                        cursor,
-                        openOptions.contains(PageCacheOpenOptions.BIG_ENDIAN)
-                                ? ByteOrder.BIG_ENDIAN
-                                : ByteOrder.LITTLE_ENDIAN);
+                doReadHeader(headerReader, cursor, getEndianness(openOptions));
             }
         } catch (Throwable t) {
             // Decorate outgoing exceptions with basic tree information. This is similar to how the constructor
@@ -878,7 +935,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
                 PageCursorUtil.goTo(cursor, "state page", pageToOverwrite);
 
                 // Place cursor after state data
-                TreeState.read(cursor);
+                cursor.setOffset(TreeState.SIZE);
 
                 // Note offset to header
                 int headerOffset = cursor.getOffset();

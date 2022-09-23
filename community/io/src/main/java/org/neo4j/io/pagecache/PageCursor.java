@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
@@ -423,4 +424,9 @@ public abstract class PageCursor implements AutoCloseable {
      * This doesn't affect linked cursors if any.
      */
     public abstract void unpin();
+
+    /**
+     * @return the byte order used to read and write.
+     */
+    public abstract ByteOrder getByteOrder();
 }

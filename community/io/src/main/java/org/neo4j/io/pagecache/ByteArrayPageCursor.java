@@ -342,6 +342,11 @@ public class ByteArrayPageCursor extends PageCursor {
     @Override
     public void unpin() {}
 
+    @Override
+    public ByteOrder getByteOrder() {
+        return buffer.order();
+    }
+
     private record ByteArrayPagedFile(int pageSize) implements PagedFile {
         @Override
         public PageCursor io(long pageId, int pf_flags, CursorContext context) {

@@ -31,7 +31,7 @@ import org.neo4j.io.pagecache.PageCursorUtil;
  * Pair of {@link TreeState}, ability to make decision about which of the two to read and write respectively,
  * depending on the {@link TreeState#isValid() validity} and {@link TreeState#stableGeneration()} of each.
  */
-class TreeStatePair {
+final class TreeStatePair {
 
     private TreeStatePair() {}
 

@@ -21,10 +21,11 @@ package org.neo4j.index.internal.gbptree;
 
 import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
+import static org.neo4j.util.Preconditions.checkState;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.neo4j.index.internal.gbptree.TreeNodeSelector.Factory;
-import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
 /**
@@ -50,6 +51,14 @@ import org.neo4j.io.pagecache.PageCursor;
 public class Meta {
     static final byte CURRENT_STATE_VERSION = 0;
     static final byte CURRENT_GBPTREE_VERSION = 0;
+    public static final int META_SIZE = Integer.BYTES // format
+            + Integer.BYTES // payloadSize
+            + Long.BYTES // dataLayoutIdentifier
+            + Integer.BYTES // dataLayoutMajorVersion
+            + Integer.BYTES // dataLayoutMinorVersion
+            + Long.BYTES // rootLayoutIdentifier
+            + Integer.BYTES // rootLayoutMajorVersion
+            + Integer.BYTES; // rootLayoutMinorVersion
 
     private static final int MASK_BYTE = 0xFF;
 
@@ -151,42 +160,16 @@ public class Meta {
                 rootLayoutMinorVersion);
     }
 
-    /**
-     * Reads meta information from the meta page. The layout identifier and its version
-     * that the returned {@link Meta} instance will have are the ones read from the page.
-     *
-     * @param cursor {@link PageCursor} to read meta information from.
-     * @return {@link Meta} instance with all meta information.
-     * @throws IOException on {@link PageCursor} I/O error.
-     */
-    static Meta read(PageCursor cursor) throws IOException {
-        int format;
-        int payloadSize;
-        long dataLayoutIdentifier;
-        int dataLayoutMajorVersion;
-        int dataLayoutMinorVersion;
-        long rootLayoutIdentifier;
-        int rootLayoutMajorVersion;
-        int rootLayoutMinorVersion;
-        try {
-            do {
-                format = cursor.getInt();
-                payloadSize = cursor.getInt();
-                dataLayoutIdentifier = cursor.getLong();
-                dataLayoutMajorVersion = cursor.getInt();
-                dataLayoutMinorVersion = cursor.getInt();
-                rootLayoutIdentifier = cursor.getLong();
-                rootLayoutMajorVersion = cursor.getInt();
-                rootLayoutMinorVersion = cursor.getInt();
-            } while (cursor.shouldRetry());
-            checkOutOfBounds(cursor);
-            cursor.checkAndClearCursorException();
-        } catch (CursorException e) {
-            throw new MetadataMismatchException(
-                    "Tried to open, but caught an error while reading meta data. File is expected "
-                            + "to be corrupt, try to rebuild.",
-                    e);
-        }
+    public static Meta read(ByteBuffer buffer) {
+        checkState(buffer.remaining() >= META_SIZE, "Not enough data");
+        int format = buffer.getInt();
+        int payloadSize = buffer.getInt();
+        long dataLayoutIdentifier = buffer.getLong();
+        int dataLayoutMajorVersion = buffer.getInt();
+        int dataLayoutMinorVersion = buffer.getInt();
+        long rootLayoutIdentifier = buffer.getLong();
+        int rootLayoutMajorVersion = buffer.getInt();
+        int rootLayoutMinorVersion = buffer.getInt();
 
         return parseMeta(
                 format,
@@ -197,6 +180,22 @@ public class Meta {
                 rootLayoutIdentifier,
                 rootLayoutMajorVersion,
                 rootLayoutMinorVersion);
+    }
+
+    /**
+     * Reads meta information from the meta page. The layout identifier and its version
+     * that the returned {@link Meta} instance will have are the ones read from the page.
+     *
+     * @param cursor {@link PageCursor} to read meta information from.
+     * @return {@link Meta} instance with all meta information.
+     * @throws IOException on {@link PageCursor} I/O error.
+     */
+    static Meta read(PageCursor cursor) throws IOException {
+        byte[] buffer = new byte[META_SIZE];
+        do {
+            cursor.getBytes(buffer);
+        } while (cursor.shouldRetry());
+        return read(ByteBuffer.wrap(buffer).order(cursor.getByteOrder()));
     }
 
     public void verify(Layout<?, ?> dataLayout, RootLayerConfiguration<?> rootLayerConfiguration) {
@@ -293,7 +292,7 @@ public class Meta {
                 | rootFormatVersion << SHIFT_ROOT_FORMAT_VERSION;
     }
 
-    int getPayloadSize() {
+    public int getPayloadSize() {
         return payloadSize;
     }
 

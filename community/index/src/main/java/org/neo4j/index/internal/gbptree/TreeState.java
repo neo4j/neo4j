@@ -19,6 +19,10 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import static org.neo4j.util.Preconditions.checkState;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -40,23 +44,15 @@ class TreeState {
     /**
      * Size of one set of tree-state fields.
      */
-    private static final int TREE_STATE_FIELDS_SIZE = Integer.BYTES * 2
-            + // stable/unstable gen
-            Long.BYTES
-            + // rootId
-            Long.BYTES
-            + // rootGeneration
-            Long.BYTES
-            + // lastId
-            Long.BYTES
-            + // freeListWritePageId
-            Long.BYTES
-            + // freeListReadPageId
-            Long.BYTES
-            + // freeListWritePos
-            Long.BYTES
-            + // freeListReadPos
-            Byte.BYTES; // clean
+    private static final int TREE_STATE_FIELDS_SIZE = Integer.BYTES * 2 // stable/unstable gen
+            + Long.BYTES // rootId
+            + Long.BYTES // rootGeneration
+            + Long.BYTES // lastId
+            + Long.BYTES // freeListWritePageId
+            + Long.BYTES // freeListReadPageId
+            + Integer.BYTES // freeListWritePos
+            + Integer.BYTES // freeListReadPos
+            + Byte.BYTES; // clean
 
     /**
      * Size of a tree-state altogether, which consists of two sets of tree-state fields.
@@ -264,9 +260,22 @@ class TreeState {
      * @param cursor {@link PageCursor} to read tree state from, at its current offset.
      * @return {@link TreeState} instance containing read tree state.
      */
-    static TreeState read(PageCursor cursor) {
-        TreeState state = readStateOnce(cursor);
-        TreeState checksumState = readStateOnce(cursor);
+    static TreeState read(PageCursor cursor) throws IOException {
+        byte[] buffer = new byte[SIZE];
+        cursor.getBytes(buffer);
+        return read(cursor.getCurrentPageId(), ByteBuffer.wrap(buffer).order(cursor.getByteOrder()));
+    }
+
+    /**
+     * @see #read(PageCursor)
+     *
+     * @param pageId current page
+     * @param buffer temporary buffer to use
+     * @return {@link TreeState} instance containing read tree state.
+     */
+    static TreeState read(long pageId, ByteBuffer buffer) {
+        TreeState state = readStateOnce(pageId, buffer);
+        TreeState checksumState = readStateOnce(pageId, buffer);
 
         boolean valid = state.equals(checksumState);
 
@@ -292,18 +301,18 @@ class TreeState {
                 && freeListReadPos == 0;
     }
 
-    private static TreeState readStateOnce(PageCursor cursor) {
-        long pageId = cursor.getCurrentPageId();
-        long stableGeneration = cursor.getInt() & GenerationSafePointer.GENERATION_MASK;
-        long unstableGeneration = cursor.getInt() & GenerationSafePointer.GENERATION_MASK;
-        long rootId = cursor.getLong();
-        long rootGeneration = cursor.getLong();
-        long lastId = cursor.getLong();
-        long freeListWritePageId = cursor.getLong();
-        long freeListReadPageId = cursor.getLong();
-        int freeListWritePos = cursor.getInt();
-        int freeListReadPos = cursor.getInt();
-        boolean clean = cursor.getByte() == CLEAN_BYTE;
+    private static TreeState readStateOnce(long pageId, ByteBuffer buffer) {
+        checkState(buffer.remaining() >= TREE_STATE_FIELDS_SIZE, "No enough data");
+        long stableGeneration = buffer.getInt() & GenerationSafePointer.GENERATION_MASK;
+        long unstableGeneration = buffer.getInt() & GenerationSafePointer.GENERATION_MASK;
+        long rootId = buffer.getLong();
+        long rootGeneration = buffer.getLong();
+        long lastId = buffer.getLong();
+        long freeListWritePageId = buffer.getLong();
+        long freeListReadPageId = buffer.getLong();
+        int freeListWritePos = buffer.getInt();
+        int freeListReadPos = buffer.getInt();
+        boolean clean = buffer.get() == CLEAN_BYTE;
         return new TreeState(
                 pageId,
                 stableGeneration,
@@ -404,6 +413,6 @@ class TreeState {
     }
 
     public boolean isClean() {
-        return this.clean;
+        return clean;
     }
 }

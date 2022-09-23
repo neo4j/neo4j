@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.util.Objects;
 import org.neo4j.internal.unsafe.UnsafeUtil;
@@ -1114,5 +1115,10 @@ public abstract class MuninnPageCursor extends PageCursor {
     @VisibleForTesting
     public int getPayloadSize() {
         return payloadSize;
+    }
+
+    @Override
+    public ByteOrder getByteOrder() {
+        return littleEndian ? ByteOrder.LITTLE_ENDIAN : ByteOrder.BIG_ENDIAN;
     }
 }

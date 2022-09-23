@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
@@ -260,6 +261,11 @@ public class DelegatingPageCursor extends PageCursor {
     @Override
     public void unpin() {
         delegate.unpin();
+    }
+
+    @Override
+    public ByteOrder getByteOrder() {
+        return delegate.getByteOrder();
     }
 
     public PageCursor unwrap() {

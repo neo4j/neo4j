@@ -445,6 +445,11 @@ public class StubPageCursor extends PageCursor {
     @Override
     public void unpin() {}
 
+    @Override
+    public ByteOrder getByteOrder() {
+        return ByteOrder.LITTLE_ENDIAN;
+    }
+
     public void setWriteLocked(boolean writeLocked) {
         this.writeLocked = writeLocked;
     }

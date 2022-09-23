@@ -330,13 +330,13 @@ public class IndexedIdGenerator implements IdGenerator {
         this.monitor = monitor;
         this.defaultMerger = new IdRangeMerger(false, monitor);
         this.recoveryMerger = new IdRangeMerger(true, monitor);
-        Optional<HeaderReader> header = readHeader(pageCache, path, databaseName, contextFactory, openOptions);
+        Optional<HeaderReader> header = readHeader(fileSystem, path, openOptions);
         // We check generation here too since we could get into this scenario:
         // 1. start on existing store, but with missing .id file so that it gets created
         // 2. rebuild will happen in start(), but perhaps the db was shut down or killed before or during start()
         // 3. next startup would have said that it wouldn't need rebuild
-        this.needsRebuild = header.isEmpty() || header.get().generation == STARTING_GENERATION;
-        if (!needsRebuild) {
+        if (header.isPresent() && header.get().generation > STARTING_GENERATION) {
+            needsRebuild = false;
             // This id generator exists, use the values from its header
             this.highId.set(header.get().highId);
             this.highestWrittenId.set(header.get().highestWrittenId);
@@ -346,6 +346,7 @@ public class IndexedIdGenerator implements IdGenerator {
             // is triggered on first request
             this.atLeastOneIdOnFreelist.set(true);
         } else {
+            needsRebuild = true;
             // We'll create this index when constructing the GBPTree below. The generation on its creation will be
             // STARTING_GENERATION,
             // as written by the HeaderWriter, but the active generation has to be +1 that
@@ -665,36 +666,20 @@ public class IndexedIdGenerator implements IdGenerator {
     /**
      * Reads contents of a header in an existing {@link IndexedIdGenerator}.
      *
-     * @param pageCache    {@link PageCache} to map id generator in.
-     * @param path         {@link Path} pointing to the id generator.
-     * @param databaseName name of the database id generator belongs to
-     * @param openOptions
+     * @param path        {@link Path} pointing to the id generator.
      * @return {@link Optional} with the data embedded inside the {@link HeaderReader} if the id generator existed and the header was read correctly, otherwise
      * {@link Optional#empty()}.
      */
     private static Optional<HeaderReader> readHeader(
-            PageCache pageCache,
-            Path path,
-            String databaseName,
-            CursorContextFactory contextFactory,
-            ImmutableSet<OpenOption> openOptions) {
-        try (var cursorContext = contextFactory.create("readHeader")) {
-            HeaderReader headerReader = new HeaderReader();
-            GBPTree.readHeader(pageCache, path, headerReader, databaseName, cursorContext, openOptions);
-            return Optional.of(headerReader);
-        } catch (NoSuchFileException e) {
-            // That's OK, looks like we're creating this id generator for the first time
-            return Optional.empty();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+            FileSystemAbstraction fileSystem, Path path, ImmutableSet<OpenOption> openOptions) {
+        HeaderReader headerReader = new HeaderReader();
+        return GBPTree.readHeader(fileSystem, path, headerReader, openOptions);
     }
 
     /**
      * Dumps the contents of an {@link IndexedIdGenerator} as human-readable text.
      *
      * @param pageCache  {@link PageCache} to map id generator in.
-     * @param fileSystem
      * @param path       {@link Path} pointing to the id generator.
      * @throws IOException if the file was missing or some other I/O error occurred.
      */
@@ -707,7 +692,7 @@ public class IndexedIdGenerator implements IdGenerator {
             boolean onlySummary,
             ImmutableSet<OpenOption> openOptions)
             throws IOException {
-        HeaderReader header = readHeader(pageCache, path, DEFAULT_DATABASE_NAME, contextFactory, openOptions)
+        HeaderReader header = readHeader(fileSystem, path, openOptions)
                 .orElseThrow(() -> new NoSuchFileException(path.toAbsolutePath().toString()));
         IdRangeLayout layout = new IdRangeLayout(header.idsPerEntry);
         try (GBPTree<IdRangeKey, IdRange> tree = new GBPTree<>(

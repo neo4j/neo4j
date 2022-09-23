@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
@@ -469,6 +470,11 @@ public final class CompositePageCursor extends PageCursor {
     public void unpin() {
         first.unpin();
         second.unpin();
+    }
+
+    @Override
+    public ByteOrder getByteOrder() {
+        throw new UnsupportedOperationException("ByteOrder is usage define.");
     }
 
     /**

@@ -23,7 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.TreeState.read;
 
+import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.pagecache.PageCursor;
@@ -39,18 +41,18 @@ class TreeStateTest {
     }
 
     @Test
-    void readEmptyStateShouldThrow() {
+    void readEmptyStateShouldThrow() throws IOException {
         // GIVEN empty state
 
         // WHEN
-        TreeState state = TreeState.read(cursor);
+        TreeState state = read(cursor);
 
         // THEN
         assertFalse(state.isValid());
     }
 
     @Test
-    void shouldReadValidPage() {
+    void shouldReadValidPage() throws IOException {
         // GIVEN valid state
         long pageId = cursor.getCurrentPageId();
         TreeState expected = new TreeState(pageId, 1, 2, 3, 4, 5, 6, 7, 8, 9, true, true);
@@ -58,25 +60,25 @@ class TreeStateTest {
         cursor.setOffset(0);
 
         // WHEN
-        TreeState read = TreeState.read(cursor);
+        TreeState read = read(cursor);
 
         // THEN
         assertEquals(expected, read);
     }
 
     @Test
-    void readBrokenStateShouldFail() {
+    void readBrokenStateShouldFail() throws IOException {
         // GIVEN broken state
         long pageId = cursor.getCurrentPageId();
         TreeState expected = new TreeState(pageId, 1, 2, 3, 4, 5, 6, 7, 8, 9, true, true);
         write(cursor, expected);
         cursor.setOffset(0);
-        assertTrue(TreeState.read(cursor).isValid());
+        assertTrue(read(cursor).isValid());
         cursor.setOffset(0);
         breakChecksum(cursor);
 
         // WHEN
-        TreeState state = TreeState.read(cursor);
+        TreeState state = read(cursor);
 
         // THEN
         assertFalse(state.isValid());

@@ -19,16 +19,20 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +40,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.DelegatingPageSwapper;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -110,6 +115,36 @@ class MuninnPageCursorTest {
                 }
             }
         }
+    }
+
+    @Test
+    void byteOrder() throws IOException {
+        testByteOrder(ByteOrder.LITTLE_ENDIAN);
+        testByteOrder(ByteOrder.BIG_ENDIAN);
+    }
+
+    private void testByteOrder(ByteOrder byteOrder) throws IOException {
+        Path file = directory.file("file" + byteOrder);
+        try (PageCache pageCache = startPageCache(customSwapper(defaultPageSwapperFactory(), () -> {}))) {
+            try (PagedFile pagedFile =
+                    pageCache.map(file, PageCache.PAGE_SIZE, DEFAULT_DATABASE_NAME, getOpenOptions(byteOrder))) {
+                // Write cursor
+                try (PageCursor cursor = pagedFile.io(0, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                    assertThat(cursor.getByteOrder()).isEqualTo(byteOrder);
+                }
+                // Read cursor
+                try (PageCursor cursor = pagedFile.io(0, PagedFile.PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                    assertThat(cursor.getByteOrder()).isEqualTo(byteOrder);
+                }
+            }
+        }
+    }
+
+    private static ImmutableSet<OpenOption> getOpenOptions(ByteOrder byteOrder) {
+        if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
+            return Sets.immutable.of(StandardOpenOption.CREATE);
+        }
+        return Sets.immutable.of(StandardOpenOption.CREATE, PageCacheOpenOptions.BIG_ENDIAN);
     }
 
     private PageCache startPageCache(PageSwapperFactory pageSwapperFactory) {

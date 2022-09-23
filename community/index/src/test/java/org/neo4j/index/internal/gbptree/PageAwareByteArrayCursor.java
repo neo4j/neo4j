@@ -24,6 +24,7 @@ import static org.neo4j.io.pagecache.ByteArrayPageCursor.wrap;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -374,6 +375,11 @@ class PageAwareByteArrayCursor extends PageCursor {
 
     @Override
     public void unpin() {}
+
+    @Override
+    public ByteOrder getByteOrder() {
+        return current.getByteOrder();
+    }
 
     public int getCloseCount() {
         return closeCount;
