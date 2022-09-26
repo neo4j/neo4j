@@ -187,6 +187,20 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
                 })
                 .forEach(conf -> reporter.registerSource("config", conf));
 
+        Path serverLogsConfig = config.get(GraphDatabaseSettings.server_logging_config_path);
+        if (ctx.fs().fileExists(serverLogsConfig)) {
+            reporter.registerSource(
+                    "config",
+                    DiagnosticsReportSources.newDiagnosticsFile("config/server-logs.xml", ctx.fs(), serverLogsConfig));
+        }
+
+        Path userLogsConfig = config.get(GraphDatabaseSettings.user_logging_config_path);
+        if (ctx.fs().fileExists(userLogsConfig)) {
+            reporter.registerSource(
+                    "config",
+                    DiagnosticsReportSources.newDiagnosticsFile("config/user-logs.xml", ctx.fs(), userLogsConfig));
+        }
+
         reporter.registerSource("ps", runningProcesses());
 
         // Online connection

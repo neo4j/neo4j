@@ -225,6 +225,42 @@ class DiagnosticsReportCommandIT {
     }
 
     @Test
+    void includeLog4jConfigs() throws IOException {
+        // Special location for one of the logging configuration files.
+        String neo4jConfContents = GraphDatabaseSettings.server_logging_config_path.name() + "=customLogDir/name.xml";
+        Files.write(configDir.resolve("neo4j.conf"), singletonList(neo4jConfContents));
+        Files.createDirectories(homeDir.resolve("customLogDir"));
+        Files.write(homeDir.resolve("customLogDir/name.xml"), singletonList("Config1"));
+        // Default for the logging config is in a conf folder under neo4j-home
+        Files.createDirectories(homeDir.resolve("conf"));
+        Files.write(homeDir.resolve("conf/user-logs.xml"), singletonList("Config2"));
+
+        String[] args = {"config", "--to-path=" + testDirectory.absolutePath() + "/reports"};
+        DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
+        CommandLine.populateCommand(diagnosticsReportCommand, args);
+        diagnosticsReportCommand.execute();
+
+        Path[] files = FileUtils.listPaths(testDirectory.homePath().resolve("reports"));
+        assertThat(files.length).isEqualTo(1);
+
+        // Should find neo4j.conf (created in setup), and the two logging configuration files in different places
+        try (FileSystem fileSystem = FileSystems.newFileSystem(files[0])) {
+            Path confDir = fileSystem.getPath("config");
+            Path neo4jConf = confDir.resolve("neo4j.conf");
+            assertTrue(Files.exists(neo4jConf));
+            assertThat(Files.readAllLines(neo4jConf)).containsExactly(neo4jConfContents);
+
+            Path serverLogConf = confDir.resolve("server-logs.xml");
+            assertTrue(Files.exists(serverLogConf));
+            assertThat(Files.readAllLines(serverLogConf)).containsExactly("Config1");
+
+            Path userLogConf = confDir.resolve("user-logs.xml");
+            assertTrue(Files.exists(userLogConf));
+            assertThat(Files.readAllLines(userLogConf)).containsExactly("Config2");
+        }
+    }
+
+    @Test
     void allHasToBeOnlyClassifier() {
         String[] args = {"all", "logs", "tx"};
         DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
