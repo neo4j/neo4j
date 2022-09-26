@@ -36,7 +36,7 @@ Feature: BuiltInProcedureAcceptance
     """
     CALL db.labels
     """
-    Then the result should be, in order:
+    Then the result should be, in any order:
       | label |
       | 'A'   |
       | 'B'   |
