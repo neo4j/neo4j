@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
  * Merge executes the inner plan and on each found row it executes `onMatch`. If there are no found rows
- * it will first run `createOps` followed by `onCreate`
+ * it will first run `createNodes` and `createRelationships` followed by `onCreate`
  */
 case class Merge(
   read: LogicalPlan,
