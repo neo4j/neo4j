@@ -2780,6 +2780,33 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   }
 
   test(
+    "inserts eager between property set and property read (NodeUniqueIndexSeek) if property read through unstable iterator"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .setNodeProperty("m", "prop", "5")
+      .apply()
+      .|.nodeIndexOperator("n:N(prop=5)", unique = true)
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("m")
+        .setNodeProperty("m", "prop", "5")
+        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
+          propName("prop"),
+          Some(EagernessReason.Conflict(Id(1), Id(3)))
+        )))
+        .apply()
+        .|.nodeIndexOperator("n:N(prop = 5)", unique = true)
+        .allNodeScan("m")
+        .build()
+    )
+  }
+
+  test(
     "inserts eager between property set and property read (NodeIndexContainsScan) if property read through unstable iterator"
   ) {
     val planBuilder = new LogicalPlanBuilder()
