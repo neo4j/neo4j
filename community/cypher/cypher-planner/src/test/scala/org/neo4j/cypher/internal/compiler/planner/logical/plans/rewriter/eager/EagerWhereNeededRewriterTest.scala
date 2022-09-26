@@ -2677,7 +2677,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
   // Ignored tests
 
-  // Todo: Update LabelExpressionEvaluator to return a boolean or a set of the conflicting Labels
+  // Update LabelExpressionEvaluator to return a boolean or a set of the conflicting Labels
   ignore(
     "Should only reference the conflicting labels when there is a write of multiple labels in the same create pattern"
   ) {
