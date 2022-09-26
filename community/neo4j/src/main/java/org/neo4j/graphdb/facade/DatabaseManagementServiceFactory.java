@@ -88,6 +88,7 @@ import org.neo4j.procedure.builtin.SpecialBuiltInProcedures;
 import org.neo4j.procedure.builtin.routing.ClientRoutingDomainChecker;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 import org.neo4j.procedure.impl.ProcedureConfig;
+import org.neo4j.procedure.impl.ProcedureGraphDatabaseService;
 import org.neo4j.procedure.impl.ProcedureLoginContextTransformer;
 import org.neo4j.procedure.impl.ProcedureTransactionProvider;
 import org.neo4j.procedure.impl.TerminationGuardProvider;
@@ -360,8 +361,10 @@ public class DatabaseManagementServiceFactory {
                     true);
             globalProcedures.registerComponent(
                     GraphDatabaseService.class,
-                    ctx -> new GraphDatabaseFacade(
-                            (GraphDatabaseFacade) ctx.graphDatabaseAPI(), new ProcedureLoginContextTransformer(ctx)),
+                    ctx -> new ProcedureGraphDatabaseService(
+                            ctx.graphDatabaseAPI(),
+                            new ProcedureLoginContextTransformer(ctx),
+                            ctx.dependencyResolver().resolveDependency(Config.class)),
                     true);
             globalProcedures.registerComponent(ValueMapper.class, Context::valueMapper, true);
 
