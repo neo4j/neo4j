@@ -662,6 +662,8 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
 
   override def isOpen: Boolean = inner.isOpen
 
+  override def assertOpen(): Unit = inner.assertOpen
+
   override def close(): Unit = inner.close()
 
   override def kernelStatisticProvider: KernelStatisticProvider = inner.kernelStatisticProvider

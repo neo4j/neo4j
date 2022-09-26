@@ -636,6 +636,8 @@ trait QueryTransactionalContext extends CloseableResource {
 
   def isOpen: Boolean
 
+  def assertOpen(): Unit
+
   def close(): Unit
 
   def rollback(): Unit

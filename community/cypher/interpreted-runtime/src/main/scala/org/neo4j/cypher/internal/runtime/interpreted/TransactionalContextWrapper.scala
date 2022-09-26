@@ -121,6 +121,8 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, thread
 
   override def isOpen: Boolean = tc.kernelTransaction.isOpen
 
+  override def assertOpen(): Unit = tc.kernelTransaction.assertOpen()
+
   override def close(): Unit = {
     if (DebugSupport.DEBUG_TRANSACTIONAL_CONTEXT) {
       DebugSupport.TRANSACTIONAL_CONTEXT.log(
