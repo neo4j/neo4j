@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
@@ -118,6 +119,14 @@ object ReadFinder {
             PlanReads()
               .withLabelRead(labelName)
               .withAddedFilterExpression(variable, hasLabels)
+
+          case UnionNodeByLabelsScan(varName, labelNames, _, _) =>
+            labelNames.foldLeft(PlanReads()) { (acc, labelName) =>
+              val variable = Variable(varName)(InputPosition.NONE)
+              val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
+              acc.withLabelRead(labelName)
+                .withAddedFilterExpression(variable, hasLabels)
+            }
 
           case NodeCountFromCountStore(varName, labelNames, _) =>
             val countsAllNodes = labelNames.exists(_.isEmpty)

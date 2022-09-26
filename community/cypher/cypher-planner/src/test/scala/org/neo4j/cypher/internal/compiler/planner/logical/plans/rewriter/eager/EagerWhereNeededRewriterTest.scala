@@ -428,6 +428,33 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
+  test(
+    "inserts eager between label set and label read (UnionNodeByLabelScan) if label read through unstable iterator"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .setLabels("m", "N")
+      .apply()
+      .|.unionNodeByLabelsScan("n", Seq("N", "M"))
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("m")
+        .setLabels("m", "N")
+        .eager(ListSet(EagernessReason.LabelReadSetConflict(
+          labelName("N"),
+          Some(EagernessReason.Conflict(Id(1), Id(3)))
+        )))
+        .apply()
+        .|.unionNodeByLabelsScan("n", Seq("N", "M"))
+        .allNodeScan("m")
+        .build()
+    )
+  }
+
   test("inserts eager between label set and label read (NodeIndexScan) if label read through unstable iterator") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("m")
