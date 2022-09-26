@@ -58,7 +58,10 @@ class ParallelTransactionalContextWrapper(
 
   // TODO: Make parallel transaction use safe.
   //       We want all methods going through kernelExecutionContext when it is supported instead of through tc.kernelTransaction, which is not thread-safe
-  private[this] val kernelExecutionContext: ExecutionContext = tc.kernelTransaction.createExecutionContext()
+  private[this] val kernelExecutionContext: ExecutionContext = {
+    tc.kernelTransaction().assertOpen()
+    tc.kernelTransaction.createExecutionContext()
+  }
 
   override def commitTransaction(): Unit = unsupported()
 
