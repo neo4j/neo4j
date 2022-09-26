@@ -102,6 +102,11 @@ object Foldable {
    */
   class Folder(foldedOver: Any, cancellation: CancellationChecker) {
 
+    def treeCollect[R](f: PartialFunction[Any, R]): Seq[R] =
+      fold(Seq.empty[R]) {
+        case x if f.isDefinedAt(x) => _ :+ f(x)
+      }
+
     def fold[R](init: R)(f: PartialFunction[Any, R => R]): R =
       foldAcc(mutable.Stack(foldedOver), init, f.lift, cancellation)
 
