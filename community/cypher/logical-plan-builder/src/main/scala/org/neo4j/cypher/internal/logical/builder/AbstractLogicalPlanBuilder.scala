@@ -1069,10 +1069,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     }
   }
 
-  def nodeCountFromCountStore(node: String, labels: Seq[Option[String]], args: String*): IMPL = {
+  def nodeCountFromCountStore(name: String, labels: Seq[Option[String]], args: String*): IMPL = {
     val labelNames = labels.map(maybeLabel => maybeLabel.map(labelName)).toList
     appendAtCurrentIndent(LeafOperator(NodeCountFromCountStore(
-      node,
+      name,
       labelNames,
       args.map(VariableParser.unescaped).toSet
     )(_)))

@@ -507,6 +507,48 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
+  test(
+    "inserts eager between label set and label read (NodeCountFromCountStore) if label read through unstable iterator"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .setLabels("m", "N")
+      .apply()
+      .|.nodeCountFromCountStore("count", Seq(Some("N")))
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("m")
+        .setLabels("m", "N")
+        .eager(ListSet(EagernessReason.LabelReadSetConflict(
+          labelName("N"),
+          Some(EagernessReason.Conflict(Id(1), Id(3)))
+        )))
+        .apply()
+        .|.nodeCountFromCountStore("count", Seq(Some("N")))
+        .allNodeScan("m")
+        .build()
+    )
+  }
+
+  test(
+    "inserts no eager between label set and label read (NodeCountFromCountStore) if label read through stable iterator"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .setLabels("m", "N")
+      .apply()
+      .|.allNodeScan("m")
+      .nodeCountFromCountStore("count", Seq(Some("N")))
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(plan)
+  }
+
   // Read vs Create conflicts
 
   test("inserts no eager between Create and AllNodeScan if read through stable iterator") {
@@ -560,6 +602,72 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .cartesianProduct()
         .|.allNodeScan("m")
         .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test(
+    "inserts eager between Create and All nodes read (NodeCountFromCountStore) if read through unstable iterator"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("o", "O"))
+      .apply()
+      .|.nodeCountFromCountStore("count", Seq(None))
+      .nodeByLabelScan("m", "M")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("m")
+        .create(createNode("o", "O"))
+        .eager(ListSet(EagernessReason.ReadCreateConflict(Some(EagernessReason.Conflict(Id(1), Id(3))))))
+        .apply()
+        .|.nodeCountFromCountStore("count", Seq(None))
+        .nodeByLabelScan("m", "M")
+        .build()
+    )
+  }
+
+  test(
+    "inserts no eager between Create and All nodes read (NodeCountFromCountStore) if read through stable iterator"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("o", "O"))
+      .apply()
+      .|.nodeByLabelScan("m", "M")
+      .nodeCountFromCountStore("count", Seq(None))
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(plan)
+  }
+
+  test(
+    "inserts eager between Create and label read (NodeCountFromCountStore) if label read through unstable iterator"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("o", "N"))
+      .apply()
+      .|.nodeCountFromCountStore("count", Seq(Some("N")))
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("m")
+        .create(createNode("o", "N"))
+        .eager(ListSet(EagernessReason.LabelReadSetConflict(
+          labelName("N"),
+          Some(EagernessReason.Conflict(Id(1), Id(3)))
+        )))
+        .apply()
+        .|.nodeCountFromCountStore("count", Seq(Some("N")))
+        .allNodeScan("m")
         .build()
     )
   }

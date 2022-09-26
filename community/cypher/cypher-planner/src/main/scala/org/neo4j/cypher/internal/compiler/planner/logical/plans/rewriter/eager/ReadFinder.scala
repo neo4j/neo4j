@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
@@ -115,6 +116,18 @@ object ReadFinder {
             PlanReads()
               .withLabelRead(labelName)
               .withAddedFilterExpression(variable, hasLabels)
+
+          case NodeCountFromCountStore(varName, labelNames, _) =>
+            val countsAllNodes = labelNames.exists(_.isEmpty)
+            val acc = PlanReads(readsAllNodes = countsAllNodes)
+            labelNames.flatten.foldLeft(acc) { (acc, labelName) =>
+              // The varName is really for the count variable - we don't have a node variable.
+              // But this is OK?
+              val variable = Variable(varName)(InputPosition.NONE)
+              val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
+              acc.withLabelRead(labelName)
+                .withAddedFilterExpression(variable, hasLabels)
+            }
 
           case NodeIndexScan(varName, LabelToken(labelName, _), properties, _, _, _) =>
             val variable = Variable(varName)(InputPosition.NONE)
