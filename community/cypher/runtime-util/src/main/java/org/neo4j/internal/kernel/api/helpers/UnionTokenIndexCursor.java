@@ -21,11 +21,12 @@ package org.neo4j.internal.kernel.api.helpers;
 
 import java.util.Arrays;
 import org.neo4j.internal.kernel.api.Cursor;
+import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.util.Preconditions;
 
-public abstract class UnionTokenIndexCursor<CURSOR extends Cursor> {
+public abstract class UnionTokenIndexCursor<CURSOR extends Cursor> extends DefaultCloseListenable implements Cursor {
     private static final int UNINITIALIZED = -1;
     private final CURSOR[] cursors;
     private int currentCursorIndex = UNINITIALIZED;
@@ -130,5 +131,15 @@ public abstract class UnionTokenIndexCursor<CURSOR extends Cursor> {
 
     protected CURSOR current() {
         return cursors[currentCursorIndex];
+    }
+
+    @Override
+    public void closeInternal() {
+        // do nothing for
+    }
+
+    @Override
+    public boolean isClosed() {
+        return false;
     }
 }

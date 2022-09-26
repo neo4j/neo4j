@@ -68,6 +68,10 @@ public abstract class UnionNodeLabelIndexCursor extends UnionTokenIndexCursor<No
         return new DescendingUnionLabelIndexCursor(cursors);
     }
 
+    public static UnionNodeLabelIndexCursor unionNodeLabelIndexCursor(NodeLabelIndexCursor[] cursors) {
+        return new AscendingUnionLabelIndexCursor(cursors);
+    }
+
     UnionNodeLabelIndexCursor(NodeLabelIndexCursor[] cursors) {
         super(cursors);
     }
