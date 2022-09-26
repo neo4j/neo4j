@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
+import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -194,6 +195,9 @@ object ReadFinder {
               .withPropertyRead(PropertyKeyName(property)(InputPosition.NONE))
 
           case _: Argument =>
+            PlanReads()
+
+          case _: Input =>
             PlanReads()
 
           case x => throw new IllegalStateException(s"Leaf operator ${x.getClass.getSimpleName} not implemented yet.")
