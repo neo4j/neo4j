@@ -2568,6 +2568,56 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   }
 
   test(
+    "Should insert an eager when there is a conflict between a write within a forEachApply and a read after"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("d")
+      .apply()
+      .|.nodeIndexOperator("d:D(foo>0)")
+      .foreachApply("num", "[1]")
+      .|.create(createNodeWithProperties("n", Seq(), "{foo: num}"))
+      .|.argument("num")
+      .argument()
+
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("d")
+        .apply()
+        .|.nodeIndexOperator("d:D(foo>0)")
+        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
+          propName("foo"),
+          Some(EagernessReason.Conflict(Id(4), Id(2)))
+        )))
+        .foreachApply("num", "[1]")
+        .|.create(createNodeWithProperties("n", Seq(), "{foo: num}"))
+        .|.argument("num")
+        .argument()
+        .build()
+    )
+  }
+
+  test(
+    "Should not insert an eager when there is no conflict between a write within a forEachApply and a read after"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("d")
+      .apply()
+      .|.nodeIndexOperator("d:D(bar>0)")
+      .foreachApply("num", "[1]")
+      .|.create(createNodeWithProperties("n", Seq(), "{foo: num}"))
+      .|.argument("num")
+      .argument()
+
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(plan)
+  }
+
+  test(
     "inserts eager between property set and property read (NodeIndexSeekByRange) if property read through unstable iterator"
   ) {
     val planBuilder = new LogicalPlanBuilder()
