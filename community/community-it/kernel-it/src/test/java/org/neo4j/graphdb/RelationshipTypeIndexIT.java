@@ -29,9 +29,9 @@ import static org.neo4j.io.IOUtils.uncheckedConsumer;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,16 +41,14 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
-import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -59,7 +57,6 @@ import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.schema.SimpleEntityTokenClient;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.DbmsController;
@@ -92,41 +89,41 @@ class RelationshipTypeIndexIT {
 
     @Test
     void shouldSeeAddedRelationship() throws IndexNotFoundKernelException {
-        List<Long> expectedIds = new ArrayList<>();
+        Set<String> expectedIds = new HashSet<>();
         createRelationshipInTx(expectedIds);
 
-        assertContainIds(expectedIds);
+        assertContainsRelationships(expectedIds);
     }
 
     @Test
     void shouldNotSeeRemovedRelationship() throws IndexNotFoundKernelException {
-        List<Long> expectedIds = new ArrayList<>();
-        long nodeId;
+        Set<String> expectedIds = new HashSet<>();
+        String nodeId;
         try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode(TestLabels.LABEL_ONE);
-            nodeId = node.getId();
+            nodeId = node.getElementId();
             Relationship relationship1 = node.createRelationshipTo(tx.createNode(), REL_TYPE);
             Relationship relationship2 = createRelationship(tx);
-            expectedIds.add(relationship1.getId());
-            expectedIds.add(relationship2.getId());
+            expectedIds.add(relationship1.getElementId());
+            expectedIds.add(relationship2.getElementId());
             tx.commit();
         }
 
         try (Transaction tx = db.beginTx()) {
-            Node node = tx.getNodeById(nodeId);
+            Node node = tx.getNodeByElementId(nodeId);
             Iterables.forEach(node.getRelationships(), rel -> {
-                expectedIds.remove(rel.getId());
+                expectedIds.remove(rel.getElementId());
                 rel.delete();
             });
             tx.commit();
         }
 
-        assertContainIds(expectedIds);
+        assertContainsRelationships(expectedIds);
     }
 
     @Test
     void shouldRebuildIfMissingDuringStartup() throws IndexNotFoundKernelException, IOException {
-        List<Long> expectedIds = new ArrayList<>();
+        Set<String> expectedIds = new HashSet<>();
         createRelationshipInTx(expectedIds);
 
         ResourceIterator<Path> files = getRelationshipTypeIndexFiles();
@@ -136,7 +133,7 @@ class RelationshipTypeIndexIT {
         });
         awaitIndexesOnline();
 
-        assertContainIds(expectedIds);
+        assertContainsRelationships(expectedIds);
     }
 
     @Test
@@ -156,7 +153,7 @@ class RelationshipTypeIndexIT {
 
     @Test
     void shouldBeRecovered() throws IndexNotFoundKernelException {
-        List<Long> expectedIds = new ArrayList<>();
+        Set<String> expectedIds = new HashSet<>();
         createRelationshipInTx(expectedIds);
 
         dbmsController.restartDbms(builder -> {
@@ -165,7 +162,7 @@ class RelationshipTypeIndexIT {
         });
         awaitIndexesOnline();
 
-        assertContainIds(expectedIds);
+        assertContainsRelationships(expectedIds);
     }
 
     @Test
@@ -232,10 +229,10 @@ class RelationshipTypeIndexIT {
         return relationship;
     }
 
-    private void createRelationshipInTx(List<Long> expectedIds) {
+    private void createRelationshipInTx(Set<String> expectedIds) {
         try (Transaction tx = db.beginTx()) {
             Relationship relationship = createRelationship(tx);
-            expectedIds.add(relationship.getId());
+            expectedIds.add(relationship.getElementId());
             tx.commit();
         }
     }
@@ -261,23 +258,18 @@ class RelationshipTypeIndexIT {
         return indexingService.getIndexProxy(findTokenIndex());
     }
 
-    private void assertContainIds(List<Long> expectedIds) throws IndexNotFoundKernelException {
-        int relationshipTypeId = getRelationshipTypeId();
-
-        IndexProxy indexProxy = getIndexProxy();
-        List<Long> actualIds = new ArrayList<>();
-        try (TokenIndexReader reader = indexProxy.newTokenReader()) {
-            SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
-            reader.query(
-                    tokenClient, unconstrained(), new TokenPredicate(relationshipTypeId), CursorContext.NULL_CONTEXT);
-            while (tokenClient.next()) {
-                actualIds.add(tokenClient.reference);
+    private void assertContainsRelationships(Set<String> expectedIds) throws IndexNotFoundKernelException {
+        assertThat(getIndexProxy().getState()).isEqualTo(InternalIndexState.ONLINE);
+        try (var tx = db.beginTx()) {
+            try (var relationships = tx.findRelationships(REL_TYPE)) {
+                var actualIds = new HashSet<String>();
+                while (relationships.hasNext()) {
+                    var relationship = relationships.next();
+                    actualIds.add(relationship.getElementId());
+                }
+                assertThat(actualIds).as("contains expected relationships").isEqualTo(expectedIds);
             }
         }
-
-        expectedIds.sort(Long::compareTo);
-        actualIds.sort(Long::compareTo);
-        assertThat(actualIds).as("contains expected relationships").isEqualTo(expectedIds);
     }
 
     private int countRelationshipsInFulltextIndex(String indexName) throws KernelException {
@@ -321,16 +313,6 @@ class RelationshipTypeIndexIT {
             transaction.schema().awaitIndexesOnline(10, TimeUnit.MINUTES);
             transaction.commit();
         }
-    }
-
-    private int getRelationshipTypeId() {
-        int relationshipTypeId;
-        try (Transaction tx = db.beginTx()) {
-            relationshipTypeId =
-                    ((InternalTransaction) tx).kernelTransaction().tokenRead().relationshipType(REL_TYPE.name());
-            tx.commit();
-        }
-        return relationshipTypeId;
     }
 
     private void removeLastCheckpointRecordFromLastLogFile() {
