@@ -19,19 +19,12 @@
  */
 package org.neo4j.graphdb;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.coreapi.TransactionImpl;
-import org.neo4j.test.Barrier;
-import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -91,114 +84,6 @@ class DeleteNodeWithRelationshipsIT {
         try (Transaction tx = db.beginTx()) {
             assertThrows(NotFoundException.class, () -> tx.getNodeById(nodeId));
             tx.commit();
-        }
-    }
-
-    @Test
-    void shouldDeleteDenseNodeIfContainingEmptyGroupsFromPreviousContendedRelationshipDeletions()
-            throws ExecutionException, InterruptedException {
-        // given
-        long nodeId;
-        RelationshipType typeA = RelationshipType.withName("A");
-        RelationshipType typeB = RelationshipType.withName("B");
-        try (Transaction tx = db.beginTx()) {
-            Node node = tx.createNode();
-            nodeId = node.getId();
-            for (int i = 0; i < 200; i++) {
-                node.createRelationshipTo(tx.createNode(), i % 2 == 0 ? typeA : typeB);
-            }
-            tx.commit();
-        }
-
-        // when starting a transaction that creates a relationship of type B and halting it before apply
-        Barrier.Control barrier;
-        try (OtherThreadExecutor t2 = new OtherThreadExecutor("T2")) {
-            barrier = new Barrier.Control();
-            Future<Object> t2Future = t2.executeDontWait(() -> {
-                try (TransactionImpl tx = (TransactionImpl) db.beginTx()) {
-                    tx.getNodeById(nodeId).createRelationshipTo(tx.createNode(), typeB);
-                    tx.commit(barrier::reached);
-                }
-                return null;
-            });
-
-            barrier.awaitUninterruptibly();
-
-            // and another transaction which deletes all relationships of type A, and let it commit
-            try (Transaction tx = db.beginTx()) {
-                Iterables.forEach(tx.getNodeById(nodeId).getRelationships(typeA), Relationship::delete);
-                tx.commit();
-            }
-            // and letting the first transaction complete
-            barrier.release();
-            t2Future.get();
-        }
-
-        // then deleting the node should remove the empty group A, even if it's only deleting relationships of type B
-        try (Transaction tx = db.beginTx()) {
-            Node node = tx.getNodeById(nodeId);
-            Iterables.forEach(node.getRelationships(), rel -> {
-                assertThat(rel.isType(typeB)).isTrue();
-                rel.delete();
-            });
-            node.delete();
-            tx.commit();
-        }
-    }
-
-    @Test
-    void shouldDeleteDenseNodeIfContainingEmptyGroups() throws Exception {
-        // given
-        long nodeId;
-        RelationshipType typeA = RelationshipType.withName("A");
-        RelationshipType typeB = RelationshipType.withName("B");
-        try (Transaction tx = db.beginTx()) {
-            Node node = tx.createNode();
-            nodeId = node.getId();
-            node.createRelationshipTo(tx.createNode(), typeA);
-            for (int i = 0; i < 200; i++) {
-                node.createRelationshipTo(
-                        tx.createNode(), typeA); // Type A is created first and will get a lower type ID
-            }
-            tx.getNodeById(nodeId).createRelationshipTo(tx.createNode(), typeB);
-            tx.commit();
-        }
-
-        // when starting a transaction that creates a relationship of type A and halting it before apply
-        Barrier.Control barrier;
-        try (OtherThreadExecutor t2 = new OtherThreadExecutor("T2")) {
-            barrier = new Barrier.Control();
-            Future<Object> t2Future = t2.executeDontWait(() -> {
-                try (TransactionImpl tx = (TransactionImpl) db.beginTx()) {
-                    tx.getNodeById(nodeId).createRelationshipTo(tx.createNode(), typeA);
-                    tx.commit(barrier::reached);
-                }
-                return null;
-            });
-
-            barrier.awaitUninterruptibly();
-
-            // and another transaction which deletes all relationships of type B, and let it commit
-            try (Transaction tx = db.beginTx()) {
-                Iterables.forEach(tx.getNodeById(nodeId).getRelationships(typeB), Relationship::delete);
-                tx.commit(); // This will fail to delete the group B since it can not get exlusive locks
-            }
-            // and letting the first transaction complete
-            barrier.release();
-            t2Future.get();
-
-            // then removing the remaining relationships of A
-            try (Transaction tx = db.beginTx()) {
-                Iterables.forEach(tx.getNodeById(nodeId).getRelationships(typeA), Relationship::delete);
-                tx.commit(); // this should only delete group A since B has a higher typeId than A (later in
-                // group-chain)
-            }
-        }
-
-        // then deleting the node should also remove the empty group B
-        try (Transaction tx = db.beginTx()) {
-            tx.getNodeById(nodeId).delete();
-            assertThatCode(tx::commit).doesNotThrowAnyException();
         }
     }
 }
