@@ -683,8 +683,7 @@ public class ConsistencyCheckService {
         LoggingReporterFactoryInvocationHandler handler = new LoggingReporterFactoryInvocationHandler(log, true);
         ReporterFactory proxyFactory = new ReporterFactory(handler);
 
-        checkable.consistencyCheck(
-                proxyFactory, NULL_CONTEXT_FACTORY, Runtime.getRuntime().availableProcessors());
+        checkable.consistencyCheck(proxyFactory, NULL_CONTEXT_FACTORY, numberOfThreads);
         summary.update("INDEX_STATISTICS", handler.errors(), handler.warnings());
     }
 
@@ -724,10 +723,6 @@ public class ConsistencyCheckService {
 
     private static String defaultLogFileName(Date date) {
         return "inconsistencies-%s.report".formatted(new SimpleDateFormat("yyyy-MM-dd.HH.mm.ss").format(date));
-    }
-
-    private static int defaultNumberOfThreads() {
-        return Runtime.getRuntime().availableProcessors();
     }
 
     public static class Result {

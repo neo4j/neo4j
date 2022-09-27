@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.annotations.documented.ReporterFactories.noopReporterFactory;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.test.Race.throwing;
 
 import java.io.IOException;
@@ -44,7 +45,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -77,7 +77,7 @@ class IndexStatisticsStoreTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        contextFactory = new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY);
+        contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
         store = openStore("stats");
         lifeSupport.start();
     }
@@ -108,19 +108,19 @@ class IndexStatisticsStoreTest {
     @Test
     void tracePageCacheAccessOnConsistencyCheck() throws IOException {
         var store = openStore("consistencyCheck");
-        try (var cursorContext = contextFactory.create("tracePageCacheAccessOnConsistencyCheck")) {
-            for (int i = 0; i < 100; i++) {
-                store.replaceStats(i, new IndexSample());
-            }
-            store.checkpoint(FileFlushEvent.NULL, CursorContext.NULL_CONTEXT);
-            store.consistencyCheck(
-                    noopReporterFactory(), contextFactory, Runtime.getRuntime().availableProcessors());
-
-            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-            assertThat(cursorTracer.pins()).isEqualTo(16);
-            assertThat(cursorTracer.unpins()).isEqualTo(16);
-            assertThat(cursorTracer.hits()).isEqualTo(16);
+        for (int i = 0; i < 100; i++) {
+            store.replaceStats(i, new IndexSample());
         }
+        store.checkpoint(FileFlushEvent.NULL, CursorContext.NULL_CONTEXT);
+
+        var checkPageCacheTracer = new DefaultPageCacheTracer();
+        var checkContextFactory = new CursorContextFactory(checkPageCacheTracer, EMPTY);
+        store.consistencyCheck(
+                noopReporterFactory(), checkContextFactory, Runtime.getRuntime().availableProcessors());
+
+        assertThat(checkPageCacheTracer.pins()).isEqualTo(9);
+        assertThat(checkPageCacheTracer.unpins()).isEqualTo(9);
+        assertThat(checkPageCacheTracer.hits()).isEqualTo(9);
     }
 
     @Test

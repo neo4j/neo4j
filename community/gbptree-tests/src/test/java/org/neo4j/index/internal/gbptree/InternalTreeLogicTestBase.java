@@ -39,6 +39,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -1723,9 +1724,18 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
                 visitor,
                 CursorCreator.bind(readCursor),
                 Runtime.getRuntime().availableProcessors())) {
-            GBPTreeConsistencyChecker<KEY> consistencyChecker =
-                    new GBPTreeConsistencyChecker<>(node, layout, state, stableGeneration, unstableGeneration, true);
-            consistencyChecker.check(null, root, visitor, NULL_CONTEXT_FACTORY);
+            GBPTreeConsistencyChecker<KEY> consistencyChecker = new GBPTreeConsistencyChecker<>(
+                    node,
+                    layout,
+                    state,
+                    stableGeneration,
+                    unstableGeneration,
+                    true,
+                    Path.of("file"),
+                    ctx -> cursor.duplicate(),
+                    root,
+                    NULL_CONTEXT_FACTORY);
+            consistencyChecker.check(visitor);
         }
         goTo(readCursor, currentPageId);
     }
@@ -1944,7 +1954,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
 
     private void assertSiblingOrderAndPointers(long... children) throws IOException {
         long currentPageId = readCursor.getCurrentPageId();
-        RightmostInChain rightmost = new RightmostInChain(null);
+        RightmostInChain rightmost = new RightmostInChain(null, true);
         GenerationKeeper generationTarget = new GenerationKeeper();
         ThrowingConsistencyCheckVisitor visitor = new ThrowingConsistencyCheckVisitor();
         for (long child : children) {

@@ -33,13 +33,20 @@ import org.neo4j.io.pagecache.PageCursor;
  */
 class RightmostInChain {
     private final Path path;
-    private long currentRightmostNode = TreeNode.NO_NODE_FLAG;
-    private long currentRightmostRightSiblingPointer = TreeNode.NO_NODE_FLAG;
+    private final boolean leftmostShard;
+    private long currentRightmostNode = NO_NODE_FLAG;
+    private long currentRightmostRightSiblingPointer = NO_NODE_FLAG;
     private long currentRightmostRightSiblingPointerGeneration;
     private long currentRightmostNodeGeneration;
 
-    RightmostInChain(Path path) {
+    private long leftmostNode = NO_NODE_FLAG;
+    private long leftmostLeftSiblingPointer = NO_NODE_FLAG;
+    private long leftmostLeftSiblingPointerGeneration;
+    private long leftmostNodeGeneration;
+
+    RightmostInChain(Path path, boolean leftmostShard) {
         this.path = path;
+        this.leftmostShard = leftmostShard;
     }
 
     void assertNext(
@@ -52,23 +59,7 @@ class RightmostInChain {
             GBPTreeConsistencyCheckVisitor visitor) {
         long newRightmostNode = cursor.getCurrentPageId();
 
-        // Assert we have reached expected node and that we agree about being siblings
-        assertSiblingsAgreeOnBeingSiblings(
-                currentRightmostNode,
-                currentRightmostNodeGeneration,
-                currentRightmostRightSiblingPointer,
-                currentRightmostRightSiblingPointerGeneration,
-                newRightmostNode,
-                newRightmostNodeGeneration,
-                newRightmostLeftSiblingPointer,
-                newRightmostLeftSiblingPointerGeneration,
-                visitor);
-        // Assert that both sibling pointers have reasonable generations
-        assertSiblingPointerGeneration(
-                currentRightmostNode,
-                currentRightmostNodeGeneration,
-                currentRightmostRightSiblingPointer,
-                currentRightmostRightSiblingPointerGeneration,
+        assertNode(
                 newRightmostNode,
                 newRightmostNodeGeneration,
                 newRightmostLeftSiblingPointer,
@@ -80,13 +71,47 @@ class RightmostInChain {
         currentRightmostNodeGeneration = newRightmostNodeGeneration;
         currentRightmostRightSiblingPointer = newRightmostRightSiblingPointer;
         currentRightmostRightSiblingPointerGeneration = newRightmostRightSiblingPointerGeneration;
+
+        if (leftmostNode == NO_NODE_FLAG) {
+            leftmostNode = newRightmostNode;
+            leftmostLeftSiblingPointer = newRightmostLeftSiblingPointer;
+            leftmostLeftSiblingPointerGeneration = newRightmostLeftSiblingPointerGeneration;
+            leftmostNodeGeneration = newRightmostNodeGeneration;
+        }
+    }
+
+    void assertNext(RightmostInChain right, GBPTreeConsistencyCheckVisitor visitor) {
+        assertNode(
+                right.leftmostNode,
+                right.leftmostNodeGeneration,
+                right.leftmostLeftSiblingPointer,
+                right.leftmostLeftSiblingPointerGeneration,
+                visitor);
+    }
+
+    private void assertNode(
+            long newRightmostNode,
+            long newRightmostNodeGeneration,
+            long newRightmostLeftSiblingPointer,
+            long newRightmostLeftSiblingPointerGeneration,
+            GBPTreeConsistencyCheckVisitor visitor) {
+        // Assert we have reached expected node and that we agree about being siblings
+        assertSiblingsAgreeOnBeingSiblings(
+                newRightmostNode,
+                newRightmostNodeGeneration,
+                newRightmostLeftSiblingPointer,
+                newRightmostLeftSiblingPointerGeneration,
+                visitor);
+        // Assert that both sibling pointers have reasonable generations
+        assertSiblingPointerGeneration(
+                newRightmostNode,
+                newRightmostNodeGeneration,
+                newRightmostLeftSiblingPointer,
+                newRightmostLeftSiblingPointerGeneration,
+                visitor);
     }
 
     private void assertSiblingPointerGeneration(
-            long currentRightmostNode,
-            long currentRightmostNodeGeneration,
-            long currentRightmostRightSiblingPointer,
-            long currentRightmostRightSiblingPointerGeneration,
             long newRightmostNode,
             long newRightmostNodeGeneration,
             long newRightmostLeftSiblingPointer,
@@ -121,17 +146,14 @@ class RightmostInChain {
     }
 
     private void assertSiblingsAgreeOnBeingSiblings(
-            long currentRightmostNode,
-            long currentRightmostNodeGeneration,
-            long currentRightmostRightSiblingPointer,
-            long currentRightmostRightSiblingPointerGeneration,
             long newRightmostNode,
             long newRightmostNodeGeneration,
             long newRightmostLeftSiblingPointer,
             long newRightmostLeftSiblingPointerGeneration,
             GBPTreeConsistencyCheckVisitor visitor) {
         boolean siblingsPointToEachOther = true;
-        if (newRightmostLeftSiblingPointer != currentRightmostNode) {
+        if (newRightmostLeftSiblingPointer != currentRightmostNode
+                && (currentRightmostNode != NO_NODE_FLAG || leftmostShard)) {
             // Right sibling does not point to left sibling
             // Left siblings view:  {2(_)}-(_)->{_}
             // Right siblings view: {1}<-(_)-{_(_)}

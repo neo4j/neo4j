@@ -21,10 +21,13 @@ package org.neo4j.index.internal.gbptree;
 
 import static java.lang.Math.toIntExact;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
+import static org.neo4j.index.internal.gbptree.IdSpace.MIN_TREE_NODE_ID;
 import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
 import static org.neo4j.index.internal.gbptree.TreeNode.NO_OFFLOAD_ID;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
+import static org.neo4j.index.internal.gbptree.TreeNode.goTo;
+import static org.neo4j.index.internal.gbptree.TreeNode.isNode;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -32,14 +35,22 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.eclipse.collections.api.list.MutableList;
+import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
-import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
+import org.neo4j.function.ThrowingFunction;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.util.concurrent.Futures;
 
 /**
  * <ul>
@@ -51,16 +62,19 @@ import org.neo4j.io.pagecache.context.CursorContext;
  * </ul>
  */
 class GBPTreeConsistencyChecker<KEY> {
+    private static final String TAG_CHECK = "check gbptree consistency";
+
     private final TreeNode<KEY, ?> node;
     private final Comparator<KEY> comparator;
     private final Layout<KEY, ?> layout;
-    private final List<RightmostInChain> rightmostPerLevel = new ArrayList<>();
     private final ConsistencyCheckState state;
     private final long stableGeneration;
     private final long unstableGeneration;
     private final boolean reportDirty;
-    private final GenerationKeeper generationTarget = new GenerationKeeper();
-    private final MutableLongList offloadIds = new LongArrayList();
+    private final Path file;
+    private final ThrowingFunction<CursorContext, PageCursor, IOException> cursorFactory;
+    private final Root root;
+    private final CursorContextFactory contextFactory;
 
     GBPTreeConsistencyChecker(
             TreeNode<KEY, ?> node,
@@ -68,7 +82,11 @@ class GBPTreeConsistencyChecker<KEY> {
             ConsistencyCheckState state,
             long stableGeneration,
             long unstableGeneration,
-            boolean reportDirty) {
+            boolean reportDirty,
+            Path file,
+            ThrowingFunction<CursorContext, PageCursor, IOException> cursorFactory,
+            Root root,
+            CursorContextFactory contextFactory) {
         this.node = node;
         this.comparator = node.keyComparator();
         this.layout = layout;
@@ -76,44 +94,38 @@ class GBPTreeConsistencyChecker<KEY> {
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
         this.reportDirty = reportDirty;
+        this.file = file;
+        this.cursorFactory = cursorFactory;
+        this.root = root;
+        this.contextFactory = contextFactory;
     }
 
     /**
      * Checks so that all pages between {@link IdSpace#MIN_TREE_NODE_ID} and highest allocated id
-     * are either in use in the tree, on the free-list or free-list nodes.
+     * are either in use in the tree, on the free-list or free-list nodes, and that their interlinks are correct.
      *
-     * @param file The file containing the gbptree
-     * @param cursor {@link PageCursor} to use for reading.
-     * @param root {@link Root} the root of the gbptree.
      * @param visitor {@link GBPTreeConsistencyCheckVisitor} visitor to report inconsistencies to.
-     * @param cursorContext underlying page cursor context
      * @throws IOException on {@link PageCursor} error.
      */
-    void check(
-            Path file,
-            PageCursor cursor,
-            Root root,
-            GBPTreeConsistencyCheckVisitor visitor,
-            CursorContext cursorContext)
-            throws IOException {
-        // Check structure of this root in the GBPTree
-        long rootGeneration = root.goTo(cursor);
-        KeyRange<KEY> openRange = new KeyRange<>(-1, -1, comparator, null, null, layout, null);
-        checkSubtree(
-                file,
-                cursor,
-                openRange,
-                -1,
-                rootGeneration,
-                GBPTreePointerType.noPointer(),
-                0,
-                visitor,
-                state.seenIds,
-                cursorContext);
-
-        // Assert that rightmost node on each level has empty right sibling.
-        rightmostPerLevel.forEach(rightmost -> rightmost.assertLast(visitor));
-        root.goTo(cursor);
+    void check(GBPTreeConsistencyCheckVisitor visitor) throws IOException {
+        try (var context = contextFactory.create(TAG_CHECK);
+                var cursor = cursorFactory.apply(context)) {
+            long rootGeneration = root.goTo(cursor);
+            KeyRange<KEY> openRange = new KeyRange<>(-1, -1, comparator, null, null, layout, null);
+            var rightmostPerLevel = new RightmostInChainShard(file, true);
+            checkSubtree(
+                    cursor,
+                    openRange,
+                    -1,
+                    rootGeneration,
+                    GBPTreePointerType.noPointer(),
+                    0,
+                    visitor,
+                    state.seenIds,
+                    context,
+                    rightmostPerLevel);
+            rightmostPerLevel.assertLast(visitor);
+        }
     }
 
     private static void addToSeenList(
@@ -129,7 +141,6 @@ class GBPTreeConsistencyChecker<KEY> {
     }
 
     private void checkSubtree(
-            Path file,
             PageCursor cursor,
             KeyRange<KEY> range,
             long parentNode,
@@ -138,7 +149,8 @@ class GBPTreeConsistencyChecker<KEY> {
             int level,
             GBPTreeConsistencyCheckVisitor visitor,
             BitSet seenIds,
-            CursorContext cursorContext)
+            CursorContext cursorContext,
+            RightmostInChainShard rightmostPerLevel)
             throws IOException {
         long pageId = cursor.getCurrentPageId();
         addToSeenList(file, seenIds, pageId, state.lastId, visitor);
@@ -156,6 +168,7 @@ class GBPTreeConsistencyChecker<KEY> {
         long leftSiblingPointerGeneration;
         long rightSiblingPointerGeneration;
         long currentNodeGeneration;
+        var generationTarget = new GenerationKeeper();
 
         do {
             // for assertSiblings
@@ -220,9 +233,9 @@ class GBPTreeConsistencyChecker<KEY> {
         if (!reasonableKeyCount) {
             visitor.unreasonableKeyCount(pageId, keyCount, file);
         } else {
-            assertKeyOrder(file, cursor, range, keyCount, isLeaf ? LEAF : INTERNAL, offloadIds, visitor, cursorContext);
+            var offloadIds = assertKeyOrder(cursor, range, keyCount, isLeaf ? LEAF : INTERNAL, visitor, cursorContext);
+            offloadIds.forEach(id -> addToSeenList(file, seenIds, id, state.lastId, visitor));
         }
-        offloadIds.forEach(id -> addToSeenList(file, seenIds, id, state.lastId, visitor));
 
         String nodeMetaReport;
         boolean consistentNodeMeta;
@@ -236,26 +249,120 @@ class GBPTreeConsistencyChecker<KEY> {
         }
 
         assertPointerGenerationMatchesGeneration(
-                file, parentPointerType, parentNode, pageId, pointerGeneration, currentNodeGeneration, visitor);
-        assertSiblings(
-                file,
-                cursor,
-                currentNodeGeneration,
-                leftSiblingPointer,
-                leftSiblingPointerGeneration,
-                rightSiblingPointer,
-                rightSiblingPointerGeneration,
-                level,
-                visitor);
-        checkSuccessorPointerGeneration(file, cursor, successor, visitor);
+                parentPointerType, parentNode, pageId, pointerGeneration, currentNodeGeneration, visitor);
+        // Assumption: We traverse the tree from left to right on every level
+        rightmostPerLevel
+                .forLevel(level)
+                .assertNext(
+                        cursor,
+                        currentNodeGeneration,
+                        leftSiblingPointer,
+                        leftSiblingPointerGeneration,
+                        rightSiblingPointer,
+                        rightSiblingPointerGeneration,
+                        visitor);
+        checkSuccessorPointerGeneration(cursor, successor, visitor);
 
-        if (isInternal && reasonableKeyCount && consistentNodeMeta) {
-            assertSubtrees(file, cursor, range, keyCount, level, visitor, seenIds, cursorContext);
+        if (!isInternal || !reasonableKeyCount || !consistentNodeMeta) {
+            return;
+        }
+
+        if (level == 0 && state.numThreads > 1) {
+            // Let's parallelize checking the children in the root, one child is one task
+            var futures = new ArrayList<Future<?>>();
+            var rightmostPerLevelFromShards = new ArrayList<RightmostInChainShard>();
+            visitChildren(
+                    cursor,
+                    range,
+                    keyCount,
+                    level,
+                    visitor,
+                    cursorContext,
+                    generationTarget,
+                    (pos, treeNodeId, generation, childRange) -> {
+                        // Add the RightmostInChain in child order, i.e. when visiting and not when checking (which is
+                        // done by another thread)
+                        var shardRightmostPerLevel = new RightmostInChainShard(file, pos == 0);
+                        rightmostPerLevelFromShards.add(shardRightmostPerLevel);
+                        futures.add(state.executor.submit(() -> {
+                            try (var shardContext = contextFactory.create(TAG_CHECK);
+                                    var shardCursor = cursorFactory.apply(shardContext)) {
+                                goTo(shardCursor, "child at pos " + pos, treeNodeId);
+                                var shardSeenIds = new BitSet(toIntExact(state.highId()));
+                                checkSubtree(
+                                        shardCursor,
+                                        childRange,
+                                        pageId,
+                                        generation,
+                                        GBPTreePointerType.child(pos),
+                                        level + 1,
+                                        visitor,
+                                        shardSeenIds,
+                                        cursorContext,
+                                        shardRightmostPerLevel);
+                                synchronized (seenIds) {
+                                    shardSeenIds.stream()
+                                            .forEach(id -> addToSeenList(file, seenIds, id, state.lastId, visitor));
+                                }
+                                return null;
+                            }
+                        }));
+                    });
+            awaitAllFutures(futures);
+            checkRightmostInChainSeams(visitor, rightmostPerLevelFromShards);
+        } else {
+            visitChildren(
+                    cursor,
+                    range,
+                    keyCount,
+                    level,
+                    visitor,
+                    cursorContext,
+                    generationTarget,
+                    (pos, treeNodeId, generation, childRange) -> {
+                        goTo(cursor, "child at pos " + pos, treeNodeId);
+                        checkSubtree(
+                                cursor,
+                                childRange,
+                                pageId,
+                                generation,
+                                GBPTreePointerType.child(pos),
+                                level + 1,
+                                visitor,
+                                seenIds,
+                                cursorContext,
+                                rightmostPerLevel);
+                        goTo(cursor, "parent", pageId);
+                    });
         }
     }
 
-    private static void assertPointerGenerationMatchesGeneration(
-            Path file,
+    private static void checkRightmostInChainSeams(
+            GBPTreeConsistencyCheckVisitor visitor, List<RightmostInChainShard> rightmostPerLevelFromShards) {
+        // No need to go to parent w/ the shardCursor, but we need to check the RightmostInChain
+        // data and also check the seams between the shards.
+        if (!rightmostPerLevelFromShards.isEmpty()) {
+            var totalRightmost = rightmostPerLevelFromShards.get(0);
+            for (var i = 1; i < rightmostPerLevelFromShards.size(); i++) {
+                var shard = rightmostPerLevelFromShards.get(i);
+                totalRightmost.assertAndMergeNext(shard, visitor);
+            }
+            totalRightmost.assertLast(visitor);
+        }
+    }
+
+    private static void awaitAllFutures(Iterable<Future<?>> futures) throws IOException {
+        try {
+            Futures.getAll(futures);
+        } catch (ExecutionException e) {
+            // There may be multiple layers of ExecutionException here, so unwrap those to get to the real cause
+            var cause = Exceptions.findCauseOrSuppressed(e, t -> !(t instanceof ExecutionException))
+                    .orElse(e);
+            Exceptions.throwIfInstanceOfOrUnchecked(cause, IOException.class, IOException::new);
+        }
+    }
+
+    private void assertPointerGenerationMatchesGeneration(
             GBPTreePointerType pointerType,
             long sourceNode,
             long pointer,
@@ -269,57 +376,30 @@ class GBPTreeConsistencyChecker<KEY> {
     }
 
     private void checkSuccessorPointerGeneration(
-            Path file, PageCursor cursor, long successor, GBPTreeConsistencyCheckVisitor visitor) {
-        if (TreeNode.isNode(successor)) {
+            PageCursor cursor, long successor, GBPTreeConsistencyCheckVisitor visitor) {
+        if (isNode(successor)) {
             visitor.pointerToOldVersionOfTreeNode(cursor.getCurrentPageId(), pointer(successor), file);
         }
     }
 
-    // Assumption: We traverse the tree from left to right on every level
-    private void assertSiblings(
-            Path file,
-            PageCursor cursor,
-            long currentNodeGeneration,
-            long leftSiblingPointer,
-            long leftSiblingPointerGeneration,
-            long rightSiblingPointer,
-            long rightSiblingPointerGeneration,
-            int level,
-            GBPTreeConsistencyCheckVisitor visitor) {
-        // If this is the first time on this level, we will add a new entry
-        for (int i = rightmostPerLevel.size(); i <= level; i++) {
-            rightmostPerLevel.add(i, new RightmostInChain(file));
-        }
-        RightmostInChain rightmost = rightmostPerLevel.get(level);
-
-        rightmost.assertNext(
-                cursor,
-                currentNodeGeneration,
-                leftSiblingPointer,
-                leftSiblingPointerGeneration,
-                rightSiblingPointer,
-                rightSiblingPointerGeneration,
-                visitor);
-    }
-
-    private void assertSubtrees(
-            Path file,
+    private void visitChildren(
             PageCursor cursor,
             KeyRange<KEY> range,
             int keyCount,
             int level,
             GBPTreeConsistencyCheckVisitor visitor,
-            BitSet seenIds,
-            CursorContext cursorContext)
+            CursorContext cursorContext,
+            GenerationKeeper generationTarget,
+            ChildVisitor<KEY> childVisitor)
             throws IOException {
         long pageId = cursor.getCurrentPageId();
-        KEY prev = null;
-        KeyRange<KEY> childRange;
-        KEY readKey = layout.newKey();
+        KEY prev = layout.newKey();
 
-        // Check children, all except the last one
+        // Visit children, all except the last one
         int pos = 0;
         while (pos < keyCount) {
+            KEY readKey = layout.newKey();
+            KeyRange<KEY> childRange;
             long child;
             long childGeneration;
             assertNoCrashOrBrokenPointerInGSPP(
@@ -343,24 +423,7 @@ class GBPTreeConsistencyChecker<KEY> {
                 childRange = childRange.restrictLeft(prev);
             }
 
-            TreeNode.goTo(cursor, "child at pos " + pos, child);
-            checkSubtree(
-                    file,
-                    cursor,
-                    childRange,
-                    pageId,
-                    childGeneration,
-                    GBPTreePointerType.child(pos),
-                    level + 1,
-                    visitor,
-                    seenIds,
-                    cursorContext);
-
-            TreeNode.goTo(cursor, "parent", pageId);
-
-            if (pos == 0) {
-                prev = layout.newKey();
-            }
+            childVisitor.accept(pos, child, childGeneration, childRange);
             layout.copyKey(readKey, prev);
             pos++;
         }
@@ -382,21 +445,8 @@ class GBPTreeConsistencyChecker<KEY> {
             childGeneration = generationTarget.generation;
         } while (cursor.shouldRetry());
         checkAfterShouldRetry(cursor);
-
-        TreeNode.goTo(cursor, "child at pos " + pos, child);
-        childRange = range.newSubRange(level, pageId).restrictLeft(prev);
-        checkSubtree(
-                file,
-                cursor,
-                childRange,
-                pageId,
-                childGeneration,
-                GBPTreePointerType.child(pos),
-                level + 1,
-                visitor,
-                seenIds,
-                cursorContext);
-        TreeNode.goTo(cursor, "parent", pageId);
+        var childRange = range.newSubRange(level, pageId).restrictLeft(prev);
+        childVisitor.accept(pos, child, childGeneration, childRange);
     }
 
     private static void checkAfterShouldRetry(PageCursor cursor) throws CursorException {
@@ -408,17 +458,16 @@ class GBPTreeConsistencyChecker<KEY> {
         return node.childAt(cursor, pos, stableGeneration, unstableGeneration, childGeneration);
     }
 
-    private void assertKeyOrder(
-            Path file,
+    private LongList assertKeyOrder(
             PageCursor cursor,
             KeyRange<KEY> range,
             int keyCount,
             TreeNode.Type type,
-            MutableLongList offloadIds,
             GBPTreeConsistencyCheckVisitor visitor,
             CursorContext cursorContext)
             throws IOException {
         DelayedVisitor delayedVisitor = new DelayedVisitor(file);
+        var offloadIds = LongLists.mutable.empty();
         do {
             delayedVisitor.clear();
             offloadIds.clear();
@@ -449,6 +498,7 @@ class GBPTreeConsistencyChecker<KEY> {
         } while (cursor.shouldRetry());
         checkAfterShouldRetry(cursor);
         delayedVisitor.report(visitor);
+        return offloadIds;
     }
 
     static void assertNoCrashOrBrokenPointerInGSPP(
@@ -481,7 +531,7 @@ class GBPTreeConsistencyChecker<KEY> {
             // A
             generationA = GenerationSafePointer.readGeneration(cursor);
             readPointerA = GenerationSafePointer.readPointer(cursor);
-            pointerA = GenerationSafePointerPair.pointer(readPointerA);
+            pointerA = pointer(readPointerA);
             checksumA = GenerationSafePointer.readChecksum(cursor);
             correctChecksumA = GenerationSafePointer.checksumOf(generationA, readPointerA) == checksumA;
             stateA = GenerationSafePointerPair.pointerState(
@@ -490,7 +540,7 @@ class GBPTreeConsistencyChecker<KEY> {
             // B
             generationB = GenerationSafePointer.readGeneration(cursor);
             readPointerB = GenerationSafePointer.readPointer(cursor);
-            pointerB = GenerationSafePointerPair.pointer(readPointerA);
+            pointerB = pointer(readPointerA);
             checksumB = GenerationSafePointer.readChecksum(cursor);
             correctChecksumB = GenerationSafePointer.checksumOf(generationB, readPointerB) == checksumB;
             stateB = GenerationSafePointerPair.pointerState(
@@ -613,9 +663,15 @@ class GBPTreeConsistencyChecker<KEY> {
         private final long lastId;
         private final BitSet seenIds;
         private final GBPTreeConsistencyCheckVisitor visitor;
+        private final ExecutorService executor;
+        private final int numThreads;
 
         ConsistencyCheckState(
-                Path file, IdProvider idProvider, GBPTreeConsistencyCheckVisitor visitor, CursorCreator cursorCreator)
+                Path file,
+                IdProvider idProvider,
+                GBPTreeConsistencyCheckVisitor visitor,
+                CursorCreator cursorCreator,
+                int numThreads)
                 throws IOException {
             this.file = file;
             this.lastId = idProvider.lastId();
@@ -626,6 +682,8 @@ class GBPTreeConsistencyChecker<KEY> {
             IdProvider.IdProviderVisitor freelistSeenIdsVisitor =
                     new FreelistSeenIdsVisitor(file, seenIds, lastId, visitor);
             idProvider.visitFreelist(freelistSeenIdsVisitor, cursorCreator);
+            this.executor = Executors.newFixedThreadPool(numThreads);
+            this.numThreads = numThreads;
         }
 
         private long highId() {
@@ -635,15 +693,60 @@ class GBPTreeConsistencyChecker<KEY> {
         @Override
         public void close() {
             long highId = highId();
-            long expectedNumberOfPages = highId - IdSpace.MIN_TREE_NODE_ID;
+            long expectedNumberOfPages = highId - MIN_TREE_NODE_ID;
             if (seenIds.cardinality() != expectedNumberOfPages) {
-                int index = (int) IdSpace.MIN_TREE_NODE_ID;
+                int index = (int) MIN_TREE_NODE_ID;
                 while (index >= 0 && index < highId) {
                     index = seenIds.nextClearBit(index);
                     if (index != -1 && index < highId) {
                         visitor.unusedPage(index, file);
                     }
                     index++;
+                }
+            }
+            this.executor.shutdown();
+        }
+    }
+
+    interface ChildVisitor<KEY> {
+        void accept(int pos, long treeNodeId, long generation, KeyRange<KEY> range) throws IOException;
+    }
+
+    private static class RightmostInChainShard {
+        private final List<RightmostInChain> rightmostPerLevel = new ArrayList<>();
+        private final Path file;
+        private final boolean leftmostShard;
+
+        RightmostInChainShard(Path file, boolean leftmostShard) {
+            this.file = file;
+            this.leftmostShard = leftmostShard;
+        }
+
+        private RightmostInChain forLevel(int level) {
+            // If this is the first time on this level, we will add a new entry
+            for (int i = rightmostPerLevel.size(); i <= level; i++) {
+                rightmostPerLevel.add(i, new RightmostInChain(file, leftmostShard));
+            }
+            return rightmostPerLevel.get(level);
+        }
+
+        private void assertLast(GBPTreeConsistencyCheckVisitor visitor) {
+            rightmostPerLevel.forEach(rightmost -> rightmost.assertLast(visitor));
+        }
+
+        private void assertAndMergeNext(RightmostInChainShard shard, GBPTreeConsistencyCheckVisitor visitor) {
+            for (var j = 0; j < shard.rightmostPerLevel.size() || j < rightmostPerLevel.size(); j++) {
+                var left = j < rightmostPerLevel.size() ? rightmostPerLevel.get(j) : null;
+                var right = j < shard.rightmostPerLevel.size() ? shard.rightmostPerLevel.get(j) : null;
+                if (left != null && right != null) {
+                    left.assertNext(right, visitor);
+                }
+                if (right != null) {
+                    if (j >= rightmostPerLevel.size()) {
+                        rightmostPerLevel.add(right);
+                    } else {
+                        rightmostPerLevel.set(j, right);
+                    }
                 }
             }
         }

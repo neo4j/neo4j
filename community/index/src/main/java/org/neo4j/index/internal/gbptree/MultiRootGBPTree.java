@@ -1324,7 +1324,6 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             throws IOException {
         CleanTrackingConsistencyCheckVisitor cleanTrackingVisitor = new CleanTrackingConsistencyCheckVisitor(visitor);
         try (var context = contextFactory.create("consistencyCheck");
-                var cursor = pagedFile.io(0L /*ignored*/, PF_SHARED_READ_LOCK, context);
                 var state = new ConsistencyCheckState(
                         indexFile, freeList, visitor, bind(pagedFile, PF_SHARED_READ_LOCK, context), numThreads)) {
             if (dirtyOnStartup && reportDirty) {

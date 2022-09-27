@@ -119,14 +119,19 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
             CursorContextFactory contextFactory)
             throws IOException {
         long generation = support.generation();
+        var pagedFile = support.pagedFile();
         new GBPTreeConsistencyChecker<>(
                         treeNode,
                         layout,
                         state,
                         stableGeneration(generation),
                         unstableGeneration(generation),
-                        reportDirty)
-                .check(support.pagedFile(), root, visitor, contextFactory);
+                        reportDirty,
+                        pagedFile.path(),
+                        ctx -> pagedFile.io(0, PF_SHARED_READ_LOCK, ctx),
+                        root,
+                        contextFactory)
+                .check(visitor);
     }
 
     @Override

@@ -27,6 +27,7 @@ import java.lang.Thread.State;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 public final class Exceptions {
@@ -104,6 +105,35 @@ public final class Exceptions {
         if (clazz.isInstance(exception)) {
             throw clazz.cast(exception);
         }
+    }
+
+    /**
+     * @see #throwIfInstanceOfOrUnchecked(Throwable, Class, Function) and the exception will be rethrown as a
+     * {@link RuntimeException} if neither of the sought instance not unchecked.
+     */
+    public static <CHECKED extends Throwable> void throwIfInstanceOfOrUnchecked(
+            Throwable exception, Class<CHECKED> clazz) throws CHECKED {
+        throwIfInstanceOfOrUnchecked(exception, clazz, RuntimeException::new);
+    }
+
+    /**
+     * Will rethrow the provided {@code exception} as {@code CHECKED} if it's of that instance,
+     * otherwise as-is if it's unchecked, or lastly converted with {@code fallback} as a {@code FALLBACK}.
+     * @param exception the {@link Throwable} to rethrow.
+     * @param clazz {@link Class} of the checked exception to check instance of.
+     * @param fallback a way to convert the {@code exception} into a {@code FALLBACK} exception.
+     * @param <CHECKED> type of {@link Throwable} to check for (and rethrow) first.
+     * @param <FALLBACK> type of {@link Throwable} that {@code fallback} will convert the {@code exception} into
+     * if it doesn't fall into one of the other categories.
+     * @throws CHECKED if the {@code exception} is of this type.
+     * @throws FALLBACK if the {@code exception} is not of the {@code CHECKED} type, nor unchecked.
+     */
+    public static <CHECKED extends Throwable, FALLBACK extends Throwable> void throwIfInstanceOfOrUnchecked(
+            Throwable exception, Class<CHECKED> clazz, Function<Throwable, FALLBACK> fallback)
+            throws CHECKED, FALLBACK {
+        throwIfInstanceOf(exception, clazz);
+        throwIfUnchecked(exception);
+        throw fallback.apply(exception);
     }
 
     /**

@@ -20,6 +20,7 @@
 package org.neo4j.internal.helpers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -77,9 +78,46 @@ class ExceptionsTest {
         assertThat(chainedException.getSuppressed()).isEmpty();
     }
 
+    @Test
+    void shouldThrowAsIsIfCorrectCheckedInInstanceOfOrUnchecked() {
+        // GIVEN
+        var exception = new LevelOneException("The one exception");
+
+        // THEN
+        assertThatThrownBy(() -> Exceptions.throwIfInstanceOfOrUnchecked(exception, LevelOneException.class))
+                .isSameAs(exception);
+    }
+
+    @Test
+    void shouldThrowAsIsIfUncheckedInInstanceOfOrUnchecked() {
+        // GIVEN
+        var exception = new ARuntimeException(new LevelOneException("The one exception"));
+
+        // THEN
+        assertThatThrownBy(() -> Exceptions.throwIfInstanceOfOrUnchecked(exception, LevelOneException.class))
+                .isSameAs(exception);
+    }
+
+    @Test
+    void shouldThrowAsFallbackIfNeitherInInstanceOfOrUnchecked() {
+        // GIVEN
+        var exception = new LevelOneException("The one exception");
+
+        // THEN
+        assertThatThrownBy(() -> Exceptions.throwIfInstanceOfOrUnchecked(
+                        exception, AnotherCheckedException.class, AnotherCheckedException::new))
+                .hasCause(exception);
+    }
+
     private static class LevelOneException extends Exception {
         LevelOneException(String message) {
             super(message);
+        }
+    }
+
+    private static class AnotherCheckedException extends Exception {
+        AnotherCheckedException(Throwable cause) {
+            super(cause);
         }
     }
 

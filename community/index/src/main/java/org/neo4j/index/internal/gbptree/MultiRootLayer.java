@@ -270,9 +270,19 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         long generation = support.generation();
         long stableGeneration = stableGeneration(generation);
         long unstableGeneration = unstableGeneration(generation);
+        var pagedFile = support.pagedFile();
         new GBPTreeConsistencyChecker<>(
-                        rootTreeNode, rootLayout, state, stableGeneration, unstableGeneration, reportDirty)
-                .check(support.pagedFile(), root, visitor, contextFactory);
+                        rootTreeNode,
+                        rootLayout,
+                        state,
+                        stableGeneration,
+                        unstableGeneration,
+                        reportDirty,
+                        pagedFile.path(),
+                        ctx -> pagedFile.io(0, PF_SHARED_READ_LOCK, ctx),
+                        root,
+                        contextFactory)
+                .check(visitor);
 
         // Check each root
         try (var context = contextFactory.create("allRootsSeek");
@@ -280,8 +290,17 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             while (seek.next()) {
                 Root dataRoot = seek.value().asRoot();
                 new GBPTreeConsistencyChecker<>(
-                                dataTreeNode, dataLayout, state, stableGeneration, unstableGeneration, reportDirty)
-                        .check(support.pagedFile(), dataRoot, visitor, contextFactory);
+                                dataTreeNode,
+                                dataLayout,
+                                state,
+                                stableGeneration,
+                                unstableGeneration,
+                                reportDirty,
+                                pagedFile.path(),
+                                ctx -> pagedFile.io(0, PF_SHARED_READ_LOCK, ctx),
+                                dataRoot,
+                                contextFactory)
+                        .check(visitor);
             }
         }
     }

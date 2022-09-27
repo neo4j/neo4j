@@ -40,7 +40,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.annotations.documented.ReporterFactories.noopReporterFactory;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.strictly_prioritize_id_freelist;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.FreeIds.NO_FREE_IDS;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
@@ -807,16 +806,15 @@ class IndexedIdGeneratorTest {
     void tracePageCacheAccessOnConsistencyCheck() {
         open();
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try (var cursorContext = CONTEXT_FACTORY.create(
-                pageCacheTracer.createPageCursorTracer("tracePageCacheAccessOnConsistencyCheck"))) {
-            idGenerator.consistencyCheck(
-                    noopReporterFactory(), CONTEXT_FACTORY, Runtime.getRuntime().availableProcessors());
+        var cursorContextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        idGenerator.consistencyCheck(
+                noopReporterFactory(),
+                cursorContextFactory,
+                Runtime.getRuntime().availableProcessors());
 
-            var cursorTracer = cursorContext.getCursorTracer();
-            assertThat(cursorTracer.hits()).isEqualTo(2);
-            assertThat(cursorTracer.pins()).isEqualTo(2);
-            assertThat(cursorTracer.unpins()).isEqualTo(2);
-        }
+        assertThat(pageCacheTracer.hits()).isEqualTo(2);
+        assertThat(pageCacheTracer.pins()).isEqualTo(2);
+        assertThat(pageCacheTracer.unpins()).isEqualTo(2);
     }
 
     @Test
