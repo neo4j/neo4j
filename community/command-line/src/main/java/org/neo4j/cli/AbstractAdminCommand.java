@@ -95,6 +95,7 @@ public abstract class AbstractAdminCommand extends AbstractCommand {
         return configs;
     }
 
+    @SuppressWarnings("resource")
     private boolean configFileExists(Path path) {
         return ctx.fs().fileExists(path) && !ctx.fs().isDirectory(path);
     }

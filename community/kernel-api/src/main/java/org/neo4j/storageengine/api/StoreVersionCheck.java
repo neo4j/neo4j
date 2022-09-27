@@ -45,6 +45,13 @@ public interface StoreVersionCheck {
 
     String getIntroductionVersionFromVersion(StoreVersionIdentifier versionIdentifier);
 
+    /**
+     * Determine the latest version identifier for the provided storage engine format
+     * @param format the format to check and fins the latest version for
+     * @return the identifier for the latest version
+     */
+    StoreVersionIdentifier findLatestVersion(String format);
+
     record MigrationCheckResult(
             MigrationOutcome outcome,
             StoreVersionIdentifier versionToMigrateFrom,

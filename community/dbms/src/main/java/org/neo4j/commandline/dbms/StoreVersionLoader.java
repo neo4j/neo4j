@@ -78,7 +78,7 @@ public class StoreVersionLoader implements AutoCloseable {
      */
     public Result loadStoreVersion(DatabaseLayout layout) {
         StorageEngineFactory sef = StorageEngineFactory.selectStorageEngine(fs, layout)
-                .orElseGet(StorageEngineFactory::defaultStorageEngine);
+                .orElseGet(() -> StorageEngineFactory.selectStorageEngine(config));
         StoreVersionCheck versionCheck =
                 sef.versionCheck(fs, layout, config, pageCache, NullLogService.getInstance(), contextFactory);
         try (CursorContext cursorContext = contextFactory.create("Store version loader")) {

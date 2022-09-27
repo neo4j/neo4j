@@ -110,7 +110,7 @@ class RecordStoreVersionCheckTest {
     @Test
     void migrationCheckShouldFailWithCorruptedMetadataStore() throws IOException {
         // given
-        metaDataFileContaining(databaseLayout, fileSystem, "nothing interesting");
+        metaDataFileContaining(databaseLayout, fileSystem, "not interesting");
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
         // when
@@ -127,7 +127,7 @@ class RecordStoreVersionCheckTest {
     @Test
     void upgradeCheckShouldFailWithCorruptedMetadataStore() throws IOException {
         // given
-        metaDataFileContaining(databaseLayout, fileSystem, "nothing interesting");
+        metaDataFileContaining(databaseLayout, fileSystem, "really not interesting");
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
         // when
@@ -219,12 +219,9 @@ class RecordStoreVersionCheckTest {
 
     @Test
     void tracePageCacheAccessOnStoreVersionAccess() throws IOException {
-        var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
-        var cursorContext = contextFactory.create("tracePageCacheAccessOnStoreVersionAccessConstruction");
-
         RecordFormats format = PageAligned.LATEST_RECORD_FORMATS;
-        Path neoStore = emptyFile(fileSystem);
+        Path neoStore = createMetaDataStore(format);
+
         var fieldAccess =
                 MetaDataStore.getFieldAccess(pageCache, neoStore, databaseLayout.getDatabaseName(), NULL_CONTEXT);
         fieldAccess.isLegacyFieldValid();
@@ -234,21 +231,17 @@ class RecordStoreVersionCheckTest {
                 format.majorVersion(),
                 format.minorVersion()));
 
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
+        var cursorContext = contextFactory.create("tracePageCacheAccessOnStoreVersionAccessConstruction");
         StoreId storeId = StoreId.retrieveFromStore(fileSystem, databaseLayout, pageCache, cursorContext);
         assertNotNull(storeId);
         assertEquals("record-aligned-1.1", storeId.getStoreVersionUserString());
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat(cursorTracer.pins()).isEqualTo(1);
-        assertThat(cursorTracer.unpins()).isEqualTo(1);
-        assertThat(cursorTracer.faults()).isEqualTo(1);
-    }
-
-    private Path emptyFile(FileSystemAbstraction fs) throws IOException {
-        Path shortFile = databaseLayout.metadataStore();
-        fs.deleteFile(shortFile);
-        fs.write(shortFile).close();
-        return shortFile;
+        assertThat(cursorTracer.pins()).isEqualTo(2);
+        assertThat(cursorTracer.unpins()).isEqualTo(2);
+        assertThat(cursorTracer.faults()).isEqualTo(2);
     }
 
     private static void metaDataFileContaining(RecordDatabaseLayout layout, FileSystemAbstraction fs, String content)
@@ -264,7 +257,7 @@ class RecordStoreVersionCheckTest {
         return new RecordStoreVersionCheck(pageCache, databaseLayout, Config.defaults());
     }
 
-    private void createMetaDataStore(RecordFormats recordFormats) {
+    private Path createMetaDataStore(RecordFormats recordFormats) {
         InternalLogProvider logProvider = NullLogProvider.getInstance();
         PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
         StoreFactory storeFactory = new StoreFactory(
@@ -281,6 +274,9 @@ class RecordStoreVersionCheckTest {
                 writable(),
                 EMPTY_LOG_TAIL,
                 Sets.immutable.empty());
-        storeFactory.openNeoStores(true, StoreType.META_DATA).getMetaDataStore().close();
+        try (var metaDataStore =
+                storeFactory.openNeoStores(true, StoreType.META_DATA).getMetaDataStore()) {
+            return metaDataStore.getStorageFile();
+        }
     }
 }

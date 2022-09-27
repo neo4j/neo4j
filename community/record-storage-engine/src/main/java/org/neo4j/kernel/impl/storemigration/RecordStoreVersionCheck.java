@@ -157,6 +157,11 @@ public class RecordStoreVersionCheck implements StoreVersionCheck {
                 .introductionVersion();
     }
 
+    @Override
+    public StoreVersionIdentifier findLatestVersion(String format) {
+        return versionIdentifier(RecordFormatSelector.findLatestFormatInFamily(format, config));
+    }
+
     private StoreVersionIdentifier versionIdentifier(RecordFormats format) {
         return new StoreVersionIdentifier(
                 RecordStorageEngineFactory.NAME,

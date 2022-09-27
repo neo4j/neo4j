@@ -165,12 +165,16 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     public StoreId retrieveStoreId(
             FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext)
             throws IOException {
-        MetaDataStore.FieldAccess fieldAccess = MetaDataStore.getFieldAccess(
-                pageCache,
-                formatSpecificDatabaseLayout(databaseLayout).metadataStore(),
-                databaseLayout.getDatabaseName(),
-                cursorContext);
-        return fieldAccess.readStoreId();
+        final var metaDataFile = formatSpecificDatabaseLayout(databaseLayout).metadataStore();
+        final var databaseName = databaseLayout.getDatabaseName();
+        MetaDataStore.FieldAccess fieldAccess =
+                MetaDataStore.getFieldAccess(pageCache, metaDataFile, databaseName, cursorContext);
+        if (fieldAccess.isLegacyFieldValid()) {
+            return fieldAccess.readStoreId();
+        }
+
+        return LegacyMetadataHandler.readMetadata44FromStore(pageCache, metaDataFile, databaseName, cursorContext)
+                .storeId();
     }
 
     @Override
