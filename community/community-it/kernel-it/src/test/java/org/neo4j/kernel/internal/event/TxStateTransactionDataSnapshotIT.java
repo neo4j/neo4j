@@ -237,20 +237,27 @@ class TxStateTransactionDataSnapshotIT {
 
     @Test
     void tracePageCacheAccessOnTransactionSnapshotCreation() {
-        long nodeId;
-        long relationshipId;
+        String nodeId1;
+        String nodeId2;
+        String relationshipId;
         try (Transaction transaction = database.beginTx()) {
             var node1 = transaction.createNode();
+            // Create some more nodes such that the two likely will end up on different pages
+            for (int i = 0; i < 1000; i++) {
+                transaction.createNode();
+            }
             var node2 = transaction.createNode();
             var relationship = node1.createRelationshipTo(node2, withName("marker"));
             node1.setProperty("foo", "bar");
-            nodeId = node1.getId();
-            relationshipId = relationship.getId();
+            nodeId1 = node1.getElementId();
+            nodeId2 = node2.getElementId();
+            relationshipId = relationship.getElementId();
             transaction.commit();
         }
         try (Transaction transaction = database.beginTx()) {
-            transaction.getNodeById(nodeId).delete();
-            transaction.getRelationshipById(relationshipId).delete();
+            transaction.getNodeByElementId(nodeId1).delete();
+            transaction.getNodeByElementId(nodeId2).delete();
+            transaction.getRelationshipByElementId(relationshipId).delete();
 
             var kernelTransaction = getKernelTransaction(transaction);
             var transactionState = kernelTransaction.txState();
@@ -263,9 +270,9 @@ class TxStateTransactionDataSnapshotIT {
                     transactionState, kernelTransaction.newStorageReader(), kernelTransaction)) {
                 // no work for snapshot
             }
-            assertThat(cursorTracer.pins()).isEqualTo(3);
-            assertThat(cursorTracer.hits()).isEqualTo(3);
-            assertThat(cursorTracer.unpins()).isEqualTo(3);
+            assertThat(cursorTracer.pins()).isGreaterThan(0);
+            assertThat(cursorTracer.hits()).isEqualTo(cursorTracer.pins());
+            assertThat(cursorTracer.unpins()).isEqualTo(cursorTracer.pins());
         }
     }
 
