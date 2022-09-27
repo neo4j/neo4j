@@ -25,14 +25,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.shutdown_transaction_end_timeout;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.ThrowingSupplier;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.Barrier;
@@ -125,61 +123,6 @@ public class GraphDatabaseServiceTest {
         shutdownFuture.get();
 
         assertThrows(DatabaseShutdownException.class, database::beginTx);
-    }
-
-    @Test
-    void shouldLetDetectedDeadlocksDuringCommitBeThrownInTheirOriginalForm() throws Exception {
-        // GIVEN a database with a couple of entities:
-        // (n1) --> (r1) --> (r2) --> (r3)
-        // (n2)
-        Node n1 = createNode(database);
-        Node n2 = createNode(database);
-        Relationship r3 = createRelationship(database, n1);
-        Relationship r2 = createRelationship(database, n1);
-        Relationship r1 = createRelationship(database, n1);
-
-        // Nodes to lock for deadlock strategy to close expected lock client.
-        // Since we use ABORT_YOUNG strategy by default we need expected client to hold less locks.
-        var emptyNodes = List.of(
-                createNode(database),
-                createNode(database),
-                createNode(database),
-                createNode(database),
-                createNode(database),
-                createNode(database),
-                createNode(database),
-                createNode(database));
-
-        // WHEN creating a deadlock scenario where the final deadlock would have happened due to locks
-        //      acquired during linkage of relationship records
-        //
-        // (r1) <-- (t1)
-        //   |       ^
-        //   v       |
-        // (t2) --> (n2)
-        Transaction t1Tx = database.beginTx();
-        Transaction t2Tx = t2.executeDontWait(beginTx(database)).get();
-        // (t1) <-- (n2)
-        t1Tx.getNodeById(n2.getId()).setProperty("locked", "indeed");
-        // (t2) <-- (r1)
-        t2.executeDontWait(setProperty(t2Tx.getRelationshipById(r1.getId()), "locked", "absolutely"))
-                .get();
-        // dummy locks
-        for (Node emptyNode : emptyNodes) {
-            t2.executeDontWait(setProperty(t2Tx.getNodeById(emptyNode.getId()), "locked", "absolutely"))
-                    .get();
-        }
-
-        // (t2) --> (n2)
-        Future<Void> t2n2Wait = t2.executeDontWait(setProperty(t2Tx.getNodeById(n2.getId()), "locked", "In my dreams"));
-        t2.waitUntilWaiting();
-        // (t1) --> (r1) although delayed until commit, this is accomplished by deleting an adjacent
-        //               relationship so that its surrounding relationships are locked at commit time.
-        t1Tx.getRelationshipById(r2.getId()).delete();
-        assertThrows(DeadlockDetectedException.class, t1Tx::commit);
-
-        t2n2Wait.get();
-        t2.executeDontWait(close(t2Tx)).get();
     }
 
     /**
