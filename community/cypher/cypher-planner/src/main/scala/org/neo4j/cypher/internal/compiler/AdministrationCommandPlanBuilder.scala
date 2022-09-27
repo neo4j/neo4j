@@ -136,9 +136,10 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.All
-import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.Composite
-import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.Standard
+import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.Alias
+import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.CompositeDatabase
+import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.DatabaseOrLocalAlias
+import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.StandardDatabase
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.planner.spi.AdministrationPlannerName
@@ -147,7 +148,6 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.PRIMARY_PROPERTY
-import org.neo4j.kernel.database.NormalizedDatabaseName
 
 /**
  * This planner takes on queries that run at the DBMS level for multi-database administration.
@@ -685,8 +685,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                 Some(canCreateCheck)
                   .map(plans.DoNothingIfDatabaseExists(
                     _,
-                    dbName,
-                    s => new NormalizedDatabaseName(s).name()
+                    dbName
                   ))
               case _ =>
                 Some(canCreateCheck)
@@ -712,7 +711,10 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                   .map(plans.DropDatabase(_, dbName, DestroyData, forceComposite = false))
               case IfExistsDoNothing =>
                 Some(canCreateCheck)
-                  .map(plans.DoNothingIfDatabaseExists(_, dbName))
+                  .map(plans.DoNothingIfDatabaseExists(
+                    _,
+                    dbName
+                  ))
               case _ =>
                 Some(canCreateCheck)
             }
@@ -735,8 +737,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
               assertAllowed,
               dbName,
               "delete",
-              s => new NormalizedDatabaseName(s).name(),
-              if (composite) Composite else All
+              if (composite) CompositeDatabase else DatabaseOrLocalAlias
             )
           else assertAllowed
         )
@@ -764,8 +765,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             assertAllowed,
             dbName,
             "alter",
-            s => new NormalizedDatabaseName(s).name(),
-            Standard
+            StandardDatabase
           )
           else assertAllowed
         val plan =
@@ -869,7 +869,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           Seq(DropAliasAction)
         )
         val source =
-          if (ifExists) plans.DoNothingIfDatabaseNotExists(assertAllowed, aliasName, "delete")
+          if (ifExists) plans.DoNothingIfDatabaseNotExists(assertAllowed, aliasName, "delete", Alias)
           else plans.EnsureDatabaseNodeExists(
             assertAllowed,
             aliasName,
@@ -885,7 +885,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
         val source =
           if (ifExists)
-            plans.DoNothingIfDatabaseNotExists(assertAllowedLocal, aliasName, "alter")
+            plans.DoNothingIfDatabaseNotExists(assertAllowedLocal, aliasName, "alter", Alias)
           else plans.EnsureDatabaseNodeExists(
             assertAllowedLocal,
             aliasName,
@@ -918,7 +918,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         )
 
         val source =
-          if (ifExists) plans.DoNothingIfDatabaseNotExists(assertAllowedRemote, aliasName, "alter")
+          if (ifExists) plans.DoNothingIfDatabaseNotExists(assertAllowedRemote, aliasName, "alter", Alias)
           else plans.EnsureDatabaseNodeExists(
             assertAllowedRemote,
             aliasName,

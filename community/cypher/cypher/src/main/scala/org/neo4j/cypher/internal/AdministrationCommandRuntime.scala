@@ -484,76 +484,77 @@ object AdministrationCommandRuntime {
    *
    * @param nameKey parameter key used in the "inner" cypher
    * @param name the namespaced name or parameter
-   * @param valueMapper function to apply to the value
    * @return
    */
   private[internal] def getDatabaseNameFields(
     nameKey: String,
-    name: DatabaseName,
-    valueMapper: String => String = identity
-  ): DatabaseNameFields = name match {
-    case name @ NamespacedName(_, None) =>
-      DatabaseNameFields(
-        s"$internalPrefix$nameKey",
-        Values.utf8Value(valueMapper(name.name)),
-        s"$internalPrefix${nameKey}_namespace",
-        Values.utf8Value(DEFAULT_NAMESPACE),
-        s"$internalPrefix${nameKey}_displayName",
-        Values.utf8Value(valueMapper(name.name)),
-        wasParameter = false,
-        IdentityConverter
-      )
-    case name @ NamespacedName(_, Some(namespace)) =>
-      DatabaseNameFields(
-        s"$internalPrefix$nameKey",
-        Values.utf8Value(valueMapper(name.name)),
-        s"$internalPrefix${nameKey}_namespace",
-        Values.utf8Value(valueMapper(namespace)),
-        s"$internalPrefix${nameKey}_displayName",
-        Values.utf8Value(
-          (if (namespace == DEFAULT_NAMESPACE) valueMapper(name.name)
-           else valueMapper(namespace) + "." + valueMapper(name.name))
-        ),
-        wasParameter = false,
-        IdentityConverter
-      )
-    case ParameterName(parameter) =>
-      def rename: String => String = paramName => internalKey(paramName)
-      val displayNameKey = internalKey(parameter.name + "_displayName")
-      DatabaseNameFields(
-        rename(parameter.name),
-        Values.NO_VALUE,
-        internalKey(parameter.name + "_namespace"),
-        Values.utf8Value(DEFAULT_NAMESPACE),
-        displayNameKey,
-        Values.NO_VALUE,
-        wasParameter = true,
-        (_, params) => {
-          val paramValue = params.get(parameter.name)
-          if (!paramValue.isInstanceOf[TextValue]) {
-            throw new ParameterWrongTypeException(
-              s"Expected parameter $$${parameter.name} to have type String but was $paramValue"
-            )
-          } else {
-            val nameParts = paramValue.asInstanceOf[TextValue].stringValue().split('.')
-            if (nameParts.length == 1) {
-              params.updatedWith(rename(parameter.name), Values.utf8Value(valueMapper(nameParts(0))))
-                .updatedWith(displayNameKey, Values.utf8Value(valueMapper(nameParts(0))))
-            } else {
-              val displayName =
-                if (nameParts(0).equals(DEFAULT_NAMESPACE))
-                  Values.utf8Value(valueMapper(nameParts.tail.mkString(".")))
-                else paramValue
-              params.updatedWith(
-                internalKey(parameter.name + "_namespace"),
-                Values.utf8Value(valueMapper(nameParts(0)))
+    name: DatabaseName
+  ): DatabaseNameFields = {
+    val valueMapper: String => String = new NormalizedDatabaseName(_).name()
+    name match {
+      case name @ NamespacedName(_, None) =>
+        DatabaseNameFields(
+          s"$internalPrefix$nameKey",
+          Values.utf8Value(valueMapper(name.name)),
+          s"$internalPrefix${nameKey}_namespace",
+          Values.utf8Value(DEFAULT_NAMESPACE),
+          s"$internalPrefix${nameKey}_displayName",
+          Values.utf8Value(valueMapper(name.name)),
+          wasParameter = false,
+          IdentityConverter
+        )
+      case name @ NamespacedName(_, Some(namespace)) =>
+        DatabaseNameFields(
+          s"$internalPrefix$nameKey",
+          Values.utf8Value(valueMapper(name.name)),
+          s"$internalPrefix${nameKey}_namespace",
+          Values.utf8Value(valueMapper(namespace)),
+          s"$internalPrefix${nameKey}_displayName",
+          Values.utf8Value(
+            if (namespace == DEFAULT_NAMESPACE) valueMapper(name.name)
+            else valueMapper(namespace) + "." + valueMapper(name.name)
+          ),
+          wasParameter = false,
+          IdentityConverter
+        )
+      case ParameterName(parameter) =>
+        def rename: String => String = paramName => internalKey(paramName)
+        val displayNameKey = internalKey(parameter.name + "_displayName")
+        DatabaseNameFields(
+          rename(parameter.name),
+          Values.NO_VALUE,
+          internalKey(parameter.name + "_namespace"),
+          Values.utf8Value(DEFAULT_NAMESPACE),
+          displayNameKey,
+          Values.NO_VALUE,
+          wasParameter = true,
+          (_, params) => {
+            val paramValue = params.get(parameter.name)
+            if (!paramValue.isInstanceOf[TextValue]) {
+              throw new ParameterWrongTypeException(
+                s"Expected parameter $$${parameter.name} to have type String but was $paramValue"
               )
-                .updatedWith(internalKey(parameter.name), Values.utf8Value(valueMapper(nameParts.tail.mkString("."))))
-                .updatedWith(displayNameKey, displayName)
+            } else {
+              val nameParts = paramValue.asInstanceOf[TextValue].stringValue().split('.')
+              if (nameParts.length == 1) {
+                params.updatedWith(rename(parameter.name), Values.utf8Value(valueMapper(nameParts(0))))
+                  .updatedWith(displayNameKey, Values.utf8Value(valueMapper(nameParts(0))))
+              } else {
+                val displayName =
+                  if (nameParts(0).equals(DEFAULT_NAMESPACE))
+                    Values.utf8Value(valueMapper(nameParts.tail.mkString(".")))
+                  else paramValue
+                params.updatedWith(
+                  internalKey(parameter.name + "_namespace"),
+                  Values.utf8Value(valueMapper(nameParts(0)))
+                )
+                  .updatedWith(internalKey(parameter.name), Values.utf8Value(valueMapper(nameParts.tail.mkString("."))))
+                  .updatedWith(displayNameKey, displayName)
+              }
             }
           }
-        }
-      )
+        )
+    }
   }
 
   private[internal] def runtimeStringValue(field: DatabaseName, params: MapValue): String = field match {

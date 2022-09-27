@@ -101,7 +101,6 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.kernel.database.DefaultDatabaseResolver
-import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.storageengine.api.StoreIdProvider
 import org.neo4j.storageengine.util.StoreIdDecodeUtils
@@ -150,7 +149,7 @@ case class ShowDatabasesExecutionPlanner(
       // show database name
       case NamedDatabaseScope(p) =>
         val nameFields =
-          getDatabaseNameFields("databaseName", p, valueMapper = s => new NormalizedDatabaseName(s).name())
+          getDatabaseNameFields("databaseName", p)
         (
           s"WHERE any(a in aliases WHERE $$`${nameFields.nameKey}` = a.$NAME_PROPERTY AND  $$`${nameFields.namespaceKey}` = a.$NAMESPACE_PROPERTY)",
           VirtualValues.map(nameFields.keys, nameFields.values),

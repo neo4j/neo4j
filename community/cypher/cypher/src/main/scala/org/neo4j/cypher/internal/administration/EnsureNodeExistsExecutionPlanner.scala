@@ -39,7 +39,6 @@ import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
-import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.values.virtual.VirtualValues
 
 case class EnsureNodeExistsExecutionPlanner(
@@ -78,7 +77,7 @@ case class EnsureNodeExistsExecutionPlanner(
     sourcePlan: Option[ExecutionPlan]
   ): ExecutionPlan = {
     val aliasNameFields =
-      getDatabaseNameFields("aliasName", aliasName, new NormalizedDatabaseName(_).name())
+      getDatabaseNameFields("aliasName", aliasName)
 
     UpdatingSystemCommandExecutionPlan(
       "EnsureNodeExists",

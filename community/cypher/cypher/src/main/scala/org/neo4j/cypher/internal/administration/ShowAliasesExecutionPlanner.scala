@@ -48,7 +48,6 @@ import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGET_NAME_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.URL_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.USERNAME_PROPERTY
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
-import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.values.virtual.VirtualValues
 
 case class ShowAliasesExecutionPlanner(
@@ -101,7 +100,7 @@ case class ShowAliasesExecutionPlanner(
   private def filterAliasByName(aliasName: Option[DatabaseName]): (Option[DatabaseNameFields], String) = {
     val aliasNameFields =
       aliasName.map((name: DatabaseName) =>
-        getDatabaseNameFields("aliasName", name, new NormalizedDatabaseName(_).name())
+        getDatabaseNameFields("aliasName", name)
       )
 
     // If we have a literal, we know from the escaping whether this is an alias in a composite or not

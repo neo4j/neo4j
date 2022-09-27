@@ -31,9 +31,6 @@ import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter
-import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.All
-import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.Composite
-import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.Standard
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.COMPOSITE_DATABASE
@@ -42,6 +39,8 @@ import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAMESPACE_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAME_PROPERTY
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.PRIMARY_PROPERTY
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.REMOTE_DATABASE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
@@ -92,7 +91,6 @@ case class DoNothingExecutionPlanner(
 
   def planDoNothingIfDatabaseNotExists(
     name: DatabaseName,
-    valueMapper: String => String,
     operation: String,
     sourcePlan: Option[ExecutionPlan],
     databaseTypeFilter: DatabaseTypeFilter
@@ -100,7 +98,6 @@ case class DoNothingExecutionPlanner(
     planDoNothingDatabase(
       "DoNothingIfDatabaseNotExists",
       name,
-      valueMapper,
       QueryHandler
         .ignoreNoResult()
         .handleError(handleErrorFn(operation, DATABASE, name)),
@@ -111,14 +108,12 @@ case class DoNothingExecutionPlanner(
 
   def planDoNothingIfDatabaseExists(
     name: DatabaseName,
-    valueMapper: String => String,
     sourcePlan: Option[ExecutionPlan],
     databaseTypeFilter: DatabaseTypeFilter
   ): ExecutionPlan =
     planDoNothingDatabase(
       "DoNothingIfDatabaseExists",
       name,
-      valueMapper,
       QueryHandler
         .ignoreOnResult()
         .handleError(handleErrorFn("create", DATABASE, name)),
@@ -153,12 +148,11 @@ case class DoNothingExecutionPlanner(
   private def planDoNothingDatabase(
     planName: String,
     name: DatabaseName,
-    valueMapper: String => String,
     queryHandler: QueryHandler,
     sourcePlan: Option[ExecutionPlan],
     databaseTypeFilter: DatabaseTypeFilter
   ): ExecutionPlan = {
-    val nameFields = getDatabaseNameFields("name", name, valueMapper = valueMapper)
+    val nameFields = getDatabaseNameFields("name", name)
     UpdatingSystemCommandExecutionPlan(
       planName,
       normalExecutionEngine,
@@ -200,8 +194,11 @@ case class DoNothingExecutionPlanner(
   }
 
   private def filterByDatabaseType(databaseTypeFilter: DatabaseTypeFilter) = databaseTypeFilter match {
-    case All       => ""
-    case Composite => s"""WHERE EXISTS { (dn)-[:$TARGETS]->(d:$COMPOSITE_DATABASE) }"""
-    case Standard  => s"""WHERE EXISTS { (dn)-[:$TARGETS]->(d:$DATABASE) WHERE NOT d:$COMPOSITE_DATABASE }"""
+    case DatabaseTypeFilter.All                  => ""
+    case DatabaseTypeFilter.DatabaseOrLocalAlias => s"""WHERE NOT dn:$REMOTE_DATABASE"""
+    case DatabaseTypeFilter.CompositeDatabase    => s"""WHERE EXISTS { (dn)-[:$TARGETS]->(d:$COMPOSITE_DATABASE) }"""
+    case DatabaseTypeFilter.StandardDatabase =>
+      s"""WHERE EXISTS { (dn)-[:$TARGETS]->(d:$DATABASE) WHERE NOT d:$COMPOSITE_DATABASE }"""
+    case DatabaseTypeFilter.Alias => s"""WHERE NOT dn.$PRIMARY_PROPERTY"""
   }
 }

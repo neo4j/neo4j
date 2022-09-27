@@ -369,14 +369,12 @@ case class DoNothingIfDatabaseNotExists(
   source: PrivilegePlan,
   name: DatabaseName,
   operation: String,
-  valueMapper: String => String = s => s,
   databaseTypeFilter: DatabaseTypeFilter = All
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 case class DoNothingIfDatabaseExists(
   source: PrivilegePlan,
   name: DatabaseName,
-  valueMapper: String => String = s => s,
   databaseTypeFilter: DatabaseTypeFilter = All
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
@@ -565,7 +563,11 @@ sealed trait DatabaseTypeFilter
 object DatabaseTypeFilter {
   case object All extends DatabaseTypeFilter
 
-  case object Composite extends DatabaseTypeFilter
+  case object CompositeDatabase extends DatabaseTypeFilter
 
-  case object Standard extends DatabaseTypeFilter
+  case object StandardDatabase extends DatabaseTypeFilter
+
+  case object DatabaseOrLocalAlias extends DatabaseTypeFilter
+
+  case object Alias extends DatabaseTypeFilter
 }
