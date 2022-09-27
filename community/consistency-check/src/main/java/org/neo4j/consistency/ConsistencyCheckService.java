@@ -23,7 +23,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.io.ByteUnit.mebiBytes;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.factory.DbmsInfo.TOOL;
 import static org.neo4j.kernel.impl.index.schema.SchemaIndexExtensionLoader.instantiateExtensions;
@@ -683,7 +683,8 @@ public class ConsistencyCheckService {
         LoggingReporterFactoryInvocationHandler handler = new LoggingReporterFactoryInvocationHandler(log, true);
         ReporterFactory proxyFactory = new ReporterFactory(handler);
 
-        checkable.consistencyCheck(proxyFactory, NULL_CONTEXT);
+        checkable.consistencyCheck(
+                proxyFactory, NULL_CONTEXT_FACTORY, Runtime.getRuntime().availableProcessors());
         summary.update("INDEX_STATISTICS", handler.errors(), handler.warnings());
     }
 

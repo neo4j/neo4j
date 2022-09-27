@@ -1299,32 +1299,38 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         }
     }
 
-    public boolean consistencyCheck(CursorContext cursorContext) throws IOException {
-        return consistencyCheck(true, cursorContext);
+    public boolean consistencyCheck(CursorContextFactory contextFactory, int numThreads) throws IOException {
+        return consistencyCheck(true, contextFactory, numThreads);
     }
 
-    public boolean consistencyCheck(boolean reportDirty, CursorContext cursorContext) throws IOException {
-        ThrowingConsistencyCheckVisitor reporter = new ThrowingConsistencyCheckVisitor();
-        return consistencyCheck(reporter, reportDirty, cursorContext);
-    }
-
-    public boolean consistencyCheck(GBPTreeConsistencyCheckVisitor visitor, CursorContext cursorContext)
+    public boolean consistencyCheck(boolean reportDirty, CursorContextFactory contextFactory, int numThreads)
             throws IOException {
-        return consistencyCheck(visitor, true, cursorContext);
+        ThrowingConsistencyCheckVisitor reporter = new ThrowingConsistencyCheckVisitor();
+        return consistencyCheck(reporter, reportDirty, contextFactory, numThreads);
+    }
+
+    public boolean consistencyCheck(
+            GBPTreeConsistencyCheckVisitor visitor, CursorContextFactory contextFactory, int numThreads)
+            throws IOException {
+        return consistencyCheck(visitor, true, contextFactory, numThreads);
     }
 
     // Utility method
     public boolean consistencyCheck(
-            GBPTreeConsistencyCheckVisitor visitor, boolean reportDirty, CursorContext cursorContext)
+            GBPTreeConsistencyCheckVisitor visitor,
+            boolean reportDirty,
+            CursorContextFactory contextFactory,
+            int numThreads)
             throws IOException {
         CleanTrackingConsistencyCheckVisitor cleanTrackingVisitor = new CleanTrackingConsistencyCheckVisitor(visitor);
-        try (PageCursor cursor = pagedFile.io(0L /*ignored*/, PF_SHARED_READ_LOCK, cursorContext);
-                ConsistencyCheckState state = new ConsistencyCheckState(
-                        indexFile, freeList, visitor, bind(pagedFile, PF_SHARED_READ_LOCK, cursorContext))) {
+        try (var context = contextFactory.create("consistencyCheck");
+                var cursor = pagedFile.io(0L /*ignored*/, PF_SHARED_READ_LOCK, context);
+                var state = new ConsistencyCheckState(
+                        indexFile, freeList, visitor, bind(pagedFile, PF_SHARED_READ_LOCK, context), numThreads)) {
             if (dirtyOnStartup && reportDirty) {
                 cleanTrackingVisitor.dirtyOnStartup(indexFile);
             }
-            rootLayer.consistencyCheck(state, cleanTrackingVisitor, reportDirty, cursor, cursorContext, indexFile);
+            rootLayer.consistencyCheck(state, cleanTrackingVisitor, reportDirty, contextFactory);
         } catch (TreeInconsistencyException | MetadataMismatchException | CursorException e) {
             cleanTrackingVisitor.exception(e);
         }

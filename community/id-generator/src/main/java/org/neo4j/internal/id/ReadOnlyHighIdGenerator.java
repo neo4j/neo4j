@@ -21,6 +21,7 @@ package org.neo4j.internal.id;
 
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 
 /**
@@ -122,7 +123,8 @@ class ReadOnlyHighIdGenerator implements IdGenerator {
     }
 
     @Override
-    public boolean consistencyCheck(ReporterFactory reporterFactory, CursorContext cursorContext) {
+    public boolean consistencyCheck(
+            ReporterFactory reporterFactory, CursorContextFactory contextFactory, int numThreads) {
         return true;
     }
 }

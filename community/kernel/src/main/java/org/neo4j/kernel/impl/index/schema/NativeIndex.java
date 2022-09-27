@@ -37,7 +37,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -135,13 +134,16 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
     }
 
     @Override
-    public boolean consistencyCheck(ReporterFactory reporterFactory, CursorContext cursorContext) {
-        return consistencyCheck(reporterFactory.getClass(GBPTreeConsistencyCheckVisitor.class), cursorContext);
+    public boolean consistencyCheck(
+            ReporterFactory reporterFactory, CursorContextFactory contextFactory, int numThreads) {
+        return consistencyCheck(
+                reporterFactory.getClass(GBPTreeConsistencyCheckVisitor.class), contextFactory, numThreads);
     }
 
-    private boolean consistencyCheck(GBPTreeConsistencyCheckVisitor visitor, CursorContext cursorContext) {
+    private boolean consistencyCheck(
+            GBPTreeConsistencyCheckVisitor visitor, CursorContextFactory contextFactory, int numThreads) {
         try {
-            return tree.consistencyCheck(visitor, cursorContext);
+            return tree.consistencyCheck(visitor, contextFactory, numThreads);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

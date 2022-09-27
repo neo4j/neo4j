@@ -1452,7 +1452,8 @@ class RecoveryIT {
                 return null;
             };
             ReporterFactory reporterFactory = new ReporterFactory(invocationHandler);
-            idGenerator.consistencyCheck(reporterFactory, NULL_CONTEXT);
+            idGenerator.consistencyCheck(
+                    reporterFactory, NULL_CONTEXT_FACTORY, Runtime.getRuntime().availableProcessors());
             return dirtyOnStartup.booleanValue();
         }
     }

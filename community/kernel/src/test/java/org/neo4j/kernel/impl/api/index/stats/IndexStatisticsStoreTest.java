@@ -113,7 +113,8 @@ class IndexStatisticsStoreTest {
                 store.replaceStats(i, new IndexSample());
             }
             store.checkpoint(FileFlushEvent.NULL, CursorContext.NULL_CONTEXT);
-            store.consistencyCheck(noopReporterFactory(), cursorContext);
+            store.consistencyCheck(
+                    noopReporterFactory(), contextFactory, Runtime.getRuntime().availableProcessors());
 
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             assertThat(cursorTracer.pins()).isEqualTo(16);

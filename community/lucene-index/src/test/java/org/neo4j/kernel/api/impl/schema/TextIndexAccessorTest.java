@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.kernel.api.impl.schema.AbstractTextIndexProvider.UPDATE_IGNORE_STRATEGY;
 import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
 
@@ -57,13 +57,13 @@ class TextIndexAccessorTest {
     @Test
     void indexIsNotConsistentWhenIndexIsNotValid() {
         when(schemaIndex.isValid()).thenReturn(false);
-        assertFalse(accessor.consistencyCheck(ReporterFactories.noopReporterFactory(), NULL_CONTEXT));
+        assertFalse(accessor.consistencyCheck(ReporterFactories.noopReporterFactory(), NULL_CONTEXT_FACTORY, 1));
     }
 
     @Test
     void indexIsConsistentWhenIndexIsValid() {
         when(schemaIndex.isValid()).thenReturn(true);
-        assertTrue(accessor.consistencyCheck(ReporterFactories.noopReporterFactory(), NULL_CONTEXT));
+        assertTrue(accessor.consistencyCheck(ReporterFactories.noopReporterFactory(), NULL_CONTEXT_FACTORY, 1));
     }
 
     @Test
@@ -75,7 +75,7 @@ class TextIndexAccessorTest {
             return null;
         };
         assertFalse(
-                accessor.consistencyCheck(new ReporterFactory(handler), NULL_CONTEXT),
+                accessor.consistencyCheck(new ReporterFactory(handler), NULL_CONTEXT_FACTORY, 1),
                 "Expected index to be inconsistent");
         assertTrue(called.booleanValue(), "Expected visitor to be called");
     }

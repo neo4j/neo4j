@@ -185,7 +185,8 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory {
         }
 
         @Override
-        public boolean consistencyCheck(ReporterFactory reporterFactory, CursorContext cursorContext) {
+        public boolean consistencyCheck(
+                ReporterFactory reporterFactory, CursorContextFactory contextFactory, int numThreads) {
             return true;
         }
     }

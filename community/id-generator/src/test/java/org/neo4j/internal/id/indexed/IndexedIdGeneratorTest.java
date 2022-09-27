@@ -809,7 +809,8 @@ class IndexedIdGeneratorTest {
         var pageCacheTracer = new DefaultPageCacheTracer();
         try (var cursorContext = CONTEXT_FACTORY.create(
                 pageCacheTracer.createPageCursorTracer("tracePageCacheAccessOnConsistencyCheck"))) {
-            idGenerator.consistencyCheck(noopReporterFactory(), cursorContext);
+            idGenerator.consistencyCheck(
+                    noopReporterFactory(), CONTEXT_FACTORY, Runtime.getRuntime().availableProcessors());
 
             var cursorTracer = cursorContext.getCursorTracer();
             assertThat(cursorTracer.hits()).isEqualTo(2);

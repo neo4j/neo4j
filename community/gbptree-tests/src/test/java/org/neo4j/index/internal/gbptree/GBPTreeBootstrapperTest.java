@@ -128,9 +128,9 @@ class GBPTreeBootstrapperTest {
             GBPTreeBootstrapper.Bootstrap bootstrap =
                     bootstrapper.bootstrapTree(storeFile, PageCacheOpenOptions.BIG_ENDIAN);
             assertTrue(bootstrap.isTree());
-            try (MultiRootGBPTree<?, ?, ?> tree = bootstrap.tree();
-                    var cursorContext = contextFactory.create("shouldBootstrapTreeOfDifferentPageSizes")) {
-                assertTrue(tree.consistencyCheck(cursorContext));
+            try (MultiRootGBPTree<?, ?, ?> tree = bootstrap.tree()) {
+                assertTrue(tree.consistencyCheck(
+                        contextFactory, Runtime.getRuntime().availableProcessors()));
             }
         }
     }

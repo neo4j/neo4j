@@ -36,6 +36,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -1716,11 +1717,15 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         long currentPageId = readCursor.getCurrentPageId();
         root.goTo(readCursor);
         ThrowingConsistencyCheckVisitor visitor = new ThrowingConsistencyCheckVisitor();
-        try (ConsistencyCheckState state =
-                new ConsistencyCheckState(null, id, visitor, CursorCreator.bind(readCursor))) {
+        try (ConsistencyCheckState state = new ConsistencyCheckState(
+                null,
+                id,
+                visitor,
+                CursorCreator.bind(readCursor),
+                Runtime.getRuntime().availableProcessors())) {
             GBPTreeConsistencyChecker<KEY> consistencyChecker =
                     new GBPTreeConsistencyChecker<>(node, layout, state, stableGeneration, unstableGeneration, true);
-            consistencyChecker.check(null, readCursor, root, visitor, NULL_CONTEXT);
+            consistencyChecker.check(null, root, visitor, NULL_CONTEXT_FACTORY);
         }
         goTo(readCursor, currentPageId);
     }

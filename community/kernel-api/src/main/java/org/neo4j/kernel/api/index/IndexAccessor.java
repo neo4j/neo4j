@@ -35,6 +35,7 @@ import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -284,7 +285,8 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         }
 
         @Override
-        public boolean consistencyCheck(ReporterFactory reporterFactory, CursorContext cursorContext) {
+        public boolean consistencyCheck(
+                ReporterFactory reporterFactory, CursorContextFactory contextFactory, int numThreads) {
             return true;
         }
 
@@ -384,8 +386,9 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         }
 
         @Override
-        public boolean consistencyCheck(ReporterFactory reporterFactory, CursorContext cursorContext) {
-            return delegate.consistencyCheck(reporterFactory, cursorContext);
+        public boolean consistencyCheck(
+                ReporterFactory reporterFactory, CursorContextFactory contextFactory, int numThreads) {
+            return delegate.consistencyCheck(reporterFactory, contextFactory, numThreads);
         }
 
         @Override

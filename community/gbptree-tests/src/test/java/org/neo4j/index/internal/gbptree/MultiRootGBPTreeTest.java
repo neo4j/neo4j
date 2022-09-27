@@ -30,6 +30,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.index.internal.gbptree.RootLayerConfiguration.multipleRoots;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.test.Race.throwing;
 import static org.neo4j.util.concurrent.Futures.getAllResults;
 
@@ -123,7 +124,9 @@ class MultiRootGBPTreeTest {
     @AfterEach
     void stop() throws IOException {
         if (tree != null) {
-            assertThat(tree.consistencyCheck(NULL_CONTEXT)).isTrue();
+            assertThat(tree.consistencyCheck(
+                            NULL_CONTEXT_FACTORY, Runtime.getRuntime().availableProcessors()))
+                    .isTrue();
             tree.close();
             tree = null;
         }

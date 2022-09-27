@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.index.internal.gbptree.GBPTreeOpenOptions.NO_FLUSH_ON_CLOSE;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.io.IOException;
@@ -899,7 +900,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                         assertEquals(pageId, targetNode);
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertCalled(called);
     }
 
@@ -914,7 +916,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                         assertEquals(targetNode, pageId);
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertCalled(called);
     }
 
@@ -943,7 +946,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                         rightmostNodeHasRightSiblingCalled.setTrue();
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertTrue(corruptedSiblingPointerCalled.getValue() || rightmostNodeHasRightSiblingCalled.getValue());
     }
 
@@ -959,7 +963,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                         assertEquals(GenerationSafePointer.MAX_POINTER, successorPointer);
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertCalled(called);
     }
 
@@ -981,7 +986,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                         assertEquals(expectedPointerType, pointerType);
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertCalled(called);
     }
 
@@ -996,7 +1002,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                         assertEquals(targetNode, pageId);
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertCalled(called);
     }
 
@@ -1013,7 +1020,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                         allNodesWithKeysLocatedInWrongNode.add(pageId);
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertCalled(called);
         assertTrue(allNodesWithKeysLocatedInWrongNode.contains(targetNode));
     }
@@ -1030,7 +1038,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                         assertThat(message).contains("Overlap between allocSpace and active keys");
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertCalled(called);
     }
 
@@ -1046,7 +1055,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                         assertThat(message).contains("Overlap between offsetArray and allocSpace");
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertCalled(called);
     }
 
@@ -1062,7 +1072,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                         assertThat(message).contains("Space areas did not sum to total space");
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertCalled(called);
     }
 
@@ -1079,7 +1090,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                                 .contains("Pointer to allocSpace is misplaced, it should point to start of key");
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertCalled(called);
     }
 
@@ -1094,7 +1106,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                         assertEquals(targetNode, pageId);
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertCalled(called);
     }
 
@@ -1109,7 +1122,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                         assertEquals(targetNode, pageId);
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertCalled(called);
     }
 
@@ -1125,7 +1139,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                         assertEquals(targetPageId, pageId);
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertCalled(called);
     }
 
@@ -1152,7 +1167,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                         assertEquals(targetPointerType, pointerType);
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertCalled(called);
     }
 
@@ -1179,7 +1195,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                         assertEquals(targetPointerType, pointerType);
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertCalled(called);
     }
 
@@ -1195,7 +1212,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                         assertEquals(targetKeyCount, keyCount);
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertCalled(called);
     }
 
@@ -1240,7 +1258,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                         called.setTrue();
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertCalled(called);
     }
 
@@ -1256,7 +1275,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                         assertEquals(targetNode, pageId);
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertCalled(called);
     }
 
@@ -1269,7 +1289,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                         called.setTrue();
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertCalled(called);
     }
 
@@ -1282,7 +1303,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
                         called.setTrue();
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertCalled(called);
     }
 

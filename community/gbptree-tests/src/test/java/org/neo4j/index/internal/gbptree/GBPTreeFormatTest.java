@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -297,7 +298,7 @@ public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
             {
                 // WHEN reading from the tree
                 // THEN initial keys should be there
-                tree.consistencyCheck(NULL_CONTEXT);
+                tree.consistencyCheck(NULL_CONTEXT_FACTORY, Runtime.getRuntime().availableProcessors());
                 try (Seeker<KEY, VALUE> cursor = tree.seek(layout.key(0), layout.key(Long.MAX_VALUE), NULL_CONTEXT)) {
                     for (Long expectedKey : initialKeys) {
                         assertHit(cursor, layout, expectedKey);
@@ -322,7 +323,7 @@ public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
             {
                 // WHEN reading from the tree again
                 // THEN all keys including newly added should be there
-                tree.consistencyCheck(NULL_CONTEXT);
+                tree.consistencyCheck(NULL_CONTEXT_FACTORY, Runtime.getRuntime().availableProcessors());
                 try (Seeker<KEY, VALUE> cursor =
                         tree.seek(layout.key(0), layout.key(2 * INITIAL_KEY_COUNT), NULL_CONTEXT)) {
                     for (Long expectedKey : allKeys) {
@@ -349,7 +350,7 @@ public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
             {
                 // WHEN reading from the tree after remove
                 // THEN we should see everything that is left in the tree
-                tree.consistencyCheck(NULL_CONTEXT);
+                tree.consistencyCheck(NULL_CONTEXT_FACTORY, Runtime.getRuntime().availableProcessors());
                 try (Seeker<KEY, VALUE> cursor =
                         tree.seek(layout.key(0), layout.key(2 * INITIAL_KEY_COUNT), NULL_CONTEXT)) {
                     for (Long expectedKey : allKeys) {

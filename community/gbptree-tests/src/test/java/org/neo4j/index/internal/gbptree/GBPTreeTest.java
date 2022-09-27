@@ -38,6 +38,7 @@ import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.io.fs.FileUtils.blockSize;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.Race.throwing;
@@ -989,7 +990,8 @@ class GBPTreeTest {
                             cleanOnStartup.setFalse();
                         }
                     },
-                    NULL_CONTEXT);
+                    NULL_CONTEXT_FACTORY,
+                    Runtime.getRuntime().availableProcessors());
             assertEquals(expected, cleanOnStartup.booleanValue());
         }
     }

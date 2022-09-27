@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.io.IOException;
@@ -123,7 +124,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY, VALUE> {
     @AfterEach
     void consistencyCheckAndClose() throws IOException {
         threadPool.shutdownNow();
-        index.consistencyCheck(NULL_CONTEXT);
+        index.consistencyCheck(NULL_CONTEXT_FACTORY, Runtime.getRuntime().availableProcessors());
         index.close();
         pageCache.close();
     }

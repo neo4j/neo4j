@@ -35,7 +35,6 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -265,9 +264,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             GBPTreeConsistencyChecker.ConsistencyCheckState state,
             GBPTreeConsistencyCheckVisitor visitor,
             boolean reportDirty,
-            PageCursor cursor,
-            CursorContext cursorContext,
-            Path file)
+            CursorContextFactory contextFactory)
             throws IOException {
         // Check the root mapping tree
         long generation = support.generation();
@@ -275,15 +272,16 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         long unstableGeneration = unstableGeneration(generation);
         new GBPTreeConsistencyChecker<>(
                         rootTreeNode, rootLayout, state, stableGeneration, unstableGeneration, reportDirty)
-                .check(file, cursor, root, visitor, cursorContext);
+                .check(support.pagedFile(), root, visitor, contextFactory);
 
         // Check each root
-        try (Seeker<ROOT_KEY, RootMappingValue> seek = allRootsSeek(cursorContext)) {
+        try (var context = contextFactory.create("allRootsSeek");
+                Seeker<ROOT_KEY, RootMappingValue> seek = allRootsSeek(context)) {
             while (seek.next()) {
                 Root dataRoot = seek.value().asRoot();
                 new GBPTreeConsistencyChecker<>(
                                 dataTreeNode, dataLayout, state, stableGeneration, unstableGeneration, reportDirty)
-                        .check(file, cursor, dataRoot, visitor, cursorContext);
+                        .check(support.pagedFile(), dataRoot, visitor, contextFactory);
             }
         }
     }

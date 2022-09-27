@@ -24,6 +24,7 @@ import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADE
 import static org.neo4j.index.internal.gbptree.GBPTreeCorruption.notAnOffloadNode;
 import static org.neo4j.index.internal.gbptree.GBPTreeCorruption.pageSpecificCorruption;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 
 import java.io.IOException;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -83,7 +84,8 @@ public class GBPTreeConsistencyCheckerDynamicSizeTest extends GBPTreeConsistency
                                 .contains("Tried to read from offload store but page is not an offload page.");
                     }
                 },
-                NULL_CONTEXT);
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors());
         assertCalled(called);
     }
 }

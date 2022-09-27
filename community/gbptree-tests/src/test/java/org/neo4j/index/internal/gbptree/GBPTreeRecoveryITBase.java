@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.io.IOException;
@@ -129,7 +130,7 @@ abstract class GBPTreeRecoveryITBase<KEY, VALUE> {
 
             // THEN
             // we should end up with a consistent index
-            index.consistencyCheck(NULL_CONTEXT);
+            index.consistencyCheck(NULL_CONTEXT_FACTORY, Runtime.getRuntime().availableProcessors());
 
             // ... containing all the stuff load says
             try (Seeker<KEY, VALUE> cursor = index.seek(key(Long.MIN_VALUE), key(Long.MAX_VALUE), NULL_CONTEXT)) {
@@ -239,7 +240,7 @@ abstract class GBPTreeRecoveryITBase<KEY, VALUE> {
 
             // THEN
             // we should end up with a consistent index containing all the stuff load says
-            index.consistencyCheck(NULL_CONTEXT);
+            index.consistencyCheck(NULL_CONTEXT_FACTORY, Runtime.getRuntime().availableProcessors());
             long[ /*key,value,key,value...*/] aggregate = expectedSortedAggregatedDataFromGeneratedLoad(load);
             try (Seeker<KEY, VALUE> cursor = index.seek(key(Long.MIN_VALUE), key(Long.MAX_VALUE), NULL_CONTEXT)) {
                 for (int i = 0; i < aggregate.length; ) {

@@ -37,6 +37,7 @@ import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexReaderAcquisitionException;
@@ -209,7 +210,8 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
     }
 
     @Override
-    public boolean consistencyCheck(ReporterFactory reporterFactory, CursorContext cursorContext) {
+    public boolean consistencyCheck(
+            ReporterFactory reporterFactory, CursorContextFactory contextFactory, int numThreads) {
         final LuceneIndexConsistencyCheckVisitor visitor =
                 reporterFactory.getClass(LuceneIndexConsistencyCheckVisitor.class);
         final boolean isConsistent = luceneIndex.isValid();

@@ -22,7 +22,6 @@ package org.neo4j.index.internal.gbptree;
 import static org.neo4j.index.internal.gbptree.InternalTreeLogic.DEFAULT_SPLIT_RATIO;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -121,18 +120,14 @@ abstract class RootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> implements TreeRootExch
      * @param state structure to keep internal state while checking all trees.
      * @param visitor gets notified about potential inconsistencies.
      * @param reportDirty whether to report (to the visitor) about GBPTree being dirty, i.e. not cleanly shut down before checking.
-     * @param cursor {@link PageCursor} to use for reading from the page cache.
-     * @param cursorContext the {@link CursorContext}.
-     * @param indexFile path of the file that is being checked.
+     * @param contextFactory for creating cursor contexts.
      * @throws IOException on I/O error.
      */
     abstract void consistencyCheck(
             GBPTreeConsistencyChecker.ConsistencyCheckState state,
             GBPTreeConsistencyCheckVisitor visitor,
             boolean reportDirty,
-            PageCursor cursor,
-            CursorContext cursorContext,
-            Path indexFile)
+            CursorContextFactory contextFactory)
             throws IOException;
 
     /**

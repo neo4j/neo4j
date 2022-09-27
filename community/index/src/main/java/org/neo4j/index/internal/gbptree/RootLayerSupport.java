@@ -415,4 +415,8 @@ class RootLayerSupport {
         } while (!monitor.isConsistent());
         return monitor.estimateNumberOfKeys();
     }
+
+    PagedFile pagedFile() {
+        return pagedFile;
+    }
 }

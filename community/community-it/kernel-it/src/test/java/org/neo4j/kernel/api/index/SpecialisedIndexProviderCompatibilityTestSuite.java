@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 
 import org.junit.jupiter.api.Nested;
 import org.neo4j.annotations.documented.ReporterFactories;
@@ -40,7 +40,11 @@ abstract class SpecialisedIndexProviderCompatibilityTestSuite extends IndexProvi
 
     @Override
     void consistencyCheck(IndexPopulator populator) {
-        ((ConsistencyCheckable) populator).consistencyCheck(ReporterFactories.throwingReporterFactory(), NULL_CONTEXT);
+        ((ConsistencyCheckable) populator)
+                .consistencyCheck(
+                        ReporterFactories.throwingReporterFactory(),
+                        NULL_CONTEXT_FACTORY,
+                        Runtime.getRuntime().availableProcessors());
     }
 
     abstract static class Compatibility extends IndexProviderCompatabilityTestBase {

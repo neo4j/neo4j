@@ -37,7 +37,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -205,14 +204,17 @@ public class TokenIndex implements ConsistencyCheckable {
     }
 
     @Override
-    public boolean consistencyCheck(ReporterFactory reporterFactory, CursorContext cursorContext) {
+    public boolean consistencyCheck(
+            ReporterFactory reporterFactory, CursorContextFactory contextFactory, int numThreads) {
         //noinspection unchecked
-        return consistencyCheck(reporterFactory.getClass(GBPTreeConsistencyCheckVisitor.class), cursorContext);
+        return consistencyCheck(
+                reporterFactory.getClass(GBPTreeConsistencyCheckVisitor.class), contextFactory, numThreads);
     }
 
-    private boolean consistencyCheck(GBPTreeConsistencyCheckVisitor visitor, CursorContext cursorContext) {
+    private boolean consistencyCheck(
+            GBPTreeConsistencyCheckVisitor visitor, CursorContextFactory contextFactory, int numThreads) {
         try {
-            return index.consistencyCheck(visitor, cursorContext);
+            return index.consistencyCheck(visitor, contextFactory, numThreads);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

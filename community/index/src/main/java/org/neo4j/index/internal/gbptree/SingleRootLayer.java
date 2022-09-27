@@ -27,7 +27,6 @@ import static org.neo4j.index.internal.gbptree.TreeNode.DATA_LAYER_FLAG;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.List;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.io.pagecache.PageCursor;
@@ -117,9 +116,7 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
             GBPTreeConsistencyChecker.ConsistencyCheckState state,
             GBPTreeConsistencyCheckVisitor visitor,
             boolean reportDirty,
-            PageCursor cursor,
-            CursorContext cursorContext,
-            Path file)
+            CursorContextFactory contextFactory)
             throws IOException {
         long generation = support.generation();
         new GBPTreeConsistencyChecker<>(
@@ -129,7 +126,7 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
                         stableGeneration(generation),
                         unstableGeneration(generation),
                         reportDirty)
-                .check(file, cursor, root, visitor, cursorContext);
+                .check(support.pagedFile(), root, visitor, contextFactory);
     }
 
     @Override

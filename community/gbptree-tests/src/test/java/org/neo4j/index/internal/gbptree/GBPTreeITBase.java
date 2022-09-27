@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.index.internal.gbptree.DataTree.W_SPLIT_KEEP_ALL_LEFT;
 import static org.neo4j.index.internal.gbptree.DataTree.W_SPLIT_KEEP_ALL_RIGHT;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.io.IOException;
@@ -165,7 +166,7 @@ abstract class GBPTreeITBase<KEY, VALUE> {
         }
 
         // and finally
-        index.consistencyCheck(NULL_CONTEXT);
+        index.consistencyCheck(NULL_CONTEXT_FACTORY, Runtime.getRuntime().availableProcessors());
     }
 
     @EnumSource(WriterFactory.class)
@@ -208,7 +209,7 @@ abstract class GBPTreeITBase<KEY, VALUE> {
         }
 
         // and finally
-        index.consistencyCheck(NULL_CONTEXT);
+        index.consistencyCheck(NULL_CONTEXT_FACTORY, Runtime.getRuntime().availableProcessors());
     }
 
     @EnumSource(WriterFactory.class)

@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.ArrayList;
@@ -86,7 +87,10 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
     @AfterEach
     void after() {
         try {
-            accessor.consistencyCheck(ReporterFactories.throwingReporterFactory(), CursorContext.NULL_CONTEXT);
+            accessor.consistencyCheck(
+                    ReporterFactories.throwingReporterFactory(),
+                    NULL_CONTEXT_FACTORY,
+                    Runtime.getRuntime().availableProcessors());
         } finally {
             accessor.drop();
             accessor.close();

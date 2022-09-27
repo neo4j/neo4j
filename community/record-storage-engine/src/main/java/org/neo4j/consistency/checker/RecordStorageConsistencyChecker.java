@@ -315,8 +315,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
                     progressFactory.singlePart("ID Generator consistency check", idGenerators.size());
 
             for (IdGenerator idGenerator : idGenerators) {
-                consistencyCheckSingleCheckable(
-                        report, progressListener, idGenerator, RecordType.ID_STORE, cursorContext);
+                consistencyCheckSingleCheckable(report, progressListener, idGenerator, RecordType.ID_STORE);
             }
         }
     }
@@ -335,19 +334,14 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
 
             if (indexAccessors.nodeLabelIndex() != null) {
                 consistencyCheckSingleCheckable(
-                        report,
-                        progressListener,
-                        indexAccessors.nodeLabelIndex(),
-                        RecordType.LABEL_SCAN_DOCUMENT,
-                        cursorContext);
+                        report, progressListener, indexAccessors.nodeLabelIndex(), RecordType.LABEL_SCAN_DOCUMENT);
             }
             if (indexAccessors.relationshipTypeIndex() != null) {
                 consistencyCheckSingleCheckable(
                         report,
                         progressListener,
                         indexAccessors.relationshipTypeIndex(),
-                        RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT,
-                        cursorContext);
+                        RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT);
             }
 
             List<IndexDescriptor> rulesToRemove = new ArrayList<>();
@@ -356,7 +350,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
                         ConsistencyReporter.formattingHandler(report, RecordType.INDEX);
                 ReporterFactory reporterFactory = new ReporterFactory(handler);
                 IndexAccessor accessor = indexAccessors.accessorFor(onlineRule);
-                if (!accessor.consistencyCheck(reporterFactory, cursorContext)) {
+                if (!accessor.consistencyCheck(
+                        reporterFactory, contextFactory, context.execution.getNumberOfThreads())) {
                     rulesToRemove.add(onlineRule);
                 }
                 handler.updateSummary();
@@ -424,8 +419,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
                         neoStores.getOpenOptions());
                 var checker = observedCounts.checker(reporter)) {
             if (consistencyFlags.checkStructure()) {
-                consistencyCheckSingleCheckable(
-                        report, ProgressListener.NONE, countsStore, RecordType.COUNTS, cursorContext);
+                consistencyCheckSingleCheckable(report, ProgressListener.NONE, countsStore, RecordType.COUNTS);
             }
             countsStore.accept(checker, cursorContext);
         } catch (Exception e) {
@@ -439,40 +433,33 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
             return;
         }
 
-        try (var cursorContext = contextFactory.create(REL_GROUP_STORE_CONSISTENCY_CHECKER_TAG);
-                var relationshipGroupDegrees = new GBPTreeRelationshipGroupDegreesStore(
-                        pageCache,
-                        databaseLayout.relationshipGroupDegreesStore(),
-                        fileSystem,
-                        RecoveryCleanupWorkCollector.ignore(),
-                        new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder() {
-                            @Override
-                            public void rebuild(
-                                    Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
-                                throw new UnsupportedOperationException(
-                                        "Counts store needed rebuild, consistency checker will instead report broken or missing store");
-                            }
+        try (var relationshipGroupDegrees = new GBPTreeRelationshipGroupDegreesStore(
+                pageCache,
+                databaseLayout.relationshipGroupDegreesStore(),
+                fileSystem,
+                RecoveryCleanupWorkCollector.ignore(),
+                new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder() {
+                    @Override
+                    public void rebuild(Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+                        throw new UnsupportedOperationException(
+                                "Counts store needed rebuild, consistency checker will instead report broken or missing store");
+                    }
 
-                            @Override
-                            public long lastCommittedTxId() {
-                                return neoStores.getMetaDataStore().getLastCommittedTransactionId();
-                            }
-                        },
-                        true,
-                        GBPTreeGenericCountsStore.NO_MONITOR,
-                        databaseLayout.getDatabaseName(),
-                        100,
-                        NullLogProvider.getInstance(),
-                        contextFactory,
-                        cacheTracer,
-                        neoStores.getOpenOptions())) {
+                    @Override
+                    public long lastCommittedTxId() {
+                        return neoStores.getMetaDataStore().getLastCommittedTransactionId();
+                    }
+                },
+                true,
+                GBPTreeGenericCountsStore.NO_MONITOR,
+                databaseLayout.getDatabaseName(),
+                100,
+                NullLogProvider.getInstance(),
+                contextFactory,
+                cacheTracer,
+                neoStores.getOpenOptions())) {
             consistencyCheckSingleCheckable(
-                    report,
-                    ProgressListener.NONE,
-                    relationshipGroupDegrees,
-                    RecordType.RELATIONSHIP_GROUP,
-                    cursorContext);
-
+                    report, ProgressListener.NONE, relationshipGroupDegrees, RecordType.RELATIONSHIP_GROUP);
         } catch (Exception e) {
             log.error(
                     "Relationship group degrees is missing, broken or of an older format and will not be consistency checked",
@@ -517,13 +504,12 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
             InconsistencyReport report,
             ProgressListener listener,
             ConsistencyCheckable checkable,
-            RecordType recordType,
-            CursorContext cursorContext) {
+            RecordType recordType) {
         ConsistencyReporter.FormattingDocumentedHandler handler =
                 ConsistencyReporter.formattingHandler(report, recordType);
         ReporterFactory proxyFactory = new ReporterFactory(handler);
 
-        checkable.consistencyCheck(proxyFactory, cursorContext);
+        checkable.consistencyCheck(proxyFactory, contextFactory, context.execution.getNumberOfThreads());
         handler.updateSummary();
         listener.add(1);
     }

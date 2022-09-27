@@ -25,6 +25,7 @@ import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.util.VisibleForTesting;
@@ -317,8 +318,9 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         }
 
         @Override
-        public boolean consistencyCheck(ReporterFactory reporterFactory, CursorContext cursorContext) {
-            return delegate.consistencyCheck(reporterFactory, cursorContext);
+        public boolean consistencyCheck(
+                ReporterFactory reporterFactory, CursorContextFactory contextFactory, int numThreads) {
+            return delegate.consistencyCheck(reporterFactory, contextFactory, numThreads);
         }
     }
 

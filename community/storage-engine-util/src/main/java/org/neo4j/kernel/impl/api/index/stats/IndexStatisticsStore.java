@@ -204,13 +204,16 @@ public class IndexStatisticsStore extends LifecycleAdapter
     }
 
     @Override
-    public boolean consistencyCheck(ReporterFactory reporterFactory, CursorContext cursorContext) {
-        return consistencyCheck(reporterFactory.getClass(GBPTreeConsistencyCheckVisitor.class), cursorContext);
+    public boolean consistencyCheck(
+            ReporterFactory reporterFactory, CursorContextFactory contextFactory, int numThreads) {
+        return consistencyCheck(
+                reporterFactory.getClass(GBPTreeConsistencyCheckVisitor.class), contextFactory, numThreads);
     }
 
-    private boolean consistencyCheck(GBPTreeConsistencyCheckVisitor visitor, CursorContext cursorContext) {
+    private boolean consistencyCheck(
+            GBPTreeConsistencyCheckVisitor visitor, CursorContextFactory contextFactory, int numThreads) {
         try {
-            return tree.consistencyCheck(visitor, cursorContext);
+            return tree.consistencyCheck(visitor, contextFactory, numThreads);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
