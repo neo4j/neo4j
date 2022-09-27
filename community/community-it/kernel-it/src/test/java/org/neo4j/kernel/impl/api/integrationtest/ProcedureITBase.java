@@ -366,12 +366,6 @@ public interface ProcedureITBase {
                         stringArray("admin"),
                         "DBMS"),
                 proc(
-                        "dbms.cluster.overview",
-                        "() :: (id :: STRING?, addresses :: LIST? OF STRING?, databases :: MAP?, groups :: LIST? OF STRING?)",
-                        "Overview of all currently accessible cluster members, their databases and roles.",
-                        stringArray("reader", "editor", "publisher", "architect", "admin"),
-                        "READ"),
-                proc(
                         "dbms.cluster.protocols",
                         "() :: (orientation :: STRING?, remoteAddress :: STRING?, applicationProtocol :: STRING?, "
                                 + "applicationProtocolVersion :: INTEGER?, modifierProtocols :: STRING?)",
