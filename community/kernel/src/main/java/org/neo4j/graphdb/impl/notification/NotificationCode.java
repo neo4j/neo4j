@@ -23,6 +23,8 @@ import java.util.Objects;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
+import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 
 /**
  * Notification codes are status codes identifying the type of notification.
@@ -87,6 +89,12 @@ public enum NotificationCode {
             Status.Statement.FeatureDeprecationWarning,
             "The use of shortestPath and allShortestPaths with fixed length relationships is deprecated and will be removed in a future version. "
                     + "Please use a path with a length of 1 [r*1..1] instead or a Match with a limit."),
+    DEPRECATED_TEXT_INDEX_PROVIDER(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The `" + TextIndexProvider.DESCRIPTOR.name()
+                    + "` provider for text indexes is deprecated and will be removed in a future version. "
+                    + "Please use `" + TrigramIndexProvider.DESCRIPTOR.name() + "` instead."),
     EAGER_LOAD_CSV(
             SeverityLevel.INFORMATION,
             Status.Statement.EagerOperator,

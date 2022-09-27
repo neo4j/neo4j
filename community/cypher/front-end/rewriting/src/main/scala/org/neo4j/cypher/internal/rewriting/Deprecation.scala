@@ -18,7 +18,11 @@ package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.CreateDatabase
+import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
+import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
 import org.neo4j.cypher.internal.ast.NamespacedName
+import org.neo4j.cypher.internal.ast.Options
+import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetProperty
@@ -31,12 +35,14 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.ShortestPaths
+import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
 import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
+import org.neo4j.cypher.internal.util.DeprecatedTextIndexProvider
 import org.neo4j.cypher.internal.util.FixedLengthRelationshipInShortestPath
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.Ref
@@ -84,6 +90,28 @@ object Deprecations {
           Some(DeprecatedDatabaseNameNotification(nn.toString, Some(c.position)))
         )
 
+      case c: CreateTextNodeIndex if hasOldTextIndexProvider(c.options) =>
+        Deprecation(
+          None,
+          Some(DeprecatedTextIndexProvider(c.position))
+        )
+      case c: CreateTextRelationshipIndex if hasOldTextIndexProvider(c.options) =>
+        Deprecation(
+          None,
+          Some(DeprecatedTextIndexProvider(c.position))
+        )
+    }
+
+    private def hasOldTextIndexProvider(options: Options): Boolean = options match {
+      case OptionsMap(opt) => opt.exists {
+          case (key, value: StringLiteral) if key.equalsIgnoreCase("indexProvider") =>
+            // Can't reach the TextIndexProvider
+            // so have to hardcode the old text provider instead
+            value.value.equalsIgnoreCase("text-1.0")
+
+          case _ => false
+        }
+      case _ => false
     }
   }
 

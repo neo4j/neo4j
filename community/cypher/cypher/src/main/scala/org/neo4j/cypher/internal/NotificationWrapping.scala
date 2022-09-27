@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedRuntimeNotification
+import org.neo4j.cypher.internal.util.DeprecatedTextIndexProvider
 import org.neo4j.cypher.internal.util.FixedLengthRelationshipInShortestPath
 import org.neo4j.cypher.internal.util.HomeDatabaseNotPresent
 import org.neo4j.cypher.internal.util.InputPosition
@@ -203,6 +204,11 @@ object NotificationWrapping {
       )
     case FixedLengthRelationshipInShortestPath(pos) =>
       NotificationCode.DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP.notification(
+        pos.withOffset(offset).asInputPosition
+      )
+
+    case DeprecatedTextIndexProvider(pos) =>
+      NotificationCode.DEPRECATED_TEXT_INDEX_PROVIDER.notification(
         pos.withOffset(offset).asInputPosition
       )
 

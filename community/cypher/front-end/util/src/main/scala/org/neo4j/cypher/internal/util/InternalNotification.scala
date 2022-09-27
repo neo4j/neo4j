@@ -51,3 +51,5 @@ case class DeprecatedDatabaseNameNotification(databaseName: String, position: Op
 
 case class DeprecatedRuntimeNotification(msg: String)
     extends InternalNotification
+
+case class DeprecatedTextIndexProvider(position: InputPosition) extends InternalNotification

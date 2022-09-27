@@ -26,7 +26,10 @@ import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP
+import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_TEXT_INDEX_PROVIDER
 import org.neo4j.graphdb.impl.notification.NotificationDetail
+import org.neo4j.kernel.api.impl.schema.TextIndexProvider
+import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider
 import org.scalatest.BeforeAndAfterAll
 
 abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeAndAfterAll with DeprecationTestSupport {
@@ -85,5 +88,21 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "MATCH (a), (b), shortestPath((a)-[r]->(b)) RETURN b"
     )
     assertNotification(queries, true, DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP)
+  }
+
+  test("deprecate explicit use of old text index provider") {
+    val deprecatedProvider = TextIndexProvider.DESCRIPTOR.name()
+    val deprecatedProviderQueries = Seq(
+      s"CREATE TEXT INDEX FOR (n:Label) ON (n.prop) OPTIONS {indexProvider : '$deprecatedProvider'}",
+      s"CREATE TEXT INDEX FOR ()-[r:TYPE]-() ON (r.prop) OPTIONS {indexProvider : '$deprecatedProvider'}"
+    )
+    assertNotification(deprecatedProviderQueries, shouldContainNotification = true, DEPRECATED_TEXT_INDEX_PROVIDER)
+
+    val validProvider = TrigramIndexProvider.DESCRIPTOR.name()
+    val validProviderQueries = Seq(
+      s"CREATE TEXT INDEX FOR (n:Label) ON (n.prop) OPTIONS {indexProvider : '$validProvider'}",
+      s"CREATE TEXT INDEX FOR ()-[r:TYPE]-() ON (r.prop) OPTIONS {indexProvider : '$validProvider'}"
+    )
+    assertNoDeprecations(validProviderQueries)
   }
 }
