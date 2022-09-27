@@ -29,9 +29,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.junit.vintage</groupId>
-            <artifactId>junit-vintage-engine</artifactId>
-            <scope>test</scope>
+            <groupId>co.helmethair</groupId>
+            <artifactId>scalatest-junit-runner</artifactId>
         </dependency>
     </dependencies>
 

@@ -70,17 +70,12 @@
         </dependency>
         <dependency>
             <groupId>org.scalatestplus</groupId>
-            <artifactId>junit-4-13_${scala.binary.version}</artifactId>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.scalatestplus</groupId>
             <artifactId>mockito-4-6_${scala.binary.version}</artifactId>
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>org.junit.vintage</groupId>
-            <artifactId>junit-vintage-engine</artifactId>
+            <groupId>co.helmethair</groupId>
+            <artifactId>scalatest-junit-runner</artifactId>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -93,6 +88,10 @@
             <artifactId>junit-jupiter-api</artifactId>
             <version>${junit.version}</version>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
         </dependency>
     </dependencies>
 

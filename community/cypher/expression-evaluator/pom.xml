@@ -110,12 +110,8 @@
             <artifactId>scalatest_${scala.binary.version}</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.junit.vintage</groupId>
-            <artifactId>junit-vintage-engine</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.scalatestplus</groupId>
-            <artifactId>junit-4-13_${scala.binary.version}</artifactId>
+            <groupId>co.helmethair</groupId>
+            <artifactId>scalatest-junit-runner</artifactId>
         </dependency>
         <dependency>
             <groupId>org.scalatestplus</groupId>

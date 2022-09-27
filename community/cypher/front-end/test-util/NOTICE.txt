@@ -22,7 +22,6 @@ Apache Software License, Version 2.0
   Apache Commons Lang
   Byte Buddy (without dependencies)
   Byte Buddy agent
-  junit-4.13
   mockito-4.6
   openCypher TCK API
   openCypher TCK Features and Graphs
@@ -54,10 +53,9 @@ BSD - Scala License
 Eclipse Public License v2.0
   JUnit Jupiter API
   JUnit Platform Commons
-  JUnit Platform Engine API
-  JUnit Vintage Engine
 
 MIT License
+  co.helmethair:scalatest-junit-runner
   Cucumber Expressions
   Cucumber Tag Expressions
   Cucumber-JVM: Core

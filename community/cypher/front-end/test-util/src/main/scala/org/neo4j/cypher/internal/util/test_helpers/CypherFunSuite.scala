@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.util.test_helpers
 
-import org.junit.runner.RunWith
 import org.mockito.ArgumentCaptor
 import org.scalatest.Args
 import org.scalatest.Assertions
@@ -25,10 +24,8 @@ import org.scalatest.Status
 import org.scalatest.Suite
 import org.scalatest.funsuite.AnyFunSuiteLike
 import org.scalatest.matchers.should.Matchers
-import org.scalatestplus.junit.JUnitRunner
 import org.scalatestplus.mockito.MockitoSugar
 
-@RunWith(classOf[JUnitRunner])
 abstract class CypherFunSuite
     extends Suite
     with Assertions

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.evaluator
 
-import org.junit.runner.RunWith
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.values.storable.CoordinateReferenceSystem
 import org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84_3D
@@ -32,12 +31,10 @@ import org.neo4j.values.virtual.VirtualValues.list
 import org.neo4j.values.virtual.VirtualValues.map
 import org.scalatest.funsuite.AnyFunSuiteLike
 import org.scalatest.matchers.should.Matchers
-import org.scalatestplus.junit.JUnitRunner
 
 import java.lang.Math.PI
 import java.lang.Math.sin
 
-@RunWith(classOf[JUnitRunner])
 class SimpleInternalExpressionEvaluatorTest extends AnyFunSuiteLike with Matchers {
 
   test("parse literals") {

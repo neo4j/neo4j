@@ -109,8 +109,8 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.junit.vintage</groupId>
-            <artifactId>junit-vintage-engine</artifactId>
+            <groupId>co.helmethair</groupId>
+            <artifactId>scalatest-junit-runner</artifactId>
         </dependency>
         <dependency>
             <groupId>org.hamcrest</groupId>

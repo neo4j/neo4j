@@ -320,11 +320,6 @@
               <artifactId>junit-jupiter-engine</artifactId>
               <version>${junit.version}</version>
             </dependency>
-            <dependency>
-              <groupId>org.junit.vintage</groupId>
-              <artifactId>junit-vintage-engine</artifactId>
-              <version>${junit.version}</version>
-            </dependency>
           </dependencies>
         </plugin>
         <plugin>
@@ -361,11 +356,6 @@
             <dependency>
               <groupId>org.junit.jupiter</groupId>
               <artifactId>junit-jupiter-engine</artifactId>
-              <version>${junit.version}</version>
-            </dependency>
-            <dependency>
-              <groupId>org.junit.vintage</groupId>
-              <artifactId>junit-vintage-engine</artifactId>
               <version>${junit.version}</version>
             </dependency>
           </dependencies>
@@ -1121,18 +1111,6 @@
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>org.junit.vintage</groupId>
-        <artifactId>junit-vintage-engine</artifactId>
-        <version>${junit.version}</version>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>*</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
         <groupId>org.junit.platform</groupId>
         <artifactId>junit-platform-testkit</artifactId>
         <version>${junit.platform.version}</version>
@@ -1264,14 +1242,14 @@
       </dependency>
       <dependency>
         <groupId>org.scalatestplus</groupId>
-        <artifactId>junit-4-13_${scala.binary.version}</artifactId>
+        <artifactId>mockito-4-6_${scala.binary.version}</artifactId>
         <version>${scala.test.version}.0</version>
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>org.scalatestplus</groupId>
-        <artifactId>mockito-4-6_${scala.binary.version}</artifactId>
-        <version>${scala.test.version}.0</version>
+        <groupId>co.helmethair</groupId>
+        <artifactId>scalatest-junit-runner</artifactId>
+        <version>0.1.11</version>
         <scope>test</scope>
       </dependency>
       <dependency>
