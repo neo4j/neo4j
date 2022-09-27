@@ -50,6 +50,7 @@
     <module>security</module>
     <module>codegen</module>
     <module>index</module>
+    <module>gbptree-tests</module>
     <module>kernel</module>
     <module>lucene-index</module>
     <module>fulltext-index</module>

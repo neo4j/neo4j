@@ -1,26 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.neo4j</groupId>
-        <artifactId>community-integration-tests</artifactId>
+        <artifactId>parent</artifactId>
         <version>5.1.0-SNAPSHOT</version>
+        <relativePath>../..</relativePath>
     </parent>
-
-    <groupId>org.neo4j.community</groupId>
-    <artifactId>record-storage-engine-it</artifactId>
-
-    <name>Neo4j - Record Storage Engine Integration Tests</name>
-    <packaging>jar</packaging>
-    <description>Neo4j record storage engine integration tests.</description>
 
     <properties>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
         <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
-        <moduleName>org.neo4j.community.record.storage.it</moduleName>
+        <moduleName>org.neo4j.gbptree.tests</moduleName>
         <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
     </properties>
+
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>gbptree-tests</artifactId>
+
+    <packaging>jar</packaging>
+    <name>Neo4j - gbptree-tests</name>
+    <description>Test utils and tests for GBPTree.</description>
+    <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
     <scm>
         <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
@@ -49,53 +50,17 @@
     </licenses>
 
     <dependencies>
+        <!-- Main dependencies -->
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j</artifactId>
+            <artifactId>neo4j-index</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-random-values</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-record-storage-engine</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-        </dependency>
+
+        <!-- Test dependencies -->
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>io-test-utils</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>layout-test-utils</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j.community</groupId>
-            <artifactId>it-test-support</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>storage-engine-test-utils</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
@@ -107,21 +72,27 @@
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-kernel</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>gbptree-tests</artifactId>
+            <artifactId>neo4j-random-values</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>log-test-utils</artifactId>
+            <artifactId>neo4j-collections</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
         </dependency>
     </dependencies>
 </project>
