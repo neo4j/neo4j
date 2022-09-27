@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -1420,11 +1421,21 @@ case class InterpretedPipeMapper(
       case SubqueryForeach(_, _) =>
         SubqueryForeachPipe(lhs, rhs)(id = id)
 
-      case TransactionForeach(_, _, batchSize) =>
-        TransactionForeachPipe(lhs, rhs, buildExpression(batchSize))(id = id)
+      case TransactionForeach(_, _, batchSize, onErrorBehaviour, maybeReportAs)
+        if onErrorBehaviour == OnErrorFail && maybeReportAs.isEmpty =>
+        TransactionForeachPipe(
+          lhs,
+          rhs,
+          buildExpression(batchSize)
+        )(id = id)
 
-      case TransactionApply(_, _, batchSize) =>
-        TransactionApplyPipe(lhs, rhs, buildExpression(batchSize))(id = id)
+      case TransactionApply(_, _, batchSize, onErrorBehaviour, maybeReportAs)
+        if onErrorBehaviour == OnErrorFail && maybeReportAs.isEmpty =>
+        TransactionApplyPipe(
+          lhs,
+          rhs,
+          buildExpression(batchSize)
+        )(id = id)
 
       case Trail(
           _,

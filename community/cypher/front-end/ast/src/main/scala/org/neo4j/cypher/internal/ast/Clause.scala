@@ -36,6 +36,8 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck.Filtering
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck.stringifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
+import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck.error
+import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck.whenState
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.TypeGenerator
 import org.neo4j.cypher.internal.ast.semantics.iterableOnceSemanticChecking
@@ -77,6 +79,7 @@ import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StartsWith
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
@@ -1539,13 +1542,59 @@ case class Yield(
 
 object SubqueryCall {
 
-  final case class InTransactionsParameters(batchSize: Option[Expression])(val position: InputPosition) extends ASTNode
-      with SemanticCheckable with SemanticAnalysisTooling {
+  final case class InTransactionsBatchParameters(batchSize: Expression)(val position: InputPosition) extends ASTNode
+      with SemanticCheckable {
 
     override def semanticCheck: SemanticCheck =
-      batchSize.foldSemanticCheck {
-        checkExpressionIsStaticInt(_, "OF ... ROWS", acceptsZero = false)
+      checkExpressionIsStaticInt(batchSize, "OF ... ROWS", acceptsZero = false)
+  }
+
+  final case class InTransactionsReportParameters(reportAs: LogicalVariable)(val position: InputPosition)
+      extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
+
+    override def semanticCheck: SemanticCheck =
+      declareVariable(reportAs, CTMap) chain specifyType(CTMap, reportAs)
+  }
+
+  final case class InTransactionsErrorParameters(behaviour: InTransactionsOnErrorBehaviour)(
+    val position: InputPosition
+  ) extends ASTNode
+
+  sealed trait InTransactionsOnErrorBehaviour
+
+  object InTransactionsOnErrorBehaviour {
+    case object OnErrorContinue extends InTransactionsOnErrorBehaviour
+    case object OnErrorBreak extends InTransactionsOnErrorBehaviour
+    case object OnErrorFail extends InTransactionsOnErrorBehaviour
+  }
+
+  final case class InTransactionsParameters private (
+    batchParams: Option[InTransactionsBatchParameters],
+    errorParams: Option[InTransactionsErrorParameters],
+    reportParams: Option[InTransactionsReportParameters]
+  )(val position: InputPosition) extends ASTNode with SemanticCheckable {
+
+    override def semanticCheck: SemanticCheck = {
+      val checkBatchParams = batchParams.foldSemanticCheck(_.semanticCheck)
+
+      val checkErrorParams: SemanticCheck = errorParams match {
+        case Some(params) => whenState(!_.features.contains(SemanticFeature.CallInTxsStatusAndErrorHandling)) {
+            error("CALL IN TRANSACTIONS does not support ON ERROR behaviour yet", params.position)
+          }
+        case None =>
+          SemanticCheck.success
       }
+
+      val checkReportParams: SemanticCheck = reportParams match {
+        case Some(params) => whenState(!_.features.contains(SemanticFeature.CallInTxsStatusAndErrorHandling)) {
+            error("CALL IN TRANSACTIONS does not support REPORT STATUS yet", params.position)
+          } chain params.semanticCheck
+        case None =>
+          SemanticCheck.success
+      }
+
+      checkBatchParams chain checkErrorParams chain checkReportParams
+    }
   }
 
   def isTransactionalSubquery(clause: SubqueryCall): Boolean = clause.inTransactionsParameters.isDefined
@@ -1568,6 +1617,9 @@ case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[Subque
       } chain
       checkNoCallInTransactionsInsideRegularCall
   }
+
+  def reportParams: Option[SubqueryCall.InTransactionsReportParameters] =
+    inTransactionsParameters.flatMap(_.reportParams)
 
   def checkSubquery: SemanticCheck = {
     for {

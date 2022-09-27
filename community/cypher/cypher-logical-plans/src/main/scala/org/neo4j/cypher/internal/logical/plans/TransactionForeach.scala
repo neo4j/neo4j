@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
@@ -50,16 +52,23 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * }}}
  */
 
-case class TransactionForeach(override val left: LogicalPlan, override val right: LogicalPlan, batchSize: Expression)(
+case class TransactionForeach(
+  override val left: LogicalPlan,
+  override val right: LogicalPlan,
+  batchSize: Expression,
+  onErrorBehaviour: InTransactionsOnErrorBehaviour,
+  maybeReportAs: Option[String]
+)(
   implicit idGen: IdGen
 ) extends LogicalBinaryPlan(idGen) with ApplyPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): TransactionForeach = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): TransactionForeach = copy(right = newRHS)(idGen)
 
-  override val availableSymbols: Set[String] = left.availableSymbols
+  override val availableSymbols: Set[String] = left.availableSymbols ++ maybeReportAs.toList
 }
 
 object TransactionForeach {
   val defaultBatchSize: Long = 1000L
+  val defaultOnErrorBehaviour: InTransactionsOnErrorBehaviour = OnErrorFail
 }

@@ -181,6 +181,9 @@ import org.neo4j.cypher.internal.ast.StartDatabase
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.SubqueryCall
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.ast.TerminateTransactionsClause
 import org.neo4j.cypher.internal.ast.Topology
@@ -917,8 +920,21 @@ case class Prettifier(
     }
 
     def asString(ip: InTransactionsParameters): String = {
-      val ofRows = ip.batchSize.map(n => s" OF ${expr(n)} ROWS").getOrElse("")
-      s" IN TRANSACTIONS$ofRows"
+      val ofRows = ip.batchParams.map(_.batchSize) match {
+        case Some(size) => " OF " + expr(size) + " ROWS"
+        case None       => ""
+      }
+      val onError = ip.errorParams.map(_.behaviour) match {
+        case Some(OnErrorBreak)    => s" ON ERROR BREAK"
+        case Some(OnErrorContinue) => s" ON ERROR CONTINUE"
+        case Some(OnErrorFail)     => s" ON ERROR FAIL"
+        case None                  => ""
+      }
+      val reportStatus = ip.reportParams.map(_.reportAs) match {
+        case Some(statusVar) => s" REPORT STATUS AS ${ExpressionStringifier.backtick(statusVar.name)}"
+        case None            => ""
+      }
+      s" IN TRANSACTIONS$ofRows$onError$reportStatus"
     }
 
     def asString(w: Where): String =

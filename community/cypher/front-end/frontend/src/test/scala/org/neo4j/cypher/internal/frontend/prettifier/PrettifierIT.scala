@@ -103,10 +103,22 @@ class PrettifierIT extends CypherFunSuite {
       """CALL {
         |  CREATE (n)
         |} IN TRANSACTIONS""".stripMargin,
-    "call { create ( n ) } in transactions of 1 row" ->
+    "call { create ( n ) } in transactions of 1 row on error break" ->
       """CALL {
         |  CREATE (n)
-        |} IN TRANSACTIONS OF 1 ROWS""".stripMargin,
+        |} IN TRANSACTIONS OF 1 ROWS ON ERROR BREAK""".stripMargin,
+    "call { create ( n ) } in transactions of 1 row on error continue" ->
+      """CALL {
+        |  CREATE (n)
+        |} IN TRANSACTIONS OF 1 ROWS ON ERROR CONTINUE""".stripMargin,
+    "call { create ( n ) } in transactions report status as s" ->
+      """CALL {
+        |  CREATE (n)
+        |} IN TRANSACTIONS REPORT STATUS AS s""".stripMargin,
+    "call { create ( n ) } in transactions of 1 row on error fail report status as s" ->
+      """CALL {
+        |  CREATE (n)
+        |} IN TRANSACTIONS OF 1 ROWS ON ERROR FAIL REPORT STATUS AS s""".stripMargin,
     "call { create ( n ) } in transactions of 10 rows" ->
       """CALL {
         |  CREATE (n)
@@ -115,6 +127,19 @@ class PrettifierIT extends CypherFunSuite {
       """CALL {
         |  CREATE (n)
         |} IN TRANSACTIONS OF $p ROWS""".stripMargin,
+    "call { create ( n ) } in transactions of 10 rows on error break" ->
+      """CALL {
+        |  CREATE (n)
+        |} IN TRANSACTIONS OF 10 ROWS ON ERROR BREAK""".stripMargin,
+    "call { return 1 as i } in transactions of 10 rows report status as s on error break return s, i" ->
+      """CALL {
+        |  RETURN 1 AS i
+        |} IN TRANSACTIONS OF 10 ROWS ON ERROR BREAK REPORT STATUS AS s
+        |RETURN s, i""".stripMargin,
+    "call { return 1 as i } in transactions on error break" ->
+      """CALL {
+        |  RETURN 1 AS i
+        |} IN TRANSACTIONS ON ERROR BREAK""".stripMargin,
     "match (n) SET n.prop = 1" ->
       """MATCH (n)
         |SET n.prop = 1""".stripMargin,

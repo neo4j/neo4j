@@ -16,6 +16,9 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsBatchParameters
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsErrorParameters
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsReportParameters
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.And
@@ -600,7 +603,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def subqueryCallInTransactions(cs: Clause*): SubqueryCall = {
     val call = subqueryCall(cs: _*)
-    call.copy(inTransactionsParameters = Some(inTransactionsParameters(None)))(pos)
+    call.copy(inTransactionsParameters = Some(inTransactionsParameters(None, None, None)))(pos)
   }
 
   def subqueryCallInTransactions(
@@ -611,8 +614,12 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     call.copy(inTransactionsParameters = Some(inTransactionParameters))(pos)
   }
 
-  def inTransactionsParameters(batchSize: Option[Expression]): SubqueryCall.InTransactionsParameters =
-    SubqueryCall.InTransactionsParameters(batchSize)(pos)
+  def inTransactionsParameters(
+    batchParams: Option[InTransactionsBatchParameters],
+    errorParams: Option[InTransactionsErrorParameters],
+    reportParams: Option[InTransactionsReportParameters]
+  ): SubqueryCall.InTransactionsParameters =
+    SubqueryCall.InTransactionsParameters(batchParams, errorParams, reportParams)(pos)
 
   def create(pattern: PatternElement, position: InputPosition = pos): Create =
     Create(Pattern(Seq(EveryPath(pattern)))(pattern.position))(position)

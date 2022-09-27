@@ -26,6 +26,10 @@ import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.Expression
@@ -1801,6 +1805,23 @@ case class LogicalPlan2PlanDescription(
     addRuntimeAttributes(addPlanningAttributes(result, plan), plan)
   }
 
+  private def callInTxsDetails(
+    batchSize: Expression,
+    onErrorBehaviour: InTransactionsOnErrorBehaviour,
+    maybeReportAs: Option[String]
+  ) = {
+    val errorParams = onErrorBehaviour match {
+      case OnErrorContinue => " ON ERROR CONTINUE"
+      case OnErrorBreak    => " ON ERROR BREAK"
+      case OnErrorFail     => " ON ERROR FAIL"
+    }
+    val reportParams = maybeReportAs.fold("")(status => s" REPORT STATUS AS $status")
+
+    Details(
+      pretty"IN TRANSACTIONS OF ${asPrettyString(batchSize)} ROWS${asPrettyString.raw(errorParams)}${asPrettyString.raw(reportParams)}"
+    )
+  }
+
   override def onTwoChildPlan(
     plan: LogicalPlan,
     lhs: InternalPlanDescription,
@@ -1929,12 +1950,12 @@ case class LogicalPlan2PlanDescription(
       case _: SemiApply =>
         PlanDescriptionImpl(id, "SemiApply", children, Seq.empty, variables, withRawCardinalities)
 
-      case TransactionForeach(_, _, batchSize) =>
-        val details = Details(pretty"IN TRANSACTIONS OF ${asPrettyString(batchSize)} ROWS")
+      case TransactionForeach(_, _, batchSize, onErrorBehaviour, maybeReportAs) =>
+        val details = callInTxsDetails(batchSize, onErrorBehaviour, maybeReportAs)
         PlanDescriptionImpl(id, "TransactionForeach", children, Seq(details), variables, withRawCardinalities)
 
-      case TransactionApply(_, _, batchSize) =>
-        val details = Details(pretty"IN TRANSACTIONS OF ${asPrettyString(batchSize)} ROWS")
+      case TransactionApply(_, _, batchSize, onErrorBehaviour, maybeReportAs) =>
+        val details = callInTxsDetails(batchSize, onErrorBehaviour, maybeReportAs)
         PlanDescriptionImpl(id, "TransactionApply", children, Seq(details), variables, withRawCardinalities)
 
       case TriadicSelection(_, _, positivePredicate, source, seen, target) =>

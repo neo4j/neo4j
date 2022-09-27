@@ -311,7 +311,7 @@ class FabricStitcherTest
     }
 
     "errors" - {
-      val inTransactionParameters = Some(InTransactionsParameters(None)(pos))
+      val inTransactionParameters = Some(InTransactionsParameters(None, None, None)(pos))
 
       "disallows call in transactions as apply" in {
         val e = the[SyntaxException].thrownBy(

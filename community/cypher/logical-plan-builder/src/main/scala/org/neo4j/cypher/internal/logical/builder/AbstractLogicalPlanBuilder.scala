@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.logical.builder
 
 import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
@@ -1849,11 +1851,25 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     aggregation(Seq(), Seq(s"collect($variable) AS $collection"))
   }
 
-  def transactionForeach(batchSize: Long = TransactionForeach.defaultBatchSize): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => TransactionForeach(lhs, rhs, literalInt(batchSize))(_)))
+  def batchParams(batchSize: Long): Expression = literalInt(batchSize)
 
-  def transactionApply(batchSize: Long = TransactionForeach.defaultBatchSize): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => TransactionApply(lhs, rhs, literalInt(batchSize))(_)))
+  def transactionForeach(
+    batchSize: Long = TransactionForeach.defaultBatchSize,
+    onErrorBehaviour: InTransactionsOnErrorBehaviour = OnErrorFail,
+    maybeReportAs: Option[String] = None
+  ): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
+      TransactionForeach(lhs, rhs, batchParams(batchSize), onErrorBehaviour, maybeReportAs)(_)
+    ))
+
+  def transactionApply(
+    batchSize: Long = TransactionForeach.defaultBatchSize,
+    onErrorBehaviour: InTransactionsOnErrorBehaviour = OnErrorFail,
+    maybeReportAs: Option[String] = None
+  ): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
+      TransactionApply(lhs, rhs, batchParams(batchSize), onErrorBehaviour, maybeReportAs)(_)
+    ))
 
   def trail(
     trailParameters: TrailParameters

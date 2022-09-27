@@ -125,7 +125,11 @@ case class CallSubqueryHorizon(
   yielding: Boolean,
   inTransactionsParameters: Option[InTransactionsParameters]
 ) extends QueryHorizon {
-  override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds ++ callSubquery.returns
+
+  override def exposedSymbols(coveredIds: Set[String]): Set[String] = {
+    val maybeReportAs = inTransactionsParameters.flatMap(_.reportParams.map(_.reportAs.name))
+    coveredIds ++ callSubquery.returns ++ maybeReportAs.toSeq
+  }
 
   override def dependingExpressions: Seq[Expression] = Seq.empty
 

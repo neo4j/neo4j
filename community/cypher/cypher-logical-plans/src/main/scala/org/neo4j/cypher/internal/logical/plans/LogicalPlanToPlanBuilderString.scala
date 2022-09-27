@@ -953,10 +953,16 @@ object LogicalPlanToPlanBuilderString {
           format,
           fieldTerminatorStr
         ).mkString(", ")
-      case Apply(_, _, fromSubquery)           => s"fromSubquery = $fromSubquery"
-      case Eager(_, reasons)                   => reasons.map(eagernessReasonStr).mkString("ListSet(", ", ", ")")
-      case TransactionForeach(_, _, batchSize) => expressionStringifier(batchSize)
-      case TransactionApply(_, _, batchSize)   => expressionStringifier(batchSize)
+      case Apply(_, _, fromSubquery) => s"fromSubquery = $fromSubquery"
+      case Eager(_, reasons)         => reasons.map(eagernessReasonStr).mkString("ListSet(", ", ", ")")
+      case TransactionForeach(_, _, batchSize, onErrorBehaviour, maybeReportAs) =>
+        val params =
+          Seq(expressionStringifier(batchSize), onErrorBehaviour.toString) ++ maybeReportAs.toSeq
+        params.mkString(", ")
+      case TransactionApply(_, _, batchSize, onErrorBehaviour, maybeReportAs) =>
+        val params =
+          Seq(expressionStringifier(batchSize), onErrorBehaviour.toString) ++ maybeReportAs.toSeq
+        params.mkString(", ")
     }
     val plansWithContent2: PartialFunction[LogicalPlan, String] = {
       case MultiNodeIndexSeek(indexSeekLeafPlans: Seq[NodeIndexSeekLeafPlan]) =>

@@ -26,7 +26,10 @@ import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.ast.ShowTransactionsClause
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsErrorParameters
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsReportParameters
 import org.neo4j.cypher.internal.ast.TerminateTransactionsClause
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.UsingIndexHint
@@ -738,6 +741,22 @@ case class LogicalPlanProducer(
     annotate(leafPlan, solved, providedOrder, context)
   }
 
+  private def computeBatchSize(maybeBatchSize: Option[Expression]): Expression = {
+    maybeBatchSize match {
+      case Some(batchSize) => batchSize
+      case None => SignedDecimalIntegerLiteral(TransactionForeach.defaultBatchSize.toString)(InputPosition.NONE)
+    }
+  }
+
+  private def computeErrorBehaviour(maybeErrorParams: Option[InTransactionsErrorParameters])
+    : InTransactionsOnErrorBehaviour = {
+    maybeErrorParams.map(_.behaviour).getOrElse(TransactionForeach.defaultOnErrorBehaviour)
+  }
+
+  private def computeMaybeReportAs(maybeReportParams: Option[InTransactionsReportParameters]): Option[String] = {
+    maybeReportParams.map(_.reportAs.name)
+  }
+
   /**
    * Plan a selection on `hiddenSelections` but, in the solveds, pretend to solve only the predicates of the leaf plan and `originalPattern` instead of the leaf plan's pattern.
    * @param source the source leaf plan
@@ -788,18 +807,17 @@ case class LogicalPlanProducer(
       inTransactionsParameters
     )))
 
-    def chooseBatchSize(maybeBatchSize: Option[Expression]): Expression = {
-      maybeBatchSize match {
-        case Some(batchSize) => batchSize
-        case None => SignedDecimalIntegerLiteral(TransactionForeach.defaultBatchSize.toString)(InputPosition.NONE)
-      }
-    }
-
     val plan =
       if (yielding) {
         inTransactionsParameters match {
-          case Some(InTransactionsParameters(maybeBatchSize)) =>
-            TransactionApply(left, right, chooseBatchSize(maybeBatchSize))
+          case Some(InTransactionsParameters(batchParams, errorParams, reportParams)) =>
+            TransactionApply(
+              left,
+              right,
+              computeBatchSize(batchParams.map(_.batchSize)),
+              computeErrorBehaviour(errorParams),
+              computeMaybeReportAs(reportParams)
+            )
           case None =>
             if (!correlated && solvedRight.readOnly) {
               CartesianProduct(left, right, fromSubquery = true)
@@ -809,8 +827,14 @@ case class LogicalPlanProducer(
         }
       } else {
         inTransactionsParameters match {
-          case Some(InTransactionsParameters(maybeBatchSize)) =>
-            TransactionForeach(left, right, chooseBatchSize(maybeBatchSize))
+          case Some(InTransactionsParameters(batchParams, errorParams, reportParams)) =>
+            TransactionForeach(
+              left,
+              right,
+              computeBatchSize(batchParams.map(_.batchSize)),
+              computeErrorBehaviour(errorParams),
+              computeMaybeReportAs(reportParams)
+            )
           case None => SubqueryForeach(left, right)
         }
       }

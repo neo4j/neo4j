@@ -44,13 +44,18 @@ object SemanticFeature {
     override def name: String = "Quantified path patterns"
   }
 
+  case object CallInTxsStatusAndErrorHandling extends SemanticFeature with FeatureToString {
+    override def name: String = "CALL IN TRANSACTIONS status report and error handling"
+  }
+
   private val allSemanticFeatures = Set(
     MultipleDatabases,
     MultipleGraphs,
     UseGraphSelector,
     ExpressionsInViewInvocations,
     WithInitialQuerySignature,
-    QuantifiedPathPatterns
+    QuantifiedPathPatterns,
+    CallInTxsStatusAndErrorHandling
   )
 
   def fromString(str: String): SemanticFeature =

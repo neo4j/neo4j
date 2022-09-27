@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
@@ -49,12 +50,19 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * }}}
  */
 
-case class TransactionApply(override val left: LogicalPlan, override val right: LogicalPlan, batchSize: Expression)(
+case class TransactionApply(
+  override val left: LogicalPlan,
+  override val right: LogicalPlan,
+  batchSize: Expression,
+  onErrorBehaviour: InTransactionsOnErrorBehaviour,
+  maybeReportAs: Option[String]
+)(
   implicit idGen: IdGen
 ) extends LogicalBinaryPlan(idGen) with ApplyPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): TransactionApply = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): TransactionApply = copy(right = newRHS)(idGen)
 
-  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
+  override val availableSymbols: Set[String] =
+    left.availableSymbols ++ right.availableSymbols ++ maybeReportAs.toList
 }

@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
@@ -1832,6 +1835,42 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
   )
 
   testPlan(
+    "transactionForeach with OnErrorContinue",
+    new TestPlanBuilder()
+      .produceResults("x")
+      .transactionForeach(onErrorBehaviour = OnErrorContinue)
+      .|.emptyResult()
+      .|.create(createNode("y"))
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+  )
+
+  testPlan(
+    "transactionForeach with OnErrorFail",
+    new TestPlanBuilder()
+      .produceResults("x")
+      .transactionForeach(onErrorBehaviour = OnErrorFail)
+      .|.emptyResult()
+      .|.create(createNode("y"))
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+  )
+
+  testPlan(
+    "transactionForeach with OnErrorBreak",
+    new TestPlanBuilder()
+      .produceResults("x")
+      .transactionForeach(onErrorBehaviour = OnErrorBreak)
+      .|.emptyResult()
+      .|.create(createNode("y"))
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+  )
+
+  testPlan(
     "transactionApply",
     new TestPlanBuilder()
       .produceResults("x", "y")
@@ -1905,6 +1944,9 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
         interpreter.interpret(
           """import scala.collection.immutable.ListSet
             |
+            |import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
+            |import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
+            |import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
@@ -1979,12 +2021,14 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
         ) && !Modifier.isAbstract(modifiers)
       }
       methods should not be empty
-      methods.map { m =>
+      val m = methods.map { m =>
         val name = m.getName
         val index = name.indexOf("$") // filter out the $bar method
         val end = if (index == -1) name.length else index
         name.substring(0, end)
-      }.filter(_.nonEmpty).toSet[String] -- methodsWeCantTest -- testedOperators should be(empty)
+      }
+
+      m.filter(_.nonEmpty).toSet[String] -- methodsWeCantTest -- testedOperators should be(empty)
     }
   }
 

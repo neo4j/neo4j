@@ -102,6 +102,14 @@ trait JavaccParserTestBase[T, J] extends CypherFunSuite {
     }
   }
 
+  def assertFailsWithMessageContains(s: String, expectedMessage: String)(implicit p: JavaccRule[T]): Unit = {
+    parseRule(p, s) match {
+      case Failure(exception) =>
+        exception.getMessage.contains(fixLineSeparator(expectedMessage)) shouldBe true
+      case Success(thing) => fail(s"'$s' should not have been parsed correctly, parsed as $thing")
+    }
+  }
+
   private def fixLineSeparator(message: String): String = {
     // This is needed because current version of scala seems to produce \n from multi line strings
     // This produces a problem with windows line endings \r\n

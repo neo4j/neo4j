@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.ast.factory.ASTFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.NULL;
 import org.neo4j.cypher.internal.ast.factory.AccessType;
 import org.neo4j.cypher.internal.ast.factory.ActionType;
+import org.neo4j.cypher.internal.ast.factory.CallInTxsOnErrorBehaviourType;
 import org.neo4j.cypher.internal.ast.factory.ConstraintType;
 import org.neo4j.cypher.internal.ast.factory.ConstraintVersion;
 import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes;
@@ -93,6 +94,9 @@ public class LiteralInterpreter
                 NULL, // PRIVILEGE_TYPE,
                 NULL, // PRIVILEGE_RESOURCE,
                 NULL, // PRIVILEGE_QUALIFIER,
+                NULL, // SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS,
+                NULL, // SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS,
+                NULL, // SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS,
                 NULL, // SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
                 NULL, // POS,
                 NULL, // ENTITY_TYPE,
@@ -367,13 +371,28 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL subqueryInTransactionsParams(NULL p, Object batchSize) {
+    public NULL subqueryClause(NULL p, NULL subquery, NULL inTransactions) {
+        throw new UnsupportedOperationException("subqueryClause is not a literal");
+    }
+
+    @Override
+    public NULL subqueryInTransactionsParams(NULL p, NULL batchParams, NULL errorParams, NULL reportParams) {
         throw new UnsupportedOperationException("subqueryInTransactionsParams is not a literal");
     }
 
     @Override
-    public NULL subqueryClause(NULL p, NULL subquery, NULL inTransactions) {
-        throw new UnsupportedOperationException("subqueryClause is not a literal");
+    public NULL subqueryInTransactionsBatchParameters(NULL p, Object batchSize) {
+        throw new UnsupportedOperationException("subqueryInTransactionsBatchParameters is not a literal");
+    }
+
+    @Override
+    public NULL subqueryInTransactionsErrorParameters(NULL p, CallInTxsOnErrorBehaviourType onErrorBehaviour) {
+        throw new UnsupportedOperationException("subqueryInTransactionsErrorParameters is not a literal");
+    }
+
+    @Override
+    public NULL subqueryInTransactionsReportParameters(NULL p, Object v) {
+        throw new UnsupportedOperationException("subqueryInTransactionsReportParameters is not a literal");
     }
 
     @Override

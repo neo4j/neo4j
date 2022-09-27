@@ -20,9 +20,15 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
@@ -40,7 +46,16 @@ class SubqueryCallPlanningIntegrationTest
     with LogicalPlanningAttributesTestSupport {
 
   private def planFor(query: String): LogicalPlan = {
-    plannerBuilder().setAllNodesCardinality(1000).build().plan(query)
+    plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .build()
+      .plan(query)
+  }
+
+  private def plannerCfgBuilder: StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .addSemanticFeature(SemanticFeature.CallInTxsStatusAndErrorHandling)
   }
 
   // Uncorrelated subqueries
@@ -953,9 +968,7 @@ class SubqueryCallPlanningIntegrationTest
   }
 
   test("call correlated returning subquery in transactions") {
-    val cfg = plannerBuilder()
-      .setAllNodesCardinality(1000)
-      .build()
+    val cfg = plannerCfgBuilder.build()
 
     val query =
       """
@@ -978,10 +991,198 @@ class SubqueryCallPlanningIntegrationTest
       .build()
   }
 
-  test("call subquery in transactions with internal read-write conflict is eagerized") {
-    val cfg = plannerBuilder()
-      .setAllNodesCardinality(1000)
+  test("call returning subquery in transactions with specified batch size, on error behaviour and status report") {
+    val cfg = plannerCfgBuilder.build()
+
+    val query =
+      """
+        |MATCH (a)
+        |CALL {
+        |  CREATE (b)
+        |  RETURN b
+        |} IN TRANSACTIONS OF 400 ROWS
+        |  ON ERROR FAIL
+        |  REPORT STATUS AS s
+        |RETURN a, b, s
+        |""".stripMargin
+
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .transactionApply(400, OnErrorFail, Some("s"))
+      .|.create(createNode("b"))
+      .|.argument()
+      .eager()
+      .allNodeScan("a")
       .build()
+  }
+
+  test("call returning subquery in transactions with specified batch size and status report") {
+    val cfg = plannerCfgBuilder.build()
+
+    val query =
+      """
+        |MATCH (a)
+        |CALL {
+        |  CREATE (b)
+        |  RETURN b
+        |} IN TRANSACTIONS OF 400 ROWS
+        |  REPORT STATUS AS s
+        |RETURN a, b, s
+        |""".stripMargin
+
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .transactionApply(400, maybeReportAs = Some("s"))
+      .|.create(createNode("b"))
+      .|.argument()
+      .eager()
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("call returning subquery in transactions with status report") {
+    val cfg = plannerCfgBuilder.build()
+
+    val query =
+      """
+        |MATCH (a)
+        |CALL {
+        |  CREATE (b)
+        |  RETURN b
+        |} IN TRANSACTIONS
+        |  REPORT STATUS AS s
+        |RETURN a, b, s
+        |""".stripMargin
+
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .transactionApply(maybeReportAs = Some("s"))
+      .|.create(createNode("b"))
+      .|.argument()
+      .eager()
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("call returning subquery in transactions with on error break") {
+    val cfg = plannerCfgBuilder.build()
+
+    val query =
+      """
+        |MATCH (a)
+        |CALL {
+        |  CREATE (b)
+        |  RETURN b
+        |} IN TRANSACTIONS ON ERROR BREAK
+        |RETURN a, b
+        |""".stripMargin
+
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .transactionApply(onErrorBehaviour = OnErrorBreak)
+      .|.create(createNode("b"))
+      .|.argument()
+      .eager()
+      .allNodeScan("a")
+      .build()
+  }
+
+  test(
+    "call with non-returning subquery in transactions with specified batch size, on error behaviour and status report"
+  ) {
+    val cfg = plannerCfgBuilder.build()
+
+    val query =
+      """
+        |MATCH (a)
+        |CALL {
+        |  CREATE (b)
+        |} IN TRANSACTIONS OF 400 ROWS
+        |  ON ERROR FAIL
+        |  REPORT STATUS AS s
+        |RETURN a, s
+        |""".stripMargin
+
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .transactionForeach(400, OnErrorFail, Some("s"))
+      .|.create(createNode("b"))
+      .|.argument()
+      .eager()
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("call with non-returning subquery in transactions with specified batch size and status report") {
+    val cfg = plannerCfgBuilder.build()
+
+    val query =
+      """
+        |MATCH (a)
+        |CALL {
+        |  CREATE (b)
+        |} IN TRANSACTIONS OF 400 ROWS
+        |  REPORT STATUS AS s
+        |RETURN a, s
+        |""".stripMargin
+
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .transactionForeach(400, maybeReportAs = Some("s"))
+      .|.create(createNode("b"))
+      .|.argument()
+      .eager()
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("call with non-returning subquery in transactions with status report") {
+    val cfg = plannerCfgBuilder.build()
+
+    val query =
+      """
+        |MATCH (a)
+        |CALL {
+        |  CREATE (b)
+        |} IN TRANSACTIONS
+        |  REPORT STATUS AS s
+        |RETURN a, s
+        |""".stripMargin
+
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .transactionForeach(maybeReportAs = Some("s"))
+      .|.create(createNode("b"))
+      .|.argument()
+      .eager()
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("call with non-returning subquery in transactions with on error continue") {
+    val cfg = plannerCfgBuilder.build()
+
+    val query =
+      """
+        |MATCH (a)
+        |CALL {
+        |  CREATE (b)
+        |} IN TRANSACTIONS ON ERROR CONTINUE
+        |RETURN a
+        |""".stripMargin
+
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .transactionForeach(onErrorBehaviour = OnErrorContinue)
+      .|.create(createNode("b"))
+      .|.argument()
+      .eager()
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("call subquery in transactions with internal read-write conflict is eagerized") {
+    val cfg = plannerCfgBuilder.build()
 
     val query =
       """
@@ -1005,9 +1206,7 @@ class SubqueryCallPlanningIntegrationTest
   }
 
   test("call subquery in transactions with internal read-write, and external write-read conflict is eagerized") {
-    val cfg = plannerBuilder()
-      .setAllNodesCardinality(1000)
-      .build()
+    val cfg = plannerCfgBuilder.build()
 
     val query =
       """
@@ -1035,9 +1234,7 @@ class SubqueryCallPlanningIntegrationTest
   }
 
   test("call subquery in transactions with external property write-read conflict is eagerized") {
-    val cfg = plannerBuilder()
-      .setAllNodesCardinality(1000)
-      .build()
+    val cfg = plannerCfgBuilder.build()
 
     val query =
       """
@@ -1061,9 +1258,7 @@ class SubqueryCallPlanningIntegrationTest
   }
 
   test("consecutive call subquery in transactions with write after load csv is not eagerized") {
-    val cfg = plannerBuilder()
-      .setAllNodesCardinality(1000)
-      .build()
+    val cfg = plannerCfgBuilder.build()
 
     val query =
       """
@@ -1094,9 +1289,7 @@ class SubqueryCallPlanningIntegrationTest
   }
 
   test("consecutive call subquery in transactions with write-read conflict is eagerized") {
-    val cfg = plannerBuilder()
-      .setAllNodesCardinality(1000)
-      .build()
+    val cfg = plannerCfgBuilder.build()
 
     val query =
       """
@@ -1127,8 +1320,7 @@ class SubqueryCallPlanningIntegrationTest
   }
 
   test("Should not push down property reads past transactionForeach") {
-    val cfg = plannerBuilder()
-      .setAllNodesCardinality(1000)
+    val cfg = plannerCfgBuilder
       .setRelationshipCardinality("()-[]->()", 10000)
       .build()
 

@@ -262,7 +262,14 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.SubqueryCall
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsBatchParameters
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsErrorParameters
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsReportParameters
 import org.neo4j.cypher.internal.ast.TerminateTransactionAction
 import org.neo4j.cypher.internal.ast.TerminateTransactionsClause
 import org.neo4j.cypher.internal.ast.TextIndexes
@@ -1255,9 +1262,16 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     params <- option(_inTransactionsParameters)
   } yield SubqueryCall(part, params)(pos)
 
-  def _inTransactionsParameters: Gen[InTransactionsParameters] = for {
-    batchSize <- option(_expression)
-  } yield InTransactionsParameters(batchSize)(pos)
+  def _inTransactionsParameters: Gen[InTransactionsParameters] =
+    for {
+      batchSize <- option(_expression)
+      onErrorBehaviour <- option(oneOf[InTransactionsOnErrorBehaviour](OnErrorContinue, OnErrorBreak, OnErrorFail))
+      reportAs <- option(string)
+    } yield InTransactionsParameters(
+      batchSize.map(InTransactionsBatchParameters(_)(pos)),
+      onErrorBehaviour.map(InTransactionsErrorParameters(_)(pos)),
+      reportAs.map(v => InTransactionsReportParameters(Variable(s"`$v`")(pos))(pos))
+    )(pos)
 
   def _clause: Gen[Clause] = oneOf(
     lzy(_use),

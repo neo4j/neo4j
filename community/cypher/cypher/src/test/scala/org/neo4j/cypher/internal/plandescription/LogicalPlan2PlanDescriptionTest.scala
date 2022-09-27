@@ -70,6 +70,9 @@ import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.TextIndexes
 import org.neo4j.cypher.internal.ast.TraverseAction
 import org.neo4j.cypher.internal.ast.UniqueConstraints
@@ -5186,26 +5189,88 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("TransactionForeach") {
     assertGood(
-      attach(TransactionForeach(lhsLP, rhsLP, number("100")), 2345.0),
+      attach(
+        TransactionForeach(
+          lhsLP,
+          rhsLP,
+          batchSize = number("100"),
+          onErrorBehaviour = OnErrorContinue,
+          maybeReportAs = None
+        ),
+        2345.0
+      ),
       planDescription(
         id,
         "TransactionForeach",
         TwoChildren(lhsPD, rhsPD),
-        Seq(details("IN TRANSACTIONS OF 100 ROWS")),
+        Seq(details("IN TRANSACTIONS OF 100 ROWS ON ERROR CONTINUE")),
         Set("a")
+      )
+    )
+  }
+
+  test("TransactionForeach with status") {
+    assertGood(
+      attach(
+        TransactionForeach(
+          lhsLP,
+          rhsLP,
+          batchSize = number("100"),
+          onErrorBehaviour = OnErrorBreak,
+          maybeReportAs = Some("status")
+        ),
+        2345.0
+      ),
+      planDescription(
+        id,
+        "TransactionForeach",
+        TwoChildren(lhsPD, rhsPD),
+        Seq(details("IN TRANSACTIONS OF 100 ROWS ON ERROR BREAK REPORT STATUS AS status")),
+        Set("a", "status")
       )
     )
   }
 
   test("TransactionApply") {
     assertGood(
-      attach(TransactionApply(lhsLP, rhsLP, number("100")), 2345.0),
+      attach(
+        TransactionApply(
+          lhsLP,
+          rhsLP,
+          batchSize = number("100"),
+          onErrorBehaviour = OnErrorFail,
+          maybeReportAs = None
+        ),
+        2345.0
+      ),
       planDescription(
         id,
         "TransactionApply",
         TwoChildren(lhsPD, rhsPD),
-        Seq(details("IN TRANSACTIONS OF 100 ROWS")),
+        Seq(details("IN TRANSACTIONS OF 100 ROWS ON ERROR FAIL")),
         Set("a", "b")
+      )
+    )
+  }
+
+  test("TransactionApply with status") {
+    assertGood(
+      attach(
+        TransactionApply(
+          lhsLP,
+          rhsLP,
+          batchSize = number("100"),
+          onErrorBehaviour = OnErrorFail,
+          maybeReportAs = Some("status")
+        ),
+        2345.0
+      ),
+      planDescription(
+        id,
+        "TransactionApply",
+        TwoChildren(lhsPD, rhsPD),
+        Seq(details("IN TRANSACTIONS OF 100 ROWS ON ERROR FAIL REPORT STATUS AS status")),
+        Set("a", "b", "status")
       )
     )
   }

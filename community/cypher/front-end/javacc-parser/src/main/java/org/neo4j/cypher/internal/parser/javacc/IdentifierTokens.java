@@ -36,6 +36,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASSERT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASSIGN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.AT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BOOSTED;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BREAK;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BRIEF;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BTREE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BUILT;
@@ -50,6 +51,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.COMPOSITE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CONSTRAINT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CONSTRAINTS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CONTAINS;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CONTINUE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.COPY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.COUNT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CREATE;
@@ -79,12 +81,14 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ENABLE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ENCRYPTED;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.END;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ENDS;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ERROR;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ESCAPED_SYMBOLIC_NAME;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXECUTABLE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXECUTE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXIST;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXISTENCE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXISTS;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FAIL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FALSE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FIELDTERMINATOR;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FOR;
@@ -160,6 +164,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.RELATIONSH
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REMOVE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.RENAME;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REPLACE;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REPORT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REQUIRE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REQUIRED;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.RETURN;
@@ -240,6 +245,7 @@ public class IdentifierTokens {
             ASSIGN,
             AT,
             BOOSTED,
+            BREAK,
             BRIEF,
             BTREE,
             BUILT,
@@ -254,6 +260,7 @@ public class IdentifierTokens {
             CONSTRAINT,
             CONSTRAINTS,
             CONTAINS,
+            CONTINUE,
             COPY,
             COUNT,
             CREATE,
@@ -283,11 +290,13 @@ public class IdentifierTokens {
             ENCRYPTED,
             END,
             ENDS,
+            ERROR,
             EXECUTABLE,
             EXECUTE,
             EXIST,
             EXISTENCE,
             EXISTS,
+            FAIL,
             FALSE,
             FIELDTERMINATOR,
             FOR,
@@ -363,6 +372,7 @@ public class IdentifierTokens {
             REMOVE,
             RENAME,
             REPLACE,
+            REPORT,
             REQUIRE,
             REQUIRED,
             RETURN,

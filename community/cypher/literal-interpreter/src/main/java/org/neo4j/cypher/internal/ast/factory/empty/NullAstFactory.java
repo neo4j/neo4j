@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.factory.ASTFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.NULL;
 import org.neo4j.cypher.internal.ast.factory.AccessType;
 import org.neo4j.cypher.internal.ast.factory.ActionType;
+import org.neo4j.cypher.internal.ast.factory.CallInTxsOnErrorBehaviourType;
 import org.neo4j.cypher.internal.ast.factory.ConstraintType;
 import org.neo4j.cypher.internal.ast.factory.ConstraintVersion;
 import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes;
@@ -39,6 +40,9 @@ import org.neo4j.cypher.internal.ast.factory.SimpleEither;
  */
 public class NullAstFactory
         implements ASTFactory<
+                NULL,
+                NULL,
+                NULL,
                 NULL,
                 NULL,
                 NULL,
@@ -720,7 +724,22 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL subqueryInTransactionsParams(NULL p, NULL batchSize) {
+    public NULL subqueryInTransactionsParams(NULL p, NULL batchParams, NULL errorParams, NULL reportParams) {
+        return null;
+    }
+
+    @Override
+    public NULL subqueryInTransactionsBatchParameters(NULL p, NULL batchSize) {
+        return null;
+    }
+
+    @Override
+    public NULL subqueryInTransactionsErrorParameters(NULL p, CallInTxsOnErrorBehaviourType onErrorBehaviour) {
+        return null;
+    }
+
+    @Override
+    public NULL subqueryInTransactionsReportParameters(NULL p, NULL v) {
         return null;
     }
 

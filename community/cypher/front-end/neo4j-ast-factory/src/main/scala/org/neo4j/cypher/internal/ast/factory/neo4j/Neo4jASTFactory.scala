@@ -278,6 +278,9 @@ import org.neo4j.cypher.internal.ast.StatementWithGraph
 import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.SubqueryCall
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.TerminateTransactionAction
 import org.neo4j.cypher.internal.ast.TerminateTransactionsClause
 import org.neo4j.cypher.internal.ast.TextIndexes
@@ -318,6 +321,7 @@ import org.neo4j.cypher.internal.ast.factory.AccessType
 import org.neo4j.cypher.internal.ast.factory.AccessType.READ_ONLY
 import org.neo4j.cypher.internal.ast.factory.AccessType.READ_WRITE
 import org.neo4j.cypher.internal.ast.factory.ActionType
+import org.neo4j.cypher.internal.ast.factory.CallInTxsOnErrorBehaviourType
 import org.neo4j.cypher.internal.ast.factory.ConstraintType
 import org.neo4j.cypher.internal.ast.factory.ConstraintVersion
 import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes
@@ -507,6 +511,9 @@ class Neo4jASTFactory(query: String)
       ActionResource,
       PrivilegeQualifier,
       SubqueryCall.InTransactionsParameters,
+      SubqueryCall.InTransactionsBatchParameters,
+      SubqueryCall.InTransactionsErrorParameters,
+      SubqueryCall.InTransactionsReportParameters,
       InputPosition,
       EntityType,
       GraphPatternQuantifier,
@@ -727,10 +734,41 @@ class Neo4jASTFactory(query: String)
 
   override def subqueryInTransactionsParams(
     p: InputPosition,
+    batchParams: SubqueryCall.InTransactionsBatchParameters,
+    errorParams: SubqueryCall.InTransactionsErrorParameters,
+    reportParams: SubqueryCall.InTransactionsReportParameters
+  ): SubqueryCall.InTransactionsParameters =
+    SubqueryCall.InTransactionsParameters(
+      Option(batchParams),
+      Option(errorParams),
+      Option(reportParams)
+    )(p)
+
+  override def subqueryInTransactionsBatchParameters(
+    p: InputPosition,
     batchSize: Expression
-  ): SubqueryCall.InTransactionsParameters = {
-    SubqueryCall.InTransactionsParameters(Option(batchSize))(p)
+  ): SubqueryCall.InTransactionsBatchParameters =
+    SubqueryCall.InTransactionsBatchParameters(batchSize)(p)
+
+  override def subqueryInTransactionsErrorParameters(
+    p: InputPosition,
+    onErrorBehaviour: CallInTxsOnErrorBehaviourType
+  ): SubqueryCall.InTransactionsErrorParameters = {
+    onErrorBehaviour match {
+      case CallInTxsOnErrorBehaviourType.ON_ERROR_CONTINUE =>
+        SubqueryCall.InTransactionsErrorParameters(OnErrorContinue)(p)
+      case CallInTxsOnErrorBehaviourType.ON_ERROR_BREAK =>
+        SubqueryCall.InTransactionsErrorParameters(OnErrorBreak)(p)
+      case CallInTxsOnErrorBehaviourType.ON_ERROR_FAIL =>
+        SubqueryCall.InTransactionsErrorParameters(OnErrorFail)(p)
+    }
   }
+
+  override def subqueryInTransactionsReportParameters(
+    p: InputPosition,
+    v: Variable
+  ): SubqueryCall.InTransactionsReportParameters =
+    SubqueryCall.InTransactionsReportParameters(v)(p)
 
   override def subqueryClause(
     p: InputPosition,

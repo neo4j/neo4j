@@ -74,6 +74,7 @@ import org.neo4j.cypher.internal.ast.factory.ASTFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos;
 import org.neo4j.cypher.internal.ast.factory.ActionType;
 import org.neo4j.cypher.internal.ast.factory.ConstraintType;
+import org.neo4j.cypher.internal.ast.factory.CallInTxsOnErrorBehaviourType;
 import org.neo4j.cypher.internal.ast.factory.ConstraintVersion;
 import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes;
 import org.neo4j.cypher.internal.ast.factory.HintIndexType;
@@ -118,6 +119,9 @@ public class Cypher<STATEMENT,
                     PRIVILEGE_RESOURCE,
                     PRIVILEGE_QUALIFIER,
                     SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
+                    SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS,
+                    SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS,
+                    SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS,
                     POS,
                     ENTITY_TYPE,
                     PATTERN_QUANTIFIER,
@@ -161,6 +165,9 @@ public class Cypher<STATEMENT,
                PRIVILEGE_RESOURCE,
                PRIVILEGE_QUALIFIER,
                SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
+               SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS,
+               SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS,
+               SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS,
                POS,
                ENTITY_TYPE,
                PATTERN_QUANTIFIER,
@@ -205,6 +212,9 @@ public class Cypher<STATEMENT,
                              PRIVILEGE_RESOURCE,
                              PRIVILEGE_QUALIFIER,
                              SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
+                             SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS,
+                             SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS,
+                             SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS,
                              POS,
                              ENTITY_TYPE,
                              PATTERN_QUANTIFIER,
@@ -375,6 +385,7 @@ TOKEN [IGNORE_CASE] :
     | < AT: "AT" >
     | < BAR: "|" >
     | < BOOSTED: "BOOSTED" >
+    | < BREAK: "BREAK" >
     | < BRIEF: "BRIEF" >
     | < BTREE: "BTREE" >
     | < BUILT: "BUILT" >
@@ -390,6 +401,7 @@ TOKEN [IGNORE_CASE] :
     | < CONSTRAINTS: "CONSTRAINTS" >
     | < CONTAINS: "CONTAINS" >
     | < COPY: "COPY" >
+    | < CONTINUE: "CONTINUE" >
     | < COUNT: "COUNT" >
     | < CREATE: "CREATE" >
     | < CSV: "CSV" >
@@ -428,6 +440,8 @@ TOKEN [IGNORE_CASE] :
     | < EXIST: "EXIST" >
     | < EXISTENCE: "EXISTENCE" >
     | < EXISTS: "EXISTS" >
+    | < ERROR: "ERROR" >
+    | < FAIL: "FAIL" >
     | < FALSE: "false" >
     | < FIELDTERMINATOR: "FIELDTERMINATOR" >
     | < FOR: "FOR" >
@@ -521,6 +535,7 @@ TOKEN [IGNORE_CASE] :
     | < RELATIONSHIPS: "RELATIONSHIPS" >
     | < REMOVE: "REMOVE" >
     | < REPLACE: "REPLACE" >
+    | < REPORT: "REPORT" >
     | < REQUIRE: "REQUIRE" >
     | < REQUIRED: "REQUIRED" >
     | < RETURN: "RETURN" >
@@ -1544,7 +1559,7 @@ void PeriodicCommitQueryHintFailure() throws Exception :
     }
 }
 
-QUERY RegularQuery() :
+QUERY RegularQuery() throws Exception:
 {
     QUERY x;
 }
@@ -1555,7 +1570,7 @@ QUERY RegularQuery() :
     }
 }
 
-QUERY Union( QUERY lhs ) :
+QUERY Union( QUERY lhs ) throws Exception :
 {
     Token t;
     QUERY rhs;
@@ -1568,7 +1583,7 @@ QUERY Union( QUERY lhs ) :
     }
 }
 
-QUERY SingleQuery() :
+QUERY SingleQuery() throws Exception:
 {
     CLAUSE x;
     List<CLAUSE> clauses = new ArrayList<>();
@@ -1580,7 +1595,7 @@ QUERY SingleQuery() :
     }
 }
 
-QUERY SingleQueryWithUseClause( CLAUSE useClause ) :
+QUERY SingleQueryWithUseClause( CLAUSE useClause ) throws Exception:
 {
     CLAUSE x;
     List<CLAUSE> clauses = new ArrayList<>();
@@ -1596,7 +1611,7 @@ QUERY SingleQueryWithUseClause( CLAUSE useClause ) :
     }
 }
 
-CLAUSE Clause() :
+CLAUSE Clause() throws Exception:
 {
     CLAUSE x = null;
 }
@@ -2061,7 +2076,7 @@ CLAUSE LoadCSVClause() :
 
 // FOREACH
 
-CLAUSE ForeachClause() :
+CLAUSE ForeachClause() throws Exception:
 {
     Token t;
     VARIABLE v;
@@ -2078,7 +2093,7 @@ CLAUSE ForeachClause() :
     }
 }
 
-CLAUSE SubqueryClause() :
+CLAUSE SubqueryClause() throws Exception :
 {
     Token t;
     QUERY q;
@@ -2095,16 +2110,65 @@ CLAUSE SubqueryClause() :
     }
 }
 
-SUBQUERY_IN_TRANSACTIONS_PARAMETERS SubqueryInTransactionsParameters() :
+SUBQUERY_IN_TRANSACTIONS_PARAMETERS SubqueryInTransactionsParameters() throws Exception:
 {
     Token t;
-    EXPRESSION batchSize = null;
+    SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS batchParams = null;
+    SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS errorParams = null;
+    SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS reportParams = null;
+    String repeatedOnError = "Duplicated ON ERROR parameter";
+    String repeatedReport = "Duplicated REPORT STATUS parameter";
 }
 {
     t=<IN> <TRANSACTIONS>
-    (<OF> batchSize=Expression() (<ROW> | <ROWS>))?
+    (batchParams=SubqueryInTransactionsBatchParameters())?
+    // The 2 parameters for CALL IN TRANSACTIONS:
+    // ON ERROR CONTINUE / BREAK / FAIL and REPORT STATUS, can appear
+    // in any order and shouldn't be duplicated
+    (
+        (
+            { assertNotAlreadySet( errorParams, t, repeatedOnError ); } errorParams=SubqueryInTransactionsErrorParameters() |
+            { assertNotAlreadySet( reportParams, t, repeatedReport ); } reportParams=SubqueryInTransactionsReportParameters()
+        )
+    )*
     {
-        return astFactory.subqueryInTransactionsParams( pos( t ), batchSize );
+        return astFactory.subqueryInTransactionsParams( pos( t ), batchParams, errorParams, reportParams);
+    }
+}
+
+SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS SubqueryInTransactionsBatchParameters() :
+{
+    Token t;
+    EXPRESSION batchSize;
+}
+{
+    t=<OF> batchSize=Expression() (<ROW>|<ROWS>)
+    {
+        return astFactory.subqueryInTransactionsBatchParameters( pos( t ), batchSize);
+    }
+}
+
+SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS SubqueryInTransactionsErrorParameters() :
+{
+    Token t;
+    CallInTxsOnErrorBehaviourType onErrorBehaviour = CallInTxsOnErrorBehaviourType.ON_ERROR_FAIL;
+}
+{
+    t=<ON> <ERROR> (<CONTINUE> { onErrorBehaviour = CallInTxsOnErrorBehaviourType.ON_ERROR_CONTINUE; } | <BREAK> { onErrorBehaviour = CallInTxsOnErrorBehaviourType.ON_ERROR_BREAK; }  | <FAIL>)
+    {
+        return astFactory.subqueryInTransactionsErrorParameters( pos( t ), onErrorBehaviour );
+    }
+}
+
+SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS SubqueryInTransactionsReportParameters() :
+{
+    Token t;
+    VARIABLE v;
+}
+{
+    t=<REPORT> <STATUS> <AS> v=Variable()
+    {
+        return astFactory.subqueryInTransactionsReportParameters( pos( t ), v );
     }
 }
 
@@ -5899,6 +5963,7 @@ Token UnescapedSymbolicNameString() :
         | t=<ASSIGN>
         | t=<AT>
         | t=<BOOSTED>
+        | t=<BREAK>
         | t=<BRIEF>
         | t=<BTREE>
         | t=<BUILT>
@@ -5913,6 +5978,7 @@ Token UnescapedSymbolicNameString() :
         | t=<CONSTRAINT>
         | t=<CONSTRAINTS>
         | t=<CONTAINS>
+        | t=<CONTINUE>
         | t=<COPY>
         | t=<COUNT>
         | t=<CREATE>
@@ -5942,11 +6008,13 @@ Token UnescapedSymbolicNameString() :
         | t=<ENCRYPTED>
         | t=<END>
         | t=<ENDS>
+        | t=<ERROR>
         | t=<EXECUTABLE>
         | t=<EXECUTE>
         | t=<EXIST>
         | t=<EXISTENCE>
         | t=<EXISTS>
+        | t=<FAIL>
         | t=<FALSE>
         | t=<FIELDTERMINATOR>
         | t=<FOREACH>
@@ -6020,6 +6088,7 @@ Token UnescapedSymbolicNameString() :
         | t=<REMOVE>
         | t=<RENAME>
         | t=<REPLACE>
+        | t=<REPORT>
         | t=<REQUIRE>
         | t=<REQUIRED>
         | t=<RETURN>

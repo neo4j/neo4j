@@ -73,6 +73,9 @@ public interface ASTFactory<
                 PRIVILEGE_RESOURCE,
                 PRIVILEGE_QUALIFIER,
                 SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
+                SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS,
+                SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS,
+                SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS,
                 POS,
                 ENTITY_TYPE,
                 PATH_PATTERN_QUANTIFIER,
@@ -255,7 +258,18 @@ public interface ASTFactory<
 
     CLAUSE subqueryClause(POS p, QUERY subquery, SUBQUERY_IN_TRANSACTIONS_PARAMETERS inTransactions);
 
-    SUBQUERY_IN_TRANSACTIONS_PARAMETERS subqueryInTransactionsParams(POS p, EXPRESSION batchSize);
+    SUBQUERY_IN_TRANSACTIONS_PARAMETERS subqueryInTransactionsParams(
+            POS p,
+            SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS batchParams,
+            SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS errorParams,
+            SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS reportParams);
+
+    SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS subqueryInTransactionsBatchParameters(POS p, EXPRESSION batchSize);
+
+    SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS subqueryInTransactionsErrorParameters(
+            POS p, CallInTxsOnErrorBehaviourType onErrorBehaviour);
+
+    SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS subqueryInTransactionsReportParameters(POS p, VARIABLE v);
 
     // Commands
     STATEMENT_WITH_GRAPH useGraph(STATEMENT_WITH_GRAPH statement, USE_GRAPH useGraph);
