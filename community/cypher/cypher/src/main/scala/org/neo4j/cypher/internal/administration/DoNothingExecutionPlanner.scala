@@ -25,11 +25,13 @@ import org.neo4j.cypher.internal.AdministrationCommandRuntime.runtimeStringValue
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAME_PROPERTY
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.REMOTE_DATABASE
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.kernel.api.exceptions.Status
@@ -71,27 +73,31 @@ case class DoNothingExecutionPlanner(normalExecutionEngine: ExecutionEngine,
   def planDoNothingIfDatabaseNotExists(name: Either[String, Parameter],
                                        valueMapper: String => String,
                                        operation: String,
-                                       sourcePlan: Option[ExecutionPlan]): ExecutionPlan = {
+                                       sourcePlan: Option[ExecutionPlan],
+                                       databaseTypeFilter: DatabaseTypeFilter): ExecutionPlan = {
     planDoNothingDatabase("DoNothingIfDatabaseNotExists",
       name,
       valueMapper,
       QueryHandler
         .ignoreNoResult()
         .handleError(handleErrorFn(operation, DATABASE, name)),
-      sourcePlan
+      sourcePlan,
+      databaseTypeFilter
     )
   }
 
   def planDoNothingIfDatabaseExists(name: Either[String, Parameter],
                                     valueMapper: String => String,
-                                    sourcePlan: Option[ExecutionPlan]): ExecutionPlan =
+                                    sourcePlan: Option[ExecutionPlan],
+                                    databaseTypeFilter: DatabaseTypeFilter): ExecutionPlan =
     planDoNothingDatabase("DoNothingIfDatabaseExists",
       name,
       valueMapper,
       QueryHandler
         .ignoreOnResult()
         .handleError(handleErrorFn("create", DATABASE, name)),
-      sourcePlan)
+      sourcePlan,
+      databaseTypeFilter)
 
   private def planDoNothing(planName: String,
                             label: String,
@@ -118,15 +124,16 @@ case class DoNothingExecutionPlanner(normalExecutionEngine: ExecutionEngine,
                                     name: Either[String, Parameter],
                                     valueMapper: String => String,
                                     queryHandler: QueryHandler,
-                                    sourcePlan: Option[ExecutionPlan]): ExecutionPlan = {
+                                    sourcePlan: Option[ExecutionPlan],
+                                    databaseTypeFilter: DatabaseTypeFilter): ExecutionPlan = {
     val nameFields = getNameFields("name", name, valueMapper = valueMapper)
     UpdatingSystemCommandExecutionPlan(planName,
       normalExecutionEngine,
       securityAuthorizationHandler,
       s"""
-         |MATCH (d:$DATABASE_NAME {$NAME_PROPERTY: $$`${nameFields.nameKey}`}) RETURN d.$NAME_PROPERTY
+         |MATCH (dn:$DATABASE_NAME {$NAME_PROPERTY: $$`${nameFields.nameKey}`}) ${filterOnDatabase(databaseTypeFilter)} RETURN dn.$NAME_PROPERTY AS name
          |UNION
-         |MATCH (d:$DATABASE {$NAME_PROPERTY: $$`${nameFields.nameKey}`}) RETURN d.$NAME_PROPERTY
+         |MATCH (d:$DATABASE {$NAME_PROPERTY: $$`${nameFields.nameKey}`}) RETURN d.$NAME_PROPERTY AS name
         """.stripMargin,
       VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)),
       queryHandler,
@@ -141,5 +148,10 @@ case class DoNothingExecutionPlanner(normalExecutionEngine: ExecutionEngine,
     case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
       new DatabaseAdministrationOnFollowerException(s"Failed to $operation the specified ${labelDescription.toLowerCase} '${runtimeStringValue(name, p)}': $followerError", error)
     case (error, p) => new IllegalStateException(s"Failed to $operation the specified ${labelDescription.toLowerCase} '${runtimeStringValue(name, p)}'.", error) // should not get here but need a default case
+  }
+
+  private def filterOnDatabase(databaseTypeFilter: DatabaseTypeFilter) = databaseTypeFilter match {
+    case DatabaseTypeFilter.All => ""
+    case DatabaseTypeFilter.DatabaseOrLocalAlias => s"""WHERE NOT dn:$REMOTE_DATABASE"""
   }
 }

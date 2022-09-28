@@ -245,13 +245,13 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
       DoNothingExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planDoNothingIfExists(label, name, valueMapper, sourcePlan)
 
-    case DoNothingIfDatabaseNotExists(source, name, operation, valueMapper) => context =>
+    case DoNothingIfDatabaseNotExists(source, name, operation, valueMapper, databaseTypeFilter) => context =>
       val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
-      DoNothingExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planDoNothingIfDatabaseNotExists(name, valueMapper, operation, sourcePlan)
+      DoNothingExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planDoNothingIfDatabaseNotExists(name, valueMapper, operation, sourcePlan, databaseTypeFilter)
 
-    case DoNothingIfDatabaseExists(source, name, valueMapper) => context =>
+    case DoNothingIfDatabaseExists(source, name, valueMapper, databaseTypeFilter) => context =>
       val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
-      DoNothingExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planDoNothingIfDatabaseExists(name, valueMapper, sourcePlan)
+      DoNothingExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planDoNothingIfDatabaseExists(name, valueMapper, sourcePlan, databaseTypeFilter)
 
     // Ensure that the role or user exists before being dropped
     case EnsureNodeExists(source, label, name, valueMapper, extraFilter, labelDescription, action) => context =>

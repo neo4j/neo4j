@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.All
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.exceptions.SecurityAdministrationException
@@ -143,8 +144,8 @@ case class ShowPrivilegeCommands(source: Option[PrivilegePlan],
 case class LogSystemCommand(source: AdministrationCommandLogicalPlan, command: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class DoNothingIfNotExists(source: PrivilegePlan, label: String, name: Either[String, Parameter], operation: String, valueMapper: String => String = s => s)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class DoNothingIfExists(source: PrivilegePlan, label: String, name: Either[String, Parameter], valueMapper: String => String = s => s)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class DoNothingIfDatabaseNotExists(source: PrivilegePlan, name: Either[String, Parameter], operation: String, valueMapper: String => String = s => s)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class DoNothingIfDatabaseExists(source: PrivilegePlan, name: Either[String, Parameter], valueMapper: String => String = s => s)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+case class DoNothingIfDatabaseNotExists(source: PrivilegePlan, name: Either[String, Parameter], operation: String, valueMapper: String => String = s => s, databaseTypeFilter: DatabaseTypeFilter = All)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+case class DoNothingIfDatabaseExists(source: PrivilegePlan, name: Either[String, Parameter], valueMapper: String => String = s => s, databaseTypeFilter: DatabaseTypeFilter = All)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class EnsureNodeExists(source: PrivilegePlan,
                             label: String,
                             name: Either[String, Parameter],
@@ -212,3 +213,11 @@ case class EnsureValidNumberOfDatabases(source: CreateDatabase)(implicit idGen: 
 case class WaitForCompletion(source: AdministrationCommandLogicalPlan,
                              databaseName: Either[String, Parameter],
                              waitForCompletion: WaitUntilComplete)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
+
+sealed trait DatabaseTypeFilter
+
+object DatabaseTypeFilter {
+  case object All extends DatabaseTypeFilter
+
+  case object DatabaseOrLocalAlias extends DatabaseTypeFilter
+}

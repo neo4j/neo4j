@@ -116,6 +116,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.logical.plans
+import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.DatabaseOrLocalAlias
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.planner.spi.AdministrationPlannerName
@@ -442,7 +443,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.AssertAllowedDbmsActions(plans.AssertNotBlockedDatabaseManagement(DropDatabaseAction),DropDatabaseAction))
           .map(assertAllowed =>
             if (ifExists)
-              plans.DoNothingIfDatabaseNotExists(assertAllowed, dbName, "delete", s => new NormalizedDatabaseName(s).name())
+              plans.DoNothingIfDatabaseNotExists(assertAllowed, dbName, "delete", s => new NormalizedDatabaseName(s).name(), DatabaseOrLocalAlias)
             else assertAllowed)
           .map(plans.EnsureDatabaseHasNoAliases(_, dbName))
           .map(plans.EnsureValidNonSystemDatabase(_, dbName, "delete"))
@@ -453,7 +454,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // ALTER DATABASE foo [IF EXISTS] SET ACCESS {READ ONLY | READ WRITE}
       case c@AlterDatabase(dbName, ifExists, access) =>
         val assertAllowed = plans.AssertAllowedDbmsActions(plans.AssertNotBlockedDatabaseManagement(AlterDatabaseAction),SetDatabaseAccessAction)
-        val source = if (ifExists) plans.DoNothingIfDatabaseNotExists(assertAllowed, dbName, "alter", s => new NormalizedDatabaseName(s).name()) else assertAllowed
+        val source = if (ifExists) plans.DoNothingIfDatabaseNotExists(assertAllowed, dbName, "alter", s => new NormalizedDatabaseName(s).name(), DatabaseOrLocalAlias) else assertAllowed
         val plan = plans.AlterDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "alter"), dbName, access)
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
