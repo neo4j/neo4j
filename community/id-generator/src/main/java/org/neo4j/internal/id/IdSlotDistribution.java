@@ -28,14 +28,24 @@ import org.neo4j.util.Preconditions;
  * Defines which slot sizes for IDs to use, e.g. a slot size of 4 contains IDs where the ID + the 3 next IDs are available.
  */
 public interface IdSlotDistribution {
-    IdSlotDistribution SINGLE_IDS = capacity -> new Slot[] {new Slot(capacity, 1)};
+    IdSlotDistribution SINGLE_IDS = new IdSlotDistribution() {
+        @Override
+        public Slot[] slots(int capacity) {
+            return new Slot[] {new Slot(capacity, 1)};
+        }
+
+        @Override
+        public int maxSlotSize() {
+            return 1;
+        }
+    };
 
     static IdSlotDistribution evenSlotDistribution(int... slotSizes) {
         return evenSlotDistribution(IDS_PER_ENTRY, slotSizes);
     }
 
     static IdSlotDistribution evenSlotDistribution(int idsPerEntry, int... slotSizes) {
-        return new BaseIdSlotDistribution(idsPerEntry) {
+        return new BaseIdSlotDistribution(idsPerEntry, slotSizes) {
             @Override
             public Slot[] slots(int capacity) {
                 Slot[] slots = new Slot[slotSizes.length];
@@ -57,7 +67,7 @@ public interface IdSlotDistribution {
     }
 
     static IdSlotDistribution diminishingSlotDistribution(int idsPerEntry, int... slotSizes) {
-        return new BaseIdSlotDistribution(idsPerEntry) {
+        return new BaseIdSlotDistribution(idsPerEntry, slotSizes) {
             @Override
             public Slot[] slots(int capacity) {
                 Slot[] slots = new Slot[slotSizes.length];
@@ -74,7 +84,7 @@ public interface IdSlotDistribution {
     }
 
     static IdSlotDistribution allWithSameCapacity(int idsPerEntry, int... slotSizes) {
-        return new BaseIdSlotDistribution(idsPerEntry) {
+        return new BaseIdSlotDistribution(idsPerEntry, slotSizes) {
             @Override
             public Slot[] slots(int capacity) {
                 Slot[] slots = new Slot[slotSizes.length];
@@ -98,7 +108,13 @@ public interface IdSlotDistribution {
     Slot[] slots(int capacity);
 
     /**
-     * This affects high ID and how {@link IdGenerator#nextConsecutiveIdRange(int, CursorContext)} decides when to cross a store "page"
+     * @return max ID slot size.
+     */
+    int maxSlotSize();
+
+    /**
+     * This affects high ID and how {@link IdGenerator#nextConsecutiveIdRange(int, boolean, CursorContext)}
+     * decides when to cross a store "page"
      */
     default int idsPerEntry() {
         return IDS_PER_ENTRY;
@@ -108,14 +124,21 @@ public interface IdSlotDistribution {
 
     abstract class BaseIdSlotDistribution implements IdSlotDistribution {
         private final int idsPerEntry;
+        private final int[] slotSizes;
 
-        BaseIdSlotDistribution(int idsPerEntry) {
+        BaseIdSlotDistribution(int idsPerEntry, int[] slotSizes) {
             this.idsPerEntry = idsPerEntry;
+            this.slotSizes = slotSizes;
         }
 
         @Override
         public int idsPerEntry() {
             return idsPerEntry;
+        }
+
+        @Override
+        public int maxSlotSize() {
+            return slotSizes[slotSizes.length - 1];
         }
     }
 }
