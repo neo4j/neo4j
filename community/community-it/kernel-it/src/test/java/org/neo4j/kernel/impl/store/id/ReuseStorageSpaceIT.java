@@ -44,7 +44,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.assertj.core.description.Description;
@@ -66,7 +65,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Race;
@@ -353,9 +351,9 @@ class ReuseStorageSpaceIT {
             sizes = new HashMap<>();
             IdGeneratorFactory idGeneratorFactory =
                     db.getDependencyResolver().resolveDependency(IdGeneratorFactory.class);
-            for (RecordIdType idType : RecordIdType.values()) {
-                sizes.put(idType.name(), idGeneratorFactory.get(idType).getHighId());
-            }
+            idGeneratorFactory.visit(idGenerator -> {
+                sizes.put(idGenerator.idType().name(), idGenerator.getHighId());
+            });
         }
 
         private Sizes(Map<String, Long> sizes) {
@@ -381,7 +379,7 @@ class ReuseStorageSpaceIT {
             List<Map.Entry<String, Long>> nonEmptyEntries = sizes.entrySet().stream()
                     .filter(e -> e.getValue() != 0)
                     .sorted(Map.Entry.comparingByKey())
-                    .collect(Collectors.toList());
+                    .toList();
             long sum = sum();
             return format(
                     "SUM %s(%d):%n%s",
