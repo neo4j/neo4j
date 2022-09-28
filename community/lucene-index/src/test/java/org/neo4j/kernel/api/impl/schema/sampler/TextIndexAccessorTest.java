@@ -23,7 +23,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -199,33 +198,14 @@ public class TextIndexAccessorTest {
             throws Exception {
         init(index, accessorFactory);
 
-        updateAndCommit(asList(add(PROP_ID, "A"), add(2, "B"), add(3, "C"), add(4, "")));
-
-        var reader = accessor.newValueReader();
-
-        long[] rangeFromBInclusive = resultsArray(reader, range(PROP_ID, "B", true, null, false));
-        assertThat(rangeFromBInclusive).contains(2, 3);
-
-        long[] rangeFromANonInclusive = resultsArray(reader, range(PROP_ID, "A", false, null, false));
-        assertThat(rangeFromANonInclusive).contains(2, 3);
-
-        long[] emptyLowInclusive = resultsArray(reader, range(PROP_ID, "", true, null, false));
-        assertThat(emptyLowInclusive).contains(PROP_ID, 2, 3, 4);
-
-        long[] emptyUpperNonInclusive = resultsArray(reader, range(PROP_ID, "B", true, "", false));
-        assertThat(emptyUpperNonInclusive).isEmpty();
-
-        long[] emptyInterval = resultsArray(reader, range(PROP_ID, "", true, "", true));
-        assertThat(emptyInterval).contains(4);
-
-        long[] emptyAllNonInclusive = resultsArray(reader, range(PROP_ID, "", false, null, false));
-        assertThat(emptyAllNonInclusive).contains(PROP_ID, 2, 3);
-
-        long[] nullNonInclusive = resultsArray(reader, range(PROP_ID, (String) null, false, null, false));
-        assertThat(nullNonInclusive).contains(PROP_ID, 2, 3, 4);
-
-        long[] nullInclusive = resultsArray(reader, range(PROP_ID, (String) null, false, null, false));
-        assertThat(nullInclusive).contains(PROP_ID, 2, 3, 4);
+        // GIVEN
+        try (var reader = accessor.newValueReader()) {
+            // WHEN
+            var query = exists(PROP_ID);
+            assertThatThrownBy(() -> resultsArray(reader, query))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Index query not supported for %s index. Query: %s", IndexType.TEXT, query);
+        }
     }
 
     @ParameterizedTest(name = "{0}")

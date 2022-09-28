@@ -62,9 +62,6 @@ public class TrigramIndexReader extends AbstractTextIndexReader {
         switch (predicate.type()) {
             case ALL_ENTRIES:
                 return TrigramQueryFactory.allValues();
-            case RANGE:
-                var range = (PropertyIndexQuery.TextRangePredicate) predicate;
-                return TrigramQueryFactory.range(range.from(), range.to());
             case EXACT:
                 var value = ((ExactPredicate) predicate).value().asObject().toString();
                 return TrigramQueryFactory.exact(value);

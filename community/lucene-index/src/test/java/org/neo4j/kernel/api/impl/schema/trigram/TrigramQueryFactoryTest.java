@@ -59,8 +59,7 @@ class TrigramQueryFactoryTest {
         EXACT(s -> TrigramQueryFactory.exact(s)),
         PREFIX(s -> TrigramQueryFactory.stringPrefix(s)),
         SUFFIX(s -> TrigramQueryFactory.stringSuffix(s)),
-        CONTAINS(s -> TrigramQueryFactory.stringContains(s)),
-        RANGE(s -> TrigramQueryFactory.range(s, s));
+        CONTAINS(s -> TrigramQueryFactory.stringContains(s));
 
         final Function<String, Query> queryFunction;
 

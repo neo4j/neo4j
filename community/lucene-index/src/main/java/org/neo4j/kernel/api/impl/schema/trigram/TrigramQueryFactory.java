@@ -31,7 +31,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
@@ -61,13 +60,6 @@ class TrigramQueryFactory {
     // Need to filter out false positives
     static Query stringSuffix(String suffix) {
         return trigramSearch(suffix);
-    }
-
-    // Need to filter out false positives
-    static Query range(String from, String to) {
-        String lowerNgram = from == null ? null : getFirstNgram(from);
-        String upperNgram = to == null ? null : getFirstNgram(to);
-        return TermRangeQuery.newStringRange(TRIGRAM_VALUE_KEY, lowerNgram, upperNgram, true, true);
     }
 
     static MatchAllDocsQuery allValues() {
@@ -103,12 +95,6 @@ class TrigramQueryFactory {
             builder.add(termQuery, BooleanClause.Occur.MUST);
         }
         return builder.build();
-    }
-
-    private static String getFirstNgram(String searchString) {
-        var codePointBuffer = TrigramTokenStream.getCodePoints(searchString);
-        var n = Math.min(3, codePointBuffer.codePointCount());
-        return getNgram(codePointBuffer, 0, n);
     }
 
     private static String getNgram(CodePointBuffer codePointBuffer, int ngramIndex, int n) {

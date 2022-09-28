@@ -33,7 +33,6 @@ import java.io.IOException;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -95,15 +94,6 @@ class TextIndexReaderTest {
         doQuery(simpleIndexReader, PropertyIndexQuery.allEntries());
 
         verify(indexSearcher).search(any(MatchAllDocsQuery.class), any(DocValuesCollector.class));
-    }
-
-    @Test
-    void stringRangeSeekQueryReachSearcher() throws Exception {
-        var simpleIndexReader = getNonUniqueSimpleReader();
-
-        doQuery(simpleIndexReader, range(1, "a", false, "b", true));
-
-        verify(indexSearcher).search(any(TermRangeQuery.class), any(DocValuesCollector.class));
     }
 
     @Test

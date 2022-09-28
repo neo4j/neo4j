@@ -67,9 +67,6 @@ public class TextIndexReader extends AbstractTextIndexReader {
                 return TextDocumentStructure.newScanQuery();
             case EXACT:
                 return TextDocumentStructure.newSeekQuery(((PropertyIndexQuery.ExactPredicate) predicate).value());
-            case RANGE:
-                PropertyIndexQuery.TextRangePredicate sp = (PropertyIndexQuery.TextRangePredicate) predicate;
-                return CypherStringQueryFactory.range(sp.from(), sp.fromInclusive(), sp.to(), sp.toInclusive());
             case STRING_PREFIX:
                 PropertyIndexQuery.StringPrefixPredicate spp = (PropertyIndexQuery.StringPrefixPredicate) predicate;
                 return CypherStringQueryFactory.stringPrefix(spp.prefix().stringValue());

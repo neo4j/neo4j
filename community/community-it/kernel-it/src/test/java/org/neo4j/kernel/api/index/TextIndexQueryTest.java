@@ -216,59 +216,6 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport> {
                 .isEqualTo(2);
         assertThat(indexedNodes(stringSuffix(token.propertyKey(NAME), stringValue(""))))
                 .isEqualTo(11);
-        assertThat(indexedNodes(range(token.propertyKey(NAME), "Mike Smith", true, "Noah", true)))
-                .isEqualTo(2);
-        assertThat(indexedNodes(range(token.propertyKey(NAME), "", true, "James", true)))
-                .isEqualTo(6);
-    }
-
-    @Test
-    void shouldFindForRangesWithEmptyString() throws Exception {
-        assertThat(indexedNodes(range(token.propertyKey(NAME), "", true, "Noah", true)))
-                .isEqualTo(9);
-        assertThat(indexedNodes(range(token.propertyKey(NAME), "", false, "Noah", false)))
-                .isEqualTo(6);
-        assertThat(indexedNodes(range(token.propertyKey(NAME), "Noah", true, "", true)))
-                .isEqualTo(0);
-        assertThat(indexedNodes(range(token.propertyKey(NAME), "Noah", false, "", false)))
-                .isEqualTo(0);
-        assertThat(indexedNodes(range(token.propertyKey(NAME), "", true, "", true)))
-                .isEqualTo(2);
-        assertThat(indexedNodes(range(token.propertyKey(NAME), "", false, "", false)))
-                .isEqualTo(0);
-        assertThat(indexedNodes(range(token.propertyKey(NAME), "", false, "", true)))
-                .isEqualTo(0);
-        assertThat(indexedNodes(range(token.propertyKey(NAME), "", true, "", false)))
-                .isEqualTo(0);
-    }
-
-    @Test
-    void shouldFindForRangesWithNull() throws Exception {
-        // null means open range and doesn't care about inclusion
-        assertThat(indexedNodes(range(token.propertyKey(NAME), (String) null, true, null, true)))
-                .isEqualTo(11);
-        assertThat(indexedNodes(range(token.propertyKey(NAME), (String) null, true, null, false)))
-                .isEqualTo(11);
-        assertThat(indexedNodes(range(token.propertyKey(NAME), (String) null, false, null, true)))
-                .isEqualTo(11);
-        assertThat(indexedNodes(range(token.propertyKey(NAME), (String) null, false, null, false)))
-                .isEqualTo(11);
-        assertThat(indexedNodes(range(token.propertyKey(NAME), null, true, "Noah", true)))
-                .isEqualTo(9);
-        assertThat(indexedNodes(range(token.propertyKey(NAME), null, true, "Noah", false)))
-                .isEqualTo(8);
-        assertThat(indexedNodes(range(token.propertyKey(NAME), null, false, "Noah", true)))
-                .isEqualTo(9);
-        assertThat(indexedNodes(range(token.propertyKey(NAME), null, false, "Noah", false)))
-                .isEqualTo(8);
-        assertThat(indexedNodes(range(token.propertyKey(NAME), "Noah", true, null, true)))
-                .isEqualTo(3);
-        assertThat(indexedNodes(range(token.propertyKey(NAME), "Noah", true, null, false)))
-                .isEqualTo(3);
-        assertThat(indexedNodes(range(token.propertyKey(NAME), "Noah", false, null, true)))
-                .isEqualTo(2);
-        assertThat(indexedNodes(range(token.propertyKey(NAME), "Noah", false, null, false)))
-                .isEqualTo(2);
     }
 
     @Test
@@ -290,10 +237,6 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport> {
                 .isEqualTo(2);
         assertThat(indexedRelations(stringPrefix(token.propertyKey(SINCE), stringValue(""))))
                 .isEqualTo(6);
-        assertThat(indexedRelations(range(token.propertyKey(SINCE), "2 years", true, "3 years", true)))
-                .isEqualTo(3);
-        assertThat(indexedRelations(range(token.propertyKey(SINCE), "", true, "3", true)))
-                .isEqualTo(4);
     }
 
     @Test
@@ -306,7 +249,24 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport> {
                         "Index query not supported for %s index. Query: %s",
                         org.neo4j.graphdb.schema.IndexType.TEXT, query);
 
-        assertThatThrownBy(() -> indexedRelations(exists(token.propertyKey(SINCE))))
+        assertThatThrownBy(() -> indexedRelations(query))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(
+                        "Index query not supported for %s index. Query: %s",
+                        org.neo4j.graphdb.schema.IndexType.TEXT, query);
+    }
+
+    @Test
+    void shouldThrowOnRangeQuery() {
+        PropertyIndexQuery query = range(token.propertyKey(SINCE), "2 years", true, "3 years", true);
+
+        assertThatThrownBy(() -> indexedNodes(query))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(
+                        "Index query not supported for %s index. Query: %s",
+                        org.neo4j.graphdb.schema.IndexType.TEXT, query);
+
+        assertThatThrownBy(() -> indexedRelations(query))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(
                         "Index query not supported for %s index. Query: %s",

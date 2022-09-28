@@ -27,7 +27,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
-import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
@@ -56,15 +55,6 @@ class CypherStringQueryFactory {
     static Query stringSuffix(String suffix) {
         Term term = new Term(ValueEncoding.String.key(0), suffix);
         return new SuffixMultiTermsQuery(term);
-    }
-
-    /**
-     * TODO: This operation would, most likely, also benefit from a custom implementation
-     * not using automaton. In essence, it is very similar to string prefix search.
-     * However we don't currently have a benchmark for this operation.
-     */
-    static Query range(String lower, boolean includeLower, String upper, boolean includeUpper) {
-        return TermRangeQuery.newStringRange(ValueEncoding.String.key(0), lower, upper, includeLower, includeUpper);
     }
 
     /**

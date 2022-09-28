@@ -162,7 +162,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     }
 
     @ParameterizedTest
-    @MethodSource("parameters")
+    @MethodSource("parametersForRange")
     void shouldPerformStringRangeSearch(IndexType indexType, boolean needsValues) throws Exception {
         // given
         Set<Pair<Long, Value>> expected = new HashSet<>();
@@ -186,7 +186,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     }
 
     @ParameterizedTest
-    @MethodSource("parameters")
+    @MethodSource("parametersForRange")
     void shouldPerformStringRangeSearchWithAddedEntityInTxState(IndexType indexType, boolean needsValues)
             throws Exception {
         // given
@@ -217,7 +217,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     }
 
     @ParameterizedTest
-    @MethodSource("parameters")
+    @MethodSource("parametersForRange")
     void shouldPerformStringRangeSearchWithChangedEntityInTxState(IndexType indexType, boolean needsValues)
             throws Exception {
         // given
@@ -246,7 +246,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     }
 
     @ParameterizedTest
-    @MethodSource("parameters")
+    @MethodSource("parametersForRange")
     void shouldPerformStringRangeSearchWithRemovedRemovedPropertyInTxState(IndexType indexType, boolean needsValues)
             throws Exception {
         // given
@@ -274,7 +274,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     }
 
     @ParameterizedTest
-    @MethodSource("parameters")
+    @MethodSource("parametersForRange")
     void shouldPerformStringRangeSearchWithDeletedEntityInTxState(IndexType indexType, boolean needsValues)
             throws Exception {
         // given
@@ -353,6 +353,10 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
                 Arguments.of(IndexType.RANGE, true),
                 Arguments.of(IndexType.RANGE, false),
                 Arguments.of(IndexType.TEXT, false));
+    }
+
+    private static Stream<Arguments> parametersForRange() {
+        return Stream.of(Arguments.of(IndexType.RANGE, true), Arguments.of(IndexType.RANGE, false));
     }
 
     // Range index doesn't support suffix/contains queries, and text index doesn't contain values
