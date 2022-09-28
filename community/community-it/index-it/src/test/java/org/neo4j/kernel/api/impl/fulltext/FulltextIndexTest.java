@@ -63,20 +63,27 @@ class FulltextIndexTest extends LuceneFulltextTestSupport {
     private static final String REL_INDEX_NAME = "rels";
 
     @Test
-    void tracePageCacheAccessOnIndexQuering() throws Exception {
+    void tracePageCacheAccessOnIndexQuerying() throws Exception {
         prepareNodeLabelPropIndex();
 
         long nodeId;
+        long higherNodeId = -1;
         var label2 = label("label2");
         try (Transaction tx = db.beginTx()) {
             var node = tx.createNode(LABEL, label2);
             nodeId = node.getId();
             node.setProperty(PROP, "b");
+            // This has to be done for Freki because otherwise it wouldn't need to move from the page (see below)
+            for (int i = 0; i < 1000; i++) {
+                higherNodeId = tx.createNode().getId();
+            }
             tx.commit();
         }
 
         try (Transaction tx = db.beginTx()) {
             tx.getNodeById(nodeId).removeLabel(label2);
+            // Put the internal cursor on a different page
+            tx.getNodeById(higherNodeId);
             KernelTransaction ktx = kernelTransaction(tx);
 
             var cursorContext = ktx.cursorContext();
@@ -87,8 +94,9 @@ class FulltextIndexTest extends LuceneFulltextTestSupport {
 
             assertQueryFindsIds(ktx, true, NODE_INDEX_NAME, "b", nodeId);
 
-            assertThat(cursorContext.getCursorTracer().pins()).isEqualTo(2);
-            assertThat(cursorContext.getCursorTracer().hits()).isEqualTo(2);
+            var pins = cursorContext.getCursorTracer().pins();
+            assertThat(pins).isGreaterThan(0);
+            assertThat(cursorContext.getCursorTracer().hits()).isEqualTo(pins);
         }
     }
 
