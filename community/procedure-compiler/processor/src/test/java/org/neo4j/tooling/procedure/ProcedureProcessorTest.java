@@ -163,7 +163,7 @@ public class ProcedureProcessorTest extends ExtensionTestBase {
         JavaFileObject record = JavaFileObjectUtils.INSTANCE.procedureSource(
                 "invalid/bad_record_field_type/BadRecordSimpleFieldType.java");
 
-        assert_()
+        var compilation = assert_()
                 .about(javaSources())
                 .that(asList(
                         JavaFileObjectUtils.INSTANCE.procedureSource(
@@ -171,11 +171,25 @@ public class ProcedureProcessorTest extends ExtensionTestBase {
                         record))
                 .processedWith(processor())
                 .failsToCompile()
-                .withErrorCount(1)
+                .withErrorCount(3);
+
+        compilation
                 .withErrorContaining(
-                        "Record definition error: type of field BadRecordSimpleFieldType#wrongType is not supported")
+                        "Record definition error: field BadRecordSimpleFieldType#wrongType1 of type java.lang.Integer is not supported")
                 .in(record)
                 .onLine(28);
+
+        compilation
+                .withErrorContaining(
+                        "Record definition error: field BadRecordSimpleFieldType#wrongType2 of type long[] is not supported")
+                .in(record)
+                .onLine(29);
+
+        compilation
+                .withErrorContaining(
+                        "Record definition error: field BadRecordSimpleFieldType#wrongType3 of type java.lang.String[] is not supported")
+                .in(record)
+                .onLine(30);
     }
 
     @Test
@@ -195,17 +209,17 @@ public class ProcedureProcessorTest extends ExtensionTestBase {
 
         compilation
                 .withErrorContaining(
-                        "Record definition error: type of field BadRecordGenericFieldType#wrongType1 is not supported")
+                        "Record definition error: field BadRecordGenericFieldType#wrongType1 of type java.util.Map<java.lang.String,java.lang.Integer> is not supported")
                 .in(record)
                 .onLine(30);
         compilation
                 .withErrorContaining(
-                        "Record definition error: type of field BadRecordGenericFieldType#wrongType2 is not supported")
+                        "Record definition error: field BadRecordGenericFieldType#wrongType2 of type java.util.List<java.lang.Integer> is not supported")
                 .in(record)
                 .onLine(31);
         compilation
                 .withErrorContaining(
-                        "Record definition error: type of field BadRecordGenericFieldType#wrongType3 is not supported")
+                        "Record definition error: field BadRecordGenericFieldType#wrongType3 of type java.util.List<java.util.List<java.util.Map<java.lang.String,java.lang.Integer>>> is not supported")
                 .in(record)
                 .onLine(32);
     }

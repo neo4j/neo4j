@@ -37,6 +37,11 @@ class RecordFieldTypeVisitor extends SimpleTypeVisitor8<Boolean, Void> {
     }
 
     @Override
+    protected Boolean defaultAction(TypeMirror e, Void ignored) {
+        return false;
+    }
+
+    @Override
     public Boolean visitDeclared(DeclaredType declaredType, Void ignored) {
         return allowedTypesValidator.test(declaredType)
                 && declaredType.getTypeArguments().stream()

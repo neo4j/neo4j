@@ -75,8 +75,9 @@ class RecordTypeVisitor extends SimpleTypeVisitor8<Stream<CompilationMessage>, V
                 .filter(element -> !fieldTypeVisitor.visit(element.asType()))
                 .map(element -> new RecordTypeError(
                         element,
-                        "Record definition error: type of field %s#%s is not supported",
+                        "Record definition error: field %s#%s of type %s is not supported",
                         recordElement.getSimpleName(),
-                        element.getSimpleName()));
+                        element.getSimpleName(),
+                        element.asType()));
     }
 }

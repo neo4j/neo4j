@@ -25,7 +25,9 @@ import org.neo4j.graphdb.Relationship;
 
 public class BadRecordSimpleFieldType {
 
-    public Integer wrongType;
+    public Integer wrongType1;
+    public long[] wrongType2;
+    public String[] wrongType3;
     public String okType1;
     public Long okType2;
     public long okType3;
