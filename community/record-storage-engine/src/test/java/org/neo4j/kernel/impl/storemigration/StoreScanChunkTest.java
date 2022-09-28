@@ -20,46 +20,63 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
-import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-@TestDirectoryExtension
-class StoreScanChunkIT {
+@EphemeralPageCacheExtension
+class StoreScanChunkTest {
     @Inject
-    private TestDirectory testDirectory;
+    private PageCache pageCache;
+
+    @Inject
+    private FileSystemAbstraction fs;
+
+    @Inject
+    private TestDirectory directory;
 
     @Test
     void differentChunksHaveDifferentCursors() {
-        DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder(testDirectory.homePath()).build();
-        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        try {
-            RecordStorageEngine recordStorageEngine =
-                    database.getDependencyResolver().resolveDependency(RecordStorageEngine.class);
-            NeoStores neoStores = recordStorageEngine.testAccessNeoStores();
+        var layout = RecordDatabaseLayout.ofFlat(directory.homePath());
+        var idGeneratorFactory = new DefaultIdGeneratorFactory(fs, immediate(), false, NULL, layout.getDatabaseName());
+        try (var neoStores = new StoreFactory(
+                        layout,
+                        Config.defaults(),
+                        idGeneratorFactory,
+                        pageCache,
+                        NULL,
+                        fs,
+                        NullLogProvider.getInstance(),
+                        NULL_CONTEXT_FACTORY,
+                        writable(),
+                        EMPTY_LOG_TAIL)
+                .openAllNeoStores(true)) {
             RecordStorageReader storageReader = new RecordStorageReader(neoStores);
             TestStoreScanChunk scanChunk1 = new TestStoreScanChunk(storageReader, false);
             TestStoreScanChunk scanChunk2 = new TestStoreScanChunk(storageReader, false);
             assertNotSame(scanChunk1.getCursor(), scanChunk2.getCursor());
             assertNotSame(scanChunk1.getStorePropertyCursor(), scanChunk2.getStorePropertyCursor());
-        } finally {
-            managementService.shutdown();
         }
     }
 
