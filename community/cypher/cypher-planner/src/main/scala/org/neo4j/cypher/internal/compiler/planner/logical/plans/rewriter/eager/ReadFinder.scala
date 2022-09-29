@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
@@ -217,6 +218,12 @@ object ReadFinder {
               .withLabelRead(lN)
               .withAddedFilterExpression(variable, hasLabels)
               .withPropertyRead(PropertyKeyName(property)(InputPosition.NONE))
+
+          case _: NodeByIdSeek =>
+            // We could avoid eagerness when we have IdSeeks with a single ID.
+            // As soon as we have multiple IDs, future creates could create nodes with one of those IDs.
+            // Not eagerizing a single row is not worth the extra complexity, so we accept that imperfection.
+            PlanReads()
 
           case _: Argument =>
             PlanReads()

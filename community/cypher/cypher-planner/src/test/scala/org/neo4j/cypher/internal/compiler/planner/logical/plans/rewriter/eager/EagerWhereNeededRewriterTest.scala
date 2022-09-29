@@ -403,6 +403,33 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(plan)
   }
 
+  test("inserts eager between label set and NodeByIdSeek with label filter if read through stable iterator") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .setLabels("m", "N")
+      .apply()
+      .|.allNodeScan("m")
+      .filter("n:N")
+      .nodeByIdSeek("n", Set.empty, 1)
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("m")
+        .setLabels("m", "N")
+        .apply()
+        .|.allNodeScan("m")
+        .eager(ListSet(EagernessReason.LabelReadSetConflict(
+          labelName("N"),
+          Some(EagernessReason.Conflict(Id(1), Id(4)))
+        )))
+        .filter("n:N")
+        .nodeByIdSeek("n", Set.empty, 1)
+        .build()
+    )
+  }
+
   test("inserts eager between label set and label read (NodeByLabelScan) if label read through unstable iterator") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("m")
@@ -1496,6 +1523,54 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .allNodeScan("n")
         .build()
     )
+  }
+
+  test("inserts eager between Create and NodeByIdSeek (single ID) with label filter if read through stable iterator") {
+    // This plan does actually not need to be Eager.
+    // But since we only eagerize a single row, we accept that the analysis is imperfect here.
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("m", "N"))
+      .filter("n:N")
+      .nodeByIdSeek("n", Set.empty, 1)
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("m", "N"))
+      .eager(ListSet(EagernessReason.LabelReadSetConflict(
+        labelName("N"),
+        Some(EagernessReason.Conflict(Id(1), Id(2)))
+      )))
+      .filter("n:N")
+      .nodeByIdSeek("n", Set.empty, 1)
+      .build())
+  }
+
+  test(
+    "inserts eager between Create and NodeByIdSeek (multiple IDs) with label filter if read through stable iterator"
+  ) {
+    // This plan looks like we would not need Eagerness, but actually the IDs 2 and 3 do not need to exist yet
+    // and the newly created node could get one of these IDs.
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("m", "N"))
+      .filter("n:N")
+      .nodeByIdSeek("n", Set.empty, 1, 2, 3)
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(plan)
+    result should equal(new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("m", "N"))
+      .eager(ListSet(EagernessReason.LabelReadSetConflict(
+        labelName("N"),
+        Some(EagernessReason.Conflict(Id(1), Id(2)))
+      )))
+      .filter("n:N")
+      .nodeByIdSeek("n", Set.empty, 1, 2, 3)
+      .build())
   }
 
   // Read vs Merge conflicts
