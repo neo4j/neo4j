@@ -602,6 +602,48 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     )
   }
 
+  test("should produce rows with nullable slots") {
+
+    // given: MATCH (a) OPTIONAL MATCH (a) ((n)-[]->(m))* (b:User) RETURN *
+
+    val (n1, n2, n3, n4, _, _, _) = smallChainGraph
+    val `(a) ((n)-[]->(m))* (b)` = TrailParameters(
+      min = 0,
+      max = Unlimited,
+      start = "a",
+      end = "b",
+      innerStart = "a_inner",
+      innerEnd = "b_inner",
+      groupNodes = Set(("a_inner", "n"), ("b_inner", "m")),
+      groupRelationships = Set(("r_anon_inner", "r_anon")),
+      innerRelationships = Set("r_anon_inner"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
+    )
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b", "m", "n")
+      .apply()
+      .|.optional("a")
+      .|.filter("b:User")
+      .|.trail(`(a) ((n)-[]->(m))* (b)`)
+      .|.|.expandAll("(a_inner)-[r_anon_inner]->(b_inner)")
+      .|.|.argument("a_inner")
+      .|.argument("a")
+      .allNodeScan("a")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("a", "b", "m", "n").withRows(
+      Seq(
+        Array(n1, null, null, null),
+        Array(n2, null, null, null),
+        Array(n3, null, null, null),
+        Array(n4, null, null, null)
+      )
+    )
+  }
+
   private def listOf(values: AnyRef*) = java.util.List.of(values: _*)
 
   // (n1) → (n2) → (n3) → (n4)

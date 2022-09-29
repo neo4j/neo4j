@@ -1069,7 +1069,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       case Trail(_, _, _, _, end, _, _, groupNodes, groupRelationships, _, _, _) =>
         recordArgument(lp)
         val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans(lp.id))
-        result.newLong(end, false, CTNode) // nullable?
+        result.newLong(end, nullable, CTNode)
         groupNodes.foreach(n => result.newReference(n.groupName, false, CTList(CTNode)))
         groupRelationships.foreach(r => result.newReference(r.groupName, false, CTList(CTRelationship)))
         result
