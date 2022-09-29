@@ -278,10 +278,10 @@ object LogicalPlan2PlanDescription {
       runtimeOperatorMetadata
     )
       .create(input)
-      .addArgument(RuntimeVersion("5.0"))
+      .addArgument(RuntimeVersion.currentVersion)
       .addArgument(Planner(plannerName.toTextOutput))
       .addArgument(PlannerImpl(plannerName.name))
-      .addArgument(PlannerVersion(plannerName.version))
+      .addArgument(PlannerVersion.currentVersion)
   }
 }
 

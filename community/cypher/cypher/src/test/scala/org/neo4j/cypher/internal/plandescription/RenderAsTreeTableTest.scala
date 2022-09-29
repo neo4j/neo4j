@@ -1576,4 +1576,10 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         |""".stripMargin
     )
   }
+
+  test("parseMajorMinor") {
+    Arguments.parseMajorMinor("4.1.53") shouldBe "4.1"
+    Arguments.parseMajorMinor("5.1.0-SNAPSHOT") shouldBe "5.1"
+    Arguments.parseMajorMinor("other version") shouldBe "other version"
+  }
 }

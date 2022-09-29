@@ -34,6 +34,10 @@ case class PrettyString private[plandescription] (prettifiedString: String) {
 }
 
 object Arguments {
+  private val VERSION_PATTERN = "(\\d+)\\.{1}(\\d+).*".r
+
+  val CURRENT_VERSION: String =
+    parseMajorMinor(parseMajorMinor(org.neo4j.kernel.internal.Version.getNeo4jVersion))
 
   object Details {
 
@@ -80,6 +84,10 @@ object Arguments {
     override def name = "runtime-version"
   }
 
+  object RuntimeVersion {
+    def currentVersion: RuntimeVersion = RuntimeVersion(CURRENT_VERSION)
+  }
+
   case class Planner(value: String) extends Argument {
 
     override def name = "planner"
@@ -93,6 +101,10 @@ object Arguments {
   case class PlannerVersion(value: String) extends Argument {
 
     override def name = "planner-version"
+  }
+
+  object PlannerVersion {
+    def currentVersion: PlannerVersion = PlannerVersion(CURRENT_VERSION)
   }
 
   case class Runtime(value: String) extends Argument {
@@ -126,5 +138,12 @@ object Arguments {
 
   case class IdArg(id: Id) extends Argument {
     override def name: String = "Id"
+  }
+
+  def parseMajorMinor(version: String): String = {
+    version match {
+      case VERSION_PATTERN(major, minor) => s"$major.$minor"
+      case _                             => version
+    }
   }
 }
