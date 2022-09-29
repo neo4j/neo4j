@@ -23,6 +23,11 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
 import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
+import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadSetConflict
+import org.neo4j.cypher.internal.ir.EagernessReason.PropertyReadSetConflict
+import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
+import org.neo4j.cypher.internal.ir.EagernessReason.UnknownPropertyReadSetConflict
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
@@ -169,10 +174,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("foo")
         .projection("n.prop AS foo")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(2), Id(1)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(1))))))
         .setNodeProperty("n", "prop", "5")
         .allNodeScan("n")
         .build()
@@ -206,10 +208,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("n")
         .setNodeProperty("n", "prop", "n.prop + 1")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(2), Id(1)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(1))))))
         .setNodeProperty("n", "prop", "5")
         .allNodeScan("n")
         .build()
@@ -230,8 +229,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("nv1", "nv2")
         .projection("n.v1 AS nv1", "n.v2 AS nv2")
         .eager(ListSet(
-          EagernessReason.PropertyReadSetConflict(propName("v2"), Some(EagernessReason.Conflict(Id(2), Id(1)))),
-          EagernessReason.PropertyReadSetConflict(propName("v1"), Some(EagernessReason.Conflict(Id(2), Id(1))))
+          PropertyReadSetConflict(propName("v2"), Some(Conflict(Id(2), Id(1)))),
+          PropertyReadSetConflict(propName("v1"), Some(Conflict(Id(2), Id(1))))
         ))
         .setNodeProperties("n", ("v1", "n.v1 + 1"), ("v2", "n.v2 + 1"))
         .allNodeScan("n")
@@ -270,10 +269,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("m")
         .setNodeProperty("m", "prop", "5")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.nodeIndexOperator("n:N(prop)")
         .allNodeScan("m")
@@ -295,10 +291,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("properties")
         .projection("properties(n) AS properties")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(2), Id(1)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(1))))))
         .setNodeProperty("m", "prop", "42")
         .expand("(n)-[r]->(m)")
         .allNodeScan("n")
@@ -320,10 +313,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("p")
         .projection("m.prop AS p")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(2), Id(1)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(1))))))
         .setNodePropertiesFromMap("m", "{prop: 42}", removeOtherProps = false)
         .expand("(n)-[r]->(m)")
         .allNodeScan("n")
@@ -358,7 +348,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("p")
         .projection("m.prop AS p")
-        .eager(ListSet(EagernessReason.UnknownPropertyReadSetConflict(Some(EagernessReason.Conflict(Id(2), Id(1))))))
+        .eager(ListSet(UnknownPropertyReadSetConflict(Some(Conflict(Id(2), Id(1))))))
         .setNodePropertiesFromMap("m", "{prop2: 42}", removeOtherProps = true)
         .expand("(n)-[r]->(m)")
         .allNodeScan("n")
@@ -380,7 +370,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("p")
         .projection("m.prop AS p")
-        .eager(ListSet(EagernessReason.UnknownPropertyReadSetConflict(Some(EagernessReason.Conflict(Id(2), Id(1))))))
+        .eager(ListSet(UnknownPropertyReadSetConflict(Some(Conflict(Id(2), Id(1))))))
         .setNodePropertiesFromMap("m", "$param", removeOtherProps = false)
         .expand("(n)-[r]->(m)")
         .allNodeScan("n")
@@ -420,10 +410,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .setLabels("m", "N")
         .apply()
         .|.allNodeScan("m")
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(
-          labelName("N"),
-          Some(EagernessReason.Conflict(Id(1), Id(4)))
-        )))
+        .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(4))))))
         .filter("n:N")
         .nodeByIdSeek("n", Set.empty, 1)
         .build()
@@ -444,10 +431,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("m")
         .setLabels("m", "N")
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(
-          labelName("N"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.nodeByLabelScan("n", "N")
         .allNodeScan("m")
@@ -471,10 +455,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("m")
         .setLabels("m", "N")
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(
-          labelName("N"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.unionNodeByLabelsScan("n", Seq("N", "M"))
         .allNodeScan("m")
@@ -496,10 +477,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("m")
         .setLabels("m", "N")
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(
-          labelName("N"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.nodeIndexOperator("n:N(prop)")
         .allNodeScan("m")
@@ -521,10 +499,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("labels")
         .projection("labels(n) AS labels")
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(
-          labelName("A"),
-          Some(EagernessReason.Conflict(Id(2), Id(1)))
-        )))
+        .eager(ListSet(LabelReadSetConflict(labelName("A"), Some(Conflict(Id(2), Id(1))))))
         .setLabels("m", "A")
         .expand("(n)-[r]->(m)")
         .allNodeScan("n")
@@ -549,10 +524,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("labels")
         .setLabels("m", "A")
         .expand("(n)-[r]->(m)")
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(
-          labelName("A"),
-          Some(EagernessReason.Conflict(Id(1), Id(4)))
-        )))
+        .eager(ListSet(LabelReadSetConflict(labelName("A"), Some(Conflict(Id(1), Id(4))))))
         .cartesianProduct()
         .|.filter("n:!A")
         .|.allNodeScan("n")
@@ -577,10 +549,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("m")
         .setLabels("m", "N")
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(
-          labelName("N"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.nodeCountFromCountStore("count", Seq(Some("N")))
         .allNodeScan("m")
@@ -630,7 +599,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("o")
         .create(createNode("o"))
-        .eager(ListSet(EagernessReason.ReadCreateConflict(Some(EagernessReason.Conflict(Id(1), Id(3))))))
+        .eager(ListSet(ReadCreateConflict(Some(Conflict(Id(1), Id(3))))))
         .cartesianProduct()
         .|.allNodeScan("m")
         .allNodeScan("n")
@@ -652,7 +621,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("o")
         .create(createNode("o", "O"))
-        .eager(ListSet(EagernessReason.ReadCreateConflict(Some(EagernessReason.Conflict(Id(1), Id(3))))))
+        .eager(ListSet(ReadCreateConflict(Some(Conflict(Id(1), Id(3))))))
         .cartesianProduct()
         .|.allNodeScan("m")
         .allNodeScan("n")
@@ -676,7 +645,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("m")
         .create(createNode("o", "O"))
-        .eager(ListSet(EagernessReason.ReadCreateConflict(Some(EagernessReason.Conflict(Id(1), Id(3))))))
+        .eager(ListSet(ReadCreateConflict(Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.nodeCountFromCountStore("count", Seq(None))
         .nodeByLabelScan("m", "M")
@@ -715,10 +684,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("m")
         .create(createNode("o", "N"))
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(
-          labelName("N"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.nodeCountFromCountStore("count", Seq(Some("N")))
         .allNodeScan("m")
@@ -766,10 +732,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("o")
         .create(createNode("o", "M"))
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(
-          labelName("M"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .eager(ListSet(LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(3))))))
         .cartesianProduct()
         .|.nodeByLabelScan("m", "M")
         .allNodeScan("n")
@@ -811,8 +774,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("o")
         .create(createNode("o", "O", "M"))
         .eager(ListSet(
-          EagernessReason.LabelReadSetConflict(labelName("O"), Some(EagernessReason.Conflict(Id(1), Id(4)))),
-          EagernessReason.LabelReadSetConflict(labelName("M"), Some(EagernessReason.Conflict(Id(1), Id(4))))
+          LabelReadSetConflict(labelName("O"), Some(Conflict(Id(1), Id(4)))),
+          LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(4))))
         ))
         .cartesianProduct()
         .|.filter("m:O")
@@ -860,8 +823,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("o")
         .create(createNode("o", "O"))
         .eager(ListSet(
-          EagernessReason.LabelReadSetConflict(labelName("O"), Some(EagernessReason.Conflict(Id(1), Id(5)))),
-          EagernessReason.LabelReadSetConflict(labelName("O"), Some(EagernessReason.Conflict(Id(1), Id(6))))
+          LabelReadSetConflict(labelName("O"), Some(Conflict(Id(1), Id(5)))),
+          LabelReadSetConflict(labelName("O"), Some(Conflict(Id(1), Id(6))))
         ))
         .cartesianProduct()
         .|.distinct("m AS m")
@@ -909,10 +872,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("o")
         .create(createNode("o", "O", "M"))
         .eager(ListSet(
-          EagernessReason.LabelReadSetConflict(labelName("O"), Some(EagernessReason.Conflict(Id(1), Id(4)))),
-          EagernessReason.LabelReadSetConflict(labelName("M"), Some(EagernessReason.Conflict(Id(1), Id(4)))),
-          EagernessReason.LabelReadSetConflict(labelName("O"), Some(EagernessReason.Conflict(Id(1), Id(5)))),
-          EagernessReason.LabelReadSetConflict(labelName("M"), Some(EagernessReason.Conflict(Id(1), Id(5))))
+          LabelReadSetConflict(labelName("O"), Some(Conflict(Id(1), Id(4)))),
+          LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(4)))),
+          LabelReadSetConflict(labelName("O"), Some(Conflict(Id(1), Id(5)))),
+          LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(5))))
         ))
         .cartesianProduct()
         .|.nodeHashJoin("m")
@@ -942,10 +905,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("o")
         .create(createNode("o", "O", "M"))
         .eager(ListSet(
-          EagernessReason.LabelReadSetConflict(labelName("O"), Some(EagernessReason.Conflict(Id(1), Id(4)))),
-          EagernessReason.LabelReadSetConflict(labelName("M"), Some(EagernessReason.Conflict(Id(1), Id(4)))),
-          EagernessReason.LabelReadSetConflict(labelName("O"), Some(EagernessReason.Conflict(Id(1), Id(5)))),
-          EagernessReason.LabelReadSetConflict(labelName("M"), Some(EagernessReason.Conflict(Id(1), Id(5))))
+          LabelReadSetConflict(labelName("O"), Some(Conflict(Id(1), Id(4)))),
+          LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(4)))),
+          LabelReadSetConflict(labelName("O"), Some(Conflict(Id(1), Id(5)))),
+          LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(5))))
         ))
         .cartesianProduct()
         .|.assertSameNode("m")
@@ -975,8 +938,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("o")
         .create(createNode("o", "M"))
         .eager(ListSet(
-          EagernessReason.LabelReadSetConflict(labelName("M"), Some(EagernessReason.Conflict(Id(1), Id(4)))),
-          EagernessReason.LabelReadSetConflict(labelName("M"), Some(EagernessReason.Conflict(Id(1), Id(5))))
+          LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(4)))),
+          LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(5))))
         ))
         .cartesianProduct()
         .|.leftOuterHashJoin("m")
@@ -1006,8 +969,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("o")
         .create(createNode("o", "O"))
         .eager(ListSet(
-          EagernessReason.LabelReadSetConflict(labelName("O"), Some(EagernessReason.Conflict(Id(1), Id(4)))),
-          EagernessReason.LabelReadSetConflict(labelName("O"), Some(EagernessReason.Conflict(Id(1), Id(5))))
+          LabelReadSetConflict(labelName("O"), Some(Conflict(Id(1), Id(4)))),
+          LabelReadSetConflict(labelName("O"), Some(Conflict(Id(1), Id(5))))
         ))
         .cartesianProduct()
         .|.rightOuterHashJoin("m")
@@ -1091,10 +1054,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("o")
         .create(createNode("o", "M"))
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(
-          labelName("M"),
-          Some(EagernessReason.Conflict(Id(1), Id(7)))
-        )))
+        .eager(ListSet(LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(7))))))
         .cartesianProduct()
         .|.apply()
         .|.|.optional()
@@ -1160,10 +1120,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(new LogicalPlanBuilder()
       .produceResults("o")
       .create(createNode("o", "M"))
-      .eager(ListSet(EagernessReason.LabelReadSetConflict(
-        labelName("M"),
-        Some(EagernessReason.Conflict(Id(1), Id(6)))
-      )))
+      .eager(ListSet(LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(6))))))
       .cartesianProduct()
       .|.antiSemiApply()
       .|.|.filter("m:O")
@@ -1192,10 +1149,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("o")
         .create(createNode("o", "M"))
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(
-          labelName("M"),
-          Some(EagernessReason.Conflict(Id(1), Id(6)))
-        )))
+        .eager(ListSet(LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(6))))))
         .cartesianProduct()
         .|.selectOrSemiApply("true")
         .|.|.filter("m:O")
@@ -1222,10 +1176,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("o")
         .create(createNode("o", "M"))
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(
-          labelName("M"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .eager(ListSet(LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(3))))))
         .selectOrSemiApply("n.prop > 0")
         .|.nodeByLabelScan("m", "M", "n")
         .allNodeScan("n")
@@ -1269,10 +1220,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(new LogicalPlanBuilder()
       .produceResults("o")
       .create(createNode("o", "M"))
-      .eager(ListSet(EagernessReason.LabelReadSetConflict(
-        labelName("M"),
-        Some(EagernessReason.Conflict(Id(1), Id(6)))
-      )))
+      .eager(ListSet(LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(6))))))
       .cartesianProduct()
       .|.rollUpApply("m", "ms")
       .|.|.filter("m:O")
@@ -1300,10 +1248,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(new LogicalPlanBuilder()
       .produceResults("o")
       .create(createNode("o", "M"))
-      .eager(ListSet(EagernessReason.LabelReadSetConflict(
-        labelName("M"),
-        Some(EagernessReason.Conflict(Id(1), Id(6)))
-      )))
+      .eager(ListSet(LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(6))))))
       .cartesianProduct()
       .|.subqueryForeach()
       .|.|.filter("m:O")
@@ -1333,8 +1278,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("o")
         .create(createNode("o", "M", "O"))
         .eager(ListSet(
-          EagernessReason.LabelReadSetConflict(labelName("M"), Some(EagernessReason.Conflict(Id(1), Id(6)))),
-          EagernessReason.LabelReadSetConflict(labelName("O"), Some(EagernessReason.Conflict(Id(1), Id(6))))
+          LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(6)))),
+          LabelReadSetConflict(labelName("O"), Some(Conflict(Id(1), Id(6))))
         ))
         .cartesianProduct()
         .|.apply()
@@ -1414,10 +1359,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("o")
         .filter("m:O")
         .create(createNode("o", "M"))
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(
-          labelName("M"),
-          Some(EagernessReason.Conflict(Id(2), Id(4)))
-        )))
+        .eager(ListSet(LabelReadSetConflict(labelName("M"), Some(Conflict(Id(2), Id(4))))))
         .cartesianProduct()
         .|.nodeByLabelScan("m", "M")
         .allNodeScan("n")
@@ -1442,10 +1384,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("o")
         .apply()
         .|.nodeByLabelScan("m", "M")
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(
-          labelName("M"),
-          Some(EagernessReason.Conflict(Id(3), Id(2)))
-        )))
+        .eager(ListSet(LabelReadSetConflict(labelName("M"), Some(Conflict(Id(3), Id(2))))))
         .create(createNode("o", "M"))
         .allNodeScan("n")
         .build()
@@ -1492,10 +1431,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("o")
         .create(createNodeWithProperties("o", Seq.empty, "{prop: 5}"))
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
         .cartesianProduct()
         .|.nodeIndexOperator("m:M(prop)")
         .allNodeScan("n")
@@ -1517,7 +1453,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("o")
         .create(createNodeWithProperties("o", Seq.empty, "$foo"))
-        .eager(ListSet(EagernessReason.UnknownPropertyReadSetConflict(Some(EagernessReason.Conflict(Id(1), Id(3))))))
+        .eager(ListSet(UnknownPropertyReadSetConflict(Some(Conflict(Id(1), Id(3))))))
         .cartesianProduct()
         .|.nodeIndexOperator("m:M(prop)")
         .allNodeScan("n")
@@ -1539,10 +1475,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(new LogicalPlanBuilder()
       .produceResults("m")
       .create(createNode("m", "N"))
-      .eager(ListSet(EagernessReason.LabelReadSetConflict(
-        labelName("N"),
-        Some(EagernessReason.Conflict(Id(1), Id(2)))
-      )))
+      .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(2))))))
       .filter("n:N")
       .nodeByIdSeek("n", Set.empty, 1)
       .build())
@@ -1564,10 +1497,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(new LogicalPlanBuilder()
       .produceResults("m")
       .create(createNode("m", "N"))
-      .eager(ListSet(EagernessReason.LabelReadSetConflict(
-        labelName("N"),
-        Some(EagernessReason.Conflict(Id(1), Id(2)))
-      )))
+      .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(2))))))
       .filter("n:N")
       .nodeByIdSeek("n", Set.empty, 1, 2, 3)
       .build())
@@ -1600,7 +1530,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("o")
         .merge(nodes = Seq(createNode("m")))
-        .eager(ListSet(EagernessReason.ReadCreateConflict(Some(EagernessReason.Conflict(Id(1), Id(3))))))
+        .eager(ListSet(ReadCreateConflict(Some(Conflict(Id(1), Id(3))))))
         .cartesianProduct()
         .|.allNodeScan("m")
         .allNodeScan("n")
@@ -1635,10 +1565,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("o")
         .merge(nodes = Seq(createNode("m")), onMatch = Seq(setNodeProperty("m", "prop", "42")))
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
         .cartesianProduct()
         .|.nodeIndexOperator("m:M(prop)")
         .allNodeScan("n")
@@ -1660,10 +1587,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("o")
         .merge(nodes = Seq(createNode("m")), onMatch = Seq(setNodeProperties("m", ("prop", "42"), ("foo", "42"))))
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
         .cartesianProduct()
         .|.nodeIndexOperator("m:M(prop)")
         .allNodeScan("n")
@@ -1691,10 +1615,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           nodes = Seq(createNode("m")),
           onMatch = Seq(setNodePropertiesFromMap("m", "{prop: 42}", removeOtherProps = false))
         )
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
         .cartesianProduct()
         .|.nodeIndexOperator("m:M(prop)")
         .allNodeScan("n")
@@ -1724,7 +1645,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           nodes = Seq(createNode("m")),
           onMatch = Seq(setNodePropertiesFromMap("m", "{foo: 42}", removeOtherProps = true))
         )
-        .eager(ListSet(EagernessReason.UnknownPropertyReadSetConflict(Some(EagernessReason.Conflict(Id(1), Id(3))))))
+        .eager(ListSet(UnknownPropertyReadSetConflict(Some(Conflict(Id(1), Id(3))))))
         .cartesianProduct()
         .|.nodeIndexOperator("m:M(prop)")
         .allNodeScan("n")
@@ -1746,10 +1667,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("o")
         .merge(nodes = Seq(createNode("m")), onCreate = Seq(setNodeProperty("m", "prop", "42")))
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
         .cartesianProduct()
         .|.nodeIndexOperator("m:M(prop)")
         .allNodeScan("n")
@@ -1775,10 +1693,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("foo")
         .projection("n.prop AS foo")
         .expand("(n)-->(m)")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(4), Id(1)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(4), Id(1))))))
         .filter("5 > 3")
         .setNodeProperty("n", "prop", "5")
         .allNodeScan("n")
@@ -1807,19 +1722,13 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("foo")
         .projection("n.foo AS foo")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("foo"),
-          Some(EagernessReason.Conflict(Id(4), Id(1)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("foo"), Some(Conflict(Id(4), Id(1))))))
         .expand("(n)-->(o)")
         .filter("5 > 3")
         .setNodeProperty("n", "foo", "5")
         .projection("n.prop AS prop")
         .expand("(n)-->(m)")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(8), Id(5)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(8), Id(5))))))
         .filter("5 > 3")
         .setNodeProperty("n", "prop", "5")
         .allNodeScan("n")
@@ -1849,8 +1758,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .projection("n.prop AS prop")
         .projection("n.foo AS foo")
         .eager(ListSet(
-          EagernessReason.PropertyReadSetConflict(propName("prop"), Some(EagernessReason.Conflict(Id(7), Id(1)))),
-          EagernessReason.PropertyReadSetConflict(propName("foo"), Some(EagernessReason.Conflict(Id(5), Id(2))))
+          PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(7), Id(1)))),
+          PropertyReadSetConflict(propName("foo"), Some(Conflict(Id(5), Id(2))))
         ))
         .expand("(n)-->(o)")
         .expand("(n)-->(m)")
@@ -1884,8 +1793,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .projection("n.prop AS prop")
         .projection("n.foo AS foo")
         .eager(ListSet(
-          EagernessReason.PropertyReadSetConflict(propName("prop"), Some(EagernessReason.Conflict(Id(7), Id(1)))),
-          EagernessReason.PropertyReadSetConflict(propName("foo"), Some(EagernessReason.Conflict(Id(5), Id(2))))
+          PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(7), Id(1)))),
+          PropertyReadSetConflict(propName("foo"), Some(Conflict(Id(5), Id(2))))
         ))
         .expand("(n)-->(o)")
         .expand("(n)-->(m)")
@@ -1920,8 +1829,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .expand("(n)-->(p)")
         .projection("n.prop AS prop")
         .eager(ListSet(
-          EagernessReason.PropertyReadSetConflict(propName("foo"), Some(EagernessReason.Conflict(Id(5), Id(1)))),
-          EagernessReason.PropertyReadSetConflict(propName("prop"), Some(EagernessReason.Conflict(Id(7), Id(3))))
+          PropertyReadSetConflict(propName("foo"), Some(Conflict(Id(5), Id(1)))),
+          PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(7), Id(3))))
         ))
         .expand("(n)-->(o)")
         .setNodeProperty("n", "foo", "5")
@@ -1955,8 +1864,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .expand("(n)-->(p)")
         .projection("n.prop AS prop")
         .eager(ListSet(
-          EagernessReason.PropertyReadSetConflict(propName("foo"), Some(EagernessReason.Conflict(Id(5), Id(1)))),
-          EagernessReason.PropertyReadSetConflict(propName("prop"), Some(EagernessReason.Conflict(Id(7), Id(3))))
+          PropertyReadSetConflict(propName("foo"), Some(Conflict(Id(5), Id(1)))),
+          PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(7), Id(3))))
         ))
         .expand("(n)-->(o)")
         .setNodeProperty("n", "foo", "5")
@@ -1990,8 +1899,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .expand("(n)-->(p)")
         .projection("n.prop AS prop")
         .eager(ListSet(
-          EagernessReason.PropertyReadSetConflict(propName("foo"), Some(EagernessReason.Conflict(Id(5), Id(1)))),
-          EagernessReason.PropertyReadSetConflict(propName("prop"), Some(EagernessReason.Conflict(Id(7), Id(3))))
+          PropertyReadSetConflict(propName("foo"), Some(Conflict(Id(5), Id(1)))),
+          PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(7), Id(3))))
         ))
         .expand("(n)-->(o)")
         .setNodeProperty("n", "foo", "5")
@@ -2022,18 +1931,12 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("foo")
         .projection("n.foo AS foo")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("foo"),
-          Some(EagernessReason.Conflict(Id(5), Id(1)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("foo"), Some(Conflict(Id(5), Id(1))))))
         .expand("(n)-->(p)")
         .projection("n.prop AS prop")
         .expand("(n)-->(o)")
         .setNodeProperty("n", "foo", "5")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(7), Id(3)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(7), Id(3))))))
         .expand("(n)-->(m)")
         .setNodeProperty("n", "prop", "5")
         .allNodeScan("n")
@@ -2060,10 +1963,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("foo")
         .setNodeProperty("n", "prop", "5")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(1), Id(4)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(4))))))
         .apply()
         .|.argument("n")
         .projection("n.prop AS foo")
@@ -2089,10 +1989,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .apply()
         .|.setNodeProperty("n", "prop", "5")
         .|.argument("n")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(2), Id(4)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(4))))))
         .projection("n.prop AS foo")
         .allNodeScan("n")
         .build()
@@ -2114,10 +2011,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("foo")
         .setNodeProperty("n", "prop", "5")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.projection("n.prop AS foo")
         .|.argument("n")
@@ -2142,10 +2036,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("foo")
         .apply()
         .|.setNodeProperty("n", "prop", "5")
-        .|.eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(2), Id(3)))
-        )))
+        .|.eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(3))))))
         .|.projection("n.prop AS foo")
         .|.argument("n")
         .allNodeScan("n")
@@ -2172,10 +2063,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .apply()
         .|.setNodeProperty("n", "prop", "5")
         .|.argument("n")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(2), Id(5)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(5))))))
         .apply()
         .|.projection("n.prop AS foo")
         .|.argument("n")
@@ -2204,10 +2092,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .|.setLabels("m", "A")
         .|.expand("(n)--(m)")
         .|.argument("n")
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(
-          labelName("A"),
-          Some(EagernessReason.Conflict(Id(3), Id(6)))
-        )))
+        .eager(ListSet(LabelReadSetConflict(labelName("A"), Some(Conflict(Id(3), Id(6))))))
         .nodeByLabelScan("n", "A")
         .build()
     )
@@ -2228,10 +2113,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults()
         .setLabels("n", "A")
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(
-          labelName("A"),
-          Some(EagernessReason.Conflict(Id(1), Id(2)))
-        )))
+        .eager(ListSet(LabelReadSetConflict(labelName("A"), Some(Conflict(Id(1), Id(2))))))
         .selectOrSemiApply("a:A")
         .|.expand("(a)-[r]->(n)")
         .|.argument("a")
@@ -2257,10 +2139,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .selectOrSemiApply("a:A")
         .|.expand("(a)-[r]->(n)")
         .|.argument("a")
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(
-          labelName("A"),
-          Some(EagernessReason.Conflict(Id(4), Id(1)))
-        )))
+        .eager(ListSet(LabelReadSetConflict(labelName("A"), Some(Conflict(Id(4), Id(1))))))
         .setLabels("a", "A")
         .allNodeScan("a")
         .build()
@@ -2304,10 +2183,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .setLabels("a", "B")
         .cartesianProduct()
         .|.allNodeScan("b")
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(
-          labelName("B"),
-          Some(EagernessReason.Conflict(Id(2), Id(5)))
-        )))
+        .eager(ListSet(LabelReadSetConflict(labelName("B"), Some(Conflict(Id(2), Id(5))))))
         .filter("a:B")
         .nodeByLabelScan("a", "A")
         .build()
@@ -2331,10 +2207,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("`count(*)`")
         .aggregation(Seq(), Seq("count(*) AS `count(*)`"))
         .setLabels("a", "B")
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(
-          labelName("B"),
-          Some(EagernessReason.Conflict(Id(2), Id(5)))
-        )))
+        .eager(ListSet(LabelReadSetConflict(labelName("B"), Some(Conflict(Id(2), Id(5))))))
         .cartesianProduct()
         .|.allNodeScan("b")
         .filter("a:B")
@@ -2358,10 +2231,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("foo")
         .projection("n.prop AS foo")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(3), Id(1)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(3), Id(1))))))
         .cartesianProduct()
         .|.setNodeProperty("n", "prop", "5")
         .|.allNodeScan("n")
@@ -2387,10 +2257,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .cartesianProduct()
         .|.projection("m.prop AS foo")
         .|.allNodeScan("m")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(4), Id(2)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(4), Id(2))))))
         .setNodeProperty("n", "prop", "5")
         .allNodeScan("n")
         .build()
@@ -2414,8 +2281,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("n")
         .setLabels("n", "Two")
         .eager(ListSet(
-          EagernessReason.LabelReadSetConflict(labelName("Two"), Some(EagernessReason.Conflict(Id(1), Id(4)))),
-          EagernessReason.LabelReadSetConflict(labelName("Two"), Some(EagernessReason.Conflict(Id(1), Id(5))))
+          LabelReadSetConflict(labelName("Two"), Some(Conflict(Id(1), Id(4)))),
+          LabelReadSetConflict(labelName("Two"), Some(Conflict(Id(1), Id(5))))
         ))
         .cartesianProduct()
         .|.cartesianProduct()
@@ -2442,10 +2309,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("foo")
         .projection("n.prop AS foo")
         .nodeHashJoin("n")
-        .|.eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(3), Id(1)))
-        )))
+        .|.eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(3), Id(1))))))
         .|.setNodeProperty("n", "prop", "5")
         .|.allNodeScan("n")
         .allNodeScan("n")
@@ -2468,10 +2332,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("foo")
         .projection("n.prop AS foo")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(3), Id(1)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(3), Id(1))))))
         .nodeHashJoin("n")
         .|.setNodeProperty("n", "prop", "5")
         .|.allNodeScan("n")
@@ -2497,10 +2358,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .setNodeProperty("n", "prop", "5")
         .assertSameNode("n")
         .|.allNodeScan("n")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(1), Id(4)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(4))))))
         .projection("n.prop AS foo")
         .allNodeScan("n")
         .build()
@@ -2522,10 +2380,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("foo")
         .setNodeProperty("n", "prop", "5")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
         .assertSameNode("n")
         .|.projection("n.prop AS foo")
         .|.allNodeScan("n")
@@ -2551,10 +2406,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .setNodeProperty("n", "prop", "5")
         .union()
         .|.allNodeScan("n")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(1), Id(4)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(4))))))
         .projection("n.prop AS foo")
         .allNodeScan("n")
         .build()
@@ -2577,10 +2429,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("foo")
         .setNodeProperty("n", "prop", "5")
         .union()
-        .|.eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .|.eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
         .|.projection("n.prop AS foo")
         .|.allNodeScan("n")
         .allNodeScan("n")
@@ -2605,16 +2454,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("foo")
         .setNodeProperty("n", "prop", "5")
         .union()
-        .|.eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .|.eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
         .|.projection("n.prop AS foo2")
         .|.allNodeScan("n")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(1), Id(5)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(5))))))
         .projection("n.prop AS foo")
         .allNodeScan("n")
         .build()
@@ -2657,10 +2500,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .apply()
       .|.filter("c:!B")
       .|.nodeByLabelScan("c", "A")
-      .eager(ListSet(EagernessReason.LabelReadSetConflict(
-        labelName("A"),
-        Some(EagernessReason.Conflict(Id(4), Id(3)))
-      )))
+      .eager(ListSet(LabelReadSetConflict(labelName("A"), Some(Conflict(Id(4), Id(3))))))
       .create(createNode("a", "A"), createNode("b", "B"))
       .argument()
       .build())
@@ -2685,16 +2525,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("foo")
         .setNodeProperty("n", "prop", "5")
         .union()
-        .|.eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .|.eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
         .|.projection("n.prop AS foo")
         .|.allNodeScan("n")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(1), Id(5)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(5))))))
         .projection("n.prop AS foo")
         .allNodeScan("n")
         .build()
@@ -2729,10 +2563,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("d")
         .apply()
         .|.nodeByLabelScan("d", "Event")
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(
-          labelName("Event"),
-          Some(EagernessReason.Conflict(Id(3), Id(2)))
-        )))
+        .eager(ListSet(LabelReadSetConflict(labelName("Event"), Some(Conflict(Id(3), Id(2))))))
         .foreach(
           "x",
           "[1]",
@@ -2767,10 +2598,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("d")
         .apply()
         .|.nodeByLabelScan("d", "Event")
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(
-          labelName("Event"),
-          Some(EagernessReason.Conflict(Id(3), Id(2)))
-        )))
+        .eager(ListSet(LabelReadSetConflict(labelName("Event"), Some(Conflict(Id(3), Id(2))))))
         .foreach("x", "[1]", Seq(createPattern(Seq(createNode("e", "Event")))))
         .argument()
         .build()
@@ -2797,10 +2625,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("d")
         .apply()
         .|.nodeIndexOperator("d:D(foo>0)")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("foo"),
-          Some(EagernessReason.Conflict(Id(4), Id(2)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("foo"), Some(Conflict(Id(4), Id(2))))))
         .foreachApply("num", "[1]")
         .|.create(createNodeWithProperties("n", Seq(), "{foo: num}"))
         .|.argument("num")
@@ -2843,10 +2668,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("m")
         .setNodeProperty("m", "prop", "5")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.nodeIndexOperator("n:N(prop > 5)")
         .allNodeScan("m")
@@ -2870,10 +2692,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("m")
         .setNodeProperty("m", "prop", "5")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.nodeIndexOperator("n:N(prop = 5)")
         .allNodeScan("m")
@@ -2897,10 +2716,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("m")
         .setNodeProperty("m", "prop", "5")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.nodeIndexOperator("n:N(prop = 5)", unique = true)
         .allNodeScan("m")
@@ -2924,10 +2740,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("m")
         .setNodeProperty("m", "prop", "5")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.nodeIndexOperator("n:N(prop CONTAINS '1')", indexType = IndexType.TEXT)
         .allNodeScan("m")
@@ -2951,10 +2764,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("m")
         .setNodeProperty("m", "prop", "5")
-        .eager(ListSet(EagernessReason.PropertyReadSetConflict(
-          propName("prop"),
-          Some(EagernessReason.Conflict(Id(1), Id(3)))
-        )))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.nodeIndexOperator("n:N(prop ENDS WITH '1')", indexType = IndexType.TEXT)
         .allNodeScan("m")
@@ -2983,7 +2793,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("d")
         .apply()
         .|.nodeByLabelScan("d", "Event")
-        .eager(ListSet(EagernessReason.LabelReadSetConflict(labelName("Event"))))
+        .eager(ListSet(LabelReadSetConflict(labelName("Event"))))
         .foreach("x", "[1]", Seq(createPattern(Seq(createNode("e", "Event", "Place")))))
         .argument()
         .build()
