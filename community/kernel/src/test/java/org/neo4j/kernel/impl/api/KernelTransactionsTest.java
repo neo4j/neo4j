@@ -102,7 +102,6 @@ import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.tracing.DefaultTracers;
 import org.neo4j.lock.LockTracer;
-import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
@@ -453,7 +452,6 @@ class KernelTransactionsTest {
     @Test
     void exceptionWhenStartingNewTransactionOnStoppedKernelTransactions() throws Throwable {
         KernelTransactions kernelTransactions = newKernelTransactions();
-
         t2.execute(() -> {
                     stopKernelTransactions(kernelTransactions);
                     return null;
@@ -674,7 +672,6 @@ class KernelTransactionsTest {
                         any(ReadableTransactionState.class),
                         any(StorageReader.class),
                         any(CommandCreationContext.class),
-                        any(ResourceLocker.class),
                         any(LockTracer.class),
                         any(TxStateVisitor.Decorator.class),
                         any(CursorContext.class),

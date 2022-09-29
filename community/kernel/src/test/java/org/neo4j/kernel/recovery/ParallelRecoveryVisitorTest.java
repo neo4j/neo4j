@@ -339,7 +339,6 @@ class ParallelRecoveryVisitorTest {
                 ReadableTransactionState state,
                 StorageReader storageReader,
                 CommandCreationContext creationContext,
-                ResourceLocker locks,
                 LockTracer lockTracer,
                 Decorator additionalTxStateVisitor,
                 CursorContext cursorContext,

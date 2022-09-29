@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.ResourceLocker;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -95,7 +96,13 @@ public class CommandCreationContextIT {
         try (var cursorContext = contextFactory.create("trackPageCacheAccessOnIdReservation")) {
             prepareIdGenerator(storeProvider.apply(neoStores).getIdGenerator());
             try (var creationContext = storageEngine.newCommandCreationContext(INSTANCE)) {
-                creationContext.initialize(cursorContext, StoreCursors.NULL);
+                creationContext.initialize(
+                        cursorContext,
+                        StoreCursors.NULL,
+                        CommandCreationContext.NO_OLD_SEQUENCE_NUMBER_SUPPLIER,
+                        CommandCreationContext.NO_SEQUENCE_NUMBER,
+                        ResourceLocker.IGNORE,
+                        () -> LockTracer.NONE);
                 idReservation.applyAsLong(creationContext);
                 assertThat(cursorContext.getCursorTracer().pins()).isEqualTo(1);
             }
@@ -108,7 +115,13 @@ public class CommandCreationContextIT {
         var memoryTracker = new LocalMemoryTracker();
         try (var commandCreationContext = storageEngine.newCommandCreationContext(memoryTracker);
                 var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
-            commandCreationContext.initialize(NULL_CONTEXT, storeCursors);
+            commandCreationContext.initialize(
+                    NULL_CONTEXT,
+                    storeCursors,
+                    CommandCreationContext.NO_OLD_SEQUENCE_NUMBER_SUPPLIER,
+                    CommandCreationContext.NO_SEQUENCE_NUMBER,
+                    ResourceLocker.IGNORE,
+                    () -> LockTracer.NONE);
             var recordState = commandCreationContext.createTransactionRecordState(
                     IGNORE, LockTracer.NONE, LATEST_LOG_SERIALIZATION, RecordAccess.LoadMonitor.NULL_MONITOR);
             long heapBefore = memoryTracker.estimatedHeapMemory();
@@ -151,7 +164,7 @@ public class CommandCreationContextIT {
                 arguments(
                         (Function<NeoStores, CommonAbstractStore<?, ?>>) NeoStores::getRelationshipStore,
                         (ToLongFunction<CommandCreationContext>)
-                                commandCreationContext -> commandCreationContext.reserveRelationship(-1)),
+                                commandCreationContext -> commandCreationContext.reserveRelationship(-1, 0, 0)),
                 arguments(
                         (Function<NeoStores, CommonAbstractStore<?, ?>>) NeoStores::getLabelTokenStore,
                         (ToLongFunction<CommandCreationContext>) CommandCreationContext::reserveLabelTokenId),

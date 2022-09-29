@@ -549,7 +549,13 @@ class BatchingNeoStoresTest {
             NeoStores neoStores = storageEngine.testAccessNeoStores();
             try (CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext(INSTANCE);
                     var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
-                commandCreationContext.initialize(NULL_CONTEXT, storeCursors);
+                commandCreationContext.initialize(
+                        NULL_CONTEXT,
+                        storeCursors,
+                        CommandCreationContext.NO_OLD_SEQUENCE_NUMBER_SUPPLIER,
+                        CommandCreationContext.NO_SEQUENCE_NUMBER,
+                        ResourceLocker.IGNORE,
+                        () -> LockTracer.NONE);
                 propertyKeyTokenCreator.initialize(neoStores.getPropertyKeyTokenStore(), txState);
                 labelTokenCreator.initialize(neoStores.getLabelTokenStore(), txState);
                 relationshipTypeTokenCreator.initialize(neoStores.getRelationshipTypeTokenStore(), txState);
@@ -563,7 +569,7 @@ class BatchingNeoStoresTest {
                 txState.nodeDoCreate(node1);
                 txState.nodeDoCreate(node2);
                 txState.relationshipDoCreate(
-                        commandCreationContext.reserveRelationship(node1), relTypeId, node1, node2);
+                        commandCreationContext.reserveRelationship(node1, node2, relTypeId), relTypeId, node1, node2);
                 apply(txState, commandCreationContext, storageEngine, storeCursors);
                 neoStores.flush(DatabaseFlushEvent.NULL, NULL_CONTEXT);
             }
@@ -584,7 +590,6 @@ class BatchingNeoStoresTest {
                     txState,
                     storageReader,
                     commandCreationContext,
-                    ResourceLocker.IGNORE,
                     LockTracer.NONE,
                     v -> v,
                     NULL_CONTEXT,

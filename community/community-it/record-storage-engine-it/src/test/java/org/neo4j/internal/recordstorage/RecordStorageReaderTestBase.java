@@ -69,8 +69,6 @@ import org.neo4j.values.storable.Values;
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
 public abstract class RecordStorageReaderTestBase {
-    private static final ResourceLocker IGNORE_LOCKING = ResourceLocker.IGNORE;
-
     private final RecordStorageEngineSupport storageEngineRule = new RecordStorageEngineSupport();
 
     @Inject
@@ -111,7 +109,13 @@ public abstract class RecordStorageReaderTestBase {
         this.commitReader = storageEngine.newReader();
         this.commitContext = storageEngine.newCommandCreationContext(INSTANCE);
         storageCursors = storageEngine.createStorageCursors(NULL_CONTEXT);
-        commitContext.initialize(NULL_CONTEXT, storageCursors);
+        commitContext.initialize(
+                NULL_CONTEXT,
+                storageCursors,
+                CommandCreationContext.NO_OLD_SEQUENCE_NUMBER_SUPPLIER,
+                CommandCreationContext.NO_SEQUENCE_NUMBER,
+                ResourceLocker.IGNORE,
+                () -> LockTracer.NONE);
         storageEngineRule.before();
     }
 
@@ -149,9 +153,9 @@ public abstract class RecordStorageReaderTestBase {
     protected long createRelationship(long sourceNode, long targetNode, RelationshipType relationshipType)
             throws Exception {
         TxState txState = new TxState();
-        long relationshipId = commitContext.reserveRelationship(sourceNode);
-        txState.relationshipDoCreate(
-                relationshipId, getOrCreateRelationshipTypeId(relationshipType), sourceNode, targetNode);
+        int typeId = getOrCreateRelationshipTypeId(relationshipType);
+        long relationshipId = commitContext.reserveRelationship(sourceNode, targetNode, typeId);
+        txState.relationshipDoCreate(relationshipId, typeId, sourceNode, targetNode);
         apply(txState);
         return relationshipId;
     }
@@ -266,7 +270,6 @@ public abstract class RecordStorageReaderTestBase {
                 txState,
                 commitReader,
                 commitContext,
-                IGNORE_LOCKING,
                 LockTracer.NONE,
                 state -> state,
                 NULL_CONTEXT,

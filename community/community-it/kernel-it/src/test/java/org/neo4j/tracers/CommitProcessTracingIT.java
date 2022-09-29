@@ -91,15 +91,19 @@ public class CommitProcessTracingIT {
             assertZeroCursor(cursorContext);
             try (CommandCreationContext context = storageEngine.newCommandCreationContext(INSTANCE);
                     var storeCursors = storageEngine.createStorageCursors(CursorContext.NULL_CONTEXT)) {
-                context.initialize(cursorContext, storeCursors);
+                context.initialize(
+                        cursorContext,
+                        storeCursors,
+                        CommandCreationContext.NO_OLD_SEQUENCE_NUMBER_SUPPLIER,
+                        CommandCreationContext.NO_SEQUENCE_NUMBER,
+                        IGNORE,
+                        () -> LockTracer.NONE);
                 var txState = new TxState();
                 txState.nodeDoAddLabel(1, sourceId);
-
                 List<StorageCommand> commands = storageEngine.createCommands(
                         txState,
                         reader,
                         context,
-                        IGNORE,
                         LockTracer.NONE,
                         NO_DECORATION,
                         cursorContext,

@@ -74,7 +74,6 @@ import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.lock.LockTracer;
-import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
@@ -122,7 +121,6 @@ class KernelTransactionTestBase {
                         any(ReadableTransactionState.class),
                         any(StorageReader.class),
                         any(CommandCreationContext.class),
-                        any(ResourceLocker.class),
                         any(LockTracer.class),
                         any(TxStateVisitor.Decorator.class),
                         any(CursorContext.class),

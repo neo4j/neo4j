@@ -19,7 +19,10 @@
  */
 package org.neo4j.storageengine.api;
 
+import java.util.function.Supplier;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.ResourceLocker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
@@ -44,8 +47,10 @@ public interface CommandCreationContext extends AutoCloseable {
      *
      * @return a reserved relationship id for future use.
      * @param sourceNode id of the source node to reserve this id for.
+     * @param targetNode id of the target node to reserve this id for.
+     * @param relationshipType id of the relationship to reserve this id for.
      */
-    long reserveRelationship(long sourceNode);
+    long reserveRelationship(long sourceNode, long targetNode, int relationshipType);
 
     /**
      * Reserves an id for a schema record, be it for a constraint or an index, for future use to store a schema record. The reason for it being exposed here
@@ -79,6 +84,20 @@ public interface CommandCreationContext extends AutoCloseable {
     /**
      * Initialise command creation context for specific transactional cursor context
      * @param cursorContext transaction cursor context
+     * @param storeCursors store cursors
+     * @param oldestActiveTransactionSequenceNumber supplier to retrieve sequence number of oldest currently active transaction
+     * @param currentTransactionSequenceNumber sequence number of current transaction
+     * @param locks access to locks that might be needed in implementation
+     * @param lockTracer Lock tracer to use if locks are taken
      */
-    void initialize(CursorContext cursorContext, StoreCursors storeCursors);
+    void initialize(
+            CursorContext cursorContext,
+            StoreCursors storeCursors,
+            Supplier<Long> oldestActiveTransactionSequenceNumber,
+            long currentTransactionSequenceNumber,
+            ResourceLocker locks,
+            Supplier<LockTracer> lockTracer);
+
+    public static final long NO_SEQUENCE_NUMBER = 0L;
+    public static final Supplier<Long> NO_OLD_SEQUENCE_NUMBER_SUPPLIER = () -> 0L;
 }

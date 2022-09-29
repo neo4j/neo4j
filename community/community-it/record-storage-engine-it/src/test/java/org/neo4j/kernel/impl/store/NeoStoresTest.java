@@ -50,7 +50,6 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.List;
 import java.util.function.LongSupplier;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
@@ -93,6 +92,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
@@ -102,7 +102,6 @@ import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
-import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
@@ -526,12 +525,17 @@ class NeoStoresTest {
         CursorContext cursorContext = NULL_CONTEXT;
         try (CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext(INSTANCE);
                 var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
-            commandCreationContext.initialize(cursorContext, storeCursors);
-            List<StorageCommand> commands = storageEngine.createCommands(
+            commandCreationContext.initialize(
+                    cursorContext,
+                    storeCursors,
+                    CommandCreationContext.NO_OLD_SEQUENCE_NUMBER_SUPPLIER,
+                    CommandCreationContext.NO_SEQUENCE_NUMBER,
+                    IGNORE,
+                    () -> LockTracer.NONE);
+            var commands = storageEngine.createCommands(
                     transactionState,
                     storageReader,
                     commandCreationContext,
-                    IGNORE,
                     NONE,
                     tx -> tx,
                     cursorContext,

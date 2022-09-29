@@ -32,7 +32,6 @@ import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 
-import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -51,6 +50,7 @@ import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.Health;
+import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -114,12 +114,17 @@ public class RecordStorageEngineTestUtils {
         try (RecordStorageCommandCreationContext commandCreationContext =
                         storageEngine.newCommandCreationContext(EmptyMemoryTracker.INSTANCE);
                 StoreCursors storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
-            commandCreationContext.initialize(cursorContext, storeCursors);
-            List<StorageCommand> commands = storageEngine.createCommands(
+            commandCreationContext.initialize(
+                    cursorContext,
+                    storeCursors,
+                    CommandCreationContext.NO_OLD_SEQUENCE_NUMBER_SUPPLIER,
+                    CommandCreationContext.NO_SEQUENCE_NUMBER,
+                    ResourceLocker.IGNORE,
+                    () -> LockTracer.NONE);
+            var commands = storageEngine.createCommands(
                     txState,
                     storageEngine.newReader(),
                     commandCreationContext,
-                    ResourceLocker.IGNORE,
                     LockTracer.NONE,
                     t -> t,
                     cursorContext,

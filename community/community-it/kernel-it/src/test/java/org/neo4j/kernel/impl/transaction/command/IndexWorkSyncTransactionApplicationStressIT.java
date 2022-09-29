@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.ResourceLocker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
@@ -174,7 +175,13 @@ class IndexWorkSyncTransactionApplicationStressIT {
             try (StorageReader reader = storageEngine.newReader();
                     CommandCreationContext creationContext = storageEngine.newCommandCreationContext(INSTANCE);
                     var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
-                creationContext.initialize(NULL_CONTEXT, storeCursors);
+                creationContext.initialize(
+                        NULL_CONTEXT,
+                        storeCursors,
+                        CommandCreationContext.NO_OLD_SEQUENCE_NUMBER_SUPPLIER,
+                        CommandCreationContext.NO_SEQUENCE_NUMBER,
+                        ResourceLocker.IGNORE,
+                        () -> LockTracer.NONE);
                 TransactionQueue queue = new TransactionQueue(batchSize, tx -> {
                     // Apply
                     storageEngine.apply(tx, EXTERNAL);
@@ -204,7 +211,6 @@ class IndexWorkSyncTransactionApplicationStressIT {
                     txState,
                     reader,
                     creationContext,
-                    null,
                     LockTracer.NONE,
                     NO_DECORATION,
                     NULL_CONTEXT,

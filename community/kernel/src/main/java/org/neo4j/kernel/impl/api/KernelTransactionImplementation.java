@@ -386,7 +386,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;
         this.clientInfo = clientInfo;
         this.statistics.init(currentThread().getId(), cursorContext);
-        this.commandCreationContext.initialize(cursorContext, transactionalCursors);
+        this.commandCreationContext.initialize(
+                cursorContext,
+                transactionalCursors,
+                kernelTransactions::oldestActiveTransactionSequenceNumber,
+                transactionSequenceNumber,
+                lockClient,
+                currentStatement::lockTracer);
         this.currentStatement.initialize(lockClient, cursorContext, startTimeMillis);
         this.operations.initialize(cursorContext);
         this.initializationTrace = traceProvider.getTraceInfo();
@@ -909,7 +915,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         txState,
                         storageReader,
                         commandCreationContext,
-                        lockClient,
                         lockTracer(),
                         this::enforceConstraints,
                         cursorContext,

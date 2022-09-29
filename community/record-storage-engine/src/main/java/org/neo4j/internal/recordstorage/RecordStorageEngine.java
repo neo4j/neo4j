@@ -424,7 +424,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             ReadableTransactionState txState,
             StorageReader storageReader,
             CommandCreationContext commandCreationContext,
-            ResourceLocker locks,
             LockTracer lockTracer,
             Decorator additionalTxStateVisitor,
             CursorContext cursorContext,
@@ -443,6 +442,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         RecordStorageCommandCreationContext creationContext =
                 (RecordStorageCommandCreationContext) commandCreationContext;
         LogCommandSerialization serialization = RecordStorageCommandReaderFactory.INSTANCE.get(version);
+        var locks = creationContext.getLocks();
         TransactionRecordState recordState = creationContext.createTransactionRecordState(
                 locks,
                 lockTracer,
@@ -459,7 +459,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         try (TxStateVisitor visitor = txStateVisitor) {
             txState.accept(visitor);
         }
-
         // Convert record state into commands
         recordState.extractCommands(commands, transactionMemoryTracker);
         countsRecordState.extractCommands(commands, transactionMemoryTracker);

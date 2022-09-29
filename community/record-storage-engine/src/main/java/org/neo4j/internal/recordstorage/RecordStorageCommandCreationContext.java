@@ -22,6 +22,7 @@ package org.neo4j.internal.recordstorage;
 import static java.lang.Math.toIntExact;
 
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.recordstorage.RecordAccess.LoadMonitor;
@@ -61,6 +62,7 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
     private Loaders loaders;
     private CursorContext cursorContext;
     private StoreCursors storeCursors;
+    private ResourceLocker locks;
 
     RecordStorageCommandCreationContext(
             NeoStores neoStores,
@@ -81,10 +83,17 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
     }
 
     @Override
-    public void initialize(CursorContext cursorContext, StoreCursors storeCursors) {
+    public void initialize(
+            CursorContext cursorContext,
+            StoreCursors storeCursors,
+            Supplier<Long> oldestSequenceNumber,
+            long currentSequenceNumber,
+            ResourceLocker locks,
+            Supplier<LockTracer> lockTracer) {
         this.cursorContext = cursorContext;
         this.loaders = new Loaders(neoStores, storeCursors);
         this.storeCursors = storeCursors;
+        this.locks = locks;
         this.relationshipGroupGetter =
                 new RelationshipGroupGetter(neoStores.getRelationshipGroupStore(), cursorContext);
         PropertyTraverser propertyTraverser = new PropertyTraverser();
@@ -114,13 +123,17 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
         return neoStores.getRecordStore(storeType).nextId(cursorContext);
     }
 
+    ResourceLocker getLocks() {
+        return locks;
+    }
+
     @Override
     public long reserveNode() {
         return nextId(StoreType.NODE);
     }
 
     @Override
-    public long reserveRelationship(long sourceNode) {
+    public long reserveRelationship(long sourceNode, long targetNode, int relationshipType) {
         return nextId(StoreType.RELATIONSHIP);
     }
 

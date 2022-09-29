@@ -71,12 +71,6 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
      * @param state {@link ReadableTransactionState} representing logical store changes to generate commands for.
      * @param storageReader {@link StorageReader} to use for reading store state during creation of commands.
      * @param creationContext {@link CommandCreationContext} to use for do contextualized command creation e.g. id allocation.
-     * @param locks {@link ResourceLocker} can grab additional locks.
-     * This locks client still have the potential to acquire more locks at this point.
-     * TODO we should try to get rid of this locking mechanism during creation of commands
-     * The reason it's needed is that some relationship changes in the record storage engine
-     * needs to lock prev/next relationships and these changes happens when creating commands
-     * The EntityLocker interface is a subset of Locks.Client interface, just to fit in while it's here.
      * @param lockTracer traces additional locks acquired while creating commands.
      * @param additionalTxStateVisitor any additional tx state visitor decoration.
      * @param cursorContext underlying page cursor context
@@ -87,7 +81,6 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
             ReadableTransactionState state,
             StorageReader storageReader,
             CommandCreationContext creationContext,
-            ResourceLocker locks,
             LockTracer lockTracer,
             Decorator additionalTxStateVisitor,
             CursorContext cursorContext,
