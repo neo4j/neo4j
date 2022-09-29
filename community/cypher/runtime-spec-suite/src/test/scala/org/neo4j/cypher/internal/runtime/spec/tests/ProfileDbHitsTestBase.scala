@@ -212,8 +212,12 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    val labelScanCost = runtimeUsed match {
+      case Parallel => 0
+      case _        => 2
+    }
     queryProfile.operatorProfile(1).dbHits() should (be(
-      6 + 2 /*label scan*/ + 2 * costOfLabelLookup
+      6 + labelScanCost /*label scan*/ + 2 * costOfLabelLookup
     )) // union label scan
   }
 
