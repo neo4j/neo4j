@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.Prober.Probe
 import org.neo4j.cypher.internal.runtime.spec.Edition
@@ -190,6 +191,46 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("c")
       .withRows(singleColumn(1 to 10))
+      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10, transactionsCommitted = 5)
+  }
+
+  test("should work with grouping aggregation on RHS") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .transactionApply(3)
+      .|.aggregation(Seq("1 AS group"), Seq("count(i) AS c"))
+      .|.unwind("range(1, x) AS i")
+      .|.create(createNodeWithProperties("n", Seq("N"), "{prop: x}"))
+      .|.argument("x")
+      .unwind("range(1, 10) AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("c")
+      .withRows(singleColumn(1 to 10))
+      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10, transactionsCommitted = 5)
+  }
+
+  test("should work with top on RHS") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("i")
+      .transactionApply(3)
+      .|.top(Seq(Descending("i")), 2)
+      .|.unwind("range(1, x) AS i")
+      .|.create(createNodeWithProperties("n", Seq("N"), "{prop: x}"))
+      .|.argument("x")
+      .unwind("range(1, 10) AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("i")
+      .withRows(singleColumn(Seq(1, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 8, 7, 9, 8, 10, 9)))
       .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10, transactionsCommitted = 5)
   }
 

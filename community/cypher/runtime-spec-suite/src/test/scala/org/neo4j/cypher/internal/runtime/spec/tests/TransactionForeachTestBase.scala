@@ -1011,6 +1011,26 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .withRows(singleColumn(Seq(2L, 2L, 2L, 2L)))
   }
 
+  test("should work with grouping aggregation on RHS") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionForeach(3)
+      .|.aggregation(Seq("1 AS group"), Seq("count(i) AS c"))
+      .|.unwind("range(1, x) AS i")
+      .|.create(createNodeWithProperties("n", Seq("N"), "{prop: x}"))
+      .|.argument("x")
+      .unwind("range(1, 10) AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("x")
+      .withRows(singleColumn(1 to 10))
+      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10, transactionsCommitted = 5)
+  }
+
   private def checkExternalAndRuntimeNodes(
     externalTx: InternalTransaction,
     runtimeTestSupport: RuntimeTestSupport[CONTEXT],
