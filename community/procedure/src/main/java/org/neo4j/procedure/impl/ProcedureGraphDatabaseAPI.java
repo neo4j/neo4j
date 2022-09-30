@@ -40,12 +40,12 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
  * Implementation of {@link org.neo4j.graphdb.GraphDatabaseService} (and {@link GraphDatabaseAPI}) for injection
  * into procedure implementations.
  */
-public class ProcedureGraphDatabaseService extends GraphDatabaseTransactions implements GraphDatabaseAPI {
+public class ProcedureGraphDatabaseAPI extends GraphDatabaseTransactions implements GraphDatabaseAPI {
 
     private final GraphDatabaseAPI delegate;
     private final Function<LoginContext, LoginContext> loginContextTransformer;
 
-    public ProcedureGraphDatabaseService(
+    public ProcedureGraphDatabaseAPI(
             GraphDatabaseAPI delegate, Function<LoginContext, LoginContext> loginContextTransformer, Config config) {
         super(config);
         this.delegate = requireNonNull(delegate);

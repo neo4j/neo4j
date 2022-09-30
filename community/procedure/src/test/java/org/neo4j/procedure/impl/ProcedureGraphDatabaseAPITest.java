@@ -40,7 +40,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
-class ProcedureGraphDatabaseServiceTest {
+class ProcedureGraphDatabaseAPITest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("beginTxCalls")
@@ -53,7 +53,7 @@ class ProcedureGraphDatabaseServiceTest {
 
         var transformedLoginContext = mock(LoginContext.class);
         var procedureGraphDatabaseService =
-                new ProcedureGraphDatabaseService(graphDatabaseAPI, ctx -> transformedLoginContext, Config.defaults());
+                new ProcedureGraphDatabaseAPI(graphDatabaseAPI, ctx -> transformedLoginContext, Config.defaults());
 
         call.accept(procedureGraphDatabaseService);
 
