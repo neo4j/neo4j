@@ -41,7 +41,7 @@ class ToolingMemoryCalculationsTest {
                 .calculateMaxAvailableOffHeapMemoryFromPercent(percent, freeMachineMemory, maxMemory);
 
         // then
-        long expected = Math.round((freeMachineMemory - maxMemory) * (percent / 100D));
+        long expected = Math.round((freeMachineMemory - Math.min(maxMemory, freeMachineMemory / 2)) * (percent / 100D));
         assertThat(memory)
                 .as("Machine free memory: " + freeMachineMemory + ", max: " + maxMemory)
                 .isEqualTo(expected);
