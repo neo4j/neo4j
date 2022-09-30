@@ -40,6 +40,10 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
+/**
+ * Implements all special versions of "begin" (beginTx, beginTransaction, executeTransactionally)
+ * by delegating to a single abstract beginTransaction()
+ */
 public abstract class GraphDatabaseTransactions implements GraphDatabaseAPI {
 
     private final Config config;
