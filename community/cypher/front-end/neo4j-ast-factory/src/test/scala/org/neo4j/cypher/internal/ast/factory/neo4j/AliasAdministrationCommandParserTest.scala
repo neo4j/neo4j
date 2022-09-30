@@ -381,6 +381,14 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   }
 
   test(
+    """CREATE ALIAS composite.name FOR DATABASE target AT "neo4j://serverA:7687"
+      |PROPERTIES { key:'value', anotherkey:'anotherValue' }
+      |USER user PASSWORD 'password'""".stripMargin
+  ) {
+    assertFailsWithMessageStart(testName, """Invalid input 'PROPERTIES': expected "USER"""")
+  }
+
+  test(
     """CREATE ALIAS alias FOR DATABASE target AT "neo4j://serverA:7687" USER user PASSWORD 'password'
       |PROPERTIES { key:12.5, anotherkey: { innerKey: 17 }, another: [1,2,'hi'] }""".stripMargin
   ) {
@@ -543,6 +551,29 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         "foo" -> literalFloat(1.0)
       )))
     )(defaultPos))
+  }
+
+  test(
+    """CREATE ALIAS name FOR DATABASE target AT "bar" USER user PASSWORD "password" DRIVER { foo: 1.0 } PROPERTIES { bar: true }"""
+  ) {
+    assertAst(CreateRemoteDatabaseAlias(
+      namespacedName("name"),
+      namespacedName("target"),
+      IfExistsThrowError,
+      Left("bar"),
+      Left("user"),
+      sensitiveLiteral("password"),
+      Some(Left(Map(
+        "foo" -> literalFloat(1.0)
+      ))),
+      Some(Left(Map("bar" -> trueLiteral)))
+    )(defaultPos))
+  }
+
+  test(
+    """CREATE ALIAS name FOR DATABASE target AT "bar" USER user PASSWORD "password" PROPERTIES { bar: true } DRIVER { foo: 1.0 }"""
+  ) {
+    assertFailsWithMessageStart(testName, """Invalid input 'DRIVER': expected <EOF>""")
   }
 
   test("Should fail to parse CREATE ALIAS with driver settings but no remote url") {
@@ -720,6 +751,33 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
     )
   }
 
+  private val localAliasClauses = Seq(
+    "TARGET db",
+    "PROPERTIES { key:'value', anotherKey:'anotherValue' }"
+  )
+
+  localAliasClauses.permutations.foreach(clauses => {
+    test(s"""ALTER ALIAS name SET DATABASE ${clauses.mkString(" ")}""") {
+      assertAst(
+        AlterLocalDatabaseAlias(
+          namespacedName("name"),
+          Some(namespacedName("db")),
+          properties =
+            Some(Left(Map("key" -> literalString("value"), "anotherKey" -> literalString("anotherValue"))))
+        )(defaultPos)
+      )
+    }
+  })
+
+  localAliasClauses.foreach(clause => {
+    test(s"""ALTER ALIAS name SET DATABASE $clause $clause""") {
+      assertFailsWithMessageStart(
+        testName,
+        s"Duplicate SET DATABASE ${clause.substring(0, clause.indexOf(" "))} clause"
+      )
+    }
+  })
+
   // ALTER REMOTE ALIAS
   test(
     """ALTER ALIAS name SET DATABASE TARGET target AT "neo4j://serverA:7687" USER user PASSWORD "password" DRIVER { ssl_enforced: true }"""
@@ -768,6 +826,40 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       Some(pwParam("password"))
     )(defaultPos))
   }
+
+  private val remoteAliasClauses = Seq(
+    "TARGET db AT 'url'",
+    "PROPERTIES { key:'value', yetAnotherKey:'yetAnotherValue' }",
+    "USER user",
+    "PASSWORD 'password'",
+    "DRIVER { ssl_enforced: true }"
+  )
+
+  remoteAliasClauses.permutations.foreach(clauses => {
+    test(s"""ALTER ALIAS name SET DATABASE ${clauses.mkString(" ")}""") {
+      assertAst(
+        AlterRemoteDatabaseAlias(
+          namespacedName("name"),
+          Some(namespacedName("db")),
+          url = Some(Left("url")),
+          username = Some(Left("user")),
+          password = Some(sensitiveLiteral("password")),
+          driverSettings = Some(Left(Map("ssl_enforced" -> trueLiteral))),
+          properties =
+            Some(Left(Map("key" -> literalString("value"), "yetAnotherKey" -> literalString("yetAnotherValue"))))
+        )(defaultPos)
+      )
+    }
+  })
+
+  remoteAliasClauses.foreach(clause => {
+    test(s"""ALTER ALIAS name SET DATABASE $clause $clause""") {
+      assertFailsWithMessageStart(
+        testName,
+        s"Duplicate SET DATABASE ${clause.substring(0, clause.indexOf(" "))} clause"
+      )
+    }
+  })
 
   // this will instead fail in semantic checking
   test("ALTER ALIAS name SET DATABASE TARGET target DRIVER { ssl_enforced: true }") {
@@ -1018,7 +1110,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
     assertAst(ShowAliases(None)(defaultPos))
   }
 
-  test("SHOW ALIAS FOR DATABASE") {
+  test("SHOW ALIAS FOR DATABASES") {
     assertAst(ShowAliases(None)(defaultPos))
   }
 
@@ -1026,13 +1118,13 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
     assertAst(ShowAliases(Some(namespacedName("db")), None)(defaultPos))
   }
 
-  test("SHOW ALIAS db FOR DATABASE YIELD *") {
+  test("SHOW ALIASES db FOR DATABASE YIELD *") {
     assertAst(
       ShowAliases(Some(namespacedName("db")), Some(Left((yieldClause(returnAllItems), None))))(defaultPos)
     )
   }
 
-  test("SHOW ALIAS ns.db FOR DATABASE") {
+  test("SHOW ALIAS ns.db FOR DATABASES") {
     assertAst(ShowAliases(Some(namespacedName("ns", "db")), None)(defaultPos))
   }
 
@@ -1124,5 +1216,9 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   test("SHOW ALIAS") {
     assertFailsWithMessage(testName, "Invalid input '': expected \"FOR\" (line 1, column 11 (offset: 10))")
+  }
+
+  test("SHOW ALIAS foo, bar FOR DATABASES") {
+    assertFailsWithMessageStart(testName, "Invalid input 'foo': expected \"FOR\"")
   }
 }

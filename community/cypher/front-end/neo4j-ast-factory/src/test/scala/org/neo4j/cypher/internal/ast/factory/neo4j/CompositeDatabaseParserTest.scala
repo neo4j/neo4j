@@ -66,6 +66,18 @@ class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTe
     )
   }
 
+  test("CREATE COMPOSITE DATABASE name TOPOLOGY 1 PRIMARY") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'TOPOLOGY': expected
+        |  "."
+        |  "IF"
+        |  "NOWAIT"
+        |  "WAIT"
+        |  <EOF> (line 1, column 32 (offset: 31))""".stripMargin
+    )
+  }
+
   test("CREATE COMPOSITE DATABASE name WAIT") {
     yields(ast.CreateCompositeDatabase(namespacedName("name"), IfExistsThrowError, IndefiniteWait))
   }
