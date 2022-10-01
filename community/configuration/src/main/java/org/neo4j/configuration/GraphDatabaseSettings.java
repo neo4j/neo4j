@@ -30,6 +30,7 @@ import static org.neo4j.configuration.SettingConstraints.ABSOLUTE_PATH;
 import static org.neo4j.configuration.SettingConstraints.HOSTNAME_ONLY;
 import static org.neo4j.configuration.SettingConstraints.NO_ALL_INTERFACES_ADDRESS;
 import static org.neo4j.configuration.SettingConstraints.POWER_OF_2;
+import static org.neo4j.configuration.SettingConstraints.VALID_DATABASE_NAME;
 import static org.neo4j.configuration.SettingConstraints.any;
 import static org.neo4j.configuration.SettingConstraints.is;
 import static org.neo4j.configuration.SettingConstraints.min;
@@ -108,6 +109,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     @Description("Name of the default database (aliases are not supported).")
     public static final Setting<String> initial_default_database = newBuilder(
                     "initial.dbms.default_database", DATABASENAME, DEFAULT_DATABASE_NAME)
+            .addConstraint(VALID_DATABASE_NAME)
             .build();
 
     public static final String DATA_DIRECTORY_SETTING_NAME = "server.directories.data";

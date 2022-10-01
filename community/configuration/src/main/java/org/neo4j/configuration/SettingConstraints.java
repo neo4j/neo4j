@@ -33,11 +33,13 @@ import java.util.function.LongFunction;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.neo4j.configuration.helpers.DatabaseNameValidator;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Numbers;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 
 public final class SettingConstraints {
     private SettingConstraints() {}
@@ -287,6 +289,18 @@ public final class SettingConstraints {
         @Override
         public String getDescription() {
             return "accessible address";
+        }
+    };
+
+    public static final SettingConstraint<String> VALID_DATABASE_NAME = new SettingConstraint<>() {
+        @Override
+        public void validate(String value, Configuration config) {
+            DatabaseNameValidator.validateExternalDatabaseName(new NormalizedDatabaseName(value));
+        }
+
+        @Override
+        public String getDescription() {
+            return "must be valid database name";
         }
     };
 
