@@ -154,12 +154,12 @@ class GraphDatabaseInternalLogIT {
                 .getDependencyResolver()
                 .resolveDependency(LogService.class)
                 .getInternalLog(getClass());
-        log.info("An info entry");
+        log.info("First info entry");
 
         Path internalLog = testDir.directory("logs").resolve("debug.log");
         Path internalLog2 = testDir.directory("logs").resolve("debug2.log");
         assertThat(internalLog).isRegularFile();
-        assertEquals(1, countOccurrences(internalLog, "An info entry"));
+        assertEquals(1, countOccurrences(internalLog, "First info entry"));
         assertThat(internalLog2).doesNotExist();
 
         // Overwrite
@@ -167,9 +167,9 @@ class GraphDatabaseInternalLogIT {
 
         // Wait for log4j to pick up on the changes
         do {
-            log.info("An info entry");
+            log.info("another info entry");
             Thread.sleep(100);
-        } while (!Files.exists(internalLog2));
+        } while (!(Files.exists(internalLog2) && Files.size(internalLog2) > 0));
 
         log.info("An info entry");
         managementService.shutdown();
