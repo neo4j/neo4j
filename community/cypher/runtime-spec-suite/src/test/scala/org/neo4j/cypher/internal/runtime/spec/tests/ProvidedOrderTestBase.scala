@@ -34,13 +34,15 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
 abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
   val sizeHint: Int
-) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+) extends RuntimeTestSuite[CONTEXT](edition, runtime)
+    with RandomValuesTestSupport {
 
   trait SeqMutator { def apply[X](in: Seq[X]): Seq[X] }
 
@@ -647,6 +649,506 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
 
       runtimeResult should beColumns("x", "yprop", "zprop").withRows(inOrder(expected))
     }
+  }
+
+  test("apply with non-grouping aggregation on the rhs should keep order when rows are filtered out") {
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.aggregation(Seq(), Seq("collect(y) as ys"))
+      .|.unwind("[0] AS y") // Pipeline break
+      .|.filter(s"x > (rand() * $sizeHint)")
+      .|.argument("x")
+      .sort(Seq(Ascending("x")))
+      .unwind(s"range(0, $sizeHint) AS x")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = Range.inclusive(0, sizeHint).map(i => Array(i))
+    runtimeResult should beColumns("x").withRows(inOrder(expected))
+  }
+
+  test("apply with grouping aggregation on the rhs should keep order when rows are filtered out") {
+    val input = Range(0, sizeHint).map(_ => randomValues.nextDouble())
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.aggregation(Seq("x AS x"), Seq("collect(y) as ys"))
+      .|.unwind("[0] AS y") // Pipeline break
+      .|.filter(s"x < 0.5")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, iteratorInput(input.iterator.map(v => Array[Any](v))))
+
+    val expected = input.filter(_ < 0.5).map(i => Array(i))
+    runtimeResult should beColumns("x").withRows(inOrder(expected))
+  }
+
+  test("anti conditional apply should keep order of lhs") {
+    val input = Range(0, sizeHint).map { _ =>
+      val x = randomValues.nextDouble()
+      val y = if (randomValues.nextBoolean()) true else null
+      (x, y)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .antiConditionalApply("y")
+      .|.unwind("[0] AS z") // Pipeline break
+      .|.filter(s"x < 0.5")
+      .|.argument("x")
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val inputIterator = input.iterator.map { case (x, y) => Array[Any](x, y) }
+    val runtimeResult = execute(logicalQuery, runtime, iteratorInput(inputIterator))
+
+    val expected = input
+      .filter { case (x, y) => x < 0.5 || y != null }
+      .map { case (x, y) => Array(x, y) }
+    runtimeResult should beColumns("x", "y").withRows(inOrder(expected))
+  }
+
+  test("apply with anti conditional apply on the rhs should keep order of lhs") {
+    val input = Range(0, sizeHint).map { _ =>
+      val x = randomValues.nextDouble()
+      val y = if (randomValues.nextBoolean()) true else null
+      (x, y)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .apply()
+      .|.antiConditionalApply("y")
+      .|.|.unwind("[0] AS b") // Pipeline break
+      .|.|.filter(s"x < 0.25")
+      .|.|.argument("x")
+      .|.unwind("[0] AS a") // Pipeline break
+      .|.filter("x < 0.5")
+      .|.argument("x")
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val inputIterator = input.iterator.map { case (x, y) => Array[Any](x, y) }
+    val runtimeResult = execute(logicalQuery, runtime, iteratorInput(inputIterator))
+
+    val expected = input
+      .filter { case (x, y) => x < 0.5 && (y != null || x < 0.25) }
+      .map { case (x, y) => Array(x, y) }
+    runtimeResult should beColumns("x", "y").withRows(inOrder(expected))
+  }
+
+  test("anti semi apply should keep order of lhs") {
+    val input = Range(0, sizeHint).map(_ => randomValues.nextDouble())
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .antiSemiApply()
+      .|.unwind("[0] AS y") // Pipeline break
+      .|.filter(s"x > 0.5")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, iteratorInput(input.iterator.map(v => Array[Any](v))))
+
+    val expected = input.filterNot(_ > 0.5).map(v => Array(v))
+    runtimeResult should beColumns("x").withRows(inOrder(expected))
+  }
+
+  test("apply with anti semi apply on rhs should keep order of lhs") {
+    val input = Range(0, sizeHint).map(_ => randomValues.nextDouble())
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.antiSemiApply()
+      .|.|.unwind("[0] AS b") // Pipeline break
+      .|.|.filter(s"x > 0.25")
+      .|.|.argument("x")
+      .|.unwind("[0] AS a") // Pipeline break
+      .|.filter("x < 0.5")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, iteratorInput(input.iterator.map(v => Array[Any](v))))
+
+    val expected = input.filter(v => v <= 0.25).map(v => Array(v))
+    runtimeResult should beColumns("x").withRows(inOrder(expected))
+  }
+
+  test("apply with cartesian product on the rhs should keep order of lhs") {
+    val input = Range(0, sizeHint).map(_ => randomValues.nextDouble())
+    given {
+      nodePropertyGraph(1, { case i => Map("prop" -> i) }, "A")
+      nodePropertyGraph(1, { case i => Map("prop" -> i) }, "B")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "`a.prop`", "`b.prop`")
+      .projection("a.prop AS `a.prop`", "b.prop AS `b.prop`")
+      .apply()
+      .|.cartesianProduct()
+      .|.|.unwind("[0] AS z") // Pipeline break
+      .|.|.filter("x > 0.5")
+      .|.|.nodeByLabelScan("b", "B", "x")
+      .|.unwind("[0] AS y") // Pipeline break
+      .|.filter("x > 0.25")
+      .|.nodeByLabelScan("a", "A", "x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, iteratorInput(input.iterator.map(v => Array[Any](v))))
+
+    val expected = input.filter(_ > 0.5).map(v => Array(v, 0, 0))
+    runtimeResult should beColumns("x", "a.prop", "b.prop").withRows(inOrder(expected))
+  }
+
+  test("conditional apply should keep order of lhs") {
+    val input = Range(0, sizeHint).map { _ =>
+      val x = randomValues.nextDouble()
+      val y = if (randomValues.nextBoolean()) true else null
+      (x, y)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .conditionalApply("y")
+      .|.unwind("[0] AS z") // Pipeline break
+      .|.filter(s"x < 0.5")
+      .|.argument("x")
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val inputIterator = input.iterator.map { case (x, y) => Array[Any](x, y) }
+    val runtimeResult = execute(logicalQuery, runtime, iteratorInput(inputIterator))
+
+    val expected = input
+      .filter { case (x, y) => x < 0.5 || y == null }
+      .map { case (x, y) => Array(x, y) }
+    runtimeResult should beColumns("x", "y").withRows(inOrder(expected))
+  }
+
+  test("apply with conditional apply on the rhs should keep order of lhs") {
+    val input = Range(0, sizeHint).map { _ =>
+      val x = randomValues.nextDouble()
+      val y = if (randomValues.nextBoolean()) true else null
+      (x, y)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .apply()
+      .|.conditionalApply("y")
+      .|.|.unwind("[0] AS b") // Pipeline break
+      .|.|.filter(s"x < 0.25")
+      .|.|.argument("x")
+      .|.unwind("[0] AS a") // Pipeline break
+      .|.filter("x < 0.5")
+      .|.argument("x")
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val inputIterator = input.iterator.map { case (x, y) => Array[Any](x, y) }
+    val runtimeResult = execute(logicalQuery, runtime, iteratorInput(inputIterator))
+
+    val expected = input
+      .filter { case (x, y) => x < 0.5 && (y == null || x < 0.25) }
+      .map { case (x, y) => Array(x, y) }
+    runtimeResult should beColumns("x", "y").withRows(inOrder(expected))
+  }
+
+  test("apply with optional on rhs should keep order of lhs") {
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.optional("x")
+      .|.unwind("[0] AS y") // Pipeline break
+      .|.filter(s"x > (rand() * $sizeHint)")
+      .|.argument("x")
+      .sort(Seq(Ascending("x")))
+      .unwind(s"range(0, $sizeHint) AS x")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = Range.inclusive(0, sizeHint).map(i => Array(i))
+    runtimeResult should beColumns("x").withRows(inOrder(expected))
+  }
+
+  ignore("apply with ordered aggregation on the rhs should keep order") {
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.orderedAggregation(Seq("x"), Seq("collect(y) as ys"), Seq("y"))
+      .|.unwind("[0] AS y") // Pipeline break
+      .|.filter(s"x > (rand() * $sizeHint)")
+      .|.argument("x")
+      .sort(Seq(Ascending("x")))
+      .unwind(s"range(0, $sizeHint) AS x")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = Range.inclusive(0, sizeHint).map(i => Array(i))
+    runtimeResult should beColumns("x").withRows(inOrder(expected))
+  }
+
+  test("rollup apply should keep order from lhs") {
+    val input = Range(0, sizeHint).map(_ => randomValues.nextDouble())
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "rollup")
+      .rollUpApply("rollup", "x")
+      .|.unwind("[0] AS y") // Pipeline break
+      .|.filter(s"x < 0.5")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, iteratorInput(input.iterator.map(v => Array[Any](v))))
+
+    val expected = input.map(x => Array(x, if (x < 0.5) Array(x) else Array()))
+    runtimeResult should beColumns("x", "rollup").withRows(inOrder(expected))
+  }
+
+  test("apply with rollup apply on the rhs should keep order from lhs") {
+    val input = Range(0, sizeHint).map(_ => randomValues.nextDouble())
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "rollup")
+      .apply()
+      .|.rollUpApply("rollup", "x")
+      .|.|.unwind("[0] AS b") // Pipeline break
+      .|.|.filter(s"x < 0.25")
+      .|.|.argument("x")
+      .|.unwind("[0] AS a") // Pipeline break
+      .|.filter("x < 0.5")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, iteratorInput(input.iterator.map(v => Array[Any](v))))
+
+    val expected = input
+      .filter(_ < 0.5)
+      .map(x => Array(x, if (x < 0.25) Array(x) else Array()))
+    runtimeResult should beColumns("x", "rollup").withRows(inOrder(expected))
+  }
+
+  test("select or anti semi apply should keep order of lhs") {
+    val input = Range(0, sizeHint).map(_ => randomValues.nextDouble())
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrAntiSemiApply("x < 0.25")
+      .|.unwind("[0] AS y") // Pipeline break
+      .|.filter(s"x < 0.75")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, iteratorInput(input.iterator.map(v => Array[Any](v))))
+
+    val expected = input.filter(v => v < 0.25 || v >= 0.75).map(v => Array(v))
+    runtimeResult should beColumns("x").withRows(inOrder(expected))
+  }
+
+  test("apply with select or anti semi apply on rhs should keep order of lhs") {
+    val input = Range(0, sizeHint).map(_ => randomValues.nextDouble())
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.selectOrAntiSemiApply("x < 0.15")
+      .|.|.unwind("[0] AS y") // Pipeline break
+      .|.|.filter(s"x <= 0.35")
+      .|.|.argument("x")
+      .|.unwind("[0] AS y") // Pipeline break
+      .|.filter("x < 0.5")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, iteratorInput(input.iterator.map(v => Array[Any](v))))
+
+    val expected = input
+      .filter(_ < 0.5)
+      .filter(v => v < 0.15 || v > 0.35)
+      .map(v => Array(v))
+    runtimeResult should beColumns("x").withRows(inOrder(expected))
+  }
+
+  test("select or semi apply should keep order of lhs") {
+    val input = Range(0, sizeHint).map(_ => randomValues.nextDouble())
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("x < 0.25")
+      .|.unwind("[0] AS y") // Pipeline break
+      .|.filter(s"x > 0.75")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, iteratorInput(input.iterator.map(v => Array[Any](v))))
+
+    val expected = input.filter(v => v < 0.25 || v > 0.75).map(v => Array(v))
+    runtimeResult should beColumns("x").withRows(inOrder(expected))
+  }
+
+  test("semi apply should keep order of lhs") {
+    val input = Range(0, sizeHint).map(_ => randomValues.nextInt())
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .semiApply()
+      .|.unwind("[0] AS y") // Pipeline break
+      .|.filter(s"x > 0.5")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, iteratorInput(input.iterator.map(v => Array[Any](v))))
+
+    val expected = input.filter(_ > 0.5).map(v => Array(v))
+    runtimeResult should beColumns("x").withRows(inOrder(expected))
+  }
+
+  test("apply with semi apply on the rhs should keep order of lhs") {
+    val input = Range(0, sizeHint).map(_ => randomValues.nextInt())
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.semiApply()
+      .|.|.unwind("[0] AS b") // Pipeline break
+      .|.|.filter(s"x < 0.25")
+      .|.|.argument("x")
+      .|.unwind("[0] AS a") // Pipeline break
+      .|.filter("x < 0.5")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, iteratorInput(input.iterator.map(v => Array[Any](v))))
+
+    val expected = input.filter(_ < 0.25).map(v => Array(v))
+    runtimeResult should beColumns("x").withRows(inOrder(expected))
+  }
+
+  test("apply with sort on rhs should keep order of lhs") {
+    val input = Range(0, sizeHint).map(_ => randomValues.nextDouble())
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.sort(Seq(Ascending("y")))
+      .|.unwind("[0] AS y") // Pipeline break
+      .|.filter(s"x > 0.5")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, iteratorInput(input.iterator.map(v => Array[Any](v))))
+
+    val expected = input.filter(_ > 0.5).map(v => Array(v))
+    runtimeResult should beColumns("x").withRows(inOrder(expected))
+  }
+
+  test("apply with top with ties on rhs should keep order of lhs") {
+    val input = Range(0, sizeHint).map(_ => randomValues.nextDouble())
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.top1WithTies(Seq(Ascending("y")))
+      .|.unwind("[0] AS y")
+      .|.filter(s"x > 0.5")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, iteratorInput(input.iterator.map(v => Array[Any](v))))
+
+    val expected = input.filter(_ > 0.5).map(v => Array(v))
+    runtimeResult should beColumns("x").withRows(inOrder(expected))
+  }
+
+  test("apply with top on rhs should not ruin order of lhs") {
+    val input = Range(0, sizeHint).map(_ => randomValues.nextDouble())
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.top(Seq(Ascending("y")), 1)
+      .|.unwind("[rand(), rand()] AS y")
+      .|.filter(s"x > 0.5")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, iteratorInput(input.iterator.map(v => Array[Any](v))))
+
+    val expected = input.filter(_ > 0.5).map(v => Array(v))
+    runtimeResult should beColumns("x").withRows(inOrder(expected))
+  }
+
+  test("value hash join should keep order from rhs") {
+    given {
+      nodeIndex("A", "prop")
+      nodeIndex("B", "prop")
+      nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) }, "A")
+      nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) }, "B")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("`a.prop`", "`b.prop`")
+      .projection("a.prop AS `a.prop`", "b.prop AS `b.prop`")
+      .valueHashJoin("a.prop=b.prop")
+      .|.nodeIndexOperator("b:B(prop >= 0)", indexOrder = IndexOrderDescending)
+      .nodeIndexOperator("a:A(prop >= 0)", indexOrder = IndexOrderAscending)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = Range(0, sizeHint).map(i => Array(i, i)).reverse
+    runtimeResult should beColumns("a.prop", "b.prop").withRows(inOrder(expected))
+  }
+
+  test("apply with value hash join on the rhs should keep order when rows are filtered out") {
+    val input = Range(0, sizeHint).map(_ => randomValues.nextDouble())
+    given {
+      nodePropertyGraph(1, { case i => Map("prop" -> i) }, "A")
+      nodePropertyGraph(1, { case i => Map("prop" -> i) }, "B")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "`a.prop`", "`b.prop`")
+      .projection("a.prop AS `a.prop`", "b.prop AS `b.prop`")
+      .apply()
+      .|.valueHashJoin("a.prop=b.prop")
+      .|.|.unwind("[0] AS z") // Pipeline break
+      .|.|.filter("x > 0.5")
+      .|.|.nodeByLabelScan("b", "B", "x")
+      .|.unwind("[0] AS y") // Pipeline break
+      .|.filter("x > 0.25")
+      .|.nodeByLabelScan("a", "A", "x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, iteratorInput(input.iterator.map(v => Array[Any](v))))
+
+    val expected = input.filter(_ > 0.5).map(v => Array(v, 0, 0))
+    runtimeResult should beColumns("x", "a.prop", "b.prop").withRows(inOrder(expected))
   }
 }
 
