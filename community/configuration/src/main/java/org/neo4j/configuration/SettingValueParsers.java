@@ -918,7 +918,7 @@ public final class SettingValueParsers
             var settingMap = new HashMap<String,String>();
             Arrays.stream( splitString ).forEach( entry ->
                                                   {
-                                                      var keyValueSplit = entry.split( "=" );
+                                                      var keyValueSplit = entry.split( "=", 2 );
                                                       if ( keyValueSplit.length != 2 )
                                                       {
                                                           throw new IllegalArgumentException(

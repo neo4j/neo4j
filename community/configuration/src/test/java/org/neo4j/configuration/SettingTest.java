@@ -379,7 +379,13 @@ class SettingTest
     {
         var setting = (SettingImpl<Map<String,String>>) setting( "setting", SettingValueParsers.MAP_PATTERN );
         assertEquals( Map.of( "k1", "v1", "k2", "v2" ), setting.parse( "k1=v1;k2=v2" ) );
-        assertThrows( IllegalArgumentException.class, () -> setting.parse( "k1=v1=v2" ) );
+    }
+
+    @Test
+    void testStringMapWithValuesContainingEquals()
+    {
+        var setting = (SettingImpl<Map<String,String>>) setting( "setting", SettingValueParsers.MAP_PATTERN );
+        assertEquals( Map.of( "k1", "cn=admin,dc=example,dc=com", "k2", "v2" ), setting.parse( "k1=cn=admin,dc=example,dc=com;k2=v2" ) );
     }
 
     @Test
