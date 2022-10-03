@@ -588,7 +588,7 @@ public class PlainOperationsTest extends OperationsTest {
 
         // when
         try {
-            operations.nodeKeyConstraintCreate(
+            operations.keyConstraintCreate(
                     IndexPrototype.uniqueForSchema(schema).withName("constraint name"));
             fail("Expected an exception because this schema should already be constrained.");
         } catch (AlreadyConstrainedException ignore) {

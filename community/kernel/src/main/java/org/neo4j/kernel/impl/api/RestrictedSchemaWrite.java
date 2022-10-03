@@ -88,9 +88,9 @@ public class RestrictedSchemaWrite implements SchemaWrite {
     }
 
     @Override
-    public ConstraintDescriptor nodeKeyConstraintCreate(IndexPrototype prototype) throws KernelException {
+    public ConstraintDescriptor keyConstraintCreate(IndexPrototype prototype) throws KernelException {
         securityAuthorizationHandler.assertSchemaWrites(securityContext, PrivilegeAction.CREATE_CONSTRAINT);
-        return inner.nodeKeyConstraintCreate(prototype);
+        return inner.keyConstraintCreate(prototype);
     }
 
     @Override

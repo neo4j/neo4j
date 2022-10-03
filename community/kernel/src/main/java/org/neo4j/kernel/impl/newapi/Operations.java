@@ -1597,7 +1597,7 @@ public class Operations implements Write, SchemaWrite {
     }
 
     @Override
-    public ConstraintDescriptor nodeKeyConstraintCreate(IndexPrototype prototype) throws KernelException {
+    public ConstraintDescriptor keyConstraintCreate(IndexPrototype prototype) throws KernelException {
         SchemaDescriptor schema = prototype.schema();
         exclusiveSchemaLock(schema);
         ktx.assertOpen();

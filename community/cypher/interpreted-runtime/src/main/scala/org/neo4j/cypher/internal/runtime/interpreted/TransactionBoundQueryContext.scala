@@ -357,7 +357,7 @@ sealed class TransactionBoundQueryContext(
     provider: Option[IndexProviderDescriptor]
   ): Unit = {
     val indexPrototype = getUniqueIndexPrototype(labelId, propertyKeyIds, name, provider)
-    transactionalContext.schemaWrite.nodeKeyConstraintCreate(indexPrototype)
+    transactionalContext.schemaWrite.keyConstraintCreate(indexPrototype)
   }
 
   override def createUniqueConstraint(

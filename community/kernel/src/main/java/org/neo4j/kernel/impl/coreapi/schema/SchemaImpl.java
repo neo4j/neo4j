@@ -740,7 +740,7 @@ public class SchemaImpl implements Schema {
                         .withName(name)
                         .withIndexType(fromPublicApi(indexType))
                         .withIndexConfig(indexConfig);
-                ConstraintDescriptor constraint = transaction.schemaWrite().nodeKeyConstraintCreate(prototype);
+                ConstraintDescriptor constraint = transaction.schemaWrite().keyConstraintCreate(prototype);
                 return new NodeKeyConstraintDefinition(this, constraint, indexDefinition);
             } catch (AlreadyConstrainedException
                     | CreateConstraintFailureException

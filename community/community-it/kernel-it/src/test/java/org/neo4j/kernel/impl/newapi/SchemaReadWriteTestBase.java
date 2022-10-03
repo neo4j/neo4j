@@ -888,7 +888,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     void shouldCreateNodeKeyConstraint() throws Exception {
         ConstraintDescriptor constraint;
         try (KernelTransaction transaction = beginTransaction()) {
-            constraint = transaction.schemaWrite().nodeKeyConstraintCreate(uniqueForSchema(forLabel(label, prop1)));
+            constraint = transaction.schemaWrite().keyConstraintCreate(uniqueForSchema(forLabel(label, prop1)));
             transaction.commit();
         }
 
@@ -905,7 +905,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     void shouldDropNodeKeyConstraint() throws Exception {
         ConstraintDescriptor constraint;
         try (KernelTransaction transaction = beginTransaction()) {
-            constraint = transaction.schemaWrite().nodeKeyConstraintCreate(uniqueForSchema(forLabel(label, prop1)));
+            constraint = transaction.schemaWrite().keyConstraintCreate(uniqueForSchema(forLabel(label, prop1)));
             transaction.commit();
         }
 
@@ -937,7 +937,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try (KernelTransaction transaction = beginTransaction()) {
             assertThrows(
                     SchemaKernelException.class,
-                    () -> transaction.schemaWrite().nodeKeyConstraintCreate(uniqueForSchema(forLabel(label, prop1))));
+                    () -> transaction.schemaWrite().keyConstraintCreate(uniqueForSchema(forLabel(label, prop1))));
         }
     }
 
@@ -947,8 +947,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try (KernelTransaction transaction = beginTransaction()) {
             existing = transaction
                     .schemaWrite()
-                    .nodeKeyConstraintCreate(
-                            uniqueForSchema(forLabel(label, prop1)).withName("existing constraint"));
+                    .keyConstraintCreate(uniqueForSchema(forLabel(label, prop1)).withName("existing constraint"));
             transaction.commit();
         }
 
@@ -956,8 +955,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             SchemaReadCore before = transaction.schemaRead().snapshot();
             ConstraintDescriptor newConstraint = transaction
                     .schemaWrite()
-                    .nodeKeyConstraintCreate(
-                            uniqueForSchema(forLabel(label, prop2)).withName("new constraint"));
+                    .keyConstraintCreate(uniqueForSchema(forLabel(label, prop2)).withName("new constraint"));
             SchemaRead schemaRead = transaction.schemaRead();
             assertTrue(schemaRead.constraintExists(existing));
             assertTrue(schemaRead.constraintExists(newConstraint));
@@ -974,8 +972,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try (KernelTransaction transaction = beginTransaction()) {
             existing = transaction
                     .schemaWrite()
-                    .nodeKeyConstraintCreate(
-                            uniqueForSchema(forLabel(label, prop1)).withName("constraint name"));
+                    .keyConstraintCreate(uniqueForSchema(forLabel(label, prop1)).withName("constraint name"));
             transaction.commit();
         }
 
@@ -1508,7 +1505,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
                                 uniqueForSchema(forLabel(label, prop1)).withName("a"));
                 overlapping
                         .schemaWrite()
-                        .nodeKeyConstraintCreate(
+                        .keyConstraintCreate(
                                 uniqueForSchema(forLabel(label2, prop1)).withName("b"));
                 overlapping.schemaWrite().nodePropertyExistenceConstraintCreate(forLabel(label, prop2), "c");
                 overlapping.schemaWrite().relationshipPropertyExistenceConstraintCreate(forRelType(type, prop1), "d");
@@ -1548,7 +1545,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     void shouldFailNodeKeyCreateForRepeatedProperties() throws Exception {
         try (KernelTransaction tx = beginTransaction()) {
             assertThrows(SchemaKernelException.class, () -> tx.schemaWrite()
-                    .nodeKeyConstraintCreate(uniqueForSchema(forLabel(label, prop1, prop1))));
+                    .keyConstraintCreate(uniqueForSchema(forLabel(label, prop1, prop1))));
         }
     }
 }

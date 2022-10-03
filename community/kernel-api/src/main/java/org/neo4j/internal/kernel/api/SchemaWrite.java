@@ -106,7 +106,7 @@ public interface SchemaWrite {
      * @return the created constraint.
      * @throws KernelException if the constraint cannot be created for some reason.
      */
-    ConstraintDescriptor nodeKeyConstraintCreate(IndexPrototype prototype) throws KernelException;
+    ConstraintDescriptor keyConstraintCreate(IndexPrototype prototype) throws KernelException;
 
     /**
      * Create node property existence constraint
