@@ -1105,12 +1105,14 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
     noException should be thrownBy consume(execute(logicalQuery, runtime))
   }
 
-  test("should not kill transaction foreach subquery if both inner and outer together exceed the limit - grouping aggregation") {
+  test(
+    "should not kill transaction foreach subquery if both inner and outer together exceed the limit - grouping aggregation"
+  ) {
     // Determined empirically
     val rowCount = runtimeUsed match {
       case Interpreted => 12000
-      case Slotted => 13000
-      case Pipelined => 15000
+      case Slotted     => 13000
+      case Pipelined   => 15000
     }
 
     // given
@@ -1308,12 +1310,14 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
     noException should be thrownBy consume(execute(logicalQuery, runtime))
   }
 
-  test("should not kill transaction apply subquery if both inner and outer together exceed the limit - grouping aggregation") {
+  test(
+    "should not kill transaction apply subquery if both inner and outer together exceed the limit - grouping aggregation"
+  ) {
     // Determined empirically
     val rowCount = runtimeUsed match {
       case Interpreted => 12000
-      case Slotted => 13000
-      case Pipelined => 15000
+      case Slotted     => 13000
+      case Pipelined   => 15000
     }
 
     // given
