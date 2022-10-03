@@ -25,7 +25,6 @@ import java.util.List;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
-import org.neo4j.internal.schema.SchemaRulesAccessor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.KernelVersion;
@@ -183,13 +182,6 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
      * @return a {@link StoreEntityCounters}, providing access to underlying store entity counters.
      */
     StoreEntityCounters storeEntityCounters();
-
-    /**
-     * @return a {@link SchemaRulesAccessor}, providing access to underlying schema descriptors.
-     */
-    default SchemaRulesAccessor schemaRulesAccessor() {
-        return SchemaRulesAccessor.NO_RULES;
-    }
 
     /**
      * @return specific behaviour of transaction state that is optimal for this storage engine.

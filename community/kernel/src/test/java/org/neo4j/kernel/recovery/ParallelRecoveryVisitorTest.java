@@ -35,7 +35,6 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
-import org.neo4j.internal.schema.SchemaRulesAccessor;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -385,11 +384,6 @@ class ParallelRecoveryVisitorTest {
 
         @Override
         public CountsAccessor countsAccessor() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public SchemaRulesAccessor schemaRulesAccessor() {
             throw new UnsupportedOperationException();
         }
 

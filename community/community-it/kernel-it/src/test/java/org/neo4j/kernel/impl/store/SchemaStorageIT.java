@@ -43,6 +43,10 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.recordstorage.SchemaStorage;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -50,17 +54,16 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.schema.SchemaNameUtil;
-import org.neo4j.internal.schema.SchemaRulesAccessor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.token.TokenHolders;
 
 @ImpermanentDbmsExtension
 class SchemaStorageIT {
@@ -74,11 +77,14 @@ class SchemaStorageIT {
     private GraphDatabaseAPI db;
 
     @Inject
-    private StorageEngine storageEngine;
+    private RecordStorageEngine storageEngine;
 
+    @Inject
+    private TokenHolders tokenHolders;
+
+    private static SchemaStore schemaStore;
+    private static SchemaStorage storage;
     private StoreCursors storageCursors;
-
-    private SchemaRulesAccessor schemaRules;
 
     @BeforeEach
     void initStorage() throws Exception {
@@ -93,7 +99,8 @@ class SchemaStorageIT {
             transaction.commit();
         }
         storageCursors = storageEngine.createStorageCursors(NULL_CONTEXT);
-        schemaRules = storageEngine.schemaRulesAccessor();
+        schemaStore = storageEngine.testAccessNeoStores().getSchemaStore();
+        storage = new SchemaStorage(schemaStore, tokenHolders);
     }
 
     @Test
@@ -102,8 +109,7 @@ class SchemaStorageIT {
         createSchema(index(LABEL1, PROP1), index(LABEL1, PROP2), index(LABEL2, PROP1));
 
         // When
-        IndexDescriptor rule = single(schemaRules.indexesGetForDescriptor(
-                indexDescriptor(LABEL1, PROP2).schema(), storageCursors));
+        IndexDescriptor rule = single(storage.indexGetForSchema(indexDescriptor(LABEL1, PROP2), storageCursors));
 
         // Then
         assertNotNull(rule);
@@ -128,10 +134,9 @@ class SchemaStorageIT {
                 .on(f)
                 .create());
 
-        IndexDescriptor rule = single(schemaRules.indexesGetForDescriptor(
+        IndexDescriptor rule = single(storage.indexGetForSchema(
                 TestIndexDescriptorFactory.forLabel(
-                                labelId(LABEL1), propId(a), propId(b), propId(c), propId(d), propId(e), propId(f))
-                        .schema(),
+                        labelId(LABEL1), propId(a), propId(b), propId(c), propId(d), propId(e), propId(f)),
                 storageCursors));
 
         assertNotNull(rule);
@@ -156,11 +161,10 @@ class SchemaStorageIT {
             indexCreator.create();
         });
 
-        IndexDescriptor rule = single(schemaRules.indexesGetForDescriptor(
+        IndexDescriptor rule = single(storage.indexGetForSchema(
                 TestIndexDescriptorFactory.forLabel(
-                                labelId(LABEL1),
-                                Arrays.stream(props).mapToInt(this::propId).toArray())
-                        .schema(),
+                        labelId(LABEL1),
+                        Arrays.stream(props).mapToInt(this::propId).toArray()),
                 storageCursors));
 
         assertNotNull(rule);
@@ -177,8 +181,7 @@ class SchemaStorageIT {
         createSchema(index(LABEL1, PROP1));
 
         // When
-        IndexDescriptor[] rules = schemaRules.indexesGetForDescriptor(
-                indexDescriptor(LABEL1, PROP2).schema(), storageCursors);
+        IndexDescriptor[] rules = storage.indexGetForSchema(indexDescriptor(LABEL1, PROP2), storageCursors);
 
         // Then
         assertThat(rules.length).isEqualTo(0);
@@ -190,8 +193,7 @@ class SchemaStorageIT {
         createSchema(uniquenessConstraint(LABEL1, PROP1), index(LABEL1, PROP2));
 
         // When
-        IndexDescriptor rule = single(schemaRules.indexesGetForDescriptor(
-                uniqueIndexDescriptor(LABEL1, PROP1).schema(), storageCursors));
+        IndexDescriptor rule = single(storage.indexGetForSchema(uniqueIndexDescriptor(LABEL1, PROP1), storageCursors));
 
         // Then
         assertNotNull(rule);
@@ -207,7 +209,7 @@ class SchemaStorageIT {
         createSchema(index(LABEL1, PROP1), index(LABEL1, PROP2), uniquenessConstraint(LABEL2, PROP1));
 
         // When
-        Set<IndexDescriptor> listedRules = asSet(schemaRules.indexesGetAll(storageCursors));
+        Set<IndexDescriptor> listedRules = asSet(storage.indexesGetAll(storageCursors));
 
         // Then
         Set<IndexDescriptor> expectedRules = new HashSet<>();
@@ -219,13 +221,14 @@ class SchemaStorageIT {
     }
 
     @Test
-    void shouldReturnCorrectUniquenessRuleForLabelAndProperty() {
+    void shouldReturnCorrectUniquenessRuleForLabelAndProperty()
+            throws SchemaRuleNotFoundException, DuplicateSchemaRuleException {
         // Given
         createSchema(uniquenessConstraint(LABEL1, PROP1), uniquenessConstraint(LABEL2, PROP1));
 
         // When
-        ConstraintDescriptor rule = single(schemaRules.constraintsGetForDescriptor(
-                ConstraintDescriptorFactory.uniqueForLabel(labelId(LABEL1), propId(PROP1)), storageCursors));
+        ConstraintDescriptor rule = storage.constraintsGetSingle(
+                ConstraintDescriptorFactory.uniqueForLabel(labelId(LABEL1), propId(PROP1)), storageCursors);
 
         // Then
         assertNotNull(rule);
