@@ -187,6 +187,10 @@ public abstract class PropertyIndexQuery implements IndexQuery {
         return new FulltextSearchPredicate(query);
     }
 
+    public static PropertyIndexQuery fulltextSearch(String query, String queryAnalyzer) {
+        return new FulltextSearchPredicate(query, queryAnalyzer);
+    }
+
     public static ValueTuple asValueTuple(PropertyIndexQuery.ExactPredicate... query) {
         Value[] values = new Value[query.length];
         for (int i = 0; i < query.length; i++) {
@@ -630,10 +634,16 @@ public abstract class PropertyIndexQuery implements IndexQuery {
 
     public static final class FulltextSearchPredicate extends StringPredicate {
         private final String query;
+        private final String queryAnalyzer;
 
         private FulltextSearchPredicate(String query) {
+            this(query, null);
+        }
+
+        private FulltextSearchPredicate(String query, String queryAnalyzer) {
             super(TokenRead.NO_TOKEN);
             this.query = query;
+            this.queryAnalyzer = queryAnalyzer;
         }
 
         @Override
@@ -649,6 +659,10 @@ public abstract class PropertyIndexQuery implements IndexQuery {
 
         public String query() {
             return query;
+        }
+
+        public String queryAnalyzer() {
+            return queryAnalyzer;
         }
     }
 }

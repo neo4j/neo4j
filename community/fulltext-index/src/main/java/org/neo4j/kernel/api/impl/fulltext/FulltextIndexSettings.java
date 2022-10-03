@@ -19,37 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALYZER;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT;
 
-import java.util.Objects;
-import org.apache.lucene.analysis.Analyzer;
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.graphdb.schema.AnalyzerProvider;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.service.Services;
 import org.neo4j.values.storable.BooleanValue;
-import org.neo4j.values.storable.TextValue;
 
 final class FulltextIndexSettings {
     private FulltextIndexSettings() {}
-
-    static Analyzer createAnalyzer(IndexDescriptor descriptor, TokenNameLookup tokenNameLookup) {
-        TextValue analyzerName = descriptor.getIndexConfig().get(ANALYZER);
-        if (analyzerName == null) {
-            throw new RuntimeException(
-                    "Index has no analyzer configured: " + descriptor.userDescription(tokenNameLookup));
-        }
-        Analyzer analyzer;
-        try {
-            AnalyzerProvider analyzerProvider = Services.loadOrFail(AnalyzerProvider.class, analyzerName.stringValue());
-            analyzer = analyzerProvider.createAnalyzer();
-        } catch (Exception e) {
-            throw new RuntimeException("Could not create fulltext analyzer: " + analyzerName, e);
-        }
-        Objects.requireNonNull(analyzer, "The '" + analyzerName + "' analyzer provider returned a null analyzer.");
-        return analyzer;
-    }
 
     static String[] createPropertyNames(IndexDescriptor descriptor, TokenNameLookup tokenNameLookup) {
         int[] propertyIds = descriptor.schema().getPropertyIds();

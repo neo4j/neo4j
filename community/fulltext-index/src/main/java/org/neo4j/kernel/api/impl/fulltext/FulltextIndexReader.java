@@ -98,7 +98,9 @@ public class FulltextIndexReader implements ValueIndexReader {
                 PropertyIndexQuery.FulltextSearchPredicate fulltextSearch =
                         (PropertyIndexQuery.FulltextSearchPredicate) indexQuery;
                 try {
-                    queryBuilder.add(parseFulltextQuery(fulltextSearch.query()), BooleanClause.Occur.SHOULD);
+                    queryBuilder.add(
+                            parseFulltextQuery(fulltextSearch.query(), fulltextSearch.queryAnalyzer()),
+                            BooleanClause.Occur.SHOULD);
                 } catch (ParseException e) {
                     throw new RuntimeException(
                             "Could not parse the given fulltext search query: '" + fulltextSearch.query() + "'.", e);
@@ -157,8 +159,12 @@ public class FulltextIndexReader implements ValueIndexReader {
         IOUtils.close(IndexReaderCloseException::new, resources);
     }
 
-    private Query parseFulltextQuery(String query) throws ParseException {
-        MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser(propertyNames, analyzer);
+    private Query parseFulltextQuery(String query, String queryAnalyzer) throws ParseException {
+        Analyzer actualQueryAnalyzer = queryAnalyzer != null
+                ? FulltextIndexAnalyzerLoader.INSTANCE.createAnalyzerFromString(queryAnalyzer)
+                : analyzer;
+
+        MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser(propertyNames, actualQueryAnalyzer);
         multiFieldQueryParser.setAllowLeadingWildcard(true);
         return multiFieldQueryParser.parse(query);
     }

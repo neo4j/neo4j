@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.createAnalyzer;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.createPropertyNames;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.isEventuallyConsistent;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALYZER;
@@ -225,7 +224,7 @@ public class FulltextIndexProvider extends IndexProvider {
         }
         try {
             PartitionedIndexStorage indexStorage = getIndexStorage(descriptor.getId());
-            Analyzer analyzer = createAnalyzer(descriptor, tokenNameLookup);
+            Analyzer analyzer = FulltextIndexAnalyzerLoader.INSTANCE.createAnalyzer(descriptor, tokenNameLookup);
             String[] propertyNames = createPropertyNames(descriptor, tokenNameLookup);
             DatabaseIndex<FulltextIndexReader> fulltextIndex = FulltextIndexBuilder.create(
                             descriptor,
@@ -256,7 +255,7 @@ public class FulltextIndexProvider extends IndexProvider {
             ImmutableSet<OpenOption> openOptions)
             throws IOException {
         PartitionedIndexStorage indexStorage = getIndexStorage(index.getId());
-        Analyzer analyzer = createAnalyzer(index, tokenHolders);
+        Analyzer analyzer = FulltextIndexAnalyzerLoader.INSTANCE.createAnalyzer(index, tokenHolders);
         String[] propertyNames = createPropertyNames(index, tokenHolders);
         FulltextIndexBuilder fulltextIndexBuilder = FulltextIndexBuilder.create(
                         index, config, readOnlyChecker, tokenHolders.propertyKeyTokens(), analyzer, propertyNames)

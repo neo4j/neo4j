@@ -24,9 +24,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.FULLTEXT_CREATE;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.FULLTEXT_CREATE_WITH_CONFIG;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asNodeLabelStr;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asPropertiesStrList;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asRelationshipTypeStr;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALYZER;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -294,6 +296,8 @@ class FulltextProceduresTestSupport {
     interface EntityUtil {
         void createIndex(Transaction tx);
 
+        void createIndexWithAnalyzer(Transaction tx, String analyzer);
+
         void createCompositeIndex(Transaction tx);
 
         String createEntityWithProperty(Transaction tx, Object propertyValue);
@@ -328,6 +332,17 @@ class FulltextProceduresTestSupport {
         @Override
         public void createIndex(Transaction tx) {
             createSimpleNodesIndex(tx);
+        }
+
+        @Override
+        public void createIndexWithAnalyzer(Transaction tx, String analyzer) {
+            tx.execute(format(
+                            FULLTEXT_CREATE_WITH_CONFIG,
+                            DEFAULT_NODE_IDX_NAME,
+                            asNodeLabelStr(LABEL.name()),
+                            asPropertiesStrList(PROP),
+                            "{`" + ANALYZER + "`: \"" + analyzer + "\"}"))
+                    .close();
         }
 
         @Override
@@ -412,6 +427,17 @@ class FulltextProceduresTestSupport {
         @Override
         public void createIndex(Transaction tx) {
             createSimpleRelationshipIndex(tx);
+        }
+
+        @Override
+        public void createIndexWithAnalyzer(Transaction tx, String analyzer) {
+            tx.execute(format(
+                            FULLTEXT_CREATE_WITH_CONFIG,
+                            DEFAULT_REL_IDX_NAME,
+                            asRelationshipTypeStr(REL.name()),
+                            asPropertiesStrList(PROP),
+                            "{`" + ANALYZER + "`: \"" + analyzer + "\"}"))
+                    .close();
         }
 
         @Override

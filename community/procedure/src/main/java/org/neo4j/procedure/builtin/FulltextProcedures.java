@@ -107,7 +107,8 @@ public class FulltextProcedures {
     @SystemProcedure
     @Description(
             "Query the given full-text index. Returns the matching nodes, and their Lucene query score, ordered by score. "
-                    + "Valid keys for the options map are: 'skip' to skip the top N results; 'limit' to limit the number of results returned.")
+                    + "Valid keys for the options map are: 'skip' to skip the top N results; 'limit' to limit the number of results returned; "
+                    + "'analyzer' to use the specified analyzer as search analyzer for this query.")
     @Procedure(name = "db.index.fulltext.queryNodes", mode = READ)
     public Stream<NodeOutput> queryFulltextForNodes(
             @Name("indexName") String name,
@@ -130,7 +131,11 @@ public class FulltextProcedures {
         IndexQueryConstraints constraints = queryConstraints(options);
         tx.dataRead()
                 .nodeIndexSeek(
-                        tx.queryContext(), indexSession, cursor, constraints, PropertyIndexQuery.fulltextSearch(query));
+                        tx.queryContext(),
+                        indexSession,
+                        cursor,
+                        constraints,
+                        PropertyIndexQuery.fulltextSearch(query, queryAnalyzer(options)));
 
         Spliterator<NodeOutput> spliterator = new SpliteratorAdaptor<>() {
             @Override
@@ -165,10 +170,19 @@ public class FulltextProcedures {
         return constraints;
     }
 
+    protected static String queryAnalyzer(Map<String, Object> options) {
+        Object analyzer;
+        if ((analyzer = options.get("analyzer")) != null && analyzer instanceof String) {
+            return (String) analyzer;
+        }
+        return null;
+    }
+
     @SystemProcedure
     @Description(
             "Query the given full-text index. Returns the matching relationships, and their Lucene query score, ordered by score. "
-                    + "Valid keys for the options map are: 'skip' to skip the top N results; 'limit' to limit the number of results returned.")
+                    + "Valid keys for the options map are: 'skip' to skip the top N results; 'limit' to limit the number of results returned; "
+                    + "'analyzer' to use the specified analyzer as search analyzer for this query.")
     @Procedure(name = "db.index.fulltext.queryRelationships", mode = READ)
     public Stream<RelationshipOutput> queryFulltextForRelationships(
             @Name("indexName") String name,
@@ -196,7 +210,7 @@ public class FulltextProcedures {
                         indexReadSession,
                         cursor,
                         constraints,
-                        PropertyIndexQuery.fulltextSearch(query));
+                        PropertyIndexQuery.fulltextSearch(query, queryAnalyzer(options)));
 
         Spliterator<RelationshipOutput> spliterator = new SpliteratorAdaptor<>() {
             @Override
