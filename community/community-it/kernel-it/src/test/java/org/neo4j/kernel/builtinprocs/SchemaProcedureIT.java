@@ -34,6 +34,7 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -81,8 +82,9 @@ class SchemaProcedureIT extends KernelIntegrationTest {
         SchemaWrite schemaOps = schemaWriteInNewTransaction();
         schemaOps.indexCreate(
                 IndexPrototype.forSchema(forLabel(labelId, propertyIdName)).withName("my index"));
+        var constraintName = "constraint name";
         schemaOps.uniquePropertyConstraintCreate(
-                uniqueForSchema(forLabel(labelId, propertyIdAge)).withName("constraint name"));
+                uniqueForSchema(forLabel(labelId, propertyIdAge)).withName(constraintName));
         commit();
 
         // When
@@ -104,15 +106,15 @@ class SchemaProcedureIT extends KernelIntegrationTest {
             assertEquals(
                     VirtualValues.list(stringValue("name")), node.properties().get("indexes"));
             assertEquals(
-                    VirtualValues.list(stringValue("Constraint( id=" + (3 + nbrIndexesOnStartup)
+                    VirtualValues.list(stringValue("Constraint( id=" + constraintId(constraintName)
                             + ", name='constraint name', type='UNIQUENESS', schema=(:Person {age}), " + "ownedIndex="
-                            + (2 + nbrIndexesOnStartup) + " )")),
+                            + indexId(constraintName) + " )")),
                     node.properties().get("constraints"));
         }
     }
 
     @Test
-    void testRelationShip() throws Throwable {
+    void testRelationship() throws Throwable {
         // Given there ar
         KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
         long nodeIdPerson = transaction.dataWrite().nodeCreate();
@@ -143,6 +145,18 @@ class SchemaProcedureIT extends KernelIntegrationTest {
             NodeValue end = (NodeValue) relationship.endNode();
             assertThat(start.labels()).isEqualTo(Values.stringArray("Person"));
             assertThat(end.labels()).isEqualTo(Values.stringArray("Location"));
+        }
+    }
+
+    private long constraintId(String name) throws TransactionFailureException {
+        try (var tx = newTransaction()) {
+            return tx.schemaRead().constraintGetForName(name).getId();
+        }
+    }
+
+    private long indexId(String name) throws TransactionFailureException {
+        try (var tx = newTransaction()) {
+            return tx.schemaRead().indexGetForName(name).getId();
         }
     }
 }
