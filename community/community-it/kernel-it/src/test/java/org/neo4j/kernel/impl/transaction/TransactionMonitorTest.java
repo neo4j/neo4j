@@ -19,84 +19,146 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import static org.junit.jupiter.params.provider.Arguments.arguments;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.function.Consumer;
 import java.util.stream.Stream;
+import org.assertj.core.description.Description;
+import org.assertj.core.description.TextDescription;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.transaction.TransactionCountersChecker.ExpectedDifference;
 import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
+@ImpermanentDbmsExtension
 class TransactionMonitorTest {
+    @Inject
+    private GraphDatabaseAPI db;
+
+    private TransactionCounters counts;
+
+    @BeforeEach
+    void setup() {
+        counts = db.getDependencyResolver().resolveDependency(TransactionCounters.class);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("parameters")
+    void shouldCountCommittedTransactions(String name, boolean isWriteTx, Consumer<Transaction> txConsumer) {
+        final var checker = checker();
+        ExpectedDifference.NONE.verifyWith(checker);
+
+        try (var tx = db.beginTx()) {
+            ExpectedDifference.NONE.withStarted(1).withActive(1).verifyWith(checker);
+            txConsumer.accept(tx);
+
+            assertThat(hasTxStateWithChanges(tx))
+                    .as(shouldHaveTxStateWithChanges(isWriteTx))
+                    .isEqualTo(isWriteTx);
+
+            ExpectedDifference.NONE
+                    .withStarted(1)
+                    .withActive(1)
+                    .isWriteTx(isWriteTx)
+                    .verifyWith(checker);
+
+            tx.commit();
+        }
+
+        ExpectedDifference.NONE
+                .withStarted(1)
+                .isWriteTx(isWriteTx)
+                .withCommitted(1)
+                .verifyWith(checker);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("parameters")
+    void shouldCountRolledBackTransactions(String name, boolean isWriteTx, Consumer<Transaction> txConsumer) {
+        final var checker = checker();
+        ExpectedDifference.NONE.verifyWith(checker);
+
+        try (var tx = db.beginTx()) {
+            ExpectedDifference.NONE.withStarted(1).withActive(1).verifyWith(checker);
+            txConsumer.accept(tx);
+
+            assertThat(hasTxStateWithChanges(tx))
+                    .as(shouldHaveTxStateWithChanges(isWriteTx))
+                    .isEqualTo(isWriteTx);
+
+            ExpectedDifference.NONE
+                    .withStarted(1)
+                    .withActive(1)
+                    .isWriteTx(isWriteTx)
+                    .verifyWith(checker);
+
+            tx.rollback();
+        }
+
+        ExpectedDifference.NONE
+                .withStarted(1)
+                .withRolledBack(1)
+                .isWriteTx(isWriteTx)
+                .verifyWith(checker);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("parameters")
+    void shouldCountTerminatedTransactions(String name, boolean isWriteTx, Consumer<Transaction> txConsumer) {
+        final var checker = checker();
+        ExpectedDifference.NONE.verifyWith(checker);
+
+        try (var tx = db.beginTx()) {
+            ExpectedDifference.NONE.withStarted(1).withActive(1).verifyWith(checker);
+            txConsumer.accept(tx);
+
+            assertThat(hasTxStateWithChanges(tx))
+                    .as(shouldHaveTxStateWithChanges(isWriteTx))
+                    .isEqualTo(isWriteTx);
+
+            ExpectedDifference.NONE
+                    .withStarted(1)
+                    .withActive(1)
+                    .isWriteTx(isWriteTx)
+                    .verifyWith(checker);
+
+            tx.terminate();
+        }
+
+        ExpectedDifference.NONE
+                .withStarted(1)
+                .withRolledBack(1)
+                .withTerminated(1)
+                .isWriteTx(isWriteTx)
+                .verifyWith(checker);
+    }
+
+    private TransactionCountersChecker checker() {
+        return TransactionCountersChecker.checkerFor(counts);
+    }
+
     private static Stream<Arguments> parameters() {
         return Stream.of(
-                arguments("read", (ThrowingConsumer<Transaction, Exception>) db -> {}, false),
-                arguments("write", (ThrowingConsumer<Transaction, Exception>) Transaction::createNode, true));
+                Arguments.of("read", false, (Consumer<Transaction>) tx -> {}),
+                Arguments.of("write", true, (Consumer<Transaction>) Transaction::createNode));
     }
 
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("parameters")
-    void shouldCountCommittedTransactions(
-            String name, ThrowingConsumer<Transaction, Exception> txConsumer, boolean isWriteTx) throws Exception {
-        DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder().impermanent().build();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        try {
-            TransactionCounters counts = db.getDependencyResolver().resolveDependency(TransactionCounters.class);
-            TransactionCountersChecker checker = new TransactionCountersChecker(counts);
-            try (Transaction tx = db.beginTx()) {
-                txConsumer.accept(tx);
-                tx.commit();
-            }
-            checker.verifyCommitted(isWriteTx, counts);
-        } finally {
-            managementService.shutdown();
-        }
+    private static boolean hasTxStateWithChanges(Transaction tx) {
+        return ((KernelTransactionImplementation) ((InternalTransaction) tx).kernelTransaction())
+                .hasTxStateWithChanges();
     }
 
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("parameters")
-    void shouldCountRolledBackTransactions(
-            String name, ThrowingConsumer<Transaction, Exception> txConsumer, boolean isWriteTx) throws Exception {
-        DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder().impermanent().build();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        try {
-            TransactionCounters counts = db.getDependencyResolver().resolveDependency(TransactionCounters.class);
-            TransactionCountersChecker checker = new TransactionCountersChecker(counts);
-            try (Transaction tx = db.beginTx()) {
-                txConsumer.accept(tx);
-                tx.rollback();
-            }
-            checker.verifyRolledBacked(isWriteTx, counts);
-        } finally {
-            managementService.shutdown();
-        }
-    }
-
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("parameters")
-    void shouldCountTerminatedTransactions(
-            String name, ThrowingConsumer<Transaction, Exception> txConsumer, boolean isWriteTx) throws Exception {
-        DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder().impermanent().build();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-        try {
-            TransactionCounters counts = db.getDependencyResolver().resolveDependency(TransactionCounters.class);
-            TransactionCountersChecker checker = new TransactionCountersChecker(counts);
-            try (Transaction tx = db.beginTx()) {
-                txConsumer.accept(tx);
-                tx.terminate();
-            }
-            checker.verifyTerminated(isWriteTx, counts);
-        } finally {
-            managementService.shutdown();
-        }
+    private static Description shouldHaveTxStateWithChanges(boolean isWriteTx) {
+        final var type = isWriteTx ? "write" : "read";
+        final var negation = isWriteTx ? "" : " not";
+        return new TextDescription("%s transaction should%s have state with changes", type, negation);
     }
 }
