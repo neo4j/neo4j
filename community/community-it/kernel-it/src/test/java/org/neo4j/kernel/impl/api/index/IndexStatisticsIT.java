@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.helpers.ArrayUtil.single;
 import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -38,24 +37,20 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.internal.recordstorage.SchemaRuleAccess;
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexSample;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.token.TokenHolders;
 
 @ExtendWith(EphemeralFileSystemExtension.class)
 class IndexStatisticsIT {
@@ -88,10 +83,12 @@ class IndexStatisticsIT {
         awaitIndexOnline(indexAliensBySpecimen());
 
         // where ALIEN and SPECIMEN are both the first ids of their kind
-        IndexDescriptor index = TestIndexDescriptorFactory.forLabel(labelId(ALIEN), pkId(SPECIMEN));
-        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess(
-                neoStores().getSchemaStore(), resolveDependency(TokenHolders.class));
-        long indexId = single(loadIndexes(index, schemaRuleAccess)).getId();
+        long indexId;
+        try (var reader = storageEngine().newReader()) {
+            indexId = Iterators.single(
+                            reader.indexGetForSchema(SchemaDescriptors.forLabel(labelId(ALIEN), pkId(SPECIMEN))))
+                    .getId();
+        }
 
         // for which we don't have index counts
         resetIndexCounts(indexId);
@@ -108,12 +105,6 @@ class IndexStatisticsIT {
         assertEquals(32, indexSample.sampleSize());
         // and also
         assertLogExistsForRecoveryOn("(:Alien {specimen})");
-    }
-
-    private IndexDescriptor[] loadIndexes(IndexDescriptor index, SchemaRuleAccess schemaRuleAccess) {
-        try (var storeCursors = storageEngine().createStorageCursors(CursorContext.NULL_CONTEXT)) {
-            return schemaRuleAccess.indexGetForSchema(index, storeCursors);
-        }
     }
 
     private void assertLogExistsForRecoveryOn(String labelAndProperty) {
@@ -169,12 +160,8 @@ class IndexStatisticsIT {
         return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(clazz);
     }
 
-    private NeoStores neoStores() {
-        return storageEngine().testAccessNeoStores();
-    }
-
-    private RecordStorageEngine storageEngine() {
-        return resolveDependency(RecordStorageEngine.class);
+    private StorageEngine storageEngine() {
+        return resolveDependency(StorageEngine.class);
     }
 
     private IndexStatisticsStore indexStatistics() {
