@@ -124,14 +124,12 @@ class EagerAnalyzer(context: LogicalPlanningContext) {
           context.planningAttributes.solveds(p.id).asSinglePlannerQuery.queryGraph.selections.predicates
       }.getOrElse(Set.empty[Predicate])
 
-      // We still need to distinguish the stable leaf from the others, and denote whether it is id-stable (== IdSeek).
+      // We still need to distinguish the stable leaf from the others
       val stableIdentifier = maybeStableLeaf.map {
-        case NodeByIdSeek(idName, _, _) => QgWithLeafInfo.StableIdentifier(idName, isIdStable = true)
-        case DirectedRelationshipByIdSeek(idName, _, _, _, _) => QgWithLeafInfo.StableIdentifier(idName, isIdStable = true)
-        case UndirectedRelationshipByIdSeek(idName, _, _, _, _) => QgWithLeafInfo.StableIdentifier(idName, isIdStable = true)
 
-        case n: NodeLogicalLeafPlan => QgWithLeafInfo.StableIdentifier(n.idName, isIdStable = false)
-        case r: RelationshipLogicalLeafPlan => QgWithLeafInfo.StableIdentifier(r.idName, isIdStable = false)
+
+        case n: NodeLogicalLeafPlan => QgWithLeafInfo.StableIdentifier(n.idName)
+        case r: RelationshipLogicalLeafPlan => QgWithLeafInfo.StableIdentifier(r.idName)
       }
 
       val unstableLeafIdNames = unstableLeaves.flatMap {

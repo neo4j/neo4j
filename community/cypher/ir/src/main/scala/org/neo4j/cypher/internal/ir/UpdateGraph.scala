@@ -364,13 +364,9 @@ trait UpdateGraph {
   def createRelationshipOverlap(qgWithInfo: QgWithLeafInfo): Boolean = {
     // MATCH ()-->() CREATE ()-->()
     allRelPatternsWrittenNonEmpty && qgWithInfo.patternRelationships.exists(r => {
-      if (r.isIdStable) {
-        false
-      } else {
-        val readProps = qgWithInfo.allKnownUnstablePropertiesFor(r)
-        val types = qgWithInfo.allPossibleUnstableRelTypesFor(r)
-        relationshipOverlap(types, readProps)
-      }
+      val readProps = qgWithInfo.allKnownUnstablePropertiesFor(r)
+      val types = qgWithInfo.allPossibleUnstableRelTypesFor(r)
+      relationshipOverlap(types, readProps)
     })
   }
 
@@ -515,7 +511,7 @@ trait UpdateGraph {
   semanticTable: SemanticTable): Seq[EagernessReason.Reason] = {
     val relevantNodes = qgWithInfo.nonArgumentPatternNodes(semanticTable)
     val deletedNodes = relevantNodes.filter(relNode => identifiersToDelete.contains(relNode.name)) ++
-      identifiersToDelete.filterNot(relevantNodes.map(_.name)).map(StableIdentifier(_, isIdStable = false))
+      identifiersToDelete.filterNot(relevantNodes.map(_.name)).map(StableIdentifier)
     val unstableNodesToDelete = deletedNodes.filterNot(_.isStable).map(_.name).toSeq
     lazy val nodesWithLabelOverlap = relevantNodes.filterNot(_.isStable)
       .flatMap(unstableNode => deletedNodes.map((unstableNode, _)))
