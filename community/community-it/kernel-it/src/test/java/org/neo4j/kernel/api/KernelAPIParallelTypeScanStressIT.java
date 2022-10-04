@@ -109,7 +109,7 @@ class KernelAPIParallelTypeScanStressIT {
                 N_THREADS,
                 tx -> {
                     var executionContext = tx.createExecutionContext();
-                    var cursor = tx.cursors().allocateRelationshipTypeIndexCursor(executionContext.cursorContext());
+                    var cursor = kernel.cursors().allocateRelationshipTypeIndexCursor(executionContext.cursorContext());
                     return new WorkerContext<>(cursor, executionContext, tx);
                 },
                 (read, workerContext) -> typeScan(read, workerContext, types[random.nextInt(types.length)]));
