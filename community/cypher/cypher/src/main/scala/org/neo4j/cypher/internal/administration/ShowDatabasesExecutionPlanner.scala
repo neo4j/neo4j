@@ -163,7 +163,6 @@ case class ShowDatabasesExecutionPlanner(
     val verboseColumns =
       if (verbose) {
         s""", props.$DATABASE_ID_COL as $DATABASE_ID_COL,
-           |props.$SERVER_ID_COL as $SERVER_ID_COL,
            |props.$CURRENT_PRIMARIES_COUNT_COL as $CURRENT_PRIMARIES_COUNT_COL,
            |props.$CURRENT_SECONDARIES_COUNT_COL as $CURRENT_SECONDARIES_COUNT_COL,
            |d.$DATABASE_PRIMARIES_PROPERTY as $REQUESTED_PRIMARIES_COUNT_COL,
@@ -207,6 +206,8 @@ case class ShowDatabasesExecutionPlanner(
            |props.$ADDRESS_COL as $ADDRESS_COL,
            |props.$ROLE_COL as $ROLE_COL,
            |props.$WRITER_COL as $WRITER_COL,
+           | // serverID needs to be part of the grouping key here as it is guaranteed to be different on different servers
+           |props.$SERVER_ID_COL as $SERVER_ID_COL,
            |d.$DATABASE_STATUS_PROPERTY as requestedStatus,
            |props.$CURRENT_STATUS_COL as $CURRENT_STATUS_COL,
            |props.$STATUS_MSG_COL as $STATUS_MSG_COL,
