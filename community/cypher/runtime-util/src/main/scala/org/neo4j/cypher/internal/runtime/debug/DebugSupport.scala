@@ -36,13 +36,15 @@ object DebugSupport {
   final val DEBUG_ASM = false
   final val DEBUG_TRANSACTIONAL_CONTEXT = false
   final val DEBUG_PIPELINES = false
+  final val DEBUG_PROGRESS = false
+  final val DEBUG_WORKERS_ON_PROGRESS_STALL = false
   final val DEBUG_GENERATED_SOURCE_CODE = false
 
   /** LOGS */
 
   final val PHYSICAL_PLANNING = new DebugLog(DEBUG_PHYSICAL_PLANNING, "")
   final val TIMELINE = new DebugTimeline(DEBUG_TIMELINE)
-  final val WORKERS = new DebugLog(DEBUG_WORKERS, "")
+  final val WORKERS = new DebugLog(DEBUG_WORKERS, BrightYellow)
   final val QUERIES = new DebugLog(DEBUG_QUERIES, "")
   final val TRACKER = new DebugLog(DEBUG_TRACKER, Yellow)
   final val LOCKS = new DebugLog(DEBUG_LOCKS, Blue)
@@ -52,6 +54,7 @@ object DebugSupport {
   final val SCHEDULING = new DebugLog(DEBUG_SCHEDULING, Cyan)
   final val ASM = new DebugLog(DEBUG_ASM, "")
   final val TRANSACTIONAL_CONTEXT = new DebugLog(DEBUG_TRANSACTIONAL_CONTEXT, Green)
+  final val PROGRESS = new DebugLog(DEBUG_PROGRESS, Bold + Underline)
 
   /** COLORS AND FORMATTING **/
 
@@ -59,6 +62,7 @@ object DebugSupport {
   final val Red = "\u001b[31m"
   final val Green = "\u001b[32m"
   final val Yellow = "\u001b[33m"
+  final val BrightYellow = "\u001b[33;1m"
   final val Blue = "\u001b[34m"
   final val Magenta = "\u001b[35m"
   final val Cyan = "\u001b[36m"
@@ -80,7 +84,15 @@ object DebugSupport {
     }
   }
 
-  final class DebugLog(private[this] val enabled: Boolean, val color: String) {
+  final class DebugLog(private[this] var enabled: Boolean, val color: String) {
+
+    def enable(): Unit = {
+      enabled = true
+    }
+
+    def disable(): Unit = {
+      enabled = false
+    }
 
     // Not using println because that is synchronized and can hide
     // parallel problems.
