@@ -29,12 +29,12 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -96,7 +96,7 @@ class ShutdownOnIndexUpdateIT {
 
         @Override
         public void notifyStatusChanged(Object instance, LifecycleStatus from, LifecycleStatus to) {
-            if ((LifecycleStatus.STOPPED == to) && instance instanceof RecordStorageEngine) {
+            if ((LifecycleStatus.STOPPED == to) && instance instanceof StorageEngine) {
                 transaction.commit();
                 transactionClosed = true;
             }
