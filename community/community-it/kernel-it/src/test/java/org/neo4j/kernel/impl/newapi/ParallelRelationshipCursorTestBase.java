@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import static java.lang.Math.toIntExact;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.newapi.TestUtils.assertDistinct;
@@ -37,6 +38,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.ToLongFunction;
+import org.eclipse.collections.api.factory.primitive.LongSets;
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
@@ -79,13 +81,14 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
             assertTrue(scan.reserveBatch(
                     relationships, 3, cursorContext, tx.securityContext().mode()));
 
-            assertTrue(relationships.next());
-            assertEquals(RELATIONSHIPS.get(0), relationships.relationshipReference());
-            assertTrue(relationships.next());
-            assertEquals(RELATIONSHIPS.get(1), relationships.relationshipReference());
-            assertTrue(relationships.next());
-            assertEquals(RELATIONSHIPS.get(2), relationships.relationshipReference());
-            assertFalse(relationships.next());
+            var relationshipsSet = LongSets.immutable.ofAll(RELATIONSHIPS);
+            var batch = LongSets.mutable.empty();
+            while (relationships.next()) {
+                batch.add(relationships.relationshipReference());
+            }
+            assertThat(batch.isEmpty()).isFalse();
+            assertThat(batch.size()).isLessThan(toIntExact(read.relationshipsGetCount()));
+            assertThat(relationshipsSet.containsAll(batch)).isTrue();
         }
     }
 
@@ -198,7 +201,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
 
             assertDistinct(lists);
             LongList concat = concat(lists).toSortedList();
-            assertEquals(RELATIONSHIPS, concat);
+            assertEquals(RELATIONSHIPS.toSortedList(), concat);
         } finally {
             service.shutdown();
             service.awaitTermination(1, TimeUnit.MINUTES);

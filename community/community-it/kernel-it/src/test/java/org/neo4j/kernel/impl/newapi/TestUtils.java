@@ -89,14 +89,16 @@ final class TestUtils {
             Scan<T> scan, WorkerContext<T> workerContext, ToLongFunction<T> producer, int sizeHint) {
         return () -> {
             try {
-                LongArrayList batch = new LongArrayList();
+                LongArrayList result = new LongArrayList();
                 T cursor = workerContext.getCursor();
                 var executionContext = workerContext.getContext();
-                scan.reserveBatch(cursor, sizeHint, executionContext.cursorContext(), executionContext.accessMode());
-                while (cursor.next()) {
-                    batch.add(producer.applyAsLong(cursor));
+                while (scan.reserveBatch(
+                        cursor, sizeHint, executionContext.cursorContext(), executionContext.accessMode())) {
+                    while (cursor.next()) {
+                        result.add(producer.applyAsLong(cursor));
+                    }
                 }
-                return batch;
+                return result;
             } finally {
                 workerContext.complete();
             }
