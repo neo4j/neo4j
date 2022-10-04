@@ -184,20 +184,6 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     }
 
     @Test
-    void shouldHaveBeenAbleToCreateDenseAndSparseNodes() {
-        // given
-        try (NodeCursor node = cursors.allocateNodeCursor(NULL_CONTEXT)) {
-            read.singleNode(dense.id, node);
-            assertTrue(node.next(), "access dense node");
-            assertTrue(node.supportsFastDegreeLookup(), "dense node");
-
-            read.singleNode(sparse.id, node);
-            assertTrue(node.next(), "access sparse node");
-            assertFalse(node.supportsFastDegreeLookup() && supportsSparseNodes(), "sparse node");
-        }
-    }
-
-    @Test
     void shouldTraverseSparseNode() throws Exception {
         assumeTrue(supportsSparseNodes() && supportsDirectTraversal());
         traverse(sparse, false);

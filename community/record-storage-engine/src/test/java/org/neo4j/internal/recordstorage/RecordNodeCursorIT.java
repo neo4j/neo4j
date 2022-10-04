@@ -36,6 +36,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.common.Primitive;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
@@ -180,6 +182,31 @@ class RecordNodeCursorIT {
             for (int i = 0, n = random.nextInt(2, 10); i < n; i++) {
                 assertThat(nodes.scanBatch(scan, Long.MAX_VALUE)).isFalse();
             }
+        }
+    }
+
+    @ValueSource(booleans = {true, false})
+    @ParameterizedTest
+    void shouldCorrectlySupportFastDegreeLookup(boolean dense) {
+        // given
+        var nodeRecord = createNodeRecord();
+        nodeRecord.setDense(dense);
+        var nodeId = write(nodeRecord);
+
+        // when
+        try (var nodeCursor = new RecordNodeCursor(
+                nodeStore,
+                neoStores.getRelationshipStore(),
+                neoStores.getRelationshipGroupStore(),
+                null,
+                NULL_CONTEXT,
+                storeCursors)) {
+            nodeCursor.single(nodeId);
+            assertThat(nodeCursor.next()).isTrue();
+            var supportsFastDegreesLookup = nodeCursor.supportsFastDegreeLookup();
+
+            // then
+            assertThat(supportsFastDegreesLookup).isEqualTo(dense);
         }
     }
 
