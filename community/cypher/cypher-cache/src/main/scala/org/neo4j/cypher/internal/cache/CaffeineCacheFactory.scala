@@ -99,8 +99,6 @@ class ExecutorBasedCaffeineCacheFactory(executor: Executor) extends CaffeineCach
 class SharedExecutorBasedCaffeineCacheFactory(executor: Executor) extends CacheFactory {
   self =>
 
-  val id = new AtomicInteger(0)
-
   private val caches: TrieMap[String, Cache[_, _]] = scala.collection.concurrent.TrieMap()
 
   def getCacheSizeOf(kind: String): Long = {
@@ -115,8 +113,7 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor) extends CacheF
       caches.getOrElseUpdate(
         cacheKind,
         ExecutorBasedCaffeineCacheFactory.createCache[(Int, K), V](executor, size)
-      ).asInstanceOf[Cache[(Int, K), V]],
-      id.getAndIncrement()
+      ).asInstanceOf[Cache[(Int, K), V]]
     )
   }
 
@@ -125,8 +122,7 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor) extends CacheF
       caches.getOrElseUpdate(
         cacheKind,
         ExecutorBasedCaffeineCacheFactory.createCache(executor, size, ttlAfterAccess)
-      ).asInstanceOf[Cache[(Int, K), V]],
-      id.getAndIncrement()
+      ).asInstanceOf[Cache[(Int, K), V]]
     )
   }
 
@@ -140,8 +136,7 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor) extends CacheF
       caches.getOrElseUpdate(
         cacheKind,
         ExecutorBasedCaffeineCacheFactory.createCache(executor, ticker, ttlAfterWrite, size)
-      ).asInstanceOf[Cache[(Int, K), V]],
-      id.getAndIncrement()
+      ).asInstanceOf[Cache[(Int, K), V]]
     )
   }
 
@@ -157,7 +152,27 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor) extends CacheF
   }
 }
 
-case class SharedCacheContainer[K, V](inner: Cache[(Int, K), V], id: Int) extends Cache[K, V] {
+object SharedCacheContainer {
+  private val id = new AtomicInteger(0)
+
+  def apply[K, V](inner: Cache[(Int, K), V]): SharedCacheContainer[K, V] = new SharedCacheContainer(inner, id.getAndIncrement())
+}
+
+/**
+ * The SharedCacheContainer is used for a caching architecture where multiple containers share a single backing cache. Thus multiple 'SharedCacheContainer's are
+ * expected to exist where they all share the same 'inner' cache.
+ *
+ * A 'SharedCacheContainer' should at creation be assigned a unique 'id'. When relaying method calls from 'SharedCacheContainer' to 'inner', keys are
+ * transformed such that 'key -> (id, key)'. This ensures that a 'SharedCacheContainer' that share the same backing cache with other containers won't observe
+ * entries in the backing cache from the other containers.
+ *
+ * @param inner A backing Cache that is expected to be the 'inner' cache of other containers as well.
+ * @param id A Int assigned to the SharedCacheContainer which is assumed to be unique in order to differentiate between different containers and their entires
+ *           in the backing 'inner' cache.
+ * @tparam K The key type of the cache.
+ * @tparam V The value type of the cache.
+ */
+private class SharedCacheContainer[K, V](inner: Cache[(Int, K), V], id: Int) extends Cache[K, V] {
 
   override def get(key: K, mappingFunction: function.Function[_ >: K, _ <: V]): V =
     inner.get((id, key), _ => mappingFunction(key))
