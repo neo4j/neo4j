@@ -95,8 +95,8 @@ class DynamicIndexStoreViewTracingIT {
                 INSTANCE);
         storeScan.run(StoreScan.NO_EXTERNAL_UPDATES);
 
-        assertThat(pageCacheTracer.pins()).isEqualTo(104);
-        assertThat(pageCacheTracer.unpins()).isEqualTo(104);
-        assertThat(pageCacheTracer.hits()).isEqualTo(104);
+        assertThat(pageCacheTracer.pins()).isGreaterThanOrEqualTo(100);
+        assertThat(pageCacheTracer.unpins()).isEqualTo(pageCacheTracer.pins());
+        assertThat(pageCacheTracer.hits()).isGreaterThanOrEqualTo(100);
     }
 }
