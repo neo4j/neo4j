@@ -45,7 +45,11 @@ object Catalog {
   }
 
   sealed trait ConcreteGraph extends Graph
-  sealed trait Alias extends Graph
+
+  sealed trait Alias extends Graph {
+    def graphName: NormalizedGraphName
+    def graphNamespace: Option[NormalizedGraphName]
+  }
 
   case class InternalGraph(
     id: Long,
@@ -233,13 +237,8 @@ object Catalog {
 
   class ByNameView() extends View1(Arg("name", classOf[StringValue])) {
 
-    // TODO: Parse the argument with quoting rules instead, to allow more cases
-    override def eval(arg: StringValue, catalog: Catalog): Graph = {
-      val name = normalize(arg.stringValue())
-      catalog.graphs
-        .collectFirst { case (cn, g: Graph) if cn.qualifiedNameString == name => g }
-        .getOrElse(Errors.entityNotFound("Graph", s"${show(arg)}"))
-    }
+    override def eval(arg: StringValue, catalog: Catalog): Graph =
+      catalog.resolveGraphByNameString(arg.stringValue())
   }
 
   private def normalize(graphName: String): String =
@@ -258,10 +257,21 @@ case class Catalog(
 ) {
 
   def resolveGraph(name: CatalogName): Catalog.Graph =
-    resolveGraphOption(name).getOrElse(Errors.entityNotFound("Graph", show(name)))
+    resolveGraphOption(name)
+      .getOrElse(Errors.entityNotFound("Graph", show(name)))
 
   def resolveGraphOption(name: CatalogName): Option[Catalog.Graph] =
     graphs.get(normalize(name))
+
+  def resolveGraphByNameString(name: String): Catalog.Graph =
+    resolveGraphOptionByNameString(name)
+      .getOrElse(Errors.entityNotFound("Graph", name))
+
+  // TODO: Parse the argument with quoting rules instead, to allow more cases
+  def resolveGraphOptionByNameString(name: String): Option[Catalog.Graph] = {
+    val normalizedName = Catalog.normalize(name)
+    graphs.collectFirst { case (cn, graph) if cn.qualifiedNameString == normalizedName => graph }
+  }
 
   def resolveView(name: CatalogName, args: Seq[AnyValue]): Catalog.Graph =
     resolveViewOption(name, args).getOrElse(Errors.entityNotFound("View", show(name)))

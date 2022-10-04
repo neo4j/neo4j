@@ -22,6 +22,7 @@ package org.neo4j.dbms.systemgraph;
 import static java.util.Objects.requireNonNull;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -289,6 +290,8 @@ public interface TopologyGraphDbmsModel {
      * @return the corresponding {@link DriverSettings}
      */
     Optional<DriverSettings> getDriverSettings(String databaseName, String namespace);
+
+    Optional<Map<String, Object>> getAliasProperties(String databaseName, String namespace);
 
     /**
      * Fetches the {@link ExternalDatabaseCredentials} corresponding to the provided database name

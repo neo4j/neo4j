@@ -26,6 +26,7 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPAC
 import static org.neo4j.values.storable.DurationValue.duration;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -246,6 +247,50 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         // then
         assertThat(result).isPresent();
         assertThat(result.get()).isEqualTo(driverSettings);
+    }
+
+    @ParameterizedTest
+    @MethodSource("aliasProperties")
+    void canReturnPropertiesForExternalDatabaseReference(Map<String, Object> properties) {
+        // given
+        var aliasName = "fooAlias";
+        var aliasNamespace = "composite";
+        var remoteAddress = new SocketAddress("my.neo4j.com", 7687);
+        var remoteNeo4j = new RemoteUri("neo4j", List.of(remoteAddress), null);
+        var fooId = randomUUID();
+        var aliasNode = createExternalReferenceForDatabase(tx, aliasNamespace, aliasName, "foo", remoteNeo4j, fooId);
+
+        createPropertiesForAlias(tx, aliasNode, properties);
+
+        // when
+        var result = dbmsModel.getAliasProperties(aliasName, aliasNamespace);
+
+        // then
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(properties);
+    }
+
+    @ParameterizedTest
+    @MethodSource("aliasProperties")
+    void canReturnPropertiesForInternalDatabaseReference(Map<String, Object> properties) {
+        // given
+        var aliasName = "fooAlias";
+        var aliasNamespace = "composite";
+        var locDb = newDatabase(b -> b.withDatabase("loc"));
+        var aliasNode = createInternalReferenceForDatabase(tx, aliasNamespace, aliasName, false, locDb);
+
+        createPropertiesForAlias(tx, aliasNode, properties);
+
+        // when
+        var result = dbmsModel.getAliasProperties(aliasName, aliasNamespace);
+
+        // then
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(properties);
+    }
+
+    static Stream<Arguments> aliasProperties() {
+        return Stream.of(Arguments.of(Map.of()), Arguments.of(Map.of("key1", "string", "key2", 123L)));
     }
 
     static Stream<Arguments> driverSettings() {

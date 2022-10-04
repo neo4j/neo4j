@@ -472,4 +472,11 @@ public abstract class BaseTopologyGraphDbmsModelIT {
         externalRefNode.createRelationshipTo(settingsNode, CONNECTS_WITH_RELATIONSHIP);
         return settingsNode;
     }
+
+    protected Node createPropertiesForAlias(Transaction tx, Node aliasNode, Map<String, Object> properties) {
+        var propertiesNode = tx.createNode(ALIAS_PROPERTIES_LABEL);
+        properties.forEach(propertiesNode::setProperty);
+        aliasNode.createRelationshipTo(propertiesNode, PROPERTIES_RELATIONSHIP);
+        return propertiesNode;
+    }
 }

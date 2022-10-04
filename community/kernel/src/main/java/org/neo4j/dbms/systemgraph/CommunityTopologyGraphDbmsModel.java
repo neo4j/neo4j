@@ -36,6 +36,7 @@ import org.neo4j.configuration.helpers.RemoteUri;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.helpers.SocketAddressParser;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -228,6 +229,13 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
     }
 
     @Override
+    public Optional<Map<String, Object>> getAliasProperties(String databaseName, String namespace) {
+        return tx.findNodes(DATABASE_NAME_LABEL, NAME_PROPERTY, databaseName, NAMESPACE_PROPERTY, namespace).stream()
+                .findFirst()
+                .flatMap(CommunityTopologyGraphDbmsModel::getAliasProperties);
+    }
+
+    @Override
     public Optional<ExternalDatabaseCredentials> getExternalDatabaseCredentials(String databaseName, String namespace) {
         return tx.findNodes(REMOTE_DATABASE_LABEL, NAME_PROPERTY, databaseName, NAMESPACE_PROPERTY, namespace).stream()
                 .findFirst()
@@ -247,6 +255,22 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
                     .findFirst()
                     .map(Relationship::getEndNode)
                     .map(CommunityTopologyGraphDbmsModel::createDriverSettings);
+        });
+    }
+
+    private static Optional<Map<String, Object>> getAliasProperties(Node aliasNode) {
+        return ignoreConcurrentDeletes(() -> {
+            var propertiesRels = StreamSupport.stream(
+                            aliasNode
+                                    .getRelationships(Direction.OUTGOING, PROPERTIES_RELATIONSHIP)
+                                    .spliterator(),
+                            false)
+                    .toList(); // Must be collected to exhaust the underlying iterator
+
+            return propertiesRels.stream()
+                    .findFirst()
+                    .map(Relationship::getEndNode)
+                    .map(Entity::getAllProperties);
         });
     }
 
