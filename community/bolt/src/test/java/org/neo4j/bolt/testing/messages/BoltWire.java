@@ -20,16 +20,31 @@
 package org.neo4j.bolt.testing.messages;
 
 import io.netty.buffer.ByteBuf;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
+import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
+import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.values.virtual.MapValue;
 
 public interface BoltWire {
+
+    static Stream<BoltWire> versions() {
+        return Stream.of(
+                new BoltV40Wire(),
+                new BoltV41Wire(),
+                new BoltV42Wire(),
+                new BoltV43Wire(),
+                new BoltV44Wire(),
+                new BoltV50Wire());
+    }
 
     /**
      * Identifies the revision of the protocol which is targeted by this wire implementation.
@@ -39,11 +54,37 @@ public interface BoltWire {
     ProtocolVersion getProtocolVersion();
 
     /**
+     * Transmits a negotiation request for the protocol version implemented by this wire and ensures that the correct version is selected.
+     *
+     * @param connection a connection.
+     * @throws IOException when transmitting the request fails.
+     */
+    default void negotiate(TransportConnection connection) throws IOException {
+        connection.send(this.getProtocolVersion());
+
+        BoltConnectionAssertions.assertThat(connection).negotiates(this.getProtocolVersion());
+    }
+
+    /**
      * Enables a given set of features within this bolt wire.
      *
      * @param features an array of features.
      */
     void enable(Feature... features);
+
+    /**
+     * Disables a given set of features within this bolt wire.
+     *
+     * @param features an array of features.
+     */
+    void disable(Feature... features);
+
+    /**
+     * Retrieves a listing of features which have been enabled on this connection.
+     *
+     * @return a list of features.
+     */
+    Set<Feature> getEnabledFeatures();
 
     /**
      * Checks whether the wire implementation recognizes the desired feature(s) as optional negotiated functionality.
@@ -57,12 +98,12 @@ public interface BoltWire {
     }
 
     default ByteBuf hello(String principal, String credentials) {
-        return this.hello(Map.of("principal", principal, "credentials", credentials, "scheme", "basic"));
+        return this.hello(Map.of("scheme", "basic", "principal", principal, "credentials", credentials));
     }
 
     default ByteBuf hello(String principal, String credentials, String realm) {
         return this.hello(
-                Map.of("principal", principal, "credentials", credentials, "realm", realm, "scheme", "basic"));
+                Map.of("scheme", "basic", "principal", principal, "credentials", credentials, "realm", realm));
     }
 
     default ByteBuf hello(Map<String, Object> meta) {

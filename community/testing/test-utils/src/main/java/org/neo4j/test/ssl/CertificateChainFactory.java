@@ -82,14 +82,8 @@ public final class CertificateChainFactory {
             BouncyCastleProvider bouncyCastleProvider)
             throws Exception {
         Security.addProvider(bouncyCastleProvider);
-        installCleanupHook(
-                endUserCertPath,
-                endUserPrivateKeyPath,
-                intCertPath,
-                intPrivateKeyPath,
-                rootCertPath,
-                rootPrivateKeyPath,
-                bouncyCastleProvider);
+        installCleanupHook(bouncyCastleProvider);
+
         String ocspBaseURL = "http://localhost:" + ocspServerPortNo;
 
         KeyPair rootCertKeyPair = generateKeyPair();
@@ -200,29 +194,11 @@ public final class CertificateChainFactory {
      * <p>
      * The hook should only be installed prior to generation of the certificate chain, and not if certificates already exist.
      */
-    private static void installCleanupHook(
-            final Path endUserCertPath,
-            final Path endUserPrivateKeyPath,
-            final Path intCertPath,
-            final Path intPrivateKeyPath,
-            final Path rootCertPath,
-            final Path rootPrivateKeyPath,
-            BouncyCastleProvider bouncyCastleProvider) {
+    private static void installCleanupHook(BouncyCastleProvider bouncyCastleProvider) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (cleanupRequired) {
                 System.err.println("Cleaning up partially generated self-signed certificate...");
-                try {
-                    Security.removeProvider(bouncyCastleProvider.getName());
-                    Files.deleteIfExists(endUserCertPath);
-                    Files.deleteIfExists(endUserPrivateKeyPath);
-                    Files.deleteIfExists(intCertPath);
-                    Files.deleteIfExists(intPrivateKeyPath);
-                    Files.deleteIfExists(rootCertPath);
-                    Files.deleteIfExists(rootPrivateKeyPath);
-                } catch (IOException e) {
-                    System.err.println("Error cleaning up");
-                    e.printStackTrace(System.err);
-                }
+                Security.removeProvider(bouncyCastleProvider.getName());
             }
         }));
     }

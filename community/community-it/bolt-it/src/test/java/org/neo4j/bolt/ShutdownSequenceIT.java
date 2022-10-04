@@ -26,41 +26,39 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
-import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.values.storable.Values.stringValue;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
-import org.neo4j.bolt.testing.client.SocketConnection;
+import org.neo4j.bolt.test.annotation.BoltTestExtension;
+import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
+import org.neo4j.bolt.test.annotation.setup.FactoryFunction;
+import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
+import org.neo4j.bolt.test.annotation.test.TransportTest;
+import org.neo4j.bolt.test.util.ServerUtil;
 import org.neo4j.bolt.testing.client.TransportConnection;
-import org.neo4j.bolt.testing.messages.BoltDefaultWire;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
-import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.SpiedAssertableLogProvider;
 import org.neo4j.procedure.Context;
@@ -71,8 +69,12 @@ import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
+/**
+ * Ensures that Bolt correctly terminates connections when the server is shut down gracefully.
+ */
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
+@BoltTestExtension
 @ExtendWith({SuppressOutputExtension.class, OtherThreadExtension.class})
 @ResourceLock(Resources.SYSTEM_OUT)
 public class ShutdownSequenceIT {
@@ -84,37 +86,44 @@ public class ShutdownSequenceIT {
     @Inject
     private Neo4jWithSocket server;
 
-    private HostnamePort address;
     private CountDownLatch txStarted;
     private CountDownLatch boltWorkerThreadPoolShuttingDown;
-    private final BoltWire wire = new BoltDefaultWire();
+
+    @FactoryFunction
+    void customizeServer(TestDatabaseManagementServiceBuilder factory) {
+        factory.setInternalLogProvider(this.internalLogProvider);
+        factory.setUserLogProvider(this.userLogProvider);
+    }
+
+    @SettingsFunction
+    static void customizeSettings(Map<Setting<?>, Object> settings) {
+        settings.put(BoltConnector.thread_pool_min_size, 0);
+        settings.put(BoltConnector.thread_pool_max_size, 2);
+        settings.put(BoltConnectorInternalSettings.thread_pool_shutdown_wait_time, THREAD_POOL_SHUTDOWN_WAIT_TIME);
+    }
 
     @BeforeEach
-    public void setup(TestInfo testInfo) throws Exception {
-        server.setGraphDatabaseFactory(getTestGraphDatabaseFactory());
-        server.setConfigure(getSettingsFunction());
-        server.init(testInfo);
-        address = server.lookupDefaultConnector();
-        txStarted = new CountDownLatch(1);
-        boltWorkerThreadPoolShuttingDown = new CountDownLatch(1);
+    void prepare() throws KernelException {
+        this.txStarted = new CountDownLatch(1);
+        this.boltWorkerThreadPoolShuttingDown = new CountDownLatch(1);
 
-        var procedures = ((GraphDatabaseAPI) server.graphDatabaseService())
-                .getDependencyResolver()
-                .resolveDependency(GlobalProcedures.class);
-        procedures.registerComponent(Pair.class, context -> Pair.of(txStarted, boltWorkerThreadPoolShuttingDown), true);
-        procedures.registerProcedure(TestProcedures.class);
+        ServerUtil.registerComponent(
+                this.server, Pair.class, context -> Pair.of(this.txStarted, this.boltWorkerThreadPoolShuttingDown));
+        ServerUtil.installProcedure(this.server, TestProcedures.class);
     }
 
     @AfterEach
-    public void tearDown() {
-        userLogProvider.print(System.out);
-        internalLogProvider.print(System.out);
+    void cleanup() {
+        this.userLogProvider.print(System.out);
+        this.internalLogProvider.print(System.out);
+
+        this.userLogProvider.clear();
+        this.internalLogProvider.clear();
     }
 
-    @Test
-    public void shutdownShouldResultInFailureMessageForTransactionAwareConnections() throws Exception {
-        var connection = connectAndAuthenticate();
-
+    @TransportTest
+    void shouldReturnFailureForTransactionAwareConnections(BoltWire wire, @Authenticated TransportConnection connection)
+            throws IOException, InterruptedException {
         connection.send(wire.run("CALL test.stream.nodes()")).send(wire.pull());
 
         // Wait for a transaction to start on the server side
@@ -156,11 +165,8 @@ public class ShutdownSequenceIT {
                 .containsMessages("Bolt server has been shut down");
     }
 
-    @Test
-    public void shutdownShouldCloseIdleConnections() throws Exception {
-        // Create an idle connection
-        var connection = connectAndAuthenticate();
-
+    @TransportTest
+    void shutdownShouldCloseIdleConnections(@Authenticated TransportConnection connection) throws IOException {
         // Shutdown the server
         server.getManagementService().shutdown();
 
@@ -173,10 +179,9 @@ public class ShutdownSequenceIT {
                 .containsMessages("Bolt server has been shut down");
     }
 
-    @Test
-    public void shutdownShouldWaitForNonTransactionAwareConnections() throws Exception {
-        var connection = connectAndAuthenticate();
-
+    @TransportTest
+    void shutdownShouldWaitForNonTransactionAwareConnections(
+            BoltWire wire, @Authenticated TransportConnection connection) throws IOException, InterruptedException {
         connection.send(wire.run("CALL test.stream.strings()")).send(wire.pull());
 
         // Wait for a transaction to start on the server side
@@ -217,36 +222,6 @@ public class ShutdownSequenceIT {
                 .forClass(BoltServer.class)
                 .forLevel(INFO)
                 .containsMessages("Bolt server has been shut down");
-    }
-
-    private TransportConnection connectAndAuthenticate() throws Exception {
-        var connection = new SocketConnection(address)
-                .connect()
-                .sendDefaultProtocolVersion()
-                .send(wire.hello());
-
-        assertThat(connection).negotiatesDefaultVersion();
-
-        assertThat(connection).receivesSuccess();
-
-        return connection;
-    }
-
-    private TestDatabaseManagementServiceBuilder getTestGraphDatabaseFactory() {
-        TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
-        factory.setInternalLogProvider(internalLogProvider);
-        factory.setUserLogProvider(userLogProvider);
-        return factory;
-    }
-
-    private static Consumer<Map<Setting<?>, Object>> getSettingsFunction() {
-        return settings -> {
-            settings.put(BoltConnector.encryption_level, OPTIONAL);
-            settings.put(BoltConnector.listen_address, new SocketAddress("localhost", 0));
-            settings.put(BoltConnector.thread_pool_min_size, 0);
-            settings.put(BoltConnector.thread_pool_max_size, 2);
-            settings.put(BoltConnectorInternalSettings.thread_pool_shutdown_wait_time, THREAD_POOL_SHUTDOWN_WAIT_TIME);
-        };
     }
 
     public static class TestProcedures {

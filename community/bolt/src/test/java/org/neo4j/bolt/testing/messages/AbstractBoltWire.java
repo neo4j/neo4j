@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import org.mockito.Mockito;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.io.StructType;
 import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
@@ -54,7 +55,8 @@ public abstract class AbstractBoltWire implements BoltWire {
     public static final short MESSAGE_TAG_ROUTE = (short) 0x66;
 
     protected final ProtocolVersion version;
-    protected final WriterPipeline pipeline;
+    protected final Connection connection;
+    protected WriterPipeline pipeline;
     protected final Set<Feature> implicitFeatures;
     protected final Set<Feature> features = new HashSet<>();
 
@@ -62,12 +64,17 @@ public abstract class AbstractBoltWire implements BoltWire {
         this.version = version;
         this.implicitFeatures = new HashSet<>(List.of(implicitFeatures));
 
-        var connection = ConnectionMockFactory.newInstance();
-        this.pipeline = new WriterPipeline(connection);
+        this.connection = ConnectionMockFactory.newInstance();
 
         Mockito.doAnswer(invocation -> this.pipeline.forBuffer(invocation.getArgument(0)))
                 .when(connection)
                 .writerContext(Mockito.any());
+
+        this.initializePipeline();
+    }
+
+    protected void initializePipeline() {
+        this.pipeline = new WriterPipeline(this.connection);
 
         this.configurePipeline();
     }
@@ -90,6 +97,20 @@ public abstract class AbstractBoltWire implements BoltWire {
                 feature.configureWriterPipeline(this.pipeline);
             }
         }
+    }
+
+    @Override
+    public void disable(Feature... features) {
+        List.of(features).forEach(this.features::remove);
+
+        this.initializePipeline();
+
+        this.features.forEach(feature -> feature.configureWriterPipeline(this.pipeline));
+    }
+
+    @Override
+    public Set<Feature> getEnabledFeatures() {
+        return Collections.unmodifiableSet(this.features);
     }
 
     @Override

@@ -38,11 +38,11 @@ public record ProtocolVersion(short major, short minor, short range) implements 
     public static final int MAX_MINOR_BIT = 255;
 
     public ProtocolVersion {
-        if (major < 0 || major >= MAX_MAJOR_BIT) {
+        if (major < 0 || major > MAX_MAJOR_BIT) {
             throw new IllegalArgumentException(
                     "Expected major version bit to be in bounds 0 <= x < " + MAX_MAJOR_BIT + ": Got " + major);
         }
-        if (minor < 0 || minor >= MAX_MINOR_BIT) {
+        if (minor < 0 || minor > MAX_MINOR_BIT) {
             throw new IllegalArgumentException(
                     "Expected minor version bit to be in bounds 0 <= x < " + MAX_MAJOR_BIT + ": Got " + minor);
         }
@@ -117,7 +117,7 @@ public record ProtocolVersion(short major, short minor, short range) implements 
             return String.format("[%1$d.%2$d,%1$d.%3$d]", this.major, lowerBound, this.minor);
         }
 
-        return String.format("(%d.%d)", this.major, this.minor);
+        return String.format("%d.%d", this.major, this.minor);
     }
 
     @Override

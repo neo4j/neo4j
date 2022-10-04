@@ -46,6 +46,8 @@ public class BoltV40Wire extends AbstractBoltWire {
     @Override
     protected void configurePipeline() {
         this.pipeline.addLast(LegacyStructWriter.getInstance());
+
+        super.configurePipeline();
     }
 
     @Override

@@ -24,6 +24,7 @@ import static org.neo4j.test.extension.testdirectory.TestDirectorySupportExtensi
 
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsSupportExtension;
 import org.neo4j.test.extension.StatefulFieldExtension;
@@ -50,6 +51,19 @@ public class Neo4jWithSocketSupportExtension extends StatefulFieldExtension<Neo4
     protected Neo4jWithSocket createField(ExtensionContext context) {
         var testDirectory = getTestDirectory(context);
         return new Neo4jWithSocket(new TestDatabaseManagementServiceBuilder(), testDirectory, settings -> {});
+    }
+
+    public static Neo4jWithSocket getInstance(ExtensionContext context) {
+        var instance = context.getStore(NAMESPACE).get(FIELD_KEY, Neo4jWithSocket.class);
+        if (instance == null) {
+            throw new IllegalStateException(Neo4jWithSocketSupportExtension.class.getSimpleName() + " not in scope");
+        }
+
+        return instance;
+    }
+
+    public static HostnamePort getDefaultConnectorAddress(ExtensionContext context) {
+        return getInstance(context).lookupDefaultConnector();
     }
 
     public static TestDirectory getTestDirectory(ExtensionContext context) {

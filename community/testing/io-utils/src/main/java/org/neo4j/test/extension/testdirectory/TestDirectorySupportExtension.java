@@ -77,7 +77,11 @@ public class TestDirectorySupportExtension extends StatefulFieldExtension<TestDi
         if (getLifecycle(context) == PER_CLASS) {
             cleanUp(context);
         }
-        getStoredValue(context).close();
+
+        var directory = getStoredValue(context);
+        if (directory != null) {
+            directory.close();
+        }
     }
 
     private static TestInstance.Lifecycle getLifecycle(ExtensionContext context) {

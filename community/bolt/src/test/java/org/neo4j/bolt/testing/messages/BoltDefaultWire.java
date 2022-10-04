@@ -27,7 +27,7 @@ import org.neo4j.bolt.testing.client.TransportConnection;
  * The references within this type should be updated along with {@link TransportConnection#DEFAULT_PROTOCOL_VERSION} in order to transmit the correct message
  * variations.
  */
-public final class BoltDefaultWire extends BoltV44Wire {
+public final class BoltDefaultWire extends BoltV50Wire {
 
     @Override
     protected String getUserAgent() {

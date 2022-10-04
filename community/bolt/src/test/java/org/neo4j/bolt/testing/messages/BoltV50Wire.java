@@ -28,7 +28,7 @@ import org.neo4j.bolt.protocol.v50.BoltProtocolV50;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
 
-public final class BoltV50Wire extends AbstractBoltWire {
+public class BoltV50Wire extends AbstractBoltWire {
 
     public BoltV50Wire() {
         super(BoltProtocolV50.VERSION, Feature.UTC_DATETIME);

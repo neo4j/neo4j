@@ -27,7 +27,7 @@ import org.neo4j.bolt.protocol.v44.BoltProtocolV44;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
 
-public class BoltV44Wire extends AbstractBoltWire {
+public final class BoltV44Wire extends AbstractBoltWire {
 
     public BoltV44Wire() {
         super(BoltProtocolV44.VERSION);
