@@ -27,6 +27,7 @@ import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_TIMEOUT;
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.LOGGING_LEVEL;
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.SSL_ENFORCED;
 import static org.neo4j.dbms.systemgraph.InstanceModeConstraint.PRIMARY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.ALIAS_PROPERTIES_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.COMPOSITE_DATABASE_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.CONNECTS_WITH_RELATIONSHIP;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_CREATED_AT_PROPERTY;
@@ -61,6 +62,7 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.INSTANCE_UUID_PR
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.InstanceStatus.ENABLED;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAMESPACE_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.PRIMARY_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.PROPERTIES_RELATIONSHIP;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.REMOTE_DATABASE_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.REMOVED_INSTANCE_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS_RELATIONSHIP;
@@ -72,6 +74,7 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.WAS_HOSTED_ON_RE
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
@@ -301,6 +304,7 @@ public abstract class BaseTopologyGraphDbmsModelIT {
         }
 
         public DatabaseNodeBuilder asVirtual() {
+            node.addLabel(COMPOSITE_DATABASE_LABEL);
             node.setProperty(DATABASE_VIRTUAL_PROPERTY, true);
             return this;
         }
