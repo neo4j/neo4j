@@ -141,7 +141,7 @@ class QueryCacheTest extends CypherFunSuite {
   }
 
   test(
-    "accessing the cache with replan=force should be a cache miss even if item exists and is not stale. It should also immediately compile with expression code generation."
+    "accessing the cache with replan=force should be a cache hit even if item exists and is not stale. It should also immediately compile with expression code generation."
   ) {
     // Given
     val tracer = newTracer()

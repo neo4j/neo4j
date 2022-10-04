@@ -31,12 +31,12 @@ trait CacheTracer[KEY] {
   def cacheHit(key: KEY, metaData: String): Unit = ()
 
   /**
-   * The item was not found in the cache or was stale.
+   * The item was not found in the cache.
    */
   def cacheMiss(key: KEY, metaData: String): Unit = ()
 
   /**
-   * A new value was inserted into the cache.
+   * A value was computed. This is either a new value or replacing a value for a stale item.
    */
   def compute(key: KEY, metaData: String): Unit = ()
 
