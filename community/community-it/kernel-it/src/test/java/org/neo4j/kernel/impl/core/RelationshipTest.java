@@ -35,6 +35,7 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Entity;
@@ -131,66 +132,70 @@ public class RelationshipTest extends EntityTest {
     }
 
     @Test
-    void createDropRelationshipLongStringProperty() {
-        Label markerLabel = Label.label("marker");
+    void createDropRelationshipLongStringProperty(TestInfo testInfo) {
+        Label markerLabel = Label.label("marker_" + testInfo.getTestMethod());
         String testPropertyKey = "testProperty";
         String propertyValue = RandomStringUtils.randomAscii(255);
 
+        String relationshipId;
         try (Transaction tx = db.beginTx()) {
             Node start = tx.createNode(markerLabel);
             Node end = tx.createNode(markerLabel);
             Relationship relationship = start.createRelationshipTo(end, withName("type"));
+            relationshipId = relationship.getElementId();
             relationship.setProperty(testPropertyKey, propertyValue);
             tx.commit();
         }
 
         try (Transaction tx = db.beginTx()) {
-            Relationship relationship = tx.getRelationshipById(0);
+            Relationship relationship = tx.getRelationshipByElementId(relationshipId);
             assertEquals(propertyValue, relationship.getProperty(testPropertyKey));
             tx.commit();
         }
 
         try (Transaction tx = db.beginTx()) {
-            Relationship relationship = tx.getRelationshipById(0);
+            Relationship relationship = tx.getRelationshipByElementId(relationshipId);
             relationship.removeProperty(testPropertyKey);
             tx.commit();
         }
 
         try (Transaction tx = db.beginTx()) {
-            Relationship relationship = tx.getRelationshipById(0);
+            Relationship relationship = tx.getRelationshipByElementId(relationshipId);
             assertFalse(relationship.hasProperty(testPropertyKey));
             tx.commit();
         }
     }
 
     @Test
-    void createDropRelationshipLongArrayProperty() {
-        Label markerLabel = Label.label("marker");
+    void createDropRelationshipLongArrayProperty(TestInfo testInfo) {
+        Label markerLabel = Label.label("marker_" + testInfo.getTestMethod());
         String testPropertyKey = "testProperty";
         byte[] propertyValue = RandomUtils.nextBytes(1024);
 
+        String relationshipId;
         try (Transaction tx = db.beginTx()) {
             Node start = tx.createNode(markerLabel);
             Node end = tx.createNode(markerLabel);
             Relationship relationship = start.createRelationshipTo(end, withName("type"));
+            relationshipId = relationship.getElementId();
             relationship.setProperty(testPropertyKey, propertyValue);
             tx.commit();
         }
 
         try (Transaction tx = db.beginTx()) {
-            Relationship relationship = tx.getRelationshipById(0);
+            Relationship relationship = tx.getRelationshipByElementId(relationshipId);
             assertArrayEquals(propertyValue, (byte[]) relationship.getProperty(testPropertyKey));
             tx.commit();
         }
 
         try (Transaction tx = db.beginTx()) {
-            Relationship relationship = tx.getRelationshipById(0);
+            Relationship relationship = tx.getRelationshipByElementId(relationshipId);
             relationship.removeProperty(testPropertyKey);
             tx.commit();
         }
 
         try (Transaction tx = db.beginTx()) {
-            Relationship relationship = tx.getRelationshipById(0);
+            Relationship relationship = tx.getRelationshipByElementId(relationshipId);
             assertFalse(relationship.hasProperty(testPropertyKey));
             tx.commit();
         }
