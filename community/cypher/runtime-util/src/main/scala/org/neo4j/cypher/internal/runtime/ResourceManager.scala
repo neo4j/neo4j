@@ -68,7 +68,9 @@ class ResourceManager(
     resource.setCloseListener(null)
     if (!resources.remove(resource)) {
 
-      throw new IllegalStateException(s"$resource is not in the resource set $resources")
+      throw new IllegalStateException(
+        s"$resource is not in the resource set $resources on thread=${Thread.currentThread().getName}"
+      )
     }
   }
 
