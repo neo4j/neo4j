@@ -21,14 +21,21 @@ package org.neo4j.internal.kernel.api.helpers;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.storageengine.api.PropertySelection;
+import org.neo4j.storageengine.api.Reference;
 
-public abstract class UnionRelationshipTypeIndexCursor extends UnionTokenIndexCursor<RelationshipTypeIndexCursor> {
+public abstract class UnionRelationshipTypeIndexCursor extends UnionTokenIndexCursor<RelationshipTypeIndexCursor>
+        implements RelationshipIndexCursor
+{
 
     public static UnionRelationshipTypeIndexCursor ascendingUnionRelationshipTypeIndexCursor(
             Read read,
@@ -68,6 +75,11 @@ public abstract class UnionRelationshipTypeIndexCursor extends UnionTokenIndexCu
         return new DescendingUnionRelationshipTypeIndexCursor(cursors);
     }
 
+    public static UnionRelationshipTypeIndexCursor unionRelationshipTypeIndexCursor(
+            RelationshipTypeIndexCursor[] cursors) {
+        return new AscendingUnionRelationshipTypeIndexCursor(cursors);
+    }
+
     UnionRelationshipTypeIndexCursor(RelationshipTypeIndexCursor[] cursors) {
         super(cursors);
     }
@@ -81,16 +93,49 @@ public abstract class UnionRelationshipTypeIndexCursor extends UnionTokenIndexCu
         return current().readFromStore();
     }
 
+    @Override
     public long sourceNodeReference() {
         return current().sourceNodeReference();
     }
 
+    @Override
     public long targetNodeReference() {
         return current().targetNodeReference();
     }
 
+    @Override
     public int type() {
         return current().type();
+    }
+
+    @Override
+    public void properties(PropertyCursor cursor, PropertySelection selection) {
+        current().properties(cursor, selection);
+    }
+
+    @Override
+    public Reference propertiesReference() {
+        return current().propertiesReference();
+    }
+
+    @Override
+    public long relationshipReference() {
+        return reference();
+    }
+
+    @Override
+    public void source(NodeCursor cursor) {
+        current().source(cursor);
+    }
+
+    @Override
+    public void target(NodeCursor cursor) {
+        current().target(cursor);
+    }
+
+    @Override
+    public float score() {
+        return Float.NaN;
     }
 
     private static final class AscendingUnionRelationshipTypeIndexCursor extends UnionRelationshipTypeIndexCursor {
