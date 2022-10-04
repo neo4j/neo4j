@@ -97,9 +97,9 @@ class LabelScanNodeViewTracingIT {
                 INSTANCE);
         scan.run(StoreScan.NO_EXTERNAL_UPDATES);
 
-        assertThat(cacheTracer.pins()).isEqualTo(102);
-        assertThat(cacheTracer.unpins()).isEqualTo(102);
-        assertThat(cacheTracer.hits()).isEqualTo(102);
+        assertThat(cacheTracer.pins()).isGreaterThanOrEqualTo(100);
+        assertThat(cacheTracer.unpins()).isEqualTo(cacheTracer.pins());
+        assertThat(cacheTracer.hits()).isGreaterThanOrEqualTo(100);
     }
 
     private int getLabelId(Label label) {
