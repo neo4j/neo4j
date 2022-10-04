@@ -47,8 +47,8 @@ import org.neo4j.test.utils.TestDirectory;
 @ExtendWith(RandomExtension.class)
 public class GBPTreeWithUndefinedValuesTest {
 
-    public static final int MAX_NUMBERS = 20000;
-    public static final int WRITE_ROUNDS = 10000;
+    public static final int MAX_NUMBERS = 2000;
+    public static final int WRITE_ROUNDS = 1000;
 
     @Inject
     PageCache pageCache;
@@ -183,7 +183,10 @@ public class GBPTreeWithUndefinedValuesTest {
     }
 
     private GBPTree<MutableLong, MutableLong> makeTree(ConditionalReadLayoutFactory<?> treeNodeLayoutFactory) {
-        var layout = SimpleLongLayout.longLayout().withFixedSize(true).build();
+        var layout = SimpleLongLayout.longLayout()
+                .withFixedSize(true)
+                .withKeyPadding(randomSupport.nextInt(1000))
+                .build();
         var builder = new GBPTreeBuilder<SingleRoot, MutableLong, MutableLong>(
                         pageCache, fileSystem, testDirectory.file("index"), layout)
                 .with(treeNodeLayoutFactory);
