@@ -279,9 +279,9 @@ class IndexPopulationJobTest {
         assertTrue(populator.resultSampled);
         assertTrue(populator.closeCall);
 
-        assertThat(pageCacheTracer.pins()).isEqualTo(17);
-        assertThat(pageCacheTracer.unpins()).isEqualTo(17);
-        assertThat(pageCacheTracer.hits()).isEqualTo(16);
+        assertThat(pageCacheTracer.pins()).isGreaterThanOrEqualTo(15);
+        assertThat(pageCacheTracer.unpins()).isEqualTo(pageCacheTracer.pins());
+        assertThat(pageCacheTracer.hits()).isGreaterThanOrEqualTo(15);
         assertThat(pageCacheTracer.faults()).isEqualTo(1);
     }
 
