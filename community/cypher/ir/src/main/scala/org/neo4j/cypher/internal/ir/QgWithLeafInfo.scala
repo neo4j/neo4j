@@ -40,17 +40,14 @@ object QgWithLeafInfo {
     def name: String
 
     def isStable: Boolean
-    def isIdStable: Boolean
   }
 
-  case class StableIdentifier(override val name: String,
-                              override val isIdStable: Boolean) extends Identifier {
+  case class StableIdentifier(override val name: String) extends Identifier {
     override def isStable: Boolean = true
   }
 
   case class UnstableIdentifier(override val name: String) extends Identifier {
     override def isStable: Boolean = false
-    override def isIdStable: Boolean = false
   }
 
   /**
@@ -130,18 +127,15 @@ case class QgWithLeafInfo(private val solvedQg: QueryGraph,
   }
 
   val allKnownUnstableNodeLabelsFor: Identifier => Set[LabelName] = CachedFunction((identifier:Identifier) => {
-    if (identifier.isIdStable) Set.empty[LabelName]
-    else queryGraph.allPossibleLabelsOnNode(identifier.name)
+    queryGraph.allPossibleLabelsOnNode(identifier.name)
   })
 
   val allPossibleUnstableRelTypesFor: Identifier => Set[RelTypeName] = CachedFunction((identifier:Identifier) => {
-    if (identifier.isIdStable) Set.empty[RelTypeName]
-    else queryGraph.allPossibleTypesOnRel(identifier.name)
+    queryGraph.allPossibleTypesOnRel(identifier.name)
   })
 
   val allKnownUnstablePropertiesFor: Identifier => Set[PropertyKeyName] = CachedFunction((identifier:Identifier) => {
-    if (identifier.isIdStable) Set.empty[PropertyKeyName]
-    else queryGraph.allKnownPropertiesOnIdentifier(identifier.name)
+    queryGraph.allKnownPropertiesOnIdentifier(identifier.name)
   })
 
   val allKnownUnstableNodeLabels: SemanticTable => Set[LabelName] = CachedFunction((semanticTable: SemanticTable) => {

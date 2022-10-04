@@ -254,13 +254,9 @@ trait UpdateGraph {
   def createRelationshipOverlap(qgWithInfo: QgWithLeafInfo): Boolean = {
     // MATCH ()-->() CREATE ()-->()
     allRelPatternsWrittenNonEmpty && qgWithInfo.patternRelationships.exists(r => {
-      if (r.isIdStable) {
-        false
-      } else {
-        val readProps = qgWithInfo.allKnownUnstablePropertiesFor(r)
-        val types = qgWithInfo.allPossibleUnstableRelTypesFor(r)
-        relationshipOverlap(types, readProps)
-      }
+      val readProps = qgWithInfo.allKnownUnstablePropertiesFor(r)
+      val types = qgWithInfo.allPossibleUnstableRelTypesFor(r)
+      relationshipOverlap(types, readProps)
     })
   }
 
