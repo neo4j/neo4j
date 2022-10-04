@@ -36,6 +36,8 @@ import static org.neo4j.io.ByteUnit.kibiBytes;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -311,7 +313,11 @@ class CheckPointerIntegrationTest {
             LogAssertions.assertThat(logProvider)
                     .forClass(CheckPointerImpl.class)
                     .containsMessages(
-                            " Checkpoint flushed 40 pages (3% of total available pages), in 40 IOs. Checkpoint performed with IO limit: unlimited, paused in total");
+                            Pattern.compile(
+                                    "Checkpoint flushed (\\d+) pages \\(\\d+% of total available pages\\), in \\d+ IOs. Checkpoint performed with IO limit: unlimited, paused in total"),
+                            greaterThan(30),
+                            greaterThan(2),
+                            greaterThan(30));
 
         } finally {
             managementService.shutdown();
@@ -354,11 +360,29 @@ class CheckPointerIntegrationTest {
             LogAssertions.assertThat(logProvider)
                     .forClass(CheckPointerImpl.class)
                     .containsMessages(
-                            "Checkpoint flushed 78 pages (7% of total available pages), in 51 IOs. Checkpoint performed with IO limit: unlimited, paused in total");
+                            Pattern.compile(
+                                    "Checkpoint flushed (\\d+) pages \\((\\d+)% of total available pages\\), in (\\d+) IOs. Checkpoint performed with IO limit: unlimited, paused in total"),
+                            greaterThan(40),
+                            greaterThan(6),
+                            greaterThan(50));
 
         } finally {
             managementService.shutdown();
         }
+    }
+
+    private Predicate<String> greaterThan(int threshold) {
+        return new Predicate<>() {
+            @Override
+            public boolean test(String value) {
+                return Integer.parseInt(value) > threshold;
+            }
+
+            @Override
+            public String toString() {
+                return "int > " + threshold;
+            }
+        };
     }
 
     private static void triggerCheckPointAttempt(GraphDatabaseService db) throws Exception {

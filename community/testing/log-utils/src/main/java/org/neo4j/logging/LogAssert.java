@@ -26,6 +26,8 @@ import static org.neo4j.internal.helpers.Exceptions.stringify;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.AbstractThrowableAssert;
 import org.assertj.core.util.Throwables;
@@ -59,6 +61,49 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider> 
             }
         }
         return this;
+    }
+
+    public LogAssert containsMessages(Predicate<String> predicate) {
+        isNotNull();
+        if (!haveMessage(predicate)) {
+            failWithMessage(
+                    "Expected log to contain messages: `%s` but no matches found in:%n%s",
+                    predicate, actual.serialize());
+        }
+        return this;
+    }
+
+    public final LogAssert containsMessages(Pattern pattern, Predicate<String>... valueTests) {
+        isNotNull();
+        var predicate = new Predicate<String>() {
+            @Override
+            public boolean test(String s) {
+                var matcher = pattern.matcher(s);
+                while (matcher.find()) {
+                    if (matchesExpectedValues(matcher)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            private boolean matchesExpectedValues(Matcher matcher) {
+                var groupCount = matcher.groupCount();
+                for (int i = 0; i < groupCount && i < valueTests.length; i++) {
+                    if (!valueTests[i].test(matcher.group(1 + i))) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            @Override
+            public String toString() {
+                return String.format("Pattern:%s, valueTests:%s", pattern.pattern(), Arrays.toString(valueTests));
+            }
+        };
+
+        return containsMessages(predicate);
     }
 
     public LogAssert containsMessagesInOrder(String... messages) {
@@ -303,6 +348,10 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider> 
     }
 
     private boolean haveMessage(String message) {
+        return haveMessage(logMessage -> logMessage.contains(message));
+    }
+
+    private boolean haveMessage(Predicate<String> message) {
         var logCalls = actual.getLogCalls();
         return logCalls.stream()
                 .anyMatch(call -> matchedLogger(call) && matchedLevel(call) && matchedMessage(message, call));
@@ -342,7 +391,11 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider> 
     }
 
     private static boolean matchedMessage(String message, LogCall call) {
-        return call.getMessage().contains(message) || call.toLogLikeString().contains(message);
+        return matchedMessage(logMessage -> logMessage.contains(message), call);
+    }
+
+    private static boolean matchedMessage(Predicate<String> predicate, LogCall call) {
+        return predicate.test(call.getMessage()) || predicate.test(call.toLogLikeString());
     }
 
     private boolean matchedLogger(LogCall call) {
