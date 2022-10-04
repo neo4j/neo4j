@@ -109,7 +109,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String, Ob
         if (visitor != null) {
             try {
                 if (!visitor.visit(new ResultRowImpl(createPublicRecord()))) {
-                    execution.cancel();
+                    execution.cancel(); // Do not close here
                     visitor = null;
                 }
             } catch (Exception exception) {
@@ -178,6 +178,13 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String, Ob
     @Override
     public void close() {
         execution.cancel();
+        try {
+            // We wait since cancelling could be asynchronous on some runtimes, and the caller
+            // could experience failures if proceeding to commit the transaction before it is finished.
+            execution.await();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -248,6 +255,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String, Ob
         } else {
             result = nextFromSubscriber();
         }
+        assertNoErrors();
         return result;
     }
 

@@ -68,3 +68,7 @@ sealed trait CloseReason
 case object Success extends CloseReason
 case object Failure extends CloseReason
 case class Error(t: Throwable) extends CloseReason
+
+trait AsyncCleanupOnClose {
+  def registerOnFinishedCallback(callback: () => Unit): Unit
+}

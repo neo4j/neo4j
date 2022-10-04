@@ -83,14 +83,26 @@ class StandardInternalExecutionResult(
   override def isClosed: Boolean = taskCloser.isClosed
 
   override def close(reason: CloseReason): Unit = {
-    runtimeResult.cancel()
-    taskCloser.close(reason == Success)
+    val success: Boolean = reason == Success
+    val closer: TaskCloser = taskCloser
+
+    runtimeResult match {
+      case result: AsyncCleanupOnClose =>
+        val onFinishedCallback = () => {
+          closer.close(success)
+        }
+        result.registerOnFinishedCallback(onFinishedCallback)
+        runtimeResult.cancel()
+
+      case _ =>
+        runtimeResult.cancel()
+        closer.close(success)
+    }
   }
 
   override def request(numberOfRows: Long): Unit = runtimeResult.request(numberOfRows)
 
   override def cancel(): Unit = {
-    runtimeResult.cancel()
     close()
   }
 

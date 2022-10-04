@@ -66,15 +66,17 @@ class PipeExecutionResult(
   subscriber.onResult(numberOfFields)
 
   override def request(numberOfRecords: Long): Unit = {
-    if (inner == null) {
-      if (startsTransactions) {
-        inner = wrap(() => pipe.createResults(state), state)
-      } else {
-        inner = pipe.createResults(state)
+    if (!cancelled) {
+      if (inner == null) {
+        if (startsTransactions) {
+          inner = wrap(() => pipe.createResults(state), state)
+        } else {
+          inner = pipe.createResults(state)
+        }
       }
+      demand = checkForOverflow(demand + numberOfRecords)
+      serveResults()
     }
-    demand = checkForOverflow(demand + numberOfRecords)
-    serveResults()
   }
 
   override def cancel(): Unit = {
