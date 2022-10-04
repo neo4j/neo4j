@@ -23,13 +23,19 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.logging.LogAssertions.assertThat;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -42,23 +48,22 @@ import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
-import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.storageengine.api.MetadataProvider;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 @Neo4jLayoutExtension
 class DatabaseStartupTest {
@@ -72,30 +77,26 @@ class DatabaseStartupTest {
     void startDatabaseWithWrongVersionShouldFail() throws Throwable {
         // given
         // create a store
-
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(neoLayout).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
         try (Transaction tx = db.beginTx()) {
             tx.createNode();
             tx.commit();
         }
+        var storageEngineFactory = db.getDependencyResolver().resolveDependency(StorageEngineFactory.class);
         DatabaseLayout databaseLayout = db.databaseLayout();
         managementService.shutdown();
 
-        // mess up the version in the metadatastore
-        try (FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-                ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
-                PageCache pageCache = createPageCache(fileSystem, scheduler, PageCacheTracer.NULL)) {
-            var fieldAccess = MetaDataStore.getFieldAccess(
-                    pageCache,
-                    databaseLayout.pathForStore(CommonDatabaseStores.METADATA),
-                    databaseLayout.getDatabaseName(),
+        // when messing up the version in the meta-data store
+        tamperWithMetaDataStore(storageEngineFactory, databaseLayout, metadataProvider -> {
+            var originalId = metadataProvider.getStoreId();
+            metadataProvider.regenerateMetadata(
+                    new StoreId(originalId.getCreationTime(), originalId.getRandom(), "bad", "even_worse", 1, 1),
+                    UUID.randomUUID(),
                     NULL_CONTEXT);
-            StoreId originalId = fieldAccess.readStoreId();
-            fieldAccess.writeStoreId(
-                    new StoreId(originalId.getCreationTime(), originalId.getRandom(), "bad", "even_worse", 1, 1));
-        }
+        });
 
+        // then
         managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
         GraphDatabaseAPI databaseService = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
         try {
@@ -116,7 +117,7 @@ class DatabaseStartupTest {
     }
 
     @Test
-    void startDatabaseWithWrongTransactionFilesShouldFail() throws IOException {
+    void startDatabaseWithWrongTransactionFilesShouldFail() throws Exception {
         // Create a store
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(neoLayout).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
@@ -125,26 +126,21 @@ class DatabaseStartupTest {
             tx.createNode();
             tx.commit();
         }
+        var storageEngineFactory = db.getDependencyResolver().resolveDependency(StorageEngineFactory.class);
         managementService.shutdown();
 
         // Change store id component
-        try (FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-                ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
-                PageCache pageCache = createPageCache(fileSystem, scheduler, PageCacheTracer.NULL)) {
-            var fieldAccess = MetaDataStore.getFieldAccess(
-                    pageCache,
-                    databaseLayout.pathForStore(CommonDatabaseStores.METADATA),
-                    databaseLayout.getDatabaseName(),
-                    NULL_CONTEXT);
-            StoreId originalId = fieldAccess.readStoreId();
-            fieldAccess.writeStoreId(new StoreId(
+        tamperWithMetaDataStore(storageEngineFactory, databaseLayout, metadataProvider -> {
+            var originalId = metadataProvider.getStoreId();
+            var newStoreId = new StoreId(
                     System.currentTimeMillis() + 1,
                     originalId.getRandom(),
                     originalId.getStorageEngineName(),
                     originalId.getFormatName(),
                     originalId.getMajorVersion(),
-                    originalId.getMinorVersion()));
-        }
+                    originalId.getMinorVersion());
+            metadataProvider.regenerateMetadata(newStoreId, UUID.randomUUID(), NULL_CONTEXT);
+        });
 
         // Try to start
         managementService = new TestDatabaseManagementServiceBuilder(databaseLayout).build();
@@ -238,6 +234,27 @@ class DatabaseStartupTest {
                             "DBMS config");
         } finally {
             managementService.shutdown();
+        }
+    }
+
+    private void tamperWithMetaDataStore(
+            StorageEngineFactory storageEngineFactory, DatabaseLayout databaseLayout, Consumer<MetadataProvider> tamper)
+            throws Exception {
+        try (var scheduler = JobSchedulerFactory.createInitialisedScheduler();
+                var pageCache = new MuninnPageCache(
+                        new SingleFilePageSwapperFactory(fs, NULL, INSTANCE),
+                        scheduler,
+                        MuninnPageCache.config(1_000));
+                var metadataProvider = storageEngineFactory.transactionMetaDataStore(
+                        fs,
+                        databaseLayout,
+                        Config.defaults(),
+                        pageCache,
+                        writable(),
+                        NULL_CONTEXT_FACTORY,
+                        EMPTY_LOG_TAIL,
+                        NULL)) {
+            tamper.accept(metadataProvider);
         }
     }
 
