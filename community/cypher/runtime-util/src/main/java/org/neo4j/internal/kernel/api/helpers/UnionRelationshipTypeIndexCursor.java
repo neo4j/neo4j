@@ -34,8 +34,7 @@ import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 
 public abstract class UnionRelationshipTypeIndexCursor extends UnionTokenIndexCursor<RelationshipTypeIndexCursor>
-        implements RelationshipIndexCursor
-{
+        implements RelationshipIndexCursor {
 
     public static UnionRelationshipTypeIndexCursor ascendingUnionRelationshipTypeIndexCursor(
             Read read,
