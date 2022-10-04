@@ -22,6 +22,7 @@ package org.neo4j.storageengine.api;
 import java.io.Closeable;
 import java.util.UUID;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.KernelVersion;
 
 /**
  * Provider for metadata that describes stores properties, ids, store level implementation details
@@ -34,4 +35,10 @@ public interface MetadataProvider
                 KernelVersionRepository,
                 Closeable {
     void regenerateMetadata(StoreId storeId, UUID externalStoreUUID, CursorContext cursorContext);
+
+    /**
+     * Sets a new kernel version.
+     * @param kernelVersion new {@link KernelVersion}.
+     */
+    void setKernelVersion(KernelVersion kernelVersion);
 }

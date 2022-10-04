@@ -34,6 +34,7 @@ public class SimpleMetaDataProvider implements MetadataProvider {
     private final SimpleTransactionIdStore transactionIdStore;
     private final SimpleLogVersionRepository logVersionRepository;
     private final ExternalStoreId externalStoreId = new ExternalStoreId(UUID.randomUUID());
+    private volatile KernelVersion kernelVersion = KernelVersion.LATEST;
 
     public SimpleMetaDataProvider() {
         transactionIdStore = new SimpleTransactionIdStore();
@@ -139,7 +140,12 @@ public class SimpleMetaDataProvider implements MetadataProvider {
 
     @Override
     public KernelVersion kernelVersion() {
-        return KernelVersion.LATEST;
+        return kernelVersion;
+    }
+
+    @Override
+    public void setKernelVersion(KernelVersion kernelVersion) {
+        this.kernelVersion = kernelVersion;
     }
 
     @Override

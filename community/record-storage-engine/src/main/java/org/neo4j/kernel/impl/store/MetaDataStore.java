@@ -196,6 +196,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         return lastPosition.firstSlotId + lastPosition.slotCount + 1;
     }
 
+    @Override
     public void setKernelVersion(KernelVersion kernelVersion) {
         assertNotClosed();
         this.kernelVersion = kernelVersion;
