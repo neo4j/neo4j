@@ -120,7 +120,7 @@
     <license-text.header>headers/AGPL-3-header.txt</license-text.header>
 
     <jamm.version>0.3.3</jamm.version>
-    <lucene.version>9.3.0</lucene.version>
+    <lucene.version>9.4.0</lucene.version>
     <bouncycastle.version>1.70</bouncycastle.version>
     <jetty.version>9.4.49.v20220914</jetty.version>
     <scala-maven-plugin.version>4.4.1</scala-maven-plugin.version>
@@ -128,7 +128,7 @@
     <scala.binary.version>2.13</scala.binary.version>
     <scala.plugin.recompileMode>all</scala.plugin.recompileMode>
     <scala.test.version>3.2.13</scala.test.version>
-    <asm.version>9.3</asm.version>
+    <asm.version>9.4</asm.version>
     <metrics.version>4.2.12</metrics.version>
     <scala.target.vm>17</scala.target.vm>
     <jersey.version>2.34</jersey.version>

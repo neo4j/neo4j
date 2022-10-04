@@ -42,6 +42,7 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.TopDocs;
@@ -67,6 +68,7 @@ public class IndexReaderStub extends LeafReader {
             1,
             8,
             0,
+            VectorEncoding.BYTE,
             VectorSimilarityFunction.EUCLIDEAN,
             true);
 
@@ -158,6 +160,7 @@ public class IndexReaderStub extends LeafReader {
                     1,
                     8,
                     0,
+                    VectorEncoding.BYTE,
                     VectorSimilarityFunction.EUCLIDEAN,
                     false));
         }
