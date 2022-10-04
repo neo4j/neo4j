@@ -67,15 +67,58 @@ public class ProcedureProcessorTest extends ExtensionTestBase {
         JavaFileObject sproc =
                 JavaFileObjectUtils.INSTANCE.procedureSource("invalid/bad_return_type/BadReturnTypeSproc.java");
 
-        assert_()
+        var compiler = assert_()
                 .about(javaSource())
                 .that(sproc)
                 .processedWith(processor())
                 .failsToCompile()
-                .withErrorCount(1)
-                .withErrorContaining("Return type of BadReturnTypeSproc#niceSproc must be java.util.stream.Stream")
+                .withErrorCount(17);
+
+        compiler.withErrorContaining(
+                        "Return type of BadReturnTypeSproc#invalidSproc1 must be java.util.stream.Stream<T>")
                 .in(sproc)
-                .onLine(33);
+                .onLine(37);
+
+        compiler.withErrorContaining(
+                        "Return type of BadReturnTypeSproc#invalidSproc2 must be java.util.stream.Stream<T> where T is a custom class per procedure, but was java.lang.String")
+                .in(sproc)
+                .onLine(42);
+
+        compiler.withErrorContaining(
+                        "Return type of BadReturnTypeSproc#invalidSproc3 must be java.util.stream.Stream<T> where T is a custom class per procedure, but was org.neo4j.graphdb.Relationship")
+                .in(sproc)
+                .onLine(47);
+
+        compiler.withErrorContaining(
+                        "Return type of BadReturnTypeSproc#invalidSproc4 must be java.util.stream.Stream<T> where T is a custom class per procedure, but was java.util.Map<java.lang.String,java.lang.String>")
+                .in(sproc)
+                .onLine(52);
+
+        // Paper-cut for subtypes such as Hashmap
+        var errors =
+                """
+                Record definition error: field HashMap#table must be public
+                Record definition error: field HashMap#entrySet must be public
+                Record definition error: field HashMap#size must be public
+                Record definition error: field HashMap#modCount must be public
+                Record definition error: field HashMap#threshold must be public
+                Record definition error: field HashMap#loadFactor must be public
+                Record definition error: field HashMap#table of type java.util.HashMap.Node<K,V>[] is not supported
+                Record definition error: field HashMap#entrySet of type java.util.Set<java.util.Map.Entry<K,V>> is not supported
+                Record definition error: field HashMap#size of type int is not supported
+                Record definition error: field HashMap#modCount of type int is not supported
+                Record definition error: field HashMap#threshold of type int is not supported
+                Record definition error: field HashMap#loadFactor of type float is not supported
+                """
+                        .split("\n");
+        for (var error : errors) {
+            compiler.withErrorContaining(error);
+        }
+
+        compiler.withErrorContaining(
+                        "Return type of BadReturnTypeSproc#invalidSproc6 must be java.util.stream.Stream<T> where T is a custom class per procedure, but was java.lang.Object")
+                .in(sproc)
+                .onLine(62);
     }
 
     @Test

@@ -19,12 +19,15 @@
  */
 package org.neo4j.tooling.procedure.visitors;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.lang.model.element.ElementVisitor;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVisitor;
@@ -42,6 +45,7 @@ public class ProcedureVisitor extends SimpleElementVisitor8<Stream<CompilationMe
     private final ElementVisitor<Stream<CompilationMessage>, Void> classVisitor;
     private final TypeVisitor<Stream<CompilationMessage>, Void> recordVisitor;
     private final ElementVisitor<Stream<CompilationMessage>, Void> parameterVisitor;
+    private final Collection<TypeMirror> invalidStreamTypeParameters;
 
     public ProcedureVisitor(Types typeUtils, Elements elementUtils, boolean ignoresWarnings) {
         TypeMirrorUtils typeMirrors = new TypeMirrorUtils(typeUtils, elementUtils);
@@ -51,6 +55,9 @@ public class ProcedureVisitor extends SimpleElementVisitor8<Stream<CompilationMe
         this.classVisitor = new ExtensionClassVisitor(typeUtils, elementUtils, ignoresWarnings);
         this.recordVisitor = new RecordTypeVisitor(typeUtils, typeMirrors);
         this.parameterVisitor = new ParameterVisitor(new ParameterTypeVisitor(typeUtils, typeMirrors));
+        this.invalidStreamTypeParameters = typeMirrors.procedureAllowedTypes().stream()
+                .map(typeUtils::erasure) // convert e.g. Map<K,V> to Map
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -69,6 +76,32 @@ public class ProcedureVisitor extends SimpleElementVisitor8<Stream<CompilationMe
         return parameters.stream().flatMap(parameterVisitor::visit);
     }
 
+    private TypeMirror getStreamTypeParameter(TypeMirror returnType) {
+        var typeParameters = ((DeclaredType) returnType).getTypeArguments();
+        assert (typeParameters.size() == 1); // Stream<T> must only have one parameter type
+        return typeParameters.get(0);
+    }
+
+    private Stream<CompilationMessage> hintInvalidStreamType(ExecutableElement method, TypeMirror returnType) {
+        var typeParameter = getStreamTypeParameter(returnType);
+        var erasedTypeParameter = typeUtils.erasure(typeParameter);
+
+        // Note: this is not an exhaustive check of all invalid type parameters
+        // but rather a means to give users a hint on how to correct an error that
+        // is easy to make.
+        if (!invalidStreamTypeParameters.contains(erasedTypeParameter)) {
+            return Stream.empty();
+        }
+
+        return Stream.of(new ReturnTypeError(
+                method,
+                "Return type of %s#%s must be %s<T> where T is a custom class per procedure, but was %s",
+                method.getEnclosingElement().getSimpleName(),
+                method.getSimpleName(),
+                Stream.class.getCanonicalName(),
+                typeParameter));
+    }
+
     private Stream<CompilationMessage> validateReturnType(ExecutableElement method) {
         String streamClassName = Stream.class.getCanonicalName();
 
@@ -85,10 +118,15 @@ public class ProcedureVisitor extends SimpleElementVisitor8<Stream<CompilationMe
         if (!typeUtils.isSubtype(erasedReturnType, streamType)) {
             return Stream.of(new ReturnTypeError(
                     method,
-                    "Return type of %s#%s must be %s",
+                    "Return type of %s#%s must be %s<T>",
                     method.getEnclosingElement().getSimpleName(),
                     method.getSimpleName(),
                     streamClassName));
+        }
+
+        var hints = hintInvalidStreamType(method, returnType).collect(Collectors.toList());
+        if (!hints.isEmpty()) {
+            return hints.stream();
         }
 
         return recordVisitor.visit(returnType);

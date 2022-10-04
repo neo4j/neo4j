@@ -19,7 +19,11 @@
  */
 package org.neo4j.tooling.procedure.procedures.invalid.bad_return_type;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
@@ -30,10 +34,35 @@ public class BadReturnTypeSproc {
     public GraphDatabaseService db;
 
     @Procedure
-    public Long niceSproc(@Name("foo") String parameter) {
+    public Long invalidSproc1(@Name("foo") String parameter) {
         return 42L;
     }
 
     @Procedure
-    public void niceSproc2(@Name("foo") String parameter) {}
+    public Stream<String> invalidSproc2(@Name("foo") String parameter) {
+        return Stream.empty();
+    }
+
+    @Procedure
+    public Stream<Relationship> invalidSproc3(@Name("foo") String parameter) {
+        return Stream.empty();
+    }
+
+    @Procedure
+    public Stream<Map<String, String>> invalidSproc4(@Name("foo") String parameter) {
+        return Stream.empty();
+    }
+
+    @Procedure
+    public Stream<HashMap<String, String>> invalidSproc5(@Name("foo") String parameter) {
+        return Stream.empty();
+    }
+
+    @Procedure
+    public Stream<Object> invalidSproc6(@Name("foo") String parameter) {
+        return Stream.empty();
+    }
+
+    @Procedure
+    public void validSproc(@Name("foo") String parameter) {}
 }
