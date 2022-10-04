@@ -79,8 +79,8 @@ class FullScanStoreViewTracingIT {
                 INSTANCE);
         storeScan.run(StoreScan.NO_EXTERNAL_UPDATES);
 
-        assertThat(pageCacheTracer.pins()).isEqualTo(103);
-        assertThat(pageCacheTracer.unpins()).isEqualTo(103);
-        assertThat(pageCacheTracer.hits()).isEqualTo(103);
+        assertThat(pageCacheTracer.pins()).isGreaterThanOrEqualTo(100);
+        assertThat(pageCacheTracer.unpins()).isEqualTo(pageCacheTracer.pins());
+        assertThat(pageCacheTracer.hits()).isGreaterThanOrEqualTo(100);
     }
 }
