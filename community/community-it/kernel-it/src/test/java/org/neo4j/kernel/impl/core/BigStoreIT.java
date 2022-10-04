@@ -50,6 +50,7 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -73,6 +74,11 @@ class BigStoreIT {
     @BeforeEach
     void doBefore() {
         startDb();
+        assumeTrue(((GraphDatabaseAPI) db)
+                .getDependencyResolver()
+                .resolveDependency(StorageEngineFactory.class)
+                .name()
+                .equals("record"));
     }
 
     private void startDb() {

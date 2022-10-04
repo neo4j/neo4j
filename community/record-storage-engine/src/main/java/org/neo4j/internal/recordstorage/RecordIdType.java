@@ -22,28 +22,32 @@ package org.neo4j.internal.recordstorage;
 import org.neo4j.internal.id.IdType;
 
 public enum RecordIdType implements IdType {
-    NODE(true),
-    RELATIONSHIP(true),
-    PROPERTY(true),
-    STRING_BLOCK(true),
-    ARRAY_BLOCK(true),
-    PROPERTY_KEY_TOKEN_NAME(false),
-    RELATIONSHIP_TYPE_TOKEN_NAME(false),
-    LABEL_TOKEN_NAME(false),
-    NODE_LABELS(false),
-    RELATIONSHIP_GROUP(true);
+    NODE(true, false),
+    RELATIONSHIP(true, false),
+    PROPERTY(true, false),
+    STRING_BLOCK(true, false),
+    ARRAY_BLOCK(true, false),
+    PROPERTY_KEY_TOKEN_NAME(false, true),
+    RELATIONSHIP_TYPE_TOKEN_NAME(false, true),
+    LABEL_TOKEN_NAME(false, true),
+    NODE_LABELS(false, false),
+    RELATIONSHIP_GROUP(true, false);
 
     private final boolean highActivity;
+    private final boolean schemaType;
 
-    RecordIdType(boolean highActivity) {
+    RecordIdType(boolean highActivity, boolean schemaType) {
         this.highActivity = highActivity;
+        this.schemaType = schemaType;
     }
 
-    /**
-     * @return whether or not there's a high activity of id allocations/deallocations for this type.
-     */
     @Override
     public boolean highActivity() {
         return highActivity;
+    }
+
+    @Override
+    public boolean isSchemaType() {
+        return schemaType;
     }
 }
