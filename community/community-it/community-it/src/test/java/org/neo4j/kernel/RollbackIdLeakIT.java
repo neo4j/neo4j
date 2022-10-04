@@ -44,6 +44,7 @@ import org.neo4j.internal.id.IdController;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.Race;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -250,8 +251,13 @@ class RollbackIdLeakIT {
         }
     }
 
-    private static void assertAllocateIds(
-            GraphDatabaseService db, MutableLongSet nodeIds, MutableLongSet relationshipIds) {
+    private static void assertAllocateIds(GraphDatabaseAPI db, MutableLongSet nodeIds, MutableLongSet relationshipIds) {
+        // Relationship IDs in record storage are just like node IDs, or any of its other stores,
+        // but in Freki relationship IDs can not be compared the same way since they are co-located with nodes.
+        boolean checkRelationshipIds = db.getDependencyResolver()
+                .resolveDependency(StorageEngineFactory.class)
+                .name()
+                .equals("record");
         try (Transaction tx = db.beginTx()) {
             int nodes = nodeIds.size();
             int relationships = relationshipIds.size();
@@ -259,14 +265,18 @@ class RollbackIdLeakIT {
                 Node node = tx.createNode();
                 assertTrue(nodeIds.remove(node.getId()));
             }
-            for (int i = 0; i < relationships; i++) {
-                Relationship relationship = tx.createNode().createRelationshipTo(tx.createNode(), TEST);
-                assertTrue(relationshipIds.remove(relationship.getId()));
+            if (checkRelationshipIds) {
+                for (int i = 0; i < relationships; i++) {
+                    Relationship relationship = tx.createNode().createRelationshipTo(tx.createNode(), TEST);
+                    assertTrue(relationshipIds.remove(relationship.getId()));
+                }
             }
             tx.commit();
         }
         assertTrue(nodeIds.isEmpty());
-        assertTrue(relationshipIds.isEmpty());
+        if (checkRelationshipIds) {
+            assertTrue(relationshipIds.isEmpty());
+        }
     }
 
     private DbRestarter clean() {
@@ -274,15 +284,15 @@ class RollbackIdLeakIT {
             private DatabaseManagementService dbms;
 
             @Override
-            public GraphDatabaseService start() {
+            public GraphDatabaseAPI start() {
                 dbms = new TestDatabaseManagementServiceBuilder(directory.homePath())
                         .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
                         .build();
-                return dbms.database(DEFAULT_DATABASE_NAME);
+                return (GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME);
             }
 
             @Override
-            public GraphDatabaseService restart() {
+            public GraphDatabaseAPI restart() {
                 close();
                 return start();
             }
@@ -300,12 +310,12 @@ class RollbackIdLeakIT {
             private EphemeralFileSystemAbstraction fsSnapshot;
 
             @Override
-            public GraphDatabaseService start() {
+            public GraphDatabaseAPI start() {
                 return start(fs);
             }
 
             @Override
-            public GraphDatabaseService restart() {
+            public GraphDatabaseAPI restart() {
                 fsSnapshot = fs.snapshot();
                 dbms.shutdown();
                 return start(fsSnapshot);
@@ -317,11 +327,11 @@ class RollbackIdLeakIT {
                 fsSnapshot.close();
             }
 
-            private GraphDatabaseService start(EphemeralFileSystemAbstraction fs) {
+            private GraphDatabaseAPI start(EphemeralFileSystemAbstraction fs) {
                 dbms = new TestDatabaseManagementServiceBuilder(directory.homePath())
                         .setFileSystem(fs)
                         .build();
-                return dbms.database(DEFAULT_DATABASE_NAME);
+                return (GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME);
             }
         };
     }
@@ -331,20 +341,17 @@ class RollbackIdLeakIT {
             private DatabaseManagementService dbms;
 
             @Override
-            public GraphDatabaseService start() {
+            public GraphDatabaseAPI start() {
                 dbms = new TestDatabaseManagementServiceBuilder(directory.homePath())
                         .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs))
                         .build();
-                return dbms.database(DEFAULT_DATABASE_NAME);
+                return (GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME);
             }
 
             @Override
-            public GraphDatabaseService restart() {
-                var db = dbms.database(DEFAULT_DATABASE_NAME);
-                ((GraphDatabaseAPI) db)
-                        .getDependencyResolver()
-                        .resolveDependency(IdController.class)
-                        .maintenance();
+            public GraphDatabaseAPI restart() {
+                var db = (GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME);
+                db.getDependencyResolver().resolveDependency(IdController.class).maintenance();
                 return db;
             }
 
@@ -356,8 +363,8 @@ class RollbackIdLeakIT {
     }
 
     private interface DbRestarter extends Closeable {
-        GraphDatabaseService start();
+        GraphDatabaseAPI start();
 
-        GraphDatabaseService restart() throws IOException;
+        GraphDatabaseAPI restart() throws IOException;
     }
 }
