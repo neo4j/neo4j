@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.ByteUnit.kibiBytes;
@@ -54,7 +55,8 @@ class VersionAwareLogEntryReaderIT {
     // this offset includes log header and transaction that create node on test setup
     // Magic number represents number of bytes that log file is actually using (in form of header size + payload)
     // to be able to check that its like that or to update manually you can disable pre-allocation + some manual checks.
-    private static final long END_OF_DATA_OFFSET = CURRENT_FORMAT_LOG_HEADER_SIZE + 3443L;
+    private static final long AT_LEAST_END_OF_DATA_OFFSET = CURRENT_FORMAT_LOG_HEADER_SIZE + 1_000;
+    private static final long AT_MOST_END_OF_DATA_OFFSET = kibiBytes(128);
     private static final StoreId STORE_ID = new StoreId(4, 5, "engine-1", "format-1", 1, 2);
 
     @Inject
@@ -69,11 +71,10 @@ class VersionAwareLogEntryReaderIT {
 
     @BeforeEach
     void setUp() {
-        GraphDatabaseService database = managementService.database(DEFAULT_DATABASE_NAME);
+        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
         createNode(database);
-        GraphDatabaseAPI dbApi = (GraphDatabaseAPI) database;
-        databaseLayout = dbApi.databaseLayout();
-        storageEngineFactory = dbApi.getDependencyResolver().resolveDependency(StorageEngineFactory.class);
+        databaseLayout = database.databaseLayout();
+        storageEngineFactory = database.getDependencyResolver().resolveDependency(StorageEngineFactory.class);
         entryReader = new VersionAwareLogEntryReader(storageEngineFactory.commandReaderFactory());
         managementService.shutdown();
     }
@@ -93,7 +94,8 @@ class VersionAwareLogEntryReaderIT {
             LogPosition logPosition = entryReader.lastPosition();
             assertEquals(0L, logPosition.getLogVersion());
             // this position in a log file before 0's are actually starting
-            assertEquals(END_OF_DATA_OFFSET, logPosition.getByteOffset());
+            assertThat(logPosition.getByteOffset()).isGreaterThanOrEqualTo(AT_LEAST_END_OF_DATA_OFFSET);
+            assertThat(logPosition.getByteOffset()).isLessThan(AT_MOST_END_OF_DATA_OFFSET);
         }
     }
 
@@ -106,9 +108,15 @@ class VersionAwareLogEntryReaderIT {
                 .withStoreId(STORE_ID)
                 .build();
         try (Lifespan lifespan = new Lifespan(logFiles)) {
-
+            long offset = 0;
             for (int i = 0; i < 10; i++) {
-                assertEquals(END_OF_DATA_OFFSET, getLastReadablePosition(logFiles));
+                var lastReadablePosition = getLastReadablePosition(logFiles);
+                assertThat(lastReadablePosition).isGreaterThanOrEqualTo(1_000);
+                assertThat(lastReadablePosition).isLessThan(AT_MOST_END_OF_DATA_OFFSET);
+                if (i > 0) {
+                    assertThat(lastReadablePosition).isEqualTo(offset);
+                }
+                offset = lastReadablePosition;
             }
         }
     }
