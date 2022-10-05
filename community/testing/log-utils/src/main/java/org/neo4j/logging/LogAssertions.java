@@ -19,6 +19,7 @@
  */
 package org.neo4j.logging;
 
+import java.util.function.Predicate;
 import org.assertj.core.api.Assertions;
 
 public final class LogAssertions extends Assertions {
@@ -26,5 +27,19 @@ public final class LogAssertions extends Assertions {
 
     public static LogAssert assertThat(AssertableLogProvider logProvider) {
         return new LogAssert(logProvider);
+    }
+
+    public static Predicate<String> greaterThan(int threshold) {
+        return new Predicate<>() {
+            @Override
+            public boolean test(String value) {
+                return Integer.parseInt(value) > threshold;
+            }
+
+            @Override
+            public String toString() {
+                return "int > " + threshold;
+            }
+        };
     }
 }

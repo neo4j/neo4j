@@ -32,11 +32,11 @@ import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.logging.LogAssertions.greaterThan;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
-import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -369,20 +369,6 @@ class CheckPointerIntegrationTest {
         } finally {
             managementService.shutdown();
         }
-    }
-
-    private Predicate<String> greaterThan(int threshold) {
-        return new Predicate<>() {
-            @Override
-            public boolean test(String value) {
-                return Integer.parseInt(value) > threshold;
-            }
-
-            @Override
-            public String toString() {
-                return "int > " + threshold;
-            }
-        };
     }
 
     private static void triggerCheckPointAttempt(GraphDatabaseService db) throws Exception {
