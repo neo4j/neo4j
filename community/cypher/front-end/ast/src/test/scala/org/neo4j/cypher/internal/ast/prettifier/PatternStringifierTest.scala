@@ -45,7 +45,8 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
   test("(n:Foo:Bar:Baz)") {
     val pattern = nodePat(
       name = Some("n"),
-      labelExpression = Some(labelColonConjunction(labelColonConjunction(labelLeaf("Foo"), labelLeaf("Bar")), labelLeaf("Baz")))
+      labelExpression =
+        Some(labelColonConjunction(labelColonConjunction(labelLeaf("Foo"), labelLeaf("Bar")), labelLeaf("Baz")))
     )
 
     patternStringifier(pattern) shouldEqual testName
