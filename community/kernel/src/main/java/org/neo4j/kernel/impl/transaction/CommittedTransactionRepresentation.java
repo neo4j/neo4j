@@ -67,9 +67,13 @@ public class CommittedTransactionRepresentation {
 
     @Override
     public String toString() {
+        return toString(false);
+    }
+
+    public String toString(boolean includeCommands) {
         return "CommittedTransactionRepresentation{" + "startEntry="
                 + startEntry + ", transactionRepresentation="
-                + transactionRepresentation + ", commitEntry="
+                + transactionRepresentation.toString(includeCommands) + ", commitEntry="
                 + commitEntry + '}';
     }
 

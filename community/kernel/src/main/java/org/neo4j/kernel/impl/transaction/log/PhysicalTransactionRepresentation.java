@@ -155,6 +155,7 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
         return toString(false);
     }
 
+    @Override
     public String toString(boolean includeCommands) {
         String basic = format(
                 "%s[timeStarted:%d, latestCommittedTxWhenStarted:%d, timeCommitted:%d, lease:%d, additionalHeader:%s, commands.length:%d",

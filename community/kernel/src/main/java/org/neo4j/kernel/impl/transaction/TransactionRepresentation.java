@@ -64,4 +64,11 @@ public interface TransactionRepresentation extends CommandStream {
     AuthSubject getAuthSubject();
 
     KernelVersion version();
+
+    /**
+     * A to-string method that may include information about all the commands in this transaction.
+     * @param includeCommands whether to include commands in the returned string.
+     * @return information about this transaction representation w/ or w/o command information included.
+     */
+    String toString(boolean includeCommands);
 }

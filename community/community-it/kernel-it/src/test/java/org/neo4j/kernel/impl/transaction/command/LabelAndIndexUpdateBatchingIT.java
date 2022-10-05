@@ -19,34 +19,30 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.singleOrNull;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.helpers.collection.Visitor;
-import org.neo4j.internal.recordstorage.Command.NodeCommand;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.MetadataProvider;
-import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 /**
@@ -68,13 +64,14 @@ class LabelAndIndexUpdateBatchingIT {
         // perform the transactions from db-level and extract the transactions as commands
         // so that they can be applied batch-wise they way we'd like to later.
 
-        List<TransactionRepresentation> transactions;
+        List<CommittedTransactionRepresentation> transactions;
         DatabaseManagementService managementService =
                 new TestDatabaseManagementServiceBuilder().impermanent().build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
         // We don't want to include any transactions that has been run on start-up when applying to the new database
         // later.
         long txIdToStartFrom = getLastClosedTransactionId(db) + 1;
+        long txIdCutOffPoint;
 
         // a bunch of nodes (to have the index population later on to decide to use label scan for population)
         String nodeN = "our guy";
@@ -92,6 +89,9 @@ class LabelAndIndexUpdateBatchingIT {
                 tx.createNode(LABEL).setProperty(PROPERTY_KEY, nodeN);
                 tx.commit();
             }
+            txIdCutOffPoint = db.getDependencyResolver()
+                    .resolveDependency(TransactionIdStore.class)
+                    .getLastClosedTransactionId();
             // uniqueness constraint affecting N
             try (Transaction tx = db.beginTx()) {
                 tx.schema()
@@ -111,7 +111,7 @@ class LabelAndIndexUpdateBatchingIT {
         TransactionCommitProcess commitProcess =
                 db.getDependencyResolver().resolveDependency(TransactionCommitProcess.class);
         try {
-            int cutoffIndex = findCutoffIndex(transactions);
+            int cutoffIndex = findCutoffIndex(transactions, txIdCutOffPoint);
             commitProcess.commit(toApply(transactions.subList(0, cutoffIndex), db), CommitEvent.NULL, EXTERNAL);
 
             // WHEN applying the two transactions (node N and the constraint) in the same batch
@@ -131,30 +131,25 @@ class LabelAndIndexUpdateBatchingIT {
         }
     }
 
-    private static int findCutoffIndex(Collection<TransactionRepresentation> transactions) throws IOException {
-        Iterator<TransactionRepresentation> iterator = transactions.iterator();
+    private static int findCutoffIndex(Collection<CommittedTransactionRepresentation> transactions, long txId) {
+        var iterator = transactions.iterator();
         for (int i = 0; iterator.hasNext(); i++) {
-            TransactionRepresentation tx = iterator.next();
-            CommandExtractor extractor = new CommandExtractor();
-            tx.accept(extractor);
-            List<StorageCommand> nodeCommands = extractor.commands.stream()
-                    .filter(command -> command instanceof NodeCommand)
-                    .collect(toList());
-            if (nodeCommands.size() == 1) {
+            var tx = iterator.next();
+            if (tx.getCommitEntry().getTxId() == txId) {
                 return i;
             }
         }
         throw new AssertionError("Couldn't find the transaction which would be the cut-off point");
     }
 
-    private static TransactionToApply toApply(Collection<TransactionRepresentation> transactions, GraphDatabaseAPI db) {
+    private static TransactionToApply toApply(
+            Collection<CommittedTransactionRepresentation> transactions, GraphDatabaseAPI db) {
         StorageEngine storageEngine = db.getDependencyResolver().resolveDependency(StorageEngine.class);
         TransactionToApply first = null;
         TransactionToApply last = null;
-        try (var storeCursors = storageEngine.createStorageCursors(CursorContext.NULL_CONTEXT)) {
-            for (TransactionRepresentation transactionRepresentation : transactions) {
-                TransactionToApply transaction =
-                        new TransactionToApply(transactionRepresentation, CursorContext.NULL_CONTEXT, storeCursors);
+        try (var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
+            for (var tx : transactions) {
+                var transaction = new TransactionToApply(tx.getTransactionRepresentation(), NULL_CONTEXT, storeCursors);
                 if (first == null) {
                     first = last = transaction;
                 } else {
@@ -166,12 +161,12 @@ class LabelAndIndexUpdateBatchingIT {
         return first;
     }
 
-    private static List<TransactionRepresentation> extractTransactions(GraphDatabaseAPI db, long txIdToStartOn)
+    private static List<CommittedTransactionRepresentation> extractTransactions(GraphDatabaseAPI db, long txIdToStartOn)
             throws IOException {
         LogicalTransactionStore txStore = db.getDependencyResolver().resolveDependency(LogicalTransactionStore.class);
-        List<TransactionRepresentation> transactions = new ArrayList<>();
+        List<CommittedTransactionRepresentation> transactions = new ArrayList<>();
         try (TransactionCursor cursor = txStore.getTransactions(txIdToStartOn)) {
-            cursor.forAll(tx -> transactions.add(tx.getTransactionRepresentation()));
+            cursor.forAll(transactions::add);
         }
         return transactions;
     }
@@ -179,15 +174,5 @@ class LabelAndIndexUpdateBatchingIT {
     private static long getLastClosedTransactionId(GraphDatabaseAPI database) {
         MetadataProvider metaDataStore = database.getDependencyResolver().resolveDependency(MetadataProvider.class);
         return metaDataStore.getLastClosedTransaction().transactionId();
-    }
-
-    private static class CommandExtractor implements Visitor<StorageCommand, IOException> {
-        private final List<StorageCommand> commands = new ArrayList<>();
-
-        @Override
-        public boolean visit(StorageCommand element) {
-            commands.add(element);
-            return false;
-        }
     }
 }
