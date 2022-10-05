@@ -29,6 +29,10 @@ import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 
+/**
+ * Validating URLs is complex due to the existence of many different types of attacks. Much of the current behaviour,
+ * as well as the scenarios we are trying to mitigate, are documented in FileUrlAccessRuleTest.class.
+ */
 class FileURLAccessRule implements URLAccessRule {
     @Override
     public URL validate(Configuration config, URL url) throws URLAccessValidationError {
@@ -52,9 +56,9 @@ class FileURLAccessRule implements URLAccessRule {
         final Path root = config.get(GraphDatabaseSettings.load_csv_file_url_root);
 
         try {
-            final Path urlPath = Path.of(url.toURI());
+            // normalize to prevent path traversal exploits like '../'
+            final Path urlPath = Path.of(url.toURI().normalize());
             final Path rootPath = root.normalize().toAbsolutePath();
-            // Normalize to prevent dirty tricks like '..'
             final Path result = rootPath.resolve(urlPath.getRoot().relativize(urlPath))
                     .normalize()
                     .toAbsolutePath();
@@ -62,9 +66,9 @@ class FileURLAccessRule implements URLAccessRule {
             if (result.startsWith(rootPath)) {
                 return result.toUri().toURL();
             }
+            // unreachable because we always construct a path relative to the root
             throw new URLAccessValidationError("file URL points outside configured import directory");
         } catch (MalformedURLException | URISyntaxException e) {
-            // unreachable
             throw new RuntimeException(e);
         }
     }
