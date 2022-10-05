@@ -39,6 +39,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.neo4j.bolt.transaction.StatementProcessorTxManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -75,15 +76,21 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
     private ExecutorService executors;
     private String txUri;
 
+    private StatementProcessorTxManager transactionManager;
+
     @BeforeEach
     public void setUp()
     {
         executors = Executors.newFixedThreadPool( max( 3, Runtime.getRuntime().availableProcessors() ) );
+        transactionManager = resolveDependency( StatementProcessorTxManager.class );
     }
 
     @AfterEach
-    public void tearDown()
+    public void afterEach()
     {
+        //verify TransactionManager's state is reset after each
+        assertThat( transactionManager.transactionCount() ).isEqualTo( 0 );
+        assertThat( transactionManager.statementProcessorProviderCount() ).isEqualTo( 0 );
         executors.shutdown();
     }
 

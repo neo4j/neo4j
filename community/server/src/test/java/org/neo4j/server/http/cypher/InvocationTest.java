@@ -37,7 +37,7 @@ import org.neo4j.bolt.messaging.ResultConsumer;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
-import org.neo4j.bolt.transaction.CleanUpTransactionContext;
+import org.neo4j.bolt.transaction.CleanUpConnectionContext;
 import org.neo4j.bolt.transaction.DefaultProgramResultReference;
 import org.neo4j.bolt.transaction.InitializeContext;
 import org.neo4j.bolt.transaction.TransactionManager;
@@ -166,7 +166,7 @@ class InvocationTest
         txManagerOrder.verify( transactionManager ).runQuery( TX_ID, "query", MapValue.EMPTY );
         txManagerOrder.verify( transactionManager ).pullData( any( String.class ), any( Integer.class ), any( Long.class ), any( ResultConsumer.class ) );
         txManagerOrder.verify( transactionManager ).commit( TX_ID );
-        txManagerOrder.verify( transactionManager ).cleanUp( any( CleanUpTransactionContext.class ) );
+        txManagerOrder.verify( transactionManager ).cleanUp( eq( new CleanUpConnectionContext( TX_ID ) ) );
         verifyNoMoreInteractions( transactionManager );
 
         // then verify output
@@ -307,7 +307,7 @@ class InvocationTest
         txManagerOrder.verify( transactionManager )
                       .begin( any( LoginContext.class ), anyString(), anyList(), eq( true ), anyMap(), nullable( Duration.class ), anyString() );
         txManagerOrder.verify( transactionManager ).commit( "123" );
-        txManagerOrder.verify( transactionManager ).cleanUp( any( CleanUpTransactionContext.class ) );
+        txManagerOrder.verify( transactionManager ).cleanUp( eq( new CleanUpConnectionContext( TX_ID ) ) );
         verifyNoMoreInteractions( transactionManager );
 
         // then verify output
@@ -347,7 +347,7 @@ class InvocationTest
         txManagerOrder.verify( transactionManager ).initialize( any( InitializeContext.class ) );
         txManagerOrder.verify( transactionManager ).runQuery( TX_ID, "query", MapValue.EMPTY );
         txManagerOrder.verify( transactionManager ).commit( "123" );
-        txManagerOrder.verify( transactionManager ).cleanUp( any( CleanUpTransactionContext.class ) );
+        txManagerOrder.verify( transactionManager ).cleanUp( eq( new CleanUpConnectionContext( TX_ID ) ) );
         txManagerOrder.verifyNoMoreInteractions();
 
         // then verify output
@@ -375,7 +375,7 @@ class InvocationTest
         InOrder transactionOrder = inOrder( transactionManager, registry );
         transactionOrder.verify( transactionManager ).rollback( "123" );
         transactionOrder.verify( registry ).forget( 123L );
-        transactionOrder.verify( transactionManager ).cleanUp( any( CleanUpTransactionContext.class ) );
+        transactionOrder.verify( transactionManager ).cleanUp( eq( new CleanUpConnectionContext( TX_ID ) ) );
 
         InOrder outputOrder = inOrder( outputEventStream );
         outputOrder.verify( outputEventStream ).writeTransactionInfo( TransactionNotificationState.ROLLED_BACK, null, -1 );
@@ -407,7 +407,6 @@ class InvocationTest
         // when
         invocation.execute( outputEventStream );
 
-        // then
         // then verify transactionManager interaction
         InOrder txManagerOrder = inOrder( transactionManager );
         txManagerOrder.verify( transactionManager ).initialize( any( InitializeContext.class ) );
@@ -416,7 +415,7 @@ class InvocationTest
         txManagerOrder.verify( transactionManager ).runQuery( TX_ID, "query", MapValue.EMPTY );
         txManagerOrder.verify( transactionManager ).pullData( any( String.class ), any( Integer.class ), any( Long.class ), any( ResultConsumer.class ) );
         txManagerOrder.verify( transactionManager ).commit( TX_ID );
-        txManagerOrder.verify( transactionManager ).cleanUp( any( CleanUpTransactionContext.class ) );
+        txManagerOrder.verify( transactionManager ).cleanUp( eq( new CleanUpConnectionContext( TX_ID ) ) );
         verifyNoMoreInteractions( transactionManager );
 
         InOrder outputOrder = inOrder( outputEventStream );
@@ -453,7 +452,7 @@ class InvocationTest
                       .begin( any( LoginContext.class ), anyString(), anyList(), eq( true ), anyMap(), nullable( Duration.class ), anyString() );
         txManagerOrder.verify( transactionManager ).runQuery( TX_ID, "query", MapValue.EMPTY );
         txManagerOrder.verify( transactionManager ).rollback( TX_ID );
-        txManagerOrder.verify( transactionManager ).cleanUp( any( CleanUpTransactionContext.class ) );
+        txManagerOrder.verify( transactionManager ).cleanUp( eq( new CleanUpConnectionContext( TX_ID ) ) );
         verifyNoMoreInteractions( transactionManager );
 
         verify( registry ).forget( 123L );
@@ -500,7 +499,7 @@ class InvocationTest
         txManagerOrder.verify( transactionManager ).runQuery( TX_ID, "query", MapValue.EMPTY );
         txManagerOrder.verify( transactionManager ).pullData( any( String.class ), any( Integer.class ), any( Long.class ), any( ResultConsumer.class ) );
         txManagerOrder.verify( transactionManager ).commit( TX_ID );
-        txManagerOrder.verify( transactionManager ).cleanUp( any( CleanUpTransactionContext.class ) );
+        txManagerOrder.verify( transactionManager ).cleanUp( eq( new CleanUpConnectionContext( TX_ID ) ) );
         verifyNoMoreInteractions( transactionManager );
 
         InOrder outputOrder = inOrder( outputEventStream );
@@ -533,7 +532,7 @@ class InvocationTest
         invocation.execute( outputEventStream );
 
         // then
-        verify( log ).error( eq( "Failed to start transaction" ), any( KernelException.class ) );
+        verify( log ).error( eq( "Failed to start transaction" ), any( KernelException.class ) ); //todo how does cleanup work here
 
         InOrder outputOrder = inOrder( outputEventStream );
         outputOrder.verify( outputEventStream ).writeFailure( any(), any() ); //todo more specific
@@ -603,7 +602,7 @@ class InvocationTest
                       .begin( any( LoginContext.class ), anyString(), anyList(), eq( true ), anyMap(), nullable( Duration.class ), anyString() );
         txManagerOrder.verify( transactionManager ).runQuery( TX_ID, queryText, MapValue.EMPTY );
         txManagerOrder.verify( transactionManager ).rollback( TX_ID );
-        txManagerOrder.verify( transactionManager ).cleanUp( any( CleanUpTransactionContext.class ) );
+        txManagerOrder.verify( transactionManager ).cleanUp( eq( new CleanUpConnectionContext( TX_ID ) ) );
         verifyNoMoreInteractions( transactionManager );
 
         InOrder outputOrder = inOrder( outputEventStream );
@@ -641,7 +640,7 @@ class InvocationTest
                       .begin( any( LoginContext.class ), anyString(), anyList(), eq( true ), anyMap(), nullable( Duration.class ), anyString() );
         txManagerOrder.verify( transactionManager ).runQuery( TX_ID, "query", MapValue.EMPTY );
         txManagerOrder.verify( transactionManager ).rollback( TX_ID );
-        txManagerOrder.verify( transactionManager ).cleanUp( any( CleanUpTransactionContext.class ) );
+        txManagerOrder.verify( transactionManager ).cleanUp( eq( new CleanUpConnectionContext( TX_ID ) ) );
         verifyNoMoreInteractions( transactionManager );
 
         InOrder outputOrder = inOrder( outputEventStream );
@@ -680,7 +679,7 @@ class InvocationTest
                       .begin( any( LoginContext.class ), anyString(), anyList(), eq( true ), anyMap(), nullable( Duration.class ), anyString() );
         txManagerOrder.verify( transactionManager ).runQuery( TX_ID, "query", MapValue.EMPTY );
         txManagerOrder.verify( transactionManager ).rollback( TX_ID );
-        txManagerOrder.verify( transactionManager ).cleanUp( any( CleanUpTransactionContext.class ) );
+        txManagerOrder.verify( transactionManager ).cleanUp( eq( new CleanUpConnectionContext( TX_ID ) ) );
         verifyNoMoreInteractions( transactionManager );
 
         InOrder outputOrder = inOrder( outputEventStream );
@@ -744,7 +743,7 @@ class InvocationTest
                       .begin( any( LoginContext.class ), anyString(), anyList(), eq( true ), anyMap(), nullable( Duration.class ), anyString() );
         txManagerOrder.verify( transactionManager ).runQuery( TX_ID, "query", MapValue.EMPTY );
         txManagerOrder.verify( transactionManager ).rollback( TX_ID );
-        txManagerOrder.verify( transactionManager ).cleanUp( any( CleanUpTransactionContext.class ) );
+        txManagerOrder.verify( transactionManager ).cleanUp( eq( new CleanUpConnectionContext( TX_ID ) ) );
         verifyNoMoreInteractions( transactionManager );
 
         InOrder outputOrder = inOrder( outputEventStream );
@@ -796,6 +795,7 @@ class InvocationTest
 
         // then
         verify( transactionManager ).rollback( TX_ID );
+        verify( transactionManager ).cleanUp( eq( new CleanUpConnectionContext( TX_ID ) ) );
         verify( registry ).forget( 123L );
 
         InOrder outputOrder = inOrder( outputEventStream );
@@ -823,6 +823,7 @@ class InvocationTest
 
         // then
         verify( transactionManager ).rollback( TX_ID );
+        verify( transactionManager ).cleanUp( eq( new CleanUpConnectionContext( TX_ID ) ) );
         verify( registry ).forget( 123L );
 
         verifyNoInteractions( outputEventStream );
@@ -848,6 +849,7 @@ class InvocationTest
         // then
         verify( transactionManager, never() ).rollback( TX_ID );
         verify( transactionManager, never() ).commit( TX_ID );
+        verify( transactionManager, never() ).cleanUp( any( CleanUpConnectionContext.class ) );
         verify( registry, never() ).forget( 1337L );
 
         verifyNoInteractions( outputEventStream );
@@ -878,6 +880,7 @@ class InvocationTest
 
         // then
         verify( transactionManager ).rollback( TX_ID );
+        verify( transactionManager ).cleanUp( eq( new CleanUpConnectionContext( "1337" ) ) );
         verify( registry ).forget( 1337L );
 
         InOrder outputOrder = inOrder( outputEventStream );
@@ -913,6 +916,7 @@ class InvocationTest
 
         // then
         verify( transactionManager, never() ).rollback( TX_ID );
+        verify( transactionManager, never() ).cleanUp( any( CleanUpConnectionContext.class ) );
         verify( registry, never() ).forget( 1337L );
 
         InOrder outputOrder = inOrder( outputEventStream );
@@ -995,7 +999,7 @@ class InvocationTest
         txManagerOrder.verify( transactionManager ).runQuery( TX_ID, "query", MapValue.EMPTY );
         txManagerOrder.verify( transactionManager ).pullData( any( String.class ), any( Integer.class ), any( Long.class ), any( ResultConsumer.class ) );
         txManagerOrder.verify( transactionManager ).commit( TX_ID );
-        txManagerOrder.verify( transactionManager ).cleanUp( any( CleanUpTransactionContext.class ) );
+        txManagerOrder.verify( transactionManager ).cleanUp( eq( new CleanUpConnectionContext( TX_ID ) ) );
         verifyNoMoreInteractions( transactionManager );
 
         // then verify output
@@ -1067,6 +1071,7 @@ class InvocationTest
         }
     };
 
+    //todo test open tx state
     private void setupResultMocks() throws Throwable
     {
         var fieldNames = List.of( "c1", "c2", "c3" ).toArray( new String[0] );

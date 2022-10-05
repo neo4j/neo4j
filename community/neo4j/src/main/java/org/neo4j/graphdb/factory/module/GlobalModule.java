@@ -267,6 +267,7 @@ public class GlobalModule
 
         //transaction manager used for Bolt and HTTP interfaces
         transactionManager = new StatementProcessorTxManager();
+        globalDependencies.satisfyDependency( transactionManager );
 
         capabilitiesService = loadCapabilities();
         globalDependencies.satisfyDependency( capabilitiesService );
