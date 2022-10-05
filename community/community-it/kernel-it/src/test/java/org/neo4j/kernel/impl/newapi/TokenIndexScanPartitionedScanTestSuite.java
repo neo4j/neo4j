@@ -260,9 +260,12 @@ public abstract class TokenIndexScanPartitionedScanTestSuite<CURSER extends Curs
             }
 
             // then   all the entities with matching the query should be found
-            softly.assertThat(foundInLeading)
-                    .as("only the expected data found matching %s", leadingQuery)
-                    .containsExactlyInAnyOrderElementsOf(leadingExpectedMatches);
+            if (!leadingExpectedMatches.equals(foundInLeading)) {
+                // only use softly if we see that there's a mismatch because the call is absurdly ultra slow
+                softly.assertThat(foundInLeading)
+                        .as("only the expected data found matching %s", leadingQuery)
+                        .containsExactlyInAnyOrderElementsOf(leadingExpectedMatches);
+            }
 
             return estimatedLeadingRanges;
         }
@@ -294,17 +297,22 @@ public abstract class TokenIndexScanPartitionedScanTestSuite<CURSER extends Curs
             }
 
             // then   all the entities with matching the query should be found
-            softly.assertThat(foundInFollowing)
-                    .as("only the expected data found matching %s", followingQuery)
-                    .containsExactlyInAnyOrderElementsOf(followingExpectedMatched);
+            if (!followingExpectedMatched.equals(foundInFollowing)) {
+                // only use softly if we see that there's a mismatch because the call is absurdly ultra slow
+                softly.assertThat(foundInFollowing)
+                        .as("only the expected data found matching %s", followingQuery)
+                        .containsExactlyInAnyOrderElementsOf(followingExpectedMatched);
+            }
 
-            // then   all estimated ranges should be strictly less than the next
-            for (int i = 1; i < estimatedRanges.size(); i++) {
-                final var prev = estimatedRanges.get(i - 1);
-                final var curr = estimatedRanges.get(i);
-                softly.assertThat(Range.strictlyLessThan(prev, curr))
-                        .as("%s is strictly less than %s", prev, curr)
-                        .isTrue();
+            if (!storageEngine.indexingBehaviour().useNodeIdsInRelationshipTypeScanIndex()) {
+                // then   all estimated ranges should be strictly less than the next
+                for (int i = 1; i < estimatedRanges.size(); i++) {
+                    final var prev = estimatedRanges.get(i - 1);
+                    final var curr = estimatedRanges.get(i);
+                    softly.assertThat(Range.strictlyLessThan(prev, curr))
+                            .as("%s is strictly less than %s", prev, curr)
+                            .isTrue();
+                }
             }
         }
 

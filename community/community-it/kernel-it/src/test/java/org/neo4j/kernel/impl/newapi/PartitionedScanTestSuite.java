@@ -50,12 +50,14 @@ import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelExce
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.WorkerContext;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.PartitionedScanFactory;
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.Tags;
@@ -75,6 +77,12 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
 
     @InjectSoftAssertions
     protected SoftAssertions softly;
+
+    @Inject
+    protected StorageEngine storageEngine;
+
+    @Inject
+    protected Kernel kernel;
 
     abstract Queries<QUERY> setupDatabase();
 
@@ -251,9 +259,12 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
                     }
 
                     // then   the entities found should be a subset of all entities that would have matched that query
-                    softly.assertThat(expectedMatches)
-                            .as("subset of all matches for %s", query)
-                            .containsAll(found);
+                    if (!expectedMatches.containsAll(found)) {
+                        // only use softly if we see that there's a mismatch because the call is absurdly ultra slow
+                        softly.assertThat(expectedMatches)
+                                .as("subset of all matches for %s", query)
+                                .containsAll(found);
+                    }
                 }
             }
         }
@@ -316,9 +327,12 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
                     }
 
                     // then   all the entities with matching the query should be found
-                    softly.assertThat(found)
-                            .as("only the expected data found matching %s", query)
-                            .containsExactlyInAnyOrderElementsOf(expectedMatches);
+                    if (!expectedMatches.equals(found)) {
+                        // only use softly if we see that there's a mismatch because the call is absurdly ultra slow
+                        softly.assertThat(found)
+                                .as("only the expected data found matching %s", query)
+                                .containsExactlyInAnyOrderElementsOf(expectedMatches);
+                    }
                 }
             }
         }
@@ -343,7 +357,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
                     // given  each partition distributed over multiple threads
                     final var allFound = Collections.synchronizedSet(new HashSet<Long>());
                     final var workerContexts =
-                            TestUtils.createContexts(tx, factory.getCursor(tx.cursors())::with, numberOfThreads);
+                            TestUtils.createContexts(tx, factory.getCursor(kernel.cursors())::with, numberOfThreads);
                     final var race = new Race();
                     for (final var workerContext : workerContexts) {
                         race.addContestant(() -> {
@@ -374,9 +388,12 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
                     workerContexts.forEach(WorkerContext::close);
 
                     // then   all the entities with matching the query should be found
-                    softly.assertThat(allFound)
-                            .as("only the expected data found matching %s", query)
-                            .containsExactlyInAnyOrderElementsOf(expectedMatches);
+                    if (!expectedMatches.equals(allFound)) {
+                        // only use softly if we see that there's a mismatch because the call is absurdly ultra slow
+                        softly.assertThat(allFound)
+                                .as("only the expected data found matching %s", query)
+                                .containsExactlyInAnyOrderElementsOf(expectedMatches);
+                    }
                 }
             }
         }
