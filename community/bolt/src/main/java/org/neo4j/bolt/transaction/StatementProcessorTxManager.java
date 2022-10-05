@@ -234,4 +234,14 @@ public class StatementProcessorTxManager implements TransactionManager {
             throw new RuntimeException(ex);
         }
     }
+
+    @VisibleForTesting
+    public int transactionCount() {
+        return statementProcessors.size();
+    }
+
+    @VisibleForTesting
+    public int statementProcessorProviderCount() {
+        return statementProcessorProviders.size();
+    }
 }

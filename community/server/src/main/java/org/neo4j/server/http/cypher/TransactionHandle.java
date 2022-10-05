@@ -166,6 +166,7 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
 
     void forceRollback() throws TransactionNotFoundException {
         transactionManager.rollback(txManagerTxId);
+        transactionManager.cleanUp(new CleanUpConnectionContext(Long.toString(id)));
     }
 
     void suspendTransaction() {
@@ -176,8 +177,8 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
         try {
             transactionManager.commit(txManagerTxId);
         } finally {
-            transactionManager.cleanUp(new CleanUpTransactionContext(txManagerTxId));
             registry.forget(id);
+            transactionManager.cleanUp(new CleanUpConnectionContext(Long.toString(id)));
         }
     }
 
@@ -188,7 +189,7 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
             // ignore - Transaction already rolled back by release mechanism.
         } finally {
             registry.forget(id);
-            transactionManager.cleanUp(new CleanUpTransactionContext(txManagerTxId));
+            transactionManager.cleanUp(new CleanUpConnectionContext(Long.toString(id)));
         }
     }
 
