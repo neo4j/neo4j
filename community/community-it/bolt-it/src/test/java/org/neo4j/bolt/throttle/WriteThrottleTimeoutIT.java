@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.bolt.protocol.common.handler.HouseKeeperHandler;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
@@ -58,7 +59,10 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 /**
  * Ensures that Bolt correctly terminates connections when a client fails to consume messages thus triggering
  * backpressure through the outgoing message buffer.
+ * <p />
+ * FIXME: Disabled due to flakiness on certain operating systems. Likely needs a rewrite.
  */
+@Disabled
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
 @BoltTestExtension
