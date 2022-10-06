@@ -24,12 +24,13 @@ import static java.lang.String.format;
 import static java.lang.System.nanoTime;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.LongConsumer;
 import java.util.function.LongPredicate;
 import org.eclipse.collections.api.block.function.primitive.LongToLongFunction;
-import org.neo4j.internal.unsafe.UnsafeUtil;
 
 /**
  * Latch which acquires and releases read/write locks using compare-and-swap on a {@code long} field.
@@ -40,7 +41,6 @@ import org.neo4j.internal.unsafe.UnsafeUtil;
  * This functionality allows these latches to be used in e.g. a {@link ConcurrentHashMap}.
  */
 class LongSpinLatch {
-    private static final long BITS_OFFSET = UnsafeUtil.getFieldOffset(LongSpinLatch.class, "bits");
     private static final long MAX_SPIN_NANOS = MICROSECONDS.toNanos(500);
     private static final long PARK_NANOS = MICROSECONDS.toNanos(100);
     private static final long TEST_FAILED = -1;
@@ -80,7 +80,18 @@ class LongSpinLatch {
     //
     // 48 tree node id bits => 281 trillion, 2 quintillion bytes, which is more than the page cache supports
     // 15 read lock bits => max 32769 concurrent threads holding a single read lock. Should be good for anyone
-    private long bits;
+    @SuppressWarnings("FieldMayBeFinal") // Accessed through VarHandle
+    private volatile long lockBits;
+
+    private static final VarHandle LOCK_BITS;
+
+    static {
+        try {
+            LOCK_BITS = MethodHandles.lookup().findVarHandle(LongSpinLatch.class, "lockBits", long.class);
+        } catch (ReflectiveOperationException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
 
     /**
      * Instantiates a latch which can be acquired, with one or more acquisitions, released, acquired again until finally
@@ -90,7 +101,7 @@ class LongSpinLatch {
      */
     LongSpinLatch(long treeNodeId, LongConsumer removeAction) {
         assert treeNodeId > 0;
-        bits = treeNodeId << TREE_NODE_ID_SHIFT;
+        lockBits = treeNodeId << TREE_NODE_ID_SHIFT;
         initialTreeNodeId = treeNodeId;
         this.removeAction = removeAction;
     }
@@ -197,7 +208,7 @@ class LongSpinLatch {
                 Thread.onSpinWait();
             } else {
                 transformedBits = transformer.applyAsLong(bits);
-                if (UnsafeUtil.compareAndSwapLong(this, BITS_OFFSET, bits, transformedBits)) {
+                if (LOCK_BITS.compareAndSet(this, bits, transformedBits)) {
                     break;
                 }
                 // Continue spinning here since we're close to making the transformation,
@@ -216,7 +227,7 @@ class LongSpinLatch {
     }
 
     private long volatileGetBits() {
-        return UnsafeUtil.getLongVolatile(this, BITS_OFFSET);
+        return (long) LOCK_BITS.getVolatile(this);
     }
 
     @Override
