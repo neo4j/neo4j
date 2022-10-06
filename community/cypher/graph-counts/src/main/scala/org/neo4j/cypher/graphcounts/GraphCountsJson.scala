@@ -28,11 +28,17 @@ import org.json4s.JString
 import org.json4s.StringInput
 import org.json4s.native.JsonMethods
 import org.neo4j.internal.schema.ConstraintType
+import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
+import org.neo4j.internal.schema.IndexType.RANGE
 
 import java.io.File
 
 object GraphCountsJson {
+
+  val allFormatsExceptRowSerializer: Formats =
+    DefaultFormats + IndexTypeSerializer + IndexProviderSerializer + ConstraintTypeSerializer
+  val allFormats: Formats = allFormatsExceptRowSerializer + RowSerializer
 
   /**
    * Given a JSON file obtained from the data collector, e.g. via
@@ -44,22 +50,22 @@ object GraphCountsJson {
    * @return the scala representation
    */
   def parseAsGraphCountData(file: File): GraphCountData = {
-    implicit val formats: Formats = DefaultFormats + RowSerializer + IndexTypeSerializer + ConstraintTypeSerializer
+    implicit val formats: Formats = allFormats
     JsonMethods.parse(FileInput(file)).extract[GraphCountData]
   }
 
   def parseAsGraphCountsJson(file: File): DbStatsRetrieveGraphCountsJSON = {
-    implicit val formats: Formats = DefaultFormats + RowSerializer + IndexTypeSerializer + ConstraintTypeSerializer
+    implicit val formats: Formats = allFormats
     JsonMethods.parse(FileInput(file)).extract[DbStatsRetrieveGraphCountsJSON]
   }
 
   def parseAsGraphCountDataFromString(str: String): GraphCountData = {
-    implicit val formats: Formats = DefaultFormats + RowSerializer + IndexTypeSerializer + ConstraintTypeSerializer
+    implicit val formats: Formats = allFormats
     JsonMethods.parse(StringInput(str)).extract[GraphCountData]
   }
 
   def parseAsGraphCountsJsonFromString(str: String): DbStatsRetrieveGraphCountsJSON = {
-    implicit val formats: Formats = DefaultFormats + RowSerializer + IndexTypeSerializer + ConstraintTypeSerializer
+    implicit val formats: Formats = allFormats
     JsonMethods.parse(StringInput(str)).extract[DbStatsRetrieveGraphCountsJSON]
   }
 }
@@ -83,7 +89,24 @@ case class GraphCountData(
   indexes: Seq[Index],
   nodes: Seq[NodeCount],
   relationships: Seq[RelationshipCount]
-)
+) {
+
+  def matchingUniquenessConstraintExists(index: Index): Boolean = {
+    index match {
+      case Index(Some(Seq(label)), None, RANGE, properties, _, _, _, _) => constraints.exists {
+          case Constraint(Some(`label`), None, `properties`, ConstraintType.UNIQUE)        => true
+          case Constraint(Some(`label`), None, `properties`, ConstraintType.UNIQUE_EXISTS) => true
+          case _                                                                           => false
+        }
+      case Index(None, Some(Seq(relType)), RANGE, properties, _, _, _, _) => constraints.exists {
+          case Constraint(None, Some(`relType`), `properties`, ConstraintType.UNIQUE)        => true
+          case Constraint(None, Some(`relType`), `properties`, ConstraintType.UNIQUE_EXISTS) => true
+          case _                                                                             => false
+        }
+      case _ => false
+    }
+  }
+}
 
 case class Constraint(
   label: Option[String],
@@ -99,7 +122,8 @@ case class Index(
   properties: Seq[String],
   totalSize: Long,
   estimatedUniqueSize: Long,
-  updatesSinceEstimation: Long
+  updatesSinceEstimation: Long,
+  indexProvider: IndexProviderDescriptor
 )
 
 case class NodeCount(count: Long, label: Option[String])
@@ -119,7 +143,7 @@ case object RowSerializer extends CustomSerializer[Row](format =>
       (
         {
           case JArray(arr) =>
-            implicit val formats: Formats = DefaultFormats + IndexTypeSerializer + ConstraintTypeSerializer
+            implicit val formats: Formats = GraphCountsJson.allFormatsExceptRowSerializer
             Row(arr.head.extract[String], arr.last.extract[GraphCountData])
         },
         {
@@ -135,6 +159,19 @@ case object IndexTypeSerializer extends CustomSerializer[IndexType](format =>
         },
         {
           case indexType: IndexType => JString(indexType.name())
+        }
+      )
+    )
+
+case object IndexProviderSerializer extends CustomSerializer[IndexProviderDescriptor](format =>
+      (
+        {
+          case JString(stringValue) =>
+            val (key, dashVersion) = stringValue.splitAt(stringValue.lastIndexOf('-'))
+            new IndexProviderDescriptor(key, dashVersion.drop(1))
+        },
+        {
+          case indexProvider: IndexProviderDescriptor => JString(indexProvider.name())
         }
       )
     )

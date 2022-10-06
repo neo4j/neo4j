@@ -19,20 +19,20 @@
  */
 package org.neo4j.cypher.graphcounts
 
-import org.json4s.DefaultFormats
 import org.json4s.Formats
 import org.json4s.StringInput
 import org.json4s.native.JsonMethods
+import org.neo4j.cypher.graphcounts.GraphCountsJson.allFormats
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.schema.ConstraintType
+import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 
 class GraphCountsJsonTest extends CypherFunSuite {
 
-  implicit val formats: Formats = DefaultFormats + RowSerializer
+  implicit val formats: Formats = allFormats
 
   test("Constraint") {
-    implicit val formats: Formats = DefaultFormats + ConstraintTypeSerializer
     JsonMethods.parse(StringInput(
       """
         |{
@@ -54,7 +54,6 @@ class GraphCountsJsonTest extends CypherFunSuite {
   }
 
   test("Relationship Existence Constraint") {
-    implicit val formats: Formats = DefaultFormats + ConstraintTypeSerializer
     JsonMethods.parse(StringInput(
       """
         |{
@@ -76,7 +75,6 @@ class GraphCountsJsonTest extends CypherFunSuite {
   }
 
   test("index for label") {
-    implicit val formats: Formats = DefaultFormats + IndexTypeSerializer
     JsonMethods.parse(StringInput(
       """
         |{
@@ -89,16 +87,25 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |    ],
         |    "totalSize": 2,
         |    "updatesSinceEstimation": 0,
-        |    "indexType": "RANGE"
+        |    "indexType": "RANGE",
+        |    "indexProvider": "range-1.0"
         |}
       """.stripMargin
     )).extract[Index] should be(
-      Index(Some(Seq("Person")), None, IndexType.RANGE, Seq("uuid"), 2, 2, 0)
+      Index(
+        Some(Seq("Person")),
+        None,
+        IndexType.RANGE,
+        Seq("uuid"),
+        2,
+        2,
+        0,
+        new IndexProviderDescriptor("range", "1.0")
+      )
     )
   }
 
   test("index for relationship type") {
-    implicit val formats: Formats = DefaultFormats + IndexTypeSerializer
     JsonMethods.parse(StringInput(
       """
         |{
@@ -111,16 +118,16 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |    ],
         |    "totalSize": 2,
         |    "updatesSinceEstimation": 0,
-        |    "indexType": "RANGE"
+        |    "indexType": "RANGE",
+        |    "indexProvider": "range-1.0"
         |}
       """.stripMargin
     )).extract[Index] should be(
-      Index(None, Some(Seq("REL")), IndexType.RANGE, Seq("prop"), 2, 2, 0)
+      Index(None, Some(Seq("REL")), IndexType.RANGE, Seq("prop"), 2, 2, 0, new IndexProviderDescriptor("range", "1.0"))
     )
   }
 
   test("lookup index for label") {
-    implicit val formats: Formats = DefaultFormats + IndexTypeSerializer
     JsonMethods.parse(StringInput(
       """
         |{
@@ -128,16 +135,16 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |    "labels": [],
         |    "totalSize": 0,
         |    "updatesSinceEstimation": 0,
-        |    "indexType": "LOOKUP"
+        |    "indexType": "LOOKUP",
+        |    "indexProvider": "token-lookup-1.0"
         |}
       """.stripMargin
     )).extract[Index] should be(
-      Index(Some(Seq()), None, IndexType.LOOKUP, Seq(), 0, 0, 0)
+      Index(Some(Seq()), None, IndexType.LOOKUP, Seq(), 0, 0, 0, new IndexProviderDescriptor("token-lookup", "1.0"))
     )
   }
 
   test("lookup index for relationship type") {
-    implicit val formats: Formats = DefaultFormats + IndexTypeSerializer
     JsonMethods.parse(StringInput(
       """
         |{
@@ -145,11 +152,12 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |    "relationshipTypes": [],
         |    "totalSize": 0,
         |    "updatesSinceEstimation": 0,
-        |    "indexType": "LOOKUP"
+        |    "indexType": "LOOKUP",
+        |    "indexProvider": "token-lookup-1.0"
         |}
       """.stripMargin
     )).extract[Index] should be(
-      Index(None, Some(Seq()), IndexType.LOOKUP, Seq(), 0, 0, 0)
+      Index(None, Some(Seq()), IndexType.LOOKUP, Seq(), 0, 0, 0, new IndexProviderDescriptor("token-lookup", "1.0"))
     )
   }
 
@@ -232,7 +240,6 @@ class GraphCountsJsonTest extends CypherFunSuite {
   }
 
   test("GraphCountData") {
-    implicit val formats: Formats = DefaultFormats + IndexTypeSerializer + ConstraintTypeSerializer
     JsonMethods.parse(StringInput(
       """
         |{"constraints": [{
@@ -252,7 +259,8 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |    ],
         |    "totalSize": 4,
         |    "updatesSinceEstimation": 0,
-        |    "indexType": "RANGE"
+        |    "indexType": "RANGE",
+        |    "indexProvider" : "range-1.0"
         |}],
         |"nodes": [{
         |    "count": 1,
@@ -267,7 +275,16 @@ class GraphCountsJsonTest extends CypherFunSuite {
     )).extract[GraphCountData] should be(
       GraphCountData(
         Seq(Constraint(Some("SSLCertificate"), None, Seq("serialNumber"), ConstraintType.UNIQUE)),
-        Seq(Index(Some(Seq("SSLCertificate")), None, IndexType.RANGE, Seq("serialNumber"), 4, 4, 0)),
+        Seq(Index(
+          Some(Seq("SSLCertificate")),
+          None,
+          IndexType.RANGE,
+          Seq("serialNumber"),
+          4,
+          4,
+          0,
+          new IndexProviderDescriptor("range", "1.0")
+        )),
         Seq(NodeCount(1, Some("VettingProvider"))),
         Seq(RelationshipCount(1, Some("HAS_GEOLOCATION"), Some("Address"), None))
       )

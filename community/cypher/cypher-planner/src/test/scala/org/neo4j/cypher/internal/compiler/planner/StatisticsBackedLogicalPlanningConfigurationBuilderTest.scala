@@ -25,7 +25,12 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getProvidesOrder
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getWithValues
 import org.neo4j.internal.schema.IndexCapability
+import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
+import org.neo4j.kernel.api.impl.schema.TextIndexProvider
+import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider
+import org.neo4j.kernel.impl.index.schema.PointIndexProvider
+import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.contain
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
@@ -38,102 +43,114 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends AnyFunSuit
    */
   val unsupportedIndexTypes: Set[IndexType] = Set(IndexType.LOOKUP, IndexType.FULLTEXT)
 
-  private def indexCapability(indexType: IndexType): IndexCapability = indexType match {
-    case IndexType.TEXT  => IndexCapabilities.text_2_0
-    case IndexType.RANGE => IndexCapabilities.range
-    case IndexType.POINT => IndexCapabilities.point
+  private def indexCapability(indexProviderDescriptor: IndexProviderDescriptor): IndexCapability =
+    indexProviderDescriptor match {
+      case TextIndexProvider.DESCRIPTOR    => IndexCapabilities.text_1_0
+      case TrigramIndexProvider.DESCRIPTOR => IndexCapabilities.text_2_0
+      case RangeIndexProvider.DESCRIPTOR   => IndexCapabilities.range
+      case PointIndexProvider.DESCRIPTOR   => IndexCapabilities.point
+    }
+
+  private def indexProviders(indexType: IndexType): Seq[IndexProviderDescriptor] = indexType match {
+    case IndexType.TEXT  => Seq(TextIndexProvider.DESCRIPTOR, TrigramIndexProvider.DESCRIPTOR)
+    case IndexType.RANGE => Seq(RangeIndexProvider.DESCRIPTOR)
+    case IndexType.POINT => Seq(PointIndexProvider.DESCRIPTOR)
   }
 
   test("processGraphCount for node indexes") {
-    IndexType.values()
-      .filter(!unsupportedIndexTypes.contains(_))
-      .foreach { indexType =>
-        withClue(s"with ${indexType.name.toLowerCase} index") {
+    for {
+      indexType <- IndexType.values()
+      if !unsupportedIndexTypes.contains(indexType)
+      indexProvider <- indexProviders(indexType)
+    } {
+      withClue(s"with ${indexType.name.toLowerCase} index and ${indexProvider.name()} provider:") {
+        val personCount = 20
+        val json =
+          s"""
+             |{
+             |  "relationships":[],
+             |  "nodes":[
+             |    {"count":150},
+             |    {"count":$personCount,"label":"Person"}
+             |  ],
+             |  "indexes":[
+             |    {
+             |      "updatesSinceEstimation":0,
+             |      "totalSize":1,
+             |      "properties":["name"],
+             |      "labels":["Person"],
+             |      "indexType":"${indexType.name}",
+             |      "indexProvider":"${indexProvider.name()}",
+             |      "estimatedUniqueSize": 1
+             |    }
+             |  ],
+             |  "constraints":[]
+             |}
+             |""".stripMargin
 
-          val personCount = 20
-          val json =
-            s"""
-               |{
-               |  "relationships":[],
-               |  "nodes":[
-               |    {"count":150},
-               |    {"count":$personCount,"label":"Person"}
-               |  ],
-               |  "indexes":[
-               |    {
-               |      "updatesSinceEstimation":0,
-               |      "totalSize":1,
-               |      "properties":["name"],
-               |      "labels":["Person"],
-               |      "indexType":"${indexType.name}",
-               |      "estimatedUniqueSize": 1
-               |    }
-               |  ],
-               |  "constraints":[]
-               |}
-               |""".stripMargin
-
-          val graphCountData = GraphCountsJson.parseAsGraphCountDataFromString(json)
-          val planner = plannerBuilder().processGraphCounts(graphCountData)
-          planner.indexes.propertyIndexes should contain only IndexDefinition(
-            entityType = IndexDefinition.EntityType.Node("Person"),
-            indexType = indexType.toPublicApi,
-            propertyKeys = Seq("name"),
-            uniqueValueSelectivity = 1,
-            propExistsSelectivity = 1.0 / personCount,
-            withValues = getWithValues(indexType),
-            withOrdering = getProvidesOrder(indexType),
-            indexCapability = indexCapability(indexType)
-          )
-        }
+        val graphCountData = GraphCountsJson.parseAsGraphCountDataFromString(json)
+        val planner = plannerBuilder().processGraphCounts(graphCountData)
+        planner.indexes.propertyIndexes should contain only IndexDefinition(
+          entityType = IndexDefinition.EntityType.Node("Person"),
+          indexType = indexType.toPublicApi,
+          propertyKeys = Seq("name"),
+          uniqueValueSelectivity = 1,
+          propExistsSelectivity = 1.0 / personCount,
+          withValues = getWithValues(indexType),
+          withOrdering = getProvidesOrder(indexType),
+          indexCapability = indexCapability(indexProvider)
+        )
       }
+    }
   }
 
   test("processGraphCount for relationship indexes") {
-    IndexType.values()
-      .filter(!unsupportedIndexTypes.contains(_))
-      .foreach { indexType =>
-        withClue(s"with ${indexType.name.toLowerCase} index") {
+    for {
+      indexType <- IndexType.values()
+      if !unsupportedIndexTypes.contains(indexType)
+      indexProvider <- indexProviders(indexType)
+    } {
+      withClue(s"with ${indexType.name.toLowerCase} index and ${indexProvider.name()} provider:") {
+        val friendCount = 20
+        val json =
+          s"""
+             |{
+             |  "relationships":[
+             |    {"count":500},
+             |    {"count":$friendCount,"relationshipType":"FRIEND"}
+             |  ],
+             |  "nodes":[
+             |    {"count":150},
+             |    {"count":80,"label":"Person"}
+             |  ],
+             |  "indexes":[
+             |    {
+             |      "updatesSinceEstimation":0,
+             |      "totalSize":1,
+             |      "properties":["name"],
+             |      "relationshipTypes":["FRIEND"],
+             |      "indexType":"${indexType.name}",
+             |      "indexProvider":"${indexProvider.name()}",
+             |      "estimatedUniqueSize": 1
+             |    }
+             |  ],
+             |  "constraints":[]
+             |}
+             |""".stripMargin
 
-          val friendCount = 20
-          val json =
-            s"""
-               |{
-               |  "relationships":[
-               |    {"count":500},
-               |    {"count":$friendCount,"relationshipType":"FRIEND"}
-               |  ],
-               |  "nodes":[
-               |    {"count":150},
-               |    {"count":80,"label":"Person"}
-               |  ],
-               |  "indexes":[
-               |    {
-               |      "updatesSinceEstimation":0,
-               |      "totalSize":1,
-               |      "properties":["name"],
-               |      "relationshipTypes":["FRIEND"],
-               |      "indexType":"${indexType.name}",
-               |      "estimatedUniqueSize": 1
-               |    }
-               |  ],
-               |  "constraints":[]
-               |}
-               |""".stripMargin
-
-          val graphCountData = GraphCountsJson.parseAsGraphCountDataFromString(json)
-          val planner = plannerBuilder().processGraphCounts(graphCountData)
-          planner.indexes.propertyIndexes should contain only IndexDefinition(
-            entityType = IndexDefinition.EntityType.Relationship("FRIEND"),
-            indexType = indexType.toPublicApi,
-            propertyKeys = Seq("name"),
-            uniqueValueSelectivity = 1,
-            propExistsSelectivity = 1.0 / friendCount,
-            withValues = getWithValues(indexType),
-            withOrdering = getProvidesOrder(indexType),
-            indexCapability = indexCapability(indexType)
-          )
-        }
+        val graphCountData = GraphCountsJson.parseAsGraphCountDataFromString(json)
+        val planner = plannerBuilder().processGraphCounts(graphCountData)
+        planner.indexes.propertyIndexes should contain only IndexDefinition(
+          entityType = IndexDefinition.EntityType.Relationship("FRIEND"),
+          indexType = indexType.toPublicApi,
+          propertyKeys = Seq("name"),
+          uniqueValueSelectivity = 1,
+          propExistsSelectivity = 1.0 / friendCount,
+          withValues = getWithValues(indexType),
+          withOrdering = getProvidesOrder(indexType),
+          indexCapability = indexCapability(indexProvider)
+        )
       }
+    }
   }
 }

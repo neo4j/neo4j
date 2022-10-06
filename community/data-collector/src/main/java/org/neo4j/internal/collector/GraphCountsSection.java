@@ -172,6 +172,7 @@ final class GraphCountsSection {
             data.put("updatesSinceEstimation", indexSample.updates());
             data.put("estimatedUniqueSize", indexSample.uniqueValues());
             data.put("indexType", indexType.name());
+            data.put("indexProvider", index.getIndexProvider().name());
 
             indexes.add(data);
         }

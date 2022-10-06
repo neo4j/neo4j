@@ -481,22 +481,6 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
    * Process graph count data and return a builder with updated constraints, indexes and counts.
    */
   def processGraphCounts(graphCountData: GraphCountData): StatisticsBackedLogicalPlanningConfigurationBuilder = {
-    def matchingUniquenessConstraintExists(index: Index): Boolean = {
-      index match {
-        case Index(Some(Seq(label)), None, RANGE, properties, _, _, _) => graphCountData.constraints.exists {
-            case Constraint(Some(`label`), None, `properties`, ConstraintType.UNIQUE)        => true
-            case Constraint(Some(`label`), None, `properties`, ConstraintType.UNIQUE_EXISTS) => true
-            case _                                                                           => false
-          }
-        case Index(None, Some(Seq(relType)), RANGE, properties, _, _, _) => graphCountData.constraints.exists {
-            case Constraint(None, Some(`relType`), `properties`, ConstraintType.UNIQUE)        => true
-            case Constraint(None, Some(`relType`), `properties`, ConstraintType.UNIQUE_EXISTS) => true
-            case _                                                                             => false
-          }
-        case _ => false
-      }
-    }
-
     val bare = this
       // Lookup indexes are present in the Graph counts, if they exist.
       .removeNodeLookupIndex()
@@ -534,16 +518,24 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
 
     val withIndexes = (builder: StatisticsBackedLogicalPlanningConfigurationBuilder) =>
       graphCountData.indexes.foldLeft(builder) {
-        case (_, index @ Index(_, _, FULLTEXT, _, _, _, _)) =>
+        case (_, index @ Index(_, _, FULLTEXT, _, _, _, _, _)) =>
           throw new IllegalArgumentException(s"Unsupported index of type FULLTEXT: $index")
-        case (builder, Index(Some(Seq()), None, LOOKUP, Seq(), _, _, _)) =>
+        case (builder, Index(Some(Seq()), None, LOOKUP, Seq(), _, _, _, _)) =>
           builder.addNodeLookupIndex()
-        case (builder, Index(None, Some(Seq()), LOOKUP, Seq(), _, _, _)) =>
+        case (builder, Index(None, Some(Seq()), LOOKUP, Seq(), _, _, _, _)) =>
           builder.addRelationshipLookupIndex()
-        case (builder, i @ Index(Some(Seq(label)), None, indexType, properties, totalSize, estimatedUniqueSize, _)) =>
+        case (
+            builder,
+            i @ Index(Some(Seq(label)), None, indexType, properties, totalSize, estimatedUniqueSize, _, indexProvider)
+          ) =>
           val existsSelectivity = totalSize / builder.cardinalities.labels(label)
           val uniqueSelectivity = 1.0 / estimatedUniqueSize
-          val isUnique = matchingUniquenessConstraintExists(i)
+          val isUnique = graphCountData.matchingUniquenessConstraintExists(i)
+          val maybeIndexCapability = indexProvider.name() match {
+            case "text-1.0" => Some(IndexCapabilities.text_1_0)
+            case "text-2.0" => Some(IndexCapabilities.text_2_0)
+            case _          => None
+          }
           builder.addNodeIndex(
             label,
             properties,
@@ -552,12 +544,21 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
             isUnique = isUnique,
             withValues = getWithValues(indexType),
             providesOrder = getProvidesOrder(indexType),
-            indexType.toPublicApi
+            indexType.toPublicApi,
+            maybeIndexCapability = maybeIndexCapability
           )
-        case (builder, i @ Index(None, Some(Seq(relType)), indexType, properties, totalSize, estimatedUniqueSize, _)) =>
+        case (
+            builder,
+            i @ Index(None, Some(Seq(relType)), indexType, properties, totalSize, estimatedUniqueSize, _, indexProvider)
+          ) =>
           val existsSelectivity = totalSize / builder.cardinalities.getRelCount(RelDef(None, Some(relType), None))
           val uniqueSelectivity = 1.0 / estimatedUniqueSize
-          val isUnique = matchingUniquenessConstraintExists(i)
+          val isUnique = graphCountData.matchingUniquenessConstraintExists(i)
+          val maybeIndexCapability = indexProvider.name() match {
+            case "text-1.0" => Some(IndexCapabilities.text_1_0)
+            case "text-2.0" => Some(IndexCapabilities.text_2_0)
+            case _          => None
+          }
           builder.addRelationshipIndex(
             relType,
             properties,
@@ -566,7 +567,8 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
             isUnique = isUnique,
             withValues = getWithValues(indexType),
             providesOrder = getProvidesOrder(indexType),
-            indexType.toPublicApi
+            indexType.toPublicApi,
+            maybeIndexCapability = maybeIndexCapability
           )
         case (_, index) => throw new IllegalArgumentException(s"Unsupported index: $index")
       }

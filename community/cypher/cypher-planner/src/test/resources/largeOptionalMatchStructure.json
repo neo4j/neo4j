@@ -5,14 +5,16 @@
       "labels": [],
       "totalSize": 0,
       "updatesSinceEstimation": 0,
-      "indexType": "LOOKUP"
+      "indexType": "LOOKUP",
+      "indexProvider": "token-lookup-1.0"
     },
     {
       "estimatedUniqueSize": 0,
       "relationshipTypes": [],
       "totalSize": 0,
       "updatesSinceEstimation": 0,
-      "indexType": "LOOKUP"
+      "indexType": "LOOKUP",
+      "indexProvider": "token-lookup-1.0"
     },
     {
       "labels": [
@@ -24,7 +26,8 @@
       "totalSize": 304838,
       "estimatedUniqueSize": 3,
       "updatesSinceEstimation": 0,
-      "indexType": "RANGE"
+      "indexType": "RANGE",
+      "indexProvider": "range-1.0"
     }
   ],
   "nodes": [

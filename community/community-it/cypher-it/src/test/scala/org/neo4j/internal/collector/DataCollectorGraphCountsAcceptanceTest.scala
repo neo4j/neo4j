@@ -78,7 +78,8 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
         "properties" -> Seq.empty,
         "labels" -> Seq.empty,
         "updatesSinceEstimation" -> 0,
-        "estimatedUniqueSize" -> 0
+        "estimatedUniqueSize" -> 0,
+        "indexProvider" -> "token-lookup-1.0"
       ),
       Map(
         "totalSize" -> 0,
@@ -86,7 +87,8 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
         "properties" -> Seq("textProp"),
         "labels" -> Seq("Label"),
         "updatesSinceEstimation" -> 0,
-        "estimatedUniqueSize" -> 0
+        "estimatedUniqueSize" -> 0,
+        "indexProvider" -> "text-2.0"
       ),
       Map(
         "totalSize" -> 0,
@@ -94,7 +96,8 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
         "properties" -> Seq("pointProp"),
         "labels" -> Seq("Label"),
         "updatesSinceEstimation" -> 0,
-        "estimatedUniqueSize" -> 0
+        "estimatedUniqueSize" -> 0,
+        "indexProvider" -> "point-1.0"
       ),
       Map(
         "totalSize" -> 0,
@@ -102,7 +105,8 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
         "properties" -> Seq("rangeProp"),
         "labels" -> Seq("Label"),
         "updatesSinceEstimation" -> 0,
-        "estimatedUniqueSize" -> 0
+        "estimatedUniqueSize" -> 0,
+        "indexProvider" -> "range-1.0"
       ),
       Map(
         "totalSize" -> 0,
@@ -110,7 +114,8 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
         "properties" -> Seq.empty,
         "relationshipTypes" -> Seq.empty,
         "updatesSinceEstimation" -> 0,
-        "estimatedUniqueSize" -> 0
+        "estimatedUniqueSize" -> 0,
+        "indexProvider" -> "token-lookup-1.0"
       ),
       Map(
         "totalSize" -> 0,
@@ -118,7 +123,8 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
         "properties" -> Seq("textProp"),
         "relationshipTypes" -> Seq("RelationshipType"),
         "updatesSinceEstimation" -> 0,
-        "estimatedUniqueSize" -> 0
+        "estimatedUniqueSize" -> 0,
+        "indexProvider" -> "text-2.0"
       ),
       Map(
         "totalSize" -> 0,
@@ -126,7 +132,8 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
         "properties" -> Seq("pointProp"),
         "relationshipTypes" -> Seq("RelationshipType"),
         "updatesSinceEstimation" -> 0,
-        "estimatedUniqueSize" -> 0
+        "estimatedUniqueSize" -> 0,
+        "indexProvider" -> "point-1.0"
       ),
       Map(
         "totalSize" -> 0,
@@ -134,7 +141,8 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
         "properties" -> Seq("rangeProp"),
         "relationshipTypes" -> Seq("RelationshipType"),
         "updatesSinceEstimation" -> 0,
-        "estimatedUniqueSize" -> 0
+        "estimatedUniqueSize" -> 0,
+        "indexProvider" -> "range-1.0"
       )
     )
   }
@@ -246,7 +254,8 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
         "totalSize" -> 1000,
         "estimatedUniqueSize" -> 1000,
         "updatesSinceEstimation" -> 0,
-        "indexType" -> "RANGE"
+        "indexType" -> "RANGE",
+        "indexProvider" -> "range-1.0"
       ),
       Map(
         "labels" -> List(tokenNames.User),
@@ -254,7 +263,8 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
         "totalSize" -> 500,
         "estimatedUniqueSize" -> 500,
         "updatesSinceEstimation" -> 0,
-        "indexType" -> "RANGE"
+        "indexType" -> "RANGE",
+        "indexProvider" -> "range-1.0"
       ),
       Map(
         "labels" -> List(tokenNames.User),
@@ -262,7 +272,8 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
         "totalSize" -> 300,
         "estimatedUniqueSize" -> 300,
         "updatesSinceEstimation" -> 0,
-        "indexType" -> "RANGE"
+        "indexType" -> "RANGE",
+        "indexProvider" -> "range-1.0"
       ),
       Map(
         "labels" -> List(tokenNames.Room),
@@ -270,7 +281,8 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
         "totalSize" -> 150,
         "estimatedUniqueSize" -> 50,
         "updatesSinceEstimation" -> 0,
-        "indexType" -> "RANGE"
+        "indexType" -> "RANGE",
+        "indexProvider" -> "range-1.0"
       ),
       Map(
         "labels" -> List(tokenNames.Car),
@@ -278,7 +290,8 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
         "totalSize" -> 120,
         "estimatedUniqueSize" -> 120,
         "updatesSinceEstimation" -> 8,
-        "indexType" -> "RANGE"
+        "indexType" -> "RANGE",
+        "indexProvider" -> "range-1.0"
       )
     )
     list(res("data"), "constraints") should contain only
