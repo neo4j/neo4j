@@ -529,7 +529,8 @@ public class AllStoreHolder extends Read {
             if (index == null) {
                 // check if such index was added in this tx
                 var added = indexChanges
-                        .filterAdded(id -> id.schema().equals(schema) && id.getIndexType() == type)
+                        .filterAdded(
+                                id -> id.getIndexType() == type && id.schema().equals(schema))
                         .getAdded();
                 index = singleOrNull(added.iterator());
             }

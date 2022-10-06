@@ -100,14 +100,9 @@ public final class SchemaDescriptorImplementation
         }
 
         switch (entityType) {
-            case NODE:
-                validateLabelIds(entityTokens);
-                break;
-            case RELATIONSHIP:
-                validateRelationshipTypeIds(entityTokens);
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown entity type: " + entityType + ".");
+            case NODE -> validateLabelIds(entityTokens);
+            case RELATIONSHIP -> validateRelationshipTypeIds(entityTokens);
+            default -> throw new IllegalArgumentException("Unknown entity type: " + entityType + ".");
         }
         validatePropertyIds(propertyKeyIds);
     }
@@ -219,14 +214,9 @@ public final class SchemaDescriptorImplementation
     @Override
     public void processWith(SchemaProcessor processor) {
         switch (schemaArchetype) {
-            case LABEL_PROPERTY:
-                processor.processSpecific(this.asLabelSchemaDescriptor());
-                break;
-            case RELATIONSHIP_PROPERTY:
-                processor.processSpecific(this.asRelationshipTypeSchemaDescriptor());
-                break;
-            default:
-                processor.processSpecific((SchemaDescriptor) this);
+            case LABEL_PROPERTY -> processor.processSpecific(this.asLabelSchemaDescriptor());
+            case RELATIONSHIP_PROPERTY -> processor.processSpecific(this.asRelationshipTypeSchemaDescriptor());
+            default -> processor.processSpecific((SchemaDescriptor) this);
         }
     }
 

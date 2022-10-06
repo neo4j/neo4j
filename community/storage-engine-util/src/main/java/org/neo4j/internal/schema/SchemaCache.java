@@ -22,7 +22,6 @@ package org.neo4j.internal.schema;
 import static java.util.Collections.emptySet;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
-import static org.neo4j.internal.helpers.collection.Pair.pair;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -32,6 +31,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -44,7 +44,6 @@ import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.UnifiedSet;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 
@@ -211,7 +210,7 @@ public class SchemaCache {
         private final Set<ConstraintDescriptor> constraints;
 
         private final Map<SchemaDescriptor, Set<IndexDescriptor>> indexesBySchema;
-        private final Map<Pair<SchemaDescriptor, IndexType>, IndexDescriptor> indexesBySchemaAndType;
+        private final Map<TypeDescriptorKey, IndexDescriptor> indexesBySchemaAndType;
         private final SchemaDescriptorLookupSet<IndexDescriptor> indexesByNode;
         private final SchemaDescriptorLookupSet<IndexDescriptor> indexesByRelationship;
         private final SchemaDescriptorLookupSet<IndexBackedConstraintDescriptor> uniquenessConstraintsByNode;
@@ -316,7 +315,7 @@ public class SchemaCache {
         }
 
         IndexDescriptor indexForSchemaAndType(SchemaDescriptor descriptor, IndexType type) {
-            return indexesBySchemaAndType.get(pair(descriptor, type));
+            return indexesBySchemaAndType.get(new TypeDescriptorKey(type, descriptor));
         }
 
         IndexDescriptor indexForName(String name) {
@@ -487,7 +486,7 @@ public class SchemaCache {
                 indexesById.put(index.getId(), index);
                 SchemaDescriptor schema = index.schema();
                 indexesBySchema.merge(schema, Set.of(index), SchemaCacheState::concatImmutableSets);
-                indexesBySchemaAndType.put(pair(schema, index.getIndexType()), index);
+                indexesBySchemaAndType.put(new TypeDescriptorKey(index.getIndexType(), schema), index);
                 indexesByName.put(rule.getName(), index);
                 selectIndexSetByEntityType(schema.entityType()).add(index);
             }
@@ -511,7 +510,7 @@ public class SchemaCache {
                 IndexDescriptor index = indexesById.remove(id);
                 SchemaDescriptor schema = index.schema();
                 indexesBySchema.computeIfPresent(schema, (key, value) -> removeFromImmutable(value, index));
-                indexesBySchemaAndType.remove(pair(schema, index.getIndexType()));
+                indexesBySchemaAndType.remove(new TypeDescriptorKey(index.getIndexType(), schema));
                 indexesByName.remove(index.getName(), index);
                 selectIndexSetByEntityType(schema.entityType()).remove(index);
             }
@@ -719,6 +718,35 @@ public class SchemaCache {
                     unchangedEntityTokens,
                     properties,
                     propertyListIsComplete);
+        }
+    }
+
+    private static class TypeDescriptorKey {
+        private final int hash;
+        private final IndexType type;
+        private final SchemaDescriptor descriptor;
+
+        private TypeDescriptorKey(IndexType type, SchemaDescriptor descriptor) {
+            this.type = type;
+            this.descriptor = descriptor;
+            this.hash = hash(type, descriptor);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            TypeDescriptorKey that = (TypeDescriptorKey) o;
+            return type == that.type && Objects.equals(descriptor, that.descriptor);
+        }
+
+        @Override
+        public int hashCode() {
+            return hash;
+        }
+
+        private static int hash(IndexType type, SchemaDescriptor descriptor) {
+            return Objects.hash(type, descriptor);
         }
     }
 }
