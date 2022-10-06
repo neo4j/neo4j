@@ -161,7 +161,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
   private val systemDbProcedureRules = "The system database supports a restricted set of Cypher clauses. " +
     "The supported clause structure for procedure calls is: CALL, YIELD, RETURN. YIELD and RETURN clauses are optional. " +
-    "The order of the clauses is fix and each can only occur once."
+    "The order of the clauses is fixed and each can only occur once."
 
   override def phase: CompilationPhase = PIPE_BUILDING
 
