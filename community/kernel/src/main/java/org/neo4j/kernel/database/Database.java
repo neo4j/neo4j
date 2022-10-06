@@ -21,6 +21,7 @@ package org.neo4j.kernel.database;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
@@ -278,7 +279,7 @@ public class Database extends AbstractDatabase {
         this.extensionFactories = context.getExtensionFactories();
         this.watcherServiceFactory = context.getWatcherServiceFactory();
         this.engineProvider = context.getEngineProvider();
-        this.lockService = new ReentrantLockService();
+        this.lockService = createLockService(databaseConfig);
         this.commitProcessFactory = context.getCommitProcessFactory();
         this.globalPageCache = context.getPageCache();
         this.collectionsFactorySupplier = context.getCollectionsFactorySupplier();
@@ -1140,5 +1141,11 @@ public class Database extends AbstractDatabase {
         if (life != null) {
             life.shutdown();
         }
+    }
+
+    private static LockService createLockService(DatabaseConfig databaseConfig) {
+        return !"multiversion".equals(databaseConfig.get(db_format))
+                ? new ReentrantLockService()
+                : LockService.NO_LOCK_SERVICE;
     }
 }
