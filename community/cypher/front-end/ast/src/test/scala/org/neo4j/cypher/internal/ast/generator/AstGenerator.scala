@@ -1774,8 +1774,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield NamespacedName(name, maybeNamespace)(pos)
 
   def _topology: Gen[Topology] = for {
-    primaries <- chooseNum[Int](1, Integer.MAX_VALUE)
-    secondaries <- option(chooseNum[Int](0, Integer.MAX_VALUE))
+    primaries <- option(chooseNum[Int](1, Integer.MAX_VALUE))
+    secondaries <-
+      if (primaries.nonEmpty)
+        option[Int](chooseNum[Int](0, Integer.MAX_VALUE))
+      else
+        some[Int](chooseNum[Int](0, Integer.MAX_VALUE))
   } yield Topology(primaries, secondaries)
 
   // User commands

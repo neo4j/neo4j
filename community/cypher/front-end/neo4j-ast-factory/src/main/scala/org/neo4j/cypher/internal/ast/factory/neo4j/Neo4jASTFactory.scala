@@ -2203,7 +2203,7 @@ class Neo4jASTFactory(query: String)
       ifExistsDo(replace, ifNotExists),
       asOptionsAst(options),
       wait,
-      primaryOpt.map(Topology(_, secondaryOpt))
+      if (primaryOpt.nonEmpty || secondaryOpt.nonEmpty) Some(Topology(primaryOpt, secondaryOpt)) else None
     )(p)
   }
 
@@ -2253,7 +2253,7 @@ class Neo4jASTFactory(query: String)
       databaseName,
       ifExists,
       access,
-      primaryOpt.map(Topology(_, secondaryOpt))
+      if (primaryOpt.nonEmpty || secondaryOpt.nonEmpty) Some(Topology(primaryOpt, secondaryOpt)) else None
     )(p)
   }
 

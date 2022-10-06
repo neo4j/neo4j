@@ -5363,7 +5363,7 @@ List<PRIVILEGE_QUALIFIER> graphQualifier():
 
 // Database commands
 
-ADMINISTRATION_COMMAND CreateDatabase( Token start, boolean replace ):
+ADMINISTRATION_COMMAND CreateDatabase( Token start, boolean replace ) throws Exception:
 {
     AliasName<DATABASE_NAME, PARAMETER> databaseName = null;
     boolean ifNotExists = false;
@@ -5372,16 +5372,20 @@ ADMINISTRATION_COMMAND CreateDatabase( Token start, boolean replace ):
     Token primaries = null;
     Token secondaries = null;
     Token count = null;
+    Token errorStart = null;
+    String topologyMultiplePrimaryError = "Duplicate PRIMARY clause";
+    String topologyMultipleSecondaryError = "Duplicate SECONDARY clause";
 }
 {
     <DATABASE> databaseName=SymbolicAliasName()
     ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )?
-    (
-        <TOPOLOGY> count=<UNSIGNED_DECIMAL_INTEGER>
-            (
-                ((<PRIMARY> | <PRIMARIES>) (secondaries=<UNSIGNED_DECIMAL_INTEGER> (<SECONDARY> | <SECONDARIES>))?){ primaries = count; } |
-                ((<SECONDARY> | <SECONDARIES>) primaries=<UNSIGNED_DECIMAL_INTEGER> (<PRIMARY> | <PRIMARIES>)){ secondaries = count; }
-            )
+    ( <TOPOLOGY> 
+            ( count=<UNSIGNED_DECIMAL_INTEGER>
+                (
+                    (errorStart=<PRIMARY> | errorStart=<PRIMARIES>){ assertNotAlreadySet(primaries, errorStart, topologyMultiplePrimaryError); }  {primaries = count;}
+                    | (errorStart=<SECONDARY> | errorStart=<SECONDARIES>){ assertNotAlreadySet(secondaries, errorStart, topologyMultipleSecondaryError); } {secondaries = count;}
+                )
+            )+
     )?
     ( options=Options() )?
     ( wait = WaitClause() )?
@@ -5454,6 +5458,9 @@ ADMINISTRATION_COMMAND AlterDatabase( Token start ) throws Exception:
     Token set = null;
     String accessSetError = "Duplicate SET ACCESS clause";
     String topologySetError = "Duplicate SET TOPOLOGY clause";
+    Token errorStart = null;
+    String topologyMultiplePrimaryError = "Duplicate PRIMARY clause";
+    String topologyMultipleSecondaryError = "Duplicate SECONDARY clause";
 }
 {
     <DATABASE>
@@ -5463,16 +5470,13 @@ ADMINISTRATION_COMMAND AlterDatabase( Token start ) throws Exception:
         <ACCESS> { assertNotAlreadySet( accessType, set, accessSetError); }
             <READ> ( <ONLY> { accessType = AccessType.READ_ONLY; } | <WRITE> { accessType = AccessType.READ_WRITE; })
         | <TOPOLOGY>
-            {
-                if ( count != null )
-                {
-                    throw exceptionFactory.syntaxException( new ParseException( topologySetError ), set.beginOffset, set.beginLine, set.beginColumn );
-                }
-            } count=<UNSIGNED_DECIMAL_INTEGER>
-            (
-                ((<PRIMARY> | <PRIMARIES>) (secondaries=<UNSIGNED_DECIMAL_INTEGER> (<SECONDARY> | <SECONDARIES>))?){ primaries = count; } |
-                ((<SECONDARY> | <SECONDARIES>) primaries=<UNSIGNED_DECIMAL_INTEGER> (<PRIMARY> | <PRIMARIES>)){ secondaries = count; }
-            )
+            { assertNotAlreadySet(count, set, topologySetError ); }
+            ( count=<UNSIGNED_DECIMAL_INTEGER>
+                (
+                    (errorStart=<PRIMARY> | errorStart=<PRIMARIES>){ assertNotAlreadySet(primaries, errorStart, topologyMultiplePrimaryError); }  {primaries = count;}
+                    | (errorStart=<SECONDARY> | errorStart=<SECONDARIES>){ assertNotAlreadySet(secondaries, errorStart, topologyMultipleSecondaryError); } {secondaries = count;}
+                )
+            )+
     ))+
     {
         return astFactory.alterDatabase(

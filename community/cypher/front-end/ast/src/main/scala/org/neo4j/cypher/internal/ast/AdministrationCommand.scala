@@ -144,7 +144,7 @@ sealed trait WriteAdministrationCommand extends AdministrationCommand {
   protected def topologyCheck(topology: Option[Topology], command: String): SemanticCheck = {
 
     def numPrimaryGreaterThanZero(topology: Topology): SemanticCheck =
-      if (topology.primaries < 1) {
+      if (topology.primaries.exists(_ < 1)) {
         error(
           s"Failed to $command with `${Prettifier.extractTopology(topology).trim}`, PRIMARY must be greater than 0.",
           position
@@ -913,7 +913,7 @@ final case class CreateDatabase(
     .chain(topologyCheck(topology, name))
 }
 
-case class Topology(primaries: Int, secondaries: Option[Int])
+case class Topology(primaries: Option[Int], secondaries: Option[Int])
 
 final case class CreateCompositeDatabase(
   databaseName: DatabaseName,

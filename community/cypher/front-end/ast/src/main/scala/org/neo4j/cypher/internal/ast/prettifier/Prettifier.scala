@@ -1371,13 +1371,13 @@ object Prettifier {
     names.map(escapeName).mkString(", ")
 
   def extractTopology(topology: Topology): String = {
-    val primariesString = topology.primaries match {
-      case n if n > 1 => s" $n PRIMARIES"
-      case n          => s" $n PRIMARY"
-    }
-    val maybeSecondariesString = topology.secondaries.map {
-      case n if n > 1 => s" $n SECONDARIES"
-      case n          => s" $n SECONDARY"
+    val primariesString = topology.primaries.flatMap {
+      case n if n != 1 => Some(s" $n PRIMARIES")
+      case 1           => Some(s" 1 PRIMARY")
+    }.getOrElse("")
+    val maybeSecondariesString = topology.secondaries.flatMap {
+      case n if n != 1 => Some(s" $n SECONDARIES")
+      case 1           => Some(s" 1 SECONDARY")
     }.getOrElse("")
     s" TOPOLOGY$primariesString$maybeSecondariesString"
   }

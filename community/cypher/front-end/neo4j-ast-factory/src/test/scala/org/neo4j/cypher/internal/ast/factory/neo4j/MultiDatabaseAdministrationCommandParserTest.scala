@@ -376,7 +376,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         ast.IfExistsThrowError,
         ast.NoOptions,
         ast.NoWait,
-        Some(Topology(1, None))
+        Some(Topology(Some(1), None))
       )(pos)
     )
   }
@@ -388,7 +388,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         ast.IfExistsThrowError,
         ast.NoOptions,
         ast.NoWait,
-        Some(Topology(1, None))
+        Some(Topology(Some(1), None))
       )(pos)
     )
   }
@@ -400,7 +400,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         ast.IfExistsThrowError,
         ast.NoOptions,
         ast.NoWait,
-        Some(Topology(1, Some(1)))
+        Some(Topology(Some(1), Some(1)))
       )(pos)
     )
   }
@@ -412,7 +412,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         ast.IfExistsThrowError,
         ast.NoOptions,
         ast.NoWait,
-        Some(Topology(1, Some(2)))
+        Some(Topology(Some(1), Some(2)))
       )(pos)
     )
   }
@@ -424,7 +424,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         ast.IfExistsThrowError,
         ast.NoOptions,
         ast.NoWait,
-        Some(Topology(1, Some(1)))
+        Some(Topology(Some(1), Some(1)))
       )(pos)
     )
   }
@@ -444,14 +444,14 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY 1 PRIMARY") {
     assertFailsWithMessage(
       testName,
-      """Invalid input 'PRIMARY': expected "SECONDARIES" or "SECONDARY" (line 1, column 42 (offset: 41))""".stripMargin
+      """Duplicate PRIMARY clause (line 1, column 42 (offset: 41))""".stripMargin
     )
   }
 
   test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY 1 SECONDARY 2 SECONDARY") {
     assertFailsWithMessage(
       testName,
-      """Invalid input '2': expected "NOWAIT", "OPTIONS", "WAIT" or <EOF> (line 1, column 52 (offset: 51))""".stripMargin
+      """Duplicate SECONDARY clause (line 1, column 54 (offset: 53))""".stripMargin
     )
   }
 
@@ -484,14 +484,19 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   test("CREATE DATABASE foo TOPOLOGY 1 SECONDARY 1 SECONDARY") {
     assertFailsWithMessage(
       testName,
-      """Invalid input 'SECONDARY': expected "PRIMARIES" or "PRIMARY" (line 1, column 44 (offset: 43))""".stripMargin
+      """Duplicate SECONDARY clause (line 1, column 44 (offset: 43))""".stripMargin
     )
   }
 
   test("CREATE DATABASE foo TOPOLOGY 1 SECONDARY") {
-    assertFailsWithMessage(
-      testName,
-      """Invalid input '': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 41 (offset: 40))""".stripMargin
+    assertAst(
+      ast.CreateDatabase(
+        literalFoo,
+        ast.IfExistsThrowError,
+        ast.NoOptions,
+        ast.NoWait,
+        Some(Topology(None, Some(1)))
+      )(pos)
     )
   }
 
@@ -511,6 +516,13 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         |  "WAIT"
         |  <EOF>
         |  <UNSIGNED_DECIMAL_INTEGER> (line 1, column 40 (offset: 39))""".stripMargin
+    )
+  }
+
+  test("CREATE DATABASE foo TOPOLOGY") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input '': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 29 (offset: 28))"""
     )
   }
 
@@ -771,7 +783,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         literalFoo,
         ifExists = false,
         None,
-        Some(Topology(1, None))
+        Some(Topology(Some(1), None))
       )(pos)
     )
   }
@@ -796,7 +808,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         literalFoo,
         ifExists = false,
         None,
-        Some(Topology(1, Some(1)))
+        Some(Topology(Some(1), Some(1)))
       )(pos)
     )
   }
@@ -807,7 +819,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         literalFoo,
         ifExists = false,
         None,
-        Some(Topology(1, Some(1)))
+        Some(Topology(Some(1), Some(1)))
       )(pos)
     )
   }
@@ -815,14 +827,14 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   test("ALTER DATABASE foo SET TOPOLOGY 5 PRIMARIES 10 PRIMARIES 1 PRIMARY 2 SECONDARIES") {
     assertFailsWithMessage(
       testName,
-      """Invalid input 'PRIMARIES': expected "SECONDARIES" or "SECONDARY" (line 1, column 48 (offset: 47))"""
+      """Duplicate PRIMARY clause (line 1, column 48 (offset: 47))"""
     )
   }
 
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 2 SECONDARIES 1 SECONDARIES") {
     assertFailsWithMessage(
       testName,
-      """Invalid input '1': expected "SET" or <EOF> (line 1, column 57 (offset: 56))"""
+      """Duplicate SECONDARY clause (line 1, column 59 (offset: 58))"""
     )
   }
 
@@ -832,7 +844,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         literalFoo,
         ifExists = false,
         Some(ast.ReadWriteAccess),
-        Some(Topology(1, Some(1)))
+        Some(Topology(Some(1), Some(1)))
       )(pos)
     )
   }
@@ -843,7 +855,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         literalFoo,
         ifExists = false,
         Some(ast.ReadWriteAccess),
-        Some(Topology(1, Some(1)))
+        Some(Topology(Some(1), Some(1)))
       )(pos)
     )
   }
@@ -855,14 +867,14 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 1 PRIMARY") {
     assertFailsWithMessage(
       testName,
-      """Invalid input 'PRIMARY': expected "SECONDARIES" or "SECONDARY" (line 1, column 45 (offset: 44))""".stripMargin
+      """Duplicate PRIMARY clause (line 1, column 45 (offset: 44))""".stripMargin
     )
   }
 
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 1 SECONDARY 2 SECONDARY") {
     assertFailsWithMessage(
       testName,
-      """Invalid input '2': expected "SET" or <EOF> (line 1, column 55 (offset: 54))""".stripMargin
+      """Duplicate SECONDARY clause (line 1, column 57 (offset: 56))""".stripMargin
     )
   }
 
@@ -890,14 +902,20 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   test("ALTER DATABASE foo SET TOPOLOGY 1 SECONDARY 1 SECONDARY") {
     assertFailsWithMessage(
       testName,
-      """Invalid input 'SECONDARY': expected "PRIMARIES" or "PRIMARY" (line 1, column 47 (offset: 46))""".stripMargin
+      """Duplicate SECONDARY clause (line 1, column 47 (offset: 46))""".stripMargin
     )
   }
 
   test("ALTER DATABASE foo SET TOPOLOGY 1 SECONDARY") {
+    assertAst(
+      ast.AlterDatabase(literalFoo, ifExists = false, None, Some(Topology(None, Some(1))))(pos)
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY") {
     assertFailsWithMessage(
       testName,
-      """Invalid input '': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 44 (offset: 43))""".stripMargin
+      """Invalid input '': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 32 (offset: 31))"""
     )
   }
 
