@@ -19,7 +19,6 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import java.lang.invoke.VarHandle;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 
 /**
@@ -149,7 +148,6 @@ public final class OffHeapPageLock {
      * @return {@code true} if the optimistic read lock was valid, {@code false} otherwise.
      */
     public static boolean validateReadLock(long address, long stamp) {
-        VarHandle.acquireFence();
         return (getState(address) & CHK_MASK) == stamp;
     }
 
@@ -189,7 +187,6 @@ public final class OffHeapPageLock {
 
             n = s + CNT_UNIT | MOD_MASK;
             if (compareAndSetState(address, s, n)) {
-                VarHandle.releaseFence();
                 return true;
             }
         }
@@ -248,7 +245,6 @@ public final class OffHeapPageLock {
                 r = n;
             }
         } while (!compareAndSetState(address, s, n));
-        VarHandle.releaseFence();
         return r;
     }
 
@@ -264,9 +260,7 @@ public final class OffHeapPageLock {
      */
     public static boolean tryExclusiveLock(long address) {
         long s = getState(address);
-        boolean res = ((s & UNL_MASK) == 0) && compareAndSetState(address, s, s + EXL_MASK);
-        VarHandle.releaseFence();
-        return res;
+        return ((s & UNL_MASK) == 0) && compareAndSetState(address, s, s + EXL_MASK);
     }
 
     /**
@@ -339,7 +333,6 @@ public final class OffHeapPageLock {
         if ((s & FAE_MASK) == 0) {
             long n = s + FLS_MASK;
             boolean res = compareAndSetState(address, s, n);
-            VarHandle.releaseFence();
             return res ? n : 0;
         }
         return 0;
