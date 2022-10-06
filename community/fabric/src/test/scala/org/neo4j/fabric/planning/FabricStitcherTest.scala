@@ -28,7 +28,10 @@ import org.neo4j.fabric.ProcedureSignatureResolverTestSupport
 import org.neo4j.fabric.eval.Catalog
 import org.neo4j.fabric.planning.Use.Declared
 import org.neo4j.fabric.planning.Use.Inherited
+import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.scalatest.Inside
+
+import java.util.UUID
 
 class FabricStitcherTest
     extends FabricTest
@@ -48,10 +51,9 @@ class FabricStitcherTest
     def stitching(fragment: Fragment) =
       FabricStitcher(
         dummyQuery,
-        allowMultiGraph = false,
-        None,
+        compositeContext = false,
         dummyPipeline,
-        new UseHelper(Catalog.empty, defaultGraphName, None)
+        new UseHelper(Catalog.empty, defaultGraphName)
       )
         .convert(fragment).withoutLocalAndRemote
 
@@ -245,13 +247,19 @@ class FabricStitcherTest
 
   "Multi-graph:" - {
 
+    val catalog =
+      Catalog.byQualifiedName(Seq(Catalog.Composite(
+        0,
+        UUID.randomUUID(),
+        new NormalizedDatabaseName(defaultGraphName)
+      )))
+
     def stitching(fragment: Fragment) =
       FabricStitcher(
         dummyQuery,
-        allowMultiGraph = true,
-        Some(defaultGraphName),
+        compositeContext = true,
         dummyPipeline,
-        new UseHelper(Catalog.empty, defaultGraphName, Some(defaultGraphName))
+        new UseHelper(catalog, defaultGraphName)
       )
         .convert(fragment).withoutLocalAndRemote
 

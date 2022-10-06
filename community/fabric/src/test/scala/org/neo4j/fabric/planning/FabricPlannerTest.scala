@@ -97,20 +97,20 @@ class FabricPlannerTest
   private def instance(
     query: String,
     params: MapValue = params,
-    fabricContext: Boolean = false
+    sessionDatabaseName: String = defaultGraphName
   ): planner.PlannerInstance = {
-    planner.instance(query, params, defaultGraphName, fabricCatalog).withForceFabricContext(fabricContext)
+    planner.instance(query, params, sessionDatabaseName, fabricCatalog)
   }
 
-  private def plan(query: String, params: MapValue = params, fabricContext: Boolean = false) =
-    instance(query, params, fabricContext).plan
+  private def plan(query: String, params: MapValue = params, sessionDatabaseName: String = defaultGraphName) =
+    instance(query, params, sessionDatabaseName).plan
 
   private def asRemote(
     query: String,
     partSelector: Fragment => Fragment.Exec = _.as[Fragment.Exec],
-    fabricContext: Boolean = false
+    sessionDatabaseName: String = defaultGraphName
   ) = {
-    val inst = instance(query, fabricContext = fabricContext)
+    val inst = instance(query, sessionDatabaseName = sessionDatabaseName)
     inst.asRemote(partSelector(inst.plan.query))
   }
 
@@ -199,7 +199,7 @@ class FabricPlannerTest
           |RETURN 1 AS x
           |""".stripMargin,
         query => query.as[Fragment.Exec].input.as[Fragment.Apply].inner.as[Fragment.Exec],
-        fabricContext = true
+        sessionDatabaseName = fabricName
       )
 
       parse(remote.query).as[Query].part.as[SingleQuery].clauses
@@ -231,9 +231,9 @@ class FabricPlannerTest
           |}
           |RETURN a, b, c
           |
-          |""".stripMargin
+          |""".stripMargin,
+        sessionDatabaseName = fabricName
       )
-        .withForceFabricContext(true)
 
       val inner = inst.plan
         .query.as[Fragment.Exec]
@@ -290,9 +290,9 @@ class FabricPlannerTest
           |  RETURN b, c, d
           |}
           |RETURN a, b, c, d
-          |""".stripMargin
+          |""".stripMargin,
+        sessionDatabaseName = fabricName
       )
-        .withForceFabricContext(true)
 
       val execs = inst.plan.folded(Seq.empty[Fragment.Exec])(_ ++ _) {
         case exec: Fragment.Exec => Descend(Seq(exec))
@@ -348,6 +348,31 @@ class FabricPlannerTest
       inst.plan
     }
 
+    "Variable with literal name" in {
+      val inst = instance(
+        """MATCH (n)
+          |WITH n AS `true`
+          |RETURN `true`"""
+          .stripMargin
+      )
+
+      val exec = inst.plan.query.as[Fragment.Exec]
+
+      inst.asRemote(exec).query should endWith("RETURN `true` AS `true`")
+    }
+
+    "Literal with variable with same name in scope" in {
+      val inst = instance(
+        """MATCH (n)
+          |WITH n AS `true`
+          |RETURN true"""
+          .stripMargin
+      )
+
+      val exec = inst.plan.query.as[Fragment.Exec]
+      inst.asRemote(exec).query should endWith("RETURN true AS `true`")
+    }
+
   }
 
   "asLocal: " - {
@@ -373,7 +398,7 @@ class FabricPlannerTest
           )
         )(pos)
       )
-      local.state.queryText should endWith("RETURN `true` AS `true`")
+      local.state.queryText should endWith("RETURN `true`")
     }
 
     "Literal with variable with same name in scope" in {
@@ -397,7 +422,7 @@ class FabricPlannerTest
           )
         )(pos)
       )
-      local.state.queryText should endWith("RETURN true AS `true`")
+      local.state.queryText should endWith("RETURN true")
     }
   }
 
@@ -476,7 +501,7 @@ class FabricPlannerTest
           |}
           |RETURN *
           |""".stripMargin,
-        fabricContext = true
+        sessionDatabaseName = fabricName
       )
 
       val partsAsList = Stream
@@ -816,7 +841,7 @@ class FabricPlannerTest
           |RETURN 1 AS x
           |""".stripMargin
 
-      the[InvalidSemanticsException].thrownBy(plan(q, params, fabricContext = true))
+      the[InvalidSemanticsException].thrownBy(plan(q, params, sessionDatabaseName = fabricName))
         .check(_.getMessage.should(include("'PROFILE' not supported in Fabric context")))
     }
 
@@ -859,7 +884,7 @@ class FabricPlannerTest
           |}
           |RETURN 1 AS x
           |""".stripMargin,
-        fabricContext = true
+        sessionDatabaseName = fabricName
       )
 
       val inner = inst.plan.query.as[Fragment.Exec].input.as[Fragment.Apply].inner.as[Fragment.Exec]
@@ -917,7 +942,7 @@ class FabricPlannerTest
           |}
           |RETURN 1 AS x
           |""".stripMargin,
-        fabricContext = true
+        sessionDatabaseName = fabricName
       )
 
       val inner = inst.plan.query.as[Fragment.Exec].input.as[Fragment.Apply].inner.as[Fragment.Exec]
@@ -984,7 +1009,7 @@ class FabricPlannerTest
           |}
           |RETURN x, y
           |""".stripMargin,
-        fabricContext = true
+        sessionDatabaseName = fabricName
       ).query.description
 
       desc

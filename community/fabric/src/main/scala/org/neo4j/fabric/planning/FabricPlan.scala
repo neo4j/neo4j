@@ -32,7 +32,7 @@ case class FabricPlan(
   queryString: String,
   debugOptions: DebugOptions,
   obfuscationMetadata: ObfuscationMetadata,
-  inFabricContext: Boolean,
+  inCompositeContext: Boolean,
   notifications: Seq[Notification]
 )
 

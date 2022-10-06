@@ -230,7 +230,7 @@ public class FabricExecutor {
 
             // EXPLAIN for multi-graph queries returns only fabric plan,
             // because it is very hard to produce anything better without actually executing the query
-            if (plan.executionType() == FabricPlan.EXPLAIN() && plan.inFabricContext()) {
+            if (plan.executionType() == FabricPlan.EXPLAIN() && plan.inCompositeContext()) {
                 lifecycle.endSuccess();
                 return StatementResults.create(
                         asJava(query.outputColumns()),
@@ -398,7 +398,7 @@ public class FabricExecutor {
                 boolean targetsComposite,
                 Flux<Record> input) {
 
-            ExecutionOptions executionOptions = plan.inFabricContext() && !targetsComposite
+            ExecutionOptions executionOptions = plan.inCompositeContext() && !targetsComposite
                     ? new ExecutionOptions(location.getGraphId())
                     : new ExecutionOptions();
 
@@ -418,7 +418,7 @@ public class FabricExecutor {
         FragmentResult runRemoteQueryAt(
                 Location.Remote location, TransactionMode transactionMode, String queryString, MapValue parameters) {
             ExecutionOptions executionOptions =
-                    plan.inFabricContext() ? new ExecutionOptions(location.getGraphId()) : new ExecutionOptions();
+                    plan.inCompositeContext() ? new ExecutionOptions(location.getGraphId()) : new ExecutionOptions();
 
             lifecycle.startExecution(true);
             Mono<StatementResult> statementResult =

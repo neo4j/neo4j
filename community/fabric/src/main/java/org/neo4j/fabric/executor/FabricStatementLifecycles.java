@@ -104,7 +104,7 @@ public class FabricStatementLifecycles {
         void doneFabricProcessing(FabricPlan plan) {
             executingQuery.onObfuscatorReady(CypherQueryObfuscator.apply(plan.obfuscationMetadata()));
 
-            if (plan.inFabricContext()) {
+            if (plan.inCompositeContext()) {
                 monitoringMode = new ParentChildMonitoringMode();
             } else {
                 monitoringMode = new SingleQueryMonitoringMode();

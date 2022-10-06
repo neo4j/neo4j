@@ -48,12 +48,11 @@ import org.neo4j.fabric.util.Rewritten.RewritingOps
 
 /**
  * @param queryString     For error reporting
- * @param allowMultiGraph When false, throws on multi-graph queries
+ * @param compositeContext When false, throws on multi-graph queries
  */
 case class FabricStitcher(
   queryString: String,
-  allowMultiGraph: Boolean,
-  fabricContextName: Option[String],
+  compositeContext: Boolean,
   pipeline: FabricFrontEnd#Pipeline,
   useHelper: UseHelper
 ) {
@@ -68,7 +67,7 @@ case class FabricStitcher(
       case chain: Fragment.Chain => convertChain(chain)
       case union: Fragment.Union => convertUnion(union)
       case command: Fragment.Command =>
-        if (!allowMultiGraph && !UseEvaluation.isStatic(command.use.graphSelection)) {
+        if (!compositeContext && !UseEvaluation.isStatic(command.use.graphSelection)) {
           failDynamicGraph(command.use)
         }
         asExec(
@@ -78,7 +77,7 @@ case class FabricStitcher(
         )
     }
 
-    if (allowMultiGraph) validateNoTransactionalSubquery(result)
+    if (compositeContext) validateNoTransactionalSubquery(result)
 
     result
   }
@@ -168,7 +167,7 @@ case class FabricStitcher(
     val nonEqual = stitched.useAppearances.flatMap(_.nonEqual).headOption
     val invalidOverride = stitched.useAppearances.flatMap(_.isInvalidOverride).headOption
 
-    (allowMultiGraph, nonStatic, nonEqual, invalidOverride) match {
+    (compositeContext, nonStatic, nonEqual, invalidOverride) match {
       case (false, Some(use), _, _) => failDynamicGraph(use)
       case (false, _, Some(use), _) => failMultipleGraphs(use)
       case (true, _, _, Some(use))  => failInvalidOverride(use)
