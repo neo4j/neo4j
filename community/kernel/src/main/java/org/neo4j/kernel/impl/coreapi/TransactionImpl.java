@@ -67,6 +67,7 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.collection.AbstractResourceIterable;
 import org.neo4j.internal.kernel.api.CloseListener;
 import org.neo4j.internal.kernel.api.Cursor;
@@ -687,15 +688,26 @@ public class TransactionImpl implements InternalTransaction {
             assert transaction == null : "Closed but still have reference to kernel transaction";
             throw exceptionMapper.mapException(new NotInTransactionException("The transaction has been closed."));
         }
-        var tx = transaction;
-        try (tx) {
-            coreApiResourceTracker.closeAllCloseableResources();
-            operation.perform(tx);
+        Exception exception = null;
+        try {
+            try {
+                coreApiResourceTracker.closeAllCloseableResources();
+                operation.perform(transaction);
+            } catch (Exception e) {
+                exception = e;
+            } finally {
+                if (transaction != null) {
+                    transaction.close();
+                }
+            }
         } catch (Exception e) {
-            throw exceptionMapper.mapException(e);
+            exception = Exceptions.chain(exception, e);
         } finally {
             closed = true;
             transaction = null;
+        }
+        if (exception != null) {
+            throw exceptionMapper.mapException(exception);
         }
     }
 

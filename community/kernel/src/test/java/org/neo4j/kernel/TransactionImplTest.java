@@ -20,6 +20,7 @@
 package org.neo4j.kernel;
 
 import static java.util.Collections.emptyMap;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -37,7 +38,9 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.function.Consumer;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.Test;
+import org.mockito.stubbing.Answer;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -50,6 +53,7 @@ import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.KernelTransaction.KernelTransactionMonitor;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -299,6 +303,39 @@ class TransactionImplTest {
             tx.commit();
             verify(resourceTracker, times(1)).closeAllCloseableResources();
         }
+    }
+
+    @Test
+    void shouldOnlyCloseKtiOnceWhenRollbackInsideCommit() throws Exception {
+        // GIVEN
+        // Mock that forward commit calls to the given monitor
+        KernelTransaction kernelTransaction = mock(KernelTransaction.class);
+        when(kernelTransaction.commit(any(KernelTransactionMonitor.class)))
+                .thenAnswer((Answer<Long>) invocationOnMock -> {
+                    var monitor = (KernelTransactionMonitor) invocationOnMock.getArgument(0);
+                    monitor.beforeApply();
+                    return -1L;
+                });
+
+        // a TransactionImpl
+        TransactionImpl transaction = createTransaction(kernelTransaction);
+
+        // and a monitor that simulates a tx-failure + rollback inside of commit
+        var monitorCalled = new MutableBoolean();
+        var monitor = new KernelTransactionMonitor() {
+            @Override
+            public void beforeApply() {
+                monitorCalled.setTrue();
+                transaction.rollback();
+            }
+        };
+
+        // WHEN
+        transaction.commit(monitor);
+
+        // THEN
+        assertThat(monitorCalled.getValue()).isTrue();
+        verify(kernelTransaction, times(1)).close();
     }
 
     private void checkForIAE(Consumer<Transaction> consumer, String message) {
