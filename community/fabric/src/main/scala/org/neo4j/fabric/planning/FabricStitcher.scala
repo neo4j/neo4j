@@ -192,7 +192,7 @@ case class FabricStitcher(
       case _: SensitiveLiteral   => true
     }
 
-    val local = pipeline.checkAndFinalize.process(statement)
+    val local = pipeline.checkAndFinalize.process(statement, useFullQueryText = !compositeContext)
 
     val (rewriter, extracted) = sensitiveLiteralReplacement(statement)
     val toRender = statement.endoRewrite(rewriter)

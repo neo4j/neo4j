@@ -144,8 +144,13 @@ case class FabricFrontEnd(
       private val transformer =
         CompilationPhases.fabricFinalize(parsingConfig)
 
-      def process(statement: Statement): BaseState = {
-        val localQueryString = QueryRenderer.render(statement)
+      def process(statement: Statement, useFullQueryText: Boolean): BaseState = {
+        val localQueryString =
+          if (useFullQueryText)
+            query.rawStatement
+          else
+            QueryRenderer.render(statement)
+
         val plannerName = PlannerNameFor(query.options.queryOptions.planner.name)
         val state = InitialState(
           localQueryString,
