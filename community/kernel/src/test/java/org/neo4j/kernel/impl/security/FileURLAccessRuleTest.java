@@ -749,8 +749,7 @@ class FileURLAccessRuleTest {
                 Stream.of(nonEncoded.entries),
                 Stream.concat(
                         Stream.of(singleEncoded.entries),
-                        Stream.concat(
-                                Stream.of(doubleEncoded.entries), Stream.of(tripleOrMoreEncoded.entries))));
+                        Stream.concat(Stream.of(doubleEncoded.entries), Stream.of(tripleOrMoreEncoded.entries))));
     }
 
     private static Arguments arg(ValidationStatus status, String location, String result) {
