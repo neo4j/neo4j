@@ -1864,7 +1864,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
                 false);
     }
 
-    private void assertKeyAssociatedWithValue(KEY key, VALUE expectedValue) {
+    private void assertKeyAssociatedWithValue(KEY key, VALUE expectedValue) throws IOException {
         KEY readKey = layout.newKey();
         var readValue = new TreeNode.ValueHolder<>(layout.newValue());
         int search =
@@ -1977,7 +1977,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         return node.keyAt(readCursor, layout.newKey(), pos, type, NULL_CONTEXT);
     }
 
-    private VALUE valueAt(long nodeId, int pos) {
+    private VALUE valueAt(long nodeId, int pos) throws IOException {
         var readValue = new TreeNode.ValueHolder<>(layout.newValue());
         long prevId = readCursor.getCurrentPageId();
         try {
@@ -1988,7 +1988,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         }
     }
 
-    private VALUE valueAt(int pos) {
+    private VALUE valueAt(int pos) throws IOException {
         return node.valueAt(readCursor, new TreeNode.ValueHolder<>(layout.newValue()), pos, NULL_CONTEXT).value;
     }
 

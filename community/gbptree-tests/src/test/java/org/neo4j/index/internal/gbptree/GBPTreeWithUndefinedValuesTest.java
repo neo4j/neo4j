@@ -213,7 +213,10 @@ public class GBPTreeWithUndefinedValuesTest {
             return layout -> new TreeNodeSelector.Factory() {
                 @Override
                 public <KEY, VALUE> TreeNode<KEY, VALUE> create(
-                        int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore) {
+                        int pageSize,
+                        Layout<KEY, VALUE> layout,
+                        OffloadStore<KEY, VALUE> offloadStore,
+                        IdProvider idProvider) {
                     return new TreeNodeFixedSize<>(pageSize, layout) {
                         @Override
                         void keyValueAt(
@@ -221,14 +224,16 @@ public class GBPTreeWithUndefinedValuesTest {
                                 KEY intoKey,
                                 ValueHolder<VALUE> intoValue,
                                 int pos,
-                                CursorContext cursorContext) {
+                                CursorContext cursorContext)
+                                throws IOException {
                             super.keyValueAt(cursor, intoKey, intoValue, pos, cursorContext);
                             intoValue.defined = predicate.test(vClass.cast(intoValue.value));
                         }
 
                         @Override
                         ValueHolder<VALUE> valueAt(
-                                PageCursor cursor, ValueHolder<VALUE> value, int pos, CursorContext cursorContext) {
+                                PageCursor cursor, ValueHolder<VALUE> value, int pos, CursorContext cursorContext)
+                                throws IOException {
                             var valueHolder = super.valueAt(cursor, value, pos, cursorContext);
                             valueHolder.defined = predicate.test(vClass.cast(value.value));
                             return valueHolder;

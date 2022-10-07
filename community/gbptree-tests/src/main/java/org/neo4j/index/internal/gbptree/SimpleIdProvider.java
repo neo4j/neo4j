@@ -29,12 +29,12 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.neo4j.io.pagecache.PageCursor;
 
-class SimpleIdProvider implements IdProvider {
+public class SimpleIdProvider implements IdProvider {
     private final Queue<Pair<Long, Long>> releasedIds = new LinkedList<>();
     private final Supplier<PageCursor> cursorSupplier;
     private long lastId;
 
-    SimpleIdProvider(Supplier<PageCursor> cursorSupplier) {
+    public SimpleIdProvider(Supplier<PageCursor> cursorSupplier) {
         this.cursorSupplier = cursorSupplier;
         reset();
     }

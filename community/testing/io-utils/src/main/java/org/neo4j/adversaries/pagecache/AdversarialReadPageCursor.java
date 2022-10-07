@@ -163,11 +163,6 @@ class AdversarialReadPageCursor extends DelegatingPageCursor {
         this.state = new State(Objects.requireNonNull(adversary));
     }
 
-    private AdversarialReadPageCursor(PageCursor delegate, State state) {
-        super(delegate);
-        this.state = state;
-    }
-
     @Override
     public byte getByte() {
         return inconsistently(delegate.getByte()).byteValue();
@@ -393,7 +388,7 @@ class AdversarialReadPageCursor extends DelegatingPageCursor {
 
     @Override
     public PageCursor openLinkedCursor(long pageId) throws IOException {
-        return linkedCursor = new AdversarialReadPageCursor(delegate.openLinkedCursor(pageId), state);
+        return linkedCursor = new AdversarialReadPageCursor(delegate.openLinkedCursor(pageId), state.adversary);
     }
 
     @Override

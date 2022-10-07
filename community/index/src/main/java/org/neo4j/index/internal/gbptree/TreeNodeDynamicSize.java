@@ -383,7 +383,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
     }
 
     @Override
-    void removeKeyValueAt(
+    int removeKeyValueAt(
             PageCursor cursor,
             int pos,
             int keyCount,
@@ -414,6 +414,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
 
         // Remove from offset array
         removeSlotAt(cursor, pos, keyCount, keyPosOffsetLeaf(0), bytesKeyOffsetSize());
+        return keyCount - 1;
     }
 
     @Override
@@ -539,7 +540,14 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
     }
 
     @Override
-    boolean setValueAt(PageCursor cursor, VALUE value, int pos) {
+    boolean setValueAt(
+            PageCursor cursor,
+            VALUE value,
+            int pos,
+            CursorContext cursorContext,
+            long stableGeneration,
+            long unstableGeneration)
+            throws IOException {
         placeCursorAtActualKey(cursor, pos, LEAF);
 
         long keyValueSize = readKeyValueSize(cursor, msbIsOffload);

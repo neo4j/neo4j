@@ -40,12 +40,14 @@ public interface TreeNodeSelector {
         /**
          * Instantiates a {@link TreeNode} of a specific format and version that this factory represents.
          *
-         * @param pageSize page size, i.e. size of tree nodes.
-         * @param layout {@link Layout} that will be used in this format.
+         * @param pageSize   page size, i.e. size of tree nodes.
+         * @param layout     {@link Layout} that will be used in this format.
+         * @param offloadStore {@link OffloadStore} that could be used for larger entries
+         * @param idProvider {@link IdProvider} that could be used for allocating pages for extra data
          * @return the instantiated {@link TreeNode}.
          */
         <KEY, VALUE> TreeNode<KEY, VALUE> create(
-                int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore);
+                int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore, IdProvider idProvider);
 
         /**
          * Specifies the format identifier of the physical layout of tree nodes.

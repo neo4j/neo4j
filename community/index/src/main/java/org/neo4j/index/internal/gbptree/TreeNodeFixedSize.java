@@ -72,20 +72,28 @@ class TreeNodeFixedSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
     private final int internalMaxKeyCount;
     private final int leafMaxKeyCount;
     private final int keySize;
-    private final int valueSize;
+    protected final int valueSize;
     private final int maxKeyCount;
-    private final int halfLeafKeyCount;
     private final int halfLeafSpace;
 
     TreeNodeFixedSize(int pageSize, Layout<KEY, VALUE> layout) {
+        this(pageSize, layout, 0);
+    }
+
+    /**
+     * @param pageSize - page size
+     * @param layout - layout
+     * @param valuePadding - extra bytes allocated for each value, can be used by descendants to store additional data
+     */
+    TreeNodeFixedSize(int pageSize, Layout<KEY, VALUE> layout, int valuePadding) {
         super(pageSize, layout);
         this.keySize = layout.keySize(null);
-        this.valueSize = layout.valueSize(null);
+        this.valueSize = layout.valueSize(null) + valuePadding;
         this.internalMaxKeyCount =
                 Math.floorDiv(pageSize - (BASE_HEADER_LENGTH + SIZE_PAGE_REFERENCE), keySize + SIZE_PAGE_REFERENCE);
         this.leafMaxKeyCount = Math.floorDiv(pageSize - BASE_HEADER_LENGTH, keySize + valueSize);
         this.maxKeyCount = Math.max(internalMaxKeyCount, leafMaxKeyCount);
-        this.halfLeafKeyCount = (leafMaxKeyCount + 1) / 2;
+        int halfLeafKeyCount = (leafMaxKeyCount + 1) / 2;
         this.halfLeafSpace = halfLeafKeyCount * (keySize + valueSize);
 
         if (internalMaxKeyCount < 2) {
@@ -121,8 +129,8 @@ class TreeNodeFixedSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
     }
 
     @Override
-    void keyValueAt(
-            PageCursor cursor, KEY intoKey, ValueHolder<VALUE> intoValue, int pos, CursorContext cursorContext) {
+    void keyValueAt(PageCursor cursor, KEY intoKey, ValueHolder<VALUE> intoValue, int pos, CursorContext cursorContext)
+            throws IOException {
         keyAt(cursor, intoKey, pos, LEAF, cursorContext);
         valueAt(cursor, intoValue, pos, cursorContext);
     }
@@ -150,21 +158,24 @@ class TreeNodeFixedSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
             int keyCount,
             long stableGeneration,
             long unstableGeneration,
-            CursorContext cursorContext) {
+            CursorContext cursorContext)
+            throws IOException {
         insertKeyAt(cursor, key, pos, keyCount);
-        insertValueAt(cursor, value, pos, keyCount);
+        insertValueAt(cursor, value, pos, keyCount, cursorContext, stableGeneration, unstableGeneration);
     }
 
     @Override
-    void removeKeyValueAt(
+    int removeKeyValueAt(
             PageCursor cursor,
             int pos,
             int keyCount,
             long stableGeneration,
             long unstableGeneration,
-            CursorContext cursorContext) {
+            CursorContext cursorContext)
+            throws IOException {
         removeKeyAt(cursor, pos, keyCount);
         removeValueAt(cursor, pos, keyCount);
+        return keyCount - 1;
     }
 
     @Override
@@ -199,7 +210,8 @@ class TreeNodeFixedSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
     }
 
     @Override
-    ValueHolder<VALUE> valueAt(PageCursor cursor, ValueHolder<VALUE> value, int pos, CursorContext cursorContext) {
+    ValueHolder<VALUE> valueAt(PageCursor cursor, ValueHolder<VALUE> value, int pos, CursorContext cursorContext)
+            throws IOException {
         cursor.setOffset(valueOffset(pos));
         layout.readValue(cursor, value.value, FIXED_SIZE_VALUE);
         value.defined = true;
@@ -207,7 +219,14 @@ class TreeNodeFixedSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
     }
 
     @Override
-    boolean setValueAt(PageCursor cursor, VALUE value, int pos) {
+    boolean setValueAt(
+            PageCursor cursor,
+            VALUE value,
+            int pos,
+            CursorContext cursorContext,
+            long stableGeneration,
+            long unstableGeneration)
+            throws IOException {
         cursor.setOffset(valueOffset(pos));
         layout.writeValue(cursor, value);
         return true;
@@ -260,7 +279,7 @@ class TreeNodeFixedSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
         layout.writeKey(cursor, key);
     }
 
-    private int leafMaxKeyCount() {
+    protected int leafMaxKeyCount() {
         return leafMaxKeyCount;
     }
 
@@ -284,9 +303,17 @@ class TreeNodeFixedSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
     }
 
     // Always insert together with key. Use insertKeyValueAt
-    private void insertValueAt(PageCursor cursor, VALUE value, int pos, int keyCount) {
+    protected void insertValueAt(
+            PageCursor cursor,
+            VALUE value,
+            int pos,
+            int keyCount,
+            CursorContext cursorContext,
+            long stableGeneration,
+            long unstableGeneration)
+            throws IOException {
         insertValueSlotsAt(cursor, pos, 1, keyCount);
-        setValueAt(cursor, value, pos);
+        setValueAt(cursor, value, pos, cursorContext, stableGeneration, unstableGeneration);
     }
 
     // Always insert together with key. Use removeKeyValueAt
@@ -298,7 +325,7 @@ class TreeNodeFixedSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
         insertSlotsAt(cursor, pos, numberOfSlots, keyCount, keyOffset(0), keySize);
     }
 
-    private void insertValueSlotsAt(PageCursor cursor, int pos, int numberOfSlots, int keyCount) {
+    protected void insertValueSlotsAt(PageCursor cursor, int pos, int numberOfSlots, int keyCount) {
         insertSlotsAt(cursor, pos, numberOfSlots, keyCount, valueOffset(0), valueSize);
     }
 
@@ -310,7 +337,7 @@ class TreeNodeFixedSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
         return BASE_HEADER_LENGTH + pos * keySize;
     }
 
-    private int valueOffset(int pos) {
+    protected int valueOffset(int pos) {
         return BASE_HEADER_LENGTH + leafMaxKeyCount * keySize + pos * valueSize;
     }
 
@@ -342,7 +369,7 @@ class TreeNodeFixedSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
                 : leafAvailableSpace(currentKeyCount);
     }
 
-    private int leafAvailableSpace(int currentKeyCount) {
+    protected int leafAvailableSpace(int currentKeyCount) {
         return (leafMaxKeyCount() - currentKeyCount) * (keySize + valueSize);
     }
 
@@ -423,7 +450,8 @@ class TreeNodeFixedSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
             double ratioToKeepInLeftOnSplit,
             long stableGeneration,
             long unstableGeneration,
-            CursorContext cursorContext) {
+            CursorContext cursorContext)
+            throws IOException {
         int keyCountAfterInsert = leftKeyCount + 1;
         int rightKeyCount = keyCountAfterInsert - splitPos;
 

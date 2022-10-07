@@ -30,7 +30,7 @@ import org.neo4j.annotations.service.ServiceProvider;
 public class DefaultTreeNodeLayoutFactory implements TreeNodeLayoutFactory {
     @Override
     public int getPriority() {
-        return 1;
+        return 1000;
     }
 
     @Override

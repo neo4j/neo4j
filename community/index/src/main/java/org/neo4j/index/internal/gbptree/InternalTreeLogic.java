@@ -111,9 +111,9 @@ class InternalTreeLogic<KEY, VALUE> {
      * ... a.s.o
      * <p>
      * Calling {@link #insert(PageCursor, StructurePropagation, Object, Object, ValueMerger, boolean, long, long, CursorContext)}
-     * or {@link #remove(PageCursor, StructurePropagation, Object, Object, long, long, CursorContext)} leaves the cursor
+     * or {@link #remove(PageCursor, StructurePropagation, Object, TreeNode.ValueHolder, long, long, CursorContext)} leaves the cursor
      * at the last updated page (tree node id) and remembers the path down the tree to where it is.
-     * Further inserts/removals will move the cursor from its current position to where the next change will
+     * Further, inserts/removals will move the cursor from its current position to where the next change will
      * take place using as few page pins as possible.
      */
     private Level<KEY>[] levels;
@@ -708,19 +708,21 @@ class InternalTreeLogic<KEY, VALUE> {
         if (mergeResult == ValueMerger.MergeResult.REPLACED || mergeResult == ValueMerger.MergeResult.MERGED) {
             // First try to write the merged value right in there
             var mergedValue = mergeResult == ValueMerger.MergeResult.REPLACED ? value : readValue.value;
-            boolean couldOverwrite = bTreeNode.setValueAt(cursor, mergedValue, pos);
+            boolean couldOverwrite =
+                    bTreeNode.setValueAt(cursor, mergedValue, pos, cursorContext, stableGeneration, unstableGeneration);
             if (!couldOverwrite) {
                 // Value could not be overwritten in a simple way because they differ in size.
                 // Delete old value and insert w/ overflow/underflow checks.
-                bTreeNode.removeKeyValueAt(cursor, pos, keyCount, stableGeneration, unstableGeneration, cursorContext);
-                TreeNode.setKeyCount(cursor, keyCount - 1);
+                var newKeyCount = bTreeNode.removeKeyValueAt(
+                        cursor, pos, keyCount, stableGeneration, unstableGeneration, cursorContext);
+                TreeNode.setKeyCount(cursor, newKeyCount);
                 InsertResult result = doInsertInLeaf(
                         cursor,
                         structurePropagation,
                         key,
                         mergedValue,
                         pos,
-                        keyCount - 1,
+                        newKeyCount,
                         stableGeneration,
                         unstableGeneration,
                         cursorContext);
@@ -739,8 +741,8 @@ class InternalTreeLogic<KEY, VALUE> {
             }
         } else if (mergeResult == ValueMerger.MergeResult.REMOVED) {
             // Remove this entry from the tree and possible underflow while doing so
-            bTreeNode.removeKeyValueAt(cursor, pos, keyCount, stableGeneration, unstableGeneration, cursorContext);
-            int newKeyCount = keyCount - 1;
+            int newKeyCount = bTreeNode.removeKeyValueAt(
+                    cursor, pos, keyCount, stableGeneration, unstableGeneration, cursorContext);
             TreeNode.setKeyCount(cursor, newKeyCount);
             if (bTreeNode.leafUnderflow(cursor, newKeyCount)) {
                 underflowInLeaf(
@@ -1593,10 +1595,8 @@ class InternalTreeLogic<KEY, VALUE> {
             CursorContext cursorContext)
             throws IOException {
         // Remove key/value
-        bTreeNode.removeKeyValueAt(cursor, pos, keyCount, stableGeneration, unstableGeneration, cursorContext);
-
-        // Decrease key count
-        int newKeyCount = keyCount - 1;
+        int newKeyCount =
+                bTreeNode.removeKeyValueAt(cursor, pos, keyCount, stableGeneration, unstableGeneration, cursorContext);
         TreeNode.setKeyCount(cursor, newKeyCount);
         return newKeyCount;
     }

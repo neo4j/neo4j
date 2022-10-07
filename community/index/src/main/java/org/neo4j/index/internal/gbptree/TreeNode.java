@@ -54,8 +54,12 @@ abstract class TreeNode<KEY, VALUE> {
         boolean defined;
 
         public ValueHolder(VALUE value) {
+            this(value, false);
+        }
+
+        public ValueHolder(VALUE value, boolean defined) {
             this.value = value;
-            this.defined = false;
+            this.defined = defined;
         }
     }
 
@@ -292,7 +296,8 @@ abstract class TreeNode<KEY, VALUE> {
      * though it still can be used for the purposes of the key-value size calculation, i.e. in {@link #totalSpaceOfKeyValue(Object, Object)}
      */
     abstract void keyValueAt(
-            PageCursor cursor, KEY intoKey, ValueHolder<VALUE> intoValue, int pos, CursorContext cursorContext);
+            PageCursor cursor, KEY intoKey, ValueHolder<VALUE> intoValue, int pos, CursorContext cursorContext)
+            throws IOException;
 
     abstract void insertKeyAndRightChildAt(
             PageCursor cursor,
@@ -316,7 +321,10 @@ abstract class TreeNode<KEY, VALUE> {
             CursorContext cursorContext)
             throws IOException;
 
-    abstract void removeKeyValueAt(
+    /**
+     * @return number of keys left in leaf after this operation
+     */
+    abstract int removeKeyValueAt(
             PageCursor cursor,
             int pos,
             int keyCount,
@@ -354,13 +362,20 @@ abstract class TreeNode<KEY, VALUE> {
      * though it still can be used for the purposes of the key-value size calculation, i.e. in {@link #totalSpaceOfKeyValue(Object, Object)}
      */
     abstract ValueHolder<VALUE> valueAt(
-            PageCursor cursor, ValueHolder<VALUE> value, int pos, CursorContext cursorContext);
+            PageCursor cursor, ValueHolder<VALUE> value, int pos, CursorContext cursorContext) throws IOException;
 
     /**
      * Overwrite value at position with given value.
      * @return True if value was overwritten, false otherwise.
      */
-    abstract boolean setValueAt(PageCursor cursor, VALUE value, int pos);
+    abstract boolean setValueAt(
+            PageCursor cursor,
+            VALUE value,
+            int pos,
+            CursorContext cursorContext,
+            long stableGeneration,
+            long unstableGeneration)
+            throws IOException;
 
     long childAt(PageCursor cursor, int pos, long stableGeneration, long unstableGeneration) {
         return childAt(cursor, pos, stableGeneration, unstableGeneration, NO_GENERATION_TARGET);

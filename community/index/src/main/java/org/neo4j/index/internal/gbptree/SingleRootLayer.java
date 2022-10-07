@@ -58,7 +58,7 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
         }
         var format = treeNodeSelector.selectByLayout(layout);
         OffloadStoreImpl<KEY, VALUE> offloadStore = support.buildOffload(layout);
-        this.treeNode = format.create(support.payloadSize(), layout, offloadStore);
+        this.treeNode = format.create(support.payloadSize(), layout, offloadStore, support.idProvider());
         this.singleRootAccess = new SingleDataTree();
     }
 

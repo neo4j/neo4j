@@ -30,7 +30,7 @@ public class DefaultTreeNodeSelector {
     private static final TreeNodeSelector.Factory FIXED = new TreeNodeSelector.Factory() {
         @Override
         public <KEY, VALUE> TreeNode<KEY, VALUE> create(
-                int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore) {
+                int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore, IdProvider idProvider) {
             return new TreeNodeFixedSize<>(pageSize, layout);
         }
 
@@ -51,7 +51,7 @@ public class DefaultTreeNodeSelector {
     private static final TreeNodeSelector.Factory DYNAMIC = new TreeNodeSelector.Factory() {
         @Override
         public <KEY, VALUE> TreeNode<KEY, VALUE> create(
-                int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore) {
+                int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore, IdProvider idProvider) {
             return new TreeNodeDynamicSize<>(pageSize, layout, offloadStore);
         }
 

@@ -225,7 +225,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
         // WHEN
         VALUE overwriteValue = value(666);
         assertTrue(
-                node.setValueAt(cursor, overwriteValue, 0),
+                node.setValueAt(cursor, overwriteValue, 0, NULL_CONTEXT, STABLE_GENERATION, UNSTABLE_GENERATION),
                 String.format("Could not overwrite value, oldValue=%s, newValue=%s", firstValue, overwriteValue));
 
         // THEN
@@ -579,7 +579,8 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
         assertContent(expectedKeys, expectedValues, expectedKeyCount);
     }
 
-    private void assertContent(List<KEY> expectedKeys, List<VALUE> expectedValues, int expectedKeyCount) {
+    private void assertContent(List<KEY> expectedKeys, List<VALUE> expectedValues, int expectedKeyCount)
+            throws IOException {
         KEY actualKey = layout.newKey();
         VALUE actualValue = layout.newValue();
         assertEquals(expectedKeyCount, TreeNode.keyCount(cursor));

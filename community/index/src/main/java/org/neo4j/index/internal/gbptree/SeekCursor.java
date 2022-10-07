@@ -690,6 +690,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
     }
 
     private boolean readAndValidateNextKeyValueBatch() throws IOException {
+        //noinspection AssignmentUsedAsCondition
         do {
             try {
                 cachedIndex = 0;

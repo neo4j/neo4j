@@ -104,8 +104,9 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         var format = treeNodeSelector.selectByLayout(dataLayout);
         OffloadStoreImpl<ROOT_KEY, RootMappingValue> rootOffloadStore = support.buildOffload(this.rootLayout);
         OffloadStoreImpl<DATA_KEY, DATA_VALUE> dataOffloadStore = support.buildOffload(dataLayout);
-        this.rootTreeNode = rootMappingFormat.create(support.payloadSize(), this.rootLayout, rootOffloadStore);
-        this.dataTreeNode = format.create(support.payloadSize(), dataLayout, dataOffloadStore);
+        this.rootTreeNode = rootMappingFormat.create(
+                support.payloadSize(), this.rootLayout, rootOffloadStore, support.idProvider());
+        this.dataTreeNode = format.create(support.payloadSize(), dataLayout, dataOffloadStore, support.idProvider());
     }
 
     private boolean hashCodeSeemsImplemented(Layout<ROOT_KEY, RootMappingValue> rootLayout) {
