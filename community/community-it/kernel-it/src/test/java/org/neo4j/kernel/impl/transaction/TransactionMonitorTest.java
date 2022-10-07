@@ -19,17 +19,23 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import org.assertj.core.api.AbstractThrowableAssert;
+import org.assertj.core.api.InstanceOfAssertFactory;
 import org.assertj.core.description.Description;
 import org.assertj.core.description.TextDescription;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.transaction.TransactionCountersChecker.ExpectedDifference;
@@ -39,6 +45,7 @@ import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @ImpermanentDbmsExtension
 class TransactionMonitorTest
@@ -151,6 +158,127 @@ class TransactionMonitorTest
                 .verifyWith( checker );
     }
 
+    @Test
+    void shouldHandleEffectiveNoOpWrite()
+    {
+        final var checker = checker();
+        ExpectedDifference.NONE.verifyWith( checker );
+
+        try ( var tx = db.beginTx() )
+        {
+            ExpectedDifference.NONE.withStarted( 1 ).withActive( 1 ).verifyWith( checker );
+            tx.createNode().delete();
+
+            assertThat( hasTxStateWithChanges( tx ) )
+                    .as( shouldHaveTxStateWithChanges( true ) )
+                    .isTrue();
+
+            ExpectedDifference.NONE.withStarted( 1 ).withActive( 1 ).isWriteTx( true ).verifyWith( checker );
+            tx.commit();
+        }
+
+        ExpectedDifference.NONE.withStarted( 1 ).withCommitted( 1 ).isWriteTx( true ).verifyWith( checker );
+    }
+
+    @ParameterizedTest( name = "terminate on fail: {argumentsWithNames}" )
+    @ValueSource( booleans = {false, true} )
+    void shouldHandleErrorOnWrite( boolean terminate )
+    {
+        // create a node in one transaction
+        // try deleting it from two different concurrent transactions
+        // the metrics should still reflect they were both write transactions, despite one of them failing with
+        // a tx state and no changes
+
+        final long nodeId; // using id for simplicity; however, could be found through other means by user
+        {
+            final var checker = checker();
+            ExpectedDifference.NONE.verifyWith( checker );
+
+            try ( var tx = db.beginTx() )
+            {
+                nodeId = tx.createNode().getId();
+                tx.commit();
+            }
+
+            ExpectedDifference.NONE
+                    .withStarted( 1 )
+                    .withCommitted( 1 )
+                    .isWriteTx( true )
+                    .verifyWith( checker );
+        }
+
+        final var checker = checker();
+        ExpectedDifference.NONE.verifyWith( checker );
+
+        try ( var successfulTx = db.beginTx();
+              var unsuccessfulTx = db.beginTx() )
+        {
+            ExpectedDifference.NONE.withStarted( 2 ).withActive( 2 ).verifyWith( checker );
+
+            // find the same node
+            final var nodeToSuccessfullyDelete = successfulTx.getNodeById( nodeId );
+            final var nodeToUnsuccessfullyDelete = unsuccessfulTx.getNodeById( nodeId );
+
+            // delete node from one transaction
+            nodeToSuccessfullyDelete.delete();
+            assertThat( hasTxStateWithChanges( successfulTx ) )
+                    .as( shouldHaveTxStateWithChanges( true ) )
+                    .isTrue();
+            successfulTx.commit();
+
+            try
+            {
+                // try to delete node from the other transaction
+                assertThatThrownBy( nodeToUnsuccessfullyDelete::delete, "node should be deleted" )
+                        .asInstanceOf( RethrowableThrowableAssert.factory( NotFoundException.class ) )
+                        .hasMessageContainingAll( "Unable to delete Node", "since it has already been deleted" )
+                        .rethrow(); // rethrow NotFoundException as it would throw here in user code
+            }
+            catch ( NotFoundException error )
+            {
+                // catch here for checking
+                ExpectedDifference.NONE
+                        .withStarted( 2 )
+                        .withActive( 1 )
+                        .withCommitted( 1 )
+                        .isWriteTx( true )
+                        .verifyWith( checker );
+
+                if ( terminate )
+                {
+                    // could be some long-running cleanup that terminates via timeout
+                    // or explicit termination like this
+                    unsuccessfulTx.terminate();
+                }
+                else
+                {
+                    throw error; // rethrow to be consistent with normal user flow
+                }
+
+                unsuccessfulTx.commit(); // will not commit, will roll back, but still counts as write tx
+            }
+        }
+        catch ( NotFoundException ignored )
+        {
+            // explicitly expected to throw for test
+            // perhaps user does something here in normal flow
+        }
+        catch ( RuntimeException e )
+        {
+            assertThat( e )
+                    .as( "transaction failure exception" )
+                    .hasRootCauseInstanceOf( TransactionTerminatedException.class );
+        }
+
+        ExpectedDifference.NONE
+                .withStarted( 2 )
+                .withCommitted( 1 )
+                .withRolledBack( 1 )
+                .withTerminated( terminate ? 1 : 0 )
+                .isWriteTx( true )
+                .verifyWith( checker );
+    }
+
     private TransactionCountersChecker checker()
     {
         return TransactionCountersChecker.checkerFor( counts );
@@ -176,5 +304,25 @@ class TransactionMonitorTest
         final var type = isWriteTx ? "write" : "read";
         final var negation = isWriteTx ? "" : " not";
         return new TextDescription( "%s transaction should%s have state with changes", type, negation );
+    }
+
+    private static class RethrowableThrowableAssert<T extends Throwable>
+            extends AbstractThrowableAssert<RethrowableThrowableAssert<T>,T>
+    {
+        static <T extends Throwable> InstanceOfAssertFactory<T,RethrowableThrowableAssert<T>> factory(
+                Class<T> throwable )
+        {
+            return new InstanceOfAssertFactory<>( throwable, RethrowableThrowableAssert::new );
+        }
+
+        RethrowableThrowableAssert( T throwable )
+        {
+            super( throwable, RethrowableThrowableAssert.class );
+        }
+
+        void rethrow() throws T
+        {
+            throw actual;
+        }
     }
 }
