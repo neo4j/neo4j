@@ -655,7 +655,24 @@ public final class SettingMigrators {
 
         private void migrateJvmAdditional(
                 Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migrateSettingNameChange(values, log, "dbms.jvm.additional", additional_jvm);
+            String oldSettingName = "dbms.jvm.additional";
+            String value = values.get(oldSettingName);
+
+            // Remove a deprecated jvm additional we used to have in the default config in 4.x
+            if (isNotBlank(value)) {
+                String deprecatedValue = "-XX:-UseBiasedLocking";
+                if (value.contains(deprecatedValue)) {
+                    String newValue = value.replaceAll(System.lineSeparator() + deprecatedValue, "");
+                    // If it was the first one it won't have a line separator before it
+                    newValue = newValue.replaceAll(deprecatedValue + System.lineSeparator(), "");
+                    // If it is coming from the migrate-config tool or is the only additional it won't have separator
+                    newValue = newValue.replaceAll(deprecatedValue, "");
+
+                    values.put(oldSettingName, newValue);
+                }
+            }
+
+            migrateSettingNameChange(values, log, oldSettingName, additional_jvm);
         }
 
         private void migrateQueryLoggingSettings(
