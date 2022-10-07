@@ -49,6 +49,7 @@ import org.neo4j.util.VisibleForTesting;
 class WindowsBootloaderOs extends BootloaderOsAbstraction {
     static final String PRUNSRV_AMD_64_EXE = "prunsrv-amd64.exe";
     static final String PRUNSRV_I_386_EXE = "prunsrv-i386.exe";
+    private static final String POWERSHELL_EXE = "powershell.exe";
     private static final int WINDOWS_PATH_MAX_LENGTH = 250;
 
     WindowsBootloaderOs(Bootloader ctx) {
@@ -64,7 +65,13 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
         return UNKNOWN_PID;
     }
 
-    private static class BlockingProcess extends ProcessStages.Adapter {
+    private static class BlockingProcess implements ProcessStages {
+        @Override
+        public void preStart(ProcessManager processManager, ProcessBuilder processBuilder) {
+            processBuilder.redirectOutput(ProcessBuilder.Redirect.DISCARD);
+            processBuilder.redirectError(ProcessBuilder.Redirect.DISCARD);
+        }
+
         @Override
         public void postStart(ProcessManager processManager, Process process) throws Exception {
             processManager.waitUntilSuccessful(process);
@@ -260,8 +267,8 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
 
         @Override
         public void postStart(ProcessManager processManager, Process process) throws Exception {
-            processManager.waitUntilSuccessful(process);
             out.write(process.getInputStream().readAllBytes());
+            processManager.waitUntilSuccessful(process);
         }
     }
 
@@ -272,7 +279,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
     private void runProcess(List<String> command, ProcessStages behaviour) {
         List<String> entireCommand = asExternalCommand(command);
         var powershellProcessId = bootloader.processManager().run(entireCommand, behaviour);
-        if (entireCommand.stream().anyMatch(cmd -> cmd.equals(powershellCmd()))
+        if (entireCommand.stream().anyMatch(cmd -> cmd.equals(POWERSHELL_EXE))
                 && command.stream()
                         .anyMatch(cmd -> cmd.endsWith(PRUNSRV_I_386_EXE) || cmd.endsWith(PRUNSRV_AMD_64_EXE))) {
             // This is special condition where we run a command with our prunsrv windows-service util and we have to run
@@ -294,7 +301,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
                     resultFromPowerShellCommand("Get-Process", "-Id", String.valueOf(powershellProcessId));
                     // Then check if the actual prunsrv process is still running
                     resultFromPowerShellCommand(
-                            "Get-Process", PRUNSRV_AMD_64_EXE + "," + PRUNSRV_I_386_EXE + "," + powershellCmd());
+                            "Get-Process", PRUNSRV_AMD_64_EXE + "," + PRUNSRV_I_386_EXE + "," + POWERSHELL_EXE);
                     // ... if these two commands complete normally then either the powershell process that's starting
                     // the prunsrv process still runs, or there's at least one running process containing that
                     // prunsrv name
@@ -335,7 +342,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
                         .collect(Collectors.joining(" ")));
         return Stream.concat(
                         Stream.of(
-                                powershellCmd(),
+                                POWERSHELL_EXE,
                                 "-OutputFormat",
                                 "Text",
                                 "-ExecutionPolicy",
@@ -343,11 +350,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
                                 "-Command",
                                 command.get(0)),
                         argsAsOne)
-                .collect(Collectors.toList());
-    }
-
-    private static String powershellCmd() {
-        return "powershell.exe";
+                .toList();
     }
 
     private Path findPrunCommand() {

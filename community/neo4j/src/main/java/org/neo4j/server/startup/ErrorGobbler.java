@@ -20,14 +20,13 @@
 package org.neo4j.server.startup;
 
 import static org.neo4j.server.startup.Environment.FULLY_FLEDGED;
+import static org.neo4j.string.EncodingUtils.getNativeCharset;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.nio.charset.Charset;
-import java.nio.charset.UnsupportedCharsetException;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -51,6 +50,10 @@ class ErrorGobbler extends Thread {
         setUncaughtExceptionHandler((t, e) -> e.printStackTrace(parentProcessStdErr));
     }
 
+    /**
+     * Will block until the child process signal that it's ready or the process ends.
+     * @return {@code ture} if the signal was observed, {@code false} otherwise.
+     */
     boolean waitUntilFullyFledged() throws IOException {
         try {
             blockParent.await();
@@ -84,16 +87,5 @@ class ErrorGobbler extends Thread {
             parentProcessStdErr.flush();
             blockParent.countDown();
         }
-    }
-
-    private static Charset getNativeCharset() {
-        try {
-            String nativeEncoding = System.getProperty("native.encoding");
-            if (nativeEncoding != null) {
-                return Charset.forName(nativeEncoding);
-            }
-        } catch (UnsupportedCharsetException ignored) {
-        }
-        return Charset.defaultCharset();
     }
 }

@@ -283,13 +283,17 @@ abstract class BootloaderCommandTestBase {
                         frame.getMethodName());
 
                 int expectedExit = monitor.afterStart(process);
-                int exitCode = process.waitFor();
+
+                ErrorGobbler errorGobbler = new ErrorGobbler(new PrintStream(err), process.getErrorStream());
+                errorGobbler.start();
                 byte[] outputBytes = process.getInputStream().readAllBytes();
-                byte[] errorBytes = process.getErrorStream().readAllBytes();
                 out.write(outputBytes);
-                err.write(errorBytes);
+
+                errorGobbler.waitUntilFullyFledged();
+                errorGobbler.join();
+                int exitCode = process.waitFor();
                 assertThat(exitCode)
-                        .as("Out: %s %nErr: %s", new String(outputBytes), new String(errorBytes))
+                        .as("Out: %s %nErr: %s", new String(outputBytes), err.toString())
                         .isEqualTo(expectedExit);
             }
             return true;

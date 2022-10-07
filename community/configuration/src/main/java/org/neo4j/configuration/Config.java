@@ -20,16 +20,18 @@
 package org.neo4j.configuration;
 
 import static java.lang.String.format;
-import static java.lang.System.lineSeparator;
 import static java.util.Objects.requireNonNull;
+import static org.apache.commons.lang3.StringUtils.chomp;
 import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.config_command_evaluation_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.strict_config_validation;
+import static org.neo4j.string.EncodingUtils.getNativeCharset;
 
-import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
@@ -878,18 +880,24 @@ public class Config implements Configuration {
                             StringMatcherFactory.INSTANCE.quoteMatcher())
                     .getTokenArray();
             process = new ProcessBuilder(commands).start();
-            BufferedReader out = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            BufferedReader err = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            Thread outGobbler = streamGobbler(process.getInputStream(), out);
+            ByteArrayOutputStream err = new ByteArrayOutputStream();
+            Thread errGobbler = streamGobbler(process.getErrorStream(), err);
             if (!process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS)) {
                 throw new IllegalArgumentException(format("Timed out executing command `%s`", command));
             }
-            String output = out.lines().collect(Collectors.joining(lineSeparator()));
+
+            outGobbler.join();
+            errGobbler.join();
+            String output = chomp(out.toString(getNativeCharset()));
 
             int exitCode = process.exitValue();
             if (exitCode != 0) {
-                String errOutput = err.lines().collect(Collectors.joining(lineSeparator()));
-                throw new IllegalArgumentException(
-                        format("Command `%s` failed with exit code %s.%n%s%n%s", command, exitCode, output, errOutput));
+                throw new IllegalArgumentException(format(
+                        "Command `%s` failed with exit code %s.%n%s%n%s",
+                        command, exitCode, output, chomp(err.toString(getNativeCharset()))));
             }
             return output;
         } catch (InterruptedException e) {
@@ -902,6 +910,18 @@ public class Config implements Configuration {
                 process.destroyForcibly();
             }
         }
+    }
+
+    private static Thread streamGobbler(InputStream from, OutputStream to) {
+        Thread thread = new Thread(() -> {
+            try {
+                from.transferTo(to);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+        thread.start();
+        return thread;
     }
 
     @SuppressWarnings("unchecked")

@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.startup;
 
-import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.neo4j.configuration.BootloaderSettings.initial_heap_size;
@@ -36,7 +35,6 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
@@ -162,34 +160,6 @@ abstract class BootloaderOsAbstraction {
         return SystemUtils.IS_OS_WINDOWS
                 ? new WindowsBootloaderOs(context)
                 : SystemUtils.IS_OS_MAC_OSX ? new MacBootloaderOs(context) : new UnixBootloaderOs(context);
-    }
-
-    protected static String executeCommand(String[] command) {
-        Process process = null;
-        try {
-            process = new ProcessBuilder(command).start();
-            if (!process.waitFor(30, TimeUnit.SECONDS)) {
-                throw new IllegalStateException(format("Timed out executing command `%s`", String.join(" ", command)));
-            }
-
-            String output =
-                    StringUtils.trimToEmpty(new String(process.getInputStream().readAllBytes()));
-
-            int exitCode = process.exitValue();
-            if (exitCode != 0) {
-                String errOutput = new String(process.getErrorStream().readAllBytes());
-                throw new IllegalStateException(format(
-                        "Command `%s` failed with exit code %s.%n%s%n%s",
-                        String.join(" ", command), exitCode, output, errOutput));
-            }
-            return output;
-        } catch (IOException | InterruptedException e) {
-            throw new IllegalStateException(e);
-        } finally {
-            if (process != null && process.isAlive()) {
-                process.destroyForcibly();
-            }
-        }
     }
 
     protected String getJavaCmd() {
