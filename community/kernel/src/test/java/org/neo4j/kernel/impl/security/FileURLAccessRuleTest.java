@@ -112,9 +112,7 @@ class FileURLAccessRuleTest {
                 new TripleOrMorePercentEncoded(
                         arg(OK, "file:/file%25253Fcsv", "file:/import/file%25253Fcsv"),
                         arg(OK, "file:/file%2525253Fcsv", "file:/import/file%2525253Fcsv"),
-                        arg(OK, "file:/file%252525253Fcsv", "file:/import/file%252525253Fcsv")),
-                new OverlongPercentEncoded(
-                        arg(OK, "file:/file%C0%BFcsv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"))); // "?"
+                        arg(OK, "file:/file%252525253Fcsv", "file:/import/file%252525253Fcsv")));
     }
 
     /**
@@ -143,9 +141,7 @@ class FileURLAccessRuleTest {
                 new TripleOrMorePercentEncoded(
                         arg(OK, "file:/file%252523csv", "file:/import/file%252523csv"),
                         arg(OK, "file:/file%25252523csv", "file:/import/file%25252523csv"),
-                        arg(OK, "file:/file%2525252523csv", "file:/import/file%2525252523csv")),
-                new OverlongPercentEncoded(
-                        arg(OK, "file:/file%C0%A3csv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"))); // "#"
+                        arg(OK, "file:/file%2525252523csv", "file:/import/file%2525252523csv")));
     }
 
     /**
@@ -200,20 +196,7 @@ class FileURLAccessRuleTest {
                         arg(ERR_ARG, "file:%25252F%252F%252Ffile.csv", null),
                         arg(ERR_AUTH, "file://%25252Ffile.csv", null),
                         arg(ERR_AUTH, "file://%2525252Efile.csv", null),
-                        arg(ERR_AUTH, "file://%2525252E%25252Efile.csv", null)),
-                new OverlongPercentEncoded(
-                        arg(OK, "file:/%C0%AFfile.csv", "file:/import/%EF%BF%BD%EF%BF%BDfile.csv"), // "/"
-                        arg(ERR_ARG, "file:%C0%AF/file.csv", null), // "/"
-                        arg(ERR_ARG, "file:%C0%AF%C0%AFfile.csv", null), // "/"
-                        arg(ERR_AUTH, "file://%C0%AFfile.csv", null), // "/"
-                        arg(OK, "file:/%C0%AEfile.csv", "file:/import/%EF%BF%BD%EF%BF%BDfile.csv"), // "."
-                        arg(ERR_AUTH, "file://%C0%AEfile.csv", null), // "."
-                        arg(OK, "file:/%C1%9Bfile.csv", "file:/import/%EF%BF%BD%EF%BF%BDfile.csv"), // "["
-                        arg(ERR_AUTH, "file://%C1%9Bfile.csv", null), // "["
-                        arg(OK, "file:/%C1%9Dfile.csv", "file:/import/%EF%BF%BD%EF%BF%BDfile.csv"), // "]"
-                        arg(ERR_AUTH, "file://%C1%9Dfile.csv", null), // "]"
-                        arg(OK, "file:/%C0%BAfile.csv", "file:/import/%EF%BF%BD%EF%BF%BDfile.csv"), // ":"
-                        arg(ERR_AUTH, "file://%C1%BAfile.csv", null))); // ":"
+                        arg(ERR_AUTH, "file://%2525252E%25252Efile.csv", null)));
     }
 
     /**
@@ -269,18 +252,7 @@ class FileURLAccessRuleTest {
                         arg(OK, "file:///w.me%252Ecom:%252Fcsv", "file:/import/w.me%252Ecom:%252Fcsv")),
                 new TripleOrMorePercentEncoded(
                         arg(OK, "file:/w%25252Eme.com%25253A80/csv", "file:/import/w%25252Eme.com%25253A80/csv"),
-                        arg(OK, "file:///w.me.com%2525253A80/csv", "file:/import/w.me.com%2525253A80/csv")),
-                new OverlongPercentEncoded(
-                        arg(OK, "file:/%C0%AFfile.csv", "file:/import/%EF%BF%BD%EF%BF%BDfile.csv"), // "/"
-                        arg(OK, "file:///%C0%AFfile.csv", "file:/import/%EF%BF%BD%EF%BF%BDfile.csv"), // "/"
-                        arg(OK, "file:/%C0%AEfile.csv", "file:/import/%EF%BF%BD%EF%BF%BDfile.csv"), // "."
-                        arg(OK, "file:///%C0%AEfile.csv", "file:/import/%EF%BF%BD%EF%BF%BDfile.csv"), // "."
-                        arg(OK, "file:/%C1%9Bfile.csv", "file:/import/%EF%BF%BD%EF%BF%BDfile.csv"), // "["
-                        arg(OK, "file:///%C1%9Bfile.csv", "file:/import/%EF%BF%BD%EF%BF%BDfile.csv"), // "["
-                        arg(OK, "file:/%C1%9Dfile.csv", "file:/import/%EF%BF%BD%EF%BF%BDfile.csv"), // "]"
-                        arg(OK, "file:///%C1%9Dfile.csv", "file:/import/%EF%BF%BD%EF%BF%BDfile.csv"), // "]"
-                        arg(OK, "file:/%C0%BAfile.csv", "file:/import/%EF%BF%BD%EF%BF%BDfile.csv"), // ":"
-                        arg(OK, "file:///%C0%BAfile.csv", "file:/import/%EF%BF%BD%EF%BF%BDfile.csv"))); // ":"
+                        arg(OK, "file:///w.me.com%2525253A80/csv", "file:/import/w.me.com%2525253A80/csv")));
     }
 
     /**
@@ -306,10 +278,7 @@ class FileURLAccessRuleTest {
                 new TripleOrMorePercentEncoded(
                         arg(OK, "file:/%2525252F%252F", "file:/import/%2525252F%252F"),
                         arg(ERR_ARG, "file:%25252F", null),
-                        arg(ERR_URL, "file%25253A", null)),
-                new OverlongPercentEncoded(
-                        arg(ERR_ARG, "file:%C0%AF", null), // "/"
-                        arg(ERR_URL, "file%C0%BA/", null))); // ":"
+                        arg(ERR_URL, "file%25253A", null)));
     }
 
     /**
@@ -361,9 +330,7 @@ class FileURLAccessRuleTest {
                         arg(OK, "file:/%25252Ffile%2520csv", "file:/import/%25252Ffile%2520csv"),
                         arg(OK, "file:/%25252Ffile%25252520csv", "file:/import/%25252Ffile%25252520csv"),
                         arg(OK, "file:/%25252Ffile%20csv", "file:/import/%25252Ffile%20csv"),
-                        arg(ERR_ARG, "file:%25252F//file.csv", null)),
-                new OverlongPercentEncoded(
-                        arg(OK, "file:/%C0%AFfile.csv", "file:/import/%EF%BF%BD%EF%BF%BDfile.csv"))); // "/"
+                        arg(ERR_ARG, "file:%25252F//file.csv", null)));
     }
 
     /**
@@ -418,10 +385,7 @@ class FileURLAccessRuleTest {
                         arg(OK, "file:/%25252F%25252Ffile.csv", "file:/import/%25252F%25252Ffile.csv"),
                         arg(OK, "file:////file.csv%25252F%25252F", "file:/import/file.csv%25252F%25252F"),
                         arg(OK, "file:/%25252Ffile.csv%25252F", "file:/import/%25252Ffile.csv%25252F"),
-                        arg(OK, "file://///%25252F%25252Ffile.csv//", "file:/import/%25252F%25252Ffile.csv")),
-                new OverlongPercentEncoded(
-                        arg(OK, "file:/file.csv%C0%AF", "file:/import/file.csv%EF%BF%BD%EF%BF%BD"), // "/"
-                        arg(OK, "file:////%C0%Afile.csv///", "file:/import/%EF%BF%BD%EF%BF%BDile.csv"))); // "/"
+                        arg(OK, "file://///%25252F%25252Ffile.csv//", "file:/import/%25252F%25252Ffile.csv")));
     }
 
     /**
@@ -522,10 +486,7 @@ class FileURLAccessRuleTest {
                 new TripleOrMorePercentEncoded(
                         arg(OK, "file:/%25252E%25252E/file.csv", "file:/import/%25252E%25252E/file.csv"),
                         arg(OK, "file:///%2525252E%25252Ffile.csv", "file:/import/%2525252E%25252Ffile.csv"),
-                        arg(OK, "file:////..//..%25252F%2Ffile.csv", "file:/import/..%25252F/file.csv")),
-                new OverlongPercentEncoded(
-                        arg(OK, "file:/%C0%AE./file.csv", "file:/import/%EF%BF%BD%EF%BF%BD./file.csv"), // "."
-                        arg(OK, "file:/..%C0%AFfile.csv", "file:/import/..%EF%BF%BD%EF%BF%BDfile.csv"))); // "/"
+                        arg(OK, "file:////..//..%25252F%2Ffile.csv", "file:/import/..%25252F/file.csv")));
     }
 
     /**
@@ -637,29 +598,7 @@ class FileURLAccessRuleTest {
                         arg(OK, "file:/file%25253Dcsv", "file:/import/file%25253Dcsv"),
                         arg(OK, "file:/file%25255Bcsv", "file:/import/file%25255Bcsv"),
                         arg(OK, "file:/file%25255Dcsv", "file:/import/file%25255Dcsv"),
-                        arg(OK, "file:/file%252520csv", "file:/import/file%252520csv")),
-                new OverlongPercentEncoded(
-                        // in the same order as above
-                        arg(OK, "file:/file%C0%A5csv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"),
-                        arg(OK, "file:/file%C0%BAcsv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"),
-                        arg(OK, "file:/file%C0%AFcsv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"),
-                        arg(OK, "file:/file%C0%BFcsv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"),
-                        arg(OK, "file:/file%C0%A3csv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"),
-                        arg(OK, "file:/file%C0%C0csv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"),
-                        arg(OK, "file:/file%C0%A1csv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"),
-                        arg(OK, "file:/file%C0%A4csv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"),
-                        arg(OK, "file:/file%C0%A6csv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"),
-                        arg(OK, "file:/file%C0%A7csv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"),
-                        arg(OK, "file:/file%C0%A8csv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"),
-                        arg(OK, "file:/file%C0%A9csv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"),
-                        arg(OK, "file:/file%C0%AAcsv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"),
-                        arg(OK, "file:/file%C0%ABcsv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"),
-                        arg(OK, "file:/file%C0%ACcsv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"),
-                        arg(OK, "file:/file%C0%BBcsv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"),
-                        arg(OK, "file:/file%C0%ADcsv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"),
-                        arg(OK, "file:/file%C1%9Bcsv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"),
-                        arg(OK, "file:/file%C1%9Dcsv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"),
-                        arg(OK, "file:/file%C0%A0csv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv")));
+                        arg(OK, "file:/file%252520csv", "file:/import/file%252520csv")));
     }
 
     /**
@@ -684,26 +623,19 @@ class FileURLAccessRuleTest {
                         arg(OK, "file:/file%252Bcsv", "file:/import/file%252Bcsv")),
                 new TripleOrMorePercentEncoded(
                         arg(OK, "file:/file%252520csv", "file:/import/file%252520csv"),
-                        arg(OK, "file:/file%25252Bcsv", "file:/import/file%25252Bcsv")),
-                new OverlongPercentEncoded(
-                        arg(OK, "file:/file%C0%A0csv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"), // " "
-                        arg(OK, "file:/file%C0%ABcsv", "file:/import/file%EF%BF%BD%EF%BF%BDcsv"))); // "+"
-    }
-
+                        arg(OK, "file:/file%25252Bcsv", "file:/import/file%25252Bcsv")));
     }
 
     private static Stream<Arguments> charactersEscapedLowerCase() {
         return Stream.of(
                 arg(OK, "file:/file%2ecsv", "file:/import/file.csv"),
-                arg(OK, "file:/file%2fcsv", "file:/import/file/csv"),
-                arg(OK, "file:/file%c2%a3csv", "file:/import/file%C2%A3csv"));
+                arg(OK, "file:/file%2fcsv", "file:/import/file/csv"));
     }
 
     private static Stream<Arguments> charactersEscapedUpperCase() {
         return Stream.of(
                 arg(OK, "file:/file%2Ecsv", "file:/import/file.csv"),
-                arg(OK, "file:/file%2Fcsv", "file:/import/file/csv"),
-                arg(OK, "file:/file%C2%A3csv", "file:/import/file%C2%A3csv"));
+                arg(OK, "file:/file%2Fcsv", "file:/import/file/csv"));
     }
 
     protected enum ValidationStatus {
@@ -799,24 +731,6 @@ class FileURLAccessRuleTest {
     private record TripleOrMorePercentEncoded(Arguments... entries) {}
 
     /**
-     * This record should contain test cases which contain overlong-encoding. In UTF-8 one could theoretically express
-     * the same unicode code point as a single-byte, or as a double/triple/quadruple byte sequence. However, UTF-8
-     * specifies that you should always use the shortest form possible and that it is forbidden to use a longer form
-     * than necessary. You can read more about overlong-encoding at
-     * <a href="https://en.wikipedia.org/wiki/UTF-8#Overlong_encodings">Wikipedia: UTF-8 Overlong</a> or at
-     * <a href="http://www.unicode.org/versions/corrigendum1.html">Unicode Corrigendum: UTF-8 Shortest Form</a>.
-     * <p>
-     * Despite being illegal, it is still a popular vulnerability because many pieces of software will decode overlong
-     * UTF-8 byte sequences to unexpected values.
-     * <p>
-     * You will find that our tests decode any overlong values to the
-     * <a href="https://www.fileformat.info/info/unicode/char/0fffd/index.htm">Unicode Replacement Character</a>.
-     *
-     * @param entries Represents individual test cases
-     */
-    private record OverlongPercentEncoded(Arguments... entries) {}
-
-    /**
      * Utility class that helps us structure our test code in a manner that makes it obvious that we are providing
      * test cases of famous vulnerabilities.
      *
@@ -824,23 +738,19 @@ class FileURLAccessRuleTest {
      * @param singleEncoded single-percent-encoded test cases
      * @param doubleEncoded double-percent-encoded test cases
      * @param tripleOrMoreEncoded triple-or-more-percent-encoded test cases
-     * @param overlongEncoded overlong-percent-encoded test cases
      * @return combined test cases
      */
     private static Stream<Arguments> buildTestCases(
             NonPercentEncoded nonEncoded,
             SinglePercentEncoded singleEncoded,
             DoublePercentEncoded doubleEncoded,
-            TripleOrMorePercentEncoded tripleOrMoreEncoded,
-            OverlongPercentEncoded overlongEncoded) {
+            TripleOrMorePercentEncoded tripleOrMoreEncoded) {
         return Stream.concat(
                 Stream.of(nonEncoded.entries),
                 Stream.concat(
                         Stream.of(singleEncoded.entries),
                         Stream.concat(
-                                Stream.of(doubleEncoded.entries),
-                                Stream.concat(
-                                        Stream.of(tripleOrMoreEncoded.entries), Stream.of(overlongEncoded.entries)))));
+                                Stream.of(doubleEncoded.entries), Stream.of(tripleOrMoreEncoded.entries))));
     }
 
     private static Arguments arg(ValidationStatus status, String location, String result) {
