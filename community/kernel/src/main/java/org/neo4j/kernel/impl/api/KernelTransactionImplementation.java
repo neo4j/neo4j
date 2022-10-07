@@ -586,7 +586,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             if (lockClient != null) {
                 lockClient.stop();
             }
-            transactionMonitor.transactionTerminated(hasTxStateWithChanges());
+            transactionMonitor.transactionTerminated(hasTxState());
 
             var internalTransaction = this.internalTransaction;
 
@@ -701,9 +701,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return txState;
     }
 
+    private boolean hasTxState() {
+        return txState != null;
+    }
+
     @Override
     public boolean hasTxStateWithChanges() {
-        return txState != null && txState.hasChanges();
+        return hasTxState() && txState.hasChanges();
+    }
+
+    private boolean hasChanges() {
+        return hasTxStateWithChanges();
     }
 
     private void markAsClosed() {
@@ -735,10 +743,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             throw new TransactionTerminatedException(reason);
         }
         assertTransactionOpen();
-    }
-
-    private boolean hasChanges() {
-        return hasTxStateWithChanges();
     }
 
     @Override
@@ -1087,7 +1091,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             markAsClosed();
             eventListeners.afterCommit(listenersState);
         } finally {
-            transactionMonitor.transactionFinished(true, hasTxStateWithChanges());
+            transactionMonitor.transactionFinished(true, hasTxState());
             transactionExecutionMonitor.commit(this);
         }
     }
@@ -1097,7 +1101,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             markAsClosed();
             eventListeners.afterRollback(listenersState);
         } finally {
-            transactionMonitor.transactionFinished(false, hasTxStateWithChanges());
+            transactionMonitor.transactionFinished(false, hasTxState());
             if (listenersState == null || listenersState.failure() == null) {
                 transactionExecutionMonitor.rollback(this);
             } else {
