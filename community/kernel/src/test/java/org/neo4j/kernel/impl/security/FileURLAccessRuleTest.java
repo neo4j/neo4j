@@ -775,8 +775,7 @@ class FileURLAccessRuleTest {
                 return Arguments.of(ERR_PATH, location, null);
             } else {
                 final var resultWithDrive = urlWithDefaultDrive(result);
-                final var resultWitEncodedChars = urlWithPercentEncodedMultiByteChar(resultWithDrive);
-                return Arguments.of(status, location, resultWitEncodedChars);
+                return Arguments.of(status, location, resultWithDrive);
             }
         }
 
@@ -837,20 +836,6 @@ class FileURLAccessRuleTest {
             final var root =
                     GraphDatabaseSettings.neo4j_home.defaultValue().toString().substring(0, 2);
             return "file:/" + root + "/" + url.substring("file:/".length());
-        }
-
-        /**
-         * For multibyte unicode code points, Unix and Mac leaves them percent-encoded as-is whereas Windows encodes
-         * them to utf-8. This utility. method will convert the multibyte encoded characters we have in our test cases
-         * to utf-8.
-         *
-         * @param url input to transform
-         * @return the url with utf-8 encoded replacement characters
-         */
-        private static String urlWithPercentEncodedMultiByteChar(String url) {
-            return url.replaceAll("%EF%BF%BD", "\uFFFD")
-                    .replaceAll("%C2%A5", "\u00A5")
-                    .replaceAll("%C2%A3", "\u00A3");
         }
     }
 
