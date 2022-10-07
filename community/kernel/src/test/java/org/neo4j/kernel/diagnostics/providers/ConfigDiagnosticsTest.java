@@ -20,11 +20,19 @@
 package org.neo4j.kernel.diagnostics.providers;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_transactions;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.GraphDatabaseSettings.plugin_dir;
+import static org.neo4j.configuration.GraphDatabaseSettings.server_logging_config_path;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.connectors.HttpConnector;
+import org.neo4j.configuration.ssl.SslPolicyConfig;
+import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.InternalLog;
 
@@ -48,6 +56,28 @@ class ConfigDiagnosticsTest {
                         max_concurrent_transactions.name() + "=400",
                         initial_default_database.name() + "=testDb")
                 .doesNotContainMessage("No provided DBMS settings.");
+    }
+
+    @Test
+    void dumpPathConfigValues() {
+        SslPolicyConfig sslPolicy = SslPolicyConfig.forScope(SslPolicyScope.BOLT);
+        Config config = Config.newBuilder()
+                .set(HttpConnector.enabled, true)
+                .set(plugin_dir, Path.of("bar"))
+                .set(sslPolicy.enabled, true)
+                .build();
+
+        ConfigDiagnostics configDiagnostics = new ConfigDiagnostics(config);
+        configDiagnostics.dump(log::info);
+
+        // Check that groups, unspecified and specified directories are listed, but not files (alphabetic order)
+        assertThat(logProvider)
+                .containsMessagesInOrder(
+                        "Directories in use:",
+                        sslPolicy.base_directory.name(),
+                        logs_directory.name(),
+                        plugin_dir.name() + "=" + config.get(neo4j_home).resolve("bar"))
+                .doesNotContainMessage(server_logging_config_path.name());
     }
 
     @Test
