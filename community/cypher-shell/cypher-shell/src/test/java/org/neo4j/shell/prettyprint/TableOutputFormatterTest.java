@@ -384,7 +384,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
 
         // THEN
         assertThrows(RuntimeException.class, () -> verbosePrinter.format(result, actual));
-        assertThat(actual.result(), equalTo("+---+\n| i |\n+---+\n"));
+        assertThat(actual.result(), equalTo(String.format("+---+%n| i |%n+---+%n")));
     }
 
     @Test
