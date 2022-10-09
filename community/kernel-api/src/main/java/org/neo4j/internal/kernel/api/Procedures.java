@@ -27,7 +27,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
-import org.neo4j.internal.kernel.api.procs.UserAggregator;
+import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.values.AnyValue;
@@ -138,7 +138,7 @@ public interface Procedures {
      * @return the aggregation function
      * @throws ProcedureException if there was an exception thrown during function execution.
      */
-    UserAggregator aggregationFunction(int id) throws ProcedureException;
+    UserAggregationReducer aggregationFunction(int id) throws ProcedureException;
 
     /**
      * Create a read-only built-in aggregation function by id
@@ -146,5 +146,5 @@ public interface Procedures {
      * @return the aggregation function
      * @throws ProcedureException if there was an exception thrown during function execution.
      */
-    UserAggregator builtInAggregationFunction(int id) throws ProcedureException;
+    UserAggregationReducer builtInAggregationFunction(int id) throws ProcedureException;
 }

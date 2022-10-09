@@ -21,10 +21,11 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.runtime.ReadableRow
-import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
+import org.neo4j.internal.kernel.api.procs.UserAggregationReducer
+import org.neo4j.internal.kernel.api.procs.UserAggregationUpdater
 import org.neo4j.memory.HeapEstimator.shallowSizeOfInstanceWithObjectReferences
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
@@ -35,10 +36,13 @@ abstract class AggregationFunctionInvocation(arguments: IndexedSeq[Expression])
   override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
     memoryTracker.allocateHeap(AggregationFunctionInvocation.SHALLOW_SIZE)
     new AggregationFunction {
-      private var inner: UserDefinedAggregator = _
+      private var innerReducer: UserAggregationReducer = _
+      private var innerUpdater: UserAggregationUpdater = _
 
       override def result(state: QueryState): AnyValue = {
-        aggregator(state).result
+        assertLoaded(state)
+        innerUpdater.applyUpdates()
+        innerReducer.result()
       }
 
       override def apply(data: ReadableRow, state: QueryState): Unit = {
@@ -49,21 +53,26 @@ abstract class AggregationFunctionInvocation(arguments: IndexedSeq[Expression])
           argValues(i) = arguments(i).apply(data, state)
           i += 1
         }
-        aggregator(state).update(argValues)
+        updater(state).update(argValues)
       }
 
-      private def aggregator(state: QueryState) = {
-        if (inner == null) {
-          inner = call(state)
+      private def updater(state: QueryState) = {
+        assertLoaded(state)
+        innerUpdater
+      }
+
+      private def assertLoaded(state: QueryState): Unit = {
+        if (innerReducer == null) {
+          innerReducer = call(state)
+          innerUpdater = innerReducer.newUpdater()
         }
-        inner
       }
     }
   }
 
   override def children: Seq[AstNode[_]] = arguments
 
-  protected def call(state: QueryState): UserDefinedAggregator
+  protected def call(state: QueryState): UserAggregationReducer
 }
 
 object AggregationFunctionInvocation {
@@ -89,7 +98,7 @@ case class UserAggregationFunctionInvocation(fcnId: Int, arguments: IndexedSeq[E
   override def rewrite(f: Expression => Expression): Expression =
     f(UserAggregationFunctionInvocation(fcnId, arguments.map(a => a.rewrite(f))))
 
-  override protected def call(state: QueryState): UserDefinedAggregator = state.query.aggregateFunction(fcnId)
+  override protected def call(state: QueryState): UserAggregationReducer = state.query.aggregateFunction(fcnId)
 }
 
 case class BuiltInAggregationFunctionInvocation(fcnId: Int, arguments: IndexedSeq[Expression])
@@ -98,5 +107,5 @@ case class BuiltInAggregationFunctionInvocation(fcnId: Int, arguments: IndexedSe
   override def rewrite(f: Expression => Expression): Expression =
     f(BuiltInAggregationFunctionInvocation(fcnId, arguments.map(a => a.rewrite(f))))
 
-  override protected def call(state: QueryState): UserDefinedAggregator = state.query.builtInAggregateFunction(fcnId)
+  override protected def call(state: QueryState): UserAggregationReducer = state.query.builtInAggregateFunction(fcnId)
 }

@@ -47,7 +47,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
-import org.neo4j.internal.kernel.api.procs.UserAggregator;
+import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -473,12 +473,12 @@ class DefaultRelationshipTraversalCursorTest {
         }
 
         @Override
-        public UserAggregator aggregationFunction(int id) {
+        public UserAggregationReducer aggregationFunction(int id) {
             return null;
         }
 
         @Override
-        public UserAggregator builtInAggregationFunction(int id) throws ProcedureException {
+        public UserAggregationReducer builtInAggregationFunction(int id) throws ProcedureException {
             return null;
         }
 

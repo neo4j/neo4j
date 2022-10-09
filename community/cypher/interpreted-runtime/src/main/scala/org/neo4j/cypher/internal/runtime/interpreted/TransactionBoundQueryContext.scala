@@ -49,7 +49,6 @@ import org.neo4j.cypher.internal.runtime.ReadQueryContext
 import org.neo4j.cypher.internal.runtime.RelationshipIterator
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.ThreadSafeResourceManager
-import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.cypher.internal.runtime.ValuedNodeIndexCursor
 import org.neo4j.cypher.internal.runtime.ValuedRelationshipIndexCursor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
@@ -104,6 +103,7 @@ import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allCursor
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingCursor
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingCursor
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
+import org.neo4j.internal.kernel.api.procs.UserAggregationReducer
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
@@ -1393,10 +1393,10 @@ private[internal] class TransactionBoundReadQueryContext(
   override def callBuiltInFunction(id: Int, args: Array[AnyValue]): AnyValue =
     CallSupport.callBuiltInFunction(transactionalContext.procedures, id, args)
 
-  override def aggregateFunction(id: Int): UserDefinedAggregator =
+  override def aggregateFunction(id: Int): UserAggregationReducer =
     CallSupport.aggregateFunction(transactionalContext.procedures, id)
 
-  override def builtInAggregateFunction(id: Int): UserDefinedAggregator =
+  override def builtInAggregateFunction(id: Int): UserAggregationReducer =
     CallSupport.builtInAggregateFunction(transactionalContext.procedures, id)
 
   private def buildPathFinder(

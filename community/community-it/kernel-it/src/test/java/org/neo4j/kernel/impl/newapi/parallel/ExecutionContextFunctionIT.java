@@ -41,7 +41,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
-import org.neo4j.internal.kernel.api.procs.UserAggregator;
+import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.ExecutionContext;
@@ -238,10 +238,12 @@ class ExecutionContextFunctionIT {
     @Test
     void testUserAggregationFunctionAcceptingBasicType() throws ProcedureException {
         doWithExecutionContext(executionContext -> {
-            UserAggregator sumFunction = prepareUserAggregationFunction(executionContext, "sum");
-            sumFunction.update(new Value[] {Values.intValue(1)});
-            sumFunction.update(new Value[] {Values.intValue(2)});
-            sumFunction.update(new Value[] {Values.intValue(3)});
+            var sumFunction = prepareUserAggregationFunction(executionContext, "sum");
+            var updater = sumFunction.newUpdater();
+            updater.update(new Value[] {Values.intValue(1)});
+            updater.update(new Value[] {Values.intValue(2)});
+            updater.update(new Value[] {Values.intValue(3)});
+            updater.applyUpdates();
 
             assertThat(sumFunction.result()).isEqualTo(Values.intValue(6));
         });
@@ -250,10 +252,12 @@ class ExecutionContextFunctionIT {
     @Test
     void testUserAggregationFunctionAcceptingNode() throws ProcedureException {
         doWithExecutionContext(executionContext -> {
-            UserAggregator sumFunction = prepareUserAggregationFunction(executionContext, "sumNodeIds");
-            sumFunction.update(new AnyValue[] {VirtualValues.node(1)});
-            sumFunction.update(new AnyValue[] {VirtualValues.node(2)});
-            sumFunction.update(new AnyValue[] {VirtualValues.node(3)});
+            var sumFunction = prepareUserAggregationFunction(executionContext, "sumNodeIds");
+            var updater = sumFunction.newUpdater();
+            updater.update(new AnyValue[] {VirtualValues.node(1)});
+            updater.update(new AnyValue[] {VirtualValues.node(2)});
+            updater.update(new AnyValue[] {VirtualValues.node(3)});
+            updater.applyUpdates();
 
             assertThat(sumFunction.result()).isEqualTo(Values.intValue(6));
         });
@@ -368,7 +372,7 @@ class ExecutionContextFunctionIT {
         return executionContext.procedures().functionCall(handle.id(), args);
     }
 
-    private UserAggregator prepareUserAggregationFunction(ExecutionContext executionContext, String name)
+    private UserAggregationReducer prepareUserAggregationFunction(ExecutionContext executionContext, String name)
             throws ProcedureException {
         var handle = executionContext.procedures().aggregationFunctionGet(getName(name));
         return executionContext.procedures().aggregationFunction(handle.id());

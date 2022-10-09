@@ -34,7 +34,7 @@ import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
-import org.neo4j.internal.kernel.api.procs.UserAggregator;
+import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.ResourceTracker;
@@ -236,7 +236,7 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
     }
 
     @Override
-    public UserAggregator createAggregationFunction(Context ctx, int id) throws ProcedureException {
+    public UserAggregationReducer createAggregationFunction(Context ctx, int id) throws ProcedureException {
         init();
         return globalProcedures.createAggregationFunction(ctx, id);
     }

@@ -56,6 +56,7 @@ import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.internal.kernel.api.TokenWrite
 import org.neo4j.internal.kernel.api.Write
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
+import org.neo4j.internal.kernel.api.procs.UserAggregationReducer
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
@@ -284,9 +285,9 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
 
   def callDbmsProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]]
 
-  def aggregateFunction(id: Int): UserDefinedAggregator
+  def aggregateFunction(id: Int): UserAggregationReducer
 
-  def builtInAggregateFunction(id: Int): UserDefinedAggregator
+  def builtInAggregateFunction(id: Int): UserAggregationReducer
 
   def assertShowIndexAllowed(): Unit
 

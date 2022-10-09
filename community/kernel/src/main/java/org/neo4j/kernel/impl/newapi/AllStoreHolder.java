@@ -56,7 +56,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
-import org.neo4j.internal.kernel.api.procs.UserAggregator;
+import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -941,12 +941,12 @@ public abstract class AllStoreHolder extends Read {
     }
 
     @Override
-    public UserAggregator aggregationFunction(int id) throws ProcedureException {
+    public UserAggregationReducer aggregationFunction(int id) throws ProcedureException {
         return procedureCaller().createAggregationFunction(id);
     }
 
     @Override
-    public UserAggregator builtInAggregationFunction(int id) throws ProcedureException {
+    public UserAggregationReducer builtInAggregationFunction(int id) throws ProcedureException {
         return procedureCaller().createBuiltInAggregationFunction(id);
     }
 

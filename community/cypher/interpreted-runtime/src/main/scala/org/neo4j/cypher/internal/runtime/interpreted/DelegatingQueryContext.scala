@@ -44,7 +44,6 @@ import org.neo4j.cypher.internal.runtime.RelationshipIterator
 import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.cypher.internal.runtime.RelationshipReadOperations
 import org.neo4j.cypher.internal.runtime.ResourceManager
-import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.dbms.database.DatabaseContext
 import org.neo4j.dbms.database.DatabaseContextProvider
 import org.neo4j.graphdb.Entity
@@ -73,6 +72,7 @@ import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.internal.kernel.api.TokenWrite
 import org.neo4j.internal.kernel.api.Write
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
+import org.neo4j.internal.kernel.api.procs.UserAggregationReducer
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
@@ -97,8 +97,6 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
 import java.net.URL
-
-import scala.collection.Iterator
 
 abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
@@ -550,10 +548,10 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def callBuiltInFunction(id: Int, args: Array[AnyValue]): AnyValue =
     singleDbHit(inner.callBuiltInFunction(id, args))
 
-  override def aggregateFunction(id: Int): UserDefinedAggregator =
+  override def aggregateFunction(id: Int): UserAggregationReducer =
     singleDbHit(inner.aggregateFunction(id))
 
-  override def builtInAggregateFunction(id: Int): UserDefinedAggregator =
+  override def builtInAggregateFunction(id: Int): UserAggregationReducer =
     singleDbHit(inner.builtInAggregateFunction(id))
 
   override def detachDeleteNode(node: Long): Int = {

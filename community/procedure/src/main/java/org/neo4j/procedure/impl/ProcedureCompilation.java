@@ -264,7 +264,7 @@ public final class ProcedureCompilation {
             Class<?> clazz = handle.loadClass();
 
             // set all static fields
-            setAllStaticFields(signature, fieldSetters, methodToCall, clazz);
+            setAllStaticFields(signature, fieldSetters, clazz);
 
             return (CallableUserFunction) clazz.getConstructor().newInstance();
         } catch (Throwable e) {
@@ -360,7 +360,7 @@ public final class ProcedureCompilation {
             Class<?> clazz = handle.loadClass();
 
             // set all static fields
-            setAllStaticFields(signature, fieldSetters, methodToCall, clazz);
+            setAllStaticFields(signature, fieldSetters, clazz);
             return (CallableProcedure) clazz.getConstructor().newInstance();
         } catch (Throwable e) {
             throw new ProcedureException(
@@ -460,12 +460,21 @@ public final class ProcedureCompilation {
         try {
             CodeGenerator codeGenerator = codeGenerator();
             Class<?> aggregator = generateAggregator(codeGenerator, update, result, signature);
-            try (ClassGenerator generator =
-                    codeGenerator.generateClass(PACKAGE, className(signature), CallableUserAggregationFunction.class)) {
+            try (ClassGenerator generator = codeGenerator.generateClass(
+                    CallableUserAggregationFunction.BasicUserAggregationFunction.class,
+                    PACKAGE,
+                    className(signature),
+                    CallableUserAggregationFunction.class)) {
                 // static fields
-                FieldReference signatureField =
-                        generator.publicStaticField(typeReference(UserFunctionSignature.class), SIGNATURE_NAME);
                 List<FieldReference> fieldsToSet = createContextSetters(fieldSetters, generator);
+
+                // constructor
+                try (CodeBlock constructor =
+                        generator.generateConstructor(param(UserFunctionSignature.class, "signature"))) {
+                    constructor.expression(invokeSuper(
+                            typeReference(CallableUserAggregationFunction.BasicUserAggregationFunction.class),
+                            constructor.load("signature")));
+                }
 
                 // CallableUserAggregationFunction::create
                 try (CodeBlock method = generator.generate(AGGREGATION_CREATE)) {
@@ -475,19 +484,15 @@ public final class ProcedureCompilation {
                             param(Throwable.class, "T"));
                 }
 
-                // CallableUserFunction::signature
-                try (CodeBlock method = generator.generateMethod(UserFunctionSignature.class, "signature")) {
-                    method.returns(getStatic(signatureField));
-                }
-
                 handle = generator.handle();
             }
             Class<?> clazz = handle.loadClass();
 
             // set all static fields
-            setAllStaticFields(signature, fieldSetters, create, clazz);
+            setAllStaticFields(fieldSetters, clazz);
 
-            return (CallableUserAggregationFunction) clazz.getConstructor().newInstance();
+            return (CallableUserAggregationFunction)
+                    clazz.getConstructor(UserFunctionSignature.class).newInstance(signature);
         } catch (Throwable e) {
             throw new ProcedureException(
                     Status.Procedure.ProcedureRegistrationFailed,
@@ -1204,10 +1209,14 @@ public final class ProcedureCompilation {
         return fieldsToSet;
     }
 
-    private static void setAllStaticFields(
-            Object signature, List<FieldSetter> fieldSetters, Method methodToCall, Class<?> clazz)
+    private static void setAllStaticFields(Object signature, List<FieldSetter> fieldSetters, Class<?> clazz)
             throws IllegalAccessException, NoSuchFieldException {
         clazz.getDeclaredField(SIGNATURE_NAME).set(null, signature);
+        setAllStaticFields(fieldSetters, clazz);
+    }
+
+    private static void setAllStaticFields(List<FieldSetter> fieldSetters, Class<?> clazz)
+            throws IllegalAccessException, NoSuchFieldException {
         for (int i = 0; i < fieldSetters.size(); i++) {
             clazz.getDeclaredField("SETTER_" + i).set(null, fieldSetters.get(i));
         }

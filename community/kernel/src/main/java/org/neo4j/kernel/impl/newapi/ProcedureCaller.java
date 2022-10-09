@@ -28,7 +28,8 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
-import org.neo4j.internal.kernel.api.procs.UserAggregator;
+import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
+import org.neo4j.internal.kernel.api.procs.UserAggregationUpdater;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AdminAccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
@@ -95,20 +96,35 @@ public abstract class ProcedureCaller {
         return mode;
     }
 
-    UserAggregator createGenericAggregator(boolean overrideAccessMode, AccessMode mode, int functionId)
+    UserAggregationReducer createGenericAggregator(boolean overrideAccessMode, AccessMode mode, int functionId)
             throws ProcedureException {
         final SecurityContext securityContext = overrideAccessMode
                 ? securityContext().withMode(new OverriddenAccessMode(mode, AccessMode.Static.READ))
                 : securityContext().withMode(new RestrictedAccessMode(mode, AccessMode.Static.READ));
 
         try (var ignore = overrideSecurityContext(securityContext)) {
-            UserAggregator aggregator = globalProcedures.createAggregationFunction(
+            UserAggregationReducer aggregator = globalProcedures.createAggregationFunction(
                     prepareContext(securityContext, ProcedureCallContext.EMPTY), functionId);
-            return new UserAggregator() {
+            return new UserAggregationReducer() {
                 @Override
-                public void update(AnyValue[] input) throws ProcedureException {
+                public UserAggregationUpdater newUpdater() throws ProcedureException {
                     try (var ignore = overrideSecurityContext(securityContext)) {
-                        aggregator.update(input);
+                        UserAggregationUpdater updater = aggregator.newUpdater();
+                        return new UserAggregationUpdater() {
+                            @Override
+                            public void update(AnyValue[] input) throws ProcedureException {
+                                try (var ignore = overrideSecurityContext(securityContext)) {
+                                    updater.update(input);
+                                }
+                            }
+
+                            @Override
+                            public void applyUpdates() throws ProcedureException {
+                                try (var ignore = overrideSecurityContext(securityContext)) {
+                                    updater.applyUpdates();
+                                }
+                            }
+                        };
                     }
                 }
 
@@ -122,22 +138,11 @@ public abstract class ProcedureCaller {
         }
     }
 
-    public UserAggregator createBuiltInAggregationFunction(int id) throws ProcedureException {
+    public UserAggregationReducer createBuiltInAggregationFunction(int id) throws ProcedureException {
         performCheckBeforeOperation();
 
-        UserAggregator aggregator = globalProcedures.createAggregationFunction(
+        return globalProcedures.createAggregationFunction(
                 prepareContext(securityContext(), ProcedureCallContext.EMPTY), id);
-        return new UserAggregator() {
-            @Override
-            public void update(AnyValue[] input) throws ProcedureException {
-                aggregator.update(input);
-            }
-
-            @Override
-            public AnyValue result() throws ProcedureException {
-                return aggregator.result();
-            }
-        };
     }
 
     Context prepareContext(SecurityContext securityContext, ProcedureCallContext procedureContext) {
@@ -163,7 +168,7 @@ public abstract class ProcedureCaller {
 
     abstract ValueMapper<Object> createValueMapper();
 
-    public abstract UserAggregator createAggregationFunction(int id) throws ProcedureException;
+    public abstract UserAggregationReducer createAggregationFunction(int id) throws ProcedureException;
 
     public abstract RawIterator<AnyValue[], ProcedureException> callProcedure(
             int id, AnyValue[] input, final AccessMode.Static procedureMode, ProcedureCallContext procedureCallContext)
@@ -218,7 +223,7 @@ public abstract class ProcedureCaller {
         }
 
         @Override
-        public UserAggregator createAggregationFunction(int id) throws ProcedureException {
+        public UserAggregationReducer createAggregationFunction(int id) throws ProcedureException {
             performCheckBeforeOperation();
             AccessMode mode = checkAggregationFunctionAccessMode(id);
             boolean overrideAccessMode = mode.shouldBoostAggregatingFunction(id).allowsAccess();
@@ -317,7 +322,7 @@ public abstract class ProcedureCaller {
         }
 
         @Override
-        public UserAggregator createAggregationFunction(int id) throws ProcedureException {
+        public UserAggregationReducer createAggregationFunction(int id) throws ProcedureException {
             performCheckBeforeOperation();
             AccessMode mode = checkAggregationFunctionAccessMode(id);
             boolean overrideAccessMode = mode.shouldBoostAggregatingFunction(id).allowsAccess();

@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.collection.RawIterator
-import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.internal.kernel.api.Procedures
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
-import org.neo4j.internal.kernel.api.procs.UserAggregator
+import org.neo4j.internal.kernel.api.procs.UserAggregationReducer
 import org.neo4j.values.AnyValue
 
 /**
@@ -74,12 +73,12 @@ object CallSupport {
   ): Iterator[Array[AnyValue]] =
     callProcedure(args, procedures.procedureCallDbms(id, _, context))
 
-  def aggregateFunction(procedures: Procedures, id: Int): UserDefinedAggregator = {
-    userDefinedAggregator(procedures.aggregationFunction(id))
+  def aggregateFunction(procedures: Procedures, id: Int): UserAggregationReducer = {
+    procedures.aggregationFunction(id)
   }
 
-  def builtInAggregateFunction(procedures: Procedures, id: Int): UserDefinedAggregator = {
-    userDefinedAggregator(procedures.builtInAggregationFunction(id))
+  def builtInAggregateFunction(procedures: Procedures, id: Int): UserAggregationReducer = {
+    procedures.builtInAggregationFunction(id)
   }
 
   private def callProcedure(args: Array[AnyValue], call: KernelProcedureCall): Iterator[Array[AnyValue]] = {
@@ -88,16 +87,6 @@ object CallSupport {
       override def hasNext: Boolean = read.hasNext
 
       override def next(): Array[AnyValue] = read.next
-    }
-  }
-
-  private def userDefinedAggregator(aggregator: UserAggregator): UserDefinedAggregator = {
-    new UserDefinedAggregator {
-      override def result: AnyValue = aggregator.result()
-
-      override def update(args: Array[AnyValue]): Unit = {
-        aggregator.update(args)
-      }
     }
   }
 }

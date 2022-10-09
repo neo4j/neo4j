@@ -81,7 +81,7 @@ import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
-import org.neo4j.internal.kernel.api.procs.UserAggregator;
+import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
@@ -467,11 +467,12 @@ public class ProcedureCompilationTest {
                 method(Adder.class, "result"));
 
         // Then
-        UserAggregator aggregator = adder.create(ctx);
+        var aggregator = adder.createReducer(ctx);
+        var updater = aggregator.newUpdater();
         for (int i = 1; i <= 10; i++) {
-            aggregator.update(new AnyValue[] {longValue(i)});
+            updater.update(new AnyValue[] {longValue(i)});
         }
-
+        updater.applyUpdates();
         assertEquals(longValue(55), aggregator.result());
     }
 
@@ -504,18 +505,19 @@ public class ProcedureCompilationTest {
                 .build();
         FieldSetter setter = createSetter(InnerClass.class, "thread", Context::thread);
         String threadName = Thread.currentThread().getName();
-        UserAggregator aggregator = compileAggregation(
+        UserAggregationReducer aggregator = compileAggregation(
                         signature,
                         singletonList(setter),
                         method(InnerClass.class, "create"),
                         method(InnerClass.Aggregator.class, "update", String.class),
                         method(InnerClass.Aggregator.class, "result"))
-                .create(ctx);
+                .createReducer(ctx);
+        var updater = aggregator.newUpdater();
 
         // When
-        aggregator.update(new AnyValue[] {stringValue("1:")});
-        aggregator.update(new AnyValue[] {stringValue("2:")});
-        aggregator.update(new AnyValue[] {stringValue("3:")});
+        updater.update(new AnyValue[] {stringValue("1:")});
+        updater.update(new AnyValue[] {stringValue("2:")});
+        updater.update(new AnyValue[] {stringValue("3:")});
 
         // Then
         assertEquals(
@@ -527,15 +529,15 @@ public class ProcedureCompilationTest {
         UserFunctionSignature signature =
                 functionSignature("test", "foo").out(NTInteger).build();
 
-        UserAggregator aggregator = compileAggregation(
+        UserAggregationReducer aggregator = compileAggregation(
                         signature,
                         emptyList(),
                         method("blackAdder"),
                         method(BlackAdder.class, "update"),
                         method(BlackAdder.class, "result"))
-                .create(ctx);
+                .createReducer(ctx);
 
-        assertThrows(ProcedureException.class, () -> aggregator.update(EMPTY));
+        assertThrows(ProcedureException.class, () -> aggregator.newUpdater().update(EMPTY));
         assertThrows(ProcedureException.class, aggregator::result);
     }
 
@@ -554,11 +556,12 @@ public class ProcedureCompilationTest {
                 method(First.class, "result"));
 
         // Then
-        UserAggregator aggregator = first.create(ctx);
-        aggregator.update(new AnyValue[] {longValue(3)});
-        aggregator.update(new AnyValue[] {longValue(4)});
-        aggregator.update(new AnyValue[] {longValue(5)});
-
+        UserAggregationReducer aggregator = first.createReducer(ctx);
+        var updater = aggregator.newUpdater();
+        updater.update(new AnyValue[] {longValue(3)});
+        updater.update(new AnyValue[] {longValue(4)});
+        updater.update(new AnyValue[] {longValue(5)});
+        updater.applyUpdates();
         assertEquals(longValue(3), aggregator.result());
     }
 
@@ -577,9 +580,10 @@ public class ProcedureCompilationTest {
                 method(Once.class, "result"));
 
         // Then
-        UserAggregator aggregator = once.create(ctx);
-        aggregator.update(new AnyValue[] {longValue(42L)});
-
+        UserAggregationReducer aggregator = once.createReducer(ctx);
+        var updater = aggregator.newUpdater();
+        updater.update(new AnyValue[] {longValue(42L)});
+        updater.applyUpdates();
         assertEquals(asMapValue(Map.of("result", longValue(42))), aggregator.result());
     }
 

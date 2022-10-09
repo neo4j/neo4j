@@ -30,7 +30,7 @@ import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
-import org.neo4j.internal.kernel.api.procs.UserAggregator;
+import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.ResourceTracker;
@@ -96,7 +96,7 @@ public interface GlobalProcedures {
 
     AnyValue callFunction(Context ctx, int id, AnyValue[] input) throws ProcedureException;
 
-    UserAggregator createAggregationFunction(Context ctx, int id) throws ProcedureException;
+    UserAggregationReducer createAggregationFunction(Context ctx, int id) throws ProcedureException;
 
     <T> ThrowingFunction<Context, T, ProcedureException> lookupComponentProvider(Class<T> cls, boolean safe);
 

@@ -37,6 +37,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
@@ -174,8 +175,10 @@ public class ResourceInjectionTest {
                         AggregationFunctionWithInjectedAPI.class)
                 .get(0);
         // When
-        proc.create(prepareContext()).update(new AnyValue[] {});
-        AnyValue out = proc.create(prepareContext()).result();
+        UserAggregationReducer reducer = proc.createReducer(prepareContext());
+        var updater = reducer.newUpdater();
+        updater.update(new AnyValue[] {});
+        AnyValue out = reducer.result();
 
         // Then
         assertThat(out).isEqualTo(stringValue("[Bonnie, Clyde]"));
@@ -204,8 +207,10 @@ public class ResourceInjectionTest {
 
         assertThat(procList.size()).isEqualTo(1);
         ProcedureException exception = assertThrows(ProcedureException.class, () -> {
-            procList.get(0).create(prepareContext()).update(new AnyValue[] {});
-            procList.get(0).create(prepareContext()).result();
+            var reducer = procList.get(0).createReducer(prepareContext());
+            var updater = reducer.newUpdater();
+            updater.update(new AnyValue[] {});
+            reducer.result();
         });
         assertThat(exception.getMessage()).contains("org.neo4j.procedure.impl.listCoolPeople", "unavailable");
     }

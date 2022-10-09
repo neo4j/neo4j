@@ -45,7 +45,6 @@ import org.neo4j.cypher.internal.runtime.RelationshipIterator
 import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.cypher.internal.runtime.RelationshipReadOperations
 import org.neo4j.cypher.internal.runtime.ResourceManager
-import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.cypher.internal.runtime.interpreted.DelegatingQueryTransactionalContext
 import org.neo4j.dbms.database.DatabaseContext
 import org.neo4j.dbms.database.DatabaseContextProvider
@@ -64,6 +63,7 @@ import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
+import org.neo4j.internal.kernel.api.procs.UserAggregationReducer
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
@@ -81,8 +81,6 @@ import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
 import java.net.URL
-
-import scala.collection.Iterator
 
 class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends ReadQueryContext
     with ExceptionTranslationSupport {
@@ -300,10 +298,10 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
   override def callBuiltInFunction(id: Int, args: Array[AnyValue]): AnyValue =
     translateException(tokenNameLookup, inner.callBuiltInFunction(id, args))
 
-  override def aggregateFunction(id: Int): UserDefinedAggregator =
+  override def aggregateFunction(id: Int): UserAggregationReducer =
     translateException(tokenNameLookup, inner.aggregateFunction(id))
 
-  override def builtInAggregateFunction(id: Int): UserDefinedAggregator =
+  override def builtInAggregateFunction(id: Int): UserAggregationReducer =
     translateException(tokenNameLookup, inner.builtInAggregateFunction(id))
 
   override def isLabelSetOnNode(label: Int, node: Long, nodeCursor: NodeCursor): Boolean =

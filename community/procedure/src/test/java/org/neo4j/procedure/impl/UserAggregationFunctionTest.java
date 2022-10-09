@@ -48,7 +48,6 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
-import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
@@ -100,12 +99,14 @@ public class UserAggregationFunctionTest {
                 compile(SingleAggregationFunction.class).get(0);
 
         // When
-        UserAggregator aggregator = func.create(prepareContext());
+        var aggregator = func.createReducer(prepareContext());
+        var updater = aggregator.newUpdater();
 
-        aggregator.update(new AnyValue[] {stringValue("Harry")});
-        aggregator.update(new AnyValue[] {stringValue("Bonnie")});
-        aggregator.update(new AnyValue[] {stringValue("Sally")});
-        aggregator.update(new AnyValue[] {stringValue("Clyde")});
+        updater.update(new AnyValue[] {stringValue("Harry")});
+        updater.update(new AnyValue[] {stringValue("Bonnie")});
+        updater.update(new AnyValue[] {stringValue("Sally")});
+        updater.update(new AnyValue[] {stringValue("Clyde")});
+        updater.applyUpdates();
 
         // Then
         assertThat(aggregator.result()).isEqualTo(VirtualValues.list(stringValue("Bonnie"), stringValue("Clyde")));
@@ -121,8 +122,10 @@ public class UserAggregationFunctionTest {
                 .get(0);
 
         // When
-        UserAggregator aggregator = function.create(prepareContext());
-        aggregator.update(new AnyValue[] {});
+        var aggregator = function.createReducer(prepareContext());
+        var updater = aggregator.newUpdater();
+        updater.update(new AnyValue[] {});
+        updater.applyUpdates();
         aggregator.result();
 
         // Then
@@ -149,12 +152,16 @@ public class UserAggregationFunctionTest {
         CallableUserAggregationFunction f2 = compiled.get(1);
 
         // When
-        UserAggregator f1Aggregator = f1.create(prepareContext());
-        f1Aggregator.update(new AnyValue[] {stringValue("Bonnie")});
-        f1Aggregator.update(new AnyValue[] {stringValue("Clyde")});
-        UserAggregator f2Aggregator = f2.create(prepareContext());
-        f2Aggregator.update(new AnyValue[] {stringValue("Bonnie"), longValue(1337L)});
-        f2Aggregator.update(new AnyValue[] {stringValue("Bonnie"), longValue(42L)});
+        var f1Aggregator = f1.createReducer(prepareContext());
+        var f1Updater = f1Aggregator.newUpdater();
+        f1Updater.update(new AnyValue[] {stringValue("Bonnie")});
+        f1Updater.update(new AnyValue[] {stringValue("Clyde")});
+        f1Updater.applyUpdates();
+        var f2Aggregator = f2.createReducer(prepareContext());
+        var f2Updater = f2Aggregator.newUpdater();
+        f2Updater.update(new AnyValue[] {stringValue("Bonnie"), longValue(1337L)});
+        f2Updater.update(new AnyValue[] {stringValue("Bonnie"), longValue(42L)});
+        f2Updater.applyUpdates();
 
         // Then
         assertThat(f1Aggregator.result()).isEqualTo(VirtualValues.list(stringValue("Bonnie"), stringValue("Clyde")));
@@ -298,7 +305,8 @@ public class UserAggregationFunctionTest {
                 compile(FunctionThatThrowsNullMsgExceptionAtInvocation.class).get(0);
 
         ProcedureException exception = assertThrows(
-                ProcedureException.class, () -> method.create(prepareContext()).update(new AnyValue[] {}));
+                ProcedureException.class,
+                () -> method.createReducer(prepareContext()).newUpdater().update(new AnyValue[] {}));
         assertThat(exception.getMessage())
                 .isEqualTo(
                         "Failed to invoke function `org.neo4j.procedure.impl.test`: Caused by: java.lang.IndexOutOfBoundsException");
@@ -319,8 +327,9 @@ public class UserAggregationFunctionTest {
                 compile(SingleAggregationFunction.class).get(0);
 
         // Expect
-        UserAggregator created = method.create(prepareContext());
-        created.update(new AnyValue[] {stringValue("Bonnie")});
+        var created = method.createReducer(prepareContext());
+        var updater = created.newUpdater();
+        updater.update(new AnyValue[] {stringValue("Bonnie")});
         assertThat(created.result()).isEqualTo(VirtualValues.list(stringValue("Bonnie")));
     }
 
@@ -378,18 +387,14 @@ public class UserAggregationFunctionTest {
         verifyNoMoreInteractions(log);
         for (CallableUserAggregationFunction func : funcs) {
             String name = func.signature().name().name();
-            func.create(prepareContext());
+            func.createReducer(prepareContext());
             switch (name) {
-                case "newFunc":
-                    assertFalse(func.signature().deprecated().isPresent(), "Should not be deprecated");
-                    break;
-                case "oldFunc":
-                case "badFunc":
+                case "newFunc" -> assertFalse(func.signature().deprecated().isPresent(), "Should not be deprecated");
+                case "oldFunc", "badFunc" -> {
                     assertTrue(func.signature().deprecated().isPresent(), "Should be deprecated");
                     assertThat(func.signature().deprecated().get()).isEqualTo("newFunc");
-                    break;
-                default:
-                    fail("Unexpected function: " + name);
+                }
+                default -> fail("Unexpected function: " + name);
             }
         }
     }
@@ -400,13 +405,15 @@ public class UserAggregationFunctionTest {
         CallableUserAggregationFunction func = compile(InternalTypes.class).get(0);
 
         // When
-        UserAggregator aggregator = func.create(prepareContext());
+        var aggregator = func.createReducer(prepareContext());
+        var updater = aggregator.newUpdater();
 
-        aggregator.update(new AnyValue[] {longValue(1)});
-        aggregator.update(new AnyValue[] {longValue(1)});
-        aggregator.update(new AnyValue[] {longValue(1)});
-        aggregator.update(new AnyValue[] {longValue(1)});
-        aggregator.update(new AnyValue[] {longValue(1)});
+        updater.update(new AnyValue[] {longValue(1)});
+        updater.update(new AnyValue[] {longValue(1)});
+        updater.update(new AnyValue[] {longValue(1)});
+        updater.update(new AnyValue[] {longValue(1)});
+        updater.update(new AnyValue[] {longValue(1)});
+        updater.applyUpdates();
 
         // Then
         assertThat(aggregator.result()).isEqualTo(longValue(5));

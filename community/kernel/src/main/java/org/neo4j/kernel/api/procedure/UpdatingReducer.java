@@ -21,31 +21,29 @@ package org.neo4j.kernel.api.procedure;
 
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
+import org.neo4j.internal.kernel.api.procs.UserAggregationUpdater;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
-import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
+import org.neo4j.values.AnyValue;
 
-public interface CallableUserAggregationFunction {
-    UserFunctionSignature signature();
+public record UpdatingReducer(UserAggregator aggregator) implements UserAggregationReducer, UserAggregationUpdater {
 
-    UserAggregationReducer createReducer(Context ctx) throws ProcedureException;
+    @Override
+    public UserAggregationUpdater newUpdater() throws ProcedureException {
+        return this;
+    }
 
-    abstract class BasicUserAggregationFunction implements CallableUserAggregationFunction {
-        private final UserFunctionSignature signature;
+    @Override
+    public AnyValue result() throws ProcedureException {
+        return aggregator.result();
+    }
 
-        public BasicUserAggregationFunction(UserFunctionSignature signature) {
-            this.signature = signature;
-        }
+    @Override
+    public void update(AnyValue[] input) throws ProcedureException {
+        aggregator.update(input);
+    }
 
-        public abstract UserAggregator create(Context ctx) throws ProcedureException;
-
-        @Override
-        public UserAggregationReducer createReducer(Context ctx) throws ProcedureException {
-            return new UpdatingReducer(create(ctx));
-        }
-
-        @Override
-        public UserFunctionSignature signature() {
-            return signature;
-        }
+    @Override
+    public void applyUpdates() throws ProcedureException {
+        // ignore
     }
 }
