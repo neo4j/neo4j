@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 
@@ -59,10 +60,12 @@ case class MaterializedEntitiesExpressionConverter(tokenContext: ReadTokenContex
     self: ExpressionConverters
   ): Option[commands.expressions.Expression] =
     expression match {
-      case e: expressions.LogicalProperty    => Some(toCommandProperty(id, e, self))
-      case e: expressions.HasLabels          => hasLabels(id, e, self)
-      case e: expressions.HasTypes           => hasTypes(id, e, self)
-      case e: expressions.HasLabelsOrTypes   => hasLabelsOrTypes(id, e, self)
+      case e: expressions.LogicalProperty  => Some(toCommandProperty(id, e, self))
+      case e: expressions.HasLabels        => hasLabels(id, e, self)
+      case e: expressions.HasTypes         => hasTypes(id, e, self)
+      case e: expressions.HasLabelsOrTypes => hasLabelsOrTypes(id, e, self)
+      case e: expressions.DesugaredMapProjection =>
+        Some(MaterializedDesugaredMapExpression(self.toCommandExpression(id, e.variable)))
       case e: expressions.FunctionInvocation => toCommandExpression(id, e.function, e, self)
       case _                                 => None
     }
@@ -279,6 +282,30 @@ case class MaterializedEntityKeysFunction(expr: Expression) extends NullInNullOu
   override def arguments: Seq[Expression] = Seq(expr)
 
   override def children: Seq[AstNode[_]] = Seq(expr)
+}
+
+case class MaterializedDesugaredMapExpression(entityExpr: Expression) extends NullInNullOutExpression(entityExpr) {
+
+  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): MapValue =
+    value match {
+      case n: NodeValue         => n.properties()
+      case r: RelationshipValue => r.properties()
+      case _ =>
+        CypherFunctions.properties(
+          value,
+          state.query,
+          state.cursors.nodeCursor,
+          state.cursors.relationshipScanCursor,
+          state.cursors.propertyCursor
+        )
+    }
+
+  override def rewrite(f: Expression => Expression): Expression =
+    f(MaterializedDesugaredMapExpression(entityExpr.rewrite(f)))
+
+  override def arguments: Seq[Expression] = Seq(entityExpr)
+
+  override def children: Seq[AstNode[_]] = Seq(entityExpr)
 }
 
 case class MaterializedEntityLabelsFunction(nodeExpr: Expression) extends NullInNullOutExpression(nodeExpr) {
