@@ -113,11 +113,11 @@ class TransactionLogServiceIT {
         var propertyValue = randomAscii((int) THRESHOLD);
 
         // execute test transaction to create any tokens to avoid tx ids tricks
-        executeTransaction("any");
+        createNodeInIsolatedTransaction("any");
         int numberOfTransactions = 30;
         long lastCommittedBeforeWorkload = metadataProvider.getLastCommittedTransactionId();
         for (int i = 0; i < numberOfTransactions; i++) {
-            executeTransaction(propertyValue);
+            createNodeInIsolatedTransaction(propertyValue);
         }
 
         try (TransactionLogChannels logReaders = logService.logFilesChannels(lastCommittedBeforeWorkload + 29)) {
@@ -132,7 +132,7 @@ class TransactionLogServiceIT {
             assertThat(logFiles.logFiles()).hasSize(4);
 
             for (LogChannel logChannel : logFileChannels) {
-                StoreChannel channel = logChannel.getChannel();
+                StoreChannel channel = logChannel.channel();
                 assertTrue(channel.isOpen());
                 assertDoesNotThrow(channel::size);
             }
@@ -145,7 +145,7 @@ class TransactionLogServiceIT {
 
         int numberOfTransactions = 30;
         for (int i = 0; i < numberOfTransactions; i++) {
-            executeTransaction(propertyValue);
+            createNodeInIsolatedTransaction(propertyValue);
         }
 
         try (TransactionLogChannels logReaders = logService.logFilesChannels(2)) {
@@ -169,12 +169,12 @@ class TransactionLogServiceIT {
             assertEquals(closedChannels.size() + openChannels.size(), logFileChannels.size());
 
             for (LogChannel logChannel : closedChannels) {
-                StoreChannel channel = logChannel.getChannel();
+                StoreChannel channel = logChannel.channel();
                 assertFalse(channel.isOpen());
                 assertThrows(ClosedChannelException.class, channel::size);
             }
             for (LogChannel logChannel : openChannels) {
-                StoreChannel channel = logChannel.getChannel();
+                StoreChannel channel = logChannel.channel();
                 assertTrue(channel.isOpen());
                 assertDoesNotThrow(channel::size);
             }
@@ -187,7 +187,7 @@ class TransactionLogServiceIT {
 
         int numberOfTransactions = 30;
         for (int i = 0; i < numberOfTransactions; i++) {
-            executeTransaction(propertyValue);
+            createNodeInIsolatedTransaction(propertyValue);
         }
 
         try (TransactionLogChannels logReaders = logService.logFilesChannels(2)) {
@@ -218,18 +218,18 @@ class TransactionLogServiceIT {
 
     @Test
     void logFileChannelsAreNonWritable() throws IOException {
-        executeTransaction("a");
-        executeTransaction("b");
-        executeTransaction("c");
+        createNodeInIsolatedTransaction("a");
+        createNodeInIsolatedTransaction("b");
+        createNodeInIsolatedTransaction("c");
 
         try (TransactionLogChannels logReaders = logService.logFilesChannels(2)) {
             List<LogChannel> logFileChannels = logReaders.getChannels();
             assertThat(logFileChannels).hasSize(1);
 
             LogChannel channel = logFileChannels.get(0);
-            assertEquals(2, channel.getStartTxId());
+            assertEquals(2, channel.startTxId());
 
-            StoreChannel storeChannel = channel.getChannel();
+            StoreChannel storeChannel = channel.channel();
             assertThrows(
                     UnsupportedOperationException.class,
                     () -> storeChannel.writeAll(ByteBuffers.allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE)));
@@ -251,7 +251,7 @@ class TransactionLogServiceIT {
 
         int numberOfTransactions = 40;
         for (int i = 0; i < numberOfTransactions; i++) {
-            executeTransaction(propertyValue);
+            createNodeInIsolatedTransaction(propertyValue);
         }
 
         int initialTxId = 17;
@@ -259,12 +259,12 @@ class TransactionLogServiceIT {
             List<LogChannel> logFileChannels = logReaders.getChannels();
             assertThat(logFileChannels).hasSize(14);
 
-            var channelIterator = logFileChannels.iterator();
-            assertEquals(initialTxId, channelIterator.next().getStartTxId());
-            int subsequentTxId = 19;
-            while (channelIterator.hasNext()) {
-                assertEquals(subsequentTxId, channelIterator.next().getStartTxId());
-                subsequentTxId += 2;
+            long prevLastTxId = -1;
+            for (LogChannel logChannel : logFileChannels) {
+                if (prevLastTxId != -1) {
+                    assertThat(logChannel.startTxId()).isEqualTo(prevLastTxId + 1);
+                }
+                prevLastTxId = logChannel.lastTxId();
             }
         }
     }
@@ -275,7 +275,7 @@ class TransactionLogServiceIT {
 
         int numberOfTransactions = 40;
         for (int i = 0; i < numberOfTransactions; i++) {
-            executeTransaction(propertyValue);
+            createNodeInIsolatedTransaction(propertyValue);
         }
 
         int initialTxId = 17;
@@ -283,12 +283,12 @@ class TransactionLogServiceIT {
             List<LogChannel> logFileChannels = logReaders.getChannels();
             assertThat(logFileChannels).hasSize(14);
 
-            var channelIterator = logFileChannels.iterator();
-            assertEquals(initialTxId + 1, channelIterator.next().getLastTxId());
-            int subsequentLastTxId = 20;
-            while (channelIterator.hasNext()) {
-                assertEquals(subsequentLastTxId, channelIterator.next().getLastTxId());
-                subsequentLastTxId += 2;
+            long prevLastTxId = -1;
+            for (LogChannel logChannel : logFileChannels) {
+                if (prevLastTxId != -1) {
+                    assertThat(prevLastTxId).isEqualTo(logChannel.startTxId() - 1);
+                }
+                prevLastTxId = logChannel.lastTxId();
             }
         }
     }
@@ -299,7 +299,7 @@ class TransactionLogServiceIT {
 
         int numberOfTransactions = 30;
         for (int i = 0; i < numberOfTransactions; i++) {
-            executeTransaction(propertyValue);
+            createNodeInIsolatedTransaction(propertyValue);
         }
 
         try (TransactionLogChannels logReaders = logService.logFilesChannels(2)) {
@@ -308,13 +308,13 @@ class TransactionLogServiceIT {
             var fullChannels = channels.subList(0, channels.size() - 1);
 
             for (LogChannel fullChannel : fullChannels) {
-                assertThat(fullChannel.getEndOffset())
-                        .isEqualTo(fullChannel.getChannel().size());
+                assertThat(fullChannel.endOffset())
+                        .isEqualTo(fullChannel.channel().size());
             }
 
             var lastChannel = channels.get(channels.size() - 1);
             var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
-            assertThat(lastChannel.getEndOffset())
+            assertThat(lastChannel.endOffset())
                     .isEqualTo(lastClosedTransaction.logPosition().getByteOffset());
         }
     }
@@ -323,7 +323,7 @@ class TransactionLogServiceIT {
     void firstLogChannelIsProperlyPositionedToInitialTransaction() throws IOException {
         int numberOfTransactions = 20;
         for (int i = 0; i < numberOfTransactions; i++) {
-            executeTransaction("abc");
+            createNodeInIsolatedTransaction("abc");
         }
 
         verifyReportedPositions(2, getTxOffset(2));
@@ -447,7 +447,7 @@ class TransactionLogServiceIT {
         var positionAfterTransaction = systemMetadata.getLastClosedTransaction().logPosition();
         long systemLastClosedTransactionId = systemMetadata.getLastClosedTransactionId();
         var buffer = readTransactionIntoBuffer(systemDatabase, positionBeforeTransaction, positionAfterTransaction);
-        LogPosition positionBeforeRecovery = null;
+        LogPosition positionBeforeRecovery;
         try {
             availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
             long lastTransactionBeforeBufferAppend =
@@ -546,10 +546,9 @@ class TransactionLogServiceIT {
 
         assertThatThrownBy(() -> logService.restore(new LogPosition(metadataProvider.getCurrentLogVersion() - 1, 100)))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage(
-                        "Log position requested to be used for restore belongs to the log file that was already appended by "
-                                + "transaction and cannot be restored. "
-                                + "Last closed position: LogPosition{logVersion=0, byteOffset=3462}, requested restore: LogPosition{logVersion=-1, byteOffset=100}");
+                .hasMessageContaining(
+                        "Log position requested to be used for restore belongs to the log file that was already appended by transaction and cannot be restored.")
+                .hasMessageContaining("requested restore: LogPosition{logVersion=-1, byteOffset=100}");
     }
 
     @Test
@@ -624,11 +623,11 @@ class TransactionLogServiceIT {
         try (TransactionLogChannels logReaders = logService.logFilesChannels(txId)) {
             List<LogChannel> logFileChannels = logReaders.getChannels();
             assertThat(logFileChannels).hasSize(1);
-            assertEquals(expectedOffset, logFileChannels.get(0).getChannel().position());
+            assertEquals(expectedOffset, logFileChannels.get(0).channel().position());
         }
     }
 
-    private void executeTransaction(String propertyValue) {
+    private void createNodeInIsolatedTransaction(String propertyValue) {
         try (var tx = databaseAPI.beginTx()) {
             Node node = tx.createNode();
             node.setProperty("a", propertyValue);

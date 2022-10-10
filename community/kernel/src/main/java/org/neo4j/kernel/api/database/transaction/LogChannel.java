@@ -21,38 +21,13 @@ package org.neo4j.kernel.api.database.transaction;
 
 import org.neo4j.io.fs.StoreChannel;
 
-public class LogChannel implements AutoCloseable {
-    private final long startTxId;
-    private final StoreChannel channel;
-    private final long endOffset;
-    private final long lastTxId;
-
-    public LogChannel(long startTxId, StoreChannel channel, long endOffset, long lastTxId) {
-        this.startTxId = startTxId;
-        this.channel = channel;
-        this.endOffset = endOffset;
-        this.lastTxId = lastTxId;
-    }
-
-    public long getStartTxId() {
-        return startTxId;
-    }
-
-    public StoreChannel getChannel() {
-        return channel;
-    }
-
-    public long getLastTxId() {
-        return lastTxId;
-    }
-
-    /**
-     * @return a known transaction-ending aligned offset for this channel.
-     */
-    public long getEndOffset() {
-        return endOffset;
-    }
-
+/**
+ * @param startTxId first transaction ID in this channel.
+ * @param channel channel containing the transaction data.
+ * @param endOffset a known transaction-ending aligned offset for this channel.
+ * @param lastTxId last transaction ID in this channel.
+ */
+public record LogChannel(long startTxId, StoreChannel channel, long endOffset, long lastTxId) implements AutoCloseable {
     @Override
     public void close() throws Exception {
         channel.close();
