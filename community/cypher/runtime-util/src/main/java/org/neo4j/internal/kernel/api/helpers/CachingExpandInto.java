@@ -201,8 +201,10 @@ public class CachingExpandInto extends DefaultCloseListenable {
             long secondNode) {
         if (positionCursor(read, nodeCursor, firstNode)) {
             nodeCursor.relationshipsTo(traversalCursor, selection(types, direction), secondNode);
+            return traversalCursor;
+        } else {
+            return Cursors.emptyTraversalCursor(read);
         }
-        return traversalCursor;
     }
 
     private RelationshipTraversalCursor expandFromNodeWithLesserDegree(
