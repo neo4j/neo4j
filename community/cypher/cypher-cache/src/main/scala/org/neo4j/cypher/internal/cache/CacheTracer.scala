@@ -41,6 +41,11 @@ trait CacheTracer[KEY] {
   def compute(key: KEY, metaData: String): Unit = ()
 
   /**
+   * A value was removed from the cache.
+   */
+  def discard(key: KEY, metaData: String): Unit = ()
+
+  /**
    * Some compute was invoked to compute a key to a value, requesting expression code generation.
    */
   def computeWithExpressionCodeGen(key: KEY, metaData: String): Unit = ()

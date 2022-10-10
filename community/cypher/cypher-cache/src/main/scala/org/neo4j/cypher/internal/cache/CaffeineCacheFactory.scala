@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.cache
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.Policy
+import com.github.benmanes.caffeine.cache.RemovalCause
+import com.github.benmanes.caffeine.cache.RemovalListener
 import com.github.benmanes.caffeine.cache.Ticker
 import com.github.benmanes.caffeine.cache.stats.CacheStats
 
@@ -33,7 +35,6 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function
 import java.util.function.Consumer
-
 import scala.collection.concurrent.TrieMap
 
 object ExecutorBasedCaffeineCacheFactory {
@@ -43,6 +44,15 @@ object ExecutorBasedCaffeineCacheFactory {
       .newBuilder()
       .executor(executor)
       .maximumSize(size)
+      .build[K, V]()
+  }
+
+  def createCache[K <: AnyRef, V <: AnyRef](executor: Executor, removalListener: RemovalListener[K, V], size: Int): Cache[K, V] = {
+    Caffeine
+      .newBuilder()
+      .executor(executor)
+      .maximumSize(size)
+      .evictionListener(removalListener)
       .build[K, V]()
   }
 
@@ -76,6 +86,7 @@ trait CacheFactory {
 
 trait CaffeineCacheFactory extends CacheFactory {
   def createCache[K <: AnyRef, V <: AnyRef](size: Int): Cache[K, V]
+  def createCache[K <: AnyRef, V <: AnyRef](size: Int, removalListener: RemovalListener[K, V]): Cache[K, V]
   def createCache[K <: AnyRef, V <: AnyRef](size: Int, ttlAfterAccess: Long): Cache[K, V]
   def createCache[K <: AnyRef, V <: AnyRef](ticker: Ticker, ttlAfterWrite: Long, size: Int): Cache[K, V]
 }
@@ -84,6 +95,10 @@ class ExecutorBasedCaffeineCacheFactory(executor: Executor) extends CaffeineCach
 
   override def createCache[K <: AnyRef, V <: AnyRef](size: Int): Cache[K, V] = {
     ExecutorBasedCaffeineCacheFactory.createCache(executor, size)
+  }
+
+  override def createCache[K <: AnyRef, V <: AnyRef](size: Int, removalListener: RemovalListener[K, V]): Cache[K, V] = {
+    ExecutorBasedCaffeineCacheFactory.createCache(executor, removalListener, size)
   }
 
   override def createCache[K <: AnyRef, V <: AnyRef](size: Int, ttlAfterAccess: Long): Cache[K, V] = {
@@ -99,7 +114,18 @@ class ExecutorBasedCaffeineCacheFactory(executor: Executor) extends CaffeineCach
 class SharedExecutorBasedCaffeineCacheFactory(executor: Executor) extends CacheFactory {
   self =>
 
+  case class InternalRemovalListener[K, V]() extends RemovalListener[(Int, K), V] {
+    private val externalListeners: TrieMap[Int, RemovalListener[K, V]] = scala.collection.concurrent.TrieMap()
+
+    override def onRemoval(key: (Int, K), value: V, cause: RemovalCause): Unit = key match {
+      case (id, innerKey) => externalListeners.get(id).foreach(_.onRemoval(innerKey,value, cause))
+    }
+
+    def registerExternalListener(id: Int, listener: RemovalListener[K, V]): Unit = externalListeners.update(id, listener)
+  }
+
   private val caches: TrieMap[String, Cache[_, _]] = scala.collection.concurrent.TrieMap()
+  private val listeners: TrieMap[String, InternalRemovalListener[_, _]] = scala.collection.concurrent.TrieMap()
 
   def getCacheSizeOf(kind: String): Long = {
     caches.get(kind) match {
@@ -113,7 +139,22 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor) extends CacheF
       caches.getOrElseUpdate(
         cacheKind,
         ExecutorBasedCaffeineCacheFactory.createCache[(Int, K), V](executor, size)
-      ).asInstanceOf[Cache[(Int, K), V]]
+      ).asInstanceOf[Cache[(Int, K), V]],
+      SharedCacheContainerIdGen.getNewId
+    )
+  }
+
+  def createCache[K <: AnyRef, V <: AnyRef](size: Int, removalListener: RemovalListener[K, V], cacheKind: String): Cache[K, V] = {
+    val id = SharedCacheContainerIdGen.getNewId
+    val internalRemovalListener = listeners.getOrElseUpdate(cacheKind, InternalRemovalListener()).asInstanceOf[InternalRemovalListener[K, V]]
+    internalRemovalListener.registerExternalListener(id, removalListener)
+
+    SharedCacheContainer(
+      caches.getOrElseUpdate(
+        cacheKind,
+        ExecutorBasedCaffeineCacheFactory.createCache[(Int, K), V](executor, internalRemovalListener, size)
+      ).asInstanceOf[Cache[(Int, K), V]],
+      id
     )
   }
 
@@ -122,7 +163,8 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor) extends CacheF
       caches.getOrElseUpdate(
         cacheKind,
         ExecutorBasedCaffeineCacheFactory.createCache(executor, size, ttlAfterAccess)
-      ).asInstanceOf[Cache[(Int, K), V]]
+      ).asInstanceOf[Cache[(Int, K), V]],
+      SharedCacheContainerIdGen.getNewId
     )
   }
 
@@ -136,12 +178,15 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor) extends CacheF
       caches.getOrElseUpdate(
         cacheKind,
         ExecutorBasedCaffeineCacheFactory.createCache(executor, ticker, ttlAfterWrite, size)
-      ).asInstanceOf[Cache[(Int, K), V]]
+      ).asInstanceOf[Cache[(Int, K), V]],
+      SharedCacheContainerIdGen.getNewId
     )
   }
 
   override def resolveCacheKind(kind: String): CaffeineCacheFactory = new CaffeineCacheFactory {
     override def createCache[K <: AnyRef, V <: AnyRef](size: Int): Cache[K, V] = self.createCache(size, kind)
+
+    override def createCache[K <: AnyRef, V <: AnyRef](size: Int, removalListener: RemovalListener[K, V]): Cache[K, V] = self.createCache(size, removalListener, kind)
 
     override def createCache[K <: AnyRef, V <: AnyRef](size: Int, ttlAfterAccess: Long): Cache[K, V] =
       self.createCache(size, ttlAfterAccess, kind)
@@ -152,10 +197,10 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor) extends CacheF
   }
 }
 
-object SharedCacheContainer {
+object SharedCacheContainerIdGen {
   private val id = new AtomicInteger(0)
 
-  def apply[K, V](inner: Cache[(Int, K), V]): SharedCacheContainer[K, V] = new SharedCacheContainer(inner, id.getAndIncrement())
+  def getNewId: Int = id.getAndIncrement()
 }
 
 /**
@@ -172,7 +217,7 @@ object SharedCacheContainer {
  * @tparam K The key type of the cache.
  * @tparam V The value type of the cache.
  */
-private class SharedCacheContainer[K, V](inner: Cache[(Int, K), V], id: Int) extends Cache[K, V] {
+case class SharedCacheContainer[K, V](inner: Cache[(Int, K), V], id: Int) extends Cache[K, V] {
 
   override def get(key: K, mappingFunction: function.Function[_ >: K, _ <: V]): V =
     inner.get((id, key), _ => mappingFunction(key))

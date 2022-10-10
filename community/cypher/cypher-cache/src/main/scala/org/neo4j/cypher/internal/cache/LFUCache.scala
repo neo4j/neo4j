@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.cache
 
 import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.RemovalCause
+import com.github.benmanes.caffeine.cache.RemovalListener
 
 import java.util.concurrent.ConcurrentMap
 
@@ -32,7 +34,9 @@ class LFUCache[K <: AnyRef, V <: AnyRef](
   tracer: CacheTracer[K] = new CacheTracer[K] {}
 ) {
 
-  private val inner: Cache[K, V] = cacheFactory.createCache(size)
+  val removalListener: RemovalListener[K, V] = (key: K, value: V, cause: RemovalCause) => tracer.discard(key, "")
+
+  private val inner: Cache[K, V] = cacheFactory.createCache(size, removalListener)
 
   def computeIfAbsent(key: K, f: => V): V = {
     var hit = true

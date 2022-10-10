@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal
 
 import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.RemovalCause
+import com.github.benmanes.caffeine.cache.RemovalListener
 import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.QueryCache.NOT_PRESENT
 import org.neo4j.cypher.internal.cache.CacheTracer
@@ -101,8 +103,10 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
   val tracer: CacheTracer[QUERY_KEY]
 ) {
 
-  private val inner: Cache[QUERY_KEY, CachedValue] =
-    cacheFactory.createCache[QUERY_KEY, CachedValue](maximumSize)
+
+  val removalListener: RemovalListener[QUERY_KEY, CachedValue] = (key: QUERY_KEY, value: CachedValue, cause: RemovalCause) => tracer.discard(key, "")
+
+  private val inner: Cache[QUERY_KEY, CachedValue] = cacheFactory.createCache[QUERY_KEY, CachedValue](maximumSize, removalListener)
 
   def estimatedSize(): Long = inner.estimatedSize()
 
@@ -110,7 +114,7 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
    * The cached value wraps the value and maintains a count of how many times it has been fetched from the cache
    * and whether or not it has been recompiled with expression code generation.
    */
-  private class CachedValue(val value: EXECUTABLE_QUERY, val recompiledWithExpressionCodeGen: Boolean) {
+  class CachedValue(val value: EXECUTABLE_QUERY, val recompiledWithExpressionCodeGen: Boolean) {
 
     @volatile private var _numberOfHits = 0
 
