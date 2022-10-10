@@ -54,6 +54,7 @@ import static org.neo4j.configuration.SettingValueParsers.setOf;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 
+import java.lang.management.ManagementFactory;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.ZoneId;
@@ -822,11 +823,20 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     @Description(
             "Limit the amount of memory that all of the running transactions can consume, in bytes (or kilobytes with the 'k' "
                     + "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'unlimited'.")
+    @DocumentedDefaultValue("The default value is 70% of the heap size limit.")
     public static final Setting<Long> memory_transaction_global_max_size = newBuilder(
-                    "dbms.memory.transaction.total.max", BYTES, 0L)
+                    "dbms.memory.transaction.total.max", BYTES, calculateDefaultMaxGlobalTransactionMemorySize())
             .addConstraint(any(min(mebiBytes(10)), is(0L)))
             .dynamic()
             .build();
+
+    private static long calculateDefaultMaxGlobalTransactionMemorySize() {
+        long heapLimit =
+                ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax();
+        long calculatedLimit = (long) (heapLimit * 0.7);
+        // Make sure that the calculated value is not outside the settings constraints.
+        return Math.max(calculatedLimit, ByteUnit.mebiBytes(10));
+    }
 
     @Description(
             "Limit the amount of memory that all transactions in one database can consume, in bytes (or kilobytes with the 'k' "
