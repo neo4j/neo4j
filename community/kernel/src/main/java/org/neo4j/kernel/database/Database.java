@@ -97,6 +97,7 @@ import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.ExternalIdReuseConditionProvider;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionIdSequence;
@@ -615,12 +616,14 @@ public class Database extends AbstractDatabase {
             PhysicalTransactionRepresentation transactionRepresentation =
                     new PhysicalTransactionRepresentation(commands);
             long time = clock.millis();
+            LeaseClient leaseClient = leaseService.newClient();
+            leaseClient.ensureValid();
             transactionRepresentation.setHeader(
                     EMPTY_BYTE_ARRAY,
                     time,
                     storageEngine.metadataProvider().getLastClosedTransactionId(),
                     time,
-                    leaseService.newClient().leaseId(),
+                    leaseClient.leaseId(),
                     AuthSubject.AUTH_DISABLED);
             try (var storeCursors = storageEngine.createStorageCursors(CursorContext.NULL_CONTEXT)) {
                 TransactionToApply toApply =
