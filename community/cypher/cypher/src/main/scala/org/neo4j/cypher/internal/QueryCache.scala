@@ -103,10 +103,11 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
   val tracer: CacheTracer[QUERY_KEY]
 ) {
 
+  val removalListener: RemovalListener[QUERY_KEY, CachedValue] =
+    (key: QUERY_KEY, value: CachedValue, cause: RemovalCause) => tracer.discard(key, "")
 
-  val removalListener: RemovalListener[QUERY_KEY, CachedValue] = (key: QUERY_KEY, value: CachedValue, cause: RemovalCause) => tracer.discard(key, "")
-
-  private val inner: Cache[QUERY_KEY, CachedValue] = cacheFactory.createCache[QUERY_KEY, CachedValue](maximumSize, removalListener)
+  private val inner: Cache[QUERY_KEY, CachedValue] =
+    cacheFactory.createCache[QUERY_KEY, CachedValue](maximumSize, removalListener)
 
   def estimatedSize(): Long = inner.estimatedSize()
 

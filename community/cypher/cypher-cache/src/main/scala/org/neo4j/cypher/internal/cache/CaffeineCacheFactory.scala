@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function
 import java.util.function.Consumer
+
 import scala.collection.concurrent.TrieMap
 
 object ExecutorBasedCaffeineCacheFactory {
@@ -47,7 +48,11 @@ object ExecutorBasedCaffeineCacheFactory {
       .build[K, V]()
   }
 
-  def createCache[K <: AnyRef, V <: AnyRef](executor: Executor, removalListener: RemovalListener[K, V], size: Int): Cache[K, V] = {
+  def createCache[K <: AnyRef, V <: AnyRef](
+    executor: Executor,
+    removalListener: RemovalListener[K, V],
+    size: Int
+  ): Cache[K, V] = {
     Caffeine
       .newBuilder()
       .executor(executor)
@@ -118,10 +123,11 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor) extends CacheF
     private val externalListeners: TrieMap[Int, RemovalListener[K, V]] = scala.collection.concurrent.TrieMap()
 
     override def onRemoval(key: (Int, K), value: V, cause: RemovalCause): Unit = key match {
-      case (id, innerKey) => externalListeners.get(id).foreach(_.onRemoval(innerKey,value, cause))
+      case (id, innerKey) => externalListeners.get(id).foreach(_.onRemoval(innerKey, value, cause))
     }
 
-    def registerExternalListener(id: Int, listener: RemovalListener[K, V]): Unit = externalListeners.update(id, listener)
+    def registerExternalListener(id: Int, listener: RemovalListener[K, V]): Unit =
+      externalListeners.update(id, listener)
   }
 
   private val caches: TrieMap[String, Cache[_, _]] = scala.collection.concurrent.TrieMap()
@@ -144,9 +150,14 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor) extends CacheF
     )
   }
 
-  def createCache[K <: AnyRef, V <: AnyRef](size: Int, removalListener: RemovalListener[K, V], cacheKind: String): Cache[K, V] = {
+  def createCache[K <: AnyRef, V <: AnyRef](
+    size: Int,
+    removalListener: RemovalListener[K, V],
+    cacheKind: String
+  ): Cache[K, V] = {
     val id = SharedCacheContainerIdGen.getNewId
-    val internalRemovalListener = listeners.getOrElseUpdate(cacheKind, InternalRemovalListener()).asInstanceOf[InternalRemovalListener[K, V]]
+    val internalRemovalListener =
+      listeners.getOrElseUpdate(cacheKind, InternalRemovalListener()).asInstanceOf[InternalRemovalListener[K, V]]
     internalRemovalListener.registerExternalListener(id, removalListener)
 
     SharedCacheContainer(
@@ -186,7 +197,8 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor) extends CacheF
   override def resolveCacheKind(kind: String): CaffeineCacheFactory = new CaffeineCacheFactory {
     override def createCache[K <: AnyRef, V <: AnyRef](size: Int): Cache[K, V] = self.createCache(size, kind)
 
-    override def createCache[K <: AnyRef, V <: AnyRef](size: Int, removalListener: RemovalListener[K, V]): Cache[K, V] = self.createCache(size, removalListener, kind)
+    override def createCache[K <: AnyRef, V <: AnyRef](size: Int, removalListener: RemovalListener[K, V]): Cache[K, V] =
+      self.createCache(size, removalListener, kind)
 
     override def createCache[K <: AnyRef, V <: AnyRef](size: Int, ttlAfterAccess: Long): Cache[K, V] =
       self.createCache(size, ttlAfterAccess, kind)
