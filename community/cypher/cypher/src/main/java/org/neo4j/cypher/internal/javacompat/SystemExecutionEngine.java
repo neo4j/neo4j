@@ -59,6 +59,11 @@ class SystemExecutionEngine extends ExecutionEngine {
                         new CompilerLibrary(systemCompilerFactory, this::normalExecutionEngine));
     }
 
+    @Override
+    public long clearQueryCaches() {
+        return Math.max(innerCypherExecutionEngine.clearQueryCaches(), cypherExecutionEngine.clearQueryCaches());
+    }
+
     org.neo4j.cypher.internal.ExecutionEngine normalExecutionEngine() {
         return innerCypherExecutionEngine;
     }
