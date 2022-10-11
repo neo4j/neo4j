@@ -565,8 +565,6 @@ object DatabaseTypeFilter {
 
   case object CompositeDatabase extends DatabaseTypeFilter
 
-  case object StandardDatabase extends DatabaseTypeFilter
-
   case object DatabaseOrLocalAlias extends DatabaseTypeFilter
 
   case object Alias extends DatabaseTypeFilter

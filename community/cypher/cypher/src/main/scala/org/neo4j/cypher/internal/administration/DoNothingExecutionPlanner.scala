@@ -197,8 +197,6 @@ case class DoNothingExecutionPlanner(
     case DatabaseTypeFilter.All                  => ""
     case DatabaseTypeFilter.DatabaseOrLocalAlias => s"""WHERE NOT dn:$REMOTE_DATABASE"""
     case DatabaseTypeFilter.CompositeDatabase    => s"""WHERE EXISTS { (dn)-[:$TARGETS]->(d:$COMPOSITE_DATABASE) }"""
-    case DatabaseTypeFilter.StandardDatabase =>
-      s"""WHERE EXISTS { (dn)-[:$TARGETS]->(d:$DATABASE) WHERE NOT d:$COMPOSITE_DATABASE }"""
-    case DatabaseTypeFilter.Alias => s"""WHERE NOT dn.$PRIMARY_PROPERTY"""
+    case DatabaseTypeFilter.Alias                => s"""WHERE NOT dn.$PRIMARY_PROPERTY"""
   }
 }

@@ -139,7 +139,6 @@ import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.Alias
 import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.CompositeDatabase
 import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.DatabaseOrLocalAlias
-import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.StandardDatabase
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.planner.spi.AdministrationPlannerName
@@ -765,7 +764,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             assertAllowed,
             dbName,
             "alter",
-            StandardDatabase
+            DatabaseOrLocalAlias
           )
           else assertAllowed
         val plan =
