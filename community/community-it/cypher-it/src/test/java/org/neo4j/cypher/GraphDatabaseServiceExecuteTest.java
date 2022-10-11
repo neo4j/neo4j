@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.data.Offset.offset;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
@@ -84,16 +83,16 @@ public class GraphDatabaseServiceExecuteTest {
 
             // then
             Object obj = execute.next().get("p");
-            assertThat(obj, Matchers.instanceOf(Point.class));
+            assertThat(obj).isInstanceOf(Point.class);
 
             Point point = (Point) obj;
-            assertThat(point.getCoordinate().getCoordinate()[0], equalTo(144.317718));
-            assertThat(point.getCoordinate().getCoordinate()[1], equalTo(-37.031738));
+            assertThat(point.getCoordinate().getCoordinate()[0]).isEqualTo(144.317718, offset(0.001));
+            assertThat(point.getCoordinate().getCoordinate()[1]).isEqualTo(-37.031738, offset(0.001));
 
             CRS crs = point.getCRS();
-            assertThat(crs.getCode(), equalTo(4326));
-            assertThat(crs.getType(), equalTo("wgs-84"));
-            assertThat(crs.getHref(), equalTo("http://spatialreference.org/ref/epsg/4326/"));
+            assertThat(crs.getCode()).isEqualTo(4326);
+            assertThat(crs.getType()).isEqualTo("wgs-84");
+            assertThat(crs.getHref()).isEqualTo("http://spatialreference.org/ref/epsg/4326/");
             transaction.commit();
         }
     }
@@ -106,15 +105,15 @@ public class GraphDatabaseServiceExecuteTest {
 
             // then
             Object obj = execute.next().get("p");
-            assertThat(obj, Matchers.instanceOf(Point.class));
+            assertThat(obj).isInstanceOf(Point.class);
 
             Point point = (Point) obj;
-            assertThat(point.getCoordinate(), equalTo(new Coordinate(13.37, 13.37)));
+            assertThat(point.getCoordinate()).isEqualTo(new Coordinate(13.37, 13.37));
 
             CRS crs = point.getCRS();
-            assertThat(crs.getCode(), equalTo(7203));
-            assertThat(crs.getType(), equalTo("cartesian"));
-            assertThat(crs.getHref(), equalTo("http://spatialreference.org/ref/sr-org/7203/"));
+            assertThat(crs.getCode()).isEqualTo(7203);
+            assertThat(crs.getType()).isEqualTo("cartesian");
+            assertThat(crs.getHref()).isEqualTo("http://spatialreference.org/ref/sr-org/7203/");
             transaction.commit();
         }
     }
@@ -128,7 +127,7 @@ public class GraphDatabaseServiceExecuteTest {
 
             // then
             List<Point> points = (List<Point>) execute.next().get("ps");
-            assertThat(points.get(0), Matchers.instanceOf(Point.class));
+            assertThat(points.get(0)).isInstanceOf(Point.class);
             transaction.commit();
         }
     }
@@ -143,7 +142,7 @@ public class GraphDatabaseServiceExecuteTest {
 
             // then
             Map<String, Object> points = (Map<String, Object>) execute.next().get("m");
-            assertThat(points.get("p"), Matchers.instanceOf(Point.class));
+            assertThat(points.get("p")).isInstanceOf(Point.class);
             transaction.commit();
         }
     }
@@ -161,7 +160,7 @@ public class GraphDatabaseServiceExecuteTest {
 
             // then
             Double dist = (Double) result.next().get("dist");
-            assertThat(dist, equalTo(0.0));
+            assertThat(dist).isZero();
             transaction.commit();
         }
     }
@@ -179,7 +178,7 @@ public class GraphDatabaseServiceExecuteTest {
 
             // then
             Double dist = (Double) result.next().get("dist");
-            assertThat(dist, equalTo(0.0));
+            assertThat(dist).isZero();
             transaction.commit();
         }
     }
@@ -197,7 +196,7 @@ public class GraphDatabaseServiceExecuteTest {
 
             // then
             Double dist = (Double) result.next().get("dist");
-            assertThat(dist, equalTo(0.0));
+            assertThat(dist).isZero();
             transaction.commit();
         }
     }
@@ -215,7 +214,7 @@ public class GraphDatabaseServiceExecuteTest {
 
             // then
             Double dist = (Double) result.next().get("dist");
-            assertThat(dist, equalTo(0.0));
+            assertThat(dist).isZero();
             transaction.commit();
         }
     }
@@ -232,7 +231,7 @@ public class GraphDatabaseServiceExecuteTest {
 
             // then
             Double dist = (Double) result.next().get("dist");
-            assertThat(dist, equalTo(0.0));
+            assertThat(dist).isZero();
             transaction.commit();
         }
     }
@@ -250,7 +249,7 @@ public class GraphDatabaseServiceExecuteTest {
             // then
             Object dist1 = result.next().get("dist");
             Double dist = (Double) dist1;
-            assertThat(dist, equalTo(0.0));
+            assertThat(dist).isZero();
             transaction.commit();
         }
     }
