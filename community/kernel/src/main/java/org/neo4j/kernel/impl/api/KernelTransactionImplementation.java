@@ -55,6 +55,7 @@ import org.neo4j.exceptions.UnspecifiedKernelException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -768,31 +769,51 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         // we assume that inner transaction have been closed before closing the outer transaction
         assertNoInnerTransactions();
         closing = true;
+        Exception exception = null;
+        long txId = -1;
         try {
             if (canCommit()) {
-                return commitTransaction();
+                txId = commitTransaction();
             } else {
                 rollback(null);
                 failOnNonExplicitRollbackIfNeeded();
-                return ROLLBACK_ID;
+                txId = ROLLBACK_ID;
             }
-        } catch (TransactionFailureException e) {
-            throw e;
+        } catch (TransactionFailureException | RuntimeException e) {
+            exception = e;
         } catch (KernelException e) {
-            throw new TransactionFailureException(e.status(), e, "Unexpected kernel exception");
+            exception = new TransactionFailureException(e.status(), e, "Unexpected kernel exception");
         } finally {
             try {
-                closed = true;
-                closing = false;
-                transactionEvent.setSuccess(success);
-                transactionEvent.setFailure(failure);
-                transactionEvent.setTransactionWriteState(writeState.name());
-                transactionEvent.setReadOnly(txState == null || !txState.hasChanges());
-                transactionEvent.close();
+                closed();
+            } catch (RuntimeException e) {
+                exception = Exceptions.chain(exception, e);
             } finally {
-                reset();
+                try {
+                    reset();
+                } catch (RuntimeException e) {
+                    exception = Exceptions.chain(exception, e);
+                }
             }
         }
+        if (exception == null) {
+            return txId;
+        }
+
+        if (exception instanceof TransactionFailureException e) {
+            throw e;
+        }
+        throw (RuntimeException) exception;
+    }
+
+    private void closed() {
+        closed = true;
+        closing = false;
+        transactionEvent.setSuccess(success);
+        transactionEvent.setFailure(failure);
+        transactionEvent.setTransactionWriteState(writeState.name());
+        transactionEvent.setReadOnly(txState == null || !txState.hasChanges());
+        transactionEvent.close();
     }
 
     @Override

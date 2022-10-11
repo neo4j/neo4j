@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -34,6 +35,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -828,6 +830,17 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
             executorService.shutdown();
             assertTrue(executorService.awaitTermination(1, MINUTES));
         }
+    }
+
+    @Test
+    void shouldNotLooseExceptionInCommit() {
+        KernelTransactionImplementation transaction = newTransaction(AUTH_DISABLED);
+        transaction.txState().nodeDoCreate(5);
+        RuntimeException foo = new RuntimeException("foo");
+        RuntimeException bar = new RuntimeException("bar");
+        doThrow(foo).when(transaction.lockClient()).prepareForCommit();
+        doThrow(bar).when(transaction.lockClient()).close();
+        assertThatThrownBy(transaction::commit).isSameAs(foo).hasSuppressedException(bar);
     }
 
     private static LoginContext loginContext(boolean isWriteTx) {
