@@ -31,12 +31,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Entity;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.token.api.TokenHolder;
@@ -45,7 +45,7 @@ import org.neo4j.token.api.TokenHolder;
 @ImpermanentDbmsExtension
 public abstract class EntityTest {
     @Inject
-    static GraphDatabaseService db;
+    static GraphDatabaseAPI db;
 
     protected abstract long createEntity(Transaction tx);
 

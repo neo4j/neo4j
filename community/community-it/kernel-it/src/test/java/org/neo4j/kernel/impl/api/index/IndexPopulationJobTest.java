@@ -48,6 +48,8 @@ import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
+import static org.neo4j.test.PageCacheTracerAssertions.assertThatTracing;
+import static org.neo4j.test.PageCacheTracerAssertions.pins;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -220,11 +222,10 @@ class IndexPopulationJobTest {
         assertTrue(populator.resultSampled);
         assertTrue(populator.closeCall);
 
-        long pins = pageCacheTracer.pins();
-        assertThat(pins).isGreaterThan(0);
-        assertThat(pageCacheTracer.unpins()).isEqualTo(pins);
-        assertThat(pageCacheTracer.hits()).isGreaterThan(0).isLessThanOrEqualTo(pins);
-        assertThat(pageCacheTracer.faults()).isGreaterThan(0).isLessThanOrEqualTo(pins);
+        assertThatTracing(db)
+                .record(pins(13).faults(2))
+                .freki(pins(12).faults(2))
+                .matches(pageCacheTracer);
     }
 
     @Test
@@ -279,10 +280,10 @@ class IndexPopulationJobTest {
         assertTrue(populator.resultSampled);
         assertTrue(populator.closeCall);
 
-        assertThat(pageCacheTracer.pins()).isGreaterThanOrEqualTo(13);
-        assertThat(pageCacheTracer.unpins()).isEqualTo(pageCacheTracer.pins());
-        assertThat(pageCacheTracer.hits()).isGreaterThanOrEqualTo(11);
-        assertThat(pageCacheTracer.faults()).isEqualTo(2);
+        assertThatTracing(db)
+                .record(pins(13).faults(2))
+                .freki(pins(12).faults(2))
+                .matches(pageCacheTracer);
     }
 
     @Test

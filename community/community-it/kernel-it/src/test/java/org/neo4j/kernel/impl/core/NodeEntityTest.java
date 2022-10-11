@@ -37,6 +37,8 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.NamedThreadFactory.named;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
+import static org.neo4j.test.PageCacheTracerAssertions.assertThatTracing;
+import static org.neo4j.test.PageCacheTracerAssertions.pins;
 
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -105,8 +107,10 @@ public class NodeEntityTest extends EntityTest {
 
             source.getDegree(Direction.INCOMING);
 
-            assertThat(cursorTracer.hits()).isGreaterThanOrEqualTo(1);
-            assertThat(cursorTracer.pins()).isGreaterThanOrEqualTo(1);
+            assertThatTracing(db)
+                    .record(pins(3).noFaults().skipUnpins())
+                    .freki(pins(1).noFaults().skipUnpins())
+                    .matches(cursorTracer);
         }
     }
 
@@ -131,8 +135,10 @@ public class NodeEntityTest extends EntityTest {
 
             source.getDegree(relationshipType, Direction.INCOMING);
 
-            assertThat(cursorTracer.hits()).isGreaterThanOrEqualTo(1);
-            assertThat(cursorTracer.pins()).isGreaterThanOrEqualTo(1);
+            assertThatTracing(db)
+                    .record(pins(3).noFaults().skipUnpins())
+                    .freki(pins(1).noFaults().skipUnpins())
+                    .matches(cursorTracer);
         }
     }
 
@@ -160,8 +166,10 @@ public class NodeEntityTest extends EntityTest {
             assertThat(count(source.getRelationships(Direction.INCOMING, relationshipType)))
                     .isGreaterThan(0);
 
-            assertThat(cursorTracer.hits()).isGreaterThanOrEqualTo(1);
-            assertThat(cursorTracer.pins()).isGreaterThanOrEqualTo(1);
+            assertThatTracing(db)
+                    .record(pins(3).noFaults().skipUnpins())
+                    .freki(pins(1).noFaults().skipUnpins())
+                    .matches(cursorTracer);
         }
     }
 

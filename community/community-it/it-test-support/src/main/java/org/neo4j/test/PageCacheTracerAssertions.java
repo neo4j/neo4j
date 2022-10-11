@@ -19,11 +19,11 @@
  */
 package org.neo4j.test;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.util.Preconditions.checkState;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.assertj.core.api.SoftAssertions;
 import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
@@ -119,14 +119,16 @@ public class PageCacheTracerAssertions {
         }
 
         private void assertMatches(long tracedPins, long tracedUnpins, long tracedHits, long tracedFaults) {
-            assertThat(pins).as("pins").isEqualTo(tracedPins);
+            SoftAssertions softly = new SoftAssertions();
+            softly.assertThat(pins).as("pins").isEqualTo(tracedPins);
             if (!overlookUnpins) {
-                assertThat(pins).as("unpins").isEqualTo(tracedUnpins);
+                softly.assertThat(pins).as("unpins").isEqualTo(tracedUnpins);
             }
             if (faults != null) {
-                assertThat(faults).as("faults").isEqualTo(tracedFaults);
-                assertThat(pins - faults).as("hits").isEqualTo(tracedHits);
+                softly.assertThat(faults).as("faults").isEqualTo(tracedFaults);
+                softly.assertThat(pins - faults).as("hits").isEqualTo(tracedHits);
             }
+            softly.assertAll();
         }
     }
 }

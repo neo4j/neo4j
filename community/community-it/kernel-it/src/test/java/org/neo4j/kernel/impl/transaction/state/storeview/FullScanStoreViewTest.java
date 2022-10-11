@@ -33,6 +33,8 @@ import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.api.index.StoreScan.NO_EXTERNAL_UPDATES;
 import static org.neo4j.lock.LockType.SHARED;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.test.PageCacheTracerAssertions.assertThatTracing;
+import static org.neo4j.test.PageCacheTracerAssertions.pins;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -307,9 +309,11 @@ class FullScanStoreViewTest {
         scan.run(NO_EXTERNAL_UPDATES);
 
         assertThat(propertyScanConsumer.batches.get(0).size()).isEqualTo(2);
-        assertThat(pageCacheTracer.pins()).isGreaterThanOrEqualTo(3);
-        assertThat(pageCacheTracer.unpins()).isEqualTo(pageCacheTracer.pins());
-        assertThat(pageCacheTracer.hits()).isGreaterThanOrEqualTo(3);
+
+        assertThatTracing(graphDb)
+                .record(pins(4).noFaults())
+                .freki(pins(3).noFaults())
+                .matches(pageCacheTracer);
     }
 
     @Test
@@ -336,9 +340,11 @@ class FullScanStoreViewTest {
         scan.run(NO_EXTERNAL_UPDATES);
 
         assertThat(propertyScanConsumer.batches.get(0).size()).isEqualTo(2);
-        assertThat(pageCacheTracer.pins()).isEqualTo(3);
-        assertThat(pageCacheTracer.unpins()).isEqualTo(3);
-        assertThat(pageCacheTracer.hits()).isEqualTo(3);
+
+        assertThatTracing(graphDb)
+                .record(pins(3).noFaults())
+                .freki(pins(3).noFaults())
+                .matches(pageCacheTracer);
     }
 
     @Test

@@ -21,10 +21,11 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import static java.util.stream.StreamSupport.stream;
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.test.PageCacheTracerAssertions.assertThatTracing;
+import static org.neo4j.test.PageCacheTracerAssertions.pins;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.EntityType;
@@ -97,9 +98,10 @@ class LabelScanNodeViewTracingIT {
                 INSTANCE);
         scan.run(StoreScan.NO_EXTERNAL_UPDATES);
 
-        assertThat(cacheTracer.pins()).isGreaterThanOrEqualTo(100);
-        assertThat(cacheTracer.unpins()).isEqualTo(cacheTracer.pins());
-        assertThat(cacheTracer.hits()).isGreaterThanOrEqualTo(100);
+        assertThatTracing(database)
+                .record(pins(102).noFaults())
+                .freki(pins(113).noFaults())
+                .matches(cacheTracer);
     }
 
     private int getLabelId(Label label) {

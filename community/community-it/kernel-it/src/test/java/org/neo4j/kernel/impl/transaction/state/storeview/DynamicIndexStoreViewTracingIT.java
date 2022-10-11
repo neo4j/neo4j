@@ -20,9 +20,10 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.test.PageCacheTracerAssertions.assertThatTracing;
+import static org.neo4j.test.PageCacheTracerAssertions.pins;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
@@ -95,8 +96,9 @@ class DynamicIndexStoreViewTracingIT {
                 INSTANCE);
         storeScan.run(StoreScan.NO_EXTERNAL_UPDATES);
 
-        assertThat(pageCacheTracer.pins()).isGreaterThanOrEqualTo(100);
-        assertThat(pageCacheTracer.unpins()).isEqualTo(pageCacheTracer.pins());
-        assertThat(pageCacheTracer.hits()).isGreaterThanOrEqualTo(100);
+        assertThatTracing(database)
+                .record(pins(104).noFaults())
+                .freki(pins(115).noFaults())
+                .matches(pageCacheTracer);
     }
 }
