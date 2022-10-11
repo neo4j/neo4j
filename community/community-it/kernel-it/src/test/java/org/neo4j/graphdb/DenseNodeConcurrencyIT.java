@@ -72,6 +72,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.graphdb.DenseNodeConcurrencyIT.WorkType;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
@@ -201,20 +202,25 @@ class DenseNodeConcurrencyIT {
                     try (Transaction tx = database.beginTx()) {
                         Node denseNode = tx.getNodeById(denseNodeToDelete);
                         var type = random.nextBoolean() ? TEST : TEST2;
+                        var increment = false;
                         switch (random.nextInt(3)) {
                             case 0:
                                 denseNode.createRelationshipTo(tx.createNode(), type);
-                                numNodes.incrementAndGet();
+                                increment = true;
                                 break;
                             case 1:
                                 tx.createNode().createRelationshipTo(denseNode, type);
-                                numNodes.incrementAndGet();
+                                increment = true;
                             default:
                                 denseNode.createRelationshipTo(denseNode, type);
                                 break;
                         }
                         tx.commit();
                         creations++;
+                        // Do this only when we know there were no deadlock
+                        if (increment) {
+                            numNodes.incrementAndGet();
+                        }
                         Thread.sleep(
                                 1); // Provoke race, since we do not have fair locking, this will give a small windows
                         // to grab exclusive
@@ -298,6 +304,11 @@ class DenseNodeConcurrencyIT {
         }
         RelationshipType[] types = typesList.toArray(new RelationshipType[0]);
         AtomicInteger numDeadlocks = new AtomicInteger();
+
+        // This is needed to make sure that local relationship ids are not reused when
+        // running on Freki. As long as we track relationships by id the test will be
+        // very confused on id reuse.
+        var outerTx = database.beginTx();
         race.addContestants(
                 numWorkers,
                 throwing(() -> {
@@ -348,7 +359,6 @@ class DenseNodeConcurrencyIT {
                                         .flatMap(change -> change.relationships.stream())
                                         .collect(Collectors.toSet()));
                                 denseNodeIds.addAll(txDeleted.values().stream()
-                                        .filter(change -> change.node)
                                         .map(change -> change.id)
                                         .toList());
                                 numDeadlocks.incrementAndGet();
@@ -359,8 +369,8 @@ class DenseNodeConcurrencyIT {
                     }
                 }),
                 1);
-
         race.goUnchecked();
+        outerTx.commit();
 
         // then
         Set<Long> deletedDenseNodes = new HashSet<>(initialDenseNodes);
@@ -370,7 +380,7 @@ class DenseNodeConcurrencyIT {
         for (long denseNodeId : denseNodeIds) {
             assertRelationshipsAndDegrees(denseNodeId, relationships.get(denseNodeId));
         }
-        assertThat(numDeadlocks.get()).isLessThan(NUM_TASKS / 10);
+        assertThat(numDeadlocks.get()).isLessThan(NUM_TASKS / 5);
     }
 
     private void assertDeletedNodes(Set<Long> deletedInitialNodes) {
@@ -866,7 +876,6 @@ class DenseNodeConcurrencyIT {
     private static class TxNodeChanges {
         final long id;
         Set<Relationship> relationships = new HashSet<>();
-        boolean node;
 
         private TxNodeChanges(long id) {
             this.id = id;
@@ -1049,8 +1058,7 @@ class DenseNodeConcurrencyIT {
                     } catch (NotFoundException e) {
                         // We tried to change some data label/property on a random node/relationship we just found.
                         // It apparently got deleted before we were able to do so and this is fine and naturally
-                        // occurring isolation-wise
-                        // in Neo4j, so just pick another one and try again.
+                        // occurring isolation-wise in Neo4j, so just pick another one and try again.
                     }
                 }
             }
