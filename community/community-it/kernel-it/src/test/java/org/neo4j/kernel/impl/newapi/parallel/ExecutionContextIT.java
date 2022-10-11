@@ -19,12 +19,15 @@
  */
 package org.neo4j.kernel.impl.newapi.parallel;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -36,9 +39,11 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.ExecutionContext;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionExecutionStatistic;
@@ -228,6 +233,73 @@ public class ExecutionContextIT {
                     executionContext.complete();
                 }
             }
+        }
+    }
+
+    @Test
+    void testTransactionTerminationCheck() {
+        try (Transaction transaction = databaseAPI.beginTx()) {
+            var ktx = (KernelTransactionImplementation) ((InternalTransaction) transaction).kernelTransaction();
+            try (var executionContext = ktx.createNewExecutionContext()) {
+                try {
+                    var read = executionContext.dataRead();
+                    ktx.markForTermination(Status.Transaction.Terminated);
+                    assertThatThrownBy(() -> read.nodeExists(1))
+                            .isInstanceOf(TransactionTerminatedException.class)
+                            .hasMessageContaining("The transaction has been terminated.");
+                } finally {
+                    executionContext.complete();
+                }
+            }
+        }
+    }
+
+    @Test
+    void shouldDetectWhenExecutionContextOutlivesItsTransaction() {
+        ExecutionContext executionContext;
+        KernelTransactionImplementation originalKtx;
+        try (Transaction transaction = databaseAPI.beginTx()) {
+            originalKtx = (KernelTransactionImplementation) ((InternalTransaction) transaction).kernelTransaction();
+            executionContext = originalKtx.createNewExecutionContext();
+        }
+
+        List<Transaction> transactions = new ArrayList<>();
+
+        try {
+            // There might be more than one kernel transaction in the pool.
+            while (true) {
+                if (transactions.size() > 100) {
+                    // Just to make sure we don't end up in an infinite loop if something changes
+                    fail("Failed to get the original kernel transactions");
+                }
+                Transaction transaction = databaseAPI.beginTx();
+                transactions.add(transaction);
+
+                var ktx = (KernelTransactionImplementation) ((InternalTransaction) transaction).kernelTransaction();
+
+                if (originalKtx == ktx) {
+                    assertThatThrownBy(() -> executionContext.dataRead().nodeExists(1))
+                            .isInstanceOf(IllegalStateException.class)
+                            .hasMessageContaining("Execution context used after transaction close");
+                    break;
+                }
+            }
+        } finally {
+            transactions.forEach(Transaction::close);
+            executionContext.complete();
+            executionContext.close();
+        }
+    }
+
+    @Test
+    void shouldFailToCrateExecutionContextForTransactionWithState() {
+        try (Transaction transaction = databaseAPI.beginTx()) {
+            transaction.createNode();
+            var ktx = (KernelTransactionImplementation) ((InternalTransaction) transaction).kernelTransaction();
+            assertThatThrownBy(ktx::createNewExecutionContext)
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining(
+                            "Execution context cannot be used for transactions with non-empty transaction state");
         }
     }
 }

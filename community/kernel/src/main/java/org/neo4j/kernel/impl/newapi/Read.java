@@ -44,9 +44,11 @@ import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.TokenPredicate;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -56,9 +58,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.index.schema.TokenScan;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
@@ -69,6 +69,7 @@ import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.util.Preconditions;
 
@@ -83,18 +84,24 @@ abstract class Read
                 QueryContext {
     protected final StorageReader storageReader;
     protected final DefaultPooledCursors cursors;
-    final KernelTransactionImplementation ktx;
+    private final TokenRead tokenRead;
     private final StorageLocks storageLocks;
+    final StoreCursors storageCursors;
+    private final LockTracer lockTracer;
 
     Read(
             StorageReader storageReader,
+            TokenRead tokenRead,
             DefaultPooledCursors cursors,
-            KernelTransactionImplementation ktx,
-            StorageLocks storageLocks) {
+            StoreCursors storageCursors,
+            StorageLocks storageLocks,
+            LockTracer lockTracer) {
         this.storageReader = storageReader;
+        this.tokenRead = tokenRead;
         this.cursors = cursors;
-        this.ktx = ktx;
+        this.storageCursors = storageCursors;
         this.storageLocks = storageLocks;
+        this.lockTracer = lockTracer;
     }
 
     @Override
@@ -105,18 +112,18 @@ abstract class Read
             IndexQueryConstraints constraints,
             PropertyIndexQuery... query)
             throws IndexNotApplicableKernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
         validateConstraints(constraints, indexSession);
 
         if (indexSession.reference.schema().entityType() != EntityType.NODE) {
             throw new IndexNotApplicableKernelException("Node index seek can not be performed on index: "
-                    + index.reference().userDescription(ktx.tokenRead()));
+                    + index.reference().userDescription(tokenRead));
         }
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         client.setRead(this);
-        indexSession.reader.query(client, queryContext, ktx.securityContext().mode(), constraints, query);
+        indexSession.reader.query(client, queryContext, getAccessMode(), constraints, query);
     }
 
     @Override
@@ -126,11 +133,11 @@ abstract class Read
             QueryContext queryContext,
             PropertyIndexQuery... query)
             throws IndexNotApplicableKernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         final var descriptor = index.reference();
         if (descriptor.schema().entityType() != EntityType.NODE) {
             throw new IndexNotApplicableKernelException(
-                    "Node index seek can not be performed on index: " + descriptor.userDescription(ktx.tokenRead()));
+                    "Node index seek can not be performed on index: " + descriptor.userDescription(tokenRead));
         }
         return propertyIndexSeek(index, desiredNumberOfPartitions, queryContext, query);
     }
@@ -143,17 +150,17 @@ abstract class Read
             IndexQueryConstraints constraints,
             PropertyIndexQuery... query)
             throws IndexNotApplicableKernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
         validateConstraints(constraints, indexSession);
         if (indexSession.reference.schema().entityType() != EntityType.RELATIONSHIP) {
             throw new IndexNotApplicableKernelException("Relationship index seek can not be performed on index: "
-                    + index.reference().userDescription(ktx.tokenRead()));
+                    + index.reference().userDescription(tokenRead));
         }
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         client.setRead(this);
-        indexSession.reader.query(client, queryContext, ktx.securityContext().mode(), constraints, query);
+        indexSession.reader.query(client, queryContext, getAccessMode(), constraints, query);
     }
 
     @Override
@@ -163,11 +170,11 @@ abstract class Read
             QueryContext queryContext,
             PropertyIndexQuery... query)
             throws IndexNotApplicableKernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         final var descriptor = index.reference();
         if (descriptor.schema().entityType() != EntityType.RELATIONSHIP) {
-            throw new IndexNotApplicableKernelException("Relationship index seek can not be performed on index: "
-                    + descriptor.userDescription(ktx.tokenRead()));
+            throw new IndexNotApplicableKernelException(
+                    "Relationship index seek can not be performed on index: " + descriptor.userDescription(tokenRead));
         }
         return propertyIndexSeek(index, desiredNumberOfPartitions, queryContext, query);
     }
@@ -194,11 +201,8 @@ abstract class Read
         assertIndexOnline(index);
         assertPredicatesMatchSchema(index, predicates);
 
-        Locks.Client locks = ktx.lockClient();
-        LockTracer lockTracer = ktx.lockTracer();
-
         return LockingNodeUniqueIndexSeek.apply(
-                locks, lockTracer, (DefaultNodeValueIndexCursor) cursor, this, this, index, predicates);
+                getLockClient(), lockTracer, (DefaultNodeValueIndexCursor) cursor, this, this, index, predicates);
     }
 
     @Override // UniqueNodeIndexSeeker
@@ -208,19 +212,19 @@ abstract class Read
             PropertyIndexQuery.ExactPredicate... query)
             throws IndexNotApplicableKernelException {
         cursor.setRead(this);
-        indexReader.query(cursor, this, ktx.securityContext().mode(), unconstrained(), query);
+        indexReader.query(cursor, this, getAccessMode(), unconstrained(), query);
     }
 
     @Override
     public final void nodeIndexScan(
             IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints)
             throws KernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
 
         if (indexSession.reference.schema().entityType() != EntityType.NODE) {
             throw new IndexNotApplicableKernelException("Node index scan can not be performed on index: "
-                    + index.reference().userDescription(ktx.tokenRead()));
+                    + index.reference().userDescription(tokenRead));
         }
 
         scanIndex(indexSession, (EntityIndexSeekClient) cursor, constraints);
@@ -230,11 +234,11 @@ abstract class Read
     public PartitionedScan<NodeValueIndexCursor> nodeIndexScan(
             IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext)
             throws IndexNotApplicableKernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         final var descriptor = index.reference();
         if (descriptor.schema().entityType() != EntityType.NODE) {
             throw new IndexNotApplicableKernelException(
-                    "Node index scan can not be performed on index: " + descriptor.userDescription(ktx.tokenRead()));
+                    "Node index scan can not be performed on index: " + descriptor.userDescription(tokenRead));
         }
 
         return propertyIndexScan(index, desiredNumberOfPartitions, queryContext);
@@ -244,12 +248,12 @@ abstract class Read
     public final void relationshipIndexScan(
             IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints)
             throws KernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
 
         if (indexSession.reference.schema().entityType() != EntityType.RELATIONSHIP) {
             throw new IndexNotApplicableKernelException("Relationship index scan can not be performed on index: "
-                    + index.reference().userDescription(ktx.tokenRead()));
+                    + index.reference().userDescription(tokenRead));
         }
 
         scanIndex(indexSession, (EntityIndexSeekClient) cursor, constraints);
@@ -259,11 +263,11 @@ abstract class Read
     public PartitionedScan<RelationshipValueIndexCursor> relationshipIndexScan(
             IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext)
             throws IndexNotApplicableKernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         final var descriptor = index.reference();
         if (descriptor.schema().entityType() != EntityType.RELATIONSHIP) {
-            throw new IndexNotApplicableKernelException("Relationship index scan can not be performed on index: "
-                    + descriptor.userDescription(ktx.tokenRead()));
+            throw new IndexNotApplicableKernelException(
+                    "Relationship index scan can not be performed on index: " + descriptor.userDescription(tokenRead));
         }
 
         return propertyIndexScan(index, desiredNumberOfPartitions, queryContext);
@@ -275,14 +279,12 @@ abstract class Read
             IndexQueryConstraints constraints)
             throws KernelException {
         indexSeekClient.setRead(this);
-        indexSession.reader.query(
-                indexSeekClient, this, ktx.securityContext().mode(), constraints, PropertyIndexQuery.allEntries());
+        indexSession.reader.query(indexSeekClient, this, getAccessMode(), constraints, PropertyIndexQuery.allEntries());
     }
 
     @Override
     public final Scan<NodeLabelIndexCursor> nodeLabelScan(int label) {
-        ktx.assertOpen();
-        CursorContext cursorContext = ktx.cursorContext();
+        performCheckBeforeOperation();
 
         TokenScan tokenScan;
         try {
@@ -291,7 +293,7 @@ abstract class Read
                 throw new IndexNotFoundKernelException("There is no index that can back a node label scan.");
             }
             DefaultTokenReadSession session = (DefaultTokenReadSession) tokenReadSession(index);
-            tokenScan = session.reader.entityTokenScan(label, cursorContext);
+            tokenScan = session.reader.entityTokenScan(label, cursorContext());
         } catch (IndexNotFoundKernelException e) {
             throw new RuntimeException(e);
         }
@@ -302,10 +304,10 @@ abstract class Read
     public final PartitionedScan<NodeLabelIndexCursor> nodeLabelScan(
             TokenReadSession session, int desiredNumberOfPartitions, CursorContext cursorContext, TokenPredicate query)
             throws IndexNotApplicableKernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         if (session.reference().schema().entityType() != EntityType.NODE) {
             throw new IndexNotApplicableKernelException("Node label index scan can not be performed on index: "
-                    + session.reference().userDescription(ktx.tokenRead()));
+                    + session.reference().userDescription(tokenRead));
         }
         return tokenIndexScan(session, desiredNumberOfPartitions, cursorContext, query);
     }
@@ -314,10 +316,10 @@ abstract class Read
     public final PartitionedScan<NodeLabelIndexCursor> nodeLabelScan(
             TokenReadSession session, PartitionedScan<NodeLabelIndexCursor> leadingPartitionScan, TokenPredicate query)
             throws IndexNotApplicableKernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         if (session.reference().schema().entityType() != EntityType.NODE) {
             throw new IndexNotApplicableKernelException("Node label index scan can not be performed on index: "
-                    + session.reference().userDescription(ktx.tokenRead()));
+                    + session.reference().userDescription(tokenRead));
         }
         return tokenIndexScan(session, leadingPartitionScan, query);
     }
@@ -329,10 +331,10 @@ abstract class Read
             CursorContext cursorContext,
             TokenPredicate... queries)
             throws IndexNotApplicableKernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         if (session.reference().schema().entityType() != EntityType.NODE) {
             throw new IndexNotApplicableKernelException("Node label index scan can not be performed on index: "
-                    + session.reference().userDescription(ktx.tokenRead()));
+                    + session.reference().userDescription(tokenRead));
         }
         return tokenIndexScan(session, desiredNumberOfPartitions, cursorContext, queries);
     }
@@ -345,11 +347,11 @@ abstract class Read
             TokenPredicate query,
             CursorContext cursorContext)
             throws KernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
 
         if (session.reference().schema().entityType() != EntityType.NODE) {
             throw new IndexNotApplicableKernelException("Node label index scan can not be performed on index: "
-                    + session.reference().userDescription(ktx.tokenRead()));
+                    + session.reference().userDescription(tokenRead));
         }
 
         var tokenSession = (DefaultTokenReadSession) session;
@@ -361,25 +363,25 @@ abstract class Read
 
     @Override
     public final void allNodesScan(NodeCursor cursor) {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         ((DefaultNodeCursor) cursor).scan(this);
     }
 
     @Override
     public final Scan<NodeCursor> allNodesScan() {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         return new NodeCursorScan(storageReader.allNodeScan(), this);
     }
 
     @Override
     public final void singleNode(long reference, NodeCursor cursor) {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         ((DefaultNodeCursor) cursor).single(reference, this);
     }
 
     @Override
     public PartitionedScan<NodeCursor> allNodesScan(int desiredNumberOfPartitions, CursorContext cursorContext) {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         long totalCount = storageReader.nodesGetCount(cursorContext);
         return new PartitionedNodeCursorScan(storageReader.allNodeScan(), this, desiredNumberOfPartitions, totalCount);
     }
@@ -387,7 +389,7 @@ abstract class Read
     @Override
     public PartitionedScan<RelationshipScanCursor> allRelationshipsScan(
             int desiredNumberOfPartitions, CursorContext cursorContext) {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         long totalCount = storageReader.relationshipsGetCount(cursorContext);
         return new PartitionedRelationshipCursorScan(
                 storageReader.allRelationshipScan(), this, desiredNumberOfPartitions, totalCount);
@@ -395,7 +397,7 @@ abstract class Read
 
     @Override
     public final void singleRelationship(long reference, RelationshipScanCursor cursor) {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         ((DefaultRelationshipScanCursor) cursor).single(reference, this);
     }
 
@@ -406,20 +408,20 @@ abstract class Read
             int type,
             long targetNodeReference,
             RelationshipScanCursor cursor) {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         ((DefaultRelationshipScanCursor) cursor)
                 .single(reference, sourceNodeReference, type, targetNodeReference, this);
     }
 
     @Override
     public final void allRelationshipsScan(RelationshipScanCursor cursor) {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         ((DefaultRelationshipScanCursor) cursor).scan(this);
     }
 
     @Override
     public final Scan<RelationshipScanCursor> allRelationshipsScan() {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         return new RelationshipCursorScan(storageReader.allRelationshipScan(), this);
     }
 
@@ -427,10 +429,10 @@ abstract class Read
     public final PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan(
             TokenReadSession session, int desiredNumberOfPartitions, CursorContext cursorContext, TokenPredicate query)
             throws IndexNotApplicableKernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         if (session.reference().schema().entityType() != EntityType.RELATIONSHIP) {
             throw new IndexNotApplicableKernelException("Relationship type index scan can not be performed on index: "
-                    + session.reference().userDescription(ktx.tokenRead()));
+                    + session.reference().userDescription(tokenRead));
         }
         return tokenIndexScan(session, desiredNumberOfPartitions, cursorContext, query);
     }
@@ -441,10 +443,10 @@ abstract class Read
             PartitionedScan<RelationshipTypeIndexCursor> leadingPartitionScan,
             TokenPredicate query)
             throws IndexNotApplicableKernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         if (session.reference().schema().entityType() != EntityType.RELATIONSHIP) {
             throw new IndexNotApplicableKernelException("Relationship type index scan can not be performed on index: "
-                    + session.reference().userDescription(ktx.tokenRead()));
+                    + session.reference().userDescription(tokenRead));
         }
         return tokenIndexScan(session, leadingPartitionScan, query);
     }
@@ -456,10 +458,10 @@ abstract class Read
             CursorContext cursorContext,
             TokenPredicate... queries)
             throws IndexNotApplicableKernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         if (session.reference().schema().entityType() != EntityType.RELATIONSHIP) {
             throw new IndexNotApplicableKernelException("Relationship type index scan can not be performed on index: "
-                    + session.reference().userDescription(ktx.tokenRead()));
+                    + session.reference().userDescription(tokenRead));
         }
         return tokenIndexScan(session, desiredNumberOfPartitions, cursorContext, queries);
     }
@@ -472,11 +474,11 @@ abstract class Read
             TokenPredicate query,
             CursorContext cursorContext)
             throws KernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
 
         if (session.reference().schema().entityType() != EntityType.RELATIONSHIP) {
             throw new IndexNotApplicableKernelException("Relationship type index scan can not be performed on index: "
-                    + session.reference().userDescription(ktx.tokenRead()));
+                    + session.reference().userDescription(tokenRead));
         }
 
         var tokenSession = (DefaultTokenReadSession) session;
@@ -495,13 +497,13 @@ abstract class Read
     @Override
     public void nodeProperties(
             long nodeReference, Reference reference, PropertySelection selection, PropertyCursor cursor) {
-        ((DefaultPropertyCursor) cursor).initNode(nodeReference, reference, selection, this, ktx);
+        ((DefaultPropertyCursor) cursor).initNode(nodeReference, reference, selection, this);
     }
 
     @Override
     public void relationshipProperties(
             long relationshipReference, Reference reference, PropertySelection selection, PropertyCursor cursor) {
-        ((DefaultPropertyCursor) cursor).initRelationship(relationshipReference, reference, selection, this, ktx);
+        ((DefaultPropertyCursor) cursor).initRelationship(relationshipReference, reference, selection, this);
     }
 
     private void validateConstraints(IndexQueryConstraints constraints, DefaultIndexReadSession indexSession) {
@@ -515,7 +517,7 @@ abstract class Read
     private <C extends Cursor> PartitionedScan<C> propertyIndexScan(
             IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext)
             throws IndexNotApplicableKernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         return propertyIndexSeek(index, desiredNumberOfPartitions, queryContext, PropertyIndexQuery.allEntries());
     }
 
@@ -525,11 +527,11 @@ abstract class Read
             QueryContext queryContext,
             PropertyIndexQuery... query)
             throws IndexNotApplicableKernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         final var descriptor = index.reference();
         if (!descriptor.getCapability().supportPartitionedScan(query)) {
             throw new IndexNotApplicableKernelException("This index does not support partitioned scan for this query: "
-                    + descriptor.userDescription(ktx.tokenRead()));
+                    + descriptor.userDescription(tokenRead));
         }
 
         final var session = (DefaultIndexReadSession) index;
@@ -540,11 +542,11 @@ abstract class Read
     private <C extends Cursor> PartitionedScan<C> tokenIndexScan(
             TokenReadSession session, int desiredNumberOfPartitions, CursorContext cursorContext, TokenPredicate query)
             throws IndexNotApplicableKernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         final var descriptor = session.reference();
         if (!descriptor.getCapability().supportPartitionedScan(query)) {
             throw new IndexNotApplicableKernelException("This index does not support partitioned scan for this query: "
-                    + descriptor.userDescription(ktx.tokenRead()));
+                    + descriptor.userDescription(tokenRead));
         }
 
         final var defaultSession = (DefaultTokenReadSession) session;
@@ -555,11 +557,11 @@ abstract class Read
     private <C extends Cursor> PartitionedScan<C> tokenIndexScan(
             TokenReadSession session, PartitionedScan<C> leadingPartitionScan, TokenPredicate query)
             throws IndexNotApplicableKernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         final var descriptor = session.reference();
         if (!descriptor.getCapability().supportPartitionedScan(query)) {
             throw new IndexNotApplicableKernelException("This index does not support partitioned scan for this query: "
-                    + descriptor.userDescription(ktx.tokenRead()));
+                    + descriptor.userDescription(tokenRead));
         }
 
         final var defaultSession = (DefaultTokenReadSession) session;
@@ -574,7 +576,7 @@ abstract class Read
             CursorContext cursorContext,
             TokenPredicate... queries)
             throws IndexNotApplicableKernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         Preconditions.requireNonEmpty(queries);
         final var scans = new ArrayList<PartitionedScan<C>>(queries.length);
         final var leadingPartitionScan =
@@ -589,110 +591,100 @@ abstract class Read
     public abstract ValueIndexReader newValueIndexReader(IndexDescriptor index) throws IndexNotFoundKernelException;
 
     @Override
-    public TransactionState txState() {
-        return ktx.txState();
-    }
-
-    @Override
-    public boolean hasTxStateWithChanges() {
-        return ktx.hasTxStateWithChanges();
-    }
-
-    @Override
     public void acquireExclusiveNodeLock(long... ids) {
-        storageLocks.acquireExclusiveNodeLock(ktx.lockTracer(), ids);
-        ktx.assertOpen();
+        performCheckBeforeOperation();
+        storageLocks.acquireExclusiveNodeLock(lockTracer, ids);
     }
 
     @Override
     public void acquireExclusiveRelationshipLock(long... ids) {
-        storageLocks.acquireExclusiveRelationshipLock(ktx.lockTracer(), ids);
-        ktx.assertOpen();
+        performCheckBeforeOperation();
+        storageLocks.acquireExclusiveRelationshipLock(lockTracer, ids);
     }
 
     @Override
     public void releaseExclusiveNodeLock(long... ids) {
+        performCheckBeforeOperation();
         storageLocks.releaseExclusiveNodeLock(ids);
-        ktx.assertOpen();
     }
 
     @Override
     public void releaseExclusiveRelationshipLock(long... ids) {
+        performCheckBeforeOperation();
         storageLocks.releaseExclusiveRelationshipLock(ids);
-        ktx.assertOpen();
     }
 
     @Override
     public void acquireSharedNodeLock(long... ids) {
-        storageLocks.acquireSharedNodeLock(ktx.lockTracer(), ids);
-        ktx.assertOpen();
+        performCheckBeforeOperation();
+        storageLocks.acquireSharedNodeLock(lockTracer, ids);
     }
 
     @Override
     public void acquireSharedRelationshipLock(long... ids) {
-        storageLocks.acquireSharedRelationshipLock(ktx.lockTracer(), ids);
-        ktx.assertOpen();
+        performCheckBeforeOperation();
+        storageLocks.acquireSharedRelationshipLock(lockTracer, ids);
     }
 
     @Override
     public void acquireSharedRelationshipTypeLock(long... ids) {
+        performCheckBeforeOperation();
         acquireSharedLock(ResourceTypes.RELATIONSHIP_TYPE, ids);
-        ktx.assertOpen();
     }
 
     @Override
     public void acquireSharedLabelLock(long... ids) {
+        performCheckBeforeOperation();
         acquireSharedLock(ResourceTypes.LABEL, ids);
-        ktx.assertOpen();
     }
 
     @Override
     public void releaseSharedNodeLock(long... ids) {
+        performCheckBeforeOperation();
         storageLocks.releaseSharedNodeLock(ids);
-        ktx.assertOpen();
     }
 
     @Override
     public void releaseSharedRelationshipLock(long... ids) {
+        performCheckBeforeOperation();
         storageLocks.releaseSharedRelationshipLock(ids);
-        ktx.assertOpen();
     }
 
     @Override
     public void releaseSharedLabelLock(long... ids) {
+        performCheckBeforeOperation();
         releaseSharedLock(ResourceTypes.LABEL, ids);
-        ktx.assertOpen();
     }
 
     @Override
     public void releaseSharedRelationshipTypeLock(long... ids) {
+        performCheckBeforeOperation();
         releaseSharedLock(ResourceTypes.RELATIONSHIP_TYPE, ids);
-        ktx.assertOpen();
     }
 
     <T extends SchemaDescriptorSupplier> T acquireSharedSchemaLock(T schemaLike) {
         SchemaDescriptor schema = schemaLike.schema();
         long[] lockingKeys = schema.lockingKeys();
-        ktx.lockClient().acquireShared(ktx.lockTracer(), schema.keyType(), lockingKeys);
+        getLockClient().acquireShared(lockTracer, schema.keyType(), lockingKeys);
         return schemaLike;
     }
 
     <T extends SchemaDescriptorSupplier> void releaseSharedSchemaLock(T schemaLike) {
         SchemaDescriptor schema = schemaLike.schema();
         long[] lockingKeys = schema.lockingKeys();
-        ktx.lockClient().releaseShared(schema.keyType(), lockingKeys);
+        getLockClient().releaseShared(schema.keyType(), lockingKeys);
     }
 
     void acquireSharedLock(ResourceType resource, long resourceId) {
-        ktx.lockClient().acquireShared(ktx.lockTracer(), resource, resourceId);
+        getLockClient().acquireShared(lockTracer, resource, resourceId);
     }
 
     private void acquireSharedLock(ResourceType type, long... ids) {
-        ktx.lockClient().acquireShared(ktx.lockTracer(), type, ids);
+        getLockClient().acquireShared(lockTracer, type, ids);
     }
 
     private void releaseSharedLock(ResourceType types, long... ids) {
-        ktx.lockClient().releaseShared(types, ids);
+        getLockClient().releaseShared(types, ids);
     }
 
     private void assertIndexOnline(IndexDescriptor index)
@@ -723,18 +715,24 @@ abstract class Read
 
     @Override
     public void assertOpen() {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
     }
 
     @Override
     public void acquireSharedLookupLock(EntityType entityType) {
         acquireSharedSchemaLock(() -> SchemaDescriptors.forAnyEntityTokens(entityType));
-        ktx.assertOpen();
+        performCheckBeforeOperation();
     }
 
     @Override
     public void releaseSharedLookupLock(EntityType entityType) {
         releaseSharedSchemaLock(() -> SchemaDescriptors.forAnyEntityTokens(entityType));
-        ktx.assertOpen();
+        performCheckBeforeOperation();
     }
+
+    abstract void performCheckBeforeOperation();
+
+    abstract AccessMode getAccessMode();
+
+    abstract Locks.Client getLockClient();
 }

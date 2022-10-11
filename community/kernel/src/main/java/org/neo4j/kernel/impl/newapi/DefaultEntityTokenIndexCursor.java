@@ -98,7 +98,7 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
         if (tracer != null) {
             traceScan(tracer, token);
         }
-        accessMode = read.ktx.securityContext().mode();
+        accessMode = read.getAccessMode();
         initSecurity(token);
     }
 

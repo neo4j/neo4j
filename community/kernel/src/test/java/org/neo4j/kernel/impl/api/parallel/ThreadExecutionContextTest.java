@@ -19,21 +19,19 @@
  */
 package org.neo4j.kernel.impl.api.parallel;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexMonitor;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.api.TransactionMemoryPool;
-import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.newapi.AllStoreHolder;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
@@ -42,25 +40,27 @@ class ThreadExecutionContextTest {
     void closeResourcesOnContextClose() {
         var pageCacheTracer = PageCacheTracer.NULL;
         var contextFactory = new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY);
-        var cursorContext = contextFactory.create("tag");
-        var ktx = mock(KernelTransactionImplementation.class);
         var storageReader = mock(StorageReader.class);
+        var lockClient = mock(Locks.Client.class);
+        var allStoreHolder = mock(AllStoreHolder.ForThreadExecutionContextScope.class);
 
-        when(ktx.cursorContext()).thenReturn(cursorContext);
-        when(ktx.securityContext()).thenReturn(SecurityContext.AUTH_DISABLED);
-        when(ktx.newStorageReader()).thenReturn(storageReader);
-
-        var storageEngine = mock(StorageEngine.class);
         var storeCursors = mock(StoreCursors.class);
-        when(storageEngine.createStorageCursors(any())).thenReturn(storeCursors);
-        var monitor = mock(IndexMonitor.class);
 
         try (var executionContext = new ThreadExecutionContext(
-                ktx, contextFactory, storageEngine, Config.defaults(), monitor, mock(TransactionMemoryPool.class))) {
+                contextFactory.create("tag"),
+                AccessMode.Static.READ,
+                new ExecutionContextCursorTracer(mock(PageCacheTracer.class), "test"),
+                contextFactory.create("tx-tag"),
+                allStoreHolder,
+                storeCursors,
+                mock(IndexMonitor.class),
+                mock(MemoryTracker.class),
+                List.of(storageReader, lockClient))) {
             executionContext.complete();
         }
 
         verify(storeCursors).close();
         verify(storageReader).close();
+        verify(lockClient).close();
     }
 }

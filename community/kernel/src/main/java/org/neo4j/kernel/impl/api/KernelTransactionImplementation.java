@@ -34,6 +34,7 @@ import static org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializat
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -75,6 +76,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -84,6 +86,8 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -95,6 +99,8 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.api.parallel.ExecutionContextCursorTracer;
+import org.neo4j.kernel.impl.api.parallel.LegacyThreadExecutionContext;
 import org.neo4j.kernel.impl.api.parallel.ThreadExecutionContext;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -110,6 +116,7 @@ import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
 import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
 import org.neo4j.kernel.impl.newapi.KernelToken;
+import org.neo4j.kernel.impl.newapi.KernelTokenRead;
 import org.neo4j.kernel.impl.newapi.Operations;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -212,6 +219,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final MemoryTracker memoryTracker;
     private final LocalConfig config;
     private volatile long transactionHeapBytesLimit;
+    private final ExecutionContextFactory executionContextFactory;
 
     /**
      * Lock prevents transaction {@link #markForTermination(Status)}  transaction termination} from interfering with
@@ -258,7 +266,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             DatabaseReadOnlyChecker readOnlyDatabaseChecker,
             TransactionExecutionMonitor transactionExecutionMonitor,
             AbstractSecurityLog securityLog,
-            Locks.Client lockClient,
+            Locks locks,
             KernelTransactions kernelTransactions,
             LogProvider logProvider) {
         this.config = new LocalConfig(externalConfig);
@@ -290,12 +298,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.statusDetails = EMPTY;
         this.constraintSemantics = constraintSemantics;
         this.transactionalCursors = storageEngine.createStorageCursors(CursorContext.NULL_CONTEXT);
+        this.lockClient = locks.newClient();
         StorageLocks storageLocks = storageEngine.createStorageLocks(lockClient);
         DefaultPooledCursors cursors = new DefaultPooledCursors(
                 storageReader, transactionalCursors, config, storageEngine.indexingBehaviour());
         this.securityAuthorizationHandler = new SecurityAuthorizationHandler(securityLog);
-        this.allStoreHolder = new AllStoreHolder(
+        var kernelToken = new KernelToken(storageReader, commandCreationContext, this, tokenHolders);
+        this.allStoreHolder = new AllStoreHolder.ForTransactionScope(
                 storageReader,
+                kernelToken,
                 this,
                 storageLocks,
                 cursors,
@@ -305,6 +316,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 indexStatisticsStore,
                 dependencies,
                 memoryTracker);
+        this.executionContextFactory = createExecutionContextFactory(
+                contextFactory,
+                storageEngine,
+                transactionMemoryPool,
+                config,
+                locks,
+                tokenHolders,
+                schemaState,
+                indexingService,
+                indexStatisticsStore,
+                tracers,
+                leaseService);
         this.operations = new Operations(
                 allStoreHolder,
                 storageReader,
@@ -312,7 +335,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 commandCreationContext,
                 storageLocks,
                 this,
-                new KernelToken(storageReader, commandCreationContext, this, tokenHolders),
+                kernelToken,
                 cursors,
                 constraintIndexCreator,
                 constraintSemantics,
@@ -323,7 +346,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         transactionHeapBytesLimit = config.get(memory_transaction_max_size);
         registerConfigChangeListeners(config);
         this.collectionsFactory = collectionsFactorySupplier.create();
-        this.lockClient = lockClient;
         this.kernelTransactions = kernelTransactions;
     }
 
@@ -370,6 +392,65 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionMemoryPool.setLimit(transactionHeapBytesLimit);
         this.innerTransactionHandler = new InnerTransactionHandlerImpl(kernelTransactions);
         return this;
+    }
+
+    private static ExecutionContextFactory createExecutionContextFactory(
+            CursorContextFactory contextFactory,
+            StorageEngine storageEngine,
+            TransactionMemoryPool transactionMemoryPool,
+            Config config,
+            Locks locks,
+            TokenHolders tokenHolders,
+            SchemaState schemaState,
+            IndexingService indexingService,
+            IndexStatisticsStore indexStatisticsStore,
+            DatabaseTracers tracers,
+            LeaseService leaseService) {
+        return (accessMode, transactionId, transactionCursorContext, assertOpen) -> {
+            var executionContextCursorTracer = new ExecutionContextCursorTracer(
+                    PageCacheTracer.NULL, ExecutionContextCursorTracer.TRANSACTION_EXECUTION_TAG);
+            var executionContextCursorContext = contextFactory.create(executionContextCursorTracer);
+            StorageReader executionContextStorageReader = storageEngine.newReader();
+            MemoryTracker executionContextMemoryTracker = transactionMemoryPool.getPoolMemoryTracker();
+            StoreCursors executionContextStoreCursors =
+                    storageEngine.createStorageCursors(executionContextCursorContext);
+            DefaultPooledCursors executionContextPooledCursors = new DefaultPooledCursors(
+                    executionContextStorageReader,
+                    executionContextStoreCursors,
+                    config,
+                    storageEngine.indexingBehaviour());
+            Locks.Client executionContextLockClient = locks.newClient();
+            executionContextLockClient.initialize(
+                    leaseService.newClient(), transactionId, executionContextMemoryTracker, config);
+            var executionContextTokenRead = new KernelTokenRead.ForThreadExecutionContextScope(
+                    executionContextStorageReader, tokenHolders, accessMode, assertOpen);
+            var executionContextRead = new AllStoreHolder.ForThreadExecutionContextScope(
+                    executionContextStorageReader,
+                    executionContextTokenRead,
+                    schemaState,
+                    indexingService,
+                    indexStatisticsStore,
+                    executionContextMemoryTracker,
+                    executionContextPooledCursors,
+                    executionContextStoreCursors,
+                    executionContextCursorContext,
+                    storageEngine.createStorageLocks(executionContextLockClient),
+                    executionContextLockClient,
+                    tracers.getLockTracer(),
+                    accessMode,
+                    assertOpen);
+
+            return new ThreadExecutionContext(
+                    executionContextCursorContext,
+                    accessMode,
+                    executionContextCursorTracer,
+                    transactionCursorContext,
+                    executionContextRead,
+                    executionContextStoreCursors,
+                    indexingService.getMonitor(),
+                    executionContextMemoryTracker,
+                    List.of(executionContextStorageReader, executionContextLockClient));
+        };
     }
 
     @Override
@@ -457,8 +538,25 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public ExecutionContext createExecutionContext() {
-        return new ThreadExecutionContext(
+        return new LegacyThreadExecutionContext(
                 this, contextFactory, storageEngine, config, allStoreHolder.monitor(), transactionMemoryPool);
+    }
+
+    public ExecutionContext createNewExecutionContext() {
+        if (hasTxStateWithChanges()) {
+            throw new IllegalStateException(
+                    "Execution context cannot be used for transactions with non-empty transaction state");
+        }
+
+        long transactionSequenceNumberWhenCreated = transactionSequenceNumber;
+        return executionContextFactory.createNew(
+                securityContext.mode(), transactionSequenceNumber, cursorContext, () -> {
+                    assertOpen();
+                    // Since TX object is reused, let's check if this is still the same TX
+                    if (transactionSequenceNumberWhenCreated != transactionSequenceNumber) {
+                        throw new IllegalStateException("Execution context used after transaction close");
+                    }
+                });
     }
 
     @Override
@@ -1337,5 +1435,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         TransactionWriteState upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException {
             return SCHEMA;
         }
+    }
+
+    private interface ExecutionContextFactory {
+
+        ExecutionContext createNew(
+                AccessMode accessMode,
+                long transactionId,
+                CursorContext transactionCursorContext,
+                AssertOpen assertOpen);
     }
 }

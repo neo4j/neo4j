@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -52,6 +53,7 @@ class KernelTokenTest {
     @BeforeEach
     void setUp() {
         ktx = mock(KernelTransactionImplementation.class);
+        when(ktx.securityContext()).thenReturn(SecurityContext.AUTH_DISABLED);
         transactionState = mock(TransactionState.class);
         when(ktx.txState()).thenReturn(transactionState);
         commandCreationContext = mock(CommandCreationContext.class);

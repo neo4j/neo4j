@@ -459,7 +459,7 @@ public class KernelTransactions extends LifecycleAdapter
                     readOnlyDatabaseChecker,
                     transactionExecutionMonitor,
                     securityLog,
-                    locks.newClient(),
+                    locks,
                     KernelTransactions.this,
                     internalLogProvider);
             this.transactions.add(tx);

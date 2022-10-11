@@ -28,17 +28,14 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 
 class SchemaReadCoreSnapshot implements SchemaReadCore {
     private final StorageSchemaReader snapshot;
-    private final KernelTransactionImplementation ktx;
     private final AllStoreHolder stores;
 
-    SchemaReadCoreSnapshot(StorageSchemaReader snapshot, KernelTransactionImplementation ktx, AllStoreHolder stores) {
+    SchemaReadCoreSnapshot(StorageSchemaReader snapshot, AllStoreHolder stores) {
         this.snapshot = snapshot;
-        this.ktx = ktx;
         this.stores = stores;
     }
 
@@ -54,38 +51,38 @@ class SchemaReadCoreSnapshot implements SchemaReadCore {
 
     @Override
     public Iterator<IndexDescriptor> index(SchemaDescriptor schema) {
-        ktx.assertOpen();
+        stores.performCheckBeforeOperation();
         return stores.indexGetForSchema(snapshot, schema);
     }
 
     @Override
     public IndexDescriptor index(SchemaDescriptor schema, IndexType type) {
-        ktx.assertOpen();
+        stores.performCheckBeforeOperation();
         return stores.index(schema, type);
     }
 
     @Override
     public Iterator<IndexDescriptor> indexesGetForLabel(int labelId) {
-        ktx.assertOpen();
+        stores.performCheckBeforeOperation();
         return stores.indexesGetForLabel(snapshot, labelId);
     }
 
     @Override
     public Iterator<IndexDescriptor> indexesGetForRelationshipType(int relationshipType) {
-        ktx.assertOpen();
+        stores.performCheckBeforeOperation();
         return stores.indexesGetForRelationshipType(snapshot, relationshipType);
     }
 
     @Override
     public Iterator<IndexDescriptor> indexesGetAll() {
-        ktx.assertOpen();
+        stores.performCheckBeforeOperation();
         return stores.indexesGetAll(snapshot);
     }
 
     @Override
     public InternalIndexState indexGetState(IndexDescriptor index) throws IndexNotFoundKernelException {
         AllStoreHolder.assertValidIndex(index);
-        ktx.assertOpen();
+        stores.performCheckBeforeOperation();
         return stores.indexGetStateLocked(index);
     }
 
@@ -97,7 +94,7 @@ class SchemaReadCoreSnapshot implements SchemaReadCore {
     @Override
     public PopulationProgress indexGetPopulationProgress(IndexDescriptor index) throws IndexNotFoundKernelException {
         AllStoreHolder.assertValidIndex(index);
-        ktx.assertOpen();
+        stores.performCheckBeforeOperation();
         return stores.indexGetPopulationProgressLocked(index);
     }
 
@@ -109,7 +106,7 @@ class SchemaReadCoreSnapshot implements SchemaReadCore {
 
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetForLabel(int labelId) {
-        ktx.assertOpen();
+        stores.performCheckBeforeOperation();
         return stores.constraintsGetForLabel(snapshot, labelId);
     }
 
@@ -120,7 +117,7 @@ class SchemaReadCoreSnapshot implements SchemaReadCore {
 
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType(int typeId) {
-        ktx.assertOpen();
+        stores.performCheckBeforeOperation();
         return stores.constraintsGetForRelationshipType(snapshot, typeId);
     }
 
@@ -131,7 +128,7 @@ class SchemaReadCoreSnapshot implements SchemaReadCore {
 
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetAll() {
-        ktx.assertOpen();
+        stores.performCheckBeforeOperation();
         return stores.constraintsGetAll(snapshot);
     }
 

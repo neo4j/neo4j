@@ -39,7 +39,9 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -64,6 +66,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -73,43 +76,56 @@ import org.neo4j.kernel.impl.api.IndexReaderCache;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CountsDelta;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageSchemaReader;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.DiffSets;
 import org.neo4j.storageengine.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Value;
 
-public class AllStoreHolder extends Read {
-    private final GlobalProcedures globalProcedures;
+/**
+ * Implementation of read operation of the Kernel API.
+ * <p>
+ * The relation between a transaction and All Store Holder can be one to many
+ * and the instances of All Store Holder related to the same transaction can be used concurrently by multiple threads.
+ * The thread safety aspect of the operation performed by All Store Holder must reflect it!
+ * This means that All Store Holder must not use objects shared by multiple All Store Holders that are
+ * not safe for multithreaded use!!!
+ * This class has two implementations.
+ * {@link ForTransactionScope} has one-to-one relation with a transaction and therefore it can safely
+ * use {@link KernelTransactionImplementation}, its resources and generally any transaction-scoped resource
+ * {@link ForThreadExecutionContextScope} has one-to-many relation with a transaction and therefore it CANNOT safely
+ * use {@link KernelTransactionImplementation}, its resources and generally any transaction-scoped
+ * resource which is not designed for concurrent use.
+ * It should use resources in {@link org.neo4j.kernel.impl.api.parallel.ThreadExecutionContext} scope instead.
+ */
+public abstract class AllStoreHolder extends Read {
     private final SchemaState schemaState;
     private final IndexingService indexingService;
     private final IndexStatisticsStore indexStatisticsStore;
-    private final Dependencies databaseDependencies;
     private final MemoryTracker memoryTracker;
     private final IndexReaderCache<ValueIndexReader> valueIndexReaderCache;
     private final IndexReaderCache<TokenIndexReader> tokenIndexReaderCache;
-    private final ReadSupport readSupport;
-    private final ProcedureCaller procedureCaller;
 
-    public AllStoreHolder(
+    private AllStoreHolder(
             StorageReader storageReader,
-            KernelTransactionImplementation ktx,
-            StorageLocks storageLocks,
-            DefaultPooledCursors cursors,
-            GlobalProcedures globalProcedures,
+            TokenRead tokenRead,
             SchemaState schemaState,
             IndexingService indexingService,
             IndexStatisticsStore indexStatisticsStore,
-            Dependencies databaseDependencies,
-            MemoryTracker memoryTracker) {
-
-        super(storageReader, cursors, ktx, storageLocks);
-        this.globalProcedures = globalProcedures;
+            MemoryTracker memoryTracker,
+            DefaultPooledCursors cursors,
+            StoreCursors storageCursors,
+            StorageLocks storageLocks,
+            LockTracer lockTracer) {
+        super(storageReader, tokenRead, cursors, storageCursors, storageLocks, lockTracer);
         this.schemaState = schemaState;
         this.valueIndexReaderCache = new IndexReaderCache<>(
                 index -> indexingService.getIndexProxy(index).newValueReader());
@@ -117,15 +133,12 @@ public class AllStoreHolder extends Read {
                 index -> indexingService.getIndexProxy(index).newTokenReader());
         this.indexingService = indexingService;
         this.indexStatisticsStore = indexStatisticsStore;
-        this.databaseDependencies = databaseDependencies;
         this.memoryTracker = memoryTracker;
-        this.readSupport = new ReadSupport(storageReader, cursors, this);
-        this.procedureCaller = new ProcedureCaller(ktx, globalProcedures, databaseDependencies);
     }
 
     @Override
     public boolean nodeExists(long reference) {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
 
         if (hasTxStateWithChanges()) {
             TransactionState txState = txState();
@@ -136,31 +149,41 @@ public class AllStoreHolder extends Read {
             }
         }
 
-        return readSupport.nodeExistsWithoutTxState(
-                reference, ktx.securityContext().mode(), ktx.storeCursors(), ktx.cursorContext());
+        boolean existsInNodeStore = storageReader.nodeExists(reference, storageCursors);
+
+        if (getAccessMode().allowsTraverseAllLabels()) {
+            return existsInNodeStore;
+        } else if (!existsInNodeStore) {
+            return false;
+        } else {
+            try (DefaultNodeCursor node = cursors.allocateNodeCursor(cursorContext())) {
+                singleNode(reference, node);
+                return node.next();
+            }
+        }
     }
 
     @Override
     public boolean nodeDeletedInTransaction(long node) {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         return hasTxStateWithChanges() && txState().nodeIsDeletedInThisTx(node);
     }
 
     @Override
     public boolean relationshipDeletedInTransaction(long relationship) {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         return hasTxStateWithChanges() && txState().relationshipIsDeletedInThisTx(relationship);
     }
 
     @Override
     public Value nodePropertyChangeInTransactionOrNull(long node, int propertyKeyId) {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         return hasTxStateWithChanges() ? txState().getNodeState(node).propertyValue(propertyKeyId) : null;
     }
 
     @Override
     public Value relationshipPropertyChangeInTransactionOrNull(long relationship, int propertyKeyId) {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         return hasTxStateWithChanges()
                 ? txState().getRelationshipState(relationship).propertyValue(propertyKeyId)
                 : null;
@@ -173,11 +196,10 @@ public class AllStoreHolder extends Read {
 
     @Override
     public long countsForNodeWithoutTxState(int labelId) {
-        AccessMode mode = ktx.securityContext().mode();
-        if (mode.allowsTraverseAllNodesWithLabel(labelId)) {
+        if (getAccessMode().allowsTraverseAllNodesWithLabel(labelId)) {
             // All nodes with the specified label can be traversed, so the count store can be used.
-            return storageReader.countsForNode(labelId, ktx.cursorContext());
-        } else if (mode.disallowsTraverseLabel(labelId)) {
+            return storageReader.countsForNode(labelId, cursorContext());
+        } else if (getAccessMode().disallowsTraverseLabel(labelId)) {
             // No nodes with the specified label can be traversed, so the count will be 0.
             return 0;
         } else {
@@ -189,7 +211,7 @@ public class AllStoreHolder extends Read {
             // nodes with the label can be traversed.
             long count = 0;
             // DefaultNodeCursor already contains traversal checks within next()
-            try (DefaultNodeCursor nodes = cursors.allocateNodeCursor(ktx.cursorContext())) {
+            try (DefaultNodeCursor nodes = cursors.allocateNodeCursor(cursorContext())) {
                 this.allNodesScan(nodes);
                 while (nodes.next()) {
                     if (labelId == TokenRead.ANY_LABEL || nodes.hasLabel(labelId)) {
@@ -203,17 +225,16 @@ public class AllStoreHolder extends Read {
 
     private long countsForNodeInTxState(int labelId) {
         long count = 0;
-        if (ktx.hasTxStateWithChanges()) {
+        if (hasTxStateWithChanges()) {
             CountsDelta counts = new CountsDelta();
             try {
-                TransactionState txState = ktx.txState();
-                CursorContext cursorContext = ktx.cursorContext();
+                TransactionState txState = txState();
                 try (var countingVisitor = new TransactionCountingStateVisitor(
-                        EMPTY, storageReader, txState, counts, cursorContext, ktx.storeCursors())) {
+                        EMPTY, storageReader, txState, counts, cursorContext(), storageCursors)) {
                     txState.accept(countingVisitor);
                 }
                 if (counts.hasChanges()) {
-                    count += counts.nodeCount(labelId, cursorContext);
+                    count += counts.nodeCount(labelId, cursorContext());
                 }
             } catch (KernelException e) {
                 throw new IllegalArgumentException("Unexpected error: " + e.getMessage());
@@ -230,16 +251,14 @@ public class AllStoreHolder extends Read {
 
     @Override
     public long countsForRelationshipWithoutTxState(int startLabelId, int typeId, int endLabelId) {
-        AccessMode mode = ktx.securityContext().mode();
-        CursorContext cursorContext = ktx.cursorContext();
-        if (mode.allowsTraverseRelType(typeId)
-                && mode.allowsTraverseNode(startLabelId)
-                && mode.allowsTraverseNode(endLabelId)) {
-            return storageReader.countsForRelationship(startLabelId, typeId, endLabelId, cursorContext);
+        if (getAccessMode().allowsTraverseRelType(typeId)
+                && getAccessMode().allowsTraverseNode(startLabelId)
+                && getAccessMode().allowsTraverseNode(endLabelId)) {
+            return storageReader.countsForRelationship(startLabelId, typeId, endLabelId, cursorContext());
         }
-        if (mode.disallowsTraverseRelType(typeId)
-                || mode.disallowsTraverseLabel(startLabelId)
-                || mode.disallowsTraverseLabel(endLabelId)) {
+        if (getAccessMode().disallowsTraverseRelType(typeId)
+                || getAccessMode().disallowsTraverseLabel(startLabelId)
+                || getAccessMode().disallowsTraverseLabel(endLabelId)) {
             // Not allowed to traverse any relationship with the specified relationship type, start node label and end
             // node label,
             // so the count will be 0.
@@ -253,16 +272,16 @@ public class AllStoreHolder extends Read {
                 if (index != IndexDescriptor.NO_INDEX) {
                     long count = 0;
                     try (DefaultRelationshipTypeIndexCursor relationshipsWithType =
-                                    cursors.allocateRelationshipTypeIndexCursor(cursorContext);
-                            DefaultNodeCursor sourceNode = cursors.allocateNodeCursor(cursorContext);
-                            DefaultNodeCursor targetNode = cursors.allocateNodeCursor(cursorContext)) {
+                                    cursors.allocateRelationshipTypeIndexCursor(cursorContext());
+                            DefaultNodeCursor sourceNode = cursors.allocateNodeCursor(cursorContext());
+                            DefaultNodeCursor targetNode = cursors.allocateNodeCursor(cursorContext())) {
                         var session = tokenReadSession(index);
                         this.relationshipTypeScan(
                                 session,
                                 relationshipsWithType,
                                 unconstrained(),
                                 new TokenPredicate(typeId),
-                                ktx.cursorContext());
+                                cursorContext());
                         count += countRelationshipsWithEndLabels(
                                 relationshipsWithType, sourceNode, targetNode, startLabelId, endLabelId);
                     }
@@ -274,9 +293,9 @@ public class AllStoreHolder extends Read {
         }
 
         long count;
-        try (DefaultRelationshipScanCursor rels = cursors.allocateRelationshipScanCursor(cursorContext);
-                DefaultNodeCursor sourceNode = cursors.allocateFullAccessNodeCursor(cursorContext);
-                DefaultNodeCursor targetNode = cursors.allocateFullAccessNodeCursor(cursorContext)) {
+        try (DefaultRelationshipScanCursor rels = cursors.allocateRelationshipScanCursor(cursorContext());
+                DefaultNodeCursor sourceNode = cursors.allocateFullAccessNodeCursor(cursorContext());
+                DefaultNodeCursor targetNode = cursors.allocateFullAccessNodeCursor(cursorContext())) {
             this.allRelationshipsScan(rels);
             Predicate<RelationshipScanCursor> predicate =
                     typeId == TokenRead.ANY_RELATIONSHIP_TYPE ? alwaysTrue() : CursorPredicates.hasType(typeId);
@@ -333,17 +352,16 @@ public class AllStoreHolder extends Read {
 
     private long countsForRelationshipInTxState(int startLabelId, int typeId, int endLabelId) {
         long count = 0;
-        if (ktx.hasTxStateWithChanges()) {
-            CursorContext cursorContext = ktx.cursorContext();
+        if (hasTxStateWithChanges()) {
             CountsDelta counts = new CountsDelta();
             try {
-                TransactionState txState = ktx.txState();
+                TransactionState txState = txState();
                 try (var countingVisitor = new TransactionCountingStateVisitor(
-                        EMPTY, storageReader, txState, counts, cursorContext, ktx.storeCursors())) {
+                        EMPTY, storageReader, txState, counts, cursorContext(), storageCursors)) {
                     txState.accept(countingVisitor);
                 }
                 if (counts.hasChanges()) {
-                    count += counts.relationshipCount(startLabelId, typeId, endLabelId, cursorContext);
+                    count += counts.relationshipCount(startLabelId, typeId, endLabelId, cursorContext());
                 }
             } catch (KernelException e) {
                 throw new IllegalArgumentException("Unexpected error: " + e.getMessage());
@@ -363,7 +381,7 @@ public class AllStoreHolder extends Read {
 
     @Override
     public boolean relationshipExists(long reference) {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
 
         if (hasTxStateWithChanges()) {
             TransactionState txState = txState();
@@ -373,8 +391,17 @@ public class AllStoreHolder extends Read {
                 return true;
             }
         }
-        AccessMode mode = ktx.securityContext().mode();
-        return readSupport.relationshipExistsWithoutTx(reference, mode, ktx.storeCursors(), ktx.cursorContext());
+        boolean existsInRelStore = storageReader.relationshipExists(reference, storageCursors);
+        if (getAccessMode().allowsTraverseAllRelTypes()) {
+            return existsInRelStore;
+        } else if (!existsInRelStore) {
+            return false;
+        } else {
+            try (DefaultRelationshipScanCursor rels = cursors.allocateRelationshipScanCursor(cursorContext())) {
+                singleRelationship(reference, rels);
+                return rels.next();
+            }
+        }
     }
 
     @Override
@@ -458,8 +485,8 @@ public class AllStoreHolder extends Read {
     }
 
     private boolean indexExists(IndexDescriptor index) {
-        if (ktx.hasTxStateWithChanges()) {
-            DiffSets<IndexDescriptor> changes = ktx.txState().indexChanges();
+        if (hasTxStateWithChanges()) {
+            DiffSets<IndexDescriptor> changes = txState().indexChanges();
             return changes.isAdded(index) || (storageReader.indexExists(index) && !changes.isRemoved(index));
         }
         return storageReader.indexExists(index);
@@ -490,10 +517,10 @@ public class AllStoreHolder extends Read {
     @Override
     public boolean constraintExists(ConstraintDescriptor constraint) {
         acquireSharedSchemaLock(constraint);
-        ktx.assertOpen();
+        performCheckBeforeOperation();
 
-        if (ktx.hasTxStateWithChanges()) {
-            DiffSets<ConstraintDescriptor> changes = ktx.txState().constraintsChanges();
+        if (hasTxStateWithChanges()) {
+            DiffSets<ConstraintDescriptor> changes = txState().constraintsChanges();
             return changes.isAdded(constraint)
                     || (storageReader.constraintExists(constraint) && !changes.isRemoved(constraint));
         }
@@ -502,14 +529,14 @@ public class AllStoreHolder extends Read {
 
     @Override
     public Iterator<IndexDescriptor> index(SchemaDescriptor schema) {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         return lockIndexes(indexGetForSchema(storageReader, schema));
     }
 
     Iterator<IndexDescriptor> indexGetForSchema(StorageSchemaReader reader, SchemaDescriptor schema) {
         Iterator<IndexDescriptor> indexes = reader.indexGetForSchema(schema);
-        if (ktx.hasTxStateWithChanges()) {
-            DiffSets<IndexDescriptor> diffSets = ktx.txState().indexDiffSetsBySchema(schema);
+        if (hasTxStateWithChanges()) {
+            DiffSets<IndexDescriptor> diffSets = txState().indexDiffSetsBySchema(schema);
             indexes = diffSets.apply(indexes);
         }
 
@@ -518,14 +545,14 @@ public class AllStoreHolder extends Read {
 
     @Override
     public IndexDescriptor index(SchemaDescriptor schema, IndexType type) {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         return lockIndex(indexGetForSchemaAndType(storageReader, schema, type));
     }
 
     IndexDescriptor indexGetForSchemaAndType(StorageSchemaReader reader, SchemaDescriptor schema, IndexType type) {
         var index = reader.indexGetForSchemaAndType(schema, type);
-        if (ktx.hasTxStateWithChanges()) {
-            var indexChanges = ktx.txState().indexChanges();
+        if (hasTxStateWithChanges()) {
+            var indexChanges = txState().indexChanges();
             if (index == null) {
                 // check if such index was added in this tx
                 var added = indexChanges
@@ -546,16 +573,16 @@ public class AllStoreHolder extends Read {
     @Override
     public Iterator<IndexDescriptor> indexesGetForLabel(int labelId) {
         acquireSharedLock(ResourceTypes.LABEL, labelId);
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         return lockIndexes(indexesGetForLabel(storageReader, labelId));
     }
 
     Iterator<IndexDescriptor> indexesGetForLabel(StorageSchemaReader reader, int labelId) {
-        if (ktx.securityContext().mode().allowsTraverseNode(labelId)) {
+        if (getAccessMode().allowsTraverseNode(labelId)) {
             Iterator<IndexDescriptor> iterator = reader.indexesGetForLabel(labelId);
 
-            if (ktx.hasTxStateWithChanges()) {
-                iterator = ktx.txState().indexDiffSetsByLabel(labelId).apply(iterator);
+            if (hasTxStateWithChanges()) {
+                iterator = txState().indexDiffSetsByLabel(labelId).apply(iterator);
             }
 
             return iterator;
@@ -567,16 +594,15 @@ public class AllStoreHolder extends Read {
     @Override
     public Iterator<IndexDescriptor> indexesGetForRelationshipType(int relationshipType) {
         acquireSharedLock(ResourceTypes.RELATIONSHIP_TYPE, relationshipType);
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         return lockIndexes(indexesGetForRelationshipType(storageReader, relationshipType));
     }
 
     Iterator<IndexDescriptor> indexesGetForRelationshipType(StorageSchemaReader reader, int relationshipType) {
         Iterator<IndexDescriptor> iterator = reader.indexesGetForRelationshipType(relationshipType);
-        if (ktx.hasTxStateWithChanges()) {
-            iterator = ktx.txState()
-                    .indexDiffSetsByRelationshipType(relationshipType)
-                    .apply(iterator);
+        if (hasTxStateWithChanges()) {
+            iterator =
+                    txState().indexDiffSetsByRelationshipType(relationshipType).apply(iterator);
         }
         return iterator;
     }
@@ -587,14 +613,14 @@ public class AllStoreHolder extends Read {
     }
 
     IndexDescriptor indexGetForName(StorageSchemaReader reader, String name) {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
 
         IndexDescriptor index = reader.indexGetForName(name);
-        if (ktx.hasTxStateWithChanges()) {
+        if (hasTxStateWithChanges()) {
             Predicate<IndexDescriptor> namePredicate =
                     indexDescriptor -> indexDescriptor.getName().equals(name);
             Iterator<IndexDescriptor> indexes =
-                    ktx.txState().indexChanges().filterAdded(namePredicate).apply(Iterators.iterator(index));
+                    txState().indexChanges().filterAdded(namePredicate).apply(Iterators.iterator(index));
             index = singleOrNull(indexes);
         }
         return lockIndex(index);
@@ -606,16 +632,14 @@ public class AllStoreHolder extends Read {
     }
 
     ConstraintDescriptor constraintGetForName(StorageSchemaReader reader, String name) {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
 
         ConstraintDescriptor constraint = reader.constraintGetForName(name);
-        if (ktx.hasTxStateWithChanges()) {
+        if (hasTxStateWithChanges()) {
             Predicate<ConstraintDescriptor> namePredicate =
                     constraintDescriptor -> constraintDescriptor.getName().equals(name);
-            Iterator<ConstraintDescriptor> constraints = ktx.txState()
-                    .constraintsChanges()
-                    .filterAdded(namePredicate)
-                    .apply(Iterators.iterator(constraint));
+            Iterator<ConstraintDescriptor> constraints =
+                    txState().constraintsChanges().filterAdded(namePredicate).apply(Iterators.iterator(constraint));
             constraint = singleOrNull(constraints);
         }
         return lockConstraint(constraint);
@@ -623,15 +647,15 @@ public class AllStoreHolder extends Read {
 
     @Override
     public Iterator<IndexDescriptor> indexesGetAll() {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         Iterator<IndexDescriptor> iterator = indexesGetAll(storageReader);
         return lockIndexes(iterator);
     }
 
     Iterator<IndexDescriptor> indexesGetAll(StorageSchemaReader reader) {
         Iterator<IndexDescriptor> iterator = reader.indexesGetAll();
-        if (ktx.hasTxStateWithChanges()) {
-            iterator = ktx.txState().indexChanges().apply(iterator);
+        if (hasTxStateWithChanges()) {
+            iterator = txState().indexChanges().apply(iterator);
         }
         return iterator;
     }
@@ -640,7 +664,7 @@ public class AllStoreHolder extends Read {
     public InternalIndexState indexGetState(IndexDescriptor index) throws IndexNotFoundKernelException {
         assertValidIndex(index);
         acquireSharedSchemaLock(index);
-        ktx.assertOpen();
+        performCheckBeforeOperation();
 
         return indexGetStateLocked(index);
     }
@@ -648,7 +672,7 @@ public class AllStoreHolder extends Read {
     @Override
     public InternalIndexState indexGetStateNonLocking(IndexDescriptor index) throws IndexNotFoundKernelException {
         assertValidIndex(index);
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         return indexGetStateLocked(
                 index); // TODO: Can we call this method without locking(since we assert valid index)?
     }
@@ -656,8 +680,8 @@ public class AllStoreHolder extends Read {
     InternalIndexState indexGetStateLocked(IndexDescriptor index) throws IndexNotFoundKernelException {
         SchemaDescriptor schema = index.schema();
         // If index is in our state, then return populating
-        if (ktx.hasTxStateWithChanges()) {
-            if (checkIndexState(index, ktx.txState().indexDiffSetsBySchema(schema))) {
+        if (hasTxStateWithChanges()) {
+            if (checkIndexState(index, txState().indexDiffSetsBySchema(schema))) {
                 return InternalIndexState.POPULATING;
             }
         }
@@ -669,13 +693,13 @@ public class AllStoreHolder extends Read {
     public PopulationProgress indexGetPopulationProgress(IndexDescriptor index) throws IndexNotFoundKernelException {
         assertValidIndex(index);
         acquireSharedSchemaLock(index);
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         return indexGetPopulationProgressLocked(index);
     }
 
     PopulationProgress indexGetPopulationProgressLocked(IndexDescriptor index) throws IndexNotFoundKernelException {
-        if (ktx.hasTxStateWithChanges()) {
-            if (checkIndexState(index, ktx.txState().indexDiffSetsBySchema(index.schema()))) {
+        if (hasTxStateWithChanges()) {
+            if (checkIndexState(index, txState().indexDiffSetsBySchema(index.schema()))) {
                 return PopulationProgress.NONE;
             }
         }
@@ -686,7 +710,7 @@ public class AllStoreHolder extends Read {
     @Override
     public Long indexGetOwningUniquenessConstraintId(IndexDescriptor index) {
         acquireSharedSchemaLock(index);
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         return storageReader.indexGetOwningUniquenessConstraintId(storageReader.indexGetForName(index.getName()));
     }
 
@@ -698,9 +722,9 @@ public class AllStoreHolder extends Read {
 
     @Override
     public double indexUniqueValuesSelectivity(IndexDescriptor index) throws IndexNotFoundKernelException {
+        performCheckBeforeOperation();
         assertValidIndex(index);
         acquireSharedSchemaLock(index);
-        ktx.assertOpen();
         assertIndexExists(index); // Throws if the index has been dropped.
         final IndexSample indexSample = indexStatisticsStore.indexSample(index.getId());
         long unique = indexSample.uniqueValues();
@@ -710,9 +734,9 @@ public class AllStoreHolder extends Read {
 
     @Override
     public long indexSize(IndexDescriptor index) throws IndexNotFoundKernelException {
+        performCheckBeforeOperation();
         assertValidIndex(index);
         acquireSharedSchemaLock(index);
-        ktx.assertOpen();
         return indexStatisticsStore.indexSample(index.getId()).indexSize();
     }
 
@@ -728,7 +752,7 @@ public class AllStoreHolder extends Read {
 
     @Override
     public IndexSample indexSample(IndexDescriptor index) throws IndexNotFoundKernelException {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         assertValidIndex(index);
         return indexStatisticsStore.indexSample(index.getId());
     }
@@ -756,162 +780,82 @@ public class AllStoreHolder extends Read {
     }
 
     private Iterator<ConstraintDescriptor> getConstraintsForSchema(SchemaDescriptor schema) {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         Iterator<ConstraintDescriptor> constraints = storageReader.constraintsGetForSchema(schema);
-        if (ktx.hasTxStateWithChanges()) {
-            return ktx.txState().constraintsChangesForSchema(schema).apply(constraints);
+        if (hasTxStateWithChanges()) {
+            return txState().constraintsChangesForSchema(schema).apply(constraints);
         }
         return constraints;
     }
 
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetForLabel(int labelId) {
+        performCheckBeforeOperation();
         acquireSharedLock(ResourceTypes.LABEL, labelId);
-        ktx.assertOpen();
         return constraintsGetForLabel(storageReader, labelId);
     }
 
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetForLabelNonLocking(int labelId) {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         return constraintsGetForLabel(storageReader, labelId);
     }
 
     Iterator<ConstraintDescriptor> constraintsGetForLabel(StorageSchemaReader reader, int labelId) {
         Iterator<ConstraintDescriptor> constraints = reader.constraintsGetForLabel(labelId);
-        if (ktx.hasTxStateWithChanges()) {
-            return ktx.txState().constraintsChangesForLabel(labelId).apply(constraints);
+        if (hasTxStateWithChanges()) {
+            return txState().constraintsChangesForLabel(labelId).apply(constraints);
         }
         return constraints;
     }
 
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetAll() {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         Iterator<ConstraintDescriptor> constraints = constraintsGetAll(storageReader);
         return lockConstraints(constraints);
     }
 
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetAllNonLocking() {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         return constraintsGetAll(storageReader);
     }
 
     Iterator<ConstraintDescriptor> constraintsGetAll(StorageSchemaReader reader) {
         Iterator<ConstraintDescriptor> constraints = reader.constraintsGetAll();
-        if (ktx.hasTxStateWithChanges()) {
-            constraints = ktx.txState().constraintsChanges().apply(constraints);
+        if (hasTxStateWithChanges()) {
+            constraints = txState().constraintsChanges().apply(constraints);
         }
         return constraints;
     }
 
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType(int typeId) {
+        performCheckBeforeOperation();
         acquireSharedLock(ResourceTypes.RELATIONSHIP_TYPE, typeId);
-        ktx.assertOpen();
         return constraintsGetForRelationshipType(storageReader, typeId);
     }
 
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetForRelationshipTypeNonLocking(int typeId) {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         return constraintsGetForRelationshipType(storageReader, typeId);
     }
 
     Iterator<ConstraintDescriptor> constraintsGetForRelationshipType(StorageSchemaReader reader, int typeId) {
         Iterator<ConstraintDescriptor> constraints = reader.constraintsGetForRelationshipType(typeId);
-        if (ktx.hasTxStateWithChanges()) {
-            return ktx.txState().constraintsChangesForRelationshipType(typeId).apply(constraints);
+        if (hasTxStateWithChanges()) {
+            return txState().constraintsChangesForRelationshipType(typeId).apply(constraints);
         }
         return constraints;
     }
 
     @Override
     public SchemaReadCore snapshot() {
-        ktx.assertOpen();
+        performCheckBeforeOperation();
         StorageSchemaReader snapshot = storageReader.schemaSnapshot();
-        return new SchemaReadCoreSnapshot(snapshot, ktx, this);
-    }
-
-    @Override
-    public UserFunctionHandle functionGet(QualifiedName name) {
-        ktx.assertOpen();
-        return globalProcedures.function(name);
-    }
-
-    @Override
-    public Stream<UserFunctionSignature> functionGetAll() {
-        ktx.assertOpen();
-        return globalProcedures.getAllNonAggregatingFunctions();
-    }
-
-    @Override
-    public ProcedureHandle procedureGet(QualifiedName name) throws ProcedureException {
-        ktx.assertOpen();
-        return globalProcedures.procedure(name);
-    }
-
-    @Override
-    public Set<ProcedureSignature> proceduresGetAll() {
-        ktx.assertOpen();
-        return globalProcedures.getAllProcedures();
-    }
-
-    @Override
-    public UserFunctionHandle aggregationFunctionGet(QualifiedName name) {
-        ktx.assertOpen();
-        return globalProcedures.aggregationFunction(name);
-    }
-
-    @Override
-    public Stream<UserFunctionSignature> aggregationFunctionGetAll() {
-        ktx.assertOpen();
-        return globalProcedures.getAllAggregatingFunctions();
-    }
-
-    @Override
-    public RawIterator<AnyValue[], ProcedureException> procedureCallRead(
-            int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
-        return procedureCaller.callProcedure(id, arguments, AccessMode.Static.READ, context);
-    }
-
-    @Override
-    public RawIterator<AnyValue[], ProcedureException> procedureCallWrite(
-            int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
-        return procedureCaller.callProcedure(id, arguments, AccessMode.Static.TOKEN_WRITE, context);
-    }
-
-    @Override
-    public RawIterator<AnyValue[], ProcedureException> procedureCallSchema(
-            int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
-        return procedureCaller.callProcedure(id, arguments, AccessMode.Static.SCHEMA, context);
-    }
-
-    @Override
-    public RawIterator<AnyValue[], ProcedureException> procedureCallDbms(
-            int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
-        return procedureCaller.callProcedure(id, arguments, AccessMode.Static.ACCESS, context);
-    }
-
-    @Override
-    public AnyValue functionCall(int id, AnyValue[] arguments) throws ProcedureException {
-        return procedureCaller.callFunction(id, arguments);
-    }
-
-    @Override
-    public AnyValue builtInFunctionCall(int id, AnyValue[] arguments) throws ProcedureException {
-        return procedureCaller.callBuiltInFunction(id, arguments);
-    }
-
-    @Override
-    public UserAggregator aggregationFunction(int id) throws ProcedureException {
-        return procedureCaller.createAggregationFunction(id);
-    }
-
-    @Override
-    public UserAggregator builtInAggregationFunction(int id) throws ProcedureException {
-        return procedureCaller.createBuiltInAggregationFunction(id);
+        return new SchemaReadCoreSnapshot(snapshot, this);
     }
 
     @Override
@@ -926,7 +870,7 @@ public class AllStoreHolder extends Read {
 
     @Override
     public boolean transactionStateHasChanges() {
-        return ktx.hasTxStateWithChanges();
+        return hasTxStateWithChanges();
     }
 
     static void assertValidIndex(IndexDescriptor index) throws IndexNotFoundKernelException {
@@ -941,11 +885,6 @@ public class AllStoreHolder extends Read {
     }
 
     @Override
-    public CursorContext cursorContext() {
-        return ktx.cursorContext();
-    }
-
-    @Override
     public MemoryTracker memoryTracker() {
         return memoryTracker;
     }
@@ -953,5 +892,310 @@ public class AllStoreHolder extends Read {
     @Override
     public IndexMonitor monitor() {
         return indexingService.getMonitor();
+    }
+
+    public static class ForTransactionScope extends AllStoreHolder {
+
+        private final KernelTransactionImplementation ktx;
+        private final ProcedureCaller procedureCaller;
+        private final GlobalProcedures globalProcedures;
+
+        public ForTransactionScope(
+                StorageReader storageReader,
+                TokenRead tokenRead,
+                KernelTransactionImplementation ktx,
+                StorageLocks storageLocks,
+                DefaultPooledCursors cursors,
+                GlobalProcedures globalProcedures,
+                SchemaState schemaState,
+                IndexingService indexingService,
+                IndexStatisticsStore indexStatisticsStore,
+                Dependencies databaseDependencies,
+                MemoryTracker memoryTracker) {
+            super(
+                    storageReader,
+                    tokenRead,
+                    schemaState,
+                    indexingService,
+                    indexStatisticsStore,
+                    memoryTracker,
+                    cursors,
+                    ktx.storeCursors(),
+                    storageLocks,
+                    ktx.lockTracer());
+
+            this.ktx = ktx;
+            this.globalProcedures = globalProcedures;
+            this.procedureCaller = new ProcedureCaller(ktx, globalProcedures, databaseDependencies);
+        }
+
+        @Override
+        public TransactionState txState() {
+            return ktx.txState();
+        }
+
+        @Override
+        public boolean hasTxStateWithChanges() {
+            return ktx.hasTxStateWithChanges();
+        }
+
+        @Override
+        void performCheckBeforeOperation() {
+            ktx.assertOpen();
+        }
+
+        @Override
+        AccessMode getAccessMode() {
+            return ktx.securityContext().mode();
+        }
+
+        @Override
+        Locks.Client getLockClient() {
+            // lock client has to be accessed like this, because of KernelTransaction#freezeLocks
+            return ktx.lockClient();
+        }
+
+        @Override
+        public CursorContext cursorContext() {
+            return ktx.cursorContext();
+        }
+
+        @Override
+        public RawIterator<AnyValue[], ProcedureException> procedureCallRead(
+                int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
+            return procedureCaller.callProcedure(id, arguments, AccessMode.Static.READ, context);
+        }
+
+        @Override
+        public RawIterator<AnyValue[], ProcedureException> procedureCallWrite(
+                int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
+            return procedureCaller.callProcedure(id, arguments, AccessMode.Static.TOKEN_WRITE, context);
+        }
+
+        @Override
+        public RawIterator<AnyValue[], ProcedureException> procedureCallSchema(
+                int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
+            return procedureCaller.callProcedure(id, arguments, AccessMode.Static.SCHEMA, context);
+        }
+
+        @Override
+        public RawIterator<AnyValue[], ProcedureException> procedureCallDbms(
+                int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
+            return procedureCaller.callProcedure(id, arguments, AccessMode.Static.ACCESS, context);
+        }
+
+        @Override
+        public AnyValue functionCall(int id, AnyValue[] arguments) throws ProcedureException {
+            return procedureCaller.callFunction(id, arguments);
+        }
+
+        @Override
+        public AnyValue builtInFunctionCall(int id, AnyValue[] arguments) throws ProcedureException {
+            return procedureCaller.callBuiltInFunction(id, arguments);
+        }
+
+        @Override
+        public UserAggregator aggregationFunction(int id) throws ProcedureException {
+            return procedureCaller.createAggregationFunction(id);
+        }
+
+        @Override
+        public UserAggregator builtInAggregationFunction(int id) throws ProcedureException {
+            return procedureCaller.createBuiltInAggregationFunction(id);
+        }
+
+        @Override
+        public UserFunctionHandle functionGet(QualifiedName name) {
+            performCheckBeforeOperation();
+            return globalProcedures.function(name);
+        }
+
+        @Override
+        public Stream<UserFunctionSignature> functionGetAll() {
+            performCheckBeforeOperation();
+            return globalProcedures.getAllNonAggregatingFunctions();
+        }
+
+        @Override
+        public ProcedureHandle procedureGet(QualifiedName name) throws ProcedureException {
+            performCheckBeforeOperation();
+            return globalProcedures.procedure(name);
+        }
+
+        @Override
+        public Set<ProcedureSignature> proceduresGetAll() {
+            performCheckBeforeOperation();
+            return globalProcedures.getAllProcedures();
+        }
+
+        @Override
+        public UserFunctionHandle aggregationFunctionGet(QualifiedName name) {
+            performCheckBeforeOperation();
+            return globalProcedures.aggregationFunction(name);
+        }
+
+        @Override
+        public Stream<UserFunctionSignature> aggregationFunctionGetAll() {
+            performCheckBeforeOperation();
+            return globalProcedures.getAllAggregatingFunctions();
+        }
+    }
+
+    public static class ForThreadExecutionContextScope extends AllStoreHolder {
+
+        private final AccessMode accessMode;
+        private final CursorContext cursorContext;
+        private final Locks.Client lockClient;
+        private final AssertOpen assertOpen;
+
+        public ForThreadExecutionContextScope(
+                StorageReader storageReader,
+                TokenRead tokenRead,
+                SchemaState schemaState,
+                IndexingService indexingService,
+                IndexStatisticsStore indexStatisticsStore,
+                MemoryTracker memoryTracker,
+                DefaultPooledCursors cursors,
+                StoreCursors storageCursors,
+                CursorContext cursorContext,
+                StorageLocks storageLocks,
+                Locks.Client lockClient,
+                LockTracer lockTracer,
+                AccessMode accessMode,
+                AssertOpen assertOpen) {
+            super(
+                    storageReader,
+                    tokenRead,
+                    schemaState,
+                    indexingService,
+                    indexStatisticsStore,
+                    memoryTracker,
+                    cursors,
+                    storageCursors,
+                    storageLocks,
+                    lockTracer);
+            this.accessMode = accessMode;
+            this.cursorContext = cursorContext;
+            this.lockClient = lockClient;
+            this.assertOpen = assertOpen;
+        }
+
+        @Override
+        public long lockingNodeUniqueIndexSeek(
+                IndexDescriptor index, NodeValueIndexCursor cursor, PropertyIndexQuery.ExactPredicate... predicates) {
+            // This is currently a problematic operation for parallel execution, because it takes exclusive locks.
+            // In transactions deadlocks is a problem for another day :) .
+            throw new UnsupportedOperationException("Locking unique index seek not allowed during parallel execution");
+        }
+
+        // Functions and procedures are currently not supported for parallel execution
+        @Override
+        public UserFunctionHandle functionGet(QualifiedName name) {
+            throw new UnsupportedOperationException("Getting a function is not allowed during parallel execution");
+        }
+
+        @Override
+        public Stream<UserFunctionSignature> functionGetAll() {
+            throw new UnsupportedOperationException("Getting all functions is not allowed during parallel execution");
+        }
+
+        @Override
+        public UserFunctionHandle aggregationFunctionGet(QualifiedName name) {
+            throw new UnsupportedOperationException(
+                    "Getting an aggregation function is not allowed during parallel execution");
+        }
+
+        @Override
+        public Stream<UserFunctionSignature> aggregationFunctionGetAll() {
+            throw new UnsupportedOperationException(
+                    "Getting all aggregation functions is not allowed during parallel execution");
+        }
+
+        @Override
+        public ProcedureHandle procedureGet(QualifiedName name) throws ProcedureException {
+            throw new UnsupportedOperationException("Getting a procedure is not allowed during parallel execution");
+        }
+
+        @Override
+        public Set<ProcedureSignature> proceduresGetAll() {
+            throw new UnsupportedOperationException("Getting all procedures is not allowed during parallel execution");
+        }
+
+        @Override
+        public RawIterator<AnyValue[], ProcedureException> procedureCallRead(
+                int id, AnyValue[] arguments, ProcedureCallContext context) {
+            throw new UnsupportedOperationException("Invoking a procedure is not allowed during parallel execution");
+        }
+
+        @Override
+        public RawIterator<AnyValue[], ProcedureException> procedureCallWrite(
+                int id, AnyValue[] arguments, ProcedureCallContext context) {
+            throw new UnsupportedOperationException("Invoking a procedure is not allowed during parallel execution");
+        }
+
+        @Override
+        public RawIterator<AnyValue[], ProcedureException> procedureCallSchema(
+                int id, AnyValue[] arguments, ProcedureCallContext context) {
+            throw new UnsupportedOperationException("Invoking a procedure is not allowed during parallel execution");
+        }
+
+        @Override
+        public RawIterator<AnyValue[], ProcedureException> procedureCallDbms(
+                int id, AnyValue[] arguments, ProcedureCallContext context) {
+            throw new UnsupportedOperationException("Invoking a procedure is not allowed during parallel execution");
+        }
+
+        @Override
+        public AnyValue functionCall(int id, AnyValue[] arguments) {
+            throw new UnsupportedOperationException("Invoking a function is not allowed during parallel execution");
+        }
+
+        @Override
+        public AnyValue builtInFunctionCall(int id, AnyValue[] arguments) {
+            throw new UnsupportedOperationException("Invoking a function is not allowed during parallel execution");
+        }
+
+        @Override
+        public UserAggregator aggregationFunction(int id) {
+            throw new UnsupportedOperationException(
+                    "Invoking an aggregation function is not allowed during parallel execution");
+        }
+
+        @Override
+        public UserAggregator builtInAggregationFunction(int id) {
+            throw new UnsupportedOperationException(
+                    "Invoking an aggregation function is not allowed during parallel execution");
+        }
+
+        @Override
+        public TransactionState txState() {
+            throw new UnsupportedOperationException(
+                    "Accessing transaction state is not allowed during parallel execution");
+        }
+
+        @Override
+        public boolean hasTxStateWithChanges() {
+            return false;
+        }
+
+        @Override
+        void performCheckBeforeOperation() {
+            assertOpen.assertOpen();
+        }
+
+        @Override
+        AccessMode getAccessMode() {
+            return accessMode;
+        }
+
+        @Override
+        Locks.Client getLockClient() {
+            return lockClient;
+        }
+
+        @Override
+        public CursorContext cursorContext() {
+            return cursorContext;
+        }
     }
 }

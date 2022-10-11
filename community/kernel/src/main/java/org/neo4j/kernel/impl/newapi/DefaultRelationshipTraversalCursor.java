@@ -168,7 +168,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
 
     boolean allowed() {
         if (mode == null) {
-            mode = read.ktx.securityContext().mode();
+            mode = read.getAccessMode();
         }
         return mode.allowsTraverseRelType(storeCursor.type()) && allowedToSeeEndNode(mode);
     }

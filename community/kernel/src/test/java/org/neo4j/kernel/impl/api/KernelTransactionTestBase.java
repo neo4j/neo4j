@@ -180,7 +180,8 @@ class KernelTransactionTestBase {
     KernelTransactionImplementation newNotInitializedTransaction(
             LeaseService leaseService, Config config, NamedDatabaseId databaseId) {
         Dependencies dependencies = new Dependencies();
-        Locks.Client locksClient = mock(Locks.Client.class);
+        var locks = mock(Locks.class);
+        when(locks.newClient()).thenReturn(mock(Locks.Client.class));
         dependencies.satisfyDependency(mock(GraphDatabaseFacade.class));
         var memoryPool = new MemoryPools().pool(MemoryGroup.TRANSACTION, ByteUnit.mebiBytes(4), null);
 
@@ -218,7 +219,7 @@ class KernelTransactionTestBase {
                 readOnlyChecker.forDatabase(databaseId),
                 TransactionExecutionMonitor.NO_OP,
                 CommunitySecurityLog.NULL_LOG,
-                locksClient,
+                locks,
                 mock(KernelTransactions.class),
                 NullLogProvider.getInstance());
     }

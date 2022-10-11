@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -87,6 +88,8 @@ public final class KernelTransactionFactory {
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency(mock(GraphDatabaseFacade.class));
+        var locks = mock(Locks.class);
+        when(locks.newClient()).thenReturn(new NoOpClient());
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(
                 Config.defaults(),
                 mock(DatabaseTransactionEventListeners.class),
@@ -114,7 +117,7 @@ public final class KernelTransactionFactory {
                 DatabaseReadOnlyChecker.writable(),
                 TransactionExecutionMonitor.NO_OP,
                 CommunitySecurityLog.NULL_LOG,
-                new NoOpClient(),
+                locks,
                 mock(KernelTransactions.class),
                 NullLogProvider.getInstance());
 

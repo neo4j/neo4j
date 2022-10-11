@@ -55,7 +55,7 @@ abstract class DefaultRelationshipCursor<SELF extends DefaultRelationshipCursor>
         this.currentAddedInTx = NO_ID;
         this.read = read;
         this.checkHasChanges = true;
-        this.accessMode = read.ktx.securityContext().mode();
+        this.accessMode = read.getAccessMode();
     }
 
     @Override
@@ -80,7 +80,7 @@ abstract class DefaultRelationshipCursor<SELF extends DefaultRelationshipCursor>
 
     @Override
     public void properties(PropertyCursor cursor, PropertySelection selection) {
-        ((DefaultPropertyCursor) cursor).initRelationship(this, selection, read, read);
+        ((DefaultPropertyCursor) cursor).initRelationship(this, selection, read);
     }
 
     @Override

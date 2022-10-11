@@ -21,15 +21,10 @@ package org.neo4j.kernel.impl.newapi;
 
 import static org.neo4j.internal.kernel.api.TokenWrite.checkValidTokenName;
 
-import java.util.Iterator;
 import java.util.function.IntSupplier;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.id.IdCapacityExceededException;
 import org.neo4j.internal.kernel.api.Token;
-import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
-import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
-import org.neo4j.internal.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.PrivilegeAction;
@@ -38,11 +33,9 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.token.TokenHolders;
-import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
-import org.neo4j.token.api.TokenNotFoundException;
 
-public class KernelToken implements Token {
+public class KernelToken extends KernelTokenRead implements Token {
     private final StorageReader store;
     private final CommandCreationContext commandCreationContext;
     private final KernelTransactionImplementation ktx;
@@ -53,6 +46,7 @@ public class KernelToken implements Token {
             CommandCreationContext commandCreationContext,
             KernelTransactionImplementation ktx,
             TokenHolders tokenHolders) {
+        super(store, tokenHolders);
         this.store = store;
         this.commandCreationContext = commandCreationContext;
         this.ktx = ktx;
@@ -121,91 +115,6 @@ public class KernelToken implements Token {
     }
 
     @Override
-    public String nodeLabelName(int labelId) throws LabelNotFoundKernelException {
-        ktx.assertOpen();
-        try {
-            return tokenHolders.labelTokens().getTokenById(labelId).name();
-        } catch (TokenNotFoundException e) {
-            throw new LabelNotFoundKernelException(labelId, e);
-        }
-    }
-
-    @Override
-    public int nodeLabel(String name) {
-        ktx.assertOpen();
-        return tokenHolders.labelTokens().getIdByName(name);
-    }
-
-    @Override
-    public int relationshipType(String name) {
-        ktx.assertOpen();
-        return tokenHolders.relationshipTypeTokens().getIdByName(name);
-    }
-
-    @Override
-    public String relationshipTypeName(int relationshipTypeId) throws RelationshipTypeIdNotFoundKernelException {
-        ktx.assertOpen();
-        try {
-            return tokenHolders
-                    .relationshipTypeTokens()
-                    .getTokenById(relationshipTypeId)
-                    .name();
-        } catch (TokenNotFoundException e) {
-            throw new RelationshipTypeIdNotFoundKernelException(relationshipTypeId, e);
-        }
-    }
-
-    @Override
-    public int propertyKey(String name) {
-        ktx.assertOpen();
-        return tokenHolders.propertyKeyTokens().getIdByName(name);
-    }
-
-    @Override
-    public String propertyKeyName(int propertyKeyId) throws PropertyKeyIdNotFoundKernelException {
-        ktx.assertOpen();
-        try {
-            return tokenHolders.propertyKeyTokens().getTokenById(propertyKeyId).name();
-        } catch (TokenNotFoundException e) {
-            throw new PropertyKeyIdNotFoundKernelException(propertyKeyId, e);
-        }
-    }
-
-    @Override
-    public Iterator<NamedToken> labelsGetAllTokens() {
-        ktx.assertOpen();
-        AccessMode mode = ktx.securityContext().mode();
-        return Iterators.stream(tokenHolders.labelTokens().getAllTokens().iterator())
-                .filter(label -> mode.allowsTraverseNode(label.id()))
-                .iterator();
-    }
-
-    @Override
-    public Iterator<NamedToken> propertyKeyGetAllTokens() {
-        ktx.assertOpen();
-        AccessMode mode = ktx.securityContext().mode();
-        return Iterators.stream(tokenHolders.propertyKeyTokens().getAllTokens().iterator())
-                .filter(propKey -> mode.allowsSeePropertyKeyToken(propKey.id()))
-                .iterator();
-    }
-
-    @Override
-    public Iterator<NamedToken> relationshipTypesGetAllTokens() {
-        ktx.assertOpen();
-        AccessMode mode = ktx.securityContext().mode();
-        return Iterators.stream(
-                        tokenHolders.relationshipTypeTokens().getAllTokens().iterator())
-                .filter(relType -> mode.allowsTraverseRelType(relType.id()))
-                .iterator();
-    }
-
-    @Override
-    public int labelCount() {
-        ktx.assertOpen();
-        return store.labelCount();
-    }
-
-    @Override
     public int propertyKeyCount() {
         ktx.assertOpen();
         return store.propertyKeyCount();
@@ -215,6 +124,16 @@ public class KernelToken implements Token {
     public int relationshipTypeCount() {
         ktx.assertOpen();
         return store.relationshipTypeCount();
+    }
+
+    @Override
+    void performCheckBeforeOperation() {
+        ktx.assertOpen();
+    }
+
+    @Override
+    AccessMode getAccessMode() {
+        return ktx.securityContext().mode();
     }
 
     private int getOrCreateForName(TokenHolder tokens, PrivilegeAction action, String name) throws KernelException {
@@ -257,23 +176,5 @@ public class KernelToken implements Token {
         } catch (IdCapacityExceededException e) {
             throw new TokenCapacityExceededKernelException(e, holder.getTokenType());
         }
-    }
-
-    @Override
-    public String labelGetName(int labelId) {
-        ktx.assertOpen();
-        return tokenHolders.labelGetName(labelId);
-    }
-
-    @Override
-    public String relationshipTypeGetName(int relationshipTypeId) {
-        ktx.assertOpen();
-        return tokenHolders.relationshipTypeGetName(relationshipTypeId);
-    }
-
-    @Override
-    public String propertyKeyGetName(int propertyKeyId) {
-        ktx.assertOpen();
-        return tokenHolders.propertyKeyGetName(propertyKeyId);
     }
 }

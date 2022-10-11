@@ -24,9 +24,10 @@ import org.neo4j.io.pagecache.tracing.cursor.CursorStatisticSnapshot;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 
 public class ExecutionContextCursorTracer extends DefaultPageCursorTracer {
+    public static final String TRANSACTION_EXECUTION_TAG = "transactionExecution";
     private volatile boolean completed;
 
-    ExecutionContextCursorTracer(PageCacheTracer pageCacheTracer, String tag) {
+    public ExecutionContextCursorTracer(PageCacheTracer pageCacheTracer, String tag) {
         super(pageCacheTracer, tag);
     }
 

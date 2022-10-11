@@ -59,14 +59,14 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.values.storable.Value;
 
 public class ThreadExecutionContextRead implements Read, Closeable, QueryContext {
-    private final ThreadExecutionContext context;
+    private final LegacyThreadExecutionContext context;
     private final Read read;
     private final StorageReader reader;
     private final ReadSupport readSupport;
     private final DefaultPooledCursors pooledCursors;
 
     ThreadExecutionContextRead(
-            ThreadExecutionContext context,
+            LegacyThreadExecutionContext context,
             Read read,
             StorageReader reader,
             StoreCursors storeCursors,

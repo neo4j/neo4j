@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
@@ -64,6 +65,7 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -276,11 +278,17 @@ class KernelTransactionTerminationTest {
                     DatabaseReadOnlyChecker.writable(),
                     TransactionExecutionMonitor.NO_OP,
                     CommunitySecurityLog.NULL_LOG,
-                    new NoOpClient(),
+                    mockLocks(),
                     mock(KernelTransactions.class),
                     NullLogProvider.getInstance());
 
             this.monitor = monitor;
+        }
+
+        private static Locks mockLocks() {
+            var locks = mock(Locks.class);
+            when(locks.newClient()).thenReturn(new NoOpClient());
+            return locks;
         }
 
         static TestKernelTransaction create() {

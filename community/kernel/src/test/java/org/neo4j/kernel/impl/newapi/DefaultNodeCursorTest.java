@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -78,8 +79,9 @@ class DefaultNodeCursorTest {
     private static Read buildReadState(Consumer<TxState> setup) {
         var ktx = mock(KernelTransactionImplementation.class);
         when(ktx.securityContext()).thenReturn(SecurityContext.AUTH_DISABLED);
-        var read = new AllStoreHolder(
+        var read = new AllStoreHolder.ForTransactionScope(
                 mock(StorageReader.class),
+                mock(TokenRead.class),
                 ktx,
                 mock(StorageLocks.class),
                 mock(DefaultPooledCursors.class),

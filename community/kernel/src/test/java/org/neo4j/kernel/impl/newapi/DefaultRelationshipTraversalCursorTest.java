@@ -50,6 +50,7 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -58,8 +59,10 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.ValueIndexReader;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
@@ -213,9 +216,8 @@ class DefaultRelationshipTraversalCursorTest {
 
     private static Read emptyTxState() {
         KernelTransactionImplementation ktx = mock(KernelTransactionImplementation.class);
-        Read read = new TestRead(ktx);
         when(ktx.securityContext()).thenReturn(SecurityContext.AUTH_DISABLED);
-        return read;
+        return new TestRead(ktx);
     }
 
     private static Read txState(long... ids) {
@@ -225,16 +227,15 @@ class DefaultRelationshipTraversalCursorTest {
 
     private static Read txState(Rel... rels) {
         KernelTransactionImplementation ktx = mock(KernelTransactionImplementation.class);
-        Read read = new TestRead(ktx);
-
         when(ktx.securityContext()).thenReturn(SecurityContext.AUTH_DISABLED);
+        Read read = new TestRead(ktx);
         if (rels.length > 0) {
             TxState txState = new TxState();
             for (Rel rel : rels) {
                 txState.relationshipDoCreate(rel.relId, rel.type, rel.sourceId, rel.targetId);
             }
-            when(read.hasTxStateWithChanges()).thenReturn(true);
-            when(read.txState()).thenReturn(txState);
+            when(ktx.hasTxStateWithChanges()).thenReturn(true);
+            when(ktx.txState()).thenReturn(txState);
         }
         return read;
     }
@@ -373,13 +374,38 @@ class DefaultRelationshipTraversalCursorTest {
     }
 
     private static class TestRead extends Read {
+
+        private final KernelTransactionImplementation ktx;
+
         TestRead(KernelTransactionImplementation ktx) {
-            super(mock(StorageReader.class), mock(DefaultPooledCursors.class), ktx, mock(StorageLocks.class));
+            super(
+                    mock(StorageReader.class),
+                    ktx.tokenRead(),
+                    mock(DefaultPooledCursors.class),
+                    ktx.storeCursors(),
+                    mock(StorageLocks.class),
+                    ktx.lockTracer());
+            this.ktx = ktx;
         }
 
         @Override
         public ValueIndexReader newValueIndexReader(IndexDescriptor index) {
             return null;
+        }
+
+        @Override
+        void performCheckBeforeOperation() {
+            ktx.assertOpen();
+        }
+
+        @Override
+        AccessMode getAccessMode() {
+            return ktx.securityContext().mode();
+        }
+
+        @Override
+        Locks.Client getLockClient() {
+            return ktx.lockClient();
         }
 
         @Override
@@ -708,6 +734,16 @@ class DefaultRelationshipTraversalCursorTest {
         @Override
         public Iterator<ConstraintDescriptor> constraintsGetAllNonLocking() {
             return null;
+        }
+
+        @Override
+        public TransactionState txState() {
+            return ktx.txState();
+        }
+
+        @Override
+        public boolean hasTxStateWithChanges() {
+            return ktx.hasTxStateWithChanges();
         }
     }
 }

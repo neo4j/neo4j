@@ -79,7 +79,7 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
         this.currentAddedInTx = NO_ID;
         this.checkHasChanges = true;
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
-        this.accessMode = read.ktx.securityContext().mode();
+        this.accessMode = read.getAccessMode();
         if (tracer != null) {
             tracer.onAllNodesScan();
         }
@@ -110,7 +110,7 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
         this.isSingle = true;
         this.currentAddedInTx = NO_ID;
         this.checkHasChanges = true;
-        this.accessMode = read.ktx.securityContext().mode();
+        this.accessMode = read.getAccessMode();
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
     }
 
@@ -233,7 +233,7 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
 
     @Override
     public void properties(PropertyCursor cursor, PropertySelection selection) {
-        ((DefaultPropertyCursor) cursor).initNode(this, selection, read, read);
+        ((DefaultPropertyCursor) cursor).initNode(this, selection, read);
     }
 
     @Override

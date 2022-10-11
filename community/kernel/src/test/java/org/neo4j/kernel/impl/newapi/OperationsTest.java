@@ -162,8 +162,11 @@ abstract class OperationsTest {
         var facade = mock(GraphDatabaseFacade.class);
         dependencies.satisfyDependency(facade);
         storageLocks = mock(StorageLocks.class);
-        allStoreHolder = new AllStoreHolder(
+        tokenHolders = mockedTokenHolders();
+        var kernelToken = new KernelToken(storageReader, creationContext, transaction, tokenHolders);
+        allStoreHolder = new AllStoreHolder.ForTransactionScope(
                 storageReader,
+                kernelToken,
                 transaction,
                 storageLocks,
                 cursors,
@@ -174,7 +177,6 @@ abstract class OperationsTest {
                 dependencies,
                 INSTANCE);
         constraintIndexCreator = mock(ConstraintIndexCreator.class);
-        tokenHolders = mockedTokenHolders();
         creationContext = mock(CommandCreationContext.class);
         IndexingProvidersService indexingProvidersService = mock(IndexingProvidersService.class);
         when(indexingProvidersService.indexProviderByName("fulltext-1.0"))
@@ -192,7 +194,7 @@ abstract class OperationsTest {
                 creationContext,
                 storageLocks,
                 transaction,
-                new KernelToken(storageReader, creationContext, transaction, tokenHolders),
+                kernelToken,
                 cursors,
                 constraintIndexCreator,
                 mock(ConstraintSemantics.class),

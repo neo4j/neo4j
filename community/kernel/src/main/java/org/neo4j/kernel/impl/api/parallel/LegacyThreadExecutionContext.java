@@ -22,48 +22,57 @@ package org.neo4j.kernel.impl.api.parallel;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 import java.lang.invoke.VarHandle;
-import java.util.ArrayList;
-import java.util.List;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.ExecutionContext;
-import org.neo4j.kernel.impl.newapi.AllStoreHolder;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.TransactionMemoryPool;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
+/**
+ * TODO: This is a temporary solution until the {@link Read} implementation in {@link ThreadExecutionContext}
+ * supports everything needed for the switch.
+ */
+public class LegacyThreadExecutionContext implements ExecutionContext, AutoCloseable {
+    private static final String TRANSACTION_EXECUTION_TAG = "transactionExecution";
     private final CursorContext context;
     private final AccessMode accessMode;
     private final ExecutionContextCursorTracer cursorTracer;
     private final CursorContext ktxContext;
-    private final AllStoreHolder.ForThreadExecutionContextScope allStoreHolder;
+    private final ThreadExecutionContextRead contextRead;
     private final StoreCursors storageCursors;
     private final IndexMonitor monitor;
     private final MemoryTracker contextTracker;
-    private final List<AutoCloseable> otherResources;
 
-    public ThreadExecutionContext(
-            CursorContext context,
-            AccessMode accessMode,
-            ExecutionContextCursorTracer cursorTracer,
-            CursorContext ktxContext,
-            AllStoreHolder.ForThreadExecutionContextScope allStoreHolder,
-            StoreCursors storageCursors,
+    public LegacyThreadExecutionContext(
+            KernelTransactionImplementation ktx,
+            CursorContextFactory contextFactory,
+            StorageEngine storageEngine,
+            Config config,
             IndexMonitor monitor,
-            MemoryTracker contextTracker,
-            List<AutoCloseable> otherResources) {
-        this.context = context;
-        this.accessMode = accessMode;
-        this.cursorTracer = cursorTracer;
-        this.ktxContext = ktxContext;
-        this.allStoreHolder = allStoreHolder;
-        this.storageCursors = storageCursors;
+            TransactionMemoryPool transactionMemoryPool) {
+        this.cursorTracer = new ExecutionContextCursorTracer(PageCacheTracer.NULL, TRANSACTION_EXECUTION_TAG);
+        this.ktxContext = ktx.cursorContext();
+        this.context = contextFactory.create(cursorTracer);
+        this.accessMode = ktx.securityContext().mode();
+        this.storageCursors = storageEngine.createStorageCursors(context);
+        this.contextTracker = transactionMemoryPool.getPoolMemoryTracker();
+        this.contextRead = new ThreadExecutionContextRead(
+                this,
+                ktx.dataRead(),
+                ktx.newStorageReader(),
+                storageCursors,
+                config,
+                storageEngine.indexingBehaviour());
         this.monitor = monitor;
-        this.contextTracker = contextTracker;
-        this.otherResources = otherResources;
     }
 
     @Override
@@ -78,14 +87,12 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
 
     @Override
     public Read dataRead() {
-        return allStoreHolder;
+        return contextRead;
     }
 
     @Override
     public void complete() {
-        List<AutoCloseable> resources = new ArrayList<>(otherResources);
-        resources.add(storageCursors);
-        closeAllUnchecked(resources);
+        closeAllUnchecked(contextRead, storageCursors);
         cursorTracer.complete();
     }
 
@@ -101,7 +108,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
 
     @Override
     public QueryContext queryContext() {
-        return allStoreHolder;
+        return contextRead;
     }
 
     @Override
