@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -835,6 +836,23 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         assertThatThrownBy(transaction::commit).isSameAs(foo).hasSuppressedException(bar);
     }
 
+    @Test
+    void shouldNotCheckLeaseOnSuccessfulTx() {
+        KernelTransactionImplementation transaction = newNotInitializedTransaction(new ExpiredLeases());
+        initialize(0, AUTH_DISABLED, 1000L, 1L, transaction);
+        assertThatCode(transaction::commit).doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldCheckLeaseOnUnexpectedException() {
+        ExpiredLeases leases = new ExpiredLeases();
+        KernelTransactionImplementation transaction = newNotInitializedTransaction(leases);
+        initialize(0, AUTH_DISABLED, 1000L, 1L, transaction);
+        RuntimeException foo = new RuntimeException("foo");
+        doThrow(foo).when(transaction.lockClient()).close();
+        assertThatThrownBy(transaction::commit).isSameAs(foo).hasSuppressedException(leases.expired());
+    }
+
     private static LoginContext loginContext(boolean isWriteTx) {
         return isWriteTx ? AnonymousContext.write() : AnonymousContext.read();
     }
@@ -869,6 +887,27 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         @Override
         public long faults() {
             return iteration;
+        }
+    }
+
+    private static class ExpiredLeases implements LeaseService {
+        LeaseException expired() {
+            return new LeaseException("Expired", Status.Cluster.NotALeader);
+        }
+
+        @Override
+        public LeaseClient newClient() {
+            return new LeaseClient() {
+                @Override
+                public int leaseId() {
+                    return 0;
+                }
+
+                @Override
+                public void ensureValid() throws LeaseException {
+                    throw expired();
+                }
+            };
         }
     }
 }

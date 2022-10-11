@@ -145,6 +145,16 @@ class KernelTransactionTestBase {
             long transactionTimeout,
             long userTransactionId) {
         KernelTransactionImplementation tx = newNotInitializedTransaction();
+        initialize(lastTransactionIdWhenStarted, loginContext, transactionTimeout, userTransactionId, tx);
+        return tx;
+    }
+
+    void initialize(
+            long lastTransactionIdWhenStarted,
+            LoginContext loginContext,
+            long transactionTimeout,
+            long userTransactionId,
+            KernelTransactionImplementation tx) {
         SecurityContext securityContext = loginContext.authorize(
                 LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG);
         tx.initialize(
@@ -154,7 +164,6 @@ class KernelTransactionTestBase {
                 transactionTimeout,
                 userTransactionId,
                 EMBEDDED_CONNECTION);
-        return tx;
     }
 
     KernelTransactionImplementation newNotInitializedTransaction() {

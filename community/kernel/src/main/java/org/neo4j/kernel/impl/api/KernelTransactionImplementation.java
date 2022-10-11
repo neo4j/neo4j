@@ -29,6 +29,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_m
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
+import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
 import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.getTraceProvider;
 import static org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace.NONE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
@@ -799,6 +800,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
         if (exception == null) {
             return txId;
+        }
+
+        if (leaseClient.leaseId() != NO_LEASE) {
+            try {
+                leaseClient.ensureValid();
+            } catch (RuntimeException e) {
+                exception = Exceptions.chain(exception, e);
+            }
         }
 
         if (exception instanceof TransactionFailureException e) {
