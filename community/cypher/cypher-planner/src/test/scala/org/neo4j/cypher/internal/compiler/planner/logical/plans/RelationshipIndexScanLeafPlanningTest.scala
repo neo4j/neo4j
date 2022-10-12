@@ -780,10 +780,10 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
     }
   }
 
-  test("no index contains scan when there is an index on the property but relationship variable is skipped") {
+  test("index contains scan when there is an index on the property but relationship variable is restricted") {
     new given {
       qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa)
-      relationshipIndexOn(relTypeName, prop)
+      relationshipTextIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val resultPlans =
@@ -794,7 +794,15 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
         )
 
       // then
-      resultPlans should be(empty)
+      resultPlans should equal(Set(
+        new LogicalPlanBuilder(wholePlan = false)
+          .relationshipIndexOperator(
+            s"($startNodeName)-[$relName:$relTypeName($prop CONTAINS '$apa')]-($endNodeName)",
+            getValue = _ => DoNotGetValue,
+            indexType = IndexType.TEXT
+          )
+          .build()
+      ))
     }
   }
 
@@ -1030,10 +1038,10 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
     }
   }
 
-  test("no index ends with scan when there is an index on the property but relationship variable is skipped") {
+  test("index ends with scan when there is an index on the property but relationship variable is restricted") {
     new given {
       qg = queryGraph(Seq(relTypeName), BOTH, propEndsWithApa)
-      relationshipIndexOn(relTypeName, prop)
+      relationshipTextIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val resultPlans =
@@ -1044,7 +1052,16 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
         )
 
       // then
-      resultPlans should be(empty)
+      resultPlans should equal(Set(
+        new LogicalPlanBuilder(wholePlan = false)
+          .relationshipIndexOperator(
+            s"($startNodeName)-[$relName:$relTypeName($prop ENDS WITH '$apa')]-($endNodeName)",
+            getValue = _ => DoNotGetValue,
+            indexType = IndexType.TEXT
+          )
+          .build()
+      ))
+
     }
   }
 }

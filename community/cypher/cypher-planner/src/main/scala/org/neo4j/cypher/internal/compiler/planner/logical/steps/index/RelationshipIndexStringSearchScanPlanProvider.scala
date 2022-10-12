@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.RelationshipLeafPlanner.planHiddenSelectionAndRelationshipLeafPlan
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexScanPlanProvider.isAllowedByRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner.RelationshipIndexMatch
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.EndsWith
@@ -41,7 +40,9 @@ object RelationshipIndexStringSearchScanPlanProvider extends RelationshipIndexPl
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = for {
     indexMatch <- indexMatches
-    if isAllowedByRestrictions(indexMatch.variableName, restrictions) && indexMatch.indexDescriptor.properties.size == 1
+    // Use isAllowedByRestrictions from EntityIndexSeekPlanProvider, since we also want to plan Nested-Index-Joins
+    // with nodeIndexStringSearchScanPlans.
+    if EntityIndexSeekPlanProvider.isAllowedByRestrictions(indexMatch.propertyPredicates, restrictions) && indexMatch.indexDescriptor.properties.size == 1
     plan <- doCreatePlans(indexMatch, hints, argumentIds, context)
   } yield plan
 

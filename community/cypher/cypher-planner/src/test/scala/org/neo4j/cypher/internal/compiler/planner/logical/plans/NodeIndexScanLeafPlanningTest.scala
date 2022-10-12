@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
 import org.neo4j.cypher.internal.ast.SeekOnly
 import org.neo4j.cypher.internal.ast.UsingIndexHint
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
@@ -123,7 +124,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     }
   }
 
-  test("no index scan when there is an index on the property but node variable is skipped") {
+  test("no index scan when there is an index on the property but node variable is restricted") {
     new given {
       qg = queryGraph(propIsNotNull, hasLabelAwesome)
 
@@ -138,6 +139,58 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should be(empty)
+    }
+  }
+
+  test("index contains scan when there is an index on the property but relationship variable is restricted") {
+    new given {
+      qg = queryGraph(propContainsApa, hasLabelAwesome)
+      textIndexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans =
+        nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.OnlyIndexSeekPlansFor(idName, Set()))(
+          cfg.qg,
+          InterestingOrderConfig.empty,
+          ctx
+        )
+
+      // then
+      resultPlans should equal(Set(
+        new LogicalPlanBuilder(wholePlan = false)
+          .nodeIndexOperator(
+            s"$idName:Awesome(prop CONTAINS 'Apa')",
+            getValue = _ => DoNotGetValue,
+            indexType = IndexType.TEXT
+          )
+          .build()
+      ))
+    }
+  }
+
+  test("index ends with scan when there is an index on the property but relationship variable is restricted") {
+    new given {
+      qg = queryGraph(propEndsWithApa, hasLabelAwesome)
+      textIndexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans =
+        nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.OnlyIndexSeekPlansFor(idName, Set()))(
+          cfg.qg,
+          InterestingOrderConfig.empty,
+          ctx
+        )
+
+      // then
+      resultPlans should equal(Set(
+        new LogicalPlanBuilder(wholePlan = false)
+          .nodeIndexOperator(
+            s"$idName:Awesome(prop ENDS WITH 'Apa')",
+            getValue = _ => DoNotGetValue,
+            indexType = IndexType.TEXT
+          )
+          .build()
+      ))
     }
   }
 

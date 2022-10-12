@@ -107,7 +107,7 @@ object QueryPlannerConfiguration {
   }
 
   /**
-   * When doing nested index joins, we have certain variables for which we only want to allow index seeks.
+   * When doing nested index joins, we have certain variables for which we only want to allow certain index plans.
    * This method returns leaf planners that will not produce any other plans for these variables.
    */
   def leafPlannersForNestedIndexJoins(restrictions: LeafPlanRestrictions): LeafPlannerIterable = {

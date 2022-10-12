@@ -50,6 +50,7 @@ import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.BOTH
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb
 import org.neo4j.graphdb.schema.IndexType
 
 import java.lang
@@ -318,6 +319,58 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     }
   }
 
+  test("should plan nested index join with CONTAINS scan") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 30)
+      .setLabelCardinality("C", 20)
+      .addNodeIndex("C", Seq("prop"), 1.0, 0.05, indexType = graphdb.schema.IndexType.TEXT)
+      .build()
+
+    val plan = cfg.plan(
+      "MATCH (a:A), (c:C) WHERE c.prop CONTAINS a.prop RETURN *"
+    ).stripProduceResults
+
+    plan should equal(
+      cfg.subPlanBuilder()
+        .apply()
+        .|.nodeIndexOperator(
+          "c:C(prop CONTAINS ???)",
+          paramExpr = Some(prop("a", "prop")),
+          argumentIds = Set("a"),
+          indexType = graphdb.schema.IndexType.TEXT
+        )
+        .nodeByLabelScan("a", "A")
+        .build()
+    )
+  }
+
+  test("should plan nested index join with ENDS WITH scan") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 30)
+      .setLabelCardinality("C", 20)
+      .addNodeIndex("C", Seq("prop"), 1.0, 0.05, indexType = graphdb.schema.IndexType.TEXT)
+      .build()
+
+    val plan = cfg.plan(
+      "MATCH (a:A), (c:C) WHERE c.prop ENDS WITH a.prop RETURN *"
+    ).stripProduceResults
+
+    plan should equal(
+      cfg.subPlanBuilder()
+        .apply()
+        .|.nodeIndexOperator(
+          "c:C(prop ENDS WITH ???)",
+          paramExpr = Some(prop("a", "prop")),
+          argumentIds = Set("a"),
+          indexType = graphdb.schema.IndexType.TEXT
+        )
+        .nodeByLabelScan("a", "A")
+        .build()
+    )
+  }
+
   test(
     "should plan nested relationship index join of two components with index on relationship appearing first in predicate"
   ) {
@@ -342,6 +395,110 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     withClue(plan) {
       relIndexSeeks should be > 0
     }
+  }
+
+  test("should plan nested relationship index join with CONTAINS scan (directed)") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:REL]-()", 10)
+      .setRelationshipCardinality("()-[:REL2]-()", 50)
+      .addRelationshipIndex("REL2", Seq("prop"), 1.0, 0.01, indexType = graphdb.schema.IndexType.TEXT)
+      .build()
+
+    val plan = cfg.plan(
+      "MATCH (a)-[r1:REL]->(b), (c)-[r2:REL2]->(d) WHERE r2.prop CONTAINS r1.prop RETURN *"
+    ).stripProduceResults
+
+    plan should equal(
+      cfg.subPlanBuilder()
+        .apply()
+        .|.relationshipIndexOperator(
+          "(c)-[r2:REL2(prop CONTAINS ???)]->(d)",
+          paramExpr = Some(prop("r1", "prop")),
+          argumentIds = Set("a", "b", "r1"),
+          indexType = graphdb.schema.IndexType.TEXT
+        )
+        .relationshipTypeScan("(a)-[r1:REL]->(b)")
+        .build()
+    )
+  }
+
+  test("should plan nested relationship index join with CONTAINS scan (undirected)") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:REL]-()", 10)
+      .setRelationshipCardinality("()-[:REL2]-()", 50)
+      .addRelationshipIndex("REL2", Seq("prop"), 1.0, 0.01, indexType = graphdb.schema.IndexType.TEXT)
+      .build()
+
+    val plan = cfg.plan(
+      "MATCH (a)-[r1:REL]->(b), (c)-[r2:REL2]-(d) WHERE r2.prop CONTAINS r1.prop RETURN *"
+    ).stripProduceResults
+
+    plan should equal(
+      cfg.subPlanBuilder()
+        .apply()
+        .|.relationshipIndexOperator(
+          "(c)-[r2:REL2(prop CONTAINS ???)]-(d)",
+          paramExpr = Some(prop("r1", "prop")),
+          argumentIds = Set("a", "b", "r1"),
+          indexType = graphdb.schema.IndexType.TEXT
+        )
+        .relationshipTypeScan("(a)-[r1:REL]->(b)")
+        .build()
+    )
+  }
+
+  test("should plan nested relationship index join with ENDS WITH scan (directed)") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:REL]-()", 10)
+      .setRelationshipCardinality("()-[:REL2]-()", 50)
+      .addRelationshipIndex("REL2", Seq("prop"), 1.0, 0.01, indexType = graphdb.schema.IndexType.TEXT)
+      .build()
+
+    val plan = cfg.plan(
+      "MATCH (a)-[r1:REL]->(b), (c)-[r2:REL2]->(d) WHERE r2.prop ENDS WITH r1.prop RETURN *"
+    ).stripProduceResults
+
+    plan should equal(
+      cfg.subPlanBuilder()
+        .apply()
+        .|.relationshipIndexOperator(
+          "(c)-[r2:REL2(prop ENDS WITH ???)]->(d)",
+          paramExpr = Some(prop("r1", "prop")),
+          argumentIds = Set("a", "b", "r1"),
+          indexType = graphdb.schema.IndexType.TEXT
+        )
+        .relationshipTypeScan("(a)-[r1:REL]->(b)")
+        .build()
+    )
+  }
+
+  test("should plan nested relationship index join with ENDS WITH scan (undirected)") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:REL]-()", 10)
+      .setRelationshipCardinality("()-[:REL2]-()", 50)
+      .addRelationshipIndex("REL2", Seq("prop"), 1.0, 0.01, indexType = graphdb.schema.IndexType.TEXT)
+      .build()
+
+    val plan = cfg.plan(
+      "MATCH (a)-[r1:REL]->(b), (c)-[r2:REL2]-(d) WHERE r2.prop ENDS WITH r1.prop RETURN *"
+    ).stripProduceResults
+
+    plan should equal(
+      cfg.subPlanBuilder()
+        .apply()
+        .|.relationshipIndexOperator(
+          "(c)-[r2:REL2(prop ENDS WITH ???)]-(d)",
+          paramExpr = Some(prop("r1", "prop")),
+          argumentIds = Set("a", "b", "r1"),
+          indexType = graphdb.schema.IndexType.TEXT
+        )
+        .relationshipTypeScan("(a)-[r1:REL]->(b)")
+        .build()
+    )
   }
 
   test(

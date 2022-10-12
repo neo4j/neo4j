@@ -31,10 +31,16 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cardinality.NumericCardinality
@@ -564,6 +570,18 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
         valueExpr.expressions.exists(_.dependencies.nonEmpty)
       case UndirectedRelationshipIndexSeek(_, _, _, _, _, valueExpr, _, _, _) =>
         valueExpr.expressions.exists(_.dependencies.nonEmpty)
+      case NodeIndexContainsScan(_, _, _, valueExpr, _, _, _) =>
+        valueExpr.dependencies.nonEmpty
+      case NodeIndexEndsWithScan(_, _, _, valueExpr, _, _, _) =>
+        valueExpr.dependencies.nonEmpty
+      case DirectedRelationshipIndexContainsScan(_, _, _, _, _, valueExpr, _, _, _) =>
+        valueExpr.dependencies.nonEmpty
+      case DirectedRelationshipIndexEndsWithScan(_, _, _, _, _, valueExpr, _, _, _) =>
+        valueExpr.dependencies.nonEmpty
+      case UndirectedRelationshipIndexContainsScan(_, _, _, _, _, valueExpr, _, _, _) =>
+        valueExpr.dependencies.nonEmpty
+      case UndirectedRelationshipIndexEndsWithScan(_, _, _, _, _, valueExpr, _, _, _) =>
+        valueExpr.dependencies.nonEmpty
       case _ => false
     }
 

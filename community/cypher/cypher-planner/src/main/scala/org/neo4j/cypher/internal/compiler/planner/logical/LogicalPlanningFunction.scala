@@ -73,6 +73,9 @@ object LeafPlanRestrictions {
     override def symbolsThatShouldOnlyUseIndexSeekLeafPlanners: Set[String] = Set.empty
   }
 
+  /**
+   * For `variable`, only plan IndexSeek, IndexContainsScan and IndexEndsWithScan.
+   */
   case class OnlyIndexSeekPlansFor(variable: String, dependencies: Set[String]) extends LeafPlanRestrictions {
     override def symbolsThatShouldOnlyUseIndexSeekLeafPlanners: Set[String] = Set(variable)
   }
