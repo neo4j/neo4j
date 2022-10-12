@@ -194,12 +194,34 @@ public abstract class RecordStorageReaderTestBase {
         apply(txState);
     }
 
+    protected void createRelKeyConstraint(RelationshipType type, String propertyKey) throws Exception {
+        IndexDescriptor index = createUniqueIndex(type, propertyKey);
+        TxState txState = new TxState();
+        KeyConstraintDescriptor constraint = ConstraintDescriptorFactory.keyForSchema(index.schema());
+        constraint = constraint.withName(index.getName()).withOwnedIndexId(index.getId());
+        txState.constraintDoAdd(constraint);
+        apply(txState);
+    }
+
     private IndexDescriptor createUniqueIndex(Label label, String propertyKey) throws Exception {
         TxState txState = new TxState();
         int labelId = getOrCreateLabelId(label);
         int propertyKeyId = getOrCreatePropertyKeyId(propertyKey);
         long id = commitContext.reserveSchema();
         IndexDescriptor index = IndexPrototype.uniqueForSchema(forLabel(labelId, propertyKeyId))
+                .withName("constraint_" + id)
+                .materialise(id);
+        txState.indexDoAdd(index);
+        apply(txState);
+        return index;
+    }
+
+    private IndexDescriptor createUniqueIndex(RelationshipType type, String propertyKey) throws Exception {
+        TxState txState = new TxState();
+        int typeId = getOrCreateRelationshipTypeId(type);
+        int propertyKeyId = getOrCreatePropertyKeyId(propertyKey);
+        long id = commitContext.reserveSchema();
+        IndexDescriptor index = IndexPrototype.uniqueForSchema(forRelType(typeId, propertyKeyId))
                 .withName("constraint_" + id)
                 .materialise(id);
         txState.indexDoAdd(index);

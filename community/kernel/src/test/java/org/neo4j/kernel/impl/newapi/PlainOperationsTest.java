@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import static java.util.Collections.singletonList;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -39,6 +40,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForRelType;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForSchema;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.keyForSchema;
@@ -626,15 +628,38 @@ public class PlainOperationsTest extends OperationsTest {
     }
 
     @Test
+    void shouldReleaseAcquiredSchemaWriteLockIfRelationshipKeyConstraintCreationFails() throws Exception {
+        // given
+        RelationTypeSchemaDescriptor descriptor = forRelType(11, 13);
+        KeyConstraintDescriptor constraint = keyForSchema(descriptor);
+        storageReaderWithConstraints(constraint);
+        int relTypeId = descriptor.getRelTypeId();
+        int propertyId = descriptor.getPropertyId();
+        when(tokenHolders.relationshipTypeTokens().getTokenById(relTypeId))
+                .thenReturn(new NamedToken("RelType", relTypeId));
+        when(tokenHolders.propertyKeyTokens().getTokenById(propertyId)).thenReturn(new NamedToken("prop", relTypeId));
+
+        // when
+        assertThatThrownBy(() -> operations.keyConstraintCreate(
+                        IndexPrototype.uniqueForSchema(descriptor).withName("constraint name")))
+                .isInstanceOf(AlreadyConstrainedException.class);
+
+        // then
+        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceTypes.RELATIONSHIP_TYPE, relTypeId);
+        order.verify(storageReader).constraintsGetForSchema(descriptor);
+        order.verify(locks).releaseExclusive(ResourceTypes.RELATIONSHIP_TYPE, relTypeId);
+    }
+
+    @Test
     void shouldReleaseAcquiredSchemaWriteLockIfRelationshipPropertyExistenceConstraintCreationFails() throws Exception {
         // given
-        RelationTypeSchemaDescriptor descriptor = SchemaDescriptors.forRelType(11, 13);
+        RelationTypeSchemaDescriptor descriptor = forRelType(11, 13);
         RelExistenceConstraintDescriptor constraint = existsForSchema(descriptor);
         storageReaderWithConstraints(constraint);
         int relTypeId = descriptor.getRelTypeId();
         int propertyId = descriptor.getPropertyId();
         when(tokenHolders.relationshipTypeTokens().getTokenById(relTypeId))
-                .thenReturn(new NamedToken("Label", relTypeId));
+                .thenReturn(new NamedToken("RelType", relTypeId));
         when(tokenHolders.propertyKeyTokens().getTokenById(propertyId)).thenReturn(new NamedToken("prop", relTypeId));
 
         // when
@@ -1086,8 +1111,7 @@ public class PlainOperationsTest extends OperationsTest {
         // given
         when(tokenHolders.relationshipTypeTokens().getTokenById(anyInt())).thenReturn(new NamedToken("RelType", 123));
         when(tokenHolders.propertyKeyTokens().getTokenById(anyInt())).thenReturn(new NamedToken("prop", 456));
-        SchemaDescriptor schema =
-                SchemaDescriptors.forRelType(this.schema.getEntityTokenIds()[0], this.schema.getPropertyIds());
+        SchemaDescriptor schema = forRelType(this.schema.getEntityTokenIds()[0], this.schema.getPropertyIds());
         IndexPrototype prototype = IndexPrototype.uniqueForSchema(schema)
                 .withName("constraint name")
                 .withIndexProvider(RangeIndexProvider.DESCRIPTOR);

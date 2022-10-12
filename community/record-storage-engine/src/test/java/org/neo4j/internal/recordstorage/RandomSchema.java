@@ -167,7 +167,7 @@ public class RandomSchema implements Supplier<SchemaRule> {
 
     public ConstraintDescriptor nextConstraint() {
         long ruleId = nextRuleIdForConstraint();
-        int choice = rng.nextInt(6);
+        int choice = rng.nextInt(8);
         return switch (choice) {
             case 0 -> ConstraintDescriptorFactory.existsForSchema(nextRelationshipSchema())
                     .withId(ruleId)
@@ -186,6 +186,13 @@ public class RandomSchema implements Supplier<SchemaRule> {
                     .withId(ruleId)
                     .withName(nextName());
             case 5 -> ConstraintDescriptorFactory.keyForSchema(nextNodeSchema())
+                    .withId(ruleId)
+                    .withOwnedIndexId(existingIndexId())
+                    .withName(nextName());
+            case 6 -> ConstraintDescriptorFactory.keyForSchema(nextRelationshipSchema())
+                    .withId(ruleId)
+                    .withName(nextName());
+            case 7 -> ConstraintDescriptorFactory.keyForSchema(nextRelationshipSchema())
                     .withId(ruleId)
                     .withOwnedIndexId(existingIndexId())
                     .withName(nextName());

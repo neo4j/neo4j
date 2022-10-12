@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForLabel;
+import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.keyForSchema;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.nodeKeyForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
 
@@ -52,6 +53,8 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase {
         createUniquenessConstraint(label2, propertyKey);
         createNodeKeyConstraint(label1, otherPropertyKey);
         createNodeKeyConstraint(label2, otherPropertyKey);
+        createRelKeyConstraint(relType1, propertyKey);
+        createRelKeyConstraint(relType2, otherPropertyKey);
 
         createNodePropertyExistenceConstraint(label2, propertyKey);
         createRelPropertyExistenceConstraint(relType1, propertyKey);
@@ -63,6 +66,7 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase {
         int labelId1 = labelId(label1);
         int labelId2 = labelId(label2);
         int relTypeId = relationshipTypeId(relType1);
+        int relTypeId2 = relationshipTypeId(relType2);
         int propKeyId = propertyKeyId(propertyKey);
         int propKeyId2 = propertyKeyId(otherPropertyKey);
 
@@ -72,6 +76,8 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase {
                         uniqueForLabel(labelId2, propKeyId),
                         nodeKeyForLabel(labelId1, propKeyId2),
                         nodeKeyForLabel(labelId2, propKeyId2),
+                        keyForSchema(SchemaDescriptors.forRelType(relTypeId, propKeyId)),
+                        keyForSchema(SchemaDescriptors.forRelType(relTypeId2, propKeyId2)),
                         existsForLabel(labelId2, propKeyId),
                         ConstraintDescriptorFactory.existsForRelType(relTypeId, propKeyId));
     }
@@ -127,6 +133,9 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase {
         createRelPropertyExistenceConstraint(relType2, propertyKey);
         createRelPropertyExistenceConstraint(relType2, otherPropertyKey);
 
+        createRelKeyConstraint(relType1, propertyKey);
+        createRelKeyConstraint(relType2, otherPropertyKey);
+
         // When
         Set<ConstraintDescriptor> constraints =
                 asSet(storageReader.constraintsGetForRelationshipType(relationshipTypeId(relType2)));
@@ -134,7 +143,8 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase {
         // Then
         Set<ConstraintDescriptor> expectedConstraints = Iterators.asSet(
                 relationshipPropertyExistenceDescriptor(relType2, propertyKey),
-                relationshipPropertyExistenceDescriptor(relType2, otherPropertyKey));
+                relationshipPropertyExistenceDescriptor(relType2, otherPropertyKey),
+                relKeyConstraintDescriptor(relType2, otherPropertyKey));
 
         assertEquals(expectedConstraints, constraints);
     }
@@ -148,6 +158,9 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase {
         createRelPropertyExistenceConstraint(relType2, propertyKey);
         createRelPropertyExistenceConstraint(relType2, otherPropertyKey);
 
+        createRelKeyConstraint(relType1, propertyKey);
+        createRelKeyConstraint(relType1, otherPropertyKey);
+
         // When
         int relTypeId = relationshipTypeId(relType1);
         int propKeyId = propertyKeyId(propertyKey);
@@ -155,8 +168,9 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase {
                 asSet(storageReader.constraintsGetForSchema(SchemaDescriptors.forRelType(relTypeId, propKeyId)));
 
         // Then
-        Set<ConstraintDescriptor> expectedConstraints =
-                Iterators.asSet(relationshipPropertyExistenceDescriptor(relType1, propertyKey));
+        Set<ConstraintDescriptor> expectedConstraints = Iterators.asSet(
+                relationshipPropertyExistenceDescriptor(relType1, propertyKey),
+                relKeyConstraintDescriptor(relType1, propertyKey));
 
         assertEquals(expectedConstraints, constraints);
     }
@@ -171,6 +185,12 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase {
         int labelId = labelId(label);
         int propKeyId = propertyKeyId(propertyKey);
         return nodeKeyForLabel(labelId, propKeyId);
+    }
+
+    private ConstraintDescriptor relKeyConstraintDescriptor(RelationshipType type, String propertyKey) {
+        int typeId = relationshipTypeId(type);
+        int propKeyId = propertyKeyId(propertyKey);
+        return keyForSchema(SchemaDescriptors.forRelType(typeId, propKeyId));
     }
 
     private ConstraintDescriptor nodePropertyExistenceDescriptor(Label label, String propertyKey) {

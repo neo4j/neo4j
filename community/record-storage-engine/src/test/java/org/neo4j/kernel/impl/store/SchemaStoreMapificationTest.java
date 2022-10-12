@@ -96,6 +96,12 @@ class SchemaStoreMapificationTest {
             .withId(1);
     private ConstraintDescriptor existsRelTypeConstraint =
             existsForSchema(relTypeSchema).withName("existsRelTypeConstraint").withId(1);
+    private final ConstraintDescriptor relKeyConstraint =
+            keyForSchema(relTypeSchema, TEXT).withName("relKeyConstraint").withId(1);
+    private final ConstraintDescriptor relKeyConstraintWithType = keyForSchema(relTypeSchema, RANGE)
+            .withName("relKeyConstraintWithType")
+            .withOwnedIndexId(7)
+            .withId(1);
 
     @RepeatedTest(500)
     void mapificationMustPreserveSchemaRulesAccurately() throws MalformedSchemaRuleException {
@@ -283,6 +289,35 @@ class SchemaStoreMapificationTest {
                 "__org.neo4j.SchemaRule.indexType", Values.stringValue("RANGE"),
                 "__org.neo4j.SchemaRule.ownedIndexId", Values.longValue(7));
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(nodeKeyConstraintWithType);
+    }
+
+    @Test
+    void relKeyConstraintWithOtherTypeDeterministicUnmapification() throws Exception {
+        Map<String, Value> mapified = Map.of(
+                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"),
+                "__org.neo4j.SchemaRule.name", Values.stringValue("relKeyConstraint"),
+                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
+                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
+                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
+                "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE_EXISTS"),
+                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}),
+                "__org.neo4j.SchemaRule.indexType", Values.stringValue("TEXT"));
+        assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(relKeyConstraint);
+    }
+
+    @Test
+    void relKeyConstraintWithTypeDeterministicUnmapification() throws Exception {
+        Map<String, Value> mapified = Map.of(
+                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"),
+                "__org.neo4j.SchemaRule.name", Values.stringValue("relKeyConstraintWithType"),
+                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
+                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
+                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
+                "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE_EXISTS"),
+                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}),
+                "__org.neo4j.SchemaRule.indexType", Values.stringValue("RANGE"),
+                "__org.neo4j.SchemaRule.ownedIndexId", Values.longValue(7));
+        assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(relKeyConstraintWithType);
     }
 
     @Test

@@ -55,6 +55,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.schema.AnyTokens;
 import org.neo4j.graphdb.schema.ConstraintCreator;
@@ -80,6 +81,7 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintWithNameAlreadyExistsExc
 import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException;
 import org.neo4j.kernel.api.exceptions.schema.IndexWithNameAlreadyExistsException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
+import org.neo4j.kernel.impl.coreapi.schema.BaseRelationshipConstraintCreator;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil;
@@ -136,6 +138,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         };
         monitors.addMonitorListener(trappingMonitor);
         builder.setMonitors(monitors);
+        builder.setConfig(GraphDatabaseInternalSettings.rel_unique_constraints, true);
     }
 
     @BeforeEach
@@ -1084,10 +1087,23 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     }
 
     @Test
-    void nodeKeyConstraintsMustNotAvailableInCommunityEdition() {
+    void nodeKeyConstraintsMustNotBeAvailableInCommunityEdition() {
         try (Transaction tx = db.beginTx()) {
             ConstraintCreator constraintCreator =
                     tx.schema().constraintFor(label).assertPropertyIsNodeKey(propertyKey);
+            ConstraintViolationException exception =
+                    assertThrows(ConstraintViolationException.class, constraintCreator::create);
+            assertThat(exception).hasMessageContaining("Enterprise Edition");
+            tx.commit();
+        }
+    }
+
+    @Test
+    void relationshipKeyConstraintsMustNotBeAvailableInCommunityEdition() {
+        try (Transaction tx = db.beginTx()) {
+            ConstraintCreator constraintCreator = ((BaseRelationshipConstraintCreator)
+                            tx.schema().constraintFor(relType))
+                    .assertPropertyIsRelationshipKey(propertyKey);
             ConstraintViolationException exception =
                     assertThrows(ConstraintViolationException.class, constraintCreator::create);
             assertThat(exception).hasMessageContaining("Enterprise Edition");
@@ -2215,11 +2231,11 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
 
     @Test
     void dropUniquenessConstraintAndCreateSimilarUniquenessInSameTxMustThrow() {
-        ConstraintCreateOperation initial = (schema, label, prop, name) -> schema.constraintFor(label)
+        ConstraintCreateOperation initial = (schema, prop, name) -> schema.constraintFor(label)
                 .assertPropertyIsUnique(prop)
                 .withName(name)
                 .create();
-        ConstraintCreateOperation similar = (schema, label, prop, name) -> schema.constraintFor(label)
+        ConstraintCreateOperation similar = (schema, prop, name) -> schema.constraintFor(label)
                 .assertPropertyIsUnique(prop)
                 .withName(name)
                 .create();
@@ -2228,11 +2244,11 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
 
     @Test
     void dropUniquenessConstraintAndCreateDifferentUniquenessInSameTxMustSucceed() {
-        ConstraintCreateOperation initial = (schema, label, prop, name) -> schema.constraintFor(label)
+        ConstraintCreateOperation initial = (schema, prop, name) -> schema.constraintFor(label)
                 .assertPropertyIsUnique(prop)
                 .withName(name)
                 .create();
-        ConstraintCreateOperation similar = (schema, label, prop, name) -> schema.constraintFor(label)
+        ConstraintCreateOperation similar = (schema, prop, name) -> schema.constraintFor(label)
                 .assertPropertyIsUnique(prop)
                 .withName(name)
                 .create();

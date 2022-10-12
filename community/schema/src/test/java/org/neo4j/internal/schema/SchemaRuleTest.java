@@ -144,6 +144,8 @@ class SchemaRuleTest {
             ConstraintDescriptorFactory.uniqueForSchema(labelSchema, RANGE);
     private final ConstraintDescriptor existsLabelConstraint = ConstraintDescriptorFactory.existsForSchema(labelSchema);
     private final ConstraintDescriptor nodeKeyConstraint = ConstraintDescriptorFactory.keyForSchema(labelSchema, RANGE);
+    private final ConstraintDescriptor relKeyConstraint =
+            ConstraintDescriptorFactory.keyForSchema(relTypeSchema, RANGE);
     private final ConstraintDescriptor existsRelTypeConstraint =
             ConstraintDescriptorFactory.existsForSchema(relTypeSchema);
     private final ConstraintDescriptor uniqueLabelConstraint2 =
@@ -156,6 +158,8 @@ class SchemaRuleTest {
             existsLabelConstraint.withName("existsLabelConstraintNamed").withId(2);
     private final ConstraintDescriptor nodeKeyConstraintNamed =
             nodeKeyConstraint.withName("nodeKeyConstraintNamed").withId(3).withOwnedIndexId(3);
+    private final ConstraintDescriptor relKeyConstraintNamed =
+            relKeyConstraint.withName("relKeyConstraintNamed").withId(6).withOwnedIndexId(4);
     private final ConstraintDescriptor existsRelTypeConstraintNamed =
             existsRelTypeConstraint.withName("existsRelTypeConstraintNamed").withId(4);
     private final ConstraintDescriptor uniqueLabelConstraint2Named = uniqueLabelConstraint2
@@ -189,6 +193,7 @@ class SchemaRuleTest {
         assertName(uniqueLabelConstraint, "constraint_dbf17751");
         assertName(existsLabelConstraint, "constraint_b23c1483");
         assertName(nodeKeyConstraint, "constraint_75ad9cd9");
+        assertName(relKeyConstraint, "constraint_675015ed");
         assertName(existsRelTypeConstraint, "constraint_ef4bbcac");
         assertName(allLabelsPrototype, "index_f56fb29d");
         assertName(allRelTypesPrototype, "index_9625776f");
@@ -348,6 +353,9 @@ class SchemaRuleTest {
         assertUserDescription(
                 "Constraint( id=3, name='nodeKeyConstraintNamed', type='NODE KEY', schema=(:Label1 {prop2, prop3}), ownedIndex=3 )",
                 nodeKeyConstraintNamed);
+        assertUserDescription(
+                "Constraint( id=6, name='relKeyConstraintNamed', type='RELATIONSHIP KEY', schema=()-[:Type1 {prop2, prop3}]-(), ownedIndex=4 )",
+                relKeyConstraintNamed);
         assertUserDescription(
                 "Constraint( id=4, name='existsRelTypeConstraintNamed', type='RELATIONSHIP PROPERTY EXISTENCE', schema=()-[:Type1 {prop2, prop3}]-() )",
                 existsRelTypeConstraintNamed);

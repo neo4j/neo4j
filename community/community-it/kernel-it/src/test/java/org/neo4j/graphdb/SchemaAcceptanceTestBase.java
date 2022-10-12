@@ -52,7 +52,7 @@ public class SchemaAcceptanceTestBase {
         String nameA = "nameA";
         String nameB = "nameB";
         try (Transaction tx = db.beginTx()) {
-            initial.createConstraint(tx.schema(), label, propertyKey, nameA);
+            initial.createConstraint(tx.schema(), propertyKey, nameA);
             tx.commit();
         }
 
@@ -61,7 +61,7 @@ public class SchemaAcceptanceTestBase {
         var e = assertThrows(UnsupportedOperationException.class, () -> {
             try (Transaction tx = db.beginTx()) {
                 tx.schema().getConstraintByName(nameA).drop();
-                similar.createConstraint(tx.schema(), label, propertyKey, nameB);
+                similar.createConstraint(tx.schema(), propertyKey, nameB);
                 tx.commit();
             }
         });
@@ -79,14 +79,14 @@ public class SchemaAcceptanceTestBase {
         String nameA = "nameA";
         String nameB = "nameB";
         try (Transaction tx = db.beginTx()) {
-            initial.createConstraint(tx.schema(), label, propertyKey, nameA);
+            initial.createConstraint(tx.schema(), propertyKey, nameA);
             tx.commit();
         }
 
         // When
         try (Transaction tx = db.beginTx()) {
             tx.schema().getConstraintByName(nameA).drop();
-            similar.createConstraint(tx.schema(), label, secondPropertyKey, nameB);
+            similar.createConstraint(tx.schema(), secondPropertyKey, nameB);
             tx.commit();
         }
 
@@ -152,6 +152,6 @@ public class SchemaAcceptanceTestBase {
 
     @FunctionalInterface
     protected interface ConstraintCreateOperation {
-        ConstraintDefinition createConstraint(Schema schema, Label label, String prop, String name);
+        ConstraintDefinition createConstraint(Schema schema, String prop, String name);
     }
 }
