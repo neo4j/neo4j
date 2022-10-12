@@ -19,13 +19,27 @@
  */
 package org.neo4j.kernel;
 
-import org.apache.commons.lang3.mutable.MutableLong;
-import org.junit.jupiter.api.Test;
+import static java.util.Collections.emptyMap;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.Optional;
 import java.util.function.Consumer;
-
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.apache.commons.lang3.mutable.MutableLong;
+import org.junit.jupiter.api.Test;
+import org.mockito.stubbing.Answer;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -35,23 +49,13 @@ import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.KernelTransaction.KernelTransactionMonitor;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.token.TokenHolders;
-
-import static java.util.Collections.emptyMap;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class TransactionImplTest
 {
@@ -223,6 +227,42 @@ class TransactionImplTest
 
         checkForIAE( tx -> tx.findRelationships( null, emptyMap() ), "Relationship type" );
         checkForIAE( tx -> tx.findRelationships( RelationshipType.withName( "test" ), null ), "Property values" );
+    }
+
+    @Test
+    void shouldOnlyCloseKtiOnceWhenRollbackInsideCommit() throws Exception
+    {
+        // GIVEN
+        // Mock that forward commit calls to the given monitor
+        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
+        when( kernelTransaction.commit( any( KernelTransactionMonitor.class ) ) )
+                .thenAnswer( (Answer<Long>) invocationOnMock -> {
+                    var monitor = (KernelTransactionMonitor) invocationOnMock.getArgument( 0 );
+                    monitor.beforeApply();
+                    return -1L;
+                });
+
+        // a TransactionImpl
+        TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null );
+
+        // and a monitor that simulates a tx-failure + rollback inside of commit
+        var monitorCalled = new MutableBoolean();
+        var monitor = new KernelTransactionMonitor()
+        {
+            @Override
+            public void beforeApply()
+            {
+                monitorCalled.setTrue();
+                transaction.rollback();
+            }
+        };
+
+        // WHEN
+        transaction.commit( monitor );
+
+        // THEN
+        assertThat( monitorCalled.getValue() ).isTrue();
+        verify( kernelTransaction, times( 1 ) ).close();
     }
 
     private void checkForIAE( Consumer<Transaction> consumer, String message )
