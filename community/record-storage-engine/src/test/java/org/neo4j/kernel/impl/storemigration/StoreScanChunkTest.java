@@ -70,7 +70,7 @@ class StoreScanChunkTest {
                         NULL_CONTEXT_FACTORY,
                         false,
                         EMPTY_LOG_TAIL)
-                .openAllNeoStores(true)) {
+                .openAllNeoStores()) {
             RecordStorageReader storageReader = new RecordStorageReader(neoStores);
             TestStoreScanChunk scanChunk1 = new TestStoreScanChunk(storageReader, false);
             TestStoreScanChunk scanChunk2 = new TestStoreScanChunk(storageReader, false);

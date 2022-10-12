@@ -129,7 +129,7 @@ public class RecordRelationshipTraversalCursorTest {
                 false,
                 EMPTY_LOG_TAIL,
                 Sets.immutable.empty());
-        neoStores = storeFactory.openAllNeoStores(true);
+        neoStores = storeFactory.openAllNeoStores();
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
     }
 

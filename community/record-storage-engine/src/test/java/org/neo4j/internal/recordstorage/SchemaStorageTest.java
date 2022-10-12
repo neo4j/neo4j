@@ -121,7 +121,6 @@ class SchemaStorageTest {
                 false,
                 EMPTY_LOG_TAIL);
         neoStores = storeFactory.openNeoStores(
-                true,
                 StoreType.SCHEMA,
                 StoreType.PROPERTY_KEY_TOKEN,
                 StoreType.LABEL_TOKEN,

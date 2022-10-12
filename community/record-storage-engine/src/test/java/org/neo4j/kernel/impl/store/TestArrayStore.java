@@ -98,7 +98,7 @@ public class TestArrayStore {
                 EMPTY_LOG_TAIL,
                 Sets.immutable.empty());
 
-        neoStores = factory.openAllNeoStores(true);
+        neoStores = factory.openAllNeoStores();
         arrayStore = neoStores.getPropertyStore().getArrayStore();
     }
 

@@ -91,7 +91,7 @@ class RecordNodeCursorIT {
                         new CursorContextFactory(pageCacheTracer, EMPTY),
                         false,
                         EMPTY_LOG_TAIL)
-                .openAllNeoStores(true);
+                .openAllNeoStores();
         nodeStore = neoStores.getNodeStore();
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
     }

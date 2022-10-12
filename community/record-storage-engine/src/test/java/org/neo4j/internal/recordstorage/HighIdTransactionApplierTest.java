@@ -80,7 +80,7 @@ class HighIdTransactionApplierTest {
                 new CursorContextFactory(pageCacheTracer, EMPTY),
                 false,
                 EMPTY_LOG_TAIL);
-        neoStores = storeFactory.openAllNeoStores(true);
+        neoStores = storeFactory.openAllNeoStores();
     }
 
     @AfterEach

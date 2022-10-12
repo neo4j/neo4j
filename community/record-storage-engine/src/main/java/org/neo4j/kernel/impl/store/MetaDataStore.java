@@ -181,8 +181,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     }
 
     @Override
-    protected void initialise(boolean createIfNotExists, CursorContextFactory contextFactory) {
-        super.initialise(createIfNotExists, contextFactory);
+    protected void initialise(CursorContextFactory contextFactory) {
+        super.initialise(contextFactory);
         try (CursorContext context = contextFactory.create("readMetadata")) {
             readMetadataFile(context);
         }

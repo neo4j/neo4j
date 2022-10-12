@@ -87,7 +87,7 @@ class RecordRelationshipScanCursorTest {
     @BeforeEach
     void setUp() {
         StoreFactory storeFactory = getStoreFactory();
-        neoStores = storeFactory.openAllNeoStores(true);
+        neoStores = storeFactory.openAllNeoStores();
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
     }
 

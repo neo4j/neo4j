@@ -175,7 +175,6 @@ public class SchemaStoreMigration {
 
             List<SchemaRule> schemaRules;
             try (NeoStores srcStore = srcFactory.openNeoStores(
-                            false,
                             StoreType.PROPERTY_KEY_TOKEN,
                             StoreType.PROPERTY_KEY_TOKEN_NAME,
                             StoreType.LABEL_TOKEN,
@@ -231,7 +230,7 @@ public class SchemaStoreMigration {
                 formats,
                 NullLogProvider.getInstance(),
                 contextFactory,
-                false,
+                true,
                 EMPTY_LOG_TAIL,
                 immutable.empty());
     }

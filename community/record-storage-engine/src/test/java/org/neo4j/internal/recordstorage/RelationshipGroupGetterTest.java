@@ -96,7 +96,7 @@ class RelationshipGroupGetterTest {
                 NULL_CONTEXT_FACTORY,
                 false,
                 EMPTY_LOG_TAIL);
-        stores = storeFactory.openNeoStores(true, StoreType.RELATIONSHIP_GROUP, StoreType.NODE, StoreType.NODE_LABEL);
+        stores = storeFactory.openNeoStores(StoreType.RELATIONSHIP_GROUP, StoreType.NODE, StoreType.NODE_LABEL);
         groupStore = spy(stores.getRelationshipGroupStore());
         NodeStore nodeStore = stores.getNodeStore();
         storeCursors = new CachedStoreCursors(stores, NULL_CONTEXT);

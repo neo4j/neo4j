@@ -264,7 +264,7 @@ class AbstractDynamicStoreTest {
                         return "TestDynamicStore";
                     }
                 };
-        store.initialise(true, new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
+        store.initialise(new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
         return store;
     }
 

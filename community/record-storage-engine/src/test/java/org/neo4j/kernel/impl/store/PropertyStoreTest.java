@@ -101,7 +101,7 @@ class PropertyStoreTest {
                     false,
                     databaseLayout.getDatabaseName(),
                     immutable.empty())) {
-                store.initialise(true, new CursorContextFactory(pageCacheTracer, EMPTY));
+                store.initialise(new CursorContextFactory(pageCacheTracer, EMPTY));
                 store.start(NULL_CONTEXT);
                 final long propertyRecordId = store.nextId(NULL_CONTEXT);
 

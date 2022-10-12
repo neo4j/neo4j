@@ -206,7 +206,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                 contextFactory,
                 false,
                 logTailMetadata);
-        neoStores = factory.openAllNeoStores(true);
+        neoStores = factory.openAllNeoStores();
         Stream.of(RecordIdType.values()).forEach(idType -> idGeneratorWorkSyncs.add(idGeneratorFactory.get(idType)));
         Stream.of(SchemaIdType.values()).forEach(idType -> idGeneratorWorkSyncs.add(idGeneratorFactory.get(idType)));
 

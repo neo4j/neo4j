@@ -98,7 +98,7 @@ class DirectRecordStoreMigrator {
                                 true,
                                 EMPTY_LOG_TAIL,
                                 immutable.empty())
-                        .openNeoStores(true, storesToOpen);
+                        .openNeoStores(storesToOpen);
                 NeoStores toStores = new StoreFactory(
                                 toDirectoryStructure,
                                 withPersistedStoreHeadersAsConfigFrom(fromStores, storesToOpen),
@@ -113,7 +113,7 @@ class DirectRecordStoreMigrator {
                                 false,
                                 EMPTY_LOG_TAIL,
                                 immutable.empty())
-                        .openNeoStores(true, storesToOpen);
+                        .openNeoStores(storesToOpen);
                 var cursorContext = contextFactory.create(DIRECT_STORE_MIGRATOR_TAG);
                 var toStoreCursors = new CachedStoreCursors(toStores, cursorContext)) {
             toStores.start(cursorContext);

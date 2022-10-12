@@ -71,7 +71,6 @@ public class NeoStores implements AutoCloseable {
     private final PageCache pageCache;
     private final PageCacheTracer pageCacheTracer;
     private final InternalLogProvider logProvider;
-    private final boolean createIfNotExist;
     private final CursorContextFactory contextFactory;
     private final StoreType[] initializedStores;
     private final RecordFormats recordFormats;
@@ -89,7 +88,6 @@ public class NeoStores implements AutoCloseable {
             PageCacheTracer pageCacheTracer,
             final InternalLogProvider logProvider,
             RecordFormats recordFormats,
-            boolean createIfNotExist,
             CursorContextFactory contextFactory,
             boolean readOnly,
             LogTailMetadata logTailMetadata,
@@ -103,7 +101,6 @@ public class NeoStores implements AutoCloseable {
         this.pageCacheTracer = pageCacheTracer;
         this.logProvider = logProvider;
         this.recordFormats = recordFormats;
-        this.createIfNotExist = createIfNotExist;
         this.contextFactory = contextFactory;
         this.readOnly = readOnly;
         this.logTailMetadata = logTailMetadata;
@@ -178,7 +175,7 @@ public class NeoStores implements AutoCloseable {
     }
 
     private <T extends CommonAbstractStore> T initialize(T store, CursorContextFactory contextFactory) {
-        store.initialise(createIfNotExist, contextFactory);
+        store.initialise(contextFactory);
         return store;
     }
 

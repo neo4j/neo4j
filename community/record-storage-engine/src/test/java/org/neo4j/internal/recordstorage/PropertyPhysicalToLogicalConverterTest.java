@@ -88,7 +88,7 @@ class PropertyPhysicalToLogicalConverterTest {
                 new CursorContextFactory(pageCacheTracer, EMPTY),
                 false,
                 EMPTY_LOG_TAIL);
-        neoStores = storeFactory.openAllNeoStores(true);
+        neoStores = storeFactory.openAllNeoStores();
         store = neoStores.getPropertyStore();
         converter = new PropertyPhysicalToLogicalConverter(store, StoreCursors.NULL);
     }

@@ -138,7 +138,7 @@ class DynamicArrayStoreTest {
                 false,
                 DEFAULT_DATABASE_NAME,
                 immutable.empty());
-        store.initialise(true, new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
+        store.initialise(new CursorContextFactory(PageCacheTracer.NULL, EMPTY));
         store.start(NULL_CONTEXT);
         return store;
     }

@@ -540,7 +540,7 @@ class NodeStoreTest {
                 new CursorContextFactory(pageCacheTracer, EMPTY),
                 false,
                 EMPTY_LOG_TAIL);
-        neoStores = factory.openAllNeoStores(true);
+        neoStores = factory.openAllNeoStores();
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
         nodeStore = neoStores.getNodeStore();
         return nodeStore;

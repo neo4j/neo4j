@@ -245,7 +245,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                         pageCache, directoryLayout.metadataStore(), directoryLayout.getDatabaseName(), cursorContext);
 
                 try (NeoStores dstStore = dstFactory.openNeoStores(
-                                true,
                                 StoreType.SCHEMA,
                                 StoreType.PROPERTY,
                                 StoreType.META_DATA,
@@ -428,7 +427,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                         true,
                         EMPTY_LOG_TAIL,
                         Sets.immutable.empty())
-                .openNeoStores(true, storesToOpen);
+                .openNeoStores(storesToOpen);
     }
 
     private void prepareBatchImportMigration(
@@ -506,7 +505,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory(
                 fileSystem, immediate(), pageCacheTracer, migrationDirectoryStructure.getDatabaseName());
         createStoreFactory(migrationDirectoryStructure, newFormat, idGeneratorFactory)
-                .openAllNeoStores(true)
+                .openAllNeoStores()
                 .close();
     }
 
@@ -654,7 +653,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
 
         // Token stores
         try (NeoStores dstStore = dstFactory.openNeoStores(
-                        true,
                         StoreType.SCHEMA,
                         StoreType.PROPERTY_KEY_TOKEN,
                         StoreType.PROPERTY,

@@ -117,7 +117,7 @@ public class RecordPropertyCursorTest {
                         false,
                         EMPTY_LOG_TAIL,
                         Sets.immutable.empty())
-                .openAllNeoStores(true);
+                .openAllNeoStores();
         owner = neoStores.getNodeStore().newRecord();
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
     }

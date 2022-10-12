@@ -81,7 +81,7 @@ class TestGrowingFileMemoryMapping {
                 false,
                 EMPTY_LOG_TAIL);
 
-        try (NeoStores neoStores = storeFactory.openAllNeoStores(true);
+        try (NeoStores neoStores = storeFactory.openAllNeoStores();
                 var storeCursors = new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT)) {
             NodeStore nodeStore = neoStores.getNodeStore();
             // when

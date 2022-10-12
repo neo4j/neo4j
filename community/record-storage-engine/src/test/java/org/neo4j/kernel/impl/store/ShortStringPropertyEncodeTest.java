@@ -78,7 +78,7 @@ class ShortStringPropertyEncodeTest {
                         new CursorContextFactory(pageCacheTracer, EMPTY),
                         false,
                         EMPTY_LOG_TAIL)
-                .openNeoStores(true, StoreType.PROPERTY, StoreType.PROPERTY_ARRAY, StoreType.PROPERTY_STRING);
+                .openNeoStores(StoreType.PROPERTY, StoreType.PROPERTY_ARRAY, StoreType.PROPERTY_STRING);
         propertyStore = neoStores.getPropertyStore();
     }
 

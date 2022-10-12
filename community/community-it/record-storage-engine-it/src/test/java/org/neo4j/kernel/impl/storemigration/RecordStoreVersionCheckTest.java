@@ -275,8 +275,7 @@ class RecordStoreVersionCheckTest {
                 false,
                 EMPTY_LOG_TAIL,
                 Sets.immutable.empty());
-        try (var metaDataStore =
-                storeFactory.openNeoStores(true, StoreType.META_DATA).getMetaDataStore()) {
+        try (var metaDataStore = storeFactory.openNeoStores(StoreType.META_DATA).getMetaDataStore()) {
             return metaDataStore.getStorageFile();
         }
     }

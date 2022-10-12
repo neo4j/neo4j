@@ -703,7 +703,7 @@ public class MetaDataStoreTest {
                 contextFactory,
                 false,
                 logTail);
-        return storeFactory.openNeoStores(true, StoreType.META_DATA).getMetaDataStore();
+        return storeFactory.openNeoStores(StoreType.META_DATA).getMetaDataStore();
     }
 
     private MetaDataStore newMetaDataStore(RecordFormats recordFormats) {
@@ -722,6 +722,6 @@ public class MetaDataStoreTest {
                 false,
                 EMPTY_LOG_TAIL,
                 Sets.immutable.empty());
-        return storeFactory.openNeoStores(true, StoreType.META_DATA).getMetaDataStore();
+        return storeFactory.openNeoStores(StoreType.META_DATA).getMetaDataStore();
     }
 }

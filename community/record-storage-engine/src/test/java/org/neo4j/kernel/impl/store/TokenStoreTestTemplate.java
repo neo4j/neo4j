@@ -112,8 +112,8 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord> {
         store = instantiateStore(
                 fs, file, idFile, generatorFactory, pageCache, logProvider, nameStore, formats, config);
         CursorContextFactory contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
-        nameStore.initialise(true, contextFactory);
-        store.initialise(true, contextFactory);
+        nameStore.initialise(contextFactory);
+        store.initialise(contextFactory);
         nameStore.start(NULL_CONTEXT);
         store.start(NULL_CONTEXT);
         storeCursors = createCursors(store, nameStore);

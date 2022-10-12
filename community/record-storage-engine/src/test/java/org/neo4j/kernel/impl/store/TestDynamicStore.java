@@ -103,7 +103,7 @@ class TestDynamicStore {
     }
 
     private DynamicArrayStore createDynamicArrayStore() throws IOException {
-        neoStores = storeFactory.openAllNeoStores(true);
+        neoStores = storeFactory.openAllNeoStores();
         neoStores.start(NULL_CONTEXT);
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
         return neoStores.getPropertyStore().getArrayStore();

@@ -87,7 +87,7 @@ abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S ext
                 new CursorContextFactory(pageCacheTracer, EMPTY),
                 false,
                 EMPTY_LOG_TAIL);
-        neoStores = factory.openAllNeoStores(true);
+        neoStores = factory.openAllNeoStores();
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
         initialiseStore(neoStores);
     }

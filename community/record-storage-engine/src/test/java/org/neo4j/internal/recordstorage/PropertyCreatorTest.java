@@ -96,7 +96,7 @@ class PropertyCreatorTest {
                         new CursorContextFactory(pageCacheTracer, EMPTY),
                         false,
                         EMPTY_LOG_TAIL)
-                .openNeoStores(true, StoreType.PROPERTY, StoreType.PROPERTY_STRING, StoreType.PROPERTY_ARRAY);
+                .openNeoStores(StoreType.PROPERTY, StoreType.PROPERTY_STRING, StoreType.PROPERTY_ARRAY);
         propertyStore = neoStores.getPropertyStore();
         StoreCursors storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
         var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);

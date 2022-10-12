@@ -229,7 +229,6 @@ public class SchemaStore44Migration {
             StoreFactory srcFactory)
             throws IOException {
         try (NeoStores srcStore = srcFactory.openNeoStores(
-                        false,
                         StoreType.SCHEMA,
                         StoreType.PROPERTY,
                         StoreType.LABEL_TOKEN,

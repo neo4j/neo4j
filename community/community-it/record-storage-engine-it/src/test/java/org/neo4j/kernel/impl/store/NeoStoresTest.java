@@ -78,6 +78,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
@@ -146,8 +147,8 @@ class NeoStoresTest {
     @BeforeEach
     void setUpNeoStores() {
         Config config = Config.defaults();
-        StoreFactory sf = getStoreFactory(config, databaseLayout, fs, NullLogProvider.getInstance());
-        sf.openAllNeoStores(true).close();
+        StoreFactory sf = getStoreFactory(config, databaseLayout, fs, NullLogProvider.getInstance(), false);
+        sf.openAllNeoStores().close();
         propertyKeyTokenHolder = new DelegatingTokenHolder(this::createPropertyKeyToken, TokenHolder.TYPE_PROPERTY_KEY);
     }
 
@@ -162,8 +163,8 @@ class NeoStoresTest {
     @Test
     void impossibleToGetStoreFromClosedNeoStoresContainer() {
         Config config = Config.defaults();
-        StoreFactory sf = getStoreFactory(config, databaseLayout, fs, NullLogProvider.getInstance());
-        NeoStores neoStores = sf.openAllNeoStores(true);
+        StoreFactory sf = getStoreFactory(config, databaseLayout, fs, NullLogProvider.getInstance(), false);
+        NeoStores neoStores = sf.openAllNeoStores();
 
         assertNotNull(neoStores.getMetaDataStore());
 
@@ -176,10 +177,10 @@ class NeoStoresTest {
     @Test
     void notAllowCreateDynamicStoreWithNegativeBlockSize() {
         Config config = Config.defaults();
-        StoreFactory sf = getStoreFactory(config, databaseLayout, fs, NullLogProvider.getInstance());
+        StoreFactory sf = getStoreFactory(config, databaseLayout, fs, NullLogProvider.getInstance(), false);
 
         var e = assertThrows(IllegalArgumentException.class, () -> {
-            try (NeoStores neoStores = sf.openNeoStores(true)) {
+            try (NeoStores neoStores = sf.openNeoStores()) {
                 neoStores.createDynamicArrayStore(
                         Path.of("someStore"), Path.of("someIdFile"), RecordIdType.ARRAY_BLOCK, -2);
             }
@@ -190,10 +191,10 @@ class NeoStoresTest {
     @Test
     void impossibleToGetNotRequestedStore() {
         Config config = Config.defaults();
-        StoreFactory sf = getStoreFactory(config, databaseLayout, fs, NullLogProvider.getInstance());
+        StoreFactory sf = getStoreFactory(config, databaseLayout, fs, NullLogProvider.getInstance(), false);
 
         var e = assertThrows(IllegalStateException.class, () -> {
-            try (NeoStores neoStores = sf.openNeoStores(true, StoreType.NODE_LABEL)) {
+            try (NeoStores neoStores = sf.openNeoStores(StoreType.NODE_LABEL)) {
                 neoStores.getMetaDataStore();
             }
         });
@@ -324,8 +325,8 @@ class NeoStoresTest {
 
     @Test
     void shouldInitializeTheTxIdToOne() {
-        StoreFactory factory = getStoreFactory(Config.defaults(), databaseLayout, fs, LOG_PROVIDER);
-        try (NeoStores neoStores = factory.openAllNeoStores(true)) {
+        StoreFactory factory = getStoreFactory(Config.defaults(), databaseLayout, fs, LOG_PROVIDER, false);
+        try (NeoStores neoStores = factory.openAllNeoStores()) {
             neoStores.getMetaDataStore();
         }
 
@@ -338,15 +339,18 @@ class NeoStoresTest {
     @Test
     void shouldThrowUnderlyingStorageExceptionWhenFailingToLoadStorage() throws IOException {
         FileSystemAbstraction fileSystem = fs;
-        StoreFactory factory = getStoreFactory(Config.defaults(), databaseLayout, fileSystem, LOG_PROVIDER);
+        var config = Config.defaults();
+        StoreFactory factory = getStoreFactory(config, databaseLayout, fileSystem, LOG_PROVIDER, false);
 
-        try (NeoStores neoStores = factory.openAllNeoStores(true)) {
+        try (NeoStores neoStores = factory.openAllNeoStores()) {
             neoStores.getMetaDataStore();
+            neoStores.flush(DatabaseFlushEvent.NULL, NULL_CONTEXT);
         }
         fileSystem.deleteFile(databaseLayout.metadataStore());
 
         assertThrows(StoreNotFoundException.class, () -> {
-            try (NeoStores neoStores = factory.openAllNeoStores()) {
+            var readOnlyFactory = getStoreFactory(config, databaseLayout, fileSystem, LOG_PROVIDER, true);
+            try (NeoStores neoStores = readOnlyFactory.openAllNeoStores()) {
                 neoStores.getMetaDataStore();
             }
         });
@@ -355,9 +359,9 @@ class NeoStoresTest {
     @Test
     void shouldSetHighestTransactionIdWhenNeeded() {
         // GIVEN
-        StoreFactory factory = getStoreFactory(Config.defaults(), databaseLayout, fs, LOG_PROVIDER);
+        StoreFactory factory = getStoreFactory(Config.defaults(), databaseLayout, fs, LOG_PROVIDER, false);
 
-        try (NeoStores neoStore = factory.openAllNeoStores(true)) {
+        try (NeoStores neoStore = factory.openAllNeoStores()) {
             MetaDataStore store = neoStore.getMetaDataStore();
             store.setLastCommittedAndClosedTransactionId(
                     40, 4444, BASE_TX_COMMIT_TIMESTAMP, CURRENT_FORMAT_LOG_HEADER_SIZE, 0);
@@ -377,9 +381,9 @@ class NeoStoresTest {
     @Test
     void shouldNotSetHighestTransactionIdWhenNeeded() {
         // GIVEN
-        StoreFactory factory = getStoreFactory(Config.defaults(), databaseLayout, fs, LOG_PROVIDER);
+        StoreFactory factory = getStoreFactory(Config.defaults(), databaseLayout, fs, LOG_PROVIDER, false);
 
-        try (NeoStores neoStore = factory.openAllNeoStores(true)) {
+        try (NeoStores neoStore = factory.openAllNeoStores()) {
             MetaDataStore store = neoStore.getMetaDataStore();
             store.setLastCommittedAndClosedTransactionId(
                     40, 4444, BASE_TX_COMMIT_TIMESTAMP, CURRENT_FORMAT_LOG_HEADER_SIZE, 0);
@@ -412,7 +416,7 @@ class NeoStoresTest {
                 CONTEXT_FACTORY,
                 false,
                 EMPTY_LOG_TAIL);
-        NeoStores neoStore = factory.openAllNeoStores(true);
+        NeoStores neoStore = factory.openAllNeoStores();
 
         var ex = assertThrows(UnderlyingStorageException.class, neoStore::close);
         assertEquals(errorMessage, ex.getCause().getMessage());
@@ -437,7 +441,7 @@ class NeoStoresTest {
                 EMPTY_LOG_TAIL);
 
         // when
-        try (NeoStores ignore = factory.openAllNeoStores(true)) {
+        try (NeoStores ignore = factory.openAllNeoStores()) {
             // then
             assertTrue(NeoStores.isStorePresent(fs, databaseLayout));
         }
@@ -464,7 +468,7 @@ class NeoStoresTest {
         StoreType[] allButLastStoreTypes = Arrays.copyOf(allStoreTypes, allStoreTypes.length - 1);
 
         // when
-        try (NeoStores ignore = factory.openNeoStores(true, allButLastStoreTypes)) {
+        try (NeoStores ignore = factory.openNeoStores(allButLastStoreTypes)) {
             // then
             assertFalse(NeoStores.isStorePresent(fs, databaseLayout));
         }
@@ -647,7 +651,11 @@ class NeoStoresTest {
     }
 
     private StoreFactory getStoreFactory(
-            Config config, RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs, NullLogProvider logProvider) {
+            Config config,
+            RecordDatabaseLayout databaseLayout,
+            FileSystemAbstraction fs,
+            NullLogProvider logProvider,
+            boolean readOnly) {
         return new StoreFactory(
                 databaseLayout,
                 config,
@@ -657,7 +665,7 @@ class NeoStoresTest {
                 fs,
                 logProvider,
                 CONTEXT_FACTORY,
-                false,
+                readOnly,
                 EMPTY_LOG_TAIL);
     }
 

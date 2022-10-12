@@ -540,7 +540,7 @@ class FulltextIndexProviderTest {
                         false,
                         EMPTY_LOG_TAIL);
                 var cursorContext = CursorContext.NULL_CONTEXT;
-                try (NeoStores neoStores = factory.openAllNeoStores(false);
+                try (NeoStores neoStores = factory.openAllNeoStores();
                         var storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
                     TokenHolders tokens = StoreTokens.readOnlyTokenHolders(neoStores, storeCursors);
                     SchemaStore schemaStore = neoStores.getSchemaStore();

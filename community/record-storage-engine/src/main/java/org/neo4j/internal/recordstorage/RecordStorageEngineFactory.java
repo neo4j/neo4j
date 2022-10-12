@@ -507,7 +507,6 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 true,
                 EMPTY_LOG_TAIL);
         try (NeoStores stores = factory.openNeoStores(
-                false,
                 StoreType.PROPERTY_KEY_TOKEN,
                 StoreType.PROPERTY_KEY_TOKEN_NAME,
                 StoreType.LABEL_TOKEN,

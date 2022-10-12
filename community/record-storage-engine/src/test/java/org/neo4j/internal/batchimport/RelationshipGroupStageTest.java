@@ -86,7 +86,7 @@ class RelationshipGroupStageTest {
                         NULL_CONTEXT_FACTORY,
                         false,
                         EMPTY_LOG_TAIL)
-                .openNeoStores(true, StoreType.RELATIONSHIP_GROUP);
+                .openNeoStores(StoreType.RELATIONSHIP_GROUP);
         store = stores.getRelationshipGroupStore();
     }
 

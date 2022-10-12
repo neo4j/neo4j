@@ -147,7 +147,7 @@ class ManyPropertyKeysIT {
                 contextFactory,
                 false,
                 EMPTY_LOG_TAIL);
-        NeoStores neoStores = storeFactory.openAllNeoStores(true);
+        NeoStores neoStores = storeFactory.openAllNeoStores();
         PropertyKeyTokenStore store = neoStores.getPropertyKeyTokenStore();
         try (var storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
                 var cursor = storeCursors.writeCursor(PROPERTY_KEY_TOKEN_CURSOR)) {

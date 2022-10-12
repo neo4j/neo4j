@@ -131,7 +131,7 @@ class CommonAbstractStoreBehaviourTest {
 
     private void createStore() {
         store = new MyStore(config, pageCache, 8);
-        store.initialise(true, CONTEXT_FACTORY);
+        store.initialise(CONTEXT_FACTORY);
         readCursor = store.openPageCursorForReading(0, NULL_CONTEXT);
     }
 
@@ -139,17 +139,17 @@ class CommonAbstractStoreBehaviourTest {
     void writingOfHeaderRecordDuringInitialiseNewStoreFileMustThrowOnPageOverflow() {
         // 16-byte header will overflow an 8-byte page size
         MyStore store = new MyStore(config, pageCache, PAGE_SIZE + 1);
-        assertThrowsUnderlyingStorageException(() -> store.initialise(true, CONTEXT_FACTORY));
+        assertThrowsUnderlyingStorageException(() -> store.initialise(CONTEXT_FACTORY));
     }
 
     @Test
     void extractHeaderRecordDuringLoadStorageMustThrowOnPageOverflow() {
         MyStore first = new MyStore(config, pageCache, 8);
-        first.initialise(true, CONTEXT_FACTORY);
+        first.initialise(CONTEXT_FACTORY);
         first.close();
 
         MyStore second = new MyStore(config, pageCache, PAGE_SIZE + 1);
-        assertThrowsUnderlyingStorageException(() -> second.initialise(false, CONTEXT_FACTORY));
+        assertThrowsUnderlyingStorageException(() -> second.initialise(CONTEXT_FACTORY));
     }
 
     @Test

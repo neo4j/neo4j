@@ -110,7 +110,7 @@ class PropertyDeleterTest {
                         new CursorContextFactory(pageCacheTracer, EMPTY),
                         false,
                         EMPTY_LOG_TAIL)
-                .openAllNeoStores(true);
+                .openAllNeoStores();
         propertyStore = neoStores.getPropertyStore();
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
         deleter = new PropertyDeleter(

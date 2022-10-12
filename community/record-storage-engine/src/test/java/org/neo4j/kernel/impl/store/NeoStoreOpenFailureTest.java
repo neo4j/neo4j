@@ -71,7 +71,6 @@ class NeoStoreOpenFailureTest {
         InternalLogProvider logProvider = NullLogProvider.getInstance();
         RecordFormats formats = defaultFormat();
         RecordFormatPropertyConfigurator.configureRecordFormat(formats, config);
-        boolean create = true;
         StoreType[] storeTypes = StoreType.values();
         ImmutableSet<OpenOption> openOptions = immutable.empty();
         CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
@@ -85,7 +84,6 @@ class NeoStoreOpenFailureTest {
                 pageCacheTracer,
                 logProvider,
                 formats,
-                create,
                 contextFactory,
                 false,
                 logTail,
@@ -112,7 +110,6 @@ class NeoStoreOpenFailureTest {
                                 pageCacheTracer,
                                 logProvider,
                                 formats,
-                                create,
                                 contextFactory,
                                 false,
                                 logTail,

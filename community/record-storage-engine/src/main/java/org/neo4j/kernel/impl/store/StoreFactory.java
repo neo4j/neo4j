@@ -126,38 +126,17 @@ public class StoreFactory {
      * @return container with all opened stores
      */
     public NeoStores openAllNeoStores() {
-        return openNeoStores(false, StoreType.values());
-    }
-
-    /**
-     * Open {@link NeoStores} with all possible stores with a possibility to create store if it not exist.
-     * @param createStoreIfNotExists - should store be created if it's not exist
-     * @return container with all opened stores
-     */
-    public NeoStores openAllNeoStores(boolean createStoreIfNotExists) {
-        return openNeoStores(createStoreIfNotExists, StoreType.values());
+        return openNeoStores(StoreType.values());
     }
 
     /**
      * Open {@link NeoStores} for requested and store types. If requested store depend from non request store,
      * it will be automatically opened as well.
-     * If some store does not exist it will <b>not</b> be created.
      * @param storeTypes - types of stores to be opened.
      * @return container with opened stores
      */
     public NeoStores openNeoStores(StoreType... storeTypes) {
-        return openNeoStores(false, storeTypes);
-    }
-
-    /**
-     * Open {@link NeoStores} for requested and store types. If requested store depend from non request store,
-     * it will be automatically opened as well.
-     * @param createStoreIfNotExists - should store be created if it's not exist
-     * @param storeTypes - types of stores to be opened.
-     * @return container with opened stores
-     */
-    public NeoStores openNeoStores(boolean createStoreIfNotExists, StoreType... storeTypes) {
-        if (createStoreIfNotExists) {
+        if (!readOnly) {
             try {
                 fileSystemAbstraction.mkdirs(databaseLayout.databaseDirectory());
             } catch (IOException e) {
@@ -174,7 +153,6 @@ public class StoreFactory {
                 pageCacheTracer,
                 logProvider,
                 recordFormats,
-                createStoreIfNotExists,
                 contextFactory,
                 readOnly,
                 logTailMetadata,

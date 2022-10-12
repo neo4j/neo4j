@@ -132,7 +132,7 @@ class OnlineIndexUpdatesTest {
                 false,
                 EMPTY_LOG_TAIL);
 
-        neoStores = storeFactory.openAllNeoStores(true);
+        neoStores = storeFactory.openAllNeoStores();
         var counts = new GBPTreeCountsStore(
                 pageCache,
                 databaseLayout.countStore(),

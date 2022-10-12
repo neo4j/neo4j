@@ -286,7 +286,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private void instantiateStores() throws IOException {
         neoStores = newStoreFactory(databaseLayout, idGeneratorFactory, contextFactory, immutable.empty())
-                .openAllNeoStores(true);
+                .openAllNeoStores();
         tokenHolders = StoreTokens.directTokenHolders(neoStores, contextFactory, memoryTracker);
 
         temporaryNeoStores = instantiateTempStores();
@@ -307,7 +307,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private NeoStores instantiateTempStores() {
         return newStoreFactory(temporaryDatabaseLayout, tempIdGeneratorFactory, contextFactory, immutable.empty())
-                .openNeoStores(true, TEMP_STORE_TYPES);
+                .openNeoStores(TEMP_STORE_TYPES);
     }
 
     public static BatchingNeoStores batchingNeoStores(

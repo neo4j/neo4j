@@ -149,7 +149,7 @@ class RelationshipGroupStoreTest {
     private void createAndVerify(Integer customThreshold) {
         int expectedThreshold = customThreshold != null ? customThreshold : defaultThreshold;
         StoreFactory factory = factory(customThreshold);
-        NeoStores neoStores = factory.openAllNeoStores(true);
+        NeoStores neoStores = factory.openAllNeoStores();
         assertEquals(expectedThreshold, neoStores.getRelationshipGroupStore().getStoreHeaderInt());
         neoStores.close();
 
@@ -360,7 +360,7 @@ class RelationshipGroupStoreTest {
                 PageCacheSupportExtension.getPageCache(fs, config().withInconsistentReads(nextReadIsInconsistent))) {
             StoreFactory factory = factory(null, pageCache);
 
-            try (NeoStores neoStores = factory.openAllNeoStores(true);
+            try (NeoStores neoStores = factory.openAllNeoStores();
                     var storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT)) {
                 RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
                 RelationshipGroupRecord record = new RelationshipGroupRecord(1)

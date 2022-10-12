@@ -173,11 +173,11 @@ class CommonAbstractStoreTest {
                 NullLogProvider.getInstance(),
                 GraphDatabaseInternalSettings.label_block_size.defaultValue(),
                 recordFormats,
-                false,
+                true,
                 databaseLayout.getDatabaseName(),
                 immutable.empty())) {
-            StoreNotFoundException storeNotFoundException = assertThrows(
-                    StoreNotFoundException.class, () -> dynamicArrayStore.initialise(false, CONTEXT_FACTORY));
+            StoreNotFoundException storeNotFoundException =
+                    assertThrows(StoreNotFoundException.class, () -> dynamicArrayStore.initialise(CONTEXT_FACTORY));
             assertEquals(
                     "Fail to read header record of store file: " + storeFile.toAbsolutePath(),
                     storeNotFoundException.getMessage());
@@ -241,7 +241,7 @@ class CommonAbstractStoreTest {
                 NullLogProvider.getInstance(),
                 recordFormat,
                 immutable.with(DELETE_ON_CLOSE));
-        store.initialise(true, CONTEXT_FACTORY);
+        store.initialise(CONTEXT_FACTORY);
         store.start(NULL_CONTEXT);
         assertTrue(fs.fileExists(nodeStore));
         assertTrue(fs.fileExists(idFile));
@@ -281,7 +281,7 @@ class CommonAbstractStoreTest {
                 log,
                 recordFormat,
                 immutable.empty());
-        store.initialise(false, CONTEXT_FACTORY);
+        store.initialise(CONTEXT_FACTORY);
         return store;
     }
 

@@ -145,7 +145,6 @@ public class SchemaStore44Reader implements AutoCloseable {
                 cursorContextFactory,
                 logProvider,
                 recordFormats,
-                true,
                 databaseName,
                 openOptions);
     }
@@ -430,7 +429,6 @@ public class SchemaStore44Reader implements AutoCloseable {
                 CursorContextFactory cursorContextFactory,
                 InternalLogProvider logProvider,
                 RecordFormats recordFormats,
-                boolean readOnly,
                 String databaseName,
                 ImmutableSet<OpenOption> openOptions) {
             super(
@@ -446,10 +444,10 @@ public class SchemaStore44Reader implements AutoCloseable {
                     TYPE_DESCRIPTOR,
                     recordFormats.schema(),
                     VALID_STORE_HEADER,
-                    readOnly,
+                    true,
                     databaseName,
                     openOptions);
-            initialise(false, cursorContextFactory);
+            initialise(cursorContextFactory);
         }
     }
 }

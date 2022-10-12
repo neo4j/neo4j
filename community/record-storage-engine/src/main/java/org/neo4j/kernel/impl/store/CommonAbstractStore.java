@@ -152,9 +152,9 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
         this.log = logProvider.getLog(getClass());
     }
 
-    protected void initialise(boolean createIfNotExists, CursorContextFactory contextFactory) {
+    protected void initialise(CursorContextFactory contextFactory) {
         try {
-            boolean created = checkAndLoadStorage(createIfNotExists, contextFactory);
+            boolean created = checkAndLoadStorage(contextFactory);
             if (!created) {
                 openIdGenerator(contextFactory);
             }
@@ -184,19 +184,17 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
      * Note: This method will map the file with the page cache. The store file must not
      * be accessed directly until it has been unmapped - the store file must only be
      * accessed through the page cache.
-     * @param createIfNotExists If true, creates and initialises the store file if it does not exist already. If false,
-     * this method will instead throw an exception in that situation.
      * @return {@code true} if the store was created as part of this call, otherwise {@code false} if it already existed.
      */
-    private boolean checkAndLoadStorage(boolean createIfNotExists, CursorContextFactory contextFactory) {
+    private boolean checkAndLoadStorage(CursorContextFactory contextFactory) {
         try (var cursorContext = contextFactory.create("checkAndLoadStorage")) {
             try {
-                if (createIfNotExists && !fileSystem.fileExists(storageFile)) {
+                if (!readOnly && !fileSystem.fileExists(storageFile)) {
                     if (createNewStoreFile(contextFactory, cursorContext)) {
                         // store file was not there, and we just created it.
                         return true;
                     }
-                } else if (openExistentStore(createIfNotExists, contextFactory, cursorContext)) {
+                } else if (openExistentStore(contextFactory, cursorContext)) {
                     return true; // <-- successfully created and initialized
                 }
             } catch (IOException e) {
@@ -206,8 +204,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
         }
     }
 
-    private boolean openExistentStore(
-            boolean createIfNotExists, CursorContextFactory contextFactory, CursorContext cursorContext)
+    private boolean openExistentStore(CursorContextFactory contextFactory, CursorContext cursorContext)
             throws IOException {
         try {
             determineRecordSize(storeHeaderFormat.generateHeader());
@@ -241,7 +238,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
             }
 
             // we can be here if existent store file was there, but it was corrupted in a way.
-            if (createIfNotExists) {
+            if (!readOnly) {
                 try {
                     if (createNewStoreFile(contextFactory, cursorContext)) {
                         return true;

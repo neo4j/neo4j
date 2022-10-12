@@ -92,7 +92,7 @@ class ConsistencyCheckingApplierTest {
                         new CursorContextFactory(pageCacheTracer, EMPTY),
                         false,
                         EMPTY_LOG_TAIL)
-                .openAllNeoStores(true);
+                .openAllNeoStores();
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         storeCursors = new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT);
         checker = new ConsistencyCheckingApplier(relationshipStore, CursorContext.NULL_CONTEXT);
