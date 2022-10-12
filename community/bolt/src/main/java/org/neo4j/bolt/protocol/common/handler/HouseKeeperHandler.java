@@ -59,6 +59,10 @@ public class HouseKeeperHandler extends ChannelInboundHandlerAdapter {
                 log.error("Fatal error occurred when handling a client connection: " + ctx.channel(), cause);
             }
         } finally {
+            // Note: Typically we would invoke Connection#close here, however this error may be
+            // triggered while streaming thus preventing us from releasing the worker thread for
+            // graceful closure. Closing the network channel will release the worker thread and
+            // cause the connection to be closed correctly.
             ctx.close();
         }
     }

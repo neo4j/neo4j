@@ -21,7 +21,6 @@ package org.neo4j.bolt.transport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,13 +29,18 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.embedded.EmbeddedChannel;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.runtime.throttle.ChannelWriteThrottleHandler;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogAssertions;
+import org.neo4j.logging.NullLogProvider;
 
 class ChannelWriteThrottleHandlerTest {
     @Test
-    void shouldThrowWhenMaxDurationReached() throws Exception {
-        var channel = new EmbeddedChannel(new ChannelWriteThrottleHandler(10));
+    void shouldCloseChannelWhenMaxDurationReached() throws Exception {
+        var logProvider = new AssertableLogProvider();
+        var channel = new EmbeddedChannel(new ChannelWriteThrottleHandler(10, logProvider));
 
         // set a low write buffer to trigger `channelWritabilityChanged()` and schedule reaper function.
         DefaultChannelConfig config = (DefaultChannelConfig) channel.config();
@@ -47,13 +51,19 @@ class ChannelWriteThrottleHandlerTest {
         Thread.sleep(100);
         channel.runScheduledPendingTasks();
 
-        assertThrows(TransportThrottleException.class, channel::checkException);
-        assertThat(writeFuture.cause()).isInstanceOf(TransportThrottleException.class);
+        Assertions.assertThat(channel.isOpen()).isFalse();
+
+        LogAssertions.assertThat(logProvider)
+                .forClass(ChannelWriteThrottleHandler.class)
+                .forLevel(AssertableLogProvider.Level.ERROR)
+                .containsMessageWithExceptionMatching(
+                        "Fatal error occurred when handling a client connection",
+                        ex -> ex instanceof TransportThrottleException);
     }
 
     @Test
     void shouldNotThrowWhenChannelBecomesWritableAgain() throws Exception {
-        var throttle = new ChannelWriteThrottleHandler(100);
+        var throttle = new ChannelWriteThrottleHandler(100, NullLogProvider.getInstance());
         var channel = new EmbeddedChannel(throttle);
         var ctxMock = mock(ChannelHandlerContext.class);
         var channelMock = mock(Channel.class);

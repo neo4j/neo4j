@@ -77,6 +77,26 @@ public final class ConnectionAssertions extends AbstractAssert<ConnectionAsserti
         return this;
     }
 
+    public ConnectionAssertions inWorkerThread() {
+        isNotNull();
+
+        if (!this.actual.inWorkerThread()) {
+            failWithMessage("Expected calling thread to be current worker thread");
+        }
+
+        return this;
+    }
+
+    public ConnectionAssertions notInWorkerThread() {
+        isNotNull();
+
+        if (this.actual.inWorkerThread()) {
+            failWithMessage("Expected calling thread to not be current worker thread");
+        }
+
+        return this;
+    }
+
     public ConnectionAssertions isInterrupted() {
         isNotNull();
 
@@ -92,6 +112,26 @@ public final class ConnectionAssertions extends AbstractAssert<ConnectionAsserti
 
         if (this.actual.isInterrupted()) {
             failWithMessage("Expected connection to not be interrupted");
+        }
+
+        return this;
+    }
+
+    public ConnectionAssertions isActive() {
+        isNotNull();
+
+        if (!this.actual.isActive()) {
+            failWithMessage("Expected connection to be active");
+        }
+
+        return this;
+    }
+
+    public ConnectionAssertions isNotActive() {
+        isNotNull();
+
+        if (this.actual.isActive()) {
+            failWithMessage("Expected connection to not be active");
         }
 
         return this;

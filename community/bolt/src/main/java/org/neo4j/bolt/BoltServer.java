@@ -373,8 +373,6 @@ public class BoltServer extends LifecycleAdapter {
 
             // once the remaining connections have been shut down, we'll request a graceful shutdown from the network
             // thread pool
-            // TODO: Force shutdown if timeout exceeded?
-            eventLoopGroup.shutdownGracefully().awaitUninterruptibly();
             eventLoopGroup
                     .shutdownGracefully(
                             config.get(GraphDatabaseInternalSettings.netty_server_shutdown_quiet_period),

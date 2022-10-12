@@ -21,12 +21,11 @@ package org.neo4j.bolt.runtime.throttle;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.neo4j.bolt.transport.TransportThrottleException;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 
 /**
  * This handler monitors outgoing writes and the writability of the underlying channel and terminates connections
@@ -34,19 +33,25 @@ import org.neo4j.bolt.transport.TransportThrottleException;
  */
 public class ChannelWriteThrottleHandler extends ChannelDuplexHandler {
 
-    private final List<ChannelPromise> pendingWriteOperations = new ArrayList<>();
-    private Future<?> reaperFuture;
     private final long maxWriteLockMillis;
+    private final InternalLog log;
 
-    public ChannelWriteThrottleHandler(long maxWriteLockMillis) {
+    private Future<?> reaperFuture;
+
+    public ChannelWriteThrottleHandler(long maxWriteLockMillis, InternalLogProvider logging) {
         this.maxWriteLockMillis = maxWriteLockMillis;
+        this.log = logging.getLog(ChannelWriteThrottleHandler.class);
     }
 
     @Override
-    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        super.write(ctx, msg, promise);
-        pendingWriteOperations.add(promise);
-        promise.addListener(future -> pendingWriteOperations.remove(promise));
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        var reaperFuture = this.reaperFuture;
+        if (reaperFuture != null) {
+            reaperFuture.cancel(false);
+            this.reaperFuture = null;
+        }
+
+        super.channelInactive(ctx);
     }
 
     @Override
@@ -61,17 +66,25 @@ public class ChannelWriteThrottleHandler extends ChannelDuplexHandler {
                 reaperFuture = ctx.executor()
                         .schedule(
                                 () -> {
-                                    var ex = new TransportThrottleException(maxWriteLockMillis);
-                                    // we create a copy because o.w. we run into a ConcurrentModificationException from
-                                    // the removal listener
-                                    var copyList = new ArrayList<>(pendingWriteOperations);
-                                    copyList.forEach(channelPromise -> channelPromise.setFailure(ex));
-                                    ctx.fireExceptionCaught(ex);
+                                    var ex = new TransportThrottleException(this.maxWriteLockMillis);
+                                    log.error("Fatal error occurred when handling a client connection", ex);
+
+                                    // The client failed to consume a sufficient amount of the incoming network buffer
+                                    // within the mandated time period. Close the channel immediately as we no longer
+                                    // have the capacity to notify the client about this issue (as its incoming buffer
+                                    // as well as out outgoing buffer are currently full).
+                                    //
+                                    // Note: Typically we would invoke Connection#close here, however this error may be
+                                    // triggered while streaming thus preventing us from releasing the worker thread for
+                                    // graceful closure. Closing the network channel will release the worker thread and
+                                    // cause the connection to be closed correctly.
+                                    ctx.close();
                                 },
                                 maxWriteLockMillis,
                                 TimeUnit.MILLISECONDS);
             }
         }
+
         ctx.fireChannelWritabilityChanged();
     }
 }

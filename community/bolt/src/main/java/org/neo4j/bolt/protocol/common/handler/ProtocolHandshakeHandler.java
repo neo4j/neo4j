@@ -195,7 +195,10 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
         var writeTimeoutMillis = config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_max_duration)
                 .toMillis();
         if (writeThrottleEnabled && writeTimeoutMillis != 0) {
-            ctx.pipeline().addLast("channelThrottleHandler", new ChannelWriteThrottleHandler(writeTimeoutMillis));
+            ctx.pipeline()
+                    .addLast(
+                            "channelThrottleHandler",
+                            new ChannelWriteThrottleHandler(writeTimeoutMillis, this.logging));
         }
 
         ProtocolLoggingHandler.shiftToEndIfPresent(ctx);

@@ -26,6 +26,7 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -218,6 +219,7 @@ class AtomicSchedulingConnectionTest {
         ConnectionAssertions.assertThat(this.connection)
                 .isIdling()
                 .hasNoPendingJobs()
+                .notInWorkerThread()
                 .isNotInterrupted()
                 .isNotClosing()
                 .isNotClosed();
@@ -225,9 +227,17 @@ class AtomicSchedulingConnectionTest {
         // however, once a job is submitted, they should consider themselves to be busy while their tasks remain pending
         var barrier = new CyclicBarrier(2);
         var latch = new CountDownLatch(1);
+        var failure = new AtomicReference<AssertionError>();
         this.connection.submit(fsm -> {
             try {
                 barrier.await();
+
+                try {
+                    ConnectionAssertions.assertThat(connection).inWorkerThread();
+                } catch (AssertionError ex) {
+                    failure.set(ex);
+                }
+
                 latch.await();
             } catch (BrokenBarrierException | InterruptedException ex) {
                 throw new RuntimeException("Test interrupted", ex);
@@ -237,6 +247,7 @@ class AtomicSchedulingConnectionTest {
         ConnectionAssertions.assertThat(this.connection)
                 .isNotIdling()
                 .hasPendingJobs()
+                .notInWorkerThread()
                 .isNotInterrupted()
                 .isNotClosing()
                 .isNotClosed();
@@ -255,13 +266,24 @@ class AtomicSchedulingConnectionTest {
 
         barrier.await(); // ensure that the job is actually running before we carry on
 
-        ConnectionAssertions.assertThat(this.connection).isNotIdling().hasNoPendingJobs();
+        ConnectionAssertions.assertThat(this.connection)
+                .isNotIdling()
+                .hasNoPendingJobs()
+                .notInWorkerThread();
 
         // once we allow the job to complete, the connection should return to idle
         latch.countDown();
         thread.join(); // ensure that the job has terminated cleanly
 
-        ConnectionAssertions.assertThat(this.connection).isIdling().hasNoPendingJobs();
+        ConnectionAssertions.assertThat(this.connection)
+                .isIdling()
+                .hasNoPendingJobs()
+                .notInWorkerThread();
+
+        var innerFailure = failure.get();
+        if (innerFailure != null) {
+            throw innerFailure;
+        }
     }
 
     @Test
@@ -309,13 +331,19 @@ class AtomicSchedulingConnectionTest {
         // submit an empty job to ensure that the connection doesn't inline close due to being in idle
         this.connection.submit(fsm -> {});
 
-        ConnectionAssertions.assertThat(this.connection).isNotClosing().isNotClosed();
+        ConnectionAssertions.assertThat(this.connection)
+                .isActive()
+                .isNotClosing()
+                .isNotClosed();
 
         this.connection.close();
 
         // when the connection is still busy (e.g. is currently executing or has pending jobs), the connection should
         // simply be marked for closure but never actually close unless its jobs are executed
-        ConnectionAssertions.assertThat(this.connection).isClosing().isNotClosed();
+        ConnectionAssertions.assertThat(this.connection)
+                .isNotActive()
+                .isClosing()
+                .isNotClosed();
     }
 
     @Test
@@ -324,7 +352,10 @@ class AtomicSchedulingConnectionTest {
 
         this.selectProtocol();
 
-        ConnectionAssertions.assertThat(this.connection).isNotClosing().isNotClosed();
+        ConnectionAssertions.assertThat(this.connection)
+                .isActive()
+                .isNotClosing()
+                .isNotClosed();
 
         this.connection.registerListener(listener);
         Mockito.verify(listener).onListenerAdded();
@@ -334,7 +365,10 @@ class AtomicSchedulingConnectionTest {
 
         // when closing in idle, the connection should immediately transition to closed as to not clog up the worker
         // pool without good reason
-        ConnectionAssertions.assertThat(this.connection).isNotClosing().isClosed();
+        ConnectionAssertions.assertThat(this.connection)
+                .isNotActive()
+                .isNotClosing()
+                .isClosed();
 
         // any closeable dependencies should also be closed once the connection is closed
         Mockito.verify(this.fsm).close();
@@ -366,13 +400,19 @@ class AtomicSchedulingConnectionTest {
 
         this.selectProtocol();
 
+        ConnectionAssertions.assertThat(connection).isActive();
+
         // submit a job and capture the actual job on the executor service in order to delay the closure
         var runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
         this.connection.submit(job1);
         Mockito.verify(this.executorService).submit(runnableCaptor.capture());
 
+        ConnectionAssertions.assertThat(connection).isActive();
+
         this.connection.submit(job2);
         Mockito.verifyNoMoreInteractions(this.executorService);
+
+        ConnectionAssertions.assertThat(connection).isActive();
 
         this.connection.registerListener(listener);
         Mockito.verify(listener).onListenerAdded();
@@ -385,7 +425,10 @@ class AtomicSchedulingConnectionTest {
         // pending jobs
         this.connection.close();
 
-        ConnectionAssertions.assertThat(this.connection).isClosing().isNotClosed();
+        ConnectionAssertions.assertThat(this.connection)
+                .isNotActive()
+                .isClosing()
+                .isNotClosed();
 
         // if we invoke the submitted runnable, the connection should process the remaining jobs and finally close
         // itself once completed
@@ -405,7 +448,10 @@ class AtomicSchedulingConnectionTest {
         inOrder.verify(listener).onClosed();
         inOrder.verifyNoMoreInteractions();
 
-        ConnectionAssertions.assertThat(this.connection).isNotClosing().isClosed();
+        ConnectionAssertions.assertThat(this.connection)
+                .isNotActive()
+                .isNotClosing()
+                .isClosed();
     }
 
     @Test
@@ -592,9 +638,13 @@ class AtomicSchedulingConnectionTest {
         Mockito.verify(listener).onListenerAdded();
         Mockito.verifyNoMoreInteractions(listener);
 
+        ConnectionAssertions.assertThat(this.connection).isActive();
+
         Assertions.assertThat(this.connection.loginContext()).isNull();
 
         var flags = this.connection.authenticate(token, USER_AGENT);
+
+        ConnectionAssertions.assertThat(this.connection).isActive();
 
         // there should be no authentication flags set as the credentials were deemed valid at the time of
         // authentication

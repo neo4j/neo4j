@@ -94,7 +94,7 @@ public class ConcurrentAccessIT {
             barrier.await(1, TimeUnit.MINUTES);
 
             // wait until all workers complete their assignment
-            barrier.await(1, TimeUnit.MINUTES);
+            barrier.await(5, TimeUnit.MINUTES);
 
             // ensure that no errors were reported, otherwise forcefully fail the test (errors will be reported to
             // stderr)

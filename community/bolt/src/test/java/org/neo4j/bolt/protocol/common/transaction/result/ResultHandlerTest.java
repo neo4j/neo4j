@@ -23,7 +23,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.bolt.protocol.v40.messaging.util.MessageMetadataParserV40.STREAM_LIMIT_UNLIMITED;
@@ -34,10 +33,13 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.response.SuccessMessage;
 import org.neo4j.bolt.protocol.common.message.result.BoltResult;
+import org.neo4j.bolt.protocol.error.streaming.BoltStreamingWriteException;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -47,21 +49,23 @@ import org.neo4j.logging.NullLogProvider;
 public class ResultHandlerTest {
     @Test
     void shouldCallHaltOnUnexpectedFailures() {
-        // Given
+        var future = Mockito.mock(ChannelFuture.class, Mockito.RETURNS_SELF);
+        Mockito.doReturn(false).when(future).isSuccess();
+        Mockito.doReturn(new RuntimeException("Something went horribly wrong"))
+                .when(future)
+                .cause();
+
         var ch = mock(Channel.class);
-        doThrow(new RuntimeException("Something went horribly wrong"))
-                .when(ch)
-                .writeAndFlush(any(SuccessMessage.class));
 
         var connection = ConnectionMockFactory.newFactory().withChannel(ch).build();
+        Mockito.doReturn(future).when(connection).writeAndFlush(Mockito.any());
 
         var handler = new ResultHandler(connection, NullLogProvider.getInstance());
 
-        // When
-        handler.onFinish();
-
-        // Then
-        verify(connection).close();
+        Assertions.assertThatExceptionOfType(BoltStreamingWriteException.class)
+                .isThrownBy(handler::onFinish)
+                .withCauseExactlyInstanceOf(RuntimeException.class)
+                .withMessage("Failed to finalize batch: Cannot write result response");
     }
 
     @Test
@@ -82,10 +86,10 @@ public class ResultHandlerTest {
 
         // Given
         var outputClosed = new RuntimeException("UH OH!");
-        Error txTerminated = Error.from(new TransactionTerminatedException(Status.Transaction.Terminated));
+        var txTerminated = Error.from(new TransactionTerminatedException(Status.Transaction.Terminated));
 
         // When
-        AssertableLogProvider logProvider = emulateFailureWritingError(txTerminated, outputClosed);
+        var logProvider = emulateFailureWritingError(txTerminated, outputClosed);
 
         // Then
         assertThat(logProvider)
@@ -112,8 +116,13 @@ public class ResultHandlerTest {
 
     @Test
     void shouldPullTheResult() throws Throwable {
-        var ch = mock(Channel.class);
-        var connection = ConnectionMockFactory.newFactory().withChannel(ch).build();
+        var future = mock(ChannelFuture.class, Mockito.RETURNS_SELF);
+        Mockito.doReturn(true).when(future).isSuccess();
+
+        var connection = ConnectionMockFactory.newFactory().build();
+        Mockito.doReturn(future).when(connection).writeAndFlush(Mockito.any());
+
+        Mockito.doReturn(future).when(connection).writeAndFlush(Mockito.any());
 
         var handler = new ResultHandler(connection, NullLogProvider.getInstance());
 
@@ -123,13 +132,18 @@ public class ResultHandlerTest {
         handler.onFinish();
 
         verify(result).handleRecords(any(BoltResult.RecordConsumer.class), eq(STREAM_LIMIT_UNLIMITED));
-        verify(ch).writeAndFlush(any(SuccessMessage.class));
+        verify(connection).writeAndFlush(any(SuccessMessage.class));
+        verify(future).sync();
+        verify(future).isSuccess();
     }
 
     @Test
     void shouldDiscardTheResult() throws Throwable {
-        var channel = mock(Channel.class);
-        var connection = ConnectionMockFactory.newFactory().withChannel(channel).build();
+        var future = mock(ChannelFuture.class, Mockito.RETURNS_SELF);
+        Mockito.doReturn(true).when(future).isSuccess();
+
+        var connection = ConnectionMockFactory.newFactory().build();
+        Mockito.doReturn(future).when(connection).writeAndFlush(Mockito.any());
 
         var handler = new ResultHandler(connection, NullLogProvider.getInstance());
 
@@ -139,14 +153,16 @@ public class ResultHandlerTest {
         handler.onFinish();
 
         verify(result).discardRecords(any(BoltResult.DiscardingRecordConsumer.class), eq(STREAM_LIMIT_UNLIMITED));
-        verify(channel).writeAndFlush(any(SuccessMessage.class));
+        verify(connection).writeAndFlush(any(SuccessMessage.class));
+        verify(future).sync();
+        verify(future).isSuccess();
     }
 
     private static AssertableLogProvider emulateFailureWritingError(Error error, Throwable exception) {
         var logProvider = new AssertableLogProvider();
 
         // I'm sorry ... I truly am ...
-        var future = mock(ChannelFuture.class);
+        var future = mock(ChannelFuture.class, Mockito.RETURNS_SELF);
 
         doReturn(false).when(future).isSuccess();
 
@@ -161,13 +177,10 @@ public class ResultHandlerTest {
                 .when(future)
                 .addListener(any());
 
-        var ch = mock(Channel.class);
+        var connection = ConnectionMockFactory.newFactory().build();
 
-        doReturn(null).when(ch).remoteAddress();
-
-        doReturn(future).when(ch).writeAndFlush(any());
-
-        var connection = ConnectionMockFactory.newFactory().withChannel(ch).build();
+        Mockito.doReturn(null).when(connection).clientAddress();
+        Mockito.doReturn(future).when(connection).writeAndFlush(Mockito.any());
 
         var handler = new ResultHandler(connection, logProvider);
 

@@ -19,8 +19,6 @@
  */
 package org.neo4j.bolt.throttle;
 
-import static java.util.Collections.singletonMap;
-import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 
 import java.net.SocketException;
@@ -32,9 +30,9 @@ import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.neo4j.bolt.protocol.common.handler.HouseKeeperHandler;
+import org.neo4j.bolt.runtime.throttle.ChannelWriteThrottleHandler;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
 import org.neo4j.bolt.test.annotation.connection.transport.ExcludeTransport;
@@ -59,10 +57,7 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 /**
  * Ensures that Bolt correctly terminates connections when a client fails to consume messages thus triggering
  * backpressure through the outgoing message buffer.
- * <p />
- * FIXME: Disabled due to flakiness on certain operating systems. Likely needs a rewrite.
  */
-@Disabled
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
 @BoltTestExtension
@@ -100,19 +95,21 @@ public class WriteThrottleTimeoutIT {
 
     // Restrict to raw transports as we do not get direct access to WebSocket sockets
     @TransportTest
+    @Timeout(value = 1, unit = TimeUnit.MINUTES)
     @ExcludeTransport({TransportType.WEBSOCKET, TransportType.WEBSOCKET_TLS})
     void sendingButNotReceivingClientShouldBeKilledWhenWriteThrottleMaxDurationIsReached(
             BoltWire wire, @Authenticated TransportConnection connection) {
-        var largeString = " ".repeat((int) ByteUnit.kibiBytes(64));
-
         connection.setOption(StandardSocketOptions.SO_RCVBUF, (int) ByteUnit.kibiBytes(32));
 
         var sender = otherThread.execute(() -> {
             // TODO: There seems to be additional buffering going on somewhere thus making this flakey unless we keep
             //       spamming the server until the error is raised
             while (!Thread.interrupted()) {
+                // we're explicitly choosing a query which returns a significant number of results while only taking a
+                // small amount of bytes to be encoded so that we don't accidentally fill up the send buffer first which
+                // would cause this test to lock up
                 connection
-                        .send(wire.run("RETURN $data as data", asMapValue(singletonMap("data", largeString))))
+                        .send(wire.run("UNWIND range(0, 1000000) AS x RETURN randomUuid()"))
                         .send(wire.pull());
             }
 
@@ -124,7 +121,7 @@ public class WriteThrottleTimeoutIT {
                 .withRootCauseInstanceOf(SocketException.class);
 
         LogAssertions.assertThat(internalLogProvider)
-                .forClass(HouseKeeperHandler.class)
+                .forClass(ChannelWriteThrottleHandler.class)
                 .forLevel(ERROR)
                 .assertExceptionForLogMessage("Fatal error occurred when handling a client connection")
                 .hasStackTraceContaining("Outbound network buffer has failed to flush within mandated period of");

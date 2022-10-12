@@ -275,6 +275,16 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
     void submit(Job job);
 
     /**
+     * Evaluates whether the function is invoked from the worker thread currently assigned to this connection.
+     * <p />
+     * When no thread is currently executing tasks for this connection (e.g. there are no tasks, or no thread has been
+     * assigned yet), this function will always return false.
+     *
+     * @return true if invoked from the worker thread, false otherwise.
+     */
+    boolean inWorkerThread();
+
+    /**
      * Checks whether this connection is currently interrupted and waiting for the client to reset it to its original
      * state.
      * <p />
@@ -305,6 +315,14 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
     boolean reset();
 
     /**
+     * Evaluates whether this connection is currently considered active (e.g. has not been marked for closure or
+     * actually closed).
+     *
+     * @return true if active, false otherwise.
+     */
+    boolean isActive();
+
+    /**
      * Checks whether this connection has been marked for closure.
      * <p />
      * Returns true when the underlying connection is marked for termination (e.g. due to a network-side disconnect or
@@ -321,6 +339,19 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
      */
     boolean isClosed();
 
+    /**
+     * Closes this connection and all of its associated resources.
+     * <p />
+     * When invoked from the bolt worker thread which is currently handling this connection, or the connection is
+     * currently idling (e.g. has no ongoing or scheduled jobs), the connection will be terminated immediately from the
+     * calling thread.
+     * <p />
+     * When invoked from any other thread, the connection will be marked for closure at the next possible
+     * opportunity (e.g. when its current scheduled task terminates).
+     * <p />
+     * This function will also attempt to interrupt any remaining operating transactions within this connection if
+     * applicable (close implies {@link #interrupt()}).
+     */
     @Override
     void close();
 

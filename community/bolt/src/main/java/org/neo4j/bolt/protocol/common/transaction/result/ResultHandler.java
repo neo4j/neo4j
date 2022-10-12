@@ -31,6 +31,7 @@ import org.neo4j.bolt.protocol.common.message.response.IgnoredMessage;
 import org.neo4j.bolt.protocol.common.message.response.SuccessMessage;
 import org.neo4j.bolt.protocol.common.message.result.BoltResult;
 import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
+import org.neo4j.bolt.protocol.error.streaming.BoltStreamingWriteException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.Log;
@@ -86,18 +87,24 @@ public class ResultHandler implements ResponseHandler {
     public void onFinish() {
         try {
             if (ignored) {
-                connection.channel().writeAndFlush(IgnoredMessage.INSTANCE).sync();
+                var f = connection.writeAndFlush(IgnoredMessage.INSTANCE).sync();
+
+                if (!f.isSuccess()) {
+                    throw f.cause();
+                }
             } else if (error != null) {
                 publishError(error);
             } else {
-                connection
-                        .channel()
+                var f = connection
                         .writeAndFlush(new SuccessMessage(getMetadata()))
                         .sync();
+
+                if (!f.isSuccess()) {
+                    throw f.cause();
+                }
             }
-        } catch (Throwable e) {
-            connection.close();
-            log.error("Failed to write response to driver", e);
+        } catch (Throwable ex) {
+            throw new BoltStreamingWriteException("Failed to finalize batch: Cannot write result response", ex);
         } finally {
             clearState();
         }
@@ -125,10 +132,9 @@ public class ResultHandler implements ResponseHandler {
             log.debug("Publishing fatal error: %s", error);
         }
 
-        var ch = connection.channel();
-        var remoteAddress = ch.remoteAddress();
-
-        ch.writeAndFlush(new FailureMessage(error.status(), error.message(), error.isFatal()))
+        var remoteAddress = connection.clientAddress();
+        connection
+                .writeAndFlush(new FailureMessage(error.status(), error.message(), error.isFatal()))
                 .addListener(f -> {
                     if (f.isSuccess()) {
                         return;

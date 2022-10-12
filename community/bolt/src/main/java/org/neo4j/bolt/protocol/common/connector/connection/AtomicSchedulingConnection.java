@@ -69,6 +69,7 @@ public class AtomicSchedulingConnection extends AbstractConnection {
 
     private final CompletableFuture<Void> closeFuture = new CompletableFuture<>();
     private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
+    private volatile Thread workerThread;
     private final LinkedBlockingDeque<Job> jobs = new LinkedBlockingDeque<>();
 
     private final AtomicInteger remainingInterrupts = new AtomicInteger();
@@ -176,6 +177,14 @@ public class AtomicSchedulingConnection extends AbstractConnection {
         }
     }
 
+    @Override
+    public boolean inWorkerThread() {
+        var workerThread = this.workerThread;
+        var currentThread = Thread.currentThread();
+
+        return workerThread == currentThread;
+    }
+
     /**
      * Executes the remaining jobs within this connection.
      */
@@ -192,6 +201,10 @@ public class AtomicSchedulingConnection extends AbstractConnection {
         currentThread.setName(customizedThreadName);
 
         log.debug("[%s] Activating connection", this.id);
+
+        // claim ownership of the current thread
+        this.workerThread = currentThread;
+
         this.notifyListeners(ConnectionListener::onActivated);
         try {
             this.doExecuteJobs();
@@ -201,6 +214,10 @@ public class AtomicSchedulingConnection extends AbstractConnection {
         } finally {
             this.notifyListeners(ConnectionListener::onIdle);
             log.debug("[%s] Returning to idle state", this.id);
+
+            // remove ownership of the current thread in order to ensure that future isOnWorkerThread calls no longer
+            // succeed
+            this.workerThread = null;
 
             // return the thread name back to its original value
             currentThread.setName(originalThreadName);
@@ -217,6 +234,12 @@ public class AtomicSchedulingConnection extends AbstractConnection {
                 // termination, we'll make sure to terminate it now as the original caller did not complete this
                 // step during our execution phase
                 this.doClose();
+
+                case CLOSED ->
+                // if the connection has been closed during this execution cycle, we'll simply log this fact for
+                // debugging purposes - there is nothing else to do here as this object is effectively considered dead
+                // at this point and has already been removed from the connection registry
+                log.debug("[%s] Connection has already been terminated via its worker thread", this.id);
             }
         }
     }
@@ -230,14 +253,20 @@ public class AtomicSchedulingConnection extends AbstractConnection {
 
         // poll for new jobs until the connection is closed (either through a client side disconnect or a server-side
         // error/operator intervention)
-        while (!this.isClosing()) {
+        while (this.isActive()) {
             // we'll prioritize batched execution as this provides a slight performance advantage over regularly polling
             // due to the reduced lock contention on the underlying job queue
             this.jobs.drainTo(batch, BATCH_SIZE);
 
             if (!batch.isEmpty()) {
                 log.debug("[%s] Executing %d scheduled jobs", this.id, batch.size());
-                batch.forEach(job -> this.executeJob(fsm, job));
+
+                // keep iterating through the queue so long as the connection has not been marked for closure or closed
+                // from this thread as a result of an error or termination command
+                var it = batch.iterator();
+                while (it.hasNext() && this.isActive()) {
+                    this.executeJob(fsm, it.next());
+                }
             } else {
                 // if there are no jobs, we'll terminate unless there are open transactions or statements remaining
                 // which require us to remain on this thread
@@ -363,6 +392,12 @@ public class AtomicSchedulingConnection extends AbstractConnection {
     }
 
     @Override
+    public boolean isActive() {
+        var state = this.state.get();
+        return state != State.CLOSING && state != State.CLOSED;
+    }
+
+    @Override
     public boolean isClosing() {
         return this.state.get() == State.CLOSING;
     }
@@ -374,13 +409,15 @@ public class AtomicSchedulingConnection extends AbstractConnection {
 
     @Override
     public void close() {
+        var inWorkerThread = this.inWorkerThread();
+
         State originalState;
         do {
             originalState = this.state.get();
 
             // ignore the call entirely if the current state is already CLOSING or CLOSED as another thread is likely
             // taking care of the cleanup procedure right now
-            if (originalState == State.CLOSING || originalState == State.CLOSED) {
+            if ((!inWorkerThread && originalState == State.CLOSING) || originalState == State.CLOSED) {
                 return;
             }
         } while (!this.state.compareAndSet(originalState, State.CLOSING));
@@ -388,11 +425,19 @@ public class AtomicSchedulingConnection extends AbstractConnection {
         log.debug("[%s] Marked connection for closure", this.id);
         this.notifyListenersSafely("markForClosure", ConnectionListener::onMarkedForClosure);
 
-        // if the connection was in idle when the closure occurred, we'll close the connection synchronously immediately
-        // in order to reduce congestion on the worker thread pool
-        if (originalState == State.IDLE) {
-            log.debug("[%s] Connection is idling - Performing inline closure", this.id);
+        // if the connection was in idle when the closure occurred or if we're already on the worker thread, we'll
+        // close the connection synchronously immediately in order to reduce congestion on the worker thread pool
+        if (inWorkerThread || originalState == State.IDLE) {
+            if (inWorkerThread) {
+                log.debug("[%s] Close request from worker thread - Performing inline closure", this.id);
+            } else {
+                log.debug("[%s] Connection is idling - Performing inline closure", this.id);
+            }
+
             this.doClose();
+        } else {
+            // interrupt any remaining workloads to ensure that the connection closes as fast as possible
+            this.interrupt();
         }
     }
 
