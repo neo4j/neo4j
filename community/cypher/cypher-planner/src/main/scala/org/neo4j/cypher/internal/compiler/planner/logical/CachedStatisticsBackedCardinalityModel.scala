@@ -43,7 +43,8 @@ class CachedStatisticsBackedCardinalityModel(wrapped: StatisticsBackedCardinalit
     labelInfo: LabelInfo,
     relTypeInfo: RelTypeInfo,
     semanticTable: SemanticTable,
-    indexCompatiblePredicatesProviderContext: IndexCompatiblePredicatesProviderContext
+    indexCompatiblePredicatesProviderContext: IndexCompatiblePredicatesProviderContext,
+    cardinalityModel: CardinalityModel
   ): Cardinality = {
     def cacheKey(part: PlannerQueryPart): CardinalityModelInput =
       (part, labelInfo, relTypeInfo, semanticTable, indexCompatiblePredicatesProviderContext)
@@ -54,7 +55,8 @@ class CachedStatisticsBackedCardinalityModel(wrapped: StatisticsBackedCardinalit
         labelInfo,
         relTypeInfo,
         semanticTable,
-        indexCompatiblePredicatesProviderContext
+        indexCompatiblePredicatesProviderContext,
+        cardinalityModel = cardinalityModel // Not part of the cache key
       )
 
     def cachedSinglePlannerQueryCardinality(singlePlannerQuery: SinglePlannerQuery): Cardinality =

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
@@ -48,16 +49,19 @@ case class AssumeIndependenceQueryGraphCardinalityModel(
     labelInfo: LabelInfo,
     relTypeInfo: RelTypeInfo,
     semanticTable: SemanticTable,
-    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+    cardinalityModel: CardinalityModel
   ): Cardinality = {
     val cardinalityAndInput = CardinalityAndInput(Cardinality.SINGLE, labelInfo, relTypeInfo)
     // Fold over query graph and optional query graphs, aggregating cardinality and label info using QueryGraphSolverInput
-    val afterOuter = visitQueryGraph(queryGraph, cardinalityAndInput, semanticTable, indexPredicateProviderContext)
+    val afterOuter =
+      visitQueryGraph(queryGraph, cardinalityAndInput, semanticTable, indexPredicateProviderContext, cardinalityModel)
     val afterOptionalMatches = visitOptionalMatchQueryGraphs(
       queryGraph.optionalMatches,
       afterOuter,
       semanticTable,
-      indexPredicateProviderContext
+      indexPredicateProviderContext,
+      cardinalityModel
     )
     afterOptionalMatches.cardinality
   }
@@ -66,7 +70,8 @@ case class AssumeIndependenceQueryGraphCardinalityModel(
     outer: QueryGraph,
     cardinalityAndInput: CardinalityAndInput,
     semanticTable: SemanticTable,
-    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+    cardinalityModel: CardinalityModel
   ): CardinalityAndInput = {
     cardinalityAndInput.copy(cardinality =
       cardinalityForQueryGraph(
@@ -74,7 +79,8 @@ case class AssumeIndependenceQueryGraphCardinalityModel(
         cardinalityAndInput.labelInfo,
         cardinalityAndInput.relTypeInfo,
         semanticTable,
-        indexPredicateProviderContext
+        indexPredicateProviderContext,
+        cardinalityModel
       )
     )
   }
@@ -83,10 +89,11 @@ case class AssumeIndependenceQueryGraphCardinalityModel(
     optionals: Seq[QueryGraph],
     cardinalityAndInput: CardinalityAndInput,
     semanticTable: SemanticTable,
-    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+    cardinalityModel: CardinalityModel
   ): CardinalityAndInput = {
     optionals.foldLeft(cardinalityAndInput) { case (current, optional) =>
-      visitOptionalQueryGraph(optional, current, semanticTable, indexPredicateProviderContext)
+      visitOptionalQueryGraph(optional, current, semanticTable, indexPredicateProviderContext, cardinalityModel)
     }
   }
 
@@ -94,7 +101,8 @@ case class AssumeIndependenceQueryGraphCardinalityModel(
     optional: QueryGraph,
     cardinalityAndInput: CardinalityAndInput,
     semanticTable: SemanticTable,
-    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+    cardinalityModel: CardinalityModel
   ): CardinalityAndInput = {
     val inputWithKnownLabelInfo = cardinalityAndInput.withFusedLabelInfo(optional.selections.labelInfo)
     val optionalCardinality = cardinalityAndInput.cardinality * cardinalityForQueryGraph(
@@ -102,7 +110,8 @@ case class AssumeIndependenceQueryGraphCardinalityModel(
       inputWithKnownLabelInfo.labelInfo,
       inputWithKnownLabelInfo.relTypeInfo,
       semanticTable,
-      indexPredicateProviderContext
+      indexPredicateProviderContext,
+      cardinalityModel
     )
     // OPTIONAL MATCH can't decrease cardinality
     inputWithKnownLabelInfo.copy(
@@ -115,10 +124,11 @@ case class AssumeIndependenceQueryGraphCardinalityModel(
     labelInfo: LabelInfo,
     relTypeInfo: RelTypeInfo,
     semanticTable: SemanticTable,
-    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+    cardinalityModel: CardinalityModel
   ): Cardinality = {
     val patternMultiplier =
-      calculateMultiplier(qg, labelInfo, relTypeInfo, semanticTable, indexPredicateProviderContext)
+      calculateMultiplier(qg, labelInfo, relTypeInfo, semanticTable, indexPredicateProviderContext, cardinalityModel)
     val numberOfPatternNodes = qg.patternNodes.count { n =>
       !qg.argumentIds.contains(n) && !qg.patternRelationships.exists(r =>
         qg.argumentIds.contains(r.name) && Seq(r.left, r.right).contains(n)
@@ -135,10 +145,18 @@ case class AssumeIndependenceQueryGraphCardinalityModel(
     labels: LabelInfo,
     relTypes: RelTypeInfo,
     semanticTable: SemanticTable,
-    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+    cardinalityModel: CardinalityModel
   ): Multiplier = {
     val expressionSelectivity =
-      selectivityCalculator(qg.selections, labels, relTypes, semanticTable, indexPredicateProviderContext)
+      selectivityCalculator(
+        qg.selections,
+        labels,
+        relTypes,
+        semanticTable,
+        indexPredicateProviderContext,
+        cardinalityModel
+      )
 
     val patternRelationships = qg.patternRelationships.toIndexedSeq
     val patternMultipliers = patternRelationships.map(r =>

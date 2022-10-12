@@ -267,7 +267,8 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
         labelInfo: LabelInfo,
         relTypeInfo: RelTypeInfo,
         semanticTable: SemanticTable,
-        indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+        indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+        cardinalityModel: CardinalityModel
       ): Cardinality = {
         val labelIdCardinality: Map[LabelId, Cardinality] = labelCardinality.map {
           case (name: String, cardinality: Cardinality) =>
@@ -287,7 +288,8 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
           labelInfo,
           relTypeInfo,
           semanticTable,
-          indexPredicateProviderContext
+          indexPredicateProviderContext,
+          cardinalityModel
         )
       }
     }

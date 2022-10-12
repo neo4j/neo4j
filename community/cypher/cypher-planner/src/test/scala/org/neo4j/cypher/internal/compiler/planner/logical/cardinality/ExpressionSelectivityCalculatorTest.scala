@@ -23,6 +23,8 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_EQUALITY_SELECTIVITY
@@ -32,7 +34,11 @@ import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAUL
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_RANGE_SELECTIVITY
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_STRING_LENGTH
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_TYPE_SELECTIVITY
+import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.probLognormalGreaterThan1
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculatorTest.IndexDescriptorHelper
+import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.BooleanExpression
@@ -48,9 +54,14 @@ import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.EntityType.Node
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.EntityType.Relationship
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
+import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_ALL_CARDINALITY
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_WITH_LABEL_CARDINALITY
+import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.ApproximateSize
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
@@ -1387,7 +1398,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   // OTHER
 
   test("Label index: Should peek inside sub predicates") {
-    implicit val semanticTable: SemanticTable = SemanticTable()
+    val semanticTable: SemanticTable = SemanticTable()
     semanticTable.resolvedLabelNames.put("Page", LabelId(0))
 
     val hasLabels = HasLabels(varFor("n"), Seq(labelName("Page"))) _
@@ -1396,15 +1407,13 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     val stats = mock[GraphStatistics]
     when(stats.nodesAllCardinality()).thenReturn(2000.0)
     when(stats.nodesWithLabelCardinality(Some(indexPersonRange.label))).thenReturn(1000.0)
-    val calculator = ExpressionSelectivityCalculator(
-      stats,
-      IndependenceCombiner,
-      planningTextIndexesEnabled = false,
-      planningRangeIndexesEnabled = false,
-      planningPointIndexesEnabled = false
+    val calculator = setUpCalculator(
+      labelInfo = labelInfo,
+      stats = stats,
+      semanticTable = semanticTable
     )
 
-    val result = calculator(PartialPredicate[HasLabels](hasLabels, mock[HasLabels]), labelInfo, Map.empty)
+    val result = calculator(PartialPredicate[HasLabels](hasLabels, hasLabels))
 
     result.factor should equal(0.5)
   }
@@ -1413,18 +1422,13 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     val stats = mock[GraphStatistics]
     when(stats.nodesAllCardinality()).thenReturn(MIN_NODES_ALL_CARDINALITY)
     when(stats.nodesWithLabelCardinality(any())).thenReturn(MIN_NODES_WITH_LABEL_CARDINALITY)
-    val calculator = ExpressionSelectivityCalculator(
-      stats,
-      IndependenceCombiner,
-      planningTextIndexesEnabled = false,
-      planningRangeIndexesEnabled = false,
-      planningPointIndexesEnabled = false
+
+    val calculator = setUpCalculator(
+      stats = stats
     )
 
-    implicit val semanticTable: SemanticTable = SemanticTable()
-
     val expr = HasLabels(null, Seq(labelName("Foo")))(pos)
-    calculator(expr, Map.empty, Map.empty) should equal(Selectivity.of(10.0 / 10.0).get)
+    calculator(expr) should equal(Selectivity.of(10.0 / 10.0).get)
   }
 
   test("selectivity of IN should never exceed the IS NOT NULL selectivity") {
@@ -1671,20 +1675,38 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     labelInfo: LabelInfo = Map.empty,
     relTypeInfo: RelTypeInfo = Map.empty,
     stats: GraphStatistics = mockStats(),
+    semanticTable: SemanticTable = setupSemanticTable(),
     planningTextIndexesEnabled: Boolean = true,
     planningRangeIndexesEnabled: Boolean = true,
     planningPointIndexesEnabled: Boolean = true
   ): Expression => Selectivity = {
-    implicit val semanticTable: SemanticTable = setupSemanticTable()
+    implicit val sT: SemanticTable = semanticTable
+    implicit val indexCPPC: IndexCompatiblePredicatesProviderContext = IndexCompatiblePredicatesProviderContext.default
 
     val combiner = IndependenceCombiner
+    val planContext = mockPlanContext(stats)
     val calculator = ExpressionSelectivityCalculator(
-      stats,
+      planContext,
       combiner,
       planningTextIndexesEnabled,
       planningRangeIndexesEnabled,
       planningPointIndexesEnabled
     )
+    val compositeCalculator = CompositeExpressionSelectivityCalculator(
+      planContext,
+      planningTextIndexesEnabled,
+      planningRangeIndexesEnabled,
+      planningPointIndexesEnabled
+    )
+    implicit val cardinalityModel: CardinalityModel = SimpleMetricsFactory.newCardinalityEstimator(
+      SimpleMetricsFactory.newQueryGraphCardinalityModel(
+        planContext,
+        compositeCalculator
+      ),
+      compositeCalculator,
+      simpleExpressionEvaluator
+    )
+
     exp: Expression => calculator(exp, labelInfo, relTypeInfo)
   }
 
@@ -1758,6 +1780,31 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     }
   }
 
+  protected def mockPlanContext(stats: GraphStatistics): PlanContext = new NotImplementedPlanContext {
+
+    val indexMap: Map[Int, IndexDescriptor] = stats match {
+      case mockStats(_, _, _, indexCardinalities, _) =>
+        indexCardinalities.keys.map(desc => getNameId(desc) -> desc).toMap
+      case _ => Map.empty
+    }
+
+    override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
+
+    override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = indexMap.valuesIterator
+
+    override def getRelationshipPropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
+
+    override def statistics: InstrumentedGraphStatistics =
+      InstrumentedGraphStatistics(stats, new MutableGraphStatisticsSnapshot())
+
+    override def txStateHasChanges(): Boolean = false
+  }
+
+  private def getNameId(descriptor: IndexDescriptor): Int = descriptor.entityType match {
+    case Node(labelId)           => labelId.id
+    case Relationship(relTypeId) => relTypeId.id
+  }
+
   protected def nPredicate(expr: Expression): Predicate = Predicate(Set("n"), expr)
   protected def rPredicate(expr: Expression): Predicate = Predicate(Set("r"), expr)
 
@@ -1773,20 +1820,20 @@ object ExpressionSelectivityCalculatorTest {
   implicit class IndexDescriptorHelper(index: IndexDescriptor) {
 
     def label: LabelId = index.entityType match {
-      case IndexDescriptor.EntityType.Node(label) => label
-      case IndexDescriptor.EntityType.Relationship(_) =>
+      case Node(label) => label
+      case Relationship(_) =>
         throw new IllegalStateException("Should not have been called in this test.")
     }
 
     def relType: RelTypeId = index.entityType match {
-      case IndexDescriptor.EntityType.Node(_) =>
+      case Node(_) =>
         throw new IllegalStateException("Should not have been called in this test.")
-      case IndexDescriptor.EntityType.Relationship(relType) => relType
+      case Relationship(relType) => relType
     }
 
     def id: NameId = index.entityType match {
-      case IndexDescriptor.EntityType.Node(label)           => label
-      case IndexDescriptor.EntityType.Relationship(relType) => relType
+      case Node(label)           => label
+      case Relationship(relType) => relType
     }
   }
 }
@@ -1797,4 +1844,41 @@ class RangeExpressionSelectivityCalculatorTest extends ExpressionSelectivityCalc
   override val substringPredicatesWithClues: Seq[((Expression, Expression) => BooleanExpression, String)] =
     Seq(startsWith _, endsWith _, contains _)
       .map(mkExpr => (mkExpr, mkExpr(null, null).getClass.getSimpleName))
+
+  test("probLognormalGreaterThan1 should always return values between 0 and 1") {
+    // Only non-negative input values are allowed.
+    val xs = Seq(0.0, 0.5, 1.0, 10, Double.MaxValue)
+
+    xs.foreach { x =>
+      withClue(x) {
+        val fx = probLognormalGreaterThan1(x)
+        fx should (be >= 0.0 and be <= 1.0)
+      }
+    }
+  }
+
+  test("probLognormalGreaterThan1 be lower than 1.0 for 'normal' cardinalities") {
+    // Only non-negative input values are allowed.
+    val xs = 0 to 1_000_000 by 1
+
+    xs.foreach { x =>
+      withClue(x) {
+        val fx = probLognormalGreaterThan1(x)
+        fx should be < 1.0
+      }
+    }
+  }
+
+  test("probLognormalGreaterThan1 be strictly monotonically increasing for 'normal' cardinalities") {
+    // Only non-negative input values are allowed.
+    val xs = 0 to 500_000 by 1
+
+    xs.sliding(2).foreach { case Seq(x, y) =>
+      withClue(x) {
+        val fx = probLognormalGreaterThan1(x)
+        val fy = probLognormalGreaterThan1(y)
+        fy should be > fx
+      }
+    }
+  }
 }

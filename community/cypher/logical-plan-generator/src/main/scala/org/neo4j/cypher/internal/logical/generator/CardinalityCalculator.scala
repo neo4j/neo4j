@@ -140,7 +140,8 @@ object CardinalityCalculator {
           state.labelInfo,
           state.relTypeInfo,
           state.semanticTable,
-          IndexCompatiblePredicatesProviderContext.default
+          IndexCompatiblePredicatesProviderContext.default,
+          cardinalityModel = null // We don't have SubqueryExpressions
         )
       expandCardinality * inboundCardinality
   }

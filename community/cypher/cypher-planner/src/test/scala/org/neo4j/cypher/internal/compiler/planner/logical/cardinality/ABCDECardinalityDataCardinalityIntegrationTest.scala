@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.subqueryCardinalityToExistsSelectivity
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.PatternRelationshipMultiplierCalculator.uniquenessSelectivityForNRels
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Argument
@@ -28,6 +29,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
+import org.neo4j.cypher.internal.util.Cardinality.lift
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.MapKeys
 import org.neo4j.cypher.internal.util.test_helpers.TestName
@@ -823,6 +825,47 @@ abstract class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunS
     expectCardinality(
       N * N * N * Asel * A_T1_B_sel * Bsel * ANY_T2_C_sel * Csel * uniquenessSelectivityForNRels(2).factor
     )
+  }
+
+  test("MATCH (a:A) WHERE EXISTS { (a)-[:T1]->(:D) }") {
+    expectCardinality(A * subquerySelectivity(D * A_T1_D_sel))
+  }
+
+  test("MATCH (a:A) WHERE EXISTS { (a)<-[:T1]-(:D) }") {
+    // Pattern does not exist
+    expectCardinality(A * subquerySelectivity(D * D_T1_A_sel))
+  }
+
+  test("MATCH (a:A), (d:D) WHERE EXISTS { (a)-[:T1]->(d) }") {
+    expectCardinality(A * D * subquerySelectivity(A_T1_D_sel))
+  }
+
+  test("MATCH (a:A) WHERE EXISTS { (a)-[:T1]-(:B) }") {
+    expectCardinality(A * subquerySelectivity((A_T1_B_sel + B_T1_A_sel) * B))
+  }
+
+  test("MATCH (a:A), (b:B) WHERE EXISTS { (a)-[:T2]->(b) }") {
+    // On avg more than 1 T2 rel per (A,B) tuple.
+    expectCardinality(A * B * subquerySelectivity(A_T2_B_sel))
+  }
+
+  test("MATCH (a:A), (d:D), (c:C) WHERE EXISTS { (a)-[:T1]->(d)-[:T1]->(c) }") {
+    expectCardinality(
+      A * D * C * subquerySelectivity(A_T1_D_sel * D_T1_C_sel * uniquenessSelectivityForNRels(2).factor)
+    )
+  }
+
+  test("MATCH (a:A), (d:D) WHERE NOT EXISTS { (a)-[:T1]->(d) }") {
+    expectCardinality(A * D * (1.0 - subquerySelectivity(A_T1_D_sel)))
+  }
+
+  test("MATCH (a:A) WHERE NOT EXISTS { (a)-[:T1]-(:B) }") {
+    // On avg more than 1 T2 rel per (A,B) tuple.
+    expectCardinality(A * (1.0 - subquerySelectivity((A_T1_B_sel + B_T1_A_sel) * B)))
+  }
+
+  private def subquerySelectivity(cardinality: Double): Double = {
+    subqueryCardinalityToExistsSelectivity(cardinality).factor
   }
 
   private def expectCardinality(expected: Double): Unit =

@@ -2195,7 +2195,7 @@ case class LogicalPlanProducer(
           that.withQueryGraph(solvedQueryGraph.withHints(newHints))
         }
     }
-    val cardinality = context.cardinality.apply(
+    val cardinality = cardinalityModel(
       solved,
       context.input.labelInfo,
       context.input.relTypeInfo,

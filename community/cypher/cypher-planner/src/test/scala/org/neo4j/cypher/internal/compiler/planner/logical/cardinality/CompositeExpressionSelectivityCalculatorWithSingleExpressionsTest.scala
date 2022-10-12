@@ -19,21 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
-import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
+import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
+import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.EntityType.Node
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.EntityType.Relationship
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
-import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
-import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
-import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Selectivity
 
 /**
@@ -46,16 +44,25 @@ abstract class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest
     labelInfo: LabelInfo,
     relTypeInfo: RelTypeInfo,
     stats: GraphStatistics,
+    semanticTable: SemanticTable,
     planningTextIndexesEnabled: Boolean,
     planningRangeIndexesEnabled: Boolean,
     planningPointIndexesEnabled: Boolean
   ): Expression => Selectivity = {
-    val semanticTable = setupSemanticTable()
+    val planContext = mockPlanContext(stats)
     val compositeCalculator = CompositeExpressionSelectivityCalculator(
-      mockPlanContext(stats),
+      planContext,
       planningTextIndexesEnabled,
       planningRangeIndexesEnabled,
       planningPointIndexesEnabled
+    )
+    val cardinalityModel: CardinalityModel = SimpleMetricsFactory.newCardinalityEstimator(
+      SimpleMetricsFactory.newQueryGraphCardinalityModel(
+        planContext,
+        compositeCalculator
+      ),
+      compositeCalculator,
+      simpleExpressionEvaluator
     )
     exp: Expression => {
       compositeCalculator(
@@ -63,33 +70,10 @@ abstract class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest
         labelInfo,
         relTypeInfo,
         semanticTable,
-        IndexCompatiblePredicatesProviderContext.default
+        IndexCompatiblePredicatesProviderContext.default,
+        cardinalityModel
       )
     }
-  }
-
-  private def getNameId(descriptor: IndexDescriptor): Int = descriptor.entityType match {
-    case Node(labelId)           => labelId.id
-    case Relationship(relTypeId) => relTypeId.id
-  }
-
-  private def mockPlanContext(stats: GraphStatistics): PlanContext = new NotImplementedPlanContext {
-
-    val indexMap: Map[Int, IndexDescriptor] = stats match {
-      case mockStats(_, _, _, indexCardinalities, _) =>
-        indexCardinalities.keys.map(desc => getNameId(desc) -> desc).toMap
-      case _ => Map.empty
-    }
-    override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
-
-    override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = indexMap.valuesIterator
-
-    override def getRelationshipPropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
-
-    override def statistics: InstrumentedGraphStatistics =
-      InstrumentedGraphStatistics(stats, new MutableGraphStatisticsSnapshot())
-
-    override def txStateHasChanges(): Boolean = false
   }
 }
 

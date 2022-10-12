@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
+import org.apache.commons.math3.special.Erf.erf
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_EQUALITY_SELECTIVITY
@@ -32,10 +34,13 @@ import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAUL
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_REL_UNIQUENESS_SELECTIVITY
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_STRING_LENGTH
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_TYPE_SELECTIVITY
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.defaultSelectivityForPropertyEquality
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.getPropertyPredicateRangeSelectivity
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.getStringLength
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.indexSelectivityForSubstringSargable
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.indexSelectivityWithSizeHint
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.selectivityForPropertyEquality
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.subqueryCardinalityToExistsSelectivity
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsBoundingBoxSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsDistanceSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsIdSeekable
@@ -47,6 +52,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.InequalityRangeS
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PointBoundingBoxSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PointDistanceSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PrefixRangeSeekable
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.Contains
@@ -70,11 +76,12 @@ import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.logical.plans.PrefixRange
-import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.EntityType
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NameId
@@ -87,12 +94,14 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.StringType
 
 case class ExpressionSelectivityCalculator(
-  stats: GraphStatistics,
+  planContext: PlanContext,
   combiner: SelectivityCombiner,
   planningTextIndexesEnabled: Boolean,
   planningRangeIndexesEnabled: Boolean,
   planningPointIndexesEnabled: Boolean
 ) {
+
+  private val stats = planContext.statistics
 
   /**
    * Index type priority to be used to calculate selectivities of exists predicates, given that a substring predicate is used.
@@ -123,8 +132,11 @@ case class ExpressionSelectivityCalculator(
     if (planningRangeIndexesEnabled) Some(IndexType.Range) else None
   ).flatten
 
-  def apply(exp: Expression, labelInfo: LabelInfo, relTypeInfo: RelTypeInfo)(implicit
-  semanticTable: SemanticTable): Selectivity = exp match {
+  def apply(exp: Expression, labelInfo: LabelInfo, relTypeInfo: RelTypeInfo)(
+    implicit semanticTable: SemanticTable,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+    cardinalityModel: CardinalityModel
+  ): Selectivity = exp match {
     // WHERE a:Label
     case HasLabels(_, label :: Nil) =>
       calculateSelectivityForLabel(semanticTable.id(label))
@@ -221,6 +233,17 @@ case class ExpressionSelectivityCalculator(
     // WHERE <expr> >= <expr>
     case _: GreaterThan | _: GreaterThanOrEqual | _: LessThan | _: LessThanOrEqual =>
       DEFAULT_RANGE_SELECTIVITY
+
+    case x: ExistsIRExpression =>
+      val subqueryCardinality = cardinalityModel.apply(
+        x.query.query,
+        labelInfo,
+        relTypeInfo,
+        semanticTable,
+        indexPredicateProviderContext,
+        cardinalityModel
+      )
+      subqueryCardinalityToExistsSelectivity(subqueryCardinality)
 
     case _: AssertIsNode =>
       Selectivity.ONE
@@ -350,7 +373,7 @@ case class ExpressionSelectivityCalculator(
         }
 
         combiner.orTogetherSelectivities(indexSelectivities)
-          .orElse(defaultSelectivityForPropertyEquality(size))
+          .orElse(defaultSelectivityForPropertyEquality(size, combiner))
           .getOrElse(DEFAULT_PREDICATE_SELECTIVITY)
       }
     )
@@ -360,22 +383,9 @@ case class ExpressionSelectivityCalculator(
     selectivityForPropertyEquality(
       stats.indexPropertyIsNotNullSelectivity(descriptor),
       stats.uniqueValueSelectivity(descriptor),
-      size
+      size,
+      combiner
     )
-
-  private def defaultSelectivityForPropertyEquality(size: Int): Option[Selectivity] =
-    selectivityForPropertyEquality(Some(DEFAULT_PROPERTY_SELECTIVITY), Some(DEFAULT_EQUALITY_SELECTIVITY), size)
-
-  private def selectivityForPropertyEquality(
-    propertySelectivity: Option[Selectivity],
-    uniqueValueSelectivity: Option[Selectivity],
-    size: Int
-  ): Option[Selectivity] = for {
-    propExists <- propertySelectivity
-    propEqualsSingleValue <- uniqueValueSelectivity
-    propEqualsAnyValue <- combiner.orTogetherSelectivities(Seq.fill(size)(propEqualsSingleValue))
-    combinedSelectivity <- combiner.andTogetherSelectivities(Seq(propExists, propEqualsAnyValue))
-  } yield combinedSelectivity
 
   private def calculateSelectivityForValueRangeSeekable(
     seekable: InequalityRangeSeekable,
@@ -591,4 +601,57 @@ object ExpressionSelectivityCalculator {
       case size => selectivityCalculator(size)
     }
   }
+
+  /**
+   * Given the cardinality of a subquery `x`, returns the selectivity of `EXISTS { x }`.
+   *
+   * To avoid estimations of 0.0 for `NOT EXISTS { ... }`, we assume that the `subqueryCardinality`
+   * is the median of a log-normally distributed function and return the probability of a sample
+   * of that function being greater than 1.0.
+   */
+  def subqueryCardinalityToExistsSelectivity(subqueryCardinality: Cardinality): Selectivity = {
+    Selectivity(probLognormalGreaterThan1(subqueryCardinality.amount))
+  }
+
+  /**
+   * For a given median `median` of a log-normally distributed function with sigma 2.0,
+   * return the probability that a sample of that function is greater than 1.
+   *
+   * {{{
+   *   lognormal_cdf_σ_µ(x) = (1 + erf((ln(x)-µ) / (σ * Math.sqrt(2)) )) * 0.5
+   *
+   *   median(lognormal_cdf_σ_µ(x)) = e^µ // solving for µ
+   *   µ = ln(median(...))
+   *
+   *   P(lognormal_2.0_µ(x)) >= 1 = 1 - P(lognormal_2.0_µ(x) < 1)
+   *                              = 1 - lognormal_cdf_2.0_µ(1.0)
+   *                              = 1 - (1 + erf((ln(1.0)-µ) / (2.0 * Math.sqrt(2)) )) * 0.5
+   *                              = 1 - (1 + erf((-µ) / (2.0 * Math.sqrt(2)) )) * 0.5
+   *                              = 1 - (1 + erf((-ln(median)) / (2.0 * Math.sqrt(2)) )) * 0.5
+   * }}}
+   */
+  def probLognormalGreaterThan1(median: Double): Double = {
+    val sigma = 2.0
+    1 - (1 + erf((-Math.log(median)) / (sigma * Math.sqrt(2)))) * 0.5
+  }
+
+  def defaultSelectivityForPropertyEquality(size: Int, combiner: SelectivityCombiner): Option[Selectivity] =
+    selectivityForPropertyEquality(
+      Some(DEFAULT_PROPERTY_SELECTIVITY),
+      Some(DEFAULT_EQUALITY_SELECTIVITY),
+      size,
+      combiner
+    )
+
+  def selectivityForPropertyEquality(
+    propertySelectivity: Option[Selectivity],
+    uniqueValueSelectivity: Option[Selectivity],
+    size: Int,
+    combiner: SelectivityCombiner
+  ): Option[Selectivity] = for {
+    propExists <- propertySelectivity
+    propEqualsSingleValue <- uniqueValueSelectivity
+    propEqualsAnyValue <- combiner.orTogetherSelectivities(Seq.fill(size)(propEqualsSingleValue))
+    combinedSelectivity <- combiner.andTogetherSelectivities(Seq(propExists, propEqualsAnyValue))
+  } yield combinedSelectivity
 }

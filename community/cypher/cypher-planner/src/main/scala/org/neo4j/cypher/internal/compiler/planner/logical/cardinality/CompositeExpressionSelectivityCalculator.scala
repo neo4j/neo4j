@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
@@ -89,7 +90,7 @@ case class CompositeExpressionSelectivityCalculator(
   private val combiner: SelectivityCombiner = IndependenceCombiner
 
   private val singleExpressionSelectivityCalculator: ExpressionSelectivityCalculator = ExpressionSelectivityCalculator(
-    planContext.statistics,
+    planContext,
     combiner,
     planningTextIndexesEnabled,
     planningRangeIndexesEnabled,
@@ -113,7 +114,8 @@ case class CompositeExpressionSelectivityCalculator(
     labelInfo: LabelInfo,
     relTypeInfo: RelTypeInfo,
     semanticTable: SemanticTable,
-    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+    cardinalityModel: CardinalityModel
   ): Selectivity = {
 
     // The selections we get for cardinality estimation might contain partial predicates.
@@ -133,7 +135,11 @@ case class CompositeExpressionSelectivityCalculator(
       val simpleSelectivities =
         unwrappedSelections
           .flatPredicates
-          .map(singleExpressionSelectivityCalculator(_, labelInfo, relTypeInfo)(semanticTable))
+          .map(singleExpressionSelectivityCalculator(_, labelInfo, relTypeInfo)(
+            semanticTable,
+            indexPredicateProviderContext,
+            cardinalityModel
+          ))
       combiner.andTogetherSelectivities(simpleSelectivities).getOrElse(Selectivity.ONE)
     }
 
@@ -215,7 +221,11 @@ case class CompositeExpressionSelectivityCalculator(
 
     // Forward all not covered predicates to the singleExpressionSelectivityCalculator.
     val notCoveredPredicatesSelectivities =
-      notCoveredPredicates.map(singleExpressionSelectivityCalculator(_, labelInfo, relTypeInfo)(semanticTable))
+      notCoveredPredicates.map(singleExpressionSelectivityCalculator(_, labelInfo, relTypeInfo)(
+        semanticTable,
+        indexPredicateProviderContext,
+        cardinalityModel
+      ))
     // Use composite index selectivities for all covered predicates.
     val coveredPredicatesSelectivities =
       compositeDisjointPredicatesWithSelectivities.toSeq.map(selectivityForCompositeIndexPredicates(_, combiner))

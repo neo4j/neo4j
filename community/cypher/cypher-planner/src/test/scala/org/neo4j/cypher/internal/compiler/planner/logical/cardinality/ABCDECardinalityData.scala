@@ -39,177 +39,209 @@ trait ABCDECardinalityData extends CardinalityIntegrationTestSupport {
    */
   val N: Double = Random.nextDouble() * 1E6 + MIN_N
 
-  val Asel = .2 // How selective a :A predicate is
-  val Bsel = .1 // How selective a :B predicate is
-  val Csel = .01 // How selective a :C predicate is
-  val Dsel = .001 // How selective a :D predicate is
-  val Esel = Bsel // How selective a :E predicate is
-  val Tsel = Bsel
-  val R1sel = Bsel
-  val R2sel = Bsel
+  val Asel: Double = .2 // How selective a :A predicate is
+  val Bsel: Double = .1 // How selective a :B predicate is
+  val Csel: Double = .01 // How selective a :C predicate is
+  val Dsel: Double = .001 // How selective a :D predicate is
+  val Esel: Double = Bsel // How selective a :E predicate is
+  val Tsel: Double = Bsel
+  val R1sel: Double = Bsel
+  val R2sel: Double = Bsel
 
-  val A = N * Asel // Nodes with label A
-  val B = N * Bsel // Nodes with label B
-  val C = N * Csel // Nodes with label C
-  val D = N * Dsel // Nodes with label D
-  val E = N * Esel // Nodes with label E
-  val R1 = N * R1sel
-  val R2 = N * R2sel
-  val T = N * Tsel // Nodes with label T
+  val A: Double = N * Asel // Nodes with label A
+  val B: Double = N * Bsel // Nodes with label B
+  val C: Double = N * Csel // Nodes with label C
+  val D: Double = N * Dsel // Nodes with label D
+  val E: Double = N * Esel // Nodes with label E
+  val R1: Double = N * R1sel
+  val R2: Double = N * R2sel
+  val T: Double = N * Tsel // Nodes with label T
 
-  val Aprop = 0.5         // Unique selectivity of index on :A(prop)
-  val Bprop = 0.003       // Unique selectivity of index on :B(prop)
-  val Abar = 0.002        // Unique selectivity of index on :A(bar)
-  val CpropBarUnique = 0.01 // Unique selectivity of index on :C(prop, bar)
-  val CpropBarExists = 0.7 // Exists selectivity of index on :C(prop, bar)
-  val DfooBarBazUnique = 0.0006 // Unique selectivity of index on :D(foo, bar, baz)
-  val DfooBarBazExists = 0.2 // Exists selectivity of index on :D(foo, bar, baz)
-  val EsomeUnique = 0.3   // Unique selectivity of index on :E(some)
-  val EsomeExists = 0.5   // Exists selectivity of index on :E(some)
-  val TpropExists = 0.7   // Exists selectivity of index on :T(prop)
-  val TpropUnique = 0.3   // Unique selectivity of index on :T(prop)
+  val Aprop: Double = 0.5         // Unique selectivity of index on :A(prop)
+  val Bprop: Double = 0.003       // Unique selectivity of index on :B(prop)
+  val Abar: Double = 0.002        // Unique selectivity of index on :A(bar)
+  val CpropBarUnique: Double = 0.01 // Unique selectivity of index on :C(prop, bar)
+  val CpropBarExists: Double = 0.7 // Exists selectivity of index on :C(prop, bar)
+  val DfooBarBazUnique: Double = 0.0006 // Unique selectivity of index on :D(foo, bar, baz)
+  val DfooBarBazExists: Double = 0.2 // Exists selectivity of index on :D(foo, bar, baz)
+  val EsomeUnique: Double = 0.3   // Unique selectivity of index on :E(some)
+  val EsomeExists: Double = 0.5   // Exists selectivity of index on :E(some)
+  val TpropExists: Double = 0.7   // Exists selectivity of index on :T(prop)
+  val TpropUnique: Double = 0.3   // Unique selectivity of index on :T(prop)
 
-  val R1propExists = 0.8   // Exists selectivity of index on :R1(prop)
-  val R1propUnique = 0.2   // Unique selectivity of index on :R1(prop)
-  val R2fooBarExists = 0.9   // Exists selectivity of index on :R2(foo, bar)
-  val R2fooBarUnique = 0.1   // Unique selectivity of index on :R2(foo, bar)
+  val R1propExists: Double = 0.8   // Exists selectivity of index on :R1(prop)
+  val R1propUnique: Double = 0.2   // Unique selectivity of index on :R1(prop)
+  val R2fooBarExists: Double = 0.9   // Exists selectivity of index on :R2(foo, bar)
+  val R2fooBarUnique: Double = 0.1   // Unique selectivity of index on :R2(foo, bar)
 
-  val T1prop = 0.003 // Selectivity of index on :T1(prop)
-  val T2propFooExists = 0.2   // Exists selectivity of index on :T2(prop, foo)
-  val T2propFooUnique = 0.009 // Unique selectivity of index on :T2(prop, foo)
+  val T1prop: Double = 0.003 // Selectivity of index on :T1(prop)
+  val T2propFooExists: Double = 0.2   // Exists selectivity of index on :T2(prop, foo)
+  val T2propFooUnique: Double = 0.009 // Unique selectivity of index on :T2(prop, foo)
 
   // Multipliers for patterns
 
-  val A_T1_A_sel = 5.0 / A
-  val A_T1_B_sel = 0.5
-  val A_T1_C_sel = 0.05
-  val A_T1_D_sel = 0.005
-  val A_T2_A_sel = 0
-  val A_T2_B_sel = 5 // On avg more than 1 T2 rel per (A,B) tuple.
+  val A_T1_A_sel: Double = 5.0 / A
+  val A_T1_B_sel: Double = 0.5
+  val A_T1_C_sel: Double = 0.05
+  val A_T1_D_sel: Double = 0.005
+  val A_T1_E_sel: Double = 0.0
+  val A_T2_A_sel: Double = 0.0
+  val A_T2_B_sel: Double = 5.0 // On avg more than 1 T2 rel per (A,B) tuple.
+  val A_T2_C_sel: Double = 0.0
+  val A_T2_D_sel: Double = 0.0
+  val A_T2_E_sel: Double = 0.0
 
-  val B_T1_B_sel = 10.0 / B
-  val B_T1_C_sel = 0.1
-  val B_T1_A_sel = 0.01
-  val B_T1_D_sel = 0.001
-  val B_T2_C_sel = 0.0031
+  val B_T1_A_sel: Double = 0.01
+  val B_T1_B_sel: Double = 10.0 / B
+  val B_T1_C_sel: Double = 0.1
+  val B_T1_D_sel: Double = 0.001
+  val B_T1_E_sel: Double = 0.0
+  val B_T2_A_sel: Double = 0.0
+  val B_T2_B_sel: Double = 0.0
+  val B_T2_C_sel: Double = 0.0031
+  val B_T2_D_sel: Double = 0.0
+  val B_T2_E_sel: Double = 0.0
 
-  val C_T1_D_sel = 0.02
-  val C_T1_C_sel = 0.05
+  val C_T1_A_sel: Double = 0.0
+  val C_T1_B_sel: Double = 0.0
+  val C_T1_C_sel: Double = 0.05
+  val C_T1_D_sel: Double = 0.02
+  val C_T1_E_sel: Double = 0.0
+  val C_T2_A_sel: Double = 0.0
+  val C_T2_B_sel: Double = 0.0
+  val C_T2_C_sel: Double = 0.0
+  val C_T2_D_sel: Double = 0.0
+  val C_T2_E_sel: Double = 0.0
 
-  val D_T1_C_sel = 0.3
-  val D_T2_C_sel = 0.07
+  val D_T1_A_sel: Double = 0.0
+  val D_T1_B_sel: Double = 0.0
+  val D_T1_C_sel: Double = 0.3
+  val D_T1_D_sel: Double = 0.0
+  val D_T1_E_sel: Double = 0.0
+  val D_T2_A_sel: Double = 0.0
+  val D_T2_B_sel: Double = 0.0
+  val D_T2_C_sel: Double = 0.07
+  val D_T2_D_sel: Double = 0.0
+  val D_T2_E_sel: Double = 0.0
 
-  val E_T2_B_sel = 0.01
-  val E_T2_C_sel = 0.01
-  val E_T2_D_sel = 0.001
+  val E_T1_A_sel: Double = 0.0
+  val E_T1_B_sel: Double = 0.0
+  val E_T1_C_sel: Double = 0.0
+  val E_T1_D_sel: Double = 0.0
+  val E_T1_E_sel: Double = 0.0
+  val E_T2_A_sel: Double = 0.0
+  val E_T2_B_sel: Double = 0.01
+  val E_T2_C_sel: Double = 0.01
+  val E_T2_D_sel: Double = 0.001
+  val E_T2_E_sel: Double = 0.0
 
   // Cardinalities for patterns
 
-  val A_T1_A = A * A * A_T1_A_sel
-  val A_T1_B = A * B * A_T1_B_sel
-  val A_T1_C = A * C * A_T1_C_sel
-  val A_T1_D = A * D * A_T1_D_sel
-  val A_T1_E = 0
-  val A_T2_A = A * A * A_T2_A_sel
-  val A_T2_B = A * B * A_T2_B_sel
-  val A_T2_C = 0
-  val A_T2_D = 0
-  val A_T2_E = 0
+  val A_T1_A: Double = A * A * A_T1_A_sel
+  val A_T1_B: Double = A * B * A_T1_B_sel
+  val A_T1_C: Double = A * C * A_T1_C_sel
+  val A_T1_D: Double = A * D * A_T1_D_sel
+  val A_T1_E: Double = A * E * A_T1_E_sel
+  val A_T2_A: Double = A * A * A_T2_A_sel
+  val A_T2_B: Double = A * B * A_T2_B_sel
+  val A_T2_C: Double = A * C * A_T2_C_sel
+  val A_T2_D: Double = A * D * A_T2_D_sel
+  val A_T2_E: Double = A * E * A_T2_E_sel
 
-  val B_T1_A = B * A * B_T1_A_sel
-  val B_T1_B = B * B * B_T1_B_sel
-  val B_T1_C = B * C * B_T1_C_sel
-  val B_T1_D = B * D * B_T1_D_sel
-  val B_T1_E = 0
-  val B_T2_A = 0
-  val B_T2_B = 0
-  val B_T2_C = B * C * B_T2_C_sel
-  val B_T2_D = 0
-  val B_T2_E = 0
+  val B_T1_A: Double = B * A * B_T1_A_sel
+  val B_T1_B: Double = B * B * B_T1_B_sel
+  val B_T1_C: Double = B * C * B_T1_C_sel
+  val B_T1_D: Double = B * D * B_T1_D_sel
+  val B_T1_E: Double = B * E * B_T1_E_sel
+  val B_T2_A: Double = B * A * B_T2_A_sel
+  val B_T2_B: Double = B * B * B_T2_B_sel
+  val B_T2_C: Double = B * C * B_T2_C_sel
+  val B_T2_D: Double = B * D * B_T2_D_sel
+  val B_T2_E: Double = B * E * B_T2_E_sel
 
-  val C_T1_A = 0
-  val C_T1_B = 0
-  val C_T1_C = C * C * C_T1_C_sel
-  val C_T1_D = C * D * C_T1_D_sel
-  val C_T1_E = 0
-  val C_T2_A = 0
-  val C_T2_B = 0
-  val C_T2_C = 0
-  val C_T2_D = 0
-  val C_T2_E = 0
+  val C_T1_A: Double = C * A * C_T1_A_sel
+  val C_T1_B: Double = C * B * C_T1_B_sel
+  val C_T1_C: Double = C * C * C_T1_C_sel
+  val C_T1_D: Double = C * D * C_T1_D_sel
+  val C_T1_E: Double = C * E * C_T1_E_sel
+  val C_T2_A: Double = C * A * C_T2_A_sel
+  val C_T2_B: Double = C * B * C_T2_B_sel
+  val C_T2_C: Double = C * C * C_T2_C_sel
+  val C_T2_D: Double = C * D * C_T2_D_sel
+  val C_T2_E: Double = C * E * C_T2_E_sel
 
-  val D_T1_A = 0
-  val D_T1_B = 0
-  val D_T1_C = D * C * D_T1_C_sel
-  val D_T1_D = 0
-  val D_T1_E = 0
-  val D_T2_A = 0
-  val D_T2_B = 0
-  val D_T2_C = D * C * D_T2_C_sel
-  val D_T2_D = 0
-  val D_T2_E = 0
+  val D_T1_A: Double = D * A * D_T1_A_sel
+  val D_T1_B: Double = D * B * D_T1_B_sel
+  val D_T1_C: Double = D * C * D_T1_C_sel
+  val D_T1_D: Double = D * D * D_T1_D_sel
+  val D_T1_E: Double = D * E * D_T1_E_sel
+  val D_T2_A: Double = D * A * D_T2_A_sel
+  val D_T2_B: Double = D * B * D_T2_B_sel
+  val D_T2_C: Double = D * C * D_T2_C_sel
+  val D_T2_D: Double = D * D * D_T2_D_sel
+  val D_T2_E: Double = D * E * D_T2_E_sel
 
-  val E_T1_A = 0
-  val E_T1_B = 0
-  val E_T1_C = 0
-  val E_T1_D = 0
-  val E_T1_E = 0
-  val E_T2_A = 0
-  val E_T2_B = E * B * E_T2_B_sel
-  val E_T2_C = E * C * E_T2_C_sel
-  val E_T2_D = E * D * E_T2_D_sel
-  val E_T2_E = 0
+  val E_T1_A: Double = E * A * E_T1_A_sel
+  val E_T1_B: Double = E * B * E_T1_B_sel
+  val E_T1_C: Double = E * C * E_T1_C_sel
+  val E_T1_D: Double = E * D * E_T1_D_sel
+  val E_T1_E: Double = E * E * E_T1_E_sel
+  val E_T2_A: Double = E * A * E_T2_A_sel
+  val E_T2_B: Double = E * B * E_T2_B_sel
+  val E_T2_C: Double = E * C * E_T2_C_sel
+  val E_T2_D: Double = E * D * E_T2_D_sel
+  val E_T2_E: Double = E * E * E_T2_E_sel
 
   // Sums
 
-  val A_T1_ANY = A_T1_A + A_T1_B + A_T1_C + A_T1_D + A_T1_E
-  val A_T1_ANY_sel = A_T1_ANY / (N * A)
-  val A_T2_ANY = A_T2_A + A_T2_B + A_T2_C + A_T2_D + A_T2_E
-  val A_ANY_ANY = A_T1_ANY + A_T2_ANY
-  val ANY_T1_A = A_T1_A + B_T1_A + C_T1_A + D_T1_A + E_T1_A
-  val ANY_T1_A_sel = ANY_T1_A / (N * A)
-  val ANY_T2_A = A_T2_A + B_T2_A + C_T2_A + D_T2_A + E_T2_A
-  val ANY_ANY_A = ANY_T1_A + ANY_T2_A
+  val A_T1_ANY: Double = A_T1_A + A_T1_B + A_T1_C + A_T1_D + A_T1_E
+  val A_T1_ANY_sel: Double = A_T1_ANY / (N * A)
+  val A_T2_ANY: Double = A_T2_A + A_T2_B + A_T2_C + A_T2_D + A_T2_E
+  val A_ANY_ANY: Double = A_T1_ANY + A_T2_ANY
+  val ANY_T1_A: Double = A_T1_A + B_T1_A + C_T1_A + D_T1_A + E_T1_A
+  val ANY_T1_A_sel: Double = ANY_T1_A / (N * A)
+  val ANY_T2_A: Double = A_T2_A + B_T2_A + C_T2_A + D_T2_A + E_T2_A
+  val ANY_ANY_A: Double = ANY_T1_A + ANY_T2_A
 
-  val B_T1_ANY = B_T1_A + B_T1_B + B_T1_C + B_T1_D + B_T1_E
-  val B_T2_ANY = B_T2_A + B_T2_B + B_T2_C + B_T2_D + B_T2_E
-  val B_ANY_ANY = B_T1_ANY + B_T2_ANY
-  val ANY_T1_B = A_T1_B + B_T1_B + C_T1_B + D_T1_B + E_T1_B
-  val ANY_T1_B_sel = ANY_T1_B / (N * B)
-  val ANY_T2_B = A_T2_B + B_T2_B + C_T2_B + D_T2_B + E_T2_B
-  val ANY_ANY_B = ANY_T1_B + ANY_T2_B
+  val B_T1_ANY: Double = B_T1_A + B_T1_B + B_T1_C + B_T1_D + B_T1_E
+  val B_T2_ANY: Double = B_T2_A + B_T2_B + B_T2_C + B_T2_D + B_T2_E
+  val B_ANY_ANY: Double = B_T1_ANY + B_T2_ANY
+  val ANY_T1_B: Double = A_T1_B + B_T1_B + C_T1_B + D_T1_B + E_T1_B
+  val ANY_T1_B_sel: Double = ANY_T1_B / (N * B)
+  val ANY_T2_B: Double = A_T2_B + B_T2_B + C_T2_B + D_T2_B + E_T2_B
+  val ANY_ANY_B: Double = ANY_T1_B + ANY_T2_B
 
-  val C_T1_ANY = C_T1_A + C_T1_B + C_T1_C + C_T1_D + C_T1_E
-  val C_T2_ANY = C_T2_A + C_T2_B + C_T2_C + C_T2_D + C_T2_E
-  val C_ANY_ANY = C_T1_ANY + C_T2_ANY
-  val ANY_T1_C = A_T1_C + B_T1_C + C_T1_C + D_T1_C + E_T1_C
-  val ANY_T2_C = A_T2_C + B_T2_C + C_T2_C + D_T2_C + E_T2_C
-  val ANY_T2_C_sel = ANY_T2_C / (N * C)
-  val ANY_ANY_C = ANY_T1_C + ANY_T2_C
+  val C_T1_ANY: Double = C_T1_A + C_T1_B + C_T1_C + C_T1_D + C_T1_E
+  val C_T2_ANY: Double = C_T2_A + C_T2_B + C_T2_C + C_T2_D + C_T2_E
+  val C_ANY_ANY: Double = C_T1_ANY + C_T2_ANY
+  val ANY_T1_C: Double = A_T1_C + B_T1_C + C_T1_C + D_T1_C + E_T1_C
+  val ANY_T2_C: Double = A_T2_C + B_T2_C + C_T2_C + D_T2_C + E_T2_C
+  val ANY_T2_C_sel: Double = ANY_T2_C / (N * C)
+  val ANY_ANY_C: Double = ANY_T1_C + ANY_T2_C
 
-  val D_T1_ANY = D_T1_A + D_T1_B + D_T1_C + D_T1_D + D_T1_E
-  val D_T2_ANY = D_T2_A + D_T2_B + D_T2_C + D_T2_D + D_T2_E
-  val D_ANY_ANY = D_T1_ANY + D_T2_ANY
-  val ANY_T1_D = A_T1_D + B_T1_D + C_T1_D + D_T1_D + E_T1_D
-  val ANY_T2_D = A_T2_D + B_T2_D + C_T2_D + D_T2_D + E_T2_D
-  val ANY_ANY_D = ANY_T1_D + ANY_T2_D
+  val D_T1_ANY: Double = D_T1_A + D_T1_B + D_T1_C + D_T1_D + D_T1_E
+  val D_T2_ANY: Double = D_T2_A + D_T2_B + D_T2_C + D_T2_D + D_T2_E
+  val D_ANY_ANY: Double = D_T1_ANY + D_T2_ANY
+  val ANY_T1_D: Double = A_T1_D + B_T1_D + C_T1_D + D_T1_D + E_T1_D
+  val ANY_T2_D: Double = A_T2_D + B_T2_D + C_T2_D + D_T2_D + E_T2_D
+  val ANY_ANY_D: Double = ANY_T1_D + ANY_T2_D
 
-  val E_T1_ANY = E_T1_A + E_T1_B + E_T1_C + E_T1_D + E_T1_E
-  val E_T2_ANY = E_T2_A + E_T2_B + E_T2_C + E_T2_D + E_T2_E
-  val E_ANY_ANY = E_T1_ANY + E_T2_ANY
-  val ANY_T1_E = A_T1_E + B_T1_E + C_T1_E + D_T1_E + E_T1_E
-  val ANY_T2_E = A_T2_E + B_T2_E + C_T2_E + D_T2_E + E_T2_E
-  val ANY_ANY_E = ANY_T1_E + ANY_T2_E
+  val E_T1_ANY: Double = E_T1_A + E_T1_B + E_T1_C + E_T1_D + E_T1_E
+  val E_T2_ANY: Double = E_T2_A + E_T2_B + E_T2_C + E_T2_D + E_T2_E
+  val E_ANY_ANY: Double = E_T1_ANY + E_T2_ANY
+  val ANY_T1_E: Double = A_T1_E + B_T1_E + C_T1_E + D_T1_E + E_T1_E
+  val ANY_T2_E: Double = A_T2_E + B_T2_E + C_T2_E + D_T2_E + E_T2_E
+  val ANY_ANY_E: Double = ANY_T1_E + ANY_T2_E
 
-  val ANY_T1_ANY = A_T1_ANY + B_T1_ANY + C_T1_ANY + D_T1_ANY + E_T1_ANY
-  val ANY_T1_ANY_sel = ANY_T1_ANY / (N * N)
+  val ANY_T1_ANY: Double = A_T1_ANY + B_T1_ANY + C_T1_ANY + D_T1_ANY + E_T1_ANY
+  val ANY_T1_ANY_sel: Double = ANY_T1_ANY / (N * N)
 
-  val ANY_T2_ANY = A_T2_ANY + B_T2_ANY + C_T2_ANY + D_T2_ANY + E_T2_ANY
-  val ANY_T2_ANY_sel = ANY_T2_ANY / (N * N)
+  val ANY_T2_ANY: Double = A_T2_ANY + B_T2_ANY + C_T2_ANY + D_T2_ANY + E_T2_ANY
+  val ANY_T2_ANY_sel: Double = ANY_T2_ANY / (N * N)
 
   // Relationship count: the total number of relationships in the system
-  val R = A_ANY_ANY + B_ANY_ANY + C_ANY_ANY + D_ANY_ANY + E_ANY_ANY
-  val R_sel = R / (N * N)
+  val R: Double = A_ANY_ANY + B_ANY_ANY + C_ANY_ANY + D_ANY_ANY + E_ANY_ANY
+  val R_sel: Double = R / (N * N)
 
   def getIndexType: IndexType
 
@@ -225,7 +257,7 @@ trait ABCDECardinalityData extends CardinalityIntegrationTestSupport {
       .setLabelCardinality("R1", R1)
       .setLabelCardinality("R2", R2)
       .setLabelCardinality("T", T)
-      .setLabelCardinality("EMPTY", 0)
+      .setLabelCardinality("EMPTY", 0.0)
 
       .addNodeIndex("A", Seq("prop"), 1.0, Aprop, indexType = getIndexType)
       .addNodeIndex("B", Seq("prop"), 1.0, Bprop, indexType = getIndexType)

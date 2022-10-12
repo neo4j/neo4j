@@ -112,7 +112,8 @@ object Metrics {
      * This metric estimates how many rows of data a query produces
      * (e.g. by asking the database for statistics)
      *
-     * @param queryPart             the query part to estimate cardinality for
+     * @param queryPart        the query part to estimate cardinality for
+     * @param cardinalityModel subquery expressions need to recursively call into the top-level cardinality model, so we pass it down.
      * @return the cardinality of the query
      */
     def apply(
@@ -120,15 +121,34 @@ object Metrics {
       labelInfo: LabelInfo,
       relTypeInfo: RelTypeInfo,
       semanticTable: SemanticTable,
-      indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+      indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+      cardinalityModel: CardinalityModel
     ): Cardinality
+
+    /**
+     * Passes down this CardinalityModel for recursive calls.
+     */
+    final def apply(
+      plannerQueryPart: PlannerQueryPart,
+      labelInfo: LabelInfo,
+      relTypeInfo: RelTypeInfo,
+      semanticTable: SemanticTable,
+      indexCompatiblePredicatesProviderContext: IndexCompatiblePredicatesProviderContext
+    ): Cardinality = apply(
+      plannerQueryPart,
+      labelInfo,
+      relTypeInfo,
+      semanticTable,
+      indexCompatiblePredicatesProviderContext,
+      this
+    )
   }
 
   trait QueryGraphCardinalityModel {
 
     /**
-     *
-     * @param queryGraph the query graph to estimate cardinality
+     * @param queryGraph       the query graph to estimate cardinality
+     * @param cardinalityModel subquery expressions need to recursively call into the top-level cardinality model, so we pass it down.
      * @return the cardinality of the query graph
      */
     def apply(
@@ -136,7 +156,8 @@ object Metrics {
       labelInfo: LabelInfo,
       relTypeInfo: RelTypeInfo,
       semanticTable: SemanticTable,
-      indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+      indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+      cardinalityModel: CardinalityModel
     ): Cardinality
   }
 
@@ -144,13 +165,16 @@ object Metrics {
 
     /**
      * Calculate a selectivity for the given selections.
+     *
+     * @param cardinalityModel subquery expressions need to recursively call into the top-level cardinality model, so we pass it down.
      */
     def apply(
       selections: Selections,
       labelInfo: LabelInfo,
       relTypeInfo: RelTypeInfo,
       semanticTable: SemanticTable,
-      indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+      indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+      cardinalityModel: CardinalityModel
     ): Selectivity
   }
 
@@ -208,6 +232,7 @@ trait MetricsFactory {
     calculator: SelectivityCalculator,
     expressionEvaluator: ExpressionEvaluator
   ): CardinalityModel
+
   def newCostModel(executionModel: ExecutionModel): CostModel
 
   def newQueryGraphCardinalityModel(

@@ -99,25 +99,6 @@ object CachedSimpleMetricsFactory extends MetricsFactory {
   ): QueryGraphCardinalityModel = {
     val wrapped: QueryGraphCardinalityModel =
       SimpleMetricsFactory.newQueryGraphCardinalityModel(planContext, selectivityCalculator)
-    val cached = CachedFunction[
-      QueryGraph,
-      Metrics.LabelInfo,
-      Metrics.RelTypeInfo,
-      SemanticTable,
-      IndexCompatiblePredicatesProviderContext,
-      Cardinality
-    ] {
-      (a, b, c, d, e) => wrapped(a, b, c, d, e)
-    }
-    (
-      queryGraph: QueryGraph,
-      labelInfo: LabelInfo,
-      relTypeInfo: RelTypeInfo,
-      semanticTable: SemanticTable,
-      indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
-    ) => {
-      cached.apply(queryGraph, labelInfo, relTypeInfo, semanticTable, indexPredicateProviderContext)
-    }
+    new CachedQueryGraphCardinalityModel(wrapped)
   }
-
 }

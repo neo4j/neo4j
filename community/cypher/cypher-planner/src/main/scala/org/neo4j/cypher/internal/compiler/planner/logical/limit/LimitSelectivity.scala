@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
@@ -67,7 +68,7 @@ object LimitSelectivity {
             proj.withPagination(proj.queryPagination.withLimit(None))
           ))
           val cardinalityModel = context.metrics.cardinality(
-            _,
+            _: PlannerQueryPart,
             context.input.labelInfo,
             context.input.relTypeInfo,
             context.semanticTable,
