@@ -77,6 +77,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -113,6 +114,7 @@ class CountsComputerTest {
     @BeforeEach
     void setup() {
         dbBuilder = new TestDatabaseManagementServiceBuilder(databaseLayout)
+                .setConfig(GraphDatabaseSettings.db_format, FormatFamily.ALIGNED.name())
                 .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fileSystem));
     }
 
