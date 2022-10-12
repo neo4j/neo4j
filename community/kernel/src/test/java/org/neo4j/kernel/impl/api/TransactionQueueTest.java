@@ -46,7 +46,7 @@ class TransactionQueueTest {
             verifyNoMoreInteractions(applier);
         }
         queue.queue(mock(TransactionToApply.class));
-        verify(applier).apply(any(), any());
+        verify(applier).apply(any());
         reset(applier);
 
         // THEN
@@ -57,8 +57,8 @@ class TransactionQueueTest {
             queue.queue(mock(TransactionToApply.class));
             verifyNoMoreInteractions(applier);
         }
-        queue.empty();
-        verify(applier).apply(any(), any());
+        queue.applyTransactions();
+        verify(applier).apply(any());
     }
 
     @Test
@@ -77,7 +77,7 @@ class TransactionQueueTest {
         }
 
         // THEN
-        verify(applier).apply(any(), any());
+        verify(applier).apply(any());
         for (int i = 0; i < txs.length - 1; i++) {
             assertEquals(txs[i + 1], txs[i].next());
         }

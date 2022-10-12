@@ -27,13 +27,13 @@ package org.neo4j.kernel.impl.api;
 public class TransactionQueue {
     @FunctionalInterface
     public interface Applier {
-        void apply(TransactionToApply first, TransactionToApply last) throws Exception;
+        void apply(TransactionToApply tx) throws Exception;
     }
 
     private final int maxSize;
     private final Applier applier;
-    private TransactionToApply first;
-    private TransactionToApply last;
+    private TransactionToApply tail;
+    private TransactionToApply head;
     private int size;
 
     public TransactionQueue(int maxSize, Applier applier) {
@@ -42,40 +42,27 @@ public class TransactionQueue {
     }
 
     public void queue(TransactionToApply transaction) throws Exception {
-        if (isEmpty()) {
-            first = last = transaction;
+        if (isNotEmpty()) {
+            tail.next(transaction);
         } else {
-            last.next(transaction);
-            last = transaction;
+            head = transaction;
         }
+        tail = transaction;
         if (++size == maxSize) {
-            empty();
+            applyTransactions();
         }
     }
 
-    public void empty() throws Exception {
-        if (size > 0) {
-            applier.apply(first, last);
-            first = last = null;
+    public void applyTransactions() throws Exception {
+        if (isNotEmpty()) {
+            applier.apply(head);
+            tail = null;
+            head = null;
             size = 0;
         }
     }
 
-    public boolean isEmpty() {
-        return size == 0;
-    }
-
-    public TransactionToApply first() {
-        if (isEmpty()) {
-            throw new IllegalStateException("Nothing in queue");
-        }
-        return first;
-    }
-
-    public TransactionToApply last() {
-        if (isEmpty()) {
-            throw new IllegalStateException("Nothing in queue");
-        }
-        return last;
+    private boolean isNotEmpty() {
+        return size != 0;
     }
 }

@@ -176,7 +176,7 @@ class IndexWorkSyncTransactionApplicationStressIT {
                     CommandCreationContext creationContext = storageEngine.newCommandCreationContext(INSTANCE);
                     var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
                 creationContext.initialize(NULL_CONTEXT, storeCursors);
-                TransactionQueue queue = new TransactionQueue(batchSize, (tx, last) -> {
+                TransactionQueue queue = new TransactionQueue(batchSize, tx -> {
                     // Apply
                     storageEngine.apply(tx, EXTERNAL);
 
@@ -187,7 +187,7 @@ class IndexWorkSyncTransactionApplicationStressIT {
                 for (; !end.get(); i++) {
                     queue.queue(createNodeAndProperty(i, reader, creationContext, storeCursors));
                 }
-                queue.empty();
+                queue.applyTransactions();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
