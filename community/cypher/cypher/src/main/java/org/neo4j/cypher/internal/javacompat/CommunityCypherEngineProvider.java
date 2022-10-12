@@ -67,7 +67,7 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider {
                 CypherPlannerConfiguration.fromCypherConfiguration(cypherConfig, spi.config(), isSystemDatabase);
         CypherRuntimeConfiguration runtimeConfig = CypherRuntimeConfiguration.fromCypherConfiguration(cypherConfig);
         CacheFactory cacheFactory;
-        if (spi.config().get(GraphDatabaseInternalSettings.enable_unified_query_caches) == Boolean.TRUE) {
+        if (spi.config().get(GraphDatabaseInternalSettings.enable_unified_query_caches)) {
             cacheFactory = deps.resolveDependency(SharedExecutorBasedCaffeineCacheFactory.class);
         } else {
             cacheFactory = makeNonUnifiedCacheFactory(spi);

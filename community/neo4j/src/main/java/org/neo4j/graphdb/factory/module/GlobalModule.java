@@ -151,8 +151,6 @@ public class GlobalModule {
     private final IOControllerService ioControllerService;
     private final CapabilitiesService capabilitiesService;
 
-    private final SharedExecutorBasedCaffeineCacheFactory unifiedExecutorBasedCaffeineCacheFactory;
-
     /**
      * @param globalConfig configuration affecting global aspects of the system.
      * @param dbmsInfo the type of dbms this module manages.
@@ -283,10 +281,13 @@ public class GlobalModule {
         globalDependencies.satisfyDependency(
                 tryResolveOrCreate(NativeAccess.class, NativeAccessProvider::getNativeAccess));
 
-        MonitoredJobExecutor monitoredExecutor = jobScheduler.monitoredJobExecutor(Group.CYPHER_CACHE);
-        unifiedExecutorBasedCaffeineCacheFactory = new SharedExecutorBasedCaffeineCacheFactory(
-                job -> monitoredExecutor.execute(systemJob("Query plan cache maintenance"), job));
-        globalDependencies.satisfyDependency(unifiedExecutorBasedCaffeineCacheFactory);
+        if (globalConfig.get(GraphDatabaseInternalSettings.enable_unified_query_caches)) {
+            MonitoredJobExecutor monitoredExecutor = jobScheduler.monitoredJobExecutor(Group.CYPHER_CACHE);
+            SharedExecutorBasedCaffeineCacheFactory unifiedExecutorBasedCaffeineCacheFactory =
+                    new SharedExecutorBasedCaffeineCacheFactory(
+                            job -> monitoredExecutor.execute(systemJob("Query plan cache maintenance"), job));
+            globalDependencies.satisfyDependency(unifiedExecutorBasedCaffeineCacheFactory);
+        }
     }
 
     private Tracers createDefaultTracers() {
