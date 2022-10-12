@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
@@ -54,7 +53,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -110,7 +108,7 @@ class BufferingIdGeneratorFactoryTest {
                 TestIdType.TEST,
                 () -> 0L,
                 Integer.MAX_VALUE,
-                writable(),
+                false,
                 config,
                 new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
                 immutable.empty(),
@@ -270,7 +268,7 @@ class BufferingIdGeneratorFactoryTest {
                 IdType idType,
                 LongSupplier highIdScanner,
                 long maxId,
-                DatabaseReadOnlyChecker readOnlyChecker,
+                boolean readOnly,
                 Config config,
                 CursorContextFactory contextFactory,
                 ImmutableSet<OpenOption> openOptions,
@@ -291,7 +289,7 @@ class BufferingIdGeneratorFactoryTest {
                 long highId,
                 boolean throwIfFileExists,
                 long maxId,
-                DatabaseReadOnlyChecker readOnlyChecker,
+                boolean readOnly,
                 Config config,
                 CursorContextFactory contextFactory,
                 ImmutableSet<OpenOption> openOptions,
@@ -302,7 +300,7 @@ class BufferingIdGeneratorFactoryTest {
                     idType,
                     () -> highId,
                     maxId,
-                    readOnlyChecker,
+                    readOnly,
                     config,
                     contextFactory,
                     openOptions,

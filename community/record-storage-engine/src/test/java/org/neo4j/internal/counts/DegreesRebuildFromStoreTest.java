@@ -24,7 +24,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.Command.GroupDegreeCommand.combinedKeyOnGroupAndDirection;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
@@ -183,7 +182,7 @@ class DegreesRebuildFromStoreTest {
                         directory.getFileSystem(),
                         NullLogProvider.getInstance(),
                         NULL_CONTEXT_FACTORY,
-                        writable(),
+                        false,
                         LogTailMetadata.EMPTY_LOG_TAIL)
                 .openAllNeoStores()) {
             DegreesRebuildFromStore rebuild = new DegreesRebuildFromStore(

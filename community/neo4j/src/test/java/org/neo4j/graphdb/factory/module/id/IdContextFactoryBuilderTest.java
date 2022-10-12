@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.Config.defaults;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
@@ -121,7 +120,7 @@ class IdContextFactoryBuilderTest {
                 idType,
                 highIdSupplier,
                 maxId,
-                writable(),
+                false,
                 config,
                 CONTEXT_FACTORY,
                 immutable.empty(),
@@ -134,7 +133,7 @@ class IdContextFactoryBuilderTest {
                         idType,
                         highIdSupplier,
                         maxId,
-                        writable(),
+                        false,
                         config,
                         CONTEXT_FACTORY,
                         immutable.empty(),
@@ -179,17 +178,7 @@ class IdContextFactoryBuilderTest {
         RecordIdType idType = RecordIdType.NODE;
 
         try (IdGenerator idGenerator = idGeneratorFactory.create(
-                pageCache,
-                file,
-                idType,
-                1,
-                false,
-                100,
-                writable(),
-                config,
-                contextFactory,
-                immutable.empty(),
-                SINGLE_IDS)) {
+                pageCache, file, idType, 1, false, 100, false, config, contextFactory, immutable.empty(), SINGLE_IDS)) {
             idGenerator.start(FreeIds.NO_FREE_IDS, NULL_CONTEXT);
             try (var marker = idGenerator.marker(NULL_CONTEXT)) {
                 marker.markDeleted(1);

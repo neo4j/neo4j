@@ -29,14 +29,13 @@ import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 
 /**
  * {@link IdGeneratorFactory} that ignores the underlying id file and only uses the provided highIdScanner in
- * {@link IdGeneratorFactory#open(PageCache, Path, IdType, LongSupplier, long, DatabaseReadOnlyChecker, Config, CursorContextFactory, ImmutableSet,
+ * {@link IdGeneratorFactory#open(PageCache, Path, IdType, LongSupplier, long, boolean, Config, CursorContextFactory, ImmutableSet,
  * IdSlotDistribution)}, instantiating {@link IdGenerator} that will return that highId and do nothing else.
  * This is of great convenience when migrating between id file formats.
  */
@@ -50,7 +49,7 @@ public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory 
             IdType idType,
             LongSupplier highIdScanner,
             long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             Config config,
             CursorContextFactory contextFactory,
             ImmutableSet<OpenOption> openOptions,
@@ -69,7 +68,7 @@ public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory 
             long highId,
             boolean throwIfFileExists,
             long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             Config config,
             CursorContextFactory contextFactory,
             ImmutableSet<OpenOption> openOptions,
@@ -80,7 +79,7 @@ public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory 
                 idType,
                 () -> highId,
                 maxId,
-                readOnlyChecker,
+                readOnly,
                 config,
                 contextFactory,
                 openOptions,

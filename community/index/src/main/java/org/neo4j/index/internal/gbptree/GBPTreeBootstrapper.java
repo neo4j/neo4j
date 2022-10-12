@@ -33,7 +33,6 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.LayoutBootstrapper.Layouts;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -50,7 +49,7 @@ public class GBPTreeBootstrapper implements Closeable {
     private final FileSystemAbstraction fs;
     private final JobScheduler jobScheduler;
     private final LayoutBootstrapper layoutBootstrapper;
-    private final DatabaseReadOnlyChecker readOnlyChecker;
+    private final boolean readOnly;
     private final CursorContextFactory contextFactory;
     private final PageCacheTracer pageCacheTracer;
     private PageCache pageCache;
@@ -59,13 +58,13 @@ public class GBPTreeBootstrapper implements Closeable {
             FileSystemAbstraction fs,
             JobScheduler jobScheduler,
             LayoutBootstrapper layoutBootstrapper,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer) {
         this.fs = fs;
         this.jobScheduler = jobScheduler;
         this.layoutBootstrapper = layoutBootstrapper;
-        this.readOnlyChecker = readOnlyChecker;
+        this.readOnly = readOnly;
         this.contextFactory = contextFactory;
         this.pageCacheTracer = pageCacheTracer;
     }
@@ -100,7 +99,7 @@ public class GBPTreeBootstrapper implements Closeable {
                     NO_MONITOR,
                     NO_HEADER_READER,
                     ignore(),
-                    readOnlyChecker,
+                    readOnly,
                     openOptions,
                     DEFAULT_DATABASE_NAME,
                     file.getFileName().toString(),

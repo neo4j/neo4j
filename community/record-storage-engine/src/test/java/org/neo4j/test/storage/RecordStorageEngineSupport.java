@@ -26,7 +26,6 @@ import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TA
 
 import java.util.function.Function;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -256,7 +255,6 @@ public class RecordStorageEngineSupport {
                     RecoveryCleanupWorkCollector.immediate(),
                     true,
                     EmptyMemoryTracker.INSTANCE,
-                    DatabaseReadOnlyChecker.writable(),
                     EMPTY_LOG_TAIL,
                     LockVerificationFactory.NONE,
                     new CursorContextFactory(PageCacheTracer.NULL, EMPTY),

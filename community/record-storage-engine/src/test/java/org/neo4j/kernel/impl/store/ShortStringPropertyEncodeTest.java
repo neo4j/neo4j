@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
@@ -77,7 +76,7 @@ class ShortStringPropertyEncodeTest {
                         fileSystem,
                         NullLogProvider.getInstance(),
                         new CursorContextFactory(pageCacheTracer, EMPTY),
-                        writable(),
+                        false,
                         EMPTY_LOG_TAIL)
                 .openNeoStores(true, StoreType.PROPERTY, StoreType.PROPERTY_ARRAY, StoreType.PROPERTY_STRING);
         propertyStore = neoStores.getPropertyStore();

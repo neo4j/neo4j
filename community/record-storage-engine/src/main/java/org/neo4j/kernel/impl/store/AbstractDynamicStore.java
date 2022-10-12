@@ -30,7 +30,6 @@ import java.util.Collection;
 import java.util.List;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -85,7 +84,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
             String typeDescriptor,
             int dataSizeFromConfiguration,
             RecordFormat<DynamicRecord> recordFormat,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             String databaseName,
             ImmutableSet<OpenOption> openOptions) {
         super(
@@ -101,7 +100,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
                 typeDescriptor,
                 recordFormat,
                 new DynamicStoreHeaderFormat(dataSizeFromConfiguration, recordFormat),
-                readOnlyChecker,
+                readOnly,
                 databaseName,
                 openOptions);
     }

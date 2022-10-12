@@ -27,7 +27,6 @@ import java.io.PrintStream;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -55,7 +54,7 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
             FileSystemAbstraction fileSystem,
             RecoveryCleanupWorkCollector recoveryCollector,
             DegreesRebuilder rebuilder,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             Monitor monitor,
             String databaseName,
             int maxCacheSize,
@@ -70,7 +69,7 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
                 fileSystem,
                 recoveryCollector,
                 new RebuilderWrapper(rebuilder),
-                readOnlyChecker,
+                readOnly,
                 NAME,
                 monitor,
                 databaseName,
@@ -132,7 +131,7 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
      *
      * @param groupId relationship group ID.
      * @param direction direction for the relationship chain.
-     * @return a {@link CountsKey for the relationship chain (group+direction). The returned key can be put into {@link Map maps} and similar.
+     * @return a {@link CountsKey for the relationship chain (group+direction). The returned key can be put into maps and similar.
      */
     static CountsKey degreeKey(long groupId, RelationshipDirection direction) {
         return new CountsKey(TYPE_DEGREE, groupId << 2 | direction.id(), 0);

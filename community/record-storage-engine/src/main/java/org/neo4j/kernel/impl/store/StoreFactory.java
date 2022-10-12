@@ -29,7 +29,6 @@ import java.nio.file.OpenOption;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.unsafe.UnsafeUtil;
@@ -58,7 +57,7 @@ public class StoreFactory {
     private final PageCacheTracer pageCacheTracer;
     private final RecordFormats recordFormats;
     private final CursorContextFactory contextFactory;
-    private final DatabaseReadOnlyChecker readOnlyChecker;
+    private final boolean readOnly;
     private final LogTailMetadata logTailMetadata;
     private final ImmutableSet<OpenOption> openOptions;
 
@@ -71,7 +70,7 @@ public class StoreFactory {
             FileSystemAbstraction fileSystemAbstraction,
             InternalLogProvider logProvider,
             CursorContextFactory contextFactory,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             LogTailMetadata logTailMetadata) {
         this(
                 directoryStructure,
@@ -89,7 +88,7 @@ public class StoreFactory {
                         contextFactory),
                 logProvider,
                 contextFactory,
-                readOnlyChecker,
+                readOnly,
                 logTailMetadata,
                 immutable.empty());
     }
@@ -104,7 +103,7 @@ public class StoreFactory {
             RecordFormats recordFormats,
             InternalLogProvider logProvider,
             CursorContextFactory contextFactory,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             LogTailMetadata logTailMetadata,
             ImmutableSet<OpenOption> openOptions) {
         this.databaseLayout = RecordDatabaseLayout.convert(databaseLayout);
@@ -113,7 +112,7 @@ public class StoreFactory {
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.recordFormats = recordFormats;
         this.contextFactory = contextFactory;
-        this.readOnlyChecker = readOnlyChecker;
+        this.readOnly = readOnly;
         this.logTailMetadata = logTailMetadata;
         this.openOptions = buildOpenOptions(config, recordFormats, openOptions);
         this.logProvider = logProvider;
@@ -177,7 +176,7 @@ public class StoreFactory {
                 recordFormats,
                 createStoreIfNotExists,
                 contextFactory,
-                readOnlyChecker,
+                readOnly,
                 logTailMetadata,
                 storeTypes,
                 openOptions);

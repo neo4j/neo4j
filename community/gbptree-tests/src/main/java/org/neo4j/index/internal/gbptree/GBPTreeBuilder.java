@@ -31,7 +31,6 @@ import java.nio.file.Path;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EmptyDependencyResolver;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -55,7 +54,7 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
     private Layout<KEY, VALUE> dataLayout;
     private KeyLayout<ROOT_KEY> rootLayout;
     private RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
-    private DatabaseReadOnlyChecker readOnlyChecker = DatabaseReadOnlyChecker.writable();
+    private boolean readOnly;
     private PageCacheTracer pageCacheTracer = NULL;
     private ImmutableSet<OpenOption> openOptions = immutable.empty();
     private TreeNodeLayoutFactory treeNodeLayoutFactory = TreeNodeLayoutFactory.getInstance();
@@ -118,8 +117,8 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
         return this;
     }
 
-    public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(DatabaseReadOnlyChecker readOnlyChecker) {
-        this.readOnlyChecker = readOnlyChecker;
+    public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> readOnly() {
+        this.readOnly = true;
         return this;
     }
 
@@ -154,7 +153,7 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
                 monitor,
                 headerReader,
                 recoveryCleanupWorkCollector,
-                readOnlyChecker,
+                readOnly,
                 openOptions,
                 DEFAULT_DATABASE_NAME,
                 "test tree",
@@ -174,7 +173,7 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
                 monitor,
                 headerReader,
                 recoveryCleanupWorkCollector,
-                readOnlyChecker,
+                readOnly,
                 openOptions,
                 DEFAULT_DATABASE_NAME,
                 "test tree",

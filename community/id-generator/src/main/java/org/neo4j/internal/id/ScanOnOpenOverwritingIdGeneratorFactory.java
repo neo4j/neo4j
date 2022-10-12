@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.util.function.LongSupplier;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -54,12 +53,13 @@ public class ScanOnOpenOverwritingIdGeneratorFactory extends DefaultIdGeneratorF
             IdType idType,
             LongSupplier highIdScanner,
             long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             Config config,
             CursorContextFactory contextFactory,
             ImmutableSet<OpenOption> openOptions,
             IdSlotDistribution slotDistribution)
             throws IOException {
+        assert !readOnly;
         long highId = highIdScanner.getAsLong();
         return create(
                 pageCache,
@@ -68,7 +68,7 @@ public class ScanOnOpenOverwritingIdGeneratorFactory extends DefaultIdGeneratorF
                 highId,
                 true,
                 maxId,
-                readOnlyChecker,
+                false,
                 config,
                 contextFactory,
                 openOptions,

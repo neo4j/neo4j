@@ -495,7 +495,6 @@ public final class Recovery {
                 logService.getUserLogProvider(),
                 recoveryCleanupCollector,
                 true,
-                readOnlyChecker,
                 logTailMetadata,
                 memoryTracker,
                 cursorContextFactory,
@@ -511,7 +510,7 @@ public final class Recovery {
                 fs,
                 databaseLayout,
                 recoveryCleanupCollector,
-                readOnlyChecker,
+                false,
                 cursorContextFactory,
                 tracers.getPageCacheTracer(),
                 storageEngine.getOpenOptions());

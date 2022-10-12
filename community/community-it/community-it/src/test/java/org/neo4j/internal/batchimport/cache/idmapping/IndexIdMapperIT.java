@@ -143,7 +143,7 @@ class IndexIdMapperIT {
                 fs,
                 RecordDatabaseLayout.convert(layout),
                 immediate(),
-                writable(),
+                false,
                 NULL_CONTEXT_FACTORY,
                 NULL,
                 openOptions));

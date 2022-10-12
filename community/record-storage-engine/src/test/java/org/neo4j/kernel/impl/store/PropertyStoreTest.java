@@ -26,7 +26,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
@@ -99,7 +98,7 @@ class PropertyStoreTest {
                     mock(PropertyKeyTokenStore.class),
                     mock(DynamicArrayStore.class),
                     RecordFormatSelector.defaultFormat(),
-                    writable(),
+                    false,
                     databaseLayout.getDatabaseName(),
                     immutable.empty())) {
                 store.initialise(true, new CursorContextFactory(pageCacheTracer, EMPTY));

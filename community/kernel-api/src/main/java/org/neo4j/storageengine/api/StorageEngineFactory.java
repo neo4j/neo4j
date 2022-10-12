@@ -153,7 +153,6 @@ public interface StorageEngineFactory {
             InternalLogProvider userLogProvider,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             boolean createStoreIfNotExists,
-            DatabaseReadOnlyChecker readOnlyChecker,
             LogTailMetadata logTailMetadata,
             MemoryTracker memoryTracker,
             CursorContextFactory contextFactory,

@@ -172,7 +172,7 @@ public class TokenIndex implements ConsistencyCheckable {
                 monitor,
                 NO_HEADER_READER,
                 recoveryCleanupWorkCollector,
-                readOnlyChecker,
+                false,
                 openOptions,
                 databaseName,
                 tokenStoreName,

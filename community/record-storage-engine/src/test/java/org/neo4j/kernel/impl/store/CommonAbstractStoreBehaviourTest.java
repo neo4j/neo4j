@@ -43,7 +43,6 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -441,7 +440,7 @@ class CommonAbstractStoreBehaviourTest {
                     "T",
                     format,
                     format,
-                    DatabaseReadOnlyChecker.writable(),
+                    false,
                     DEFAULT_DATABASE_NAME,
                     immutable.empty());
         }

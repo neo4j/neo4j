@@ -25,7 +25,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
@@ -91,7 +90,7 @@ class ConsistencyCheckingApplierTest {
                         directory.getFileSystem(),
                         NullLogProvider.getInstance(),
                         new CursorContextFactory(pageCacheTracer, EMPTY),
-                        writable(),
+                        false,
                         EMPTY_LOG_TAIL)
                 .openAllNeoStores(true);
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();

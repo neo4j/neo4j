@@ -35,7 +35,6 @@ import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
@@ -115,7 +114,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord, IntStoreHeade
             InternalLogProvider logProvider,
             PropertyStore propertyStore,
             RecordFormats recordFormats,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             String databaseName,
             ImmutableSet<OpenOption> openOptions) {
         super(
@@ -131,7 +130,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord, IntStoreHeade
                 TYPE_DESCRIPTOR,
                 recordFormats.schema(),
                 getStoreHeaderFormat(),
-                readOnlyChecker,
+                readOnly,
                 databaseName,
                 openOptions);
         this.propertyStore = propertyStore;

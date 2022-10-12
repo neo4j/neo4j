@@ -44,7 +44,6 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.collection.trackable.HeapTrackingLongArrayList;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -109,7 +108,7 @@ public class BufferingIdGeneratorFactory extends LifecycleAdapter implements IdG
             IdType idType,
             LongSupplier highIdScanner,
             long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             Config config,
             CursorContextFactory contextFactory,
             ImmutableSet<OpenOption> openOptions,
@@ -123,7 +122,7 @@ public class BufferingIdGeneratorFactory extends LifecycleAdapter implements IdG
                 idType,
                 highIdScanner,
                 maxId,
-                readOnlyChecker,
+                readOnly,
                 config,
                 contextFactory,
                 openOptions,
@@ -139,7 +138,7 @@ public class BufferingIdGeneratorFactory extends LifecycleAdapter implements IdG
             long highId,
             boolean throwIfFileExists,
             long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             Config config,
             CursorContextFactory contextFactory,
             ImmutableSet<OpenOption> openOptions,
@@ -152,7 +151,7 @@ public class BufferingIdGeneratorFactory extends LifecycleAdapter implements IdG
                 highId,
                 throwIfFileExists,
                 maxId,
-                readOnlyChecker,
+                readOnly,
                 config,
                 contextFactory,
                 openOptions,

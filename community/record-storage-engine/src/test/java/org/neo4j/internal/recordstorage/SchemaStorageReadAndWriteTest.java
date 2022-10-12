@@ -20,7 +20,6 @@
 package org.neo4j.internal.recordstorage;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -96,7 +95,7 @@ class SchemaStorageReadAndWriteTest {
                 fs,
                 NullLogProvider.getInstance(),
                 new CursorContextFactory(pageCacheTracer, EMPTY),
-                writable(),
+                false,
                 EMPTY_LOG_TAIL);
         neoStores = storeFactory.openNeoStores(
                 true,

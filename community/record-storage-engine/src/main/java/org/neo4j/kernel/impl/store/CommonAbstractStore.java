@@ -44,7 +44,6 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
@@ -86,11 +85,11 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     protected final IdGeneratorFactory idGeneratorFactory;
     protected final InternalLog log;
     protected final RecordFormat<RECORD> recordFormat;
-    private FileSystemAbstraction fileSystem;
+    private final FileSystemAbstraction fileSystem;
     final Path storageFile;
     private final Path idFile;
     private final String typeDescriptor;
-    protected final DatabaseReadOnlyChecker readOnlyChecker;
+    protected final boolean readOnly;
     protected PagedFile pagedFile;
     protected int recordSize;
     private int filePageSize;
@@ -133,7 +132,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
             String typeDescriptor,
             RecordFormat<RECORD> recordFormat,
             StoreHeaderFormat<HEADER> storeHeaderFormat,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             String databaseName,
             ImmutableSet<OpenOption> openOptions) {
         this.fileSystem = fileSystem;
@@ -149,7 +148,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
         this.storeHeaderFormat = storeHeaderFormat;
         this.databaseName = databaseName;
         this.openOptions = openOptions;
-        this.readOnlyChecker = readOnlyChecker;
+        this.readOnly = readOnly;
         this.log = logProvider.getLog(getClass());
     }
 
@@ -273,7 +272,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
                 getNumberOfReservedLowIds(),
                 false,
                 recordFormat.getMaxId(),
-                readOnlyChecker,
+                readOnly,
                 configuration,
                 contextFactory,
                 openOptions,
@@ -617,7 +616,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
                     }
                 },
                 recordFormat.getMaxId(),
-                readOnlyChecker,
+                readOnly,
                 configuration,
                 contextFactory,
                 openOptions,

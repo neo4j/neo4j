@@ -31,9 +31,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
+import static org.neo4j.index.internal.gbptree.GBPTreeStructure.visitState;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.io.fs.FileUtils.blockSize;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
@@ -74,8 +74,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.commons.lang3.tuple.Pair;
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
@@ -1798,38 +1798,12 @@ class GBPTreeTest {
     }
 
     @Test
-    void preserveChangesEvenInReadOnlyMode() throws IOException {
-        // given
-        try (PageCache pageCache = createPageCache(defaultPageSize)) {
-            try (GBPTree<MutableLong, MutableLong> tree = index(pageCache).build()) {
-                for (int i = 0; i < 10; i++) {
-                    for (int j = 0; j < 100; j++) {
-                        insert(tree, random.nextLong(), random.nextLong());
-                    }
-                    tree.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
-                }
-            }
-            byte[] before = fileContent(indexFile);
-
-            try (GBPTree<MutableLong, MutableLong> tree =
-                    index(pageCache).with(readOnly()).build()) {
-                tree.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
-            }
-            byte[] after = fileContent(indexFile);
-            assertThat(after)
-                    .isNotEqualTo(before)
-                    .describedAs("Expected file content to be diff since even read only mode can do checkpoints.");
-        }
-    }
-
-    @Test
     void mustFailGracefullyIfFileNotExistInReadOnlyMode() {
         // given
         try (PageCache pageCache = createPageCache(defaultPageSize)) {
-            assertThatThrownBy(() -> index(pageCache).with(readOnly()).build())
+            assertThatThrownBy(() -> index(pageCache).readOnly().build())
                     .isInstanceOf(TreeFileNotFoundException.class)
-                    .hasMessageContaining("Can not create new tree file in read only mode")
-                    .extracting(throwable -> throwable.getSuppressed()[0], InstanceOfAssertFactories.THROWABLE)
+                    .hasMessageContaining("Can not create new tree file")
                     .hasMessageContaining(indexFile.toAbsolutePath().toString());
         }
     }
@@ -2068,6 +2042,77 @@ class GBPTreeTest {
                 index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
             }
         }
+    }
+
+    @Test
+    void shouldNotBumpGenerationInReadOnlyMode() throws IOException {
+        // given
+        try (var pageCache = createPageCache(defaultPageSize)) {
+            try (var tree = index(pageCache).build()) {
+                tree.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
+            }
+
+            // when
+            var stateBeforeOpenReadOnly = captureTreeState(pageCache);
+            index(pageCache).readOnly().build().close();
+
+            // then
+            var stateAfterOpenReadOnly = captureTreeState(pageCache);
+            assertThat(stateAfterOpenReadOnly).isEqualTo(stateBeforeOpenReadOnly);
+        }
+    }
+
+    @Test
+    void shouldThrowOnWritingInReadOnlyMode() throws IOException {
+        // given
+        try (var pageCache = createPageCache(defaultPageSize)) {
+            try (var tree = index(pageCache).build()) {
+                tree.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
+            }
+
+            // when
+            try (var tree = index(pageCache).readOnly().build()) {
+                // then
+                assertThatThrownBy(() -> tree.writer(NULL_CONTEXT)).isInstanceOf(IllegalStateException.class);
+            }
+        }
+    }
+
+    @Test
+    void shouldIgnoreCheckpointInReadOnlyMode() throws IOException {
+        // given
+        try (var pageCache = createPageCache(defaultPageSize)) {
+            try (var tree = index(pageCache).build()) {
+                tree.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
+            }
+
+            // when
+            var stateBeforeOpenReadOnly = captureTreeState(pageCache);
+            try (var tree = index(pageCache).readOnly().build()) {
+                tree.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
+            }
+
+            // then
+            var stateAfterOpenReadOnly = captureTreeState(pageCache);
+            assertThat(stateAfterOpenReadOnly).isEqualTo(stateBeforeOpenReadOnly);
+        }
+    }
+
+    private Pair<TreeState, TreeState> captureTreeState(PageCache pageCache) throws IOException {
+        MutableObject<Pair<TreeState, TreeState>> state = new MutableObject<>();
+        visitState(
+                pageCache,
+                indexFile,
+                new GBPTreeVisitor.Adaptor<SingleRoot, MutableLong, MutableLong>() {
+                    @Override
+                    public void treeState(Pair<TreeState, TreeState> statePair) {
+                        state.setValue(statePair);
+                    }
+                },
+                "db",
+                NULL_CONTEXT,
+                Sets.immutable.empty());
+        return state.getValue();
     }
 
     private static class ControlledRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCollector {

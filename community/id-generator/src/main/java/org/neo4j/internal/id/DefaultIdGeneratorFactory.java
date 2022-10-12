@@ -32,7 +32,6 @@ import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.indexed.IndexedIdGenerator;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -91,7 +90,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
             IdType idType,
             LongSupplier highIdScanner,
             long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             Config config,
             CursorContextFactory contextFactory,
             ImmutableSet<OpenOption> openOptions,
@@ -105,7 +104,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
                 highIdScanner,
                 maxId,
                 idType,
-                readOnlyChecker,
+                readOnly,
                 config,
                 contextFactory,
                 databaseName,
@@ -123,7 +122,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
             LongSupplier highIdSupplier,
             long maxValue,
             IdType idType,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             Config config,
             CursorContextFactory contextFactory,
             String databaseName,
@@ -139,7 +138,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
                 allowLargeIdCaches,
                 highIdSupplier,
                 maxValue,
-                readOnlyChecker,
+                readOnly,
                 config,
                 databaseName,
                 contextFactory,
@@ -162,7 +161,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
             long highId,
             boolean throwIfFileExists,
             long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             Config config,
             CursorContextFactory contextFactory,
             ImmutableSet<OpenOption> openOptions,
@@ -183,7 +182,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
                 allowLargeIdCaches,
                 () -> highId,
                 maxId,
-                readOnlyChecker,
+                readOnly,
                 config,
                 databaseName,
                 contextFactory,

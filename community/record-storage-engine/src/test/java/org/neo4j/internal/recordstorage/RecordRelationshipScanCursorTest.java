@@ -20,7 +20,6 @@
 package org.neo4j.internal.recordstorage;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
@@ -214,7 +213,7 @@ class RecordRelationshipScanCursorTest {
                 fileSystem,
                 NullLogProvider.getInstance(),
                 new CursorContextFactory(pageCacheTracer, EMPTY),
-                writable(),
+                false,
                 EMPTY_LOG_TAIL);
     }
 

@@ -26,7 +26,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_STRING_STORE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
@@ -115,7 +114,7 @@ public class RecordPropertyCursorTest {
                         getRecordFormats(),
                         NullLogProvider.getInstance(),
                         new CursorContextFactory(pageCacheTracer, EMPTY),
-                        writable(),
+                        false,
                         EMPTY_LOG_TAIL,
                         Sets.immutable.empty())
                 .openAllNeoStores(true);

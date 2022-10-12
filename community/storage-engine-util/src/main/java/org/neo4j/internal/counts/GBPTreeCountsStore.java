@@ -30,7 +30,6 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.counts.CountsVisitor;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -96,7 +95,7 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
             FileSystemAbstraction fileSystem,
             RecoveryCleanupWorkCollector recoveryCollector,
             CountsBuilder initialCountsBuilder,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             Monitor monitor,
             String databaseName,
             int maxCacheSize,
@@ -111,7 +110,7 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
                 fileSystem,
                 recoveryCollector,
                 new InitialCountsRebuilder(initialCountsBuilder),
-                readOnlyChecker,
+                readOnly,
                 NAME,
                 monitor,
                 databaseName,

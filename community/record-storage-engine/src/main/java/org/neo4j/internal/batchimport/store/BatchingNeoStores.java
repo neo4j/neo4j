@@ -24,7 +24,6 @@ import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_iops_limit;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.IOUtils.uncheckedConsumer;
@@ -412,7 +411,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                 recordFormats,
                 internalLogProvider,
                 contextFactory,
-                writable(),
+                false,
                 logTailMetadata,
                 openOptions);
     }
@@ -467,7 +466,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                         fileSystem,
                         RecoveryCleanupWorkCollector.immediate(),
                         builder,
-                        writable(),
+                        false,
                         GBPTreeCountsStore.NO_MONITOR,
                         databaseName,
                         neo4jConfig.get(counts_store_max_cached_entries),
@@ -494,7 +493,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                         immediate(),
                         new GBPTreeRelationshipGroupDegreesStore.EmptyDegreesRebuilder(
                                 neoStores.getMetaDataStore().getLastCommittedTransactionId()),
-                        writable(),
+                        false,
                         GBPTreeGenericCountsStore.NO_MONITOR,
                         databaseLayout.getDatabaseName(),
                         neo4jConfig.get(counts_store_max_cached_entries),

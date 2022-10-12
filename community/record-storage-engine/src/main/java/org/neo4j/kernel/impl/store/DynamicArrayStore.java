@@ -34,7 +34,6 @@ import java.time.ZonedDateTime;
 import java.util.Collection;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -116,7 +115,7 @@ public class DynamicArrayStore extends AbstractDynamicStore {
             InternalLogProvider logProvider,
             int dataSizeFromConfiguration,
             RecordFormats recordFormats,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             String databaseName,
             ImmutableSet<OpenOption> openOptions) {
         super(
@@ -132,7 +131,7 @@ public class DynamicArrayStore extends AbstractDynamicStore {
                 TYPE_DESCRIPTOR,
                 dataSizeFromConfiguration,
                 recordFormats.dynamic(),
-                readOnlyChecker,
+                readOnly,
                 databaseName,
                 openOptions);
     }

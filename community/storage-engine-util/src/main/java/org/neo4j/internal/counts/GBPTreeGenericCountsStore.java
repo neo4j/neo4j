@@ -20,7 +20,6 @@
 package org.neo4j.internal.counts;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.internal.counts.CountsChanges.ABSENT;
 import static org.neo4j.internal.counts.CountsKey.MAX_STRAY_TX_ID;
@@ -49,7 +48,6 @@ import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.collection.PrimitiveLongArrayQueue;
 import org.neo4j.counts.CountsStorage;
 import org.neo4j.counts.InvalidCountException;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
@@ -103,7 +101,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
     protected final CountsLayout layout = new CountsLayout();
     private final Rebuilder rebuilder;
     private final boolean needsRebuild;
-    private final DatabaseReadOnlyChecker readOnlyChecker;
+    private final boolean readOnly;
     private final String name;
     private final Monitor monitor;
     private final String databaseName;
@@ -121,7 +119,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
             FileSystemAbstraction fileSystem,
             RecoveryCleanupWorkCollector recoveryCollector,
             Rebuilder rebuilder,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             String name,
             Monitor monitor,
             String databaseName,
@@ -133,7 +131,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
             throws IOException {
         this.fileSystem = fileSystem;
         this.userLogProvider = userLogProvider;
-        this.readOnlyChecker = readOnlyChecker;
+        this.readOnly = readOnly;
         this.name = name;
         this.monitor = monitor;
         this.databaseName = databaseName;
@@ -149,7 +147,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
                     pageCache,
                     file,
                     recoveryCollector,
-                    readOnlyChecker,
+                    readOnly,
                     headerReader,
                     contextFactory,
                     pageCacheTracer,
@@ -162,7 +160,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
                     pageCache,
                     file,
                     recoveryCollector,
-                    readOnlyChecker,
+                    readOnly,
                     headerReader,
                     contextFactory,
                     pageCacheTracer,
@@ -199,7 +197,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
             PageCache pageCache,
             Path file,
             RecoveryCleanupWorkCollector recoveryCollector,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             CountsHeader.Reader headerReader,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
@@ -213,7 +211,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
                     GBPTree.NO_MONITOR,
                     headerReader,
                     recoveryCollector,
-                    readOnlyChecker,
+                    readOnly,
                     openOptions.newWithout(PageCacheOpenOptions.MULTI_VERSIONED),
                     databaseName,
                     name,
@@ -236,8 +234,8 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
         // it
         if (needsRebuild || rebuilder.lastCommittedTxId() != idSequence.getHighestGapFreeNumber()) {
             checkState(
-                    !readOnlyChecker.isReadOnly(),
-                    "Counts store needs rebuilding, most likely this database needs to be recovered.");
+                    !readOnly,
+                    "Counts store needs rebuilding (most likely this database needs to be recovered), but is read-only.");
             try (CountUpdater updater = directUpdater(false, cursorContext)) {
                 rebuilder.rebuild(updater, cursorContext, memoryTracker);
             } finally {
@@ -323,6 +321,11 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
 
     @Override
     public void checkpoint(FileFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
+        // Do an explicit read-only check here because in this store checkpoint implies also writing
+        if (readOnly) {
+            return;
+        }
+
         try (CriticalSection criticalSection = new CriticalSection(lock)) {
             criticalSection.acquireExclusive();
             // Take a snapshot of applied transactions while in the exclusive critical section (but write it later, no
@@ -547,7 +550,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
                 GBPTree.NO_MONITOR,
                 headerReader,
                 RecoveryCleanupWorkCollector.ignore(),
-                readOnly(),
+                true,
                 openOptions.newWithout(PageCacheOpenOptions.MULTI_VERSIONED),
                 databaseName,
                 name,

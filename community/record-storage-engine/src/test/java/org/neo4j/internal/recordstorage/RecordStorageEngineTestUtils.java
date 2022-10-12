@@ -24,7 +24,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.StoreTokens.createReadOnlyTokenHolder;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -86,7 +85,6 @@ public class RecordStorageEngineTestUtils {
                 immediate(),
                 true,
                 EmptyMemoryTracker.INSTANCE,
-                writable(),
                 EMPTY_LOG_TAIL,
                 LockVerificationFactory.NONE,
                 new CursorContextFactory(cacheTracer, EMPTY),

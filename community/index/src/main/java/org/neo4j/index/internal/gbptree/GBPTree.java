@@ -28,7 +28,6 @@ import java.util.List;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EmptyDependencyResolver;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -52,7 +51,7 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
             Monitor monitor,
             Header.Reader headerReader,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             ImmutableSet<OpenOption> openOptions,
             String databaseName,
             String name,
@@ -67,7 +66,7 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
                 monitor,
                 headerReader,
                 recoveryCleanupWorkCollector,
-                readOnlyChecker,
+                readOnly,
                 openOptions,
                 databaseName,
                 name,
@@ -85,7 +84,7 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
             Monitor monitor,
             Header.Reader headerReader,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             ImmutableSet<OpenOption> openOptions,
             String databaseName,
             String name,
@@ -101,7 +100,7 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
                 monitor,
                 headerReader,
                 recoveryCleanupWorkCollector,
-                readOnlyChecker,
+                readOnly,
                 openOptions,
                 databaseName,
                 name,
@@ -119,7 +118,7 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
             Monitor monitor,
             Header.Reader headerReader,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             ImmutableSet<OpenOption> openOptions,
             String databaseName,
             String name,
@@ -136,7 +135,7 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
                 monitor,
                 headerReader,
                 recoveryCleanupWorkCollector,
-                readOnlyChecker,
+                readOnly,
                 openOptions,
                 databaseName,
                 name,

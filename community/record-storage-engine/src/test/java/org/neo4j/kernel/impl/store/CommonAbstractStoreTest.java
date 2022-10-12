@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -34,7 +35,6 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.IdValidator.INTEGER_MINUS_ONE;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -44,7 +44,6 @@ import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFor
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.util.function.LongSupplier;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,7 +66,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -116,13 +114,14 @@ class CommonAbstractStoreTest {
     @BeforeEach
     void setUpMocks() throws IOException {
         when(recordFormat.getFilePageSize(anyInt(), anyInt())).thenReturn(Long.SIZE);
-        when(idGeneratorFactory.open(
+        when(idGeneratorFactory.create(
                         any(),
                         any(Path.class),
                         eq(idType),
-                        any(LongSupplier.class),
                         anyLong(),
-                        any(),
+                        anyBoolean(),
+                        anyLong(),
+                        anyBoolean(),
                         any(),
                         any(),
                         any(),
@@ -174,7 +173,7 @@ class CommonAbstractStoreTest {
                 NullLogProvider.getInstance(),
                 GraphDatabaseInternalSettings.label_block_size.defaultValue(),
                 recordFormats,
-                writable(),
+                false,
                 databaseLayout.getDatabaseName(),
                 immutable.empty())) {
             StoreNotFoundException storeNotFoundException = assertThrows(
@@ -317,13 +316,10 @@ class CommonAbstractStoreTest {
                     TYPE_DESCRIPTOR,
                     recordFormat,
                     NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT,
-                    writable(),
+                    false,
                     DEFAULT_DATABASE_NAME,
                     openOptions);
         }
-
-        @Override
-        protected void initialiseNewStoreFile(FileFlushEvent flushEvent, CursorContext cursorContext) {}
 
         @Override
         protected int determineRecordSize() {

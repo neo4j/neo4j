@@ -21,7 +21,6 @@ package org.neo4j.internal.id.indexed;
 
 import static java.lang.String.format;
 import static java.util.Arrays.stream;
-import static java.util.Collections.emptySet;
 import static java.util.Comparator.comparingLong;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -42,7 +41,6 @@ import static org.neo4j.annotations.documented.ReporterFactories.noopReporterFac
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.strictly_prioritize_id_freelist;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.FreeIds.NO_FREE_IDS;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
@@ -63,8 +61,6 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Random;
-import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Future;
@@ -90,11 +86,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
-import org.neo4j.configuration.database.readonly.ConfigReadOnlyDatabaseListener;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
-import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.FreeIds;
@@ -109,9 +100,6 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
-import org.neo4j.kernel.database.DatabaseIdFactory;
-import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
@@ -153,14 +141,11 @@ class IndexedIdGeneratorTest {
     }
 
     void open() {
-        open(Config.defaults(), IndexedIdGenerator.NO_MONITOR, writable(), SINGLE_IDS);
+        open(Config.defaults(), IndexedIdGenerator.NO_MONITOR, false, SINGLE_IDS);
     }
 
     void open(
-            Config config,
-            IndexedIdGenerator.Monitor monitor,
-            DatabaseReadOnlyChecker readOnlyChecker,
-            IdSlotDistribution slotDistribution) {
+            Config config, IndexedIdGenerator.Monitor monitor, boolean readOnly, IdSlotDistribution slotDistribution) {
         idGenerator = new IndexedIdGenerator(
                 pageCache,
                 fileSystem,
@@ -170,7 +155,7 @@ class IndexedIdGeneratorTest {
                 false,
                 () -> 0,
                 MAX_ID,
-                readOnlyChecker,
+                readOnly,
                 config,
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
@@ -189,73 +174,6 @@ class IndexedIdGeneratorTest {
         if (idGenerator != null) {
             idGenerator.close();
             idGenerator = null;
-        }
-    }
-
-    @Test
-    void idGeneratorWithChangesStillPreserveState() throws IOException {
-        open();
-        int generatedIds = 10;
-        var config = Config.defaults();
-        var readOnlyDatabases =
-                new ReadOnlyDatabases(new ConfigBasedLookupFactory(config, mock(DatabaseIdRepository.class)));
-        var configLister = new ConfigReadOnlyDatabaseListener(readOnlyDatabases, config);
-        lifeSupport.add(configLister);
-        var defaultDatabaseId = DatabaseIdFactory.from(
-                DEFAULT_DATABASE_NAME, UUID.randomUUID()); // UUID required, but ignored by config lookup
-        var readableChecker = readOnlyDatabases.forDatabase(defaultDatabaseId);
-
-        try (var customGenerator = new IndexedIdGenerator(
-                pageCache,
-                fileSystem,
-                file,
-                immediate(),
-                TestIdType.TEST,
-                false,
-                () -> 0,
-                MAX_ID,
-                readableChecker,
-                config,
-                DEFAULT_DATABASE_NAME,
-                CONTEXT_FACTORY,
-                NO_MONITOR,
-                getOpenOptions(),
-                SINGLE_IDS,
-                PageCacheTracer.NULL)) {
-            customGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
-            for (int i = 0; i < generatedIds; i++) {
-                customGenerator.nextId(NULL_CONTEXT);
-            }
-            config.set(GraphDatabaseSettings.read_only_databases, Set.of(DEFAULT_DATABASE_NAME));
-
-            assertDoesNotThrow(() -> customGenerator.nextId(NULL_CONTEXT));
-
-            customGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
-        }
-
-        try (var reopenedGenerator = new IndexedIdGenerator(
-                pageCache,
-                fileSystem,
-                file,
-                immediate(),
-                TestIdType.TEST,
-                false,
-                () -> 0,
-                MAX_ID,
-                readableChecker,
-                config,
-                DEFAULT_DATABASE_NAME,
-                CONTEXT_FACTORY,
-                NO_MONITOR,
-                getOpenOptions(),
-                SINGLE_IDS,
-                PageCacheTracer.NULL)) {
-            reopenedGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
-            assertDoesNotThrow(() -> reopenedGenerator.nextId(NULL_CONTEXT));
-
-            config.set(GraphDatabaseSettings.read_only_databases, emptySet());
-
-            assertNotEquals(generatedIds, reopenedGenerator.nextId(NULL_CONTEXT));
         }
     }
 
@@ -299,7 +217,7 @@ class IndexedIdGeneratorTest {
     void shouldHandleSlotsLargerThanOne() throws IOException {
         // given
         int[] slotSizes = {1, 2, 4};
-        open(Config.defaults(), NO_MONITOR, writable(), diminishingSlotDistribution(slotSizes));
+        open(Config.defaults(), NO_MONITOR, false, diminishingSlotDistribution(slotSizes));
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
 
         // when
@@ -330,7 +248,7 @@ class IndexedIdGeneratorTest {
         open(
                 Config.defaults(strictly_prioritize_id_freelist, true),
                 NO_MONITOR,
-                writable(),
+                false,
                 evenSlotDistribution(powerTwoSlotSizesDownwards(maxSlotSize)));
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
 
@@ -357,7 +275,7 @@ class IndexedIdGeneratorTest {
         open(
                 Config.defaults(strictly_prioritize_id_freelist, true),
                 NO_MONITOR,
-                writable(),
+                false,
                 diminishingSlotDistribution(powerTwoSlotSizesDownwards(maxSlotSize)));
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
 
@@ -697,7 +615,7 @@ class IndexedIdGeneratorTest {
                 false,
                 highIdSupplier,
                 MAX_ID,
-                writable(),
+                false,
                 Config.defaults(),
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
@@ -732,7 +650,7 @@ class IndexedIdGeneratorTest {
                 false,
                 highIdSupplier,
                 MAX_ID,
-                writable(),
+                false,
                 Config.defaults(),
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
@@ -761,7 +679,7 @@ class IndexedIdGeneratorTest {
                         false,
                         () -> 0,
                         MAX_ID,
-                        readOnly(),
+                        true,
                         Config.defaults(),
                         DEFAULT_DATABASE_NAME,
                         CONTEXT_FACTORY,
@@ -769,55 +687,7 @@ class IndexedIdGeneratorTest {
                         getOpenOptions(),
                         SINGLE_IDS,
                         PageCacheTracer.NULL));
-        assertTrue(Exceptions.contains(e, t -> t instanceof WriteOnReadOnlyAccessDbException));
         assertTrue(Exceptions.contains(e, t -> t instanceof TreeFileNotFoundException));
-        assertTrue(Exceptions.contains(e, t -> t instanceof IllegalStateException));
-    }
-
-    @Test
-    void shouldNotRebuildIfReadOnly() {
-        Path file = directory.file("existing");
-        new IndexedIdGenerator(
-                        pageCache,
-                        fileSystem,
-                        file,
-                        immediate(),
-                        TestIdType.TEST,
-                        false,
-                        () -> 0,
-                        MAX_ID,
-                        writable(),
-                        Config.defaults(),
-                        DEFAULT_DATABASE_NAME,
-                        CONTEXT_FACTORY,
-                        NO_MONITOR,
-                        getOpenOptions(),
-                        SINGLE_IDS,
-                        PageCacheTracer.NULL)
-                .close();
-        // Never start id generator means it will need rebuild on next start
-
-        // Start in readOnly mode
-        try (IndexedIdGenerator readOnlyGenerator = new IndexedIdGenerator(
-                pageCache,
-                fileSystem,
-                file,
-                immediate(),
-                TestIdType.TEST,
-                false,
-                () -> 0,
-                MAX_ID,
-                readOnly(),
-                Config.defaults(),
-                DEFAULT_DATABASE_NAME,
-                CONTEXT_FACTORY,
-                NO_MONITOR,
-                getOpenOptions(),
-                SINGLE_IDS,
-                PageCacheTracer.NULL)) {
-            var e = assertThrows(Exception.class, () -> readOnlyGenerator.start(NO_FREE_IDS, NULL_CONTEXT));
-            assertThat(e).hasCauseInstanceOf(WriteOnReadOnlyAccessDbException.class);
-        }
     }
 
     @Test
@@ -832,7 +702,7 @@ class IndexedIdGeneratorTest {
                 false,
                 () -> 0,
                 MAX_ID,
-                writable(),
+                false,
                 Config.defaults(),
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
@@ -854,7 +724,7 @@ class IndexedIdGeneratorTest {
                 false,
                 () -> 0,
                 MAX_ID,
-                readOnly(),
+                true,
                 Config.defaults(),
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
@@ -889,7 +759,7 @@ class IndexedIdGeneratorTest {
     @Test
     void shouldInvokeMonitorOnCorrectCalls() throws IOException {
         IndexedIdGenerator.Monitor monitor = mock(IndexedIdGenerator.Monitor.class);
-        open(Config.defaults(), monitor, writable(), SINGLE_IDS);
+        open(Config.defaults(), monitor, false, SINGLE_IDS);
         verify(monitor).opened(-1, 0);
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
 
@@ -925,7 +795,7 @@ class IndexedIdGeneratorTest {
         verify(monitor).close();
 
         // Also test normalization (which requires a restart)
-        open(Config.defaults(), monitor, writable(), SINGLE_IDS);
+        open(Config.defaults(), monitor, false, SINGLE_IDS);
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         try (Marker marker = idGenerator.marker(NULL_CONTEXT)) {
             marker.markUsed(allocatedHighId + 1);
@@ -1102,7 +972,7 @@ class IndexedIdGeneratorTest {
                 false,
                 () -> 0,
                 MAX_ID,
-                writable(),
+                false,
                 Config.defaults(),
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
@@ -1121,7 +991,7 @@ class IndexedIdGeneratorTest {
                 false,
                 () -> 0,
                 MAX_ID,
-                writable(),
+                false,
                 Config.defaults(),
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
@@ -1204,7 +1074,7 @@ class IndexedIdGeneratorTest {
                 super.cached(cachedId, numberOfIds);
             }
         };
-        open(Config.defaults(), monitor, writable(), SINGLE_IDS);
+        open(Config.defaults(), monitor, false, SINGLE_IDS);
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         try (Marker marker = idGenerator.marker(NULL_CONTEXT)) {
             for (int i = 0; i < 5; i++) {
@@ -1261,7 +1131,7 @@ class IndexedIdGeneratorTest {
                 fail("Should not allocate from high ID");
             }
         };
-        open(Config.defaults(), monitor, writable(), SINGLE_IDS);
+        open(Config.defaults(), monitor, false, SINGLE_IDS);
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
 
         // delete and free more than cache-size IDs
@@ -1299,7 +1169,7 @@ class IndexedIdGeneratorTest {
     void shouldAllocateRangesFromHighIdConcurrently(boolean favorSamePage) throws IOException {
         // given
         int[] slotSizes = {1, 2, 4, 8};
-        open(Config.defaults(), NO_MONITOR, writable(), diminishingSlotDistribution(slotSizes));
+        open(Config.defaults(), NO_MONITOR, false, diminishingSlotDistribution(slotSizes));
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         int numThreads = 4;
         BitSet[] allocatedIds = new BitSet[numThreads];
@@ -1339,7 +1209,7 @@ class IndexedIdGeneratorTest {
     @Test
     void shouldSkipLastIdsOfRangeIfAllocatingFromHighIdAcrossPageBoundary() throws IOException {
         // given
-        open(Config.defaults(), NO_MONITOR, writable(), diminishingSlotDistribution(powerTwoSlotSizesDownwards(64)));
+        open(Config.defaults(), NO_MONITOR, false, diminishingSlotDistribution(powerTwoSlotSizesDownwards(64)));
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         long preId1 = idGenerator.nextConsecutiveIdRange(64, true, NULL_CONTEXT);
         long preId2 = idGenerator.nextConsecutiveIdRange(32, true, NULL_CONTEXT);
@@ -1369,7 +1239,7 @@ class IndexedIdGeneratorTest {
                 false,
                 () -> 0,
                 MAX_ID,
-                writable(),
+                false,
                 Config.defaults(),
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
@@ -1391,7 +1261,7 @@ class IndexedIdGeneratorTest {
                 false,
                 () -> 0,
                 MAX_ID,
-                readOnly(),
+                true,
                 Config.defaults(),
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
@@ -1473,7 +1343,7 @@ class IndexedIdGeneratorTest {
                 barrier.reached();
             }
         };
-        open(Config.defaults(strictly_prioritize_id_freelist, false), monitor, writable(), SINGLE_IDS);
+        open(Config.defaults(strictly_prioritize_id_freelist, false), monitor, false, SINGLE_IDS);
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         var id = idGenerator.nextId(NULL_CONTEXT);
         markUsed(id);
@@ -1503,7 +1373,7 @@ class IndexedIdGeneratorTest {
                 false,
                 () -> 0,
                 MAX_ID,
-                writable(),
+                false,
                 Config.defaults(),
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
@@ -1525,7 +1395,7 @@ class IndexedIdGeneratorTest {
                 false,
                 () -> 0,
                 MAX_ID,
-                readOnly(),
+                true,
                 Config.defaults(),
                 DEFAULT_DATABASE_NAME,
                 CONTEXT_FACTORY,
@@ -1535,7 +1405,7 @@ class IndexedIdGeneratorTest {
                 PageCacheTracer.NULL)) {
             readOnlyGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             var e = assertThrows(Exception.class, operation.apply(readOnlyGenerator));
-            assertThat(e).hasCauseInstanceOf(WriteOnReadOnlyAccessDbException.class);
+            assertThat(e).isInstanceOf(IllegalStateException.class);
         }
     }
 

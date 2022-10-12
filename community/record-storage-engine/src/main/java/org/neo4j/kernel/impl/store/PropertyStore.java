@@ -37,7 +37,6 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.InconsistentDataReadException;
@@ -171,7 +170,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
             PropertyKeyTokenStore propertyKeyTokenStore,
             DynamicArrayStore arrayPropertyStore,
             RecordFormats recordFormats,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             String databaseName,
             ImmutableSet<OpenOption> openOptions) {
         super(
@@ -187,7 +186,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
                 TYPE_DESCRIPTOR,
                 recordFormats.property(),
                 NO_STORE_HEADER_FORMAT,
-                readOnlyChecker,
+                readOnly,
                 databaseName,
                 openOptions);
         this.stringStore = stringPropertyStore;

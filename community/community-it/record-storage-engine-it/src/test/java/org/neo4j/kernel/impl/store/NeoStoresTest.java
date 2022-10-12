@@ -29,7 +29,6 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_rotation_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.StoreTokens.createReadOnlyTokenHolder;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -59,7 +58,6 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.Node;
@@ -412,7 +410,7 @@ class NeoStoresTest {
                 fs,
                 NullLogProvider.getInstance(),
                 CONTEXT_FACTORY,
-                writable(),
+                false,
                 EMPTY_LOG_TAIL);
         NeoStores neoStore = factory.openAllNeoStores(true);
 
@@ -435,7 +433,7 @@ class NeoStoresTest {
                 fs,
                 LOG_PROVIDER,
                 CONTEXT_FACTORY,
-                writable(),
+                false,
                 EMPTY_LOG_TAIL);
 
         // when
@@ -460,7 +458,7 @@ class NeoStoresTest {
                 fs,
                 LOG_PROVIDER,
                 CONTEXT_FACTORY,
-                writable(),
+                false,
                 EMPTY_LOG_TAIL);
         StoreType[] allStoreTypes = StoreType.values();
         StoreType[] allButLastStoreTypes = Arrays.copyOf(allStoreTypes, allStoreTypes.length - 1);
@@ -501,7 +499,6 @@ class NeoStoresTest {
                 immediate(),
                 true,
                 INSTANCE,
-                writable(),
                 EMPTY_LOG_TAIL,
                 LockVerificationFactory.NONE,
                 CONTEXT_FACTORY,
@@ -661,7 +658,7 @@ class NeoStoresTest {
                 fs,
                 logProvider,
                 CONTEXT_FACTORY,
-                writable(),
+                false,
                 EMPTY_LOG_TAIL);
     }
 
@@ -682,7 +679,7 @@ class NeoStoresTest {
                 LongSupplier highIdSupplier,
                 long maxValue,
                 IdType idType,
-                DatabaseReadOnlyChecker readOnlyChecker,
+                boolean readOnly,
                 Config config,
                 CursorContextFactory contextFactory,
                 String databaseName,
@@ -699,7 +696,7 @@ class NeoStoresTest {
                         allowLargeIdCaches,
                         () -> 6 * 7,
                         maxValue,
-                        readOnlyChecker,
+                        readOnly,
                         config,
                         databaseName,
                         contextFactory,
@@ -722,7 +719,7 @@ class NeoStoresTest {
                     highIdSupplier,
                     maxValue,
                     idType,
-                    readOnlyChecker,
+                    readOnly,
                     config,
                     contextFactory,
                     databaseName,

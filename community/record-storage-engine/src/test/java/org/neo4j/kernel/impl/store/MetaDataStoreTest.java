@@ -26,7 +26,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
@@ -702,7 +701,7 @@ public class MetaDataStoreTest {
                 fs,
                 logProvider,
                 contextFactory,
-                writable(),
+                false,
                 logTail);
         return storeFactory.openNeoStores(true, StoreType.META_DATA).getMetaDataStore();
     }
@@ -720,7 +719,7 @@ public class MetaDataStoreTest {
                 recordFormats,
                 logProvider,
                 contextFactory,
-                writable(),
+                false,
                 EMPTY_LOG_TAIL,
                 Sets.immutable.empty());
         return storeFactory.openNeoStores(true, StoreType.META_DATA).getMetaDataStore();

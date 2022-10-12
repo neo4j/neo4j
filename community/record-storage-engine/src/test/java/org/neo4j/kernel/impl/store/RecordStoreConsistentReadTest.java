@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
@@ -86,7 +85,7 @@ abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S ext
                 fs,
                 NullLogProvider.getInstance(),
                 new CursorContextFactory(pageCacheTracer, EMPTY),
-                writable(),
+                false,
                 EMPTY_LOG_TAIL);
         neoStores = factory.openAllNeoStores(true);
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);

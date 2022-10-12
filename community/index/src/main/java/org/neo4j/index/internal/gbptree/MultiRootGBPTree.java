@@ -57,7 +57,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EmptyDependencyResolver;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.ConsistencyCheckState;
 import org.neo4j.index.internal.gbptree.Header.Reader;
 import org.neo4j.index.internal.gbptree.RootLayer.TreeRootsVisitor;
@@ -442,7 +441,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
     /**
      * If this tree is read only, no changes will be made to it. No generation bumping, no checkpointing, no nothing.
      */
-    private final DatabaseReadOnlyChecker readOnlyChecker;
+    private final boolean readOnly;
 
     /**
      * Underlying cursor context factory. Should be used to create page cursors tracers
@@ -545,7 +544,8 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
      * @param headerReader                 reads header data, previously written using {@link #checkpoint(Consumer, FileFlushEvent, CursorContext)}
      *                                     or {@link #close()}
      * @param recoveryCleanupWorkCollector collects recovery cleanup jobs for execution after recovery.
-     * @param readOnlyChecker              database readonly mode checker.
+     * @param readOnly whether this tree should be opened in read-only mode. If {@code true} then no generation
+     * bump is done on open and writes/checkpoints are prevented.
      * @param databaseName                 name of the database this tree belongs to.
      * @param name                         name of the tree that will be used when describing work related to this tree.
      * @throws UncheckedIOException      on page cache error
@@ -559,7 +559,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             Monitor monitor,
             Header.Reader headerReader,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             ImmutableSet<OpenOption> engineOpenOptions,
             String databaseName,
             String name,
@@ -571,7 +571,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             throws MetadataMismatchException {
         this.indexFile = indexFile;
         this.monitor = monitor;
-        this.readOnlyChecker = readOnlyChecker;
+        this.readOnly = readOnly;
         this.contextFactory = contextFactory;
         this.openOptions = treeOpenOptions(engineOpenOptions);
         this.pageCacheTracer = pageCacheTracer;
@@ -588,7 +588,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
                 // Verify stored payload size before we verify state pages
                 // since the offset for those pages is based on page size
                 verifyPayloadSize(pagedFile, cursorContext);
-                created = needRecreation(pagedFile, cursorContext, monitor);
+                created = needRecreation(pagedFile, cursorContext, monitor, readOnly);
             }
 
             this.payloadSize = pagedFile.payloadSize();
@@ -607,7 +607,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
                     writerLock,
                     changesSinceLastCheckpoint,
                     name,
-                    treeNodeSelector);
+                    readOnly);
             this.rootLayer = rootLayerConfiguration.buildRootLayer(
                     rootLayerSupport, layout, contextFactory, treeNodeSelector, dependencyResolver);
 
@@ -619,12 +619,16 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             } else {
                 initialize(pagedFile, headerReader, cursorContext);
                 dirtyOnStartup = !clean;
-                clean = false;
-                bumpUnstableGeneration();
-                try (var flushEvent = pageCacheTracer.beginFileFlush()) {
-                    forceState(flushEvent, cursorContext);
+                if (!readOnly) {
+                    clean = false;
+                    bumpUnstableGeneration();
+                    try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                        forceState(flushEvent, cursorContext);
+                    }
+                    cleaning = createCleanupJob(recoveryCleanupWorkCollector, dirtyOnStartup);
+                } else {
+                    cleaning = CleanupJob.CLEAN;
                 }
-                cleaning = createCleanupJob(recoveryCleanupWorkCollector, dirtyOnStartup);
             }
             this.monitor.startupState(!dirtyOnStartup);
         } catch (IOException e) {
@@ -642,7 +646,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             Monitor monitor,
             Header.Reader headerReader,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             ImmutableSet<OpenOption> engineOpenOptions,
             String databaseName,
             String name,
@@ -658,7 +662,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
                 monitor,
                 headerReader,
                 recoveryCleanupWorkCollector,
-                readOnlyChecker,
+                readOnly,
                 engineOpenOptions,
                 databaseName,
                 name,
@@ -703,10 +707,9 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             throws IOException, TreeFileNotFoundException {
         openOptions = openOptions.newWithoutAll(asList(GBPTreeOpenOptions.values()));
         if (!fs.fileExists(indexFile)) {
-            try {
-                readOnlyChecker.check();
-            } catch (Exception roe) {
-                throw new TreeFileNotFoundException("Can not create new tree file in read only mode.", roe);
+            if (readOnly) {
+                throw new TreeFileNotFoundException(
+                        "Can not create new tree file '" + indexFile + "' in read only mode.");
             }
             monitor.noStoreFile();
             openOptions = openOptions.newWith(CREATE);
@@ -721,13 +724,18 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
      *
      * If the tree needs to be recreated the minimal tree pages are zapped.
      */
-    private static boolean needRecreation(PagedFile pagedFile, CursorContext cursorContext, Monitor monitor)
-            throws IOException {
-        try (PageCursor cursor = pagedFile.io(IdSpace.META_PAGE_ID, PF_SHARED_WRITE_LOCK, cursorContext)) {
+    private static boolean needRecreation(
+            PagedFile pagedFile, CursorContext cursorContext, Monitor monitor, boolean readOnly) throws IOException {
+        try (var cursor = pagedFile.io(
+                IdSpace.META_PAGE_ID, readOnly ? PF_SHARED_READ_LOCK : PF_SHARED_WRITE_LOCK, cursorContext)) {
             var bytes = new byte[pagedFile.payloadSize()];
-            boolean needRecreation = pageIsEmpty(cursor, bytes, IdSpace.STATE_PAGE_A)
+            var needRecreation = pageIsEmpty(cursor, bytes, IdSpace.STATE_PAGE_A)
                     && pageIsEmpty(cursor, bytes, IdSpace.STATE_PAGE_B);
             if (needRecreation) {
+                if (readOnly) {
+                    throw new TreeFileNotFoundException(
+                            "Can not re-create tree file '" + pagedFile.path() + "' in read only mode.");
+                }
                 zapPage(cursor, IdSpace.META_PAGE_ID);
                 zapPage(cursor, IdSpace.STATE_PAGE_A);
                 zapPage(cursor, IdSpace.STATE_PAGE_B);
@@ -740,9 +748,13 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
     }
 
     private static boolean pageIsEmpty(PageCursor cursor, byte[] bytes, long pageId) throws IOException {
-        PageCursorUtil.goTo(cursor, "check if page is empty", pageId);
-        Arrays.fill(bytes, (byte) 0);
-        cursor.getBytes(bytes);
+        if (!cursor.next(pageId)) {
+            return true;
+        }
+        do {
+            Arrays.fill(bytes, (byte) 0);
+            cursor.getBytes(bytes);
+        } while (cursor.shouldRetry());
         return allZeroes(bytes);
     }
 
@@ -1121,6 +1133,10 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
 
     private void checkpoint(Header.Writer headerWriter, FileFlushEvent flushEvent, CursorContext cursorContext)
             throws IOException {
+        if (readOnly) {
+            return;
+        }
+
         // Flush dirty pages of the tree, do this before acquiring the lock so that writers won't be
         // blocked while we do this
         pagedFile.flushAndForce(flushEvent);
@@ -1186,7 +1202,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
     @Override
     public void close() throws IOException {
         try (var cursorContext = contextFactory.create(INDEX_INTERNAL_TAG)) {
-            if (openOptions.contains(NO_FLUSH_ON_CLOSE)) {
+            if (openOptions.contains(NO_FLUSH_ON_CLOSE) || readOnly) {
                 // Close without forcing state
                 doClose();
                 return;

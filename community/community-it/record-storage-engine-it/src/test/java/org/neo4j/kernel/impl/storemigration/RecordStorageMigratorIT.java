@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.IndexImporterFactory.EMPTY;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -207,7 +206,7 @@ class RecordStorageMigratorIT {
                 fs,
                 logService.getInternalLogProvider(),
                 contextFactory,
-                writable(),
+                false,
                 EMPTY_LOG_TAIL);
         storeFactory.openAllNeoStores().close();
     }
@@ -257,7 +256,7 @@ class RecordStorageMigratorIT {
                 fs,
                 logService.getInternalLogProvider(),
                 contextFactory,
-                writable(),
+                false,
                 loadLogTail(databaseLayout, CONFIG, storageEngine));
         try (NeoStores neoStores = storeFactory.openAllNeoStores()) {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
@@ -312,7 +311,7 @@ class RecordStorageMigratorIT {
                 fs,
                 logService.getInternalLogProvider(),
                 contextFactory,
-                writable(),
+                false,
                 loadLogTail(databaseLayout, CONFIG, storageEngine));
         try (NeoStores neoStores = storeFactory.openAllNeoStores()) {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
@@ -388,7 +387,7 @@ class RecordStorageMigratorIT {
                 fs,
                 logService.getInternalLogProvider(),
                 contextFactory,
-                writable(),
+                false,
                 loadLogTail(databaseLayout, config, storageEngine));
         try (NeoStores neoStores = storeFactory.openAllNeoStores()) {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
@@ -506,7 +505,7 @@ class RecordStorageMigratorIT {
                 fs,
                 logService.getInternalLogProvider(),
                 contextFactory,
-                writable(),
+                false,
                 loadLogTail(databaseLayout, CONFIG, engineFactory));
         storeFactory.openAllNeoStores().close();
         assertThat(logProvider).forLevel(ERROR).doesNotHaveAnyLogs();
@@ -655,7 +654,7 @@ class RecordStorageMigratorIT {
                 fs,
                 logService.getInternalLogProvider(),
                 contextFactory,
-                writable(),
+                false,
                 EMPTY_LOG_TAIL);
         storeFactory.openAllNeoStores().close();
     }
@@ -707,7 +706,7 @@ class RecordStorageMigratorIT {
                         fs,
                         NullLogProvider.getInstance(),
                         contextFactory,
-                        writable(),
+                        false,
                         EMPTY_LOG_TAIL)
                 .openNeoStores(StoreType.META_DATA)) {
             neoStores.start(NULL_CONTEXT);
@@ -795,7 +794,7 @@ class RecordStorageMigratorIT {
                 testDirectory.getFileSystem(),
                 immediate(),
                 groupsRebuildAssertion,
-                writable(),
+                false,
                 GBPTreeGenericCountsStore.NO_MONITOR,
                 databaseLayout.getDatabaseName(),
                 counts_store_max_cached_entries.defaultValue(),
@@ -817,7 +816,7 @@ class RecordStorageMigratorIT {
                 testDirectory.getFileSystem(),
                 immediate(),
                 rebuilder,
-                writable(),
+                false,
                 GBPTreeGenericCountsStore.NO_MONITOR,
                 databaseLayout.getDatabaseName(),
                 counts_store_max_cached_entries.defaultValue(),

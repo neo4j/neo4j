@@ -24,8 +24,6 @@ import static java.util.Collections.singleton;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.Configuration.defaultConfiguration;
 import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.NO_MONITOR;
@@ -427,7 +425,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                         format,
                         NullLogProvider.getInstance(),
                         contextFactory,
-                        readOnly(),
+                        true,
                         EMPTY_LOG_TAIL,
                         Sets.immutable.empty())
                 .openNeoStores(true, storesToOpen);
@@ -524,7 +522,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                 formats,
                 NullLogProvider.getInstance(),
                 contextFactory,
-                writable(),
+                false,
                 EMPTY_LOG_TAIL,
                 immutable.empty());
     }
@@ -743,7 +741,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                         fileSystem,
                         immediate(),
                         countsBuilder,
-                        writable(),
+                        false,
                         NO_MONITOR,
                         databaseLayout.getDatabaseName(),
                         counts_store_max_cached_entries.defaultValue(),
@@ -783,7 +781,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                         fileSystem,
                         immediate(),
                         degreesBuilder,
-                        writable(),
+                        false,
                         NO_MONITOR,
                         databaseLayout.getDatabaseName(),
                         counts_store_max_cached_entries.defaultValue(),

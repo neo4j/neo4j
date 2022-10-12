@@ -55,6 +55,7 @@ class RootLayerSupport {
     private final AtomicBoolean changesSinceLastCheckpoint;
     private final int payloadSize;
     private final String treeName;
+    private final boolean readOnly;
 
     RootLayerSupport(
             PagedFile pagedFile,
@@ -68,7 +69,7 @@ class RootLayerSupport {
             ReadWriteLock writerLock,
             AtomicBoolean changesSinceLastCheckpoint,
             String treeName,
-            TreeNodeSelector treeNodeSelector) {
+            boolean readOnly) {
         this.pagedFile = pagedFile;
         this.generationSupplier = generationSupplier;
         this.exceptionDecorator = exceptionDecorator;
@@ -81,6 +82,7 @@ class RootLayerSupport {
         this.changesSinceLastCheckpoint = changesSinceLastCheckpoint;
         this.payloadSize = pagedFile.payloadSize();
         this.treeName = treeName;
+        this.readOnly = readOnly;
     }
 
     <K, V> SeekCursor<K, V> internalAllocateSeeker(
@@ -239,6 +241,9 @@ class RootLayerSupport {
     <K, V> GBPTreeWriter<K, V> initializeWriter(
             GBPTreeWriter<K, V> writer, double ratioToKeepInLeftOnSplit, CursorContext cursorContext)
             throws IOException {
+        if (readOnly) {
+            throw new IllegalStateException(String.format("'%s' is read-only", pagedFile.path()));
+        }
         cleanCheck.apply();
         writer.initialize(ratioToKeepInLeftOnSplit, cursorContext);
         changesSinceLastCheckpoint.set(true);

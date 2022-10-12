@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.csv.reader.Readables.wrap;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.input.RandomEntityDataGenerator.convert;
@@ -188,7 +187,7 @@ class CsvInputEstimateCalculationIT {
                                     fs,
                                     NullLogProvider.getInstance(),
                                     NULL_CONTEXT_FACTORY,
-                                    writable(),
+                                    false,
                                     EMPTY_LOG_TAIL)
                             .openAllNeoStores()) {
                 assertRoughlyEqual(

@@ -28,7 +28,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.consistency.checking.ConsistencyFlags.ALL;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.GBPTreeCorruption.pageSpecificCorruption;
 import static org.neo4j.index.internal.gbptree.GBPTreeOpenOptions.NO_FLUSH_ON_CLOSE;
 import static org.neo4j.index.internal.gbptree.RootLayerConfiguration.singleRoot;
@@ -56,7 +55,6 @@ import org.junit.jupiter.api.TestInstance;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.ConsistencyFlags;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -156,7 +154,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
         MutableObject<Integer> heightRef = new MutableObject<>();
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> heightRef.setValue(inspection.single().lastLevel()),
                 indexFiles);
 
@@ -173,7 +171,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
         MutableObject<Integer> heightRef = new MutableObject<>();
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> heightRef.setValue(inspection.single().lastLevel()),
                 indexFiles);
 
@@ -190,7 +188,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
         MutableObject<Long> targetNode = new MutableObject<>();
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     targetNode.setValue(inspection.single().rootNode());
                     tree.unsafe(
@@ -219,7 +217,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
         MutableObject<Long> targetNode = new MutableObject<>();
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     targetNode.setValue(inspection.single().rootNode());
                     tree.unsafe(
@@ -239,7 +237,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
         MutableObject<Long> targetNode = new MutableObject<>();
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     targetNode.setValue(inspection.single().rootNode());
                     tree.unsafe(
@@ -259,7 +257,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
         MutableObject<Long> targetNode = new MutableObject<>();
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     targetNode.setValue(inspection.single().leafNodes().get(0));
                     tree.unsafe(
@@ -279,7 +277,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
     void rightmostNodeHasRightSibling() throws Exception {
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     final long root = inspection.single().rootNode();
                     tree.unsafe(
@@ -300,7 +298,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
         MutableObject<Long> targetNode = new MutableObject<>();
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     targetNode.setValue(inspection.single().rootNode());
                     tree.unsafe(
@@ -325,7 +323,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
         MutableObject<Long> rightSibling = new MutableObject<>();
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     final ImmutableLongList leafNodes = inspection.single().leafNodes();
                     targetNode.setValue(leafNodes.get(0));
@@ -352,7 +350,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
         MutableObject<Long> targetNode = new MutableObject<>();
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     targetNode.setValue(inspection.single().leafNodes().get(0));
                     int keyCount = inspection.single().keyCounts().get(targetNode.getValue());
@@ -374,7 +372,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
     void keysLocatedInWrongNode() throws Exception {
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     final long internalNode =
                             inspection.single().nodesPerLevel().get(1).get(0);
@@ -395,7 +393,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
     void unusedPage() throws Exception {
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     final long internalNode =
                             inspection.single().nodesPerLevel().get(1).get(0);
@@ -416,7 +414,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
     void pageIdExceedLastId() throws Exception {
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) ->
                         tree.unsafe(GBPTreeCorruption.decrementFreelistWritePos(), CursorContext.NULL_CONTEXT),
                 indexFiles);
@@ -431,7 +429,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
     void nodeMetaInconsistency() throws Exception {
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     tree.unsafe(
                             pageSpecificCorruption(
@@ -452,7 +450,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
         MutableObject<Long> targetNode = new MutableObject<>();
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     targetNode.setValue(inspection.single().rootNode());
                     tree.unsafe(GBPTreeCorruption.addFreelistEntry(targetNode.getValue()), CursorContext.NULL_CONTEXT);
@@ -473,7 +471,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
         MutableObject<Long> targetNode = new MutableObject<>();
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                writable(),
+                false,
                 (tree, inspection) -> {
                     targetNode.setValue(inspection.single().rootNode());
                     tree.unsafe(
@@ -495,7 +493,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
         MutableObject<Long> targetNode = new MutableObject<>();
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     targetNode.setValue(inspection.single().rootNode());
                     tree.unsafe(
@@ -516,7 +514,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
         MutableObject<Long> targetNode = new MutableObject<>();
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     targetNode.setValue(inspection.single().rootNode());
                     tree.unsafe(
@@ -537,7 +535,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
     void childNodeFoundAmongParentNodes() throws Exception {
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     final long rootNode = inspection.single().rootNode();
                     tree.unsafe(
@@ -556,7 +554,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
     void exception() throws Exception {
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     final long rootNode = inspection.single().rootNode();
                     tree.unsafe(
@@ -578,7 +576,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
     void dirtyOnStartup() throws Exception {
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     tree.unsafe(GBPTreeCorruption.makeDirty(), CursorContext.NULL_CONTEXT);
                 },
@@ -596,7 +594,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
     void shouldIncludeIndexFileInConsistencyReport() throws Exception {
         Path[] indexFiles = schemaIndexFiles();
         List<Path> corruptedFiles = corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     final long rootNode = inspection.single().rootNode();
                     tree.unsafe(
@@ -617,7 +615,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
         MutableObject<Long> internalNode = new MutableObject<>();
         Path[] indexFiles = schemaIndexFiles();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     long leafNode = inspection.single().leafNodes().get(0);
                     internalNode.setValue(
@@ -654,7 +652,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
     void corruptionInNodeLabelIndex() throws Exception {
         MutableObject<Long> rootNode = new MutableObject<>();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     rootNode.setValue(inspection.single().rootNode());
                     tree.unsafe(
@@ -677,7 +675,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
     void corruptionInRelationshipTypeIndex() throws Exception {
         MutableObject<Long> rootNode = new MutableObject<>();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     rootNode.setValue(inspection.single().rootNode());
                     tree.unsafe(
@@ -701,7 +699,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
         MutableObject<Long> rootNode = new MutableObject<>();
         Path indexStatisticsStoreFile = indexStatisticsStoreFile();
         corruptIndexes(
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     rootNode.setValue(inspection.single().rootNode());
                     tree.unsafe(
@@ -728,7 +726,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
                 meta -> new LayoutBootstrapper.Layouts(new CountsLayout(), singleRoot());
         corruptIndexes(
                 fs,
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     rootNode.setValue(inspection.single().rootNode());
                     tree.unsafe(
@@ -755,7 +753,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
         Path[] idStoreFiles = idStoreFiles();
         corruptIndexes(
                 fs,
-                readOnly(),
+                true,
                 (tree, inspection) -> {
                     rootNode.setValue(inspection.single().rootNode());
                     tree.unsafe(
@@ -853,24 +851,20 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
                 .toArray(Path[]::new);
     }
 
-    private List<Path> corruptIndexes(
-            DatabaseReadOnlyChecker readOnlyChecker, CorruptionInject corruptionInject, Path... targetFiles)
+    private List<Path> corruptIndexes(boolean readOnly, CorruptionInject corruptionInject, Path... targetFiles)
             throws Exception {
-        return corruptIndexes(fs, readOnlyChecker, corruptionInject, targetFiles);
+        return corruptIndexes(fs, readOnly, corruptionInject, targetFiles);
+    }
+
+    private List<Path> corruptIndexes(
+            FileSystemAbstraction fs, boolean readOnly, CorruptionInject corruptionInject, Path... targetFiles)
+            throws Exception {
+        return corruptIndexes(fs, readOnly, corruptionInject, new SchemaLayouts(), targetFiles);
     }
 
     private List<Path> corruptIndexes(
             FileSystemAbstraction fs,
-            DatabaseReadOnlyChecker readOnlyChecker,
-            CorruptionInject corruptionInject,
-            Path... targetFiles)
-            throws Exception {
-        return corruptIndexes(fs, readOnlyChecker, corruptionInject, new SchemaLayouts(), targetFiles);
-    }
-
-    private List<Path> corruptIndexes(
-            FileSystemAbstraction fs,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             CorruptionInject corruptionInject,
             LayoutBootstrapper layoutBootstrapper,
             Path... targetFiles)
@@ -879,8 +873,8 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
         var contextFactory = new CursorContextFactory(NULL, EMPTY);
         try (var cursorContext = contextFactory.create("corruptIndexes");
                 JobScheduler jobScheduler = createInitialisedScheduler();
-                GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper(
-                        fs, jobScheduler, layoutBootstrapper, readOnlyChecker, contextFactory, NULL)) {
+                GBPTreeBootstrapper bootstrapper =
+                        new GBPTreeBootstrapper(fs, jobScheduler, layoutBootstrapper, readOnly, contextFactory, NULL)) {
             for (Path file : targetFiles) {
                 var bootstrap = bootstrapper.bootstrapTree(
                         file, openOptions.newWith(NO_FLUSH_ON_CLOSE).toArray(new OpenOption[0]));

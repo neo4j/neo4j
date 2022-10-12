@@ -23,7 +23,6 @@ import static java.lang.Double.longBitsToDouble;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
@@ -95,7 +94,7 @@ public class TestArrayStore {
                 recordFormats,
                 NullLogProvider.getInstance(),
                 CursorContextFactory.NULL_CONTEXT_FACTORY,
-                writable(),
+                false,
                 EMPTY_LOG_TAIL,
                 Sets.immutable.empty());
 

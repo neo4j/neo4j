@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
@@ -389,7 +388,7 @@ class BatchingNeoStoresTest {
                 fileSystem,
                 RecoveryCleanupWorkCollector.immediate(),
                 CountsBuilder.EMPTY,
-                writable(),
+                false,
                 GBPTreeCountsStore.NO_MONITOR,
                 DEFAULT_DATABASE_NAME,
                 1_000,
@@ -446,7 +445,7 @@ class BatchingNeoStoresTest {
                 fileSystem,
                 RecoveryCleanupWorkCollector.immediate(),
                 CountsBuilder.EMPTY,
-                writable(),
+                false,
                 GBPTreeCountsStore.NO_MONITOR,
                 DEFAULT_DATABASE_NAME,
                 1_000,
@@ -537,7 +536,6 @@ class BatchingNeoStoresTest {
                     recoveryCleanupWorkCollector,
                     true,
                     INSTANCE,
-                    writable(),
                     EMPTY_LOG_TAIL,
                     LockVerificationFactory.NONE,
                     CONTEXT_FACTORY,

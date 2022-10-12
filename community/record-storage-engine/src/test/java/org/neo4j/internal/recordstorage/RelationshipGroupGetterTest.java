@@ -25,7 +25,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
@@ -95,7 +94,7 @@ class RelationshipGroupGetterTest {
                 fs,
                 logProvider,
                 NULL_CONTEXT_FACTORY,
-                writable(),
+                false,
                 EMPTY_LOG_TAIL);
         stores = storeFactory.openNeoStores(true, StoreType.RELATIONSHIP_GROUP, StoreType.NODE, StoreType.NODE_LABEL);
         groupStore = spy(stores.getRelationshipGroupStore());

@@ -32,7 +32,6 @@ import java.util.List;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -72,7 +71,7 @@ public abstract class TokenStore<RECORD extends TokenRecord> extends CommonAbstr
             DynamicStringStore nameStore,
             String typeDescriptor,
             RecordFormat<RECORD> recordFormat,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             String databaseName,
             CursorType cursorType,
             CursorType dynamicCursorType,
@@ -90,7 +89,7 @@ public abstract class TokenStore<RECORD extends TokenRecord> extends CommonAbstr
                 typeDescriptor,
                 recordFormat,
                 NO_STORE_HEADER_FORMAT,
-                readOnlyChecker,
+                readOnly,
                 databaseName,
                 openOptions);
         this.nameStore = nameStore;

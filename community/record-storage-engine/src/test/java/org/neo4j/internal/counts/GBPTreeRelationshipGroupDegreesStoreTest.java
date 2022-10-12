@@ -24,7 +24,6 @@ import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.degreeKey;
@@ -45,7 +44,6 @@ import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore.Updater;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -216,22 +214,19 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
     }
 
     private void openCountsStore(DegreesRebuilder builder) throws IOException {
-        instantiateCountsStore(builder, writable(), NO_MONITOR);
+        instantiateCountsStore(builder, false, NO_MONITOR);
         countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
     }
 
     private void instantiateCountsStore(
-            DegreesRebuilder builder,
-            DatabaseReadOnlyChecker readOnlyChecker,
-            GBPTreeGenericCountsStore.Monitor monitor)
-            throws IOException {
+            DegreesRebuilder builder, boolean readOnly, GBPTreeGenericCountsStore.Monitor monitor) throws IOException {
         countsStore = new GBPTreeRelationshipGroupDegreesStore(
                 pageCache,
                 countsStoreFile(),
                 fs,
                 immediate(),
                 builder,
-                readOnlyChecker,
+                readOnly,
                 monitor,
                 DEFAULT_DATABASE_NAME,
                 10,

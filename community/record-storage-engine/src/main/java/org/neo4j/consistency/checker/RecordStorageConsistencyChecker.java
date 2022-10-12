@@ -22,7 +22,6 @@ package org.neo4j.consistency.checker;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.consistency_checker_fail_fast_threshold;
 import static org.neo4j.consistency.checker.ParallelExecution.DEFAULT_IDS_PER_CHUNK;
 import static org.neo4j.consistency.checker.SchemaChecker.moreDescriptiveRecordToStrings;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.internal.helpers.collection.Iterators.resourceIterator;
 
 import java.util.ArrayList;
@@ -411,7 +410,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
                                 return neoStores.getMetaDataStore().getLastCommittedTransactionId();
                             }
                         },
-                        readOnly(),
+                        true,
                         GBPTreeCountsStore.NO_MONITOR,
                         databaseLayout.getDatabaseName(),
                         100,
@@ -457,7 +456,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
                                 return neoStores.getMetaDataStore().getLastCommittedTransactionId();
                             }
                         },
-                        readOnly(),
+                        true,
                         GBPTreeGenericCountsStore.NO_MONITOR,
                         databaseLayout.getDatabaseName(),
                         100,

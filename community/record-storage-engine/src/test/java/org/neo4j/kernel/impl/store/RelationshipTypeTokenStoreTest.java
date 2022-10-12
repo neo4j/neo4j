@@ -25,7 +25,6 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.REL_TYPE_TOKEN_
 
 import java.nio.file.Path;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordCursorTypes;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -73,7 +72,7 @@ class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<Relationship
                 logProvider,
                 nameStore,
                 formats,
-                DatabaseReadOnlyChecker.writable(),
+                false,
                 DEFAULT_DATABASE_NAME,
                 immutable.empty());
     }

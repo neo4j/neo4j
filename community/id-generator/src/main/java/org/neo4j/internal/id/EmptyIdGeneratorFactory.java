@@ -30,7 +30,6 @@ import java.util.function.LongSupplier;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -48,7 +47,7 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory {
             IdType idType,
             LongSupplier highIdScanner,
             long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             Config config,
             CursorContextFactory contextFactory,
             ImmutableSet<OpenOption> openOptions,
@@ -65,7 +64,7 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory {
             long highId,
             boolean throwIfFileExists,
             long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             Config config,
             CursorContextFactory contextFactory,
             ImmutableSet<OpenOption> openOptions,

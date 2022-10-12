@@ -24,7 +24,6 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -107,7 +106,7 @@ class MultiRootGBPTreeTest {
                 NO_MONITOR,
                 NO_HEADER_READER,
                 immediate(),
-                writable(),
+                false,
                 getOpenOptions(),
                 "db",
                 "test multi-root tree",
@@ -447,7 +446,7 @@ class MultiRootGBPTreeTest {
                         NO_MONITOR,
                         NO_HEADER_READER,
                         immediate(),
-                        writable(),
+                        false,
                         getOpenOptions(),
                         "db",
                         "test multi-root tree",
@@ -474,7 +473,7 @@ class MultiRootGBPTreeTest {
                         NO_MONITOR,
                         NO_HEADER_READER,
                         immediate(),
-                        writable(),
+                        false,
                         getOpenOptions(),
                         "db",
                         "test multi-root tree",
@@ -501,7 +500,7 @@ class MultiRootGBPTreeTest {
                             NO_MONITOR,
                             NO_HEADER_READER,
                             immediate(),
-                            writable(),
+                            false,
                             getOpenOptions(),
                             "db",
                             "test multi-root tree",

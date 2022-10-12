@@ -44,7 +44,6 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -257,7 +256,7 @@ class AbstractDynamicStoreTest {
                         "test",
                         BLOCK_SIZE,
                         formats.dynamic(),
-                        DatabaseReadOnlyChecker.writable(),
+                        false,
                         DEFAULT_DATABASE_NAME,
                         getOpenOptions()) {
                     @Override

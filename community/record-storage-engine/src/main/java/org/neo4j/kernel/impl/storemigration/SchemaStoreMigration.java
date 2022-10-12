@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.storemigration;
 
 import static java.util.Arrays.asList;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.RecordStorageMigrator.createTokenHolders;
 import static org.neo4j.kernel.impl.storemigration.RecordStorageMigrator.need50Migration;
@@ -232,7 +231,7 @@ public class SchemaStoreMigration {
                 formats,
                 NullLogProvider.getInstance(),
                 contextFactory,
-                writable(),
+                false,
                 EMPTY_LOG_TAIL,
                 immutable.empty());
     }

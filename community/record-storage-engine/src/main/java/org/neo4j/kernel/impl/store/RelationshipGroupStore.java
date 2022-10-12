@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -47,7 +46,7 @@ public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGrou
             PageCacheTracer pageCacheTracer,
             InternalLogProvider logProvider,
             RecordFormats recordFormats,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             String databaseName,
             ImmutableSet<OpenOption> openOptions) {
         super(
@@ -63,7 +62,7 @@ public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGrou
                 TYPE_DESCRIPTOR,
                 recordFormats.relationshipGroup(),
                 new IntStoreHeaderFormat(config.get(GraphDatabaseSettings.dense_node_threshold)),
-                readOnlyChecker,
+                readOnly,
                 databaseName,
                 openOptions);
     }

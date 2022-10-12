@@ -50,7 +50,6 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -737,7 +736,7 @@ class LabelsAcceptanceTest {
                                     IdType idType,
                                     LongSupplier highId,
                                     long maxId,
-                                    DatabaseReadOnlyChecker readOnlyChecker,
+                                    boolean readOnly,
                                     Config config,
                                     CursorContextFactory contextFactory,
                                     ImmutableSet<OpenOption> openOptions,
@@ -749,7 +748,7 @@ class LabelsAcceptanceTest {
                                         idType,
                                         highId,
                                         maxId(idType, maxId, highId),
-                                        readOnlyChecker,
+                                        readOnly,
                                         config,
                                         contextFactory,
                                         openOptions,
@@ -764,7 +763,7 @@ class LabelsAcceptanceTest {
                                     long highId,
                                     boolean throwIfFileExists,
                                     long maxId,
-                                    DatabaseReadOnlyChecker readOnlyChecker,
+                                    boolean readOnly,
                                     Config config,
                                     CursorContextFactory contextFactory,
                                     ImmutableSet<OpenOption> openOptions,
@@ -777,7 +776,7 @@ class LabelsAcceptanceTest {
                                         highId,
                                         throwIfFileExists,
                                         maxId(idType, maxId, () -> highId),
-                                        readOnlyChecker,
+                                        readOnly,
                                         config,
                                         contextFactory,
                                         openOptions,

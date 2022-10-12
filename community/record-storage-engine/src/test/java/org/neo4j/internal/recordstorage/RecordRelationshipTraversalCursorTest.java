@@ -21,7 +21,6 @@ package org.neo4j.internal.recordstorage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.of;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.ArrayUtil.concatArrays;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
@@ -127,7 +126,7 @@ public class RecordRelationshipTraversalCursorTest {
                 getRecordFormats(),
                 NullLogProvider.getInstance(),
                 new CursorContextFactory(pageCacheTracer, EMPTY),
-                writable(),
+                false,
                 EMPTY_LOG_TAIL,
                 Sets.immutable.empty());
         neoStores = storeFactory.openAllNeoStores(true);

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -146,7 +145,7 @@ class ManyPropertyKeysIT {
                 fileSystem,
                 NullLogProvider.getInstance(),
                 contextFactory,
-                writable(),
+                false,
                 EMPTY_LOG_TAIL);
         NeoStores neoStores = storeFactory.openAllNeoStores(true);
         PropertyKeyTokenStore store = neoStores.getPropertyKeyTokenStore();

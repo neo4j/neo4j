@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
@@ -130,7 +129,7 @@ class OnlineIndexUpdatesTest {
                 fileSystem,
                 nullLogProvider,
                 contextFactory,
-                writable(),
+                false,
                 EMPTY_LOG_TAIL);
 
         neoStores = storeFactory.openAllNeoStores(true);
@@ -141,7 +140,7 @@ class OnlineIndexUpdatesTest {
                 immediate(),
                 new CountsComputer(
                         neoStores, pageCache, contextFactory, databaseLayout, INSTANCE, NullLog.getInstance()),
-                writable(),
+                false,
                 GBPTreeCountsStore.NO_MONITOR,
                 databaseLayout.getDatabaseName(),
                 1_000,

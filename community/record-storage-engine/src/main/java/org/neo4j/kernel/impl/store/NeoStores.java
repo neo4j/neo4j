@@ -28,7 +28,6 @@ import java.util.function.Consumer;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
@@ -79,7 +78,7 @@ public class NeoStores implements AutoCloseable {
     private final CommonAbstractStore[] stores;
     private final LogTailMetadata logTailMetadata;
     private final ImmutableSet<OpenOption> openOptions;
-    private final DatabaseReadOnlyChecker readOnlyChecker;
+    private final boolean readOnly;
 
     NeoStores(
             FileSystemAbstraction fileSystem,
@@ -92,7 +91,7 @@ public class NeoStores implements AutoCloseable {
             RecordFormats recordFormats,
             boolean createIfNotExist,
             CursorContextFactory contextFactory,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             LogTailMetadata logTailMetadata,
             StoreType[] storeTypes,
             ImmutableSet<OpenOption> openOptions) {
@@ -106,7 +105,7 @@ public class NeoStores implements AutoCloseable {
         this.recordFormats = recordFormats;
         this.createIfNotExist = createIfNotExist;
         this.contextFactory = contextFactory;
-        this.readOnlyChecker = readOnlyChecker;
+        this.readOnly = readOnly;
         this.logTailMetadata = logTailMetadata;
         this.openOptions = openOptions;
 
@@ -343,7 +342,7 @@ public class NeoStores implements AutoCloseable {
                         logProvider,
                         (DynamicArrayStore) getOrOpenStore(StoreType.NODE_LABEL),
                         recordFormats,
-                        readOnlyChecker,
+                        readOnly,
                         layout.getDatabaseName(),
                         openOptions),
                 contextFactory);
@@ -370,7 +369,7 @@ public class NeoStores implements AutoCloseable {
                         logProvider,
                         (DynamicStringStore) getOrOpenStore(StoreType.PROPERTY_KEY_TOKEN_NAME),
                         recordFormats,
-                        readOnlyChecker,
+                        readOnly,
                         layout.getDatabaseName(),
                         openOptions),
                 contextFactory);
@@ -399,7 +398,7 @@ public class NeoStores implements AutoCloseable {
                         (PropertyKeyTokenStore) getOrOpenStore(StoreType.PROPERTY_KEY_TOKEN),
                         (DynamicArrayStore) getOrOpenStore(StoreType.PROPERTY_ARRAY),
                         recordFormats,
-                        readOnlyChecker,
+                        readOnly,
                         layout.getDatabaseName(),
                         openOptions),
                 contextFactory);
@@ -429,7 +428,7 @@ public class NeoStores implements AutoCloseable {
                         pageCacheTracer,
                         logProvider,
                         recordFormats,
-                        readOnlyChecker,
+                        readOnly,
                         layout.getDatabaseName(),
                         openOptions),
                 contextFactory);
@@ -448,7 +447,7 @@ public class NeoStores implements AutoCloseable {
                         logProvider,
                         (DynamicStringStore) getOrOpenStore(StoreType.RELATIONSHIP_TYPE_TOKEN_NAME),
                         recordFormats,
-                        readOnlyChecker,
+                        readOnly,
                         layout.getDatabaseName(),
                         openOptions),
                 contextFactory);
@@ -475,7 +474,7 @@ public class NeoStores implements AutoCloseable {
                         logProvider,
                         (DynamicStringStore) getOrOpenStore(StoreType.LABEL_TOKEN_NAME),
                         recordFormats,
-                        readOnlyChecker,
+                        readOnly,
                         layout.getDatabaseName(),
                         openOptions),
                 contextFactory);
@@ -495,7 +494,7 @@ public class NeoStores implements AutoCloseable {
                         logProvider,
                         (PropertyStore) getOrOpenStore(StoreType.PROPERTY),
                         recordFormats,
-                        readOnlyChecker,
+                        readOnly,
                         layout.getDatabaseName(),
                         openOptions),
                 contextFactory);
@@ -513,7 +512,7 @@ public class NeoStores implements AutoCloseable {
                         pageCacheTracer,
                         logProvider,
                         recordFormats,
-                        readOnlyChecker,
+                        readOnly,
                         layout.getDatabaseName(),
                         openOptions),
                 contextFactory);
@@ -537,7 +536,7 @@ public class NeoStores implements AutoCloseable {
                         pageCacheTracer,
                         logProvider,
                         recordFormats.metaData(),
-                        readOnlyChecker,
+                        readOnly,
                         logTailMetadata,
                         layout.getDatabaseName(),
                         openOptions,
@@ -572,7 +571,7 @@ public class NeoStores implements AutoCloseable {
                         logProvider,
                         blockSize,
                         recordFormats.dynamic(),
-                        readOnlyChecker,
+                        readOnly,
                         layout.getDatabaseName(),
                         openOptions),
                 contextFactory);
@@ -600,7 +599,7 @@ public class NeoStores implements AutoCloseable {
                         logProvider,
                         blockSize,
                         recordFormats,
-                        readOnlyChecker,
+                        readOnly,
                         layout.getDatabaseName(),
                         openOptions),
                 contextFactory);

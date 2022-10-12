@@ -33,7 +33,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
@@ -64,7 +63,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -509,7 +507,7 @@ class NodeStoreTest {
                             LongSupplier highIdSupplier,
                             long maxValue,
                             IdType idType,
-                            DatabaseReadOnlyChecker readOnlyChecker,
+                            boolean readOnly,
                             Config config,
                             CursorContextFactory contextFactory,
                             String databaseName,
@@ -523,7 +521,7 @@ class NodeStoreTest {
                                 highIdSupplier,
                                 maxValue,
                                 idType,
-                                readOnlyChecker,
+                                readOnly,
                                 config,
                                 contextFactory,
                                 databaseName,
@@ -540,7 +538,7 @@ class NodeStoreTest {
                 fs,
                 NullLogProvider.getInstance(),
                 new CursorContextFactory(pageCacheTracer, EMPTY),
-                writable(),
+                false,
                 EMPTY_LOG_TAIL);
         neoStores = factory.openAllNeoStores(true);
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);

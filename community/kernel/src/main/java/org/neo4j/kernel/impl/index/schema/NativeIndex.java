@@ -93,7 +93,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
                 monitor,
                 NO_HEADER_READER,
                 recoveryCleanupWorkCollector,
-                readOnlyChecker,
+                false,
                 openOptions,
                 databaseName,
                 descriptor.getName(),

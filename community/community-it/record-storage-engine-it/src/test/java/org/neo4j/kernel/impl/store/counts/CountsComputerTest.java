@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store.counts;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
@@ -558,7 +557,7 @@ class CountsComputerTest {
                 fileSystem,
                 immediate(),
                 builder,
-                writable(),
+                false,
                 GBPTreeCountsStore.NO_MONITOR,
                 databaseLayout.getDatabaseName(),
                 1_000,
@@ -586,7 +585,7 @@ class CountsComputerTest {
                 fileSystem,
                 LOG_PROVIDER,
                 CONTEXT_FACTORY,
-                writable(),
+                false,
                 EMPTY_LOG_TAIL);
 
         try (NeoStores neoStores = storeFactory.openAllNeoStores()) {

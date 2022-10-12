@@ -437,7 +437,6 @@ public class Database extends AbstractDatabase {
                 userLogProvider,
                 recoveryCleanupWorkCollector,
                 !storageExists,
-                readOnlyDatabaseChecker,
                 tailMetadata,
                 otherDatabaseMemoryTracker,
                 cursorContextFactory,
@@ -467,7 +466,7 @@ public class Database extends AbstractDatabase {
                 fs,
                 databaseLayout,
                 recoveryCleanupWorkCollector,
-                readOnlyDatabaseChecker,
+                false,
                 cursorContextFactory,
                 tracers.getPageCacheTracer(),
                 storageEngine.getOpenOptions());

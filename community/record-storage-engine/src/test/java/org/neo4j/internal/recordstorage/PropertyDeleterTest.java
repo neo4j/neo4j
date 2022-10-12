@@ -21,7 +21,6 @@ package org.neo4j.internal.recordstorage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordBuilders.createPropertyChain;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
@@ -109,7 +108,7 @@ class PropertyDeleterTest {
                         directory.getFileSystem(),
                         NullLogProvider.getInstance(),
                         new CursorContextFactory(pageCacheTracer, EMPTY),
-                        writable(),
+                        false,
                         EMPTY_LOG_TAIL)
                 .openAllNeoStores(true);
         propertyStore = neoStores.getPropertyStore();

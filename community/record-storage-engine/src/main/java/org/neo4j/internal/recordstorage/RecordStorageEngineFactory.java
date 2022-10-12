@@ -22,7 +22,6 @@ package org.neo4j.internal.recordstorage;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
 import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR;
@@ -237,7 +236,6 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             InternalLogProvider userLogProvider,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             boolean createStoreIfNotExists,
-            DatabaseReadOnlyChecker readOnlyChecker,
             LogTailMetadata logTailMetadata,
             MemoryTracker memoryTracker,
             CursorContextFactory contextFactory,
@@ -259,7 +257,6 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 recoveryCleanupWorkCollector,
                 createStoreIfNotExists,
                 memoryTracker,
-                readOnlyChecker,
                 logTailMetadata,
                 LockVerificationFactory.select(config),
                 contextFactory,
@@ -329,7 +326,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                         recordFormats,
                         NullLogProvider.getInstance(),
                         contextFactory,
-                        readOnlyChecker,
+                        readOnlyChecker.isReadOnly(),
                         logTailMetadata,
                         immutable.empty())
                 .openNeoStores(META_DATA)
@@ -406,7 +403,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 fs,
                 NullLogProvider.getInstance(),
                 contextFactory,
-                readOnly(),
+                true,
                 logTailMetadata);
         try (var cursorContext = contextFactory.create("loadSchemaRules");
                 var stores = factory.openNeoStores(
@@ -470,7 +467,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 fs,
                 NullLogProvider.getInstance(),
                 contextFactory,
-                readOnly(),
+                true,
                 EMPTY_LOG_TAIL);
         try (var cursorContext = contextFactory.create("loadSchemaRules");
                 var stores = factory.openAllNeoStores();
@@ -509,7 +506,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 fs,
                 NullLogProvider.getInstance(),
                 contextFactory,
-                readOnly(),
+                true,
                 EMPTY_LOG_TAIL);
         try (NeoStores stores = factory.openNeoStores(
                 false,
@@ -676,7 +673,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                         fileSystem,
                         NullLogProvider.getInstance(),
                         contextFactory,
-                        readOnly(),
+                        true,
                         logTailMetadata)
                 .openNeoStores(storesToOpen);
         return new LenientStoreInput(
@@ -748,7 +745,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                         recordFormats,
                         NullLogProvider.getInstance(),
                         contextFactory,
-                        readOnly(),
+                        true,
                         EMPTY_LOG_TAIL,
                         immutable.empty())
                 .openNeoStores(StoreType.NODE_LABEL, StoreType.NODE)) {
@@ -786,7 +783,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                         fileSystem,
                         NullLogProvider.getInstance(),
                         contextFactory,
-                        readOnly(),
+                        true,
                         logTailMetadata)
                 .openAllNeoStores()) {
             neoStores.start(CursorContext.NULL_CONTEXT);

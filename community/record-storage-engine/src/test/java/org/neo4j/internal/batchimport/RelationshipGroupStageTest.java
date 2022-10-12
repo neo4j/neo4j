@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.Configuration.withBatchSize;
@@ -85,7 +84,7 @@ class RelationshipGroupStageTest {
                         directory.getFileSystem(),
                         NullLogProvider.getInstance(),
                         NULL_CONTEXT_FACTORY,
-                        writable(),
+                        false,
                         EMPTY_LOG_TAIL)
                 .openNeoStores(true, StoreType.RELATIONSHIP_GROUP);
         store = stores.getRelationshipGroupStore();

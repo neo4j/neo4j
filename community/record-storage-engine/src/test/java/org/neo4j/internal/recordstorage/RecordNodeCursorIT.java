@@ -40,7 +40,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.common.Primitive;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -90,7 +89,7 @@ class RecordNodeCursorIT {
                         directory.getFileSystem(),
                         NullLogProvider.getInstance(),
                         new CursorContextFactory(pageCacheTracer, EMPTY),
-                        DatabaseReadOnlyChecker.writable(),
+                        false,
                         EMPTY_LOG_TAIL)
                 .openAllNeoStores(true);
         nodeStore = neoStores.getNodeStore();

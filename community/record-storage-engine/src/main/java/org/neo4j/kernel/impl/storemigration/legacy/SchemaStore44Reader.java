@@ -33,7 +33,6 @@ import java.util.function.Function;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
@@ -146,7 +145,7 @@ public class SchemaStore44Reader implements AutoCloseable {
                 cursorContextFactory,
                 logProvider,
                 recordFormats,
-                DatabaseReadOnlyChecker.readOnly(),
+                true,
                 databaseName,
                 openOptions);
     }
@@ -431,7 +430,7 @@ public class SchemaStore44Reader implements AutoCloseable {
                 CursorContextFactory cursorContextFactory,
                 InternalLogProvider logProvider,
                 RecordFormats recordFormats,
-                DatabaseReadOnlyChecker readOnlyChecker,
+                boolean readOnly,
                 String databaseName,
                 ImmutableSet<OpenOption> openOptions) {
             super(
@@ -447,7 +446,7 @@ public class SchemaStore44Reader implements AutoCloseable {
                     TYPE_DESCRIPTOR,
                     recordFormats.schema(),
                     VALID_STORE_HEADER,
-                    readOnlyChecker,
+                    readOnly,
                     databaseName,
                     openOptions);
             initialise(false, cursorContextFactory);

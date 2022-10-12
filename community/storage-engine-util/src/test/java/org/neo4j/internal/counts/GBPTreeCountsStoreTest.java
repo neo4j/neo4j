@@ -24,7 +24,6 @@ import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.keyToString;
@@ -44,7 +43,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.counts.CountsAccessor;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -215,13 +213,12 @@ class GBPTreeCountsStoreTest {
     }
 
     private void openCountsStore(CountsBuilder builder) throws IOException {
-        instantiateCountsStore(builder, writable(), NO_MONITOR);
+        instantiateCountsStore(builder, false, NO_MONITOR);
         countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
     }
 
     private void instantiateCountsStore(
-            CountsBuilder builder, DatabaseReadOnlyChecker readOnlyChecker, GBPTreeGenericCountsStore.Monitor monitor)
-            throws IOException {
+            CountsBuilder builder, boolean readOnly, GBPTreeGenericCountsStore.Monitor monitor) throws IOException {
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         countsStore = new GBPTreeCountsStore(
                 pageCache,
@@ -229,7 +226,7 @@ class GBPTreeCountsStoreTest {
                 fs,
                 immediate(),
                 builder,
-                readOnlyChecker,
+                readOnly,
                 monitor,
                 DEFAULT_DATABASE_NAME,
                 10,

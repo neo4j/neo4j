@@ -35,8 +35,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.nodeKey;
@@ -76,8 +74,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.counts.InvalidCountException;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
-import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.counts.GBPTreeGenericCountsStore.Rebuilder;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -89,7 +85,6 @@ import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -152,7 +147,7 @@ class GBPTreeGenericCountsStoreTest {
                 directory.getFileSystem(),
                 immediate(),
                 CountsBuilder.EMPTY,
-                writable(),
+                false,
                 NO_MONITOR,
                 DEFAULT_DATABASE_NAME,
                 randomMaxCacheSize(),
@@ -428,7 +423,7 @@ class GBPTreeGenericCountsStoreTest {
                         return BASE_TX_ID + 2;
                     }
                 },
-                writable(),
+                false,
                 monitor);
 
         // when doing recovery of the last transaction (since this is on an empty counts store then making the count
@@ -511,7 +506,7 @@ class GBPTreeGenericCountsStoreTest {
                         fs,
                         immediate(),
                         CountsBuilder.EMPTY,
-                        readOnly(),
+                        true,
                         NO_MONITOR,
                         DEFAULT_DATABASE_NAME,
                         randomMaxCacheSize(),
@@ -519,8 +514,6 @@ class GBPTreeGenericCountsStoreTest {
                         CONTEXT_FACTORY,
                         PageCacheTracer.NULL,
                         getOpenOptions()));
-        assertTrue(Exceptions.contains(e, t -> t instanceof WriteOnReadOnlyAccessDbException));
-        assertTrue(Exceptions.contains(e, t -> t instanceof TreeFileNotFoundException));
         assertTrue(Exceptions.contains(e, t -> t instanceof IllegalStateException));
     }
 
@@ -529,7 +522,7 @@ class GBPTreeGenericCountsStoreTest {
         // given
         countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         closeCountsStore();
-        instantiateCountsStore(EMPTY_REBUILD, readOnly(), NO_MONITOR);
+        instantiateCountsStore(EMPTY_REBUILD, true, NO_MONITOR);
         countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
 
         // then
@@ -541,7 +534,7 @@ class GBPTreeGenericCountsStoreTest {
         // given
         countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         closeCountsStore();
-        instantiateCountsStore(EMPTY_REBUILD, readOnly(), NO_MONITOR);
+        instantiateCountsStore(EMPTY_REBUILD, true, NO_MONITOR);
         countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
 
         // then it's fine to call checkpoint, because no changes can actually be made on a read-only counts store anyway
@@ -759,7 +752,7 @@ class GBPTreeGenericCountsStoreTest {
                         rebuildTriggered.setTrue();
                     }
                 },
-                writable(),
+                false,
                 NO_MONITOR);
         // and do recovery
         try (CountUpdater updater = countsStore.updater(countsStoreTxId + 1, NULL_CONTEXT)) {
@@ -874,12 +867,11 @@ class GBPTreeGenericCountsStoreTest {
     }
 
     private void openCountsStore(Rebuilder builder) throws IOException {
-        instantiateCountsStore(builder, writable(), NO_MONITOR);
+        instantiateCountsStore(builder, false, NO_MONITOR);
         countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
     }
 
-    private void instantiateCountsStore(
-            Rebuilder builder, DatabaseReadOnlyChecker readOnlyChecker, GBPTreeGenericCountsStore.Monitor monitor)
+    private void instantiateCountsStore(Rebuilder builder, boolean readOnly, GBPTreeGenericCountsStore.Monitor monitor)
             throws IOException {
         countsStore = new GBPTreeGenericCountsStore(
                 pageCache,
@@ -887,7 +879,7 @@ class GBPTreeGenericCountsStoreTest {
                 fs,
                 immediate(),
                 builder,
-                readOnlyChecker,
+                readOnly,
                 "test",
                 monitor,
                 DEFAULT_DATABASE_NAME,

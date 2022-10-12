@@ -21,7 +21,6 @@ package org.neo4j.internal.id.indexed;
 
 import static org.eclipse.collections.impl.block.factory.Comparators.naturalOrder;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -46,7 +45,6 @@ import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
@@ -288,7 +286,7 @@ public class IndexedIdGenerator implements IdGenerator {
 
     private final IdRangeMerger defaultMerger;
     private final IdRangeMerger recoveryMerger;
-    private final DatabaseReadOnlyChecker readOnlyChecker;
+    private final boolean readOnly;
     private final PageCacheTracer pageCacheTracer;
     private final CursorContextFactory contextFactory;
 
@@ -305,7 +303,7 @@ public class IndexedIdGenerator implements IdGenerator {
             boolean allowLargeIdCaches,
             LongSupplier initialHighId,
             long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             Config config,
             String databaseName,
             CursorContextFactory contextFactory,
@@ -315,7 +313,7 @@ public class IndexedIdGenerator implements IdGenerator {
             PageCacheTracer tracer) {
         this.fileSystem = fileSystem;
         this.path = path;
-        this.readOnlyChecker = readOnlyChecker;
+        this.readOnly = readOnly;
         this.contextFactory = contextFactory;
         this.pageCacheTracer = tracer;
         int cacheCapacity = idType.highActivity() && allowLargeIdCaches ? LARGE_CACHE_CAPACITY : SMALL_CACHE_CAPACITY;
@@ -339,7 +337,7 @@ public class IndexedIdGenerator implements IdGenerator {
                 path,
                 header,
                 recoveryCleanupWorkCollector,
-                readOnlyChecker,
+                readOnly,
                 databaseName,
                 contextFactory,
                 openOptions);
@@ -392,7 +390,7 @@ public class IndexedIdGenerator implements IdGenerator {
             Path path,
             HeaderReader headerReader,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             String databaseName,
             CursorContextFactory contextFactory,
             ImmutableSet<OpenOption> openOptions) {
@@ -405,7 +403,7 @@ public class IndexedIdGenerator implements IdGenerator {
                     GBPTree.NO_MONITOR,
                     headerReader,
                     recoveryCleanupWorkCollector,
-                    readOnlyChecker,
+                    readOnly,
                     openOptions.newWithout(PageCacheOpenOptions.MULTI_VERSIONED),
                     databaseName,
                     "Indexed ID generator",
@@ -596,7 +594,7 @@ public class IndexedIdGenerator implements IdGenerator {
 
     @Override
     public void maintenance(CursorContext cursorContext) {
-        if (started && !cache.isFull() && !readOnlyChecker.isReadOnly()) {
+        if (started && !cache.isFull() && !readOnly) {
             // We're just helping other allocation requests and avoiding unwanted sliding of highId here
             scanner.tryLoadFreeIdsIntoCache(true, cursorContext);
         }
@@ -611,7 +609,7 @@ public class IndexedIdGenerator implements IdGenerator {
 
     @Override
     public void clearCache(CursorContext cursorContext) {
-        if (!readOnlyChecker.isReadOnly()) {
+        if (!readOnly) {
             // Make the scanner clear it because it needs to coordinate with the scan lock
             monitor.clearingCache();
             scanner.clearCache(cursorContext);
@@ -702,7 +700,7 @@ public class IndexedIdGenerator implements IdGenerator {
                 GBPTree.NO_MONITOR,
                 NO_HEADER_READER,
                 immediate(),
-                readOnly(),
+                true,
                 openOptions.newWithout(PageCacheOpenOptions.MULTI_VERSIONED),
                 DEFAULT_DATABASE_NAME,
                 "Indexed ID generator",
@@ -838,7 +836,7 @@ public class IndexedIdGenerator implements IdGenerator {
     }
 
     private void assertNotReadOnly() {
-        readOnlyChecker.check();
+        Preconditions.checkState(!readOnly, "ID generator '%s' is read-only", path);
     }
 
     interface InternalMarker extends Marker {

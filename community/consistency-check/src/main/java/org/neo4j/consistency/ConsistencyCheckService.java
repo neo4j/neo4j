@@ -545,7 +545,7 @@ public class ConsistencyCheckService {
                         fileSystem,
                         databaseLayout,
                         recoveryCleanupWorkCollector,
-                        readOnly(),
+                        true,
                         contextFactory,
                         pageCacheTracer,
                         openOptions);

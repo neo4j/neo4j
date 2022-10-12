@@ -25,7 +25,6 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TO
 
 import java.nio.file.Path;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordCursorTypes;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -73,7 +72,7 @@ class PropertyKeyTokenStoreTest extends TokenStoreTestTemplate<PropertyKeyTokenR
                 logProvider,
                 nameStore,
                 formats,
-                DatabaseReadOnlyChecker.writable(),
+                false,
                 DEFAULT_DATABASE_NAME,
                 immutable.empty());
     }

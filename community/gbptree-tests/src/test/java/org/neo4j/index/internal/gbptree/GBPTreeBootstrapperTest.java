@@ -21,7 +21,6 @@ package org.neo4j.index.internal.gbptree;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
@@ -125,7 +124,7 @@ class GBPTreeBootstrapperTest {
         var contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
         try (JobScheduler scheduler = new ThreadPoolJobScheduler();
                 GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper(
-                        fs, scheduler, layoutBootstrapper, readOnly(), contextFactory, PageCacheTracer.NULL)) {
+                        fs, scheduler, layoutBootstrapper, true, contextFactory, PageCacheTracer.NULL)) {
             GBPTreeBootstrapper.Bootstrap bootstrap =
                     bootstrapper.bootstrapTree(storeFile, PageCacheOpenOptions.BIG_ENDIAN);
             assertTrue(bootstrap.isTree());

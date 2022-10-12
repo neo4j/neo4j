@@ -26,7 +26,6 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -54,7 +53,7 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord> {
             InternalLogProvider logProvider,
             DynamicStringStore nameStore,
             RecordFormats recordFormats,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             String databaseName,
             ImmutableSet<OpenOption> openOptions) {
         super(
@@ -70,7 +69,7 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord> {
                 nameStore,
                 TYPE_DESCRIPTOR,
                 recordFormats.propertyKeyToken(),
-                readOnlyChecker,
+                readOnly,
                 databaseName,
                 PROPERTY_KEY_TOKEN_CURSOR,
                 DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR,

@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import static org.eclipse.collections.impl.factory.Sets.immutable;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.ArrayUtil.contains;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
@@ -97,7 +95,7 @@ class DirectRecordStoreMigrator {
                                 fromFormat,
                                 NullLogProvider.getInstance(),
                                 contextFactory,
-                                readOnly(),
+                                true,
                                 EMPTY_LOG_TAIL,
                                 immutable.empty())
                         .openNeoStores(true, storesToOpen);
@@ -112,7 +110,7 @@ class DirectRecordStoreMigrator {
                                 toFormat,
                                 NullLogProvider.getInstance(),
                                 contextFactory,
-                                writable(),
+                                false,
                                 EMPTY_LOG_TAIL,
                                 immutable.empty())
                         .openNeoStores(true, storesToOpen);

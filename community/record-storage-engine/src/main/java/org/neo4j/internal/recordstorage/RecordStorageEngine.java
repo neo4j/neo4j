@@ -44,7 +44,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.counts.CountsAccessor;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -180,7 +179,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             boolean createStoreIfNotExists,
             MemoryTracker otherMemoryTracker,
-            DatabaseReadOnlyChecker readOnlyChecker,
             LogTailMetadata logTailMetadata,
             LockVerificationFactory lockVerificationFactory,
             CursorContextFactory contextFactory,
@@ -207,7 +205,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                 fs,
                 internalLogProvider,
                 contextFactory,
-                readOnlyChecker,
+                false,
                 logTailMetadata);
         neoStores = factory.openAllNeoStores(createStoreIfNotExists);
         Stream.of(RecordIdType.values()).forEach(idType -> idGeneratorWorkSyncs.add(idGeneratorFactory.get(idType)));
@@ -228,7 +226,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                     internalLogProvider,
                     userLogProvider,
                     recoveryCleanupWorkCollector,
-                    readOnlyChecker,
                     config,
                     contextFactory,
                     pageCacheTracer);
@@ -240,7 +237,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                     internalLogProvider,
                     userLogProvider,
                     recoveryCleanupWorkCollector,
-                    readOnlyChecker,
                     config,
                     contextFactory,
                     pageCacheTracer);
@@ -294,7 +290,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             InternalLogProvider internalLogProvider,
             InternalLogProvider userLogProvider,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseReadOnlyChecker readOnlyChecker,
             Config config,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer) {
@@ -323,7 +318,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                             return neoStores.getMetaDataStore().getLastCommittedTransactionId();
                         }
                     },
-                    readOnlyChecker,
+                    false,
                     GBPTreeGenericCountsStore.NO_MONITOR,
                     layout.getDatabaseName(),
                     config.get(counts_store_max_cached_entries),
@@ -343,7 +338,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             InternalLogProvider internalLogProvider,
             InternalLogProvider userLogProvider,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseReadOnlyChecker readOnlyChecker,
             Config config,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer) {
@@ -360,7 +354,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                             contextFactory,
                             internalLogProvider,
                             Configuration.DEFAULT),
-                    readOnlyChecker,
+                    false,
                     GBPTreeGenericCountsStore.NO_MONITOR,
                     layout.getDatabaseName(),
                     config.get(counts_store_max_cached_entries),

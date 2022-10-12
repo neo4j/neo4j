@@ -32,7 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -74,7 +73,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
     private final String databaseName;
     private final PageCacheTracer pageCacheTracer;
     private final IndexStatisticsLayout layout;
-    private final DatabaseReadOnlyChecker readOnlyChecker;
+    private final boolean readOnly;
     private GBPTree<IndexStatisticsKey, IndexStatisticsValue> tree;
     // Let IndexStatisticsValue be immutable in this map so that checkpoint doesn't have to coordinate with concurrent
     // writers
@@ -86,7 +85,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
             FileSystemAbstraction fileSystem,
             DatabaseLayout databaseLayout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
             ImmutableSet<OpenOption> openOptions)
@@ -96,7 +95,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
                 fileSystem,
                 databaseLayout.pathForStore(CommonDatabaseStores.INDEX_STATISTICS),
                 recoveryCleanupWorkCollector,
-                readOnlyChecker,
+                readOnly,
                 databaseLayout.getDatabaseName(),
                 contextFactory,
                 pageCacheTracer,
@@ -108,7 +107,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
             FileSystemAbstraction fileSystem,
             Path path,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             String databaseName,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
@@ -121,7 +120,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
         this.databaseName = databaseName;
         this.pageCacheTracer = pageCacheTracer;
         this.layout = new IndexStatisticsLayout();
-        this.readOnlyChecker = readOnlyChecker;
+        this.readOnly = readOnly;
         initTree(contextFactory, openOptions);
     }
 
@@ -136,7 +135,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
                     GBPTree.NO_MONITOR,
                     GBPTree.NO_HEADER_READER,
                     recoveryCleanupWorkCollector,
-                    readOnlyChecker,
+                    readOnly,
                     openOptions.newWithout(PageCacheOpenOptions.MULTI_VERSIONED),
                     databaseName,
                     "Statistics store",

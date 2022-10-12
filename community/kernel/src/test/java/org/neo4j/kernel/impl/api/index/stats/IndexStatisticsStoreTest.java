@@ -25,8 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.annotations.documented.ReporterFactories.noopReporterFactory;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.test.Race.throwing;
 
@@ -51,7 +49,6 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.Race;
@@ -96,7 +93,7 @@ class IndexStatisticsStoreTest {
                 fileSystem,
                 testDirectory.file(fileName),
                 immediate(),
-                writable(),
+                false,
                 DEFAULT_DATABASE_NAME,
                 contextFactory,
                 pageCacheTracer,
@@ -281,14 +278,12 @@ class IndexStatisticsStoreTest {
                         fileSystem,
                         testDirectory.file("non-existing"),
                         immediate(),
-                        readOnly(),
+                        true,
                         DEFAULT_DATABASE_NAME,
                         contextFactory,
                         pageCacheTracer,
                         getOpenOptions()));
-        assertTrue(Exceptions.contains(e, t -> t instanceof WriteOnReadOnlyAccessDbException));
         assertTrue(Exceptions.contains(e, t -> t instanceof TreeFileNotFoundException));
-        assertTrue(Exceptions.contains(e, t -> t instanceof IllegalStateException));
     }
 
     private void replaceAndVerifySample(long indexId, IndexSample indexSample) {

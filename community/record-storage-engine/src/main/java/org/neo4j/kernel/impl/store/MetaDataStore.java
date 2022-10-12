@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.id.IdSequence;
@@ -131,7 +130,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
             PageCacheTracer pageCacheTracer,
             InternalLogProvider logProvider,
             RecordFormat<MetaDataRecord> recordFormat,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean readOnly,
             LogTailMetadata logTailMetadata,
             String databaseName,
             ImmutableSet<OpenOption> openOptions,
@@ -149,7 +148,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
                 TYPE_DESCRIPTOR,
                 recordFormat,
                 NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT,
-                readOnlyChecker,
+                readOnly,
                 databaseName,
                 buildOptions(openOptions));
 
