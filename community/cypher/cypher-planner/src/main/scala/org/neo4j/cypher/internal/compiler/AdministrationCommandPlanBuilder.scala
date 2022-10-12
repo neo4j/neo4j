@@ -695,7 +695,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           .map(wrapInWait(_, dbName, waitUntilComplete))
           .map(plans.LogSystemCommand(_, prettifier.asString(c)))
 
-      case c @ CreateCompositeDatabase(dbName, ifExistsDo, waitUntilComplete) =>
+      case c @ CreateCompositeDatabase(dbName, ifExistsDo, options, waitUntilComplete) =>
         Some(plans.AssertNotBlockedDatabaseManagement(CreateCompositeDatabaseAction))
           .map(plans.AssertAllowedDbmsActions(_, CreateCompositeDatabaseAction))
           .flatMap(canCreateCheck =>
@@ -718,7 +718,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                 Some(canCreateCheck)
             }
           ).map(plans.EnsureNameIsNotAmbiguous(_, dbName.asLegacyName, isComposite = true))
-          .map(plans.CreateDatabase(_, dbName.asLegacyName, NoOptions, ifExistsDo, isComposite = true, topology = None))
+          .map(plans.CreateDatabase(_, dbName.asLegacyName, options, ifExistsDo, isComposite = true, topology = None))
           .map(plans.EnsureValidNumberOfDatabases(_))
           .map(wrapInWait(_, dbName, waitUntilComplete))
           .map(plans.LogSystemCommand(_, prettifier.asString(c)))

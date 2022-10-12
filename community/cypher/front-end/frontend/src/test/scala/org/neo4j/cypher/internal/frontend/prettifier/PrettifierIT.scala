@@ -1473,6 +1473,8 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE OR REPLACE COMPOSITE DATABASE $c",
     "create composite database $c if not exists" ->
       "CREATE COMPOSITE DATABASE $c IF NOT EXISTS",
+    "create composite database $c options {existingData: 'use'}" ->
+      "CREATE COMPOSITE DATABASE $c OPTIONS {existingData: \"use\"}",
     "DROP database foO_Bar_42" ->
       "DROP DATABASE foO_Bar_42 DESTROY DATA",
     "DROP database $foo" ->

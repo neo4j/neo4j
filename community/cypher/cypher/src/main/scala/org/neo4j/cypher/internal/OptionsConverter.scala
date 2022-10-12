@@ -290,6 +290,20 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
   override def operation: String = "create database"
 }
 
+case object CreateCompositeDatabaseOptionsConverter extends OptionsConverter[CreateDatabaseOptions] {
+  // Composite databases do not have any valid options, but allows for an empty options map
+
+  override def convert(options: MapValue): CreateDatabaseOptions = {
+    if (!options.isEmpty)
+      throw new InvalidArgumentsException(
+        s"Could not create composite database: composite databases have no valid options values."
+      )
+    CreateDatabaseOptions(None, None, None, None, None, None, None, None)
+  }
+
+  override def operation: String = s"create composite database"
+}
+
 trait IndexOptionsConverter[T] extends OptionsConverter[T] {
   protected def context: QueryContext
 

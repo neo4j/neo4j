@@ -5415,6 +5415,7 @@ SimpleEither<Map<String, EXPRESSION>, PARAMETER> Options() :
 ADMINISTRATION_COMMAND CreateCompositeDatabase( Token start, boolean replace ) throws Exception:
 {
     AliasName<DATABASE_NAME, PARAMETER> compositeDatabaseName = null;
+    SimpleEither<Map<String, EXPRESSION>, PARAMETER> options = null;
     WAIT_CLAUSE wait = astFactory.wait( false, -1 );
     boolean ifNotExists = false;
 }
@@ -5422,9 +5423,10 @@ ADMINISTRATION_COMMAND CreateCompositeDatabase( Token start, boolean replace ) t
     <COMPOSITE> <DATABASE>
     compositeDatabaseName=SymbolicAliasName()
     ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )?
+    ( options=Options() )?
     ( wait = WaitClause() )?
     {
-       return astFactory.createCompositeDatabase( pos( start ), replace, compositeDatabaseName.getLocalAliasName(astFactory), ifNotExists, wait );
+       return astFactory.createCompositeDatabase( pos( start ), replace, compositeDatabaseName.getLocalAliasName(astFactory), ifNotExists, options, wait );
     }
 }
 

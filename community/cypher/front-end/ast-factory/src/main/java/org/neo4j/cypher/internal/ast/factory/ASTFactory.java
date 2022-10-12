@@ -581,7 +581,12 @@ public interface ASTFactory<
             Integer topologySecondaries);
 
     ADMINISTRATION_COMMAND createCompositeDatabase(
-            POS p, boolean replace, DATABASE_NAME compositeDatabaseName, boolean ifNotExists, WAIT_CLAUSE waitClause);
+            POS p,
+            boolean replace,
+            DATABASE_NAME compositeDatabaseName,
+            boolean ifNotExists,
+            SimpleEither<Map<String, EXPRESSION>, PARAMETER> options,
+            WAIT_CLAUSE waitClause);
 
     ADMINISTRATION_COMMAND dropDatabase(
             POS p, DATABASE_NAME databaseName, boolean ifExists, boolean composite, boolean dumpData, WAIT_CLAUSE wait);

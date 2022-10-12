@@ -1218,7 +1218,12 @@ public class NullAstFactory
 
     @Override
     public NULL createCompositeDatabase(
-            NULL p, boolean replace, NULL compositeDatabaseName, boolean ifNotExists, NULL wait) {
+            NULL p,
+            boolean replace,
+            NULL compositeDatabaseName,
+            boolean ifNotExists,
+            SimpleEither<Map<String, NULL>, NULL> options,
+            NULL wait) {
         return null;
     }
 

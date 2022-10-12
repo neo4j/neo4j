@@ -2212,9 +2212,10 @@ class Neo4jASTFactory(query: String)
     replace: Boolean,
     compositeDatabaseName: DatabaseName,
     ifNotExists: Boolean,
+    options: SimpleEither[util.Map[String, Expression], Parameter],
     wait: WaitUntilComplete
   ): AdministrationCommand = {
-    CreateCompositeDatabase(compositeDatabaseName, ifExistsDo(replace, ifNotExists), wait)(p)
+    CreateCompositeDatabase(compositeDatabaseName, ifExistsDo(replace, ifNotExists), asOptionsAst(options), wait)(p)
   }
 
   override def dropDatabase(

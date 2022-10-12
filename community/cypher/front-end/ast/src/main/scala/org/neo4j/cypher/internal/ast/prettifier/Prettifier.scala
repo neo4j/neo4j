@@ -639,12 +639,13 @@ case class Prettifier(
             s"${x.name} ${Prettifier.escapeName(withoutNamespace)}$maybeTopologyString$formattedOptions${waitUntilComplete.name}"
         }
 
-      case x @ CreateCompositeDatabase(name, ifExistsDo, waitUntilComplete) =>
+      case x @ CreateCompositeDatabase(name, ifExistsDo, options, waitUntilComplete) =>
+        val formattedOptions = asString(options)
         val ifExists = ifExistsDo match {
           case IfExistsInvalidSyntax | IfExistsDoNothing => " IF NOT EXISTS"
           case _                                         => ""
         }
-        s"${x.name} ${escapeName(name)}$ifExists${waitUntilComplete.name}"
+        s"${x.name} ${escapeName(name)}$ifExists$formattedOptions${waitUntilComplete.name}"
 
       case x @ DropDatabase(dbName, ifExists, _, additionalAction, waitUntilComplete) =>
         (ifExists, additionalAction) match {

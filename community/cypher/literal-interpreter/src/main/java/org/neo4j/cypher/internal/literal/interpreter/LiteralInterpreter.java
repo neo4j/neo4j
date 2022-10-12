@@ -913,7 +913,12 @@ public class LiteralInterpreter
 
     @Override
     public NULL createCompositeDatabase(
-            NULL p, boolean replace, NULL compositeDatabaseName, boolean ifNotExists, NULL wait) {
+            NULL p,
+            boolean replace,
+            NULL compositeDatabaseName,
+            boolean ifNotExists,
+            SimpleEither<Map<String, Object>, Object> options,
+            NULL wait) {
         throw new UnsupportedOperationException("createCompositeDatabase is not a literal");
     }
 

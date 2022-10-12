@@ -918,6 +918,7 @@ case class Topology(primaries: Option[Int], secondaries: Option[Int])
 final case class CreateCompositeDatabase(
   databaseName: DatabaseName,
   ifExistsDo: IfExistsDo,
+  options: Options,
   waitUntilComplete: WaitUntilComplete
 )(
   val position: InputPosition

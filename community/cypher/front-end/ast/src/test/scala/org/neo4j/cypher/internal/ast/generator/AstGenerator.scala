@@ -2175,8 +2175,9 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _createCompositeDatabase: Gen[CreateCompositeDatabase] = for {
     dbName <- _databaseName
     ifExistsDo <- _ifExistsDo
+    options <- _optionsMapAsEitherOrNone
     wait <- _waitUntilComplete
-  } yield CreateCompositeDatabase(dbName, ifExistsDo, wait)(pos)
+  } yield CreateCompositeDatabase(dbName, ifExistsDo, options, wait)(pos)
 
   def _dropDatabase: Gen[DropDatabase] = for {
     dbName <- _databaseName
