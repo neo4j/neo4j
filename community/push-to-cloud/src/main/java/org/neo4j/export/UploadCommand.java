@@ -44,9 +44,9 @@ import picocli.CommandLine.Parameters;
                 + "The target location is a Neo4j Aura Bolt URI. If Neo4j Cloud username and password are not provided "
                 + "either as a command option or as an environment variable, they will be requested interactively ")
 public class UploadCommand extends AbstractAdminCommand {
+    private static final String DEV_MODE_VAR_NAME = "NEO4J_P2C_DEV_MODE";
     private final Copier copier;
     private final PushToCloudConsole cons;
-    private static final String DEV_MODE_VAR_NAME = "NEO4J_P2C_DEV_MODE";
 
     @Parameters(
             paramLabel = "<database>",
@@ -110,6 +110,25 @@ public class UploadCommand extends AbstractAdminCommand {
         this.cons = cons;
     }
 
+    public static long readSizeFromDumpMetaData(ExecutionContext ctx, Path dump) {
+        Loader.DumpMetaData metaData;
+        try {
+            final var fileSystem = ctx.fs();
+            metaData = new Loader(fileSystem, System.out).getMetaData(() -> fileSystem.openAsInputStream(dump));
+        } catch (IOException e) {
+            throw new CommandFailedException("Unable to check size of database dump.", e);
+        }
+        return Long.parseLong(metaData.byteCount());
+    }
+
+    public static String sizeText(long size) {
+        return format("%.1f GB", bytesToGibibytes(size));
+    }
+
+    public static double bytesToGibibytes(long sizeInBytes) {
+        return sizeInBytes / (double) (1024 * 1024 * 1024);
+    }
+
     @Override
     public void execute() {
         try {
@@ -169,12 +188,11 @@ public class UploadCommand extends AbstractAdminCommand {
         //   bolt+routing://rogue-mattias.databases.neo4j.io  --> https://console-mattias.neo4j.io/v1/databases/rogue
         Pattern pattern;
         if (devMode) {
-            pattern =
-                    Pattern.compile("(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://([^-]+)(-(.+))?.databases.neo4j(-[a-z]*)?.io$");
-        }
-        else {
-            pattern =
-                    Pattern.compile("(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://([^-]+)(-(.+))?.databases.neo4j.io$");
+            pattern = Pattern.compile(
+                    "(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://([^-]+)(-(.+))?.databases.neo4j(-[a-z]*)?.io$");
+        } else {
+            pattern = Pattern.compile(
+                    "(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://([^-]+)(-(.+))?.databases.neo4j.io$");
         }
 
         Matcher matcher = pattern.matcher(boltURI);
@@ -199,73 +217,10 @@ public class UploadCommand extends AbstractAdminCommand {
         return new DumpUploader(new Source(ctx.fs(), dumpFile, dumpSize(dumpFile)));
     }
 
-    abstract static class Uploader {
-        protected final Source source;
-
-        Uploader(Source source) {
-            this.source = source;
-        }
-
-        long size() {
-            return source.size();
-        }
-
-        abstract void process(String consoleURL, String bearerToken);
-    }
-
-    class DumpUploader extends Uploader {
-        DumpUploader(Source source) {
-            super(source);
-        }
-
-        @Override
-        void process(String consoleURL, String bearerToken) {
-            // Check size of dump (reading actual database size from dump header)
-            verbose("Checking database size %s fits at %s\n", sizeText(size()), consoleURL);
-            copier.checkSize(verbose, consoleURL, size(), bearerToken);
-
-            // Upload dumpFile
-            verbose("Uploading data of %s to %s\n", sizeText(size()), consoleURL);
-            copier.copy(verbose, consoleURL, boltURI, source, false, bearerToken);
-        }
-    }
-
     private long dumpSize(Path dump) {
         long sizeInBytes = readSizeFromDumpMetaData(ctx, dump);
         verbose("Determined DumpSize=%d bytes from dump at %s\n", sizeInBytes, dump);
         return sizeInBytes;
-    }
-
-    public static long readSizeFromDumpMetaData(ExecutionContext ctx, Path dump) {
-        Loader.DumpMetaData metaData;
-        try {
-            final var fileSystem = ctx.fs();
-            metaData = new Loader(fileSystem, System.out).getMetaData(() -> fileSystem.openAsInputStream(dump));
-        } catch (IOException e) {
-            throw new CommandFailedException("Unable to check size of database dump.", e);
-        }
-        return Long.parseLong(metaData.byteCount());
-    }
-
-    public record Source(FileSystemAbstraction fs, Path path, long size) {
-        long crc32Sum() throws IOException {
-            CRC32 crc = new CRC32();
-            try (InputStream inputStream = fs.openAsInputStream(path)) {
-                int cnt;
-                while ((cnt = inputStream.read()) != -1) {
-                    crc.update(cnt);
-                }
-            }
-            return crc.getValue();
-        }
-    }
-
-    public static String sizeText(long size) {
-        return format("%.1f GB", bytesToGibibytes(size));
-    }
-
-    public static double bytesToGibibytes(long sizeInBytes) {
-        return sizeInBytes / (double) (1024 * 1024 * 1024);
     }
 
     public interface Copier {
@@ -312,5 +267,49 @@ public class UploadCommand extends AbstractAdminCommand {
          * @throws CommandFailedException if the database won't fit on the aura instance
          */
         void checkSize(boolean verbose, String consoleURL, long size, String bearerToken) throws CommandFailedException;
+    }
+
+    abstract static class Uploader {
+        protected final Source source;
+
+        Uploader(Source source) {
+            this.source = source;
+        }
+
+        long size() {
+            return source.size();
+        }
+
+        abstract void process(String consoleURL, String bearerToken);
+    }
+
+    public record Source(FileSystemAbstraction fs, Path path, long size) {
+        long crc32Sum() throws IOException {
+            CRC32 crc = new CRC32();
+            try (InputStream inputStream = fs.openAsInputStream(path)) {
+                int cnt;
+                while ((cnt = inputStream.read()) != -1) {
+                    crc.update(cnt);
+                }
+            }
+            return crc.getValue();
+        }
+    }
+
+    class DumpUploader extends Uploader {
+        DumpUploader(Source source) {
+            super(source);
+        }
+
+        @Override
+        void process(String consoleURL, String bearerToken) {
+            // Check size of dump (reading actual database size from dump header)
+            verbose("Checking database size %s fits at %s\n", sizeText(size()), consoleURL);
+            copier.checkSize(verbose, consoleURL, size(), bearerToken);
+
+            // Upload dumpFile
+            verbose("Uploading data of %s to %s\n", sizeText(size()), consoleURL);
+            copier.copy(verbose, consoleURL, boltURI, source, false, bearerToken);
+        }
     }
 }
