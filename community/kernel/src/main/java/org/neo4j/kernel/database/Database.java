@@ -308,7 +308,6 @@ public class Database extends AbstractDatabase {
         var versionStorage = versionStorageFactory.createVersionStorage(
                 globalPageCache,
                 ioController,
-                transactionIdSequence,
                 scheduler,
                 internalLogProvider,
                 databaseDependencies,
