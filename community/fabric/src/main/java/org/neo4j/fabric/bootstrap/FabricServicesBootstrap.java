@@ -19,6 +19,7 @@
  */
 package org.neo4j.fabric.bootstrap;
 
+import static org.neo4j.kernel.database.NamedDatabaseId.SYSTEM_DATABASE_NAME;
 import static org.neo4j.scheduler.Group.CYPHER_CACHE;
 import static org.neo4j.scheduler.Group.FABRIC_WORKER;
 import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
@@ -271,8 +272,10 @@ public abstract class FabricServicesBootstrap {
 
         @Override
         protected CatalogManager createCatalogManger(FabricDatabaseManager fabricDatabaseManager) {
-            var txEventListeners = resolve(GlobalTransactionEventListeners.class);
-            return new CommunityCatalogManager(createDatabaseLookup(fabricDatabaseManager), txEventListeners);
+            var catalogManager = new CommunityCatalogManager(createDatabaseLookup(fabricDatabaseManager));
+            resolve(GlobalTransactionEventListeners.class)
+                    .registerTransactionEventListener(SYSTEM_DATABASE_NAME, catalogManager.catalogInvalidator());
+            return catalogManager;
         }
 
         @Override

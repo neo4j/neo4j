@@ -30,6 +30,7 @@ import org.neo4j.fabric.eval.Catalog.NamespacedGraph
 import org.neo4j.fabric.executor.Location
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.event.TransactionData
+import org.neo4j.graphdb.event.TransactionEventListener
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter
 import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.NamedDatabaseId
@@ -38,23 +39,17 @@ import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners
 
 import scala.jdk.CollectionConverters.ListHasAsScala
 
-class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: GlobalTransactionEventListeners)
+class CommunityCatalogManager(databaseLookup: DatabaseLookup)
     extends CatalogManager {
 
   private val invalidationLock = new Object()
   @volatile private var cachedCatalog: Catalog = _
   @volatile private var invalidationToken: Object = _
 
-  registerCatalogInvalidateListeners()
+  val catalogInvalidator: TransactionEventListener[AnyRef] = new TransactionEventListenerAdapter[AnyRef] {
 
-  override def registerCatalogInvalidateListeners(): Unit = {
-    txListeners.registerTransactionEventListener(
-      NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID.name(),
-      new TransactionEventListenerAdapter[AnyRef] {
-        override def afterCommit(data: TransactionData, state: AnyRef, databaseService: GraphDatabaseService): Unit =
-          invalidateCatalog()
-      }
-    )
+    override def afterCommit(data: TransactionData, state: AnyRef, databaseService: GraphDatabaseService): Unit =
+      invalidateCatalog()
   }
 
   final override def currentCatalog(): Catalog = {

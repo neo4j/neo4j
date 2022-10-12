@@ -32,6 +32,4 @@ trait CatalogManager {
     requireWritable: Boolean,
     canRoute: Boolean
   ): Location
-
-  def registerCatalogInvalidateListeners(): Unit
 }
