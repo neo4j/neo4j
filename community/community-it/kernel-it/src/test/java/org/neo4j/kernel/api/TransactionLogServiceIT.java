@@ -24,6 +24,7 @@ import static java.util.OptionalLong.empty;
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -69,6 +70,7 @@ import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.MetadataProvider;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -435,6 +437,10 @@ class TransactionLogServiceIT {
     void replayTransactionAfterBulkAppendOnNextRestart() throws IOException {
         // so we will write data to system db and will mimic catchup by transfer in bulk logs from system db to test db
         var systemDatabase = (GraphDatabaseAPI) managementService.database(SYSTEM_DATABASE_NAME);
+
+        assumeThat(systemDatabase.getDependencyResolver().resolveDependency(StorageEngineFactory.class))
+                .isEqualTo(databaseAPI.getDependencyResolver().resolveDependency(StorageEngineFactory.class));
+
         var systemMetadata = systemDatabase.getDependencyResolver().resolveDependency(MetadataProvider.class);
         var positionBeforeTransaction =
                 systemMetadata.getLastClosedTransaction().logPosition();
