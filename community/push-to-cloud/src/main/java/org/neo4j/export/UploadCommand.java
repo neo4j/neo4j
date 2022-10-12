@@ -29,6 +29,7 @@ import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
@@ -45,6 +46,7 @@ import picocli.CommandLine.Parameters;
 public class UploadCommand extends AbstractAdminCommand {
     private final Copier copier;
     private final PushToCloudConsole cons;
+    private static final String DEV_MODE_VAR_NAME = "NEO4J_P2C_DEV_MODE";
 
     @Parameters(
             paramLabel = "<database>",
@@ -131,7 +133,9 @@ public class UploadCommand extends AbstractAdminCommand {
                 pass = password.toCharArray();
             }
 
-            String consoleURL = buildConsoleURI(boltURI);
+            boolean devMode = cons.readDevMode(DEV_MODE_VAR_NAME);
+
+            String consoleURL = buildConsoleURI(boltURI, devMode);
             String bearerToken = copier.authenticate(verbose, consoleURL, username, pass, overwrite);
 
             Uploader uploader = makeDumpUploader(dumpDirectory, database.name());
@@ -147,7 +151,7 @@ public class UploadCommand extends AbstractAdminCommand {
         }
     }
 
-    private String buildConsoleURI(String boltURI) throws CommandFailedException {
+    private String buildConsoleURI(String boltURI, boolean devMode) throws CommandFailedException {
         // A boltURI looks something like this:
         //
         //   bolt+routing://mydbid-myenvironment.databases.neo4j.io
@@ -163,9 +167,16 @@ public class UploadCommand extends AbstractAdminCommand {
         //
         //   bolt+routing://rogue.databases.neo4j.io  --> https://console.neo4j.io/v1/databases/rogue
         //   bolt+routing://rogue-mattias.databases.neo4j.io  --> https://console-mattias.neo4j.io/v1/databases/rogue
+        Pattern pattern;
+        if (devMode) {
+            pattern =
+                    Pattern.compile("(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://([^-]+)(-(.+))?.databases.neo4j(-[a-z]*)?.io$");
+        }
+        else {
+            pattern =
+                    Pattern.compile("(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://([^-]+)(-(.+))?.databases.neo4j.io$");
+        }
 
-        Pattern pattern =
-                Pattern.compile("(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://([^-]+)(-(.+))?.databases.neo4j.io$");
         Matcher matcher = pattern.matcher(boltURI);
         if (!matcher.matches()) {
             throw new CommandFailedException("Invalid Bolt URI '" + boltURI + "'");
@@ -181,7 +192,7 @@ public class UploadCommand extends AbstractAdminCommand {
         if (!ctx.fs().isDirectory(dump)) {
             throw new CommandFailedException(format("The provided source directory '%s' doesn't exist", dump));
         }
-        Path dumpFile = dump.resolve(database + ".dump");
+        Path dumpFile = dump.resolve(database + Dumper.DUMP_EXTENSION);
         if (!ctx.fs().fileExists(dumpFile)) {
             throw new CommandFailedException(format("Dump file '%s' does not exist", dumpFile.toAbsolutePath()));
         }

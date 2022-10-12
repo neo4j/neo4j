@@ -21,6 +21,8 @@ interface PushToCloudConsole {
 
     char[] readPassword(String fmt, Object... args);
 
+    boolean readDevMode(String devModeEnvVar);
+
     static PushToCloudConsole realConsole() {
         return new PushToCloudConsole() {
             @Override
@@ -32,10 +34,15 @@ interface PushToCloudConsole {
             public char[] readPassword(String fmt, Object... args) {
                 return System.console().readPassword(fmt, args);
             }
+
+            @Override
+            public boolean readDevMode(String devModeEnvVar) {
+                return Boolean.parseBoolean(System.getenv(devModeEnvVar));
+            }
         };
     }
 
-    static PushToCloudConsole fakeConsole(String username, String password) {
+    static PushToCloudConsole fakeConsole(String username, String password, boolean devMode) {
         return new PushToCloudConsole() {
             @Override
             public String readLine(String fmt, Object... args) {
@@ -45,6 +52,11 @@ interface PushToCloudConsole {
             @Override
             public char[] readPassword(String fmt, Object... args) {
                 return password.toCharArray();
+            }
+
+            @Override
+            public boolean readDevMode(String devModeEnvVar) {
+                return devMode;
             }
         };
     }

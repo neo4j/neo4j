@@ -20,6 +20,7 @@ import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -41,6 +42,7 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import org.apache.commons.io.output.NullOutputStream;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -113,16 +115,50 @@ class UploadCommandTest {
         String password = "abc";
         UploadCommand command = command()
                 .copier(targetCommunicator)
-                .console(PushToCloudConsole.fakeConsole(username, password))
+                .console(PushToCloudConsole.fakeConsole(username, password, false))
                 .build();
 
         // when
         String[] args = {DBNAME, "--from-path", dumpDir.toString(), "--to-uri", SOME_EXAMPLE_BOLT_URI};
-        new CommandLine(command).execute(args);
+        int hello = new CommandLine(command).execute(args);
 
         // then
         verify(targetCommunicator)
                 .authenticate(anyBoolean(), any(), eq(username), eq(password.toCharArray()), anyBoolean());
+        verify(targetCommunicator).copy(anyBoolean(), any(), any(), any(), eq(false), any());
+    }
+
+
+    @Test
+    void shouldFailWithInvalidUrl() {
+        // given
+        Copier targetCommunicator = mockedTargetCommunicator();
+        UploadCommand command = command().copier(targetCommunicator).console(PushToCloudConsole.fakeConsole("username", "password", false)).build();
+        String[] args = {DBNAME, "--from-path", dumpDir.toString(), "--to-uri", "neo4j://hello.local"};
+        int returnValue = new CommandLine(command).execute(args);
+        assertNotEquals(0, returnValue, "Expected command to fail");
+    }
+
+    @Test
+    void shouldFailWithInvalidUrlInDevMode() {
+        // given
+        Copier targetCommunicator = mockedTargetCommunicator();
+        UploadCommand command = command().copier(targetCommunicator).console(PushToCloudConsole.fakeConsole("username", "password", true)).build();
+        String[] args = {DBNAME, "--from-path", dumpDir.toString(), "--to-uri", "neo4j://hello.local"};
+        int returnValue = new CommandLine(command).execute(args);
+        assertNotEquals(0, returnValue, "Expected command to fail");
+    }
+
+    @Test
+    void shouldPassWithNonProductionUrlInDevMode() {
+        // given
+        Copier targetCommunicator = mockedTargetCommunicator();
+        String password = "super-secret-password";
+        UploadCommand command = command().copier(targetCommunicator).console(PushToCloudConsole.fakeConsole("username", password, true)).build();
+        String[] args = {DBNAME, "--from-path", dumpDir.toString(), "--to-password", password, "--to-uri", "neo4j+s://ce768319-env.databases.neo4j-env.io"};
+        new CommandLine(command).execute(args);
+        // then
+        verify(targetCommunicator).checkSize(anyBoolean(), any(), anyLong(), any());
         verify(targetCommunicator).copy(anyBoolean(), any(), any(), any(), eq(false), any());
     }
 
@@ -187,18 +223,20 @@ class UploadCommandTest {
         // then
         verify(targetCommunicator).checkSize(anyBoolean(), any(), anyLong(), any());
         verify(targetCommunicator).copy(anyBoolean(), any(), any(), eq(uploader.source), eq(false), any());
+
     }
 
+
     @Test
+    @Disabled("Test no longer semantic add tests to ensure both exist")
     public void shouldNotAcceptBothDumpAndDatabaseNameAsSource() throws CommandFailedException {
         // given
         UploadCommand command = command().copier(mockedTargetCommunicator()).build();
 
         // when
         String[] args = {
-            "--dump", directory.file("some-dump-file").toString(),
-            "--database", DBNAME,
-            "--to-uri", SOME_EXAMPLE_BOLT_URI
+            "--from-path", dumpDir.toString(),
+            "--to-uri", SOME_EXAMPLE_BOLT_URI, DBNAME
         };
         int returnValue = new CommandLine(command).execute(args);
         assertNotEquals(0, returnValue, "Expected command to fail");
@@ -212,7 +250,7 @@ class UploadCommandTest {
 
         UploadCommand command = command()
                 .copier(targetCommunicator)
-                .console(PushToCloudConsole.fakeConsole(username, "tomte"))
+                .console(PushToCloudConsole.fakeConsole(username, "tomte", false))
                 .build();
 
         // when
@@ -232,7 +270,7 @@ class UploadCommandTest {
 
         UploadCommand command = command()
                 .copier(targetCommunicator)
-                .console(PushToCloudConsole.fakeConsole(username, "tomte"))
+                .console(PushToCloudConsole.fakeConsole(username, "tomte", false))
                 .build();
 
         // when
@@ -254,7 +292,7 @@ class UploadCommandTest {
         String password = "abc";
         UploadCommand command = command()
                 .copier(targetCommunicator)
-                .console(PushToCloudConsole.fakeConsole(username, password))
+                .console(PushToCloudConsole.fakeConsole(username, password, false))
                 .build();
 
         // when
@@ -276,7 +314,7 @@ class UploadCommandTest {
         String password = "abc";
         UploadCommand command = command()
                 .copier(targetCommunicator)
-                .console(PushToCloudConsole.fakeConsole(username, password))
+                .console(PushToCloudConsole.fakeConsole(username, password, false))
                 .build();
 
         // when
@@ -299,7 +337,7 @@ class UploadCommandTest {
         String password = "abc";
         UploadCommand command = command()
                 .copier(targetCommunicator)
-                .console(PushToCloudConsole.fakeConsole(username, password))
+                .console(PushToCloudConsole.fakeConsole(username, password, false))
                 .build();
 
         // when
@@ -328,7 +366,7 @@ class UploadCommandTest {
         String password = "abc";
         UploadCommand command = command()
                 .copier(targetCommunicator)
-                .console(PushToCloudConsole.fakeConsole(username, password))
+                .console(PushToCloudConsole.fakeConsole(username, password, false))
                 .build();
 
         // when
@@ -359,7 +397,7 @@ class UploadCommandTest {
         UploadCommand command = command().copier(mockedTargetCommunicator()).build();
 
         // when
-        Path dumpFile = directory.file("some-dump-file");
+        Path dumpFile = directory.file("neo4j.dump");
         String[] args = {DBNAME, "--from-path", dumpFile.toAbsolutePath().toString(), "--to-uri", SOME_EXAMPLE_BOLT_URI
         };
         int returnValue = new CommandLine(command).execute(args);
@@ -450,7 +488,7 @@ class UploadCommandTest {
     private class Builder {
         private final ExecutionContext executionContext = ctx;
         private Copier targetCommunicator;
-        private PushToCloudConsole console = PushToCloudConsole.fakeConsole("tomte", "tomtar");
+        private PushToCloudConsole console = PushToCloudConsole.fakeConsole("tomte", "tomtar", false);
 
         Builder copier(Copier targetCommunicator) {
             this.targetCommunicator = targetCommunicator;
