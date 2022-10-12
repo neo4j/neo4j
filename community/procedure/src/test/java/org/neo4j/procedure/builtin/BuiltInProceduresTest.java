@@ -33,9 +33,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
-import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
-import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 
 import java.util.ArrayList;
@@ -74,16 +72,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
-import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
-import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.procedure.Context;
@@ -100,12 +89,8 @@ import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 class BuiltInProceduresTest {
-    private final List<IndexDescriptor> indexes = new ArrayList<>();
-    private final List<IndexDescriptor> uniqueIndexes = new ArrayList<>();
-    private final List<ConstraintDescriptor> constraints = new ArrayList<>();
     private final Map<Integer, String> labels = new HashMap<>();
     private final Map<Integer, String> propKeys = new HashMap<>();
     private final Map<Integer, String> relTypes = new HashMap<>();
@@ -156,14 +141,6 @@ class BuiltInProceduresTest {
         when(tokens.propertyKeyGetAllTokens()).thenAnswer(asTokens(propKeys));
         when(tokens.labelsGetAllTokens()).thenAnswer(asTokens(labels));
         when(tokens.relationshipTypesGetAllTokens()).thenAnswer(asTokens(relTypes));
-        when(schemaReadCore.indexesGetAll())
-                .thenAnswer(i -> Iterators.concat(indexes.iterator(), uniqueIndexes.iterator()));
-        when(schemaReadCore.index(any(SchemaDescriptor.class)))
-                .thenAnswer((Answer<IndexDescriptor>) invocationOnMock -> {
-                    SchemaDescriptor schema = invocationOnMock.getArgument(0);
-                    return getIndexReference(schema);
-                });
-        when(schemaReadCore.constraintsGetAll()).thenAnswer(i -> constraints.iterator());
 
         when(tokens.propertyKeyName(anyInt())).thenAnswer(invocation -> propKeys.get(invocation.getArgument(0)));
         when(tokens.nodeLabelName(anyInt())).thenAnswer(invocation -> labels.get(invocation.getArgument(0)));
@@ -452,59 +429,6 @@ class BuiltInProceduresTest {
         return fields;
     }
 
-    private void givenIndex(String label, String propKey) {
-        int labelId = token(label, labels);
-        int propId = token(propKey, propKeys);
-
-        int id = indexes.size() + 1000;
-        Map<String, Value> configMap = new HashMap<>();
-        configMap.put("config1", Values.stringValue("value1"));
-        configMap.put("config2", Values.intValue(2));
-        configMap.put("config3", Values.booleanValue(true));
-        LabelSchemaDescriptor schema = forLabel(labelId, propId);
-        IndexDescriptor index = IndexPrototype.forSchema(schema, EMPTY.getProviderDescriptor())
-                .withName("index_" + id)
-                .materialise(id)
-                .withIndexConfig(IndexConfig.with(configMap));
-        indexes.add(index);
-    }
-
-    private void givenUniqueConstraint(String label, String propKey) {
-        int labelId = token(label, labels);
-        int propId = token(propKey, propKeys);
-
-        LabelSchemaDescriptor schema = forLabel(labelId, propId);
-        int id = uniqueIndexes.size() + 1000;
-        final String name = "constraint_" + id;
-        IndexDescriptor index = IndexPrototype.uniqueForSchema(schema, EMPTY.getProviderDescriptor())
-                .withName(name)
-                .materialise(id);
-        uniqueIndexes.add(index);
-        final UniquenessConstraintDescriptor constraint =
-                ConstraintDescriptorFactory.uniqueForLabel(labelId, propId).withName(name);
-        constraints.add(constraint);
-    }
-
-    private void givenNodePropExistenceConstraint(String label, String propKey) {
-        int labelId = token(label, labels);
-        int propId = token(propKey, propKeys);
-
-        final NodeExistenceConstraintDescriptor constraint =
-                ConstraintDescriptorFactory.existsForLabel(labelId, propId).withName("MyExistenceConstraint");
-        constraints.add(constraint);
-    }
-
-    private void givenNodeKeys(String label, String... props) {
-        int labelId = token(label, labels);
-        int[] propIds = new int[props.length];
-        for (int i = 0; i < propIds.length; i++) {
-            propIds[i] = token(props[i], propKeys);
-        }
-        final NodeKeyConstraintDescriptor constraint =
-                ConstraintDescriptorFactory.nodeKeyForLabel(labelId, propIds).withName("MyNodeKeyConstraint");
-        constraints.add(constraint);
-    }
-
     private void givenPropertyKeys(String... keys) {
         for (String key : keys) {
             token(key, propKeys);
@@ -534,20 +458,6 @@ class BuiltInProceduresTest {
                 .mapToInt(Map.Entry::getKey)
                 .findFirst()
                 .orElseGet(allocateFromMap);
-    }
-
-    private IndexDescriptor getIndexReference(SchemaDescriptor schema) {
-        for (IndexDescriptor index : indexes) {
-            if (index.schema().equals(schema)) {
-                return index;
-            }
-        }
-        for (IndexDescriptor index : uniqueIndexes) {
-            if (index.schema().equals(schema)) {
-                return index;
-            }
-        }
-        throw new AssertionError("No index matching the schema: " + schema);
     }
 
     private static Answer<Iterator<NamedToken>> asTokens(Map<Integer, String> tokens) {
