@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -48,12 +49,15 @@ import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.util.concurrent.Futures;
 
-@DbmsExtension
+@DbmsExtension(configurationCallback = "configure")
 class RelationshipIdReuseStressIT {
     @Inject
     private GraphDatabaseAPI embeddedDatabase;
@@ -69,6 +73,11 @@ class RelationshipIdReuseStressIT {
     private final String NAME_PROPERTY = "name";
     private static final int NUMBER_OF_BANDS = 3;
     private static final int NUMBER_OF_CITIES = 10;
+
+    @ExtensionCallback
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseSettings.db_format, FormatFamily.ALIGNED.name());
+    }
 
     @AfterEach
     void tearDown() {

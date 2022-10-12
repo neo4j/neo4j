@@ -26,6 +26,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -34,11 +35,14 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-@ImpermanentDbmsExtension
+@ImpermanentDbmsExtension(configurationCallback = "configure")
 class DbmsDeadlockDetectionTest {
     private final OtherThreadExecutor t2 =
             new OtherThreadExecutor("T2-" + getClass().getName());
@@ -52,6 +56,11 @@ class DbmsDeadlockDetectionTest {
     @AfterEach
     public void tearDown() {
         t2.close();
+    }
+
+    @ExtensionCallback
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseSettings.db_format, FormatFamily.ALIGNED.name());
     }
 
     @Test
