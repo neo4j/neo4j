@@ -229,4 +229,36 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
         )
     }
   }
+
+  test("Should solve extremely selective filter before any pattern predicates") {
+    val planner = plannerBuilder()
+      .removeNodeLookupIndex()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 1)
+      .setLabelCardinality("B", 1)
+      .setAllRelationshipsCardinality(1000)
+      .setRelationshipCardinality("(:A)-[]->()", 500)
+      .setRelationshipCardinality("(:B)-[]->()", 500)
+      .setRelationshipCardinality("()-[]->()", 1000)
+      .build()
+
+    val query =
+      """MATCH (a:A:B) WHERE
+        |     EXISTS { (a)-[r]->(b) }
+        | AND EXISTS { (a)-[q]->(c) }
+        |RETURN a""".stripMargin
+
+    planner.plan(query).stripProduceResults should equal(
+      planner.subPlanBuilder()
+        .semiApply()
+        .|.expandAll("(a)-[q]->(c)")
+        .|.argument("a")
+        .semiApply()
+        .|.expandAll("(a)-[r]->(b)")
+        .|.argument("a")
+        .filter("a:A", "a:B")
+        .allNodeScan("a")
+        .build()
+    )
+  }
 }

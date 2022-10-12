@@ -54,8 +54,8 @@ class TriadicSelectionPlanningIntegrationTest extends CypherFunSuite with Logica
 
     plan should equal(planner.subPlanBuilder()
       .projection("1 AS 1")
+      .filter("not r2 = r1")
       .triadicSelection(positivePredicate = false, "a", "b", "c")
-      .|.filter("not r2 = r1")
       .|.expandAll("(b)-[r2]->(c)")
       .|.argument("b", "r1")
       .expandAll("(a)-[r1]->(b)")
@@ -84,8 +84,8 @@ class TriadicSelectionPlanningIntegrationTest extends CypherFunSuite with Logica
 
     plan should equal(planner.subPlanBuilder()
       .projection("1 AS 1")
+      .filter("not r2 = r1")
       .triadicSelection(positivePredicate = false, "a", "b", "c")
-      .|.filter("not r2 = r1")
       .|.expandAll("(b)-[r2:A]->(c)")
       .|.argument("b", "r1")
       .expandAll("(a)-[r1:A]->(b)")
@@ -134,8 +134,8 @@ class TriadicSelectionPlanningIntegrationTest extends CypherFunSuite with Logica
 
     plan should equal(planner.subPlanBuilder()
       .projection("1 AS 1")
+      .filter("not r2 = r1")
       .triadicSelection(positivePredicate = true, "a", "b", "c")
-      .|.filter("not r2 = r1")
       .|.expandAll("(b)-[r2]->(c)")
       .|.argument("b", "r1")
       .expandAll("(a)-[r1]->(b)")
@@ -164,8 +164,8 @@ class TriadicSelectionPlanningIntegrationTest extends CypherFunSuite with Logica
 
     plan should equal(planner.subPlanBuilder()
       .projection("1 AS 1")
+      .filter("not r2 = r1")
       .triadicSelection(positivePredicate = true, "a", "b", "c")
-      .|.filter("not r2 = r1")
       .|.expandAll("(b)-[r2:A]->(c)")
       .|.argument("b", "r1")
       .expandAll("(a)-[r1:A]->(b)")
