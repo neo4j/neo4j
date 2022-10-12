@@ -39,7 +39,10 @@ object nodeIndexStringSearchScanPlanProvider extends NodeIndexPlanProvider {
     indexMatch <- indexMatches
     // Use isAllowedByRestrictions from EntityIndexSeekPlanProvider, since we also want to plan Nested-Index-Joins
     // with nodeIndexStringSearchScanPlans.
-    if EntityIndexSeekPlanProvider.isAllowedByRestrictions(indexMatch.propertyPredicates, restrictions) && indexMatch.indexDescriptor.properties.size == 1
+    if EntityIndexSeekPlanProvider.isAllowedByRestrictions(
+      indexMatch.propertyPredicates,
+      restrictions
+    ) && indexMatch.indexDescriptor.properties.size == 1
     plan <- doCreatePlans(indexMatch, hints, argumentIds, context)
   } yield plan
 
