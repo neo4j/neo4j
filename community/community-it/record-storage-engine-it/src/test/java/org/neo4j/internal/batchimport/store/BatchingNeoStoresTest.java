@@ -534,7 +534,6 @@ class BatchingNeoStoresTest {
                     new DatabaseHealth(PanicEventGenerator.NO_OP, nullLog),
                     new DefaultIdGeneratorFactory(fileSystem, immediate(), PageCacheTracer.NULL, DEFAULT_DATABASE_NAME),
                     recoveryCleanupWorkCollector,
-                    true,
                     INSTANCE,
                     EMPTY_LOG_TAIL,
                     LockVerificationFactory.NONE,

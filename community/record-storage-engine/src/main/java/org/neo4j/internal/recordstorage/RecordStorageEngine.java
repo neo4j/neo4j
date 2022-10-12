@@ -177,7 +177,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             Health databaseHealth,
             IdGeneratorFactory idGeneratorFactory,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            boolean createStoreIfNotExists,
             MemoryTracker otherMemoryTracker,
             LogTailMetadata logTailMetadata,
             LockVerificationFactory lockVerificationFactory,
@@ -207,7 +206,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                 contextFactory,
                 false,
                 logTailMetadata);
-        neoStores = factory.openAllNeoStores(createStoreIfNotExists);
+        neoStores = factory.openAllNeoStores(true);
         Stream.of(RecordIdType.values()).forEach(idType -> idGeneratorWorkSyncs.add(idGeneratorFactory.get(idType)));
         Stream.of(SchemaIdType.values()).forEach(idType -> idGeneratorWorkSyncs.add(idGeneratorFactory.get(idType)));
 

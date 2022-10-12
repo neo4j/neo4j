@@ -253,7 +253,6 @@ public class RecordStorageEngineSupport {
                     databaseHealth,
                     idGeneratorFactory,
                     RecoveryCleanupWorkCollector.immediate(),
-                    true,
                     EmptyMemoryTracker.INSTANCE,
                     EMPTY_LOG_TAIL,
                     LockVerificationFactory.NONE,

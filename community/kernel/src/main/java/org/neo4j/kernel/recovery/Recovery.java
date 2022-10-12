@@ -494,7 +494,6 @@ public final class Recovery {
                 logService.getInternalLogProvider(),
                 logService.getUserLogProvider(),
                 recoveryCleanupCollector,
-                true,
                 logTailMetadata,
                 memoryTracker,
                 cursorContextFactory,

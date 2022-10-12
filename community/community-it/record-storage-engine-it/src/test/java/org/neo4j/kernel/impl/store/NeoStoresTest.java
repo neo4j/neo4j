@@ -497,7 +497,6 @@ class NeoStoresTest {
                 mock(Health.class),
                 idGeneratorFactory,
                 immediate(),
-                true,
                 INSTANCE,
                 EMPTY_LOG_TAIL,
                 LockVerificationFactory.NONE,

@@ -83,7 +83,6 @@ public class RecordStorageEngineTestUtils {
                 mock(Health.class),
                 new DefaultIdGeneratorFactory(fs, immediate(), cacheTracer, DEFAULT_DATABASE_NAME),
                 immediate(),
-                true,
                 EmptyMemoryTracker.INSTANCE,
                 EMPTY_LOG_TAIL,
                 LockVerificationFactory.NONE,

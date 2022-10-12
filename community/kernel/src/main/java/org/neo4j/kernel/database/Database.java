@@ -436,7 +436,6 @@ public class Database extends AbstractDatabase {
                 internalLogProvider,
                 userLogProvider,
                 recoveryCleanupWorkCollector,
-                !storageExists,
                 tailMetadata,
                 otherDatabaseMemoryTracker,
                 cursorContextFactory,

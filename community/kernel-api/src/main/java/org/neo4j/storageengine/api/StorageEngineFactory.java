@@ -152,7 +152,6 @@ public interface StorageEngineFactory {
             InternalLogProvider internalLogProvider,
             InternalLogProvider userLogProvider,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            boolean createStoreIfNotExists,
             LogTailMetadata logTailMetadata,
             MemoryTracker memoryTracker,
             CursorContextFactory contextFactory,
