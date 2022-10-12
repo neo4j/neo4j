@@ -155,7 +155,7 @@ class DetachDeleteIT {
                 Locks.Client locksClient = getLocksClient(ignore);
                 // The try-lock should fail because the detach-delete should already be holding an exclusive lock on
                 // that node.
-                assertFalse(locksClient.trySharedLock(ResourceTypes.NODE, otherNodeId));
+                assertFalse(locksClient.tryExclusiveLock(ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE, otherNodeId));
                 // The detach-delete should also hold an exclusive lock on the associated relationship.
                 assertFalse(locksClient.trySharedLock(ResourceTypes.RELATIONSHIP, otherRelId.get()));
             } finally {
