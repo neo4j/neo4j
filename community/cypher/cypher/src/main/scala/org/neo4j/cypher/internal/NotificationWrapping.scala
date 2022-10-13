@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
+import org.neo4j.cypher.internal.util.DeprecatedRepeatedVarLengthRelationshipNotification
 import org.neo4j.cypher.internal.util.DeprecatedRuntimeNotification
 import org.neo4j.cypher.internal.util.DeprecatedTextIndexProvider
 import org.neo4j.cypher.internal.util.FixedLengthRelationshipInShortestPath
@@ -152,6 +153,11 @@ object NotificationWrapping {
       )
     case DeprecatedRelTypeSeparatorNotification(pos) =>
       NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(pos.withOffset(offset).asInputPosition)
+    case DeprecatedRepeatedVarLengthRelationshipNotification(pos, relName) =>
+      NotificationCode.DEPRECATED_REPEATED_VAR_LENGTH_RELATIONSHIP.notification(
+        pos.withOffset(offset).asInputPosition,
+        NotificationDetail.Factory.repeatedVarLengthRel(relName)
+      )
     case DeprecatedNodesOrRelationshipsInSetClauseNotification(pos) =>
       NotificationCode.DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE.notification(
         pos.withOffset(offset).asInputPosition

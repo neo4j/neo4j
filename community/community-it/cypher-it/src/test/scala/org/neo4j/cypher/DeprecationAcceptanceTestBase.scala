@@ -25,6 +25,7 @@ import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_NODE_OR_R
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR
+import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_REPEATED_VAR_LENGTH_RELATIONSHIP
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_TEXT_INDEX_PROVIDER
 import org.neo4j.graphdb.impl.notification.NotificationDetail
@@ -57,7 +58,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotification(Seq(query), true, DEPRECATED_PROCEDURE_RETURN_FIELD, detail)
   }
 
-  // OTHER DEPRECATIONS IN 4.X
+  // DEPRECATIONS in 5.X
 
   test("deprecated legacy reltype separator") {
     val queries = Seq(
@@ -69,8 +70,6 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     // clear caches of the rewritten queries to not keep notifications around
     dbms.clearQueryCaches()
   }
-
-  // DEPRECATIONS in 5.X
 
   test("deprecate using nodes/relationships on the RHS of a Set Clause") {
     val queries = Seq(
@@ -104,5 +103,63 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       s"CREATE TEXT INDEX FOR ()-[r:TYPE]-() ON (r.prop) OPTIONS {indexProvider : '$validProvider'}"
     )
     assertNoDeprecations(validProviderQueries)
+  }
+
+  test("deprecate using the same variable name for several variable length relationships in the same pattern") {
+    val queries = Seq(
+      "MATCH ()-[r*]->(), ()-[r*]->() RETURN r",
+      "MATCH ()-[r*..5]->(), ()<-[r*]-() RETURN r",
+      "MATCH p = (a)-[r*]->(t), q=(b)-[r*]->(s) RETURN p, q",
+      "MATCH p = (a)-[r*]-(t), q=(b)-[r*3..]-(s) RETURN p, q",
+      "MATCH p = ()-[r*]->()-[r*]->() RETURN p",
+      "MATCH p = ()-[r*2]->()-[r*1..3]->() RETURN p",
+      "MATCH ()-[r*]-() WHERE COUNT {()-[r*]-()-[r*]-()} > 2 RETURN r",
+      "MATCH ()-[r*]-() WHERE EXISTS {()-[r*]-()-[r*]-()} RETURN r",
+      "MATCH ()-[r*]-() RETURN [ ()-[r*]-()-[r*]-() | r ] AS rs"
+    )
+    assertNotification(
+      queries,
+      true,
+      DEPRECATED_REPEATED_VAR_LENGTH_RELATIONSHIP,
+      NotificationDetail.Factory.repeatedVarLengthRel("r")
+    )
+  }
+
+  test("deprecate using the same variable name for variable length relationships across patterns") {
+    val queries = Seq(
+      "MATCH ()-[s*]->() MATCH ()-[s*]->() RETURN s",
+      "MATCH ()-[s*]->() MATCH ()-[r*]->() MATCH ()-[s*]->() RETURN r, s",
+      "MATCH p = ()-[s*]->() MATCH q = ()-[s*]->() RETURN p, q",
+      "MATCH ()-[s*]-() WHERE COUNT {()-[s*]-()} > 2 RETURN s",
+      "MATCH ()-[s*]-() WHERE EXISTS {()-[s*]-()} RETURN s",
+      """
+        |MATCH ()-[r]->()
+        |MATCH ()-[q]->()
+        |WITH [r,q] AS s
+        |MATCH p = ()-[s*]->()
+        |RETURN p
+        |""".stripMargin
+    )
+    assertNotification(
+      queries,
+      true,
+      DEPRECATED_REPEATED_VAR_LENGTH_RELATIONSHIP,
+      NotificationDetail.Factory.repeatedVarLengthRel("s")
+    )
+  }
+
+  test("should not deprecate valid repeat of variable length relationship") {
+    val queries = Seq(
+      "MATCH ()-[r*]->() RETURN r",
+      "MATCH ()-[r*]->() WITH r as s MATCH ()-[r*]->() RETURN r, s",
+      "MATCH ()-[r*]-() RETURN [ ()-[r*]-() | r ] AS rs",
+      """
+        |MATCH ()-[r*]->()
+        |MATCH ()-[s*]->()
+        |WITH [r, s] AS rs
+        |RETURN rs
+        |""".stripMargin
+    )
+    assertNoDeprecations(queries)
   }
 }

@@ -79,6 +79,10 @@ public enum NotificationCode {
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
             "The semantics of using colon in the separation of alternative relationship types will change in a future version."),
+    DEPRECATED_REPEATED_VAR_LENGTH_RELATIONSHIP(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "Using an already bound variable for a variable length relationship is deprecated and will be removed in a future version."),
     DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,

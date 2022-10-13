@@ -1671,6 +1671,32 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     )
   }
 
+  test("Should not allow repeating rel variable in comma separated patterns") {
+    val query = "MATCH ()-[r]-(), ()-[r]-() RETURN r AS r"
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "Cannot use the same relationship variable 'r' for multiple relationships",
+          InputPosition(10, 1, 11)
+        )
+      )
+    )
+  }
+
+  test("Should not allow repeating rel variable in comma separated paths") {
+    val query = "MATCH p = ()-[r]-(), q = ()-[r]-() RETURN p, q"
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "Cannot use the same relationship variable 'r' for multiple relationships",
+          InputPosition(14, 1, 15)
+        )
+      )
+    )
+  }
+
   test("Should not allow repeated rel variable in pattern expression") {
     val query = normalizeNewLines("MATCH ()-[r]-() RETURN size( ()-[r]-()-[r]-() ) AS size")
     expectErrorsFrom(

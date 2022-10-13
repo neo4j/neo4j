@@ -60,6 +60,7 @@ import org.neo4j.cypher.internal.expressions.SymbolicName
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.DeprecatedRepeatedVarLengthRelationshipNotification
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
@@ -74,16 +75,20 @@ import org.neo4j.cypher.internal.util.topDown
 object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   def check(ctx: SemanticContext, pattern: Pattern): SemanticCheck =
-    semanticCheckFold(pattern.patternParts)(declareVariables(ctx)) chain
+    ensureNoRepeatedVarLengthRelationshipsAlreadyInScope(pattern) chain
+      semanticCheckFold(pattern.patternParts)(declareVariables(ctx)) chain
       semanticCheckFold(pattern.patternParts)(check(ctx)) chain
       semanticCheckFold(pattern.patternParts)(checkMinimumNodeCount) chain
       ensureNoReferencesOutFromQuantifiedPath(pattern) chain
-      ensureNoDuplicateRelationships(pattern)
+      ensureNoRepeatedRelationships(pattern) chain
+      ensureNoRepeatedVarLengthRelationships(pattern)
 
   def check(ctx: SemanticContext, pattern: RelationshipsPattern): SemanticCheck =
-    declareVariables(ctx, pattern.element) chain
+    ensureNoRepeatedVarLengthRelationshipsAlreadyInScope(pattern) chain
+      declareVariables(ctx, pattern.element) chain
       check(ctx, pattern.element) chain
-      ensureNoDuplicateRelationships(pattern)
+      ensureNoRepeatedRelationships(pattern) chain
+      ensureNoRepeatedVarLengthRelationships(pattern)
 
   def declareVariables(ctx: SemanticContext)(part: PatternPart): SemanticCheck =
     part match {
@@ -574,19 +579,91 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
   }
 
   /**
-   * Traverse the sub-tree at astNode. Warn or fail if any duplicate relationships are found at that sub-tree.
+   * Traverse the sub-tree at astNode. Fail if any repeated relationships are found in that sub-tree.
    *
    * @param astNode the sub-tree to traverse.
    */
-  private def ensureNoDuplicateRelationships(astNode: ASTNode): SemanticCheck = {
-    RelationshipChain.findDuplicateRelationships(astNode).foldSemanticCheck {
-      duplicate =>
+  private def ensureNoRepeatedRelationships(astNode: ASTNode): SemanticCheck = {
+    findRepeatedRelationships(astNode, varLength = false).foldSemanticCheck {
+      repeated =>
         SemanticError(
-          s"Cannot use the same relationship variable '${duplicate.name}' for multiple relationships",
-          duplicate.position
+          s"Cannot use the same relationship variable '${repeated.name}' for multiple relationships",
+          repeated.position
         )
     }
   }
+
+  /**
+   * Traverse the sub-tree at astNode. Warn if any repeated var length relationships are found in that sub-tree.
+   *
+   * @param astNode the sub-tree to traverse.
+   */
+  private def ensureNoRepeatedVarLengthRelationships(astNode: ASTNode): SemanticCheck = {
+    findRepeatedRelationships(astNode, varLength = true).foldSemanticCheck {
+      repeated => (state: SemanticState) =>
+        {
+          val newState = state.addNotification(DeprecatedRepeatedVarLengthRelationshipNotification(
+            repeated.position,
+            repeated.name
+          ))
+          SemanticCheckResult(newState, Seq.empty)
+        }
+    }
+  }
+
+  /**
+   * This method will traverse into any ASTNode and find repeated relationship variables inside of RelationshipChains.
+   *
+   * For each rel variable that is repeated, return the first/second occurrence of that variable.
+   */
+  def findRepeatedRelationships(treeNode: ASTNode, varLength: Boolean): Seq[LogicalVariable] = {
+    val relVariables = treeNode.folder.fold(Map[String, List[LogicalVariable]]().withDefaultValue(Nil)) {
+      case RelationshipChain(_, RelationshipPattern(Some(rel), _, None, _, _, _), _) if !varLength =>
+        map =>
+          map.updated(rel.name, rel :: map(rel.name))
+      case RelationshipChain(_, RelationshipPattern(Some(rel), _, Some(_), _, _, _), _) if varLength =>
+        map =>
+          map.updated(rel.name, rel :: map(rel.name))
+      case _ =>
+        identity
+    }
+    val repetitions = relVariables.values.filter(_.size > 1)
+    if (varLength) {
+      // To align with ensureNoRepeatedVarLengthRelationshipsAlreadyInScope, return second occurrence
+      repetitions.map(_.sortBy(_.position).drop(1).head).toSeq
+    } else {
+      // For backwards compatibility, return the first occurrence
+      repetitions.map(_.minBy(_.position)).toSeq
+    }
+  }
+
+  /**
+   * Traverse the sub-tree at astNode. Warn if any var length relationship is repeated from a previous pattern.
+   *
+   * @param astNode the sub-tree to traverse.
+   */
+  private def ensureNoRepeatedVarLengthRelationshipsAlreadyInScope(astNode: ASTNode): SemanticCheck =
+    (state: SemanticState) => {
+      val repetitions = astNode.folder.fold(List.empty[LogicalVariable]) {
+        case RelationshipChain(_, RelationshipPattern(Some(rel), _, Some(_), _, _, _), _) =>
+          state.currentScope.localSymbol(rel.name) match {
+            case Some(_) =>
+              // var length relationship variable already defined
+              acc => acc ++ List(rel)
+            case _ =>
+              acc => acc
+          }
+        case _ => acc => acc
+      }
+      val newState = repetitions.foldLeft(state) {
+        case (accState, repeated) =>
+          accState.addNotification(DeprecatedRepeatedVarLengthRelationshipNotification(
+            repeated.position,
+            repeated.name
+          ))
+      }
+      SemanticCheckResult(newState, Seq.empty)
+    }
 
   private def checkNodeProperties(ctx: SemanticContext, properties: Option[Expression]): SemanticCheck =
     checkNoParamMapsWhenMatching(properties, ctx) chain

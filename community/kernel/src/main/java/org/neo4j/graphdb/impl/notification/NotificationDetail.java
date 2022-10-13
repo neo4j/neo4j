@@ -156,12 +156,12 @@ public interface NotificationDetail {
             return createNotificationDetail("the missing property name", name, true);
         }
 
-        public static NotificationDetail repeatedRel(final String name) {
-            return createNotificationDetail("the repeated relationship", name, true);
-        }
-
         public static NotificationDetail shadowingVariable(final String name) {
             return createNotificationDetail("the shadowing variable", name, true);
+        }
+
+        public static NotificationDetail repeatedVarLengthRel(final String name) {
+            return createNotificationDetail("the repeated variable", name, true);
         }
 
         public static NotificationDetail joinKey(List<String> identifiers) {
@@ -228,31 +228,6 @@ public interface NotificationDetail {
                 @Override
                 public String toString() {
                     return String.format("'%s' returned by '%s' is no longer supported.", field, procedure);
-                }
-            };
-        }
-
-        public static NotificationDetail bindingVarLengthRelationship(final String element) {
-            return new NotificationDetail() {
-                @Override
-                public String name() {
-                    return element;
-                }
-
-                @Override
-                public String value() {
-                    return String.format(
-                            "Binding a variable length relationship pattern to a variable ('%s') is deprecated and "
-                                    + "will be unsupported in a future version. The recommended way is to bind the "
-                                    + "whole path to a variable, then extract the relationships:%n"
-                                    + "\tMATCH p = (...)-[...]-(...)%n"
-                                    + "\tWITH *, relationships(p) AS %s",
-                            element, element);
-                }
-
-                @Override
-                public String toString() {
-                    return value();
                 }
             };
         }

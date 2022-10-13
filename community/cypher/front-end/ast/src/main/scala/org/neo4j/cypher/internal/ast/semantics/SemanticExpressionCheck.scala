@@ -690,7 +690,8 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       // EXISTS
       case x: ExistsExpression =>
         SemanticState.recordCurrentScope(x) chain
-          withScopedState { // saves us from leaking to the outside
+          withScopedStateWithVariablesFromRecordedScope(x) {
+            // saves us from leaking to the outside and import the variables from the previously recorded scope
             SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain
               x.optionalWhereExpression.foldSemanticCheck(Where.checkExpression)
           }
@@ -698,7 +699,8 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       // COUNT
       case x: CountExpression =>
         SemanticState.recordCurrentScope(x) chain
-          withScopedState { // saves us from leaking to the outside
+          withScopedStateWithVariablesFromRecordedScope(x) {
+            // saves us from leaking to the outside and import the variables from the previously recorded scope
             SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain
               x.optionalWhereExpression.foldSemanticCheck(Where.checkExpression)
           } chain specifyType(CTInteger, x)
