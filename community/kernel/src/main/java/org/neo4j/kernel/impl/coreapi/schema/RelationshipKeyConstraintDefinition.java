@@ -21,28 +21,26 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import static java.lang.String.format;
 
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 
-public class RelationshipPropertyExistenceConstraintDefinition extends RelationshipConstraintDefinition {
-    public RelationshipPropertyExistenceConstraintDefinition(
-            InternalSchemaActions actions,
-            ConstraintDescriptor constraint,
-            RelationshipType relationshipType,
-            String propertyKey) {
-        super(actions, constraint, relationshipType, propertyKey);
+public class RelationshipKeyConstraintDefinition extends RelationshipConstraintDefinition {
+    public RelationshipKeyConstraintDefinition(
+            InternalSchemaActions actions, ConstraintDescriptor constraint, IndexDefinition indexDefinition) {
+        super(actions, constraint, indexDefinition);
     }
 
     @Override
     public ConstraintType getConstraintType() {
-        return ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE;
+        assertInUnterminatedTransaction();
+        return ConstraintType.RELATIONSHIP_KEY;
     }
 
     @Override
     public String toString() {
         return format(
-                "FOR ()-[%1$s:%2$s]-() REQUIRE %3$s IS NOT NULL",
+                "FOR ()-[%1$s:%2$s]-() REQUIRE %3$s IS RELATIONSHIP KEY",
                 relationshipType.name().toLowerCase(),
                 relationshipType.name(),
                 propertyText(relationshipType.name().toLowerCase()));

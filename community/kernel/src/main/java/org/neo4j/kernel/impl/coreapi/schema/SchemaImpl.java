@@ -35,6 +35,7 @@ import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 import static org.neo4j.internal.schema.SchemaDescriptors.fulltext;
 import static org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl.labelNameList;
+import static org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl.relTypeNameList;
 import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getOrCreatePropertyKeyIds;
 
 import java.util.ArrayList;
@@ -546,13 +547,24 @@ public class SchemaImpl implements Schema {
                 return new NodeKeyConstraintDefinition(
                         actions, constraint, new IndexDefinitionImpl(actions, null, labels, propertyKeys, true));
             }
-        } else if (constraint.isRelationshipPropertyExistenceConstraint()) {
+        } else if (constraint.isRelationshipPropertyExistenceConstraint() || constraint.isRelationshipKeyConstraint()) {
             RelationTypeSchemaDescriptor descriptor = constraint.schema().asRelationshipTypeSchemaDescriptor();
-            return new RelationshipPropertyExistenceConstraintDefinition(
+            RelationshipType relationshipType = withName(tokenRead.relationshipTypeGetName(descriptor.getRelTypeId()));
+            if (constraint.isRelationshipPropertyExistenceConstraint()) {
+                return new RelationshipPropertyExistenceConstraintDefinition(
+                        actions,
+                        constraint,
+                        relationshipType,
+                        tokenRead.propertyKeyGetName(descriptor.getPropertyId()));
+            }
+            String[] propertyKeys = Arrays.stream(descriptor.getPropertyIds())
+                    .mapToObj(tokenRead::propertyKeyGetName)
+                    .toArray(String[]::new);
+            return new RelationshipKeyConstraintDefinition(
                     actions,
                     constraint,
-                    withName(tokenRead.relationshipTypeGetName(descriptor.getRelTypeId())),
-                    tokenRead.propertyKeyGetName(descriptor.getPropertyId()));
+                    new IndexDefinitionImpl(
+                            actions, null, new RelationshipType[] {relationshipType}, propertyKeys, true));
         }
         throw new IllegalArgumentException("Unknown constraint " + constraint);
     }
@@ -742,6 +754,45 @@ public class SchemaImpl implements Schema {
                         .withIndexConfig(indexConfig);
                 ConstraintDescriptor constraint = transaction.schemaWrite().keyConstraintCreate(prototype);
                 return new NodeKeyConstraintDefinition(this, constraint, indexDefinition);
+            } catch (AlreadyConstrainedException
+                    | CreateConstraintFailureException
+                    | AlreadyIndexedException
+                    | RepeatedSchemaComponentException e) {
+                throw new ConstraintViolationException(e.getUserMessage(transaction.tokenRead()), e);
+            } catch (IllegalTokenNameException e) {
+                throw new IllegalArgumentException(e);
+            } catch (TokenCapacityExceededKernelException e) {
+                throw new IllegalStateException(e);
+            } catch (InvalidTransactionTypeKernelException | SchemaKernelException e) {
+                throw new ConstraintViolationException(e.getMessage(), e);
+            } catch (KernelException e) {
+                throw new TransactionFailureException("Unknown error trying to create token ids", e);
+            }
+        }
+
+        @Override
+        public ConstraintDefinition createRelationshipKeyConstraint(
+                IndexDefinition indexDefinition, String name, IndexType indexType, IndexConfig indexConfig) {
+            if (indexDefinition.isMultiTokenIndex()) {
+                throw new ConstraintViolationException(
+                        "A relationship key constraint does not support multi-token index definitions. "
+                                + "That is, only a single relationship type is supported, but the "
+                                + "following relationship types were provided: "
+                                + relTypeNameList(indexDefinition.getRelationshipTypes(), "", "."));
+            }
+            assertConstraintableIndexType("Relationship key", indexType);
+            try {
+                TokenWrite tokenWrite = transaction.tokenWrite();
+                int typeId = tokenWrite.relationshipTypeGetOrCreateForName(
+                        single(indexDefinition.getRelationshipTypes()).name());
+                int[] propertyKeyIds = getOrCreatePropertyKeyIds(tokenWrite, indexDefinition);
+                RelationTypeSchemaDescriptor schema = forRelType(typeId, propertyKeyIds);
+                IndexPrototype prototype = IndexPrototype.uniqueForSchema(schema)
+                        .withName(name)
+                        .withIndexType(fromPublicApi(indexType))
+                        .withIndexConfig(indexConfig);
+                ConstraintDescriptor constraint = transaction.schemaWrite().keyConstraintCreate(prototype);
+                return new RelationshipKeyConstraintDefinition(this, constraint, indexDefinition);
             } catch (AlreadyConstrainedException
                     | CreateConstraintFailureException
                     | AlreadyIndexedException

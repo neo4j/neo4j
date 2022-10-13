@@ -281,6 +281,10 @@ public class IndexDefinitionImpl implements IndexDefinition {
         return stream(labels).map(Label::name).collect(joining(", ", prefix, postfix));
     }
 
+    static String relTypeNameList(Iterable<RelationshipType> types, String prefix, String postfix) {
+        return stream(types).map(RelationshipType::name).collect(joining(", ", prefix, postfix));
+    }
+
     private void assertIsNodeIndex() {
         if (!isNodeIndex()) {
             throw new IllegalStateException("This is not a node index.");

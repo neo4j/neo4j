@@ -924,7 +924,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
-    void shouldFailToNodeKeyConstraintIfConstraintNotSatisfied() throws Exception {
+    void shouldFailToCreateNodeKeyConstraintIfConstraintNotSatisfied() throws Exception {
         // Given
         try (KernelTransaction transaction = beginTransaction()) {
             Write write = transaction.dataWrite();
@@ -1209,6 +1209,117 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             assertThat(asList(schemaRead.snapshot().constraintsGetForLabel(label)))
                     .isEmpty();
             assertThat(asList(before.constraintsGetForLabel(label))).isEmpty();
+        }
+    }
+
+    @Test
+    void shouldCreateRelationshipKeyConstraint() throws Exception {
+        ConstraintDescriptor constraint;
+        try (KernelTransaction transaction = beginTransaction()) {
+            constraint = transaction.schemaWrite().keyConstraintCreate(uniqueForSchema(forRelType(type, prop1)));
+            transaction.commit();
+        }
+
+        try (KernelTransaction transaction = beginTransaction()) {
+            SchemaRead schemaRead = transaction.schemaRead();
+            assertTrue(schemaRead.constraintExists(constraint));
+            assertThat(asList(schemaRead.constraintsGetForRelationshipType(type)))
+                    .isEqualTo(singletonList(constraint));
+            assertThat(asList(schemaRead.snapshot().constraintsGetForRelationshipType(type)))
+                    .isEqualTo(singletonList(constraint));
+        }
+    }
+
+    @Test
+    void shouldDropRelKeyConstraint() throws Exception {
+        ConstraintDescriptor constraint;
+        try (KernelTransaction transaction = beginTransaction()) {
+            constraint = transaction.schemaWrite().keyConstraintCreate(uniqueForSchema(forRelType(type, prop1)));
+            transaction.commit();
+        }
+
+        try (KernelTransaction transaction = beginTransaction()) {
+            transaction.schemaWrite().constraintDrop(constraint);
+            transaction.commit();
+        }
+
+        try (KernelTransaction transaction = beginTransaction()) {
+            SchemaRead schemaRead = transaction.schemaRead();
+            assertFalse(schemaRead.constraintExists(constraint));
+            assertThat(asList(schemaRead.constraintsGetForRelationshipType(type)))
+                    .isEmpty();
+            assertThat(asList(schemaRead.snapshot().constraintsGetForRelationshipType(type)))
+                    .isEmpty();
+        }
+    }
+
+    @Test
+    void shouldFailToCreateRelKeyConstraintIfConstraintNotSatisfied() throws Exception {
+        // Given
+        try (KernelTransaction transaction = beginTransaction()) {
+            Write write = transaction.dataWrite();
+            long node = write.nodeCreate();
+            write.relationshipCreate(node, type, node);
+            transaction.commit();
+        }
+
+        // When
+        try (KernelTransaction transaction = beginTransaction()) {
+            assertThrows(
+                    SchemaKernelException.class,
+                    () -> transaction.schemaWrite().keyConstraintCreate(uniqueForSchema(forRelType(type, prop1))));
+        }
+    }
+
+    @Test
+    void shouldSeeRelKeyConstraintFromTransaction() throws Exception {
+        ConstraintDescriptor existing;
+        try (KernelTransaction transaction = beginTransaction()) {
+            existing = transaction
+                    .schemaWrite()
+                    .keyConstraintCreate(
+                            uniqueForSchema(forRelType(type, prop1)).withName("existing constraint"));
+            transaction.commit();
+        }
+
+        try (KernelTransaction transaction = beginTransaction()) {
+            SchemaReadCore before = transaction.schemaRead().snapshot();
+            ConstraintDescriptor newConstraint = transaction
+                    .schemaWrite()
+                    .keyConstraintCreate(
+                            uniqueForSchema(forRelType(type, prop2)).withName("new constraint"));
+            SchemaRead schemaRead = transaction.schemaRead();
+            assertTrue(schemaRead.constraintExists(existing));
+            assertTrue(schemaRead.constraintExists(newConstraint));
+            assertThat(asList(schemaRead.constraintsGetForRelationshipType(type)))
+                    .contains(existing, newConstraint);
+            assertThat(asList(schemaRead.snapshot().constraintsGetForRelationshipType(type)))
+                    .contains(existing, newConstraint);
+            assertThat(asList(before.constraintsGetForRelationshipType(type))).contains(existing, newConstraint);
+        }
+    }
+
+    @Test
+    void shouldNotSeeDroppedRelKeyConstraintFromTransaction() throws Exception {
+        ConstraintDescriptor existing;
+        try (KernelTransaction transaction = beginTransaction()) {
+            existing = transaction
+                    .schemaWrite()
+                    .keyConstraintCreate(
+                            uniqueForSchema(forRelType(type, prop1)).withName("constraint name"));
+            transaction.commit();
+        }
+
+        try (KernelTransaction transaction = beginTransaction()) {
+            SchemaReadCore before = transaction.schemaRead().snapshot();
+            transaction.schemaWrite().constraintDrop(existing);
+            SchemaRead schemaRead = transaction.schemaRead();
+            assertFalse(schemaRead.constraintExists(existing));
+            assertThat(asList(schemaRead.constraintsGetForRelationshipType(type)))
+                    .isEmpty();
+            assertThat(asList(schemaRead.snapshot().constraintsGetForRelationshipType(type)))
+                    .isEmpty();
+            assertThat(asList(before.constraintsGetForRelationshipType(type))).isEmpty();
         }
     }
 

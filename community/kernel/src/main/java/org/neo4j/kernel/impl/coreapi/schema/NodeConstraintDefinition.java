@@ -24,7 +24,6 @@ import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl.labelNameList;
 
 import java.util.Arrays;
-import java.util.stream.Collectors;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -73,18 +72,6 @@ abstract class NodeConstraintDefinition extends MultiPropertyConstraintDefinitio
         }
         NodeConstraintDefinition that = (NodeConstraintDefinition) o;
         return label.name().equals(that.label.name()) && Arrays.equals(propertyKeys, that.propertyKeys);
-    }
-
-    String propertyText() {
-        String nodeVariable = label.name().toLowerCase();
-        if (propertyKeys.length == 1) {
-            return nodeVariable + "." + propertyKeys[0];
-        } else {
-            return "("
-                    + Arrays.stream(propertyKeys)
-                            .map(p -> nodeVariable + "." + p)
-                            .collect(Collectors.joining(",")) + ")";
-        }
     }
 
     @Override

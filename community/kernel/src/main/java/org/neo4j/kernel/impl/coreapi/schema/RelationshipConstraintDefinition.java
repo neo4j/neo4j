@@ -20,12 +20,16 @@
 package org.neo4j.kernel.impl.coreapi.schema;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.internal.helpers.collection.Iterables.single;
+import static org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl.relTypeNameList;
 
+import java.util.Arrays;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 
-abstract class RelationshipConstraintDefinition extends SinglePropertyConstraintDefinition {
+abstract class RelationshipConstraintDefinition extends MultiPropertyConstraintDefinition {
     protected final RelationshipType relationshipType;
 
     RelationshipConstraintDefinition(
@@ -33,8 +37,20 @@ abstract class RelationshipConstraintDefinition extends SinglePropertyConstraint
             ConstraintDescriptor constraint,
             RelationshipType relationshipType,
             String propertyKey) {
-        super(actions, constraint, propertyKey);
+        super(actions, constraint, new String[] {propertyKey});
         this.relationshipType = requireNonNull(relationshipType);
+    }
+
+    RelationshipConstraintDefinition(
+            InternalSchemaActions actions, ConstraintDescriptor constraint, IndexDefinition indexDefinition) {
+        super(actions, constraint, indexDefinition);
+        if (indexDefinition.isMultiTokenIndex()) {
+            throw new IllegalArgumentException(
+                    "Relationship constraints do not support multi-token definitions. That is, they cannot apply to more than one relationship type, "
+                            + "but an attempt was made to create a relationship constraint on the following relationship types: "
+                            + relTypeNameList(indexDefinition.getRelationshipTypes(), "", "."));
+        }
+        this.relationshipType = single(indexDefinition.getRelationshipTypes());
     }
 
     @Override
@@ -58,11 +74,12 @@ abstract class RelationshipConstraintDefinition extends SinglePropertyConstraint
             return false;
         }
         RelationshipConstraintDefinition that = (RelationshipConstraintDefinition) o;
-        return relationshipType.name().equals(that.relationshipType.name()) && propertyKey.equals(that.propertyKey);
+        return relationshipType.name().equals(that.relationshipType.name())
+                && Arrays.equals(propertyKeys, that.propertyKeys);
     }
 
     @Override
     public int hashCode() {
-        return 31 * relationshipType.name().hashCode() + propertyKey.hashCode();
+        return 31 * relationshipType.name().hashCode() + Arrays.hashCode(propertyKeys);
     }
 }

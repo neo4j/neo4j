@@ -55,6 +55,9 @@ public interface InternalSchemaActions {
     ConstraintDefinition createNodeKeyConstraint(
             IndexDefinition indexDefinition, String name, IndexType indexType, IndexConfig indexConfig);
 
+    ConstraintDefinition createRelationshipKeyConstraint(
+            IndexDefinition indexDefinition, String name, IndexType indexType, IndexConfig indexConfig);
+
     ConstraintDefinition createPropertyExistenceConstraint(String name, Label label, String... propertyKey);
 
     ConstraintDefinition createPropertyExistenceConstraint(String name, RelationshipType type, String propertyKey);

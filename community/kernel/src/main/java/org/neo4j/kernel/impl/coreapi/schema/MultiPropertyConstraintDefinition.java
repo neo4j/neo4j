@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.coreapi.schema;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -58,5 +60,16 @@ abstract class MultiPropertyConstraintDefinition extends PropertyConstraintDefin
     public Iterable<String> getPropertyKeys() {
         assertInUnterminatedTransaction();
         return asList(propertyKeys);
+    }
+
+    String propertyText(String entityVariable) {
+        if (propertyKeys.length == 1) {
+            return entityVariable + "." + propertyKeys[0];
+        } else {
+            return "("
+                    + Arrays.stream(propertyKeys)
+                            .map(p -> entityVariable + "." + p)
+                            .collect(Collectors.joining(",")) + ")";
+        }
     }
 }
