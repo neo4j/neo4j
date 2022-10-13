@@ -20,16 +20,17 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.hasCause;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
-import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
@@ -89,17 +91,17 @@ abstract class IndexPopulatorTests<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE>
     void createShouldClearExistingFile() throws Exception {
         // given
         byte[] someBytes = fileWithContent();
+        var storeFile = indexFiles.getStoreFile();
+        assertThat(fs.fileExists(storeFile)).isTrue();
+        assertThat(fs.getFileSize(storeFile)).isEqualTo(someBytes.length);
 
         // when
         populator.create();
 
         // then
-        try (StoreChannel r = fs.read(indexFiles.getStoreFile())) {
-            byte[] firstBytes = new byte[someBytes.length];
-            r.readAll(ByteBuffer.wrap(firstBytes));
-            assertNotEquals(
-                    someBytes, firstBytes, "Expected previous file content to have been cleared but was still there");
-        }
+        assertThat(fs.fileExists(storeFile)).isTrue();
+        assertThat(fs.getFileSize(storeFile)).isEqualTo(0);
+
         populator.close(true, NULL_CONTEXT);
     }
 
@@ -209,7 +211,7 @@ abstract class IndexPopulatorTests<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE>
         populator.close(false, NULL_CONTEXT);
 
         // then
-        assertHeader(POPULATING, null, false);
+        assertNoHeader();
     }
 
     @Test
@@ -351,6 +353,13 @@ abstract class IndexPopulatorTests<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE>
         var e = assertThrows(RuntimeException.class, () -> populator.close(false, NULL_CONTEXT));
         assertTrue(
                 hasCause(e, IllegalStateException.class), "Expected cause to contain " + IllegalStateException.class);
+    }
+
+    private void assertNoHeader() {
+        NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader(failureByte());
+        var e = catchThrowable(() -> GBPTree.readHeader(
+                pageCache, indexFiles.getStoreFile(), headerReader, "db", NULL_CONTEXT, immutable.empty()));
+        assertThat(e).isInstanceOf(MetadataMismatchException.class);
     }
 
     private void assertHeader(InternalIndexState expectedState, String failureMessage, boolean messageTruncated)

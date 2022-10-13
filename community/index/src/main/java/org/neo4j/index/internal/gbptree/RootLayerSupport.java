@@ -315,6 +315,7 @@ class RootLayerSupport {
             long stableGeneration = stableGeneration(generation);
             long unstableGeneration = unstableGeneration(generation);
             treeNode.initializeLeaf(cursor, layerType, stableGeneration, unstableGeneration);
+            changesSinceLastCheckpoint.set(true);
             checkOutOfBounds(cursor);
         }
     }
@@ -331,7 +332,7 @@ class RootLayerSupport {
             // todo find better way of getting TreeState?
             Pair<TreeState, TreeState> states =
                     TreeStatePair.readStatePages(cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B);
-            state = TreeStatePair.selectNewestValidState(states);
+            state = TreeStatePair.selectNewestValidOrFirst(states);
         }
         unsafe.access(pagedFile, layout, treeNode, state);
     }

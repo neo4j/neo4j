@@ -27,7 +27,8 @@ import static org.neo4j.index.internal.gbptree.GBPTreeOpenOptions.NO_FLUSH_ON_CL
 import static org.neo4j.index.internal.gbptree.Generation.generation;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
-import static org.neo4j.index.internal.gbptree.GenerationSafePointer.MIN_GENERATION;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointer.FIRST_STABLE_GENERATION;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointer.FIRST_UNSTABLE_GENERATION;
 import static org.neo4j.index.internal.gbptree.Header.CARRY_OVER_PREVIOUS_HEADER;
 import static org.neo4j.index.internal.gbptree.Header.replace;
 import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
@@ -40,10 +41,10 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,6 +57,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.ConsistencyCheckState;
+import org.neo4j.index.internal.gbptree.Header.Reader;
 import org.neo4j.index.internal.gbptree.RootLayer.TreeRootsVisitor;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -169,6 +171,10 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             }
 
             @Override
+            public void needRecreation() { // no-op
+            }
+
+            @Override
             public void cleanupRegistered() { // no-op
             }
 
@@ -220,6 +226,11 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             @Override
             public void noStoreFile() {
                 delegate.noStoreFile();
+            }
+
+            @Override
+            public void needRecreation() {
+                delegate.needRecreation();
             }
 
             @Override
@@ -278,6 +289,11 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
          * Called when the tree was started on no existing store file and so will be created.
          */
         void noStoreFile();
+
+        /**
+         * Called when the tree was started in a state where file exists, but it needs to be recreated.
+         */
+        void needRecreation();
 
         /**
          * Called after cleanup job has been created
@@ -396,11 +412,6 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
     protected final int payloadSize;
 
     /**
-     * Whether the tree was created this time it was instantiated.
-     */
-    private boolean created;
-
-    /**
      * Generation of the tree. This variable contains both stable and unstable generation and is
      * represented as one long to get atomic updates of both stable and unstable generation for readers.
      * Both stable and unstable generation are unsigned ints, i.e. 32 bits each.
@@ -449,9 +460,6 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
      * concatenated with the contents of this array is passed into the map call.
      */
     private final ImmutableSet<OpenOption> openOptions;
-
-    // Name of the database this tree belongs to.
-    private final String databaseName;
 
     /**
      * Whether this tree has been closed. Accessed and changed solely in
@@ -527,14 +535,13 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
      * </ul>
      *
      * @param pageCache {@link PageCache} to use to map index file
-     * @param fileSystem
+     * @param fileSystem {@link FileSystemAbstraction} to use when doing file operations on index file.
      * @param indexFile {@link Path} containing the actual index
      * @param layout {@link Layout} to use in the tree, this must match the existing layout
      * we're just opening the index
      * @param monitor {@link Monitor} for monitoring {@link GBPTree}.
      * @param headerReader reads header data, previously written using {@link #checkpoint( Consumer, FileFlushEvent, CursorContext)}
      * or {@link #close()}
-     * @param headerWriter writes header data if indexFile is created as a result of this call.
      * @param recoveryCleanupWorkCollector collects recovery cleanup jobs for execution after recovery.
      * @param readOnlyChecker database readonly mode checker.
      * @param databaseName name of the database this tree belongs to.
@@ -549,7 +556,6 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             Layout<KEY, VALUE> layout,
             Monitor monitor,
             Header.Reader headerReader,
-            Consumer<PageCursor> headerWriter,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseReadOnlyChecker readOnlyChecker,
             ImmutableSet<OpenOption> engineOpenOptions,
@@ -565,16 +571,25 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         this.readOnlyChecker = readOnlyChecker;
         this.contextFactory = contextFactory;
         this.openOptions = treeOpenOptions(engineOpenOptions);
-        this.databaseName = databaseName;
         this.pageCacheTracer = pageCacheTracer;
-        this.generation = Generation.generation(MIN_GENERATION, MIN_GENERATION + 1);
+        this.generation = Generation.generation(FIRST_STABLE_GENERATION, FIRST_UNSTABLE_GENERATION);
         this.layout = layout;
 
         try (var cursorContext = contextFactory.create(INDEX_INTERNAL_TAG)) {
-            this.pagedFile = openOrCreate(pageCache, indexFile, cursorContext, databaseName, openOptions);
-            this.payloadSize = pagedFile.payloadSize();
+            var openResult = openOrCreate(fileSystem, pageCache, indexFile, databaseName, openOptions);
+            boolean created = openResult.created;
+            this.pagedFile = openResult.pagedFile;
             closed = false;
-            this.freeList = new FreeListIdProvider(pagedFile.payloadSize(), IdSpace.MIN_TREE_NODE_ID);
+
+            if (!created) {
+                // Verify stored payload size before we verify state pages
+                // since the offset for those pages is based on page size
+                verifyPayloadSize(pagedFile, cursorContext);
+                created = needRecreation(pagedFile, cursorContext, monitor);
+            }
+
+            this.payloadSize = pagedFile.payloadSize();
+            this.freeList = new FreeListIdProvider(pagedFile.payloadSize());
             TreeNodeLatchService latchService = new TreeNodeLatchService();
             var treeNodeSelector = treeNodeLayoutFactory.createSelector(engineOpenOptions);
             this.rootLayerSupport = new RootLayerSupport(
@@ -591,15 +606,15 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
                     name,
                     treeNodeSelector);
             this.rootLayer = rootLayerConfiguration.buildRootLayer(
-                    rootLayerSupport, layout, created, cursorContext, contextFactory, treeNodeSelector);
+                    rootLayerSupport, layout, created, contextFactory, treeNodeSelector);
 
             // Create or load state
             if (created) {
-                initializeAfterCreation(headerWriter, cursorContext, pageCacheTracer);
+                initializeAfterCreation(cursorContext);
                 dirtyOnStartup = false;
                 cleaning = CleanupJob.CLEAN;
             } else {
-                loadState(pagedFile, headerReader, cursorContext);
+                initialize(pagedFile, headerReader, cursorContext);
                 dirtyOnStartup = !clean;
                 clean = false;
                 bumpUnstableGeneration();
@@ -623,7 +638,6 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             Layout<KEY, VALUE> layout,
             Monitor monitor,
             Header.Reader headerReader,
-            Consumer<PageCursor> headerWriter,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseReadOnlyChecker readOnlyChecker,
             ImmutableSet<OpenOption> engineOpenOptions,
@@ -640,7 +654,6 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
                 layout,
                 monitor,
                 headerReader,
-                headerWriter,
                 recoveryCleanupWorkCollector,
                 readOnlyChecker,
                 engineOpenOptions,
@@ -664,53 +677,83 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         return new RuntimeException(throwable);
     }
 
-    private void initializeAfterCreation(
-            Consumer<PageCursor> headerWriter, CursorContext cursorContext, PageCacheTracer pageCacheTracer)
-            throws IOException {
-        // Initialize state
-        try (PageCursor cursor = pagedFile.io(0 /*ignored*/, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext)) {
-            TreeStatePair.initializeStatePages(cursor);
-        }
-
-        // Initialize index root node to a leaf node.
-        rootLayer.setRoot(new Root(IdSpace.MIN_TREE_NODE_ID, Generation.unstableGeneration(generation)));
-        rootLayer.initializeAfterCreation(cursorContext);
-
-        // Initialize free-list
-        freeList.initializeAfterCreation(bind(pagedFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext));
-        try (FileFlushEvent fileFlush = pageCacheTracer.beginFileFlush()) {
-            pagedFile.flushAndForce(fileFlush);
-        }
-
-        var unstableGeneration = Generation.unstableGeneration(generation);
-        // We're co-forcing the creation above as well as a bump of unstable
-        // which is a natural part of opening a GBPTree
-        generation = Generation.generation(unstableGeneration, unstableGeneration + 2);
-        writeState(pagedFile, replace(headerWriter), cursorContext);
-        try (FileFlushEvent flushEvent = pageCacheTracer.beginFileFlush()) {
-            pagedFile.flushAndForce(flushEvent);
-        }
+    private void initializeAfterCreation(CursorContext cursorContext) throws IOException {
+        var firstRoot = new Root(IdSpace.MIN_TREE_NODE_ID, unstableGeneration(generation));
+        rootLayer.initializeAfterCreation(firstRoot, cursorContext);
+        freeList.initializeAfterCreation(
+                bind(pagedFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext), IdSpace.MIN_FREELIST_NODE_ID);
     }
 
-    private PagedFile openOrCreate(
+    /**
+     * Map index file using provided pageCache. Create it if it doesn't exist.
+     * @return {@link OpenResult} containing {@link PagedFile} and created file that indicate if file was created or not..
+     * @throws IOException if something goes wrong in {@link PageCache}
+     * @throws TreeFileNotFoundException if file didn't exist and we are in read only mode.
+     */
+    private OpenResult openOrCreate(
+            FileSystemAbstraction fs,
             PageCache pageCache,
             Path indexFile,
-            CursorContext cursorContext,
             String databaseName,
             ImmutableSet<OpenOption> openOptions)
-            throws IOException, MetadataMismatchException {
-        try {
-            var pageCacheOptions = openOptions.newWithoutAll(asList(GBPTreeOpenOptions.values()));
-            return openExistingIndexFile(pageCache, indexFile, cursorContext, databaseName, pageCacheOptions);
-        } catch (NoSuchFileException e) {
+            throws IOException, TreeFileNotFoundException {
+        openOptions = openOptions.newWithoutAll(asList(GBPTreeOpenOptions.values()));
+        if (!fs.fileExists(indexFile)) {
             try {
                 readOnlyChecker.check();
             } catch (Exception roe) {
-                throw new TreeFileNotFoundException(
-                        "Can not create new tree file in read only mode.", Exceptions.chain(roe, e));
+                throw new TreeFileNotFoundException("Can not create new tree file in read only mode.", roe);
             }
-            return createNewIndexFile(pageCache, indexFile);
+            monitor.noStoreFile();
+            openOptions = openOptions.newWith(CREATE);
+            return new OpenResult(pageCache.map(indexFile, pageCache.pageSize(), databaseName, openOptions), true);
         }
+        return new OpenResult(pageCache.map(indexFile, pageCache.pageSize(), databaseName, openOptions), false);
+    }
+
+    /**
+     * The tree needs to be recreated from scratch if it hasn't seen a first successful checkpoint.
+     * This is the case if and only if both state pages are empty.
+     *
+     * If the tree needs to be recreated the minimal tree pages are zapped.
+     */
+    private static boolean needRecreation(PagedFile pagedFile, CursorContext cursorContext, Monitor monitor)
+            throws IOException {
+        try (PageCursor cursor = pagedFile.io(IdSpace.META_PAGE_ID, PF_SHARED_WRITE_LOCK, cursorContext)) {
+            var bytes = new byte[pagedFile.payloadSize()];
+            boolean needRecreation = pageIsEmpty(cursor, bytes, IdSpace.STATE_PAGE_A)
+                    && pageIsEmpty(cursor, bytes, IdSpace.STATE_PAGE_B);
+            if (needRecreation) {
+                zapPage(cursor, IdSpace.META_PAGE_ID);
+                zapPage(cursor, IdSpace.STATE_PAGE_A);
+                zapPage(cursor, IdSpace.STATE_PAGE_B);
+                zapPage(cursor, IdSpace.MIN_TREE_NODE_ID);
+                zapPage(cursor, IdSpace.MIN_FREELIST_NODE_ID);
+                monitor.needRecreation();
+            }
+            return needRecreation;
+        }
+    }
+
+    private static boolean pageIsEmpty(PageCursor cursor, byte[] bytes, long pageId) throws IOException {
+        PageCursorUtil.goTo(cursor, "check if page is empty", pageId);
+        Arrays.fill(bytes, (byte) 0);
+        cursor.getBytes(bytes);
+        return allZeroes(bytes);
+    }
+
+    private static void zapPage(PageCursor cursor, long pageId) throws IOException {
+        cursor.next(pageId);
+        cursor.zapPage();
+    }
+
+    private static boolean allZeroes(final byte[] array) {
+        for (byte b : array) {
+            if (b != 0) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static PagedFile openExistingIndexFile(
@@ -728,12 +771,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         boolean success = false;
         try {
             // We're only interested in the page size really
-            Meta meta = RootLayerSupport.readMeta(pagedFile, cursorContext);
-            if (meta.getPayloadSize() != pagedFile.payloadSize()) {
-                throw new MetadataMismatchException(format(
-                        "Tried to open the tree using page payload size %d, but the tree was original created with page payload size %d so cannot be opened.",
-                        pagedFile.payloadSize(), meta.getPayloadSize()));
-            }
+            verifyPayloadSize(pagedFile, cursorContext);
             success = true;
             return pagedFile;
         } catch (IllegalStateException e) {
@@ -745,25 +783,13 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         }
     }
 
-    private PagedFile createNewIndexFile(PageCache pageCache, Path indexFile) throws IOException {
-        // First time
-        monitor.noStoreFile();
-        // We need to create this index
-        PagedFile pagedFile = pageCache.map(indexFile, pageCache.pageSize(), databaseName, openOptions.newWith(CREATE));
-        created = true;
-        return pagedFile;
-    }
-
-    private void loadState(PagedFile pagedFile, Header.Reader headerReader, CursorContext cursorContext)
+    private void initialize(PagedFile pagedFile, Header.Reader headerReader, CursorContext cursorContext)
             throws IOException {
-        Pair<TreeState, TreeState> states = loadStatePages(pagedFile, cursorContext);
-        TreeState state = TreeStatePair.selectNewestValidState(states);
-        try (PageCursor cursor = pagedFile.io(state.pageId(), PF_SHARED_READ_LOCK, cursorContext)) {
-            PageCursorUtil.goTo(cursor, "header data", state.pageId());
-            doReadHeader(headerReader, cursor, getEndianness(openOptions));
-        }
+        var openOptions = this.openOptions;
+        TreeState state = readHeaderFromPagedFiled(pagedFile, headerReader, cursorContext, openOptions);
         generation = Generation.generation(state.stableGeneration(), state.unstableGeneration());
-        rootLayer.setRoot(new Root(state.rootId(), state.rootGeneration()));
+        var root = new Root(state.rootId(), state.rootGeneration());
+        rootLayer.initialize(root, cursorContext);
 
         long lastId = state.lastId();
         long freeListWritePageId = state.freeListWritePageId();
@@ -859,12 +885,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             throws IOException, MetadataMismatchException {
         try (PagedFile pagedFile =
                 openExistingIndexFile(pageCache, indexFile, cursorContext, databaseName, openOptions)) {
-            Pair<TreeState, TreeState> states = loadStatePages(pagedFile, cursorContext);
-            TreeState state = TreeStatePair.selectNewestValidState(states);
-            try (PageCursor cursor = pagedFile.io(state.pageId(), PF_SHARED_READ_LOCK, cursorContext)) {
-                PageCursorUtil.goTo(cursor, "header data", state.pageId());
-                doReadHeader(headerReader, cursor, getEndianness(openOptions));
-            }
+            readHeaderFromPagedFiled(pagedFile, headerReader, cursorContext, openOptions);
         } catch (Throwable t) {
             // Decorate outgoing exceptions with basic tree information. This is similar to how the constructor
             // appends its information, but the constructor has read more information at that point so this one
@@ -872,6 +893,18 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             t.addSuppressed(new Exception(format("GBPTree[file:%s]", indexFile)));
             throw t;
         }
+    }
+
+    private static TreeState readHeaderFromPagedFiled(
+            PagedFile pagedFile, Reader headerReader, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions)
+            throws IOException {
+        Pair<TreeState, TreeState> states = loadStatePages(pagedFile, cursorContext);
+        TreeState state = TreeStatePair.selectNewestValidState(states);
+        try (PageCursor cursor = pagedFile.io(state.pageId(), PF_SHARED_READ_LOCK, cursorContext)) {
+            PageCursorUtil.goTo(cursor, "header data", state.pageId());
+            doReadHeader(headerReader, cursor, getEndianness(openOptions));
+        }
+        return state;
     }
 
     private static void doReadHeader(Header.Reader headerReader, PageCursor cursor, ByteOrder order)
@@ -1387,4 +1420,18 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         OffloadIdValidator idValidator = id -> id >= IdSpace.MIN_TREE_NODE_ID && id <= pagedFile.getLastPageId();
         return new OffloadStoreImpl<>(layout, idProvider, pagedFile::io, idValidator, pageSize);
     }
+
+    private static void verifyPayloadSize(PagedFile pagedFile, CursorContext cursorContext) throws IOException {
+        if (pagedFile.getLastPageId() >= IdSpace.META_PAGE_ID) {
+            var metaPayloadSize =
+                    RootLayerSupport.readMeta(pagedFile, cursorContext).getPayloadSize();
+            if (metaPayloadSize != 0 && metaPayloadSize != pagedFile.payloadSize()) {
+                throw new MetadataMismatchException(format(
+                        "Tried to open the tree using page payload size %d, but the tree was original created with page payload size %d so cannot be opened.",
+                        pagedFile.payloadSize(), metaPayloadSize));
+            }
+        }
+    }
+
+    private record OpenResult(PagedFile pagedFile, boolean created) {}
 }

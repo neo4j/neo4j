@@ -25,12 +25,10 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.function.Consumer;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -51,7 +49,6 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
             Layout<KEY, VALUE> layout,
             Monitor monitor,
             Header.Reader headerReader,
-            Consumer<PageCursor> headerWriter,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseReadOnlyChecker readOnlyChecker,
             ImmutableSet<OpenOption> openOptions,
@@ -67,7 +64,6 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
                 layout,
                 monitor,
                 headerReader,
-                headerWriter,
                 recoveryCleanupWorkCollector,
                 readOnlyChecker,
                 openOptions,
@@ -85,7 +81,6 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
             Layout<KEY, VALUE> layout,
             Monitor monitor,
             Header.Reader headerReader,
-            Consumer<PageCursor> headerWriter,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseReadOnlyChecker readOnlyChecker,
             ImmutableSet<OpenOption> openOptions,
@@ -102,7 +97,6 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
                 layout,
                 monitor,
                 headerReader,
-                headerWriter,
                 recoveryCleanupWorkCollector,
                 readOnlyChecker,
                 openOptions,

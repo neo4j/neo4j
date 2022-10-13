@@ -59,6 +59,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.index.internal.gbptree.Writer;
+import org.neo4j.internal.counts.CountsHeader.Reader;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -140,7 +141,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
         this.rebuilder = rebuilder;
 
         // First just read the header so that we can avoid creating it if this store is read-only
-        CountsHeader header = new CountsHeader(NEEDS_REBUILDING_HIGH_ID);
+        Reader headerReader = CountsHeader.reader();
         GBPTree<CountsKey, CountsValue> instantiatedTree;
         try {
             instantiatedTree = instantiateTree(
@@ -148,20 +149,20 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
                     file,
                     recoveryCollector,
                     readOnlyChecker,
-                    header,
+                    headerReader,
                     contextFactory,
                     pageCacheTracer,
                     openOptions);
         } catch (MetadataMismatchException e) {
             // Corrupt, delete and rebuild
             fileSystem.deleteFileOrThrow(file);
-            header = new CountsHeader(NEEDS_REBUILDING_HIGH_ID);
+            headerReader = CountsHeader.reader();
             instantiatedTree = instantiateTree(
                     pageCache,
                     file,
                     recoveryCollector,
                     readOnlyChecker,
-                    header,
+                    headerReader,
                     contextFactory,
                     pageCacheTracer,
                     openOptions);
@@ -169,14 +170,18 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
         this.tree = instantiatedTree;
         boolean successful = false;
         try (var cursorContext = contextFactory.create(OPEN_COUNT_STORE_TAG)) {
-            this.txIdInformation = readTxIdInformation(header.highestGapFreeTxId(), cursorContext);
+            this.txIdInformation = readTxIdInformation(headerReader.highestGapFreeTxId(), cursorContext);
             // Recreate the tx id state as it was from last checkpoint (or base if empty)
             this.idSequence =
                     new ArrayQueueOutOfOrderSequence(txIdInformation.highestGapFreeTxId, 200, EMPTY_LONG_ARRAY);
             this.txIdInformation.strayTxIds.forEach(txId -> idSequence.offer(txId, EMPTY_LONG_ARRAY));
             // Only care about initial counts rebuilding if the tree was created right now when opening this tree
             // The actual rebuilding will happen in start()
-            this.needsRebuild = !header.wasRead() || header.highestGapFreeTxId() == NEEDS_REBUILDING_HIGH_ID;
+            // We need to check NEEDS_REBUILDING_HIGH_ID here for backwards compatibility. We used to write this value
+            // to the header during construction (but we don't anymore) and if we open a counts store that was created
+            // with that code, then this value indicate that rebuild is needed.
+            this.needsRebuild =
+                    !headerReader.wasRead() || headerReader.highestGapFreeTxId() == NEEDS_REBUILDING_HIGH_ID;
             successful = true;
         } finally {
             if (!successful) {
@@ -194,7 +199,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
             Path file,
             RecoveryCleanupWorkCollector recoveryCollector,
             DatabaseReadOnlyChecker readOnlyChecker,
-            CountsHeader header,
+            CountsHeader.Reader headerReader,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
             ImmutableSet<OpenOption> openOptions) {
@@ -205,8 +210,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
                     file,
                     layout,
                     GBPTree.NO_MONITOR,
-                    header,
-                    header,
+                    headerReader,
                     recoveryCollector,
                     readOnlyChecker,
                     openOptions,
@@ -327,7 +331,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
 
             // Write transaction information to the tree and checkpoint while still in the shared critical section
             updateTxIdInformationInTree(txIdSnapshot, cursorContext);
-            tree.checkpoint(new CountsHeader(txIdSnapshot.highestGapFree()[0]), flushEvent, cursorContext);
+            tree.checkpoint(CountsHeader.writer(txIdSnapshot.highestGapFree()[0]), flushEvent, cursorContext);
         }
     }
 
@@ -528,9 +532,9 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
             throws IOException {
         // First check if it even exists as we don't really want to create it as part of dumping it. readHeader will
         // throw if not found
-        CountsHeader header = new CountsHeader(BASE_TX_ID);
+        CountsHeader.Reader headerReader = CountsHeader.reader();
         try (var cursorContext = contextFactory.create("dump")) {
-            GBPTree.readHeader(pageCache, file, header, databaseName, cursorContext, openOptions);
+            GBPTree.readHeader(pageCache, file, headerReader, databaseName, cursorContext, openOptions);
         }
 
         // Now open it and dump its contents
@@ -540,8 +544,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
                 file,
                 new CountsLayout(),
                 GBPTree.NO_MONITOR,
-                header,
-                GBPTree.NO_HEADER_WRITER,
+                headerReader,
                 RecoveryCleanupWorkCollector.ignore(),
                 readOnly(),
                 openOptions,
@@ -549,7 +552,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
                 name,
                 contextFactory,
                 pageCacheTracer)) {
-            out.printf("Highest gap-free txId: %d%n", header.highestGapFreeTxId());
+            out.printf("Highest gap-free txId: %d%n", headerReader.highestGapFreeTxId());
             try (var cursorContext = contextFactory.create("dumpVisitor")) {
                 tree.visit(
                         new GBPTreeVisitor.Adaptor<>() {

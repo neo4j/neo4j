@@ -43,7 +43,7 @@ public class RangeIndexAccessor extends NativeIndexAccessor<RangeKey> {
             ImmutableSet<OpenOption> openOptions) {
         super(databaseIndexContext, indexFiles, layout, descriptor, openOptions);
         this.tokenNameLookup = tokenNameLookup;
-        instantiateTree(recoveryCleanupWorkCollector, headerWriter);
+        instantiateTree(recoveryCleanupWorkCollector);
     }
 
     @Override

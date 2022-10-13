@@ -147,9 +147,7 @@ public class GBPTreeStructure<ROOT_KEY, DATA_KEY, DATA_VALUE> {
             throws IOException {
         // TreeState
         long currentPage = cursor.getCurrentPageId();
-        Pair<TreeState, TreeState> statePair =
-                TreeStatePair.readStatePages(cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B);
-        visitor.treeState(statePair);
+        visitTreeState(cursor, visitor);
         TreeNode.goTo(cursor, "back to tree node from reading state", currentPage);
 
         assertOnTreeNode(cursor);

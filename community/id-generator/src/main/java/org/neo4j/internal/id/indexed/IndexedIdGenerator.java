@@ -24,7 +24,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
@@ -330,42 +329,48 @@ public class IndexedIdGenerator implements IdGenerator {
         this.monitor = monitor;
         this.defaultMerger = new IdRangeMerger(false, monitor);
         this.recoveryMerger = new IdRangeMerger(true, monitor);
-        Optional<HeaderReader> header = readHeader(fileSystem, path, openOptions);
-        // We check generation here too since we could get into this scenario:
-        // 1. start on existing store, but with missing .id file so that it gets created
-        // 2. rebuild will happen in start(), but perhaps the db was shut down or killed before or during start()
-        // 3. next startup would have said that it wouldn't need rebuild
-        if (header.isPresent() && header.get().generation > STARTING_GENERATION) {
-            needsRebuild = false;
-            // This id generator exists, use the values from its header
-            this.highId.set(header.get().highId);
-            this.highestWrittenId.set(header.get().highestWrittenId);
-            this.generation = header.get().generation + 1;
-            this.idsPerEntry = header.get().idsPerEntry;
-            // Let's optimistically think assume that there may be some free ids in here. This will ensure that a scan
-            // is triggered on first request
-            this.atLeastOneIdOnFreelist.set(true);
-        } else {
-            needsRebuild = true;
-            // We'll create this index when constructing the GBPTree below. The generation on its creation will be
-            // STARTING_GENERATION,
-            // as written by the HeaderWriter, but the active generation has to be +1 that
-            this.highId.set(initialHighId.getAsLong());
-            this.highestWrittenId.set(highId.get() - 1);
-            this.generation = STARTING_GENERATION + 1;
-            this.idsPerEntry = slotDistribution.idsPerEntry();
-        }
-        monitor.opened(highestWrittenId.get(), highId.get());
 
+        this.idsPerEntry = slotDistribution.idsPerEntry();
         this.layout = new IdRangeLayout(idsPerEntry);
+        HeaderReader header = new HeaderReader();
         this.tree = instantiateTree(
                 pageCache,
                 path,
+                header,
                 recoveryCleanupWorkCollector,
                 readOnlyChecker,
                 databaseName,
                 contextFactory,
                 openOptions);
+
+        // Why do we need to check STARTING_GENERATION here, we never write that value to header?
+        // Good question! Because we need to be backwards compatible.
+        // GBPTree used to write header in constructor and at that point we could end up in this scenario:
+        // 1. start on existing store, but with missing .id file so that it gets created
+        //    (at this point we used to write STARTING_GENERATION to header)
+        // 2. rebuild will happen in start(), but perhaps the db was shut down or killed before or during start()
+        // 3. next startup would have said that it wouldn't need rebuild
+        this.needsRebuild = !header.wasRead || header.generation == STARTING_GENERATION;
+        if (!needsRebuild) {
+            // This id generator exists, use the values from its header
+            this.highId.set(header.highId);
+            this.highestWrittenId.set(header.highestWrittenId);
+            this.generation = header.generation + 1;
+            Preconditions.checkState(
+                    this.idsPerEntry == header.idsPerEntry,
+                    "ID generator was opened with a different idsPerEntry:%s than what it was created with:%s",
+                    header.idsPerEntry,
+                    idsPerEntry);
+            // Let's optimistically assume that there may be some free ids in here. This will ensure that a scan
+            // is triggered on first request
+            this.atLeastOneIdOnFreelist.set(true);
+        } else {
+            // We're creating this file, so set initial values
+            this.highId.set(initialHighId.getAsLong());
+            this.highestWrittenId.set(highId.get() - 1);
+            this.generation = STARTING_GENERATION + 1;
+        }
+        monitor.opened(highestWrittenId.get(), highId.get());
 
         this.strictlyPrioritizeFreelist = config.get(GraphDatabaseInternalSettings.strictly_prioritize_id_freelist);
         this.cacheOptimisticRefillThreshold = strictlyPrioritizeFreelist ? 0 : cacheCapacity / 4;
@@ -384,22 +389,20 @@ public class IndexedIdGenerator implements IdGenerator {
     private GBPTree<IdRangeKey, IdRange> instantiateTree(
             PageCache pageCache,
             Path path,
+            HeaderReader headerReader,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
             CursorContextFactory contextFactory,
             ImmutableSet<OpenOption> openOptions) {
         try {
-            final HeaderWriter headerWriter =
-                    new HeaderWriter(highId::get, highestWrittenId::get, STARTING_GENERATION, idsPerEntry);
             return new GBPTree<>(
                     pageCache,
                     fileSystem,
                     path,
                     layout,
                     GBPTree.NO_MONITOR,
-                    NO_HEADER_READER,
-                    headerWriter,
+                    headerReader,
                     recoveryCleanupWorkCollector,
                     readOnlyChecker,
                     openOptions,
@@ -697,7 +700,6 @@ public class IndexedIdGenerator implements IdGenerator {
                 layout,
                 GBPTree.NO_MONITOR,
                 NO_HEADER_READER,
-                NO_HEADER_WRITER,
                 immediate(),
                 readOnly(),
                 openOptions,

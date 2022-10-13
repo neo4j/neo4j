@@ -134,10 +134,10 @@ class IndexStatisticsStoreTest {
 
         openStore("tracedStats");
 
-        assertThat(pageCacheTracer.faults() - initialFaults).isEqualTo(5);
-        assertThat(pageCacheTracer.pins() - initialPins).isEqualTo(10);
-        assertThat(pageCacheTracer.unpins() - initialUnpins).isEqualTo(10);
-        assertThat(pageCacheTracer.hits() - initialHits).isEqualTo(5);
+        assertThat(pageCacheTracer.faults() - initialFaults).isEqualTo(3);
+        assertThat(pageCacheTracer.pins() - initialPins).isEqualTo(4);
+        assertThat(pageCacheTracer.unpins() - initialUnpins).isEqualTo(4);
+        assertThat(pageCacheTracer.hits() - initialHits).isEqualTo(1);
     }
 
     @Test
@@ -151,10 +151,10 @@ class IndexStatisticsStoreTest {
 
             store.checkpoint(FileFlushEvent.NULL, cursorContext);
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-            assertThat(cursorTracer.pins()).isEqualTo(36);
-            assertThat(cursorTracer.unpins()).isEqualTo(36);
-            assertThat(cursorTracer.hits()).isEqualTo(28);
-            assertThat(cursorTracer.faults()).isEqualTo(8);
+            assertThat(cursorTracer.pins()).isEqualTo(31);
+            assertThat(cursorTracer.unpins()).isEqualTo(31);
+            assertThat(cursorTracer.hits()).isEqualTo(22);
+            assertThat(cursorTracer.faults()).isEqualTo(9);
         }
     }
 

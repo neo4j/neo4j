@@ -52,6 +52,7 @@ import org.neo4j.scheduler.JobScheduler;
 
 public class TokenIndexAccessor extends TokenIndex implements IndexAccessor {
     private final EntityType entityType;
+    private final NativeIndexHeaderWriter headerWriter = new NativeIndexHeaderWriter(ONLINE);
 
     public TokenIndexAccessor(
             DatabaseIndexContext databaseIndexContext,
@@ -62,7 +63,7 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor {
         super(databaseIndexContext, indexFiles, descriptor, openOptions);
 
         entityType = descriptor.schema().entityType();
-        instantiateTree(recoveryCleanupWorkCollector, new NativeIndexHeaderWriter(ONLINE));
+        instantiateTree(recoveryCleanupWorkCollector);
         instantiateUpdater();
     }
 
@@ -109,7 +110,7 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor {
 
     @Override
     public void force(FileFlushEvent flushEvent, CursorContext cursorContext) {
-        index.checkpoint(flushEvent, cursorContext);
+        index.checkpoint(headerWriter, flushEvent, cursorContext);
     }
 
     @Override

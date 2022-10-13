@@ -127,14 +127,13 @@ class FreeListIdProvider implements IdProvider {
     private final ConcurrentLinkedDeque<Long> releaseCache = new ConcurrentLinkedDeque<>();
     private volatile boolean mayBeMoreToReadIntoCache;
 
-    FreeListIdProvider(int payloadSize, long lastId) {
-        this(payloadSize, lastId, NO_MONITOR);
+    FreeListIdProvider(int payloadSize) {
+        this(payloadSize, NO_MONITOR);
     }
 
-    FreeListIdProvider(int payloadSize, long lastId, Monitor monitor) {
+    FreeListIdProvider(int payloadSize, Monitor monitor) {
         this.monitor = monitor;
         this.freelistNode = new FreelistNode(payloadSize);
-        this.lastId.set(lastId);
     }
 
     void initialize(long lastId, long writePageId, long readPageId, int writePos, int readPos) {
@@ -144,9 +143,10 @@ class FreeListIdProvider implements IdProvider {
         this.mayBeMoreToReadIntoCache = true;
     }
 
-    void initializeAfterCreation(CursorCreator cursorCreator) throws IOException {
+    void initializeAfterCreation(CursorCreator cursorCreator, long lastId) throws IOException {
         // Allocate a new free-list page id and set both write/read free-list page id to it.
-        writeMetaData = new ListHeadMetaData(nextLastId(), 0);
+        this.lastId.set(lastId);
+        writeMetaData = new ListHeadMetaData(lastId, 0);
         long pageId = writeMetaData.pageId;
         readMetaData = new ListHeadMetaData(pageId, 0);
         mayBeMoreToReadIntoCache = false;

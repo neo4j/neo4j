@@ -60,6 +60,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
 
     private final RootLayerSupport support;
     private final CursorContextFactory contextFactory;
+    private final TreeNodeSelector treeNodeSelector;
     private final Layout<ROOT_KEY, RootMappingValue> rootLayout;
     private final TreeNode<ROOT_KEY, RootMappingValue> rootTreeNode;
     private final AtomicReferenceArray<DataTreeRoot<ROOT_KEY>> rootMappingCache;
@@ -79,11 +80,8 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             Layout<ROOT_KEY, RootMappingValue> rootLayout,
             Layout<DATA_KEY, DATA_VALUE> dataLayout,
             int rootCacheSizeInBytes,
-            boolean created,
-            CursorContext cursorContext,
             CursorContextFactory contextFactory,
-            TreeNodeSelector treeNodeSelector)
-            throws IOException {
+            TreeNodeSelector treeNodeSelector) {
         Preconditions.checkState(
                 hashCodeSeemsImplemented(rootLayout), "Root layout doesn't seem to have a hashCode() implementation");
 
@@ -91,14 +89,9 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         this.rootLayout = rootLayout;
         this.dataLayout = dataLayout;
         this.contextFactory = contextFactory;
+        this.treeNodeSelector = treeNodeSelector;
         int numCachedRoots = rootCacheSizeInBytes / BYTE_SIZE_PER_CACHED_EXTERNAL_ROOT;
         this.rootMappingCache = new AtomicReferenceArray<>(max(numCachedRoots, 10));
-
-        if (created) {
-            support.writeMeta(this.rootLayout, dataLayout, cursorContext, treeNodeSelector);
-        } else {
-            support.readMeta(cursorContext).verify(dataLayout, this.rootLayout, treeNodeSelector);
-        }
 
         var rootMappingFormat = treeNodeSelector.selectByLayout(this.rootLayout);
         var format = treeNodeSelector.selectByLayout(dataLayout);
@@ -128,8 +121,16 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
     }
 
     @Override
-    void initializeAfterCreation(CursorContext cursorContext) throws IOException {
+    void initializeAfterCreation(Root firstRoot, CursorContext cursorContext) throws IOException {
+        setRoot(firstRoot);
+        support.writeMeta(rootLayout, dataLayout, cursorContext, treeNodeSelector);
         support.initializeNewRoot(root, rootTreeNode, ROOT_LAYER_FLAG, cursorContext);
+    }
+
+    @Override
+    void initialize(Root root, CursorContext cursorContext) throws IOException {
+        setRoot(root);
+        support.readMeta(cursorContext).verify(dataLayout, rootLayout, treeNodeSelector);
     }
 
     @Override

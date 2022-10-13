@@ -27,34 +27,48 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * Both reading and writing of a {@link GBPTreeCountsStore} tree header collected into one class.
  */
-class CountsHeader implements Header.Reader, Consumer<PageCursor> {
-    private boolean wasRead;
-    private long highestGapFreeTxId;
-
-    CountsHeader(long highestGapFreeTxId) {
-        this.highestGapFreeTxId = highestGapFreeTxId;
+class CountsHeader {
+    static Reader reader() {
+        return new Reader();
     }
 
-    @Override
-    public void read(ByteBuffer headerBytes) {
-        wasRead = true;
-        highestGapFreeTxId = headerBytes.getLong();
+    static Writer writer(long highestGapFreeTxId) {
+        return new Writer(highestGapFreeTxId);
     }
 
-    boolean wasRead() {
-        return wasRead;
+    static class Writer implements Consumer<PageCursor> {
+        private final long highestGapFreeTxId;
+
+        Writer(long highestGapFreeTxId) {
+            this.highestGapFreeTxId = highestGapFreeTxId;
+        }
+
+        @Override
+        public void accept(PageCursor cursor) {
+            cursor.putLong(highestGapFreeTxId);
+        }
     }
 
-    /**
-     * @return the highest gap-free transaction id that the tree has counts data for. The tree may include counts data
-     * for transaction ids higher than this id, but information about those transaction ids lives in the tree itself.
-     */
-    long highestGapFreeTxId() {
-        return highestGapFreeTxId;
-    }
+    static class Reader implements Header.Reader {
+        private boolean wasRead;
+        private long highestGapFreeTxId;
 
-    @Override
-    public void accept(PageCursor cursor) {
-        cursor.putLong(highestGapFreeTxId);
+        @Override
+        public void read(ByteBuffer headerBytes) {
+            wasRead = true;
+            highestGapFreeTxId = headerBytes.getLong();
+        }
+
+        boolean wasRead() {
+            return wasRead;
+        }
+
+        /**
+         * @return the highest gap-free transaction id that the tree has counts data for. The tree may include counts data
+         * for transaction ids higher than this id, but information about those transaction ids lives in the tree itself.
+         */
+        long highestGapFreeTxId() {
+            return highestGapFreeTxId;
+        }
     }
 }

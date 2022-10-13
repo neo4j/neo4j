@@ -160,16 +160,16 @@ class GBPTreeGenericCountsStoreTest {
                 cursorContextFactory,
                 pageCacheTracer,
                 getOpenOptions())) {
-            assertThat(pageCacheTracer.pins()).isEqualTo(10);
-            assertThat(pageCacheTracer.unpins()).isEqualTo(10);
-            assertThat(pageCacheTracer.hits()).isEqualTo(5);
-            assertThat(pageCacheTracer.faults()).isEqualTo(5);
+            assertThat(pageCacheTracer.pins()).isEqualTo(4);
+            assertThat(pageCacheTracer.unpins()).isEqualTo(4);
+            assertThat(pageCacheTracer.hits()).isEqualTo(1);
+            assertThat(pageCacheTracer.faults()).isEqualTo(3);
         }
 
-        assertThat(pageCacheTracer.pins()).isEqualTo(14);
-        assertThat(pageCacheTracer.unpins()).isEqualTo(14);
-        assertThat(pageCacheTracer.hits()).isEqualTo(9);
-        assertThat(pageCacheTracer.faults()).isEqualTo(5);
+        assertThat(pageCacheTracer.pins()).isEqualTo(4);
+        assertThat(pageCacheTracer.unpins()).isEqualTo(4);
+        assertThat(pageCacheTracer.hits()).isEqualTo(1);
+        assertThat(pageCacheTracer.faults()).isEqualTo(3);
     }
 
     @Test

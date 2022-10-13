@@ -68,7 +68,7 @@ import org.neo4j.values.storable.Value;
 public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> extends NativeIndex<KEY>
         implements IndexAccessor {
     private final NativeIndexUpdater<KEY> singleUpdater;
-    final NativeIndexHeaderWriter headerWriter;
+    private final NativeIndexHeaderWriter headerWriter;
 
     NativeIndexAccessor(
             DatabaseIndexContext databaseIndexContext,
@@ -248,7 +248,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
 
     @Override
     public void force(FileFlushEvent flushEvent, CursorContext cursorContext) {
-        tree.checkpoint(flushEvent, cursorContext);
+        tree.checkpoint(headerWriter, flushEvent, cursorContext);
     }
 
     @Override

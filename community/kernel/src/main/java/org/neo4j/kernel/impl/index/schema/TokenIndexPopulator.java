@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -58,7 +57,7 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator {
         assertNotClosed();
 
         indexFiles.clear();
-        instantiateTree(RecoveryCleanupWorkCollector.immediate(), new NativeIndexHeaderWriter(POPULATING));
+        instantiateTree(RecoveryCleanupWorkCollector.immediate());
         instantiateUpdater();
     }
 
@@ -162,7 +161,7 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator {
 
     private void ensureTreeInstantiated() {
         if (index == null) {
-            instantiateTree(RecoveryCleanupWorkCollector.ignore(), NO_HEADER_WRITER);
+            instantiateTree(RecoveryCleanupWorkCollector.ignore());
         }
     }
 }

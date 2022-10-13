@@ -46,5 +46,10 @@ public final class IdSpace {
      */
     static final long MIN_TREE_NODE_ID = 3L;
 
+    /**
+     * Page id for the first freelist node.
+     */
+    static final long MIN_FREELIST_NODE_ID = 4L;
+
     private IdSpace() {}
 }

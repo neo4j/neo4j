@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.util.function.Consumer;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
@@ -37,7 +36,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -160,7 +158,7 @@ public class TokenIndex implements ConsistencyCheckable {
         this.openOptions = openOptions;
     }
 
-    void instantiateTree(RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter) {
+    void instantiateTree(RecoveryCleanupWorkCollector recoveryCleanupWorkCollector) {
         ensureDirectoryExist();
         MultiRootGBPTree.Monitor monitor = treeMonitor();
         index = new GBPTree<>(
@@ -170,7 +168,6 @@ public class TokenIndex implements ConsistencyCheckable {
                 new TokenScanLayout(),
                 monitor,
                 NO_HEADER_READER,
-                headerWriter,
                 recoveryCleanupWorkCollector,
                 readOnlyChecker,
                 openOptions,

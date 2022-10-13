@@ -134,7 +134,6 @@ public class IndexStatisticsStore extends LifecycleAdapter
                     layout,
                     GBPTree.NO_MONITOR,
                     GBPTree.NO_HEADER_READER,
-                    GBPTree.NO_HEADER_WRITER,
                     recoveryCleanupWorkCollector,
                     readOnlyChecker,
                     openOptions,

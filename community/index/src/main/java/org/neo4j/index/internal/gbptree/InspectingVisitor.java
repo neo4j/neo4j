@@ -63,7 +63,7 @@ public class InspectingVisitor<ROOT_KEY, KEY, VALUE> extends GBPTreeVisitor.Adap
 
     @Override
     public void treeState(Pair<TreeState, TreeState> statePair) {
-        this.treeState = TreeStatePair.selectNewestValidState(statePair);
+        this.treeState = TreeStatePair.selectNewestValidOrFirst(statePair);
     }
 
     @Override

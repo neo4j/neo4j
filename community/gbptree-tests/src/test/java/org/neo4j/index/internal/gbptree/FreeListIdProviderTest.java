@@ -69,7 +69,7 @@ class FreeListIdProviderTest {
     @BeforeEach
     void setUpPagedFile() throws IOException {
         cursor = new PageAwareByteArrayCursor(PAYLOAD_SIZE);
-        freelist = new FreeListIdProvider(PAYLOAD_SIZE, BASE_ID, monitor);
+        freelist = new FreeListIdProvider(PAYLOAD_SIZE, monitor);
         freelist.initialize(BASE_ID + 1, BASE_ID + 1, BASE_ID + 1, 0, 0);
     }
 

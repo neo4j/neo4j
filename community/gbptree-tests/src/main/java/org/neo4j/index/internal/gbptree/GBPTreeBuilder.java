@@ -22,20 +22,17 @@ package org.neo4j.index.internal.gbptree;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.util.function.Consumer;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -49,13 +46,12 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
  */
 public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
     private final PageCache pageCache;
-    private final FileSystemAbstraction fileSystem;
+    private FileSystemAbstraction fileSystem;
     private Path path;
     private Monitor monitor = NO_MONITOR;
     private Header.Reader headerReader = NO_HEADER_READER;
     private Layout<KEY, VALUE> dataLayout;
     private KeyLayout<ROOT_KEY> rootLayout;
-    private Consumer<PageCursor> headerWriter = NO_HEADER_WRITER;
     private RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
     private DatabaseReadOnlyChecker readOnlyChecker = DatabaseReadOnlyChecker.writable();
     private PageCacheTracer pageCacheTracer = NULL;
@@ -65,7 +61,7 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
     public GBPTreeBuilder(
             PageCache pageCache, FileSystemAbstraction fileSystem, Path path, Layout<KEY, VALUE> dataLayout) {
         this.pageCache = pageCache;
-        this.fileSystem = fileSystem;
+        with(fileSystem);
         with(path);
         with(dataLayout);
     }
@@ -77,11 +73,16 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
             Layout<KEY, VALUE> dataLayout,
             KeyLayout<ROOT_KEY> rootLayout) {
         this.pageCache = pageCache;
-        this.fileSystem = fileSystem;
+        with(fileSystem);
         with(path);
         with(dataLayout);
         withRootLayout(rootLayout);
         treeNodeLayoutFactory = TreeNodeLayoutFactory.getInstance();
+    }
+
+    public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(FileSystemAbstraction fileSystem) {
+        this.fileSystem = fileSystem;
+        return this;
     }
 
     public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(Layout<KEY, VALUE> layout) {
@@ -106,11 +107,6 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
 
     public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(Header.Reader headerReader) {
         this.headerReader = headerReader;
-        return this;
-    }
-
-    public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(Consumer<PageCursor> headerWriter) {
-        this.headerWriter = headerWriter;
         return this;
     }
 
@@ -149,7 +145,6 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
                 dataLayout,
                 monitor,
                 headerReader,
-                headerWriter,
                 recoveryCleanupWorkCollector,
                 readOnlyChecker,
                 openOptions,
@@ -169,7 +164,6 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
                 dataLayout,
                 monitor,
                 headerReader,
-                headerWriter,
                 recoveryCleanupWorkCollector,
                 readOnlyChecker,
                 openOptions,

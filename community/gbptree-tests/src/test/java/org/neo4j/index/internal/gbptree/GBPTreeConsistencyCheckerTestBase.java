@@ -761,6 +761,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
     @Test
     void shouldDetectDirtyOnStartup() throws IOException {
         try (GBPTree<KEY, VALUE> index = index().build()) {
+            index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
             index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT).close();
             // No checkpoint
         }

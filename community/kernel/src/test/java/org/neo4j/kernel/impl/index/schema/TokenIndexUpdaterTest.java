@@ -137,10 +137,10 @@ class TokenIndexUpdaterTest {
 
         // Then
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat(cursorTracer.pins()).isEqualTo(4);
-        assertThat(cursorTracer.unpins()).isEqualTo(4);
-        assertThat(cursorTracer.hits()).isEqualTo(3);
-        assertThat(cursorTracer.faults()).isEqualTo(1);
+        assertThat(cursorTracer.pins()).isEqualTo(1);
+        assertThat(cursorTracer.unpins()).isEqualTo(1);
+        assertThat(cursorTracer.hits()).isEqualTo(1);
+        assertThat(cursorTracer.faults()).isEqualTo(0);
     }
 
     @Test

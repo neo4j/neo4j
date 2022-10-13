@@ -184,9 +184,9 @@ class NeoStoresIT {
         }
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertEquals(3, cursorTracer.hits());
-        assertEquals(4, cursorTracer.pins());
-        assertEquals(4, cursorTracer.unpins());
+        assertEquals(1, cursorTracer.hits());
+        assertEquals(1, cursorTracer.pins());
+        assertEquals(1, cursorTracer.unpins());
     }
 
     @Test

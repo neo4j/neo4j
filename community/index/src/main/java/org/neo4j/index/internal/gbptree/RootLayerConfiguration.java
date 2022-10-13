@@ -21,7 +21,6 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
 import org.neo4j.index.internal.gbptree.RootMappingLayout.RootMappingValue;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 
 public abstract sealed class RootLayerConfiguration<ROOT_KEY>
@@ -40,7 +39,6 @@ public abstract sealed class RootLayerConfiguration<ROOT_KEY>
             RootLayerSupport rootLayerSupport,
             Layout<KEY, VALUE> dataLayout,
             boolean created,
-            CursorContext cursorContext,
             CursorContextFactory contextFactory,
             TreeNodeSelector treeNodeSelector)
             throws IOException;
@@ -54,11 +52,9 @@ public abstract sealed class RootLayerConfiguration<ROOT_KEY>
                 RootLayerSupport rootLayerSupport,
                 Layout<KEY, VALUE> dataLayout,
                 boolean created,
-                CursorContext cursorContext,
                 CursorContextFactory contextFactory,
-                TreeNodeSelector treeNodeSelector)
-                throws IOException {
-            return new SingleRootLayer<>(rootLayerSupport, dataLayout, created, cursorContext, treeNodeSelector);
+                TreeNodeSelector treeNodeSelector) {
+            return new SingleRootLayer<>(rootLayerSupport, dataLayout, treeNodeSelector);
         }
 
         @Override
@@ -81,17 +77,13 @@ public abstract sealed class RootLayerConfiguration<ROOT_KEY>
                 RootLayerSupport rootLayerSupport,
                 Layout<KEY, VALUE> dataLayout,
                 boolean created,
-                CursorContext cursorContext,
                 CursorContextFactory contextFactory,
-                TreeNodeSelector treeNodeSelector)
-                throws IOException {
+                TreeNodeSelector treeNodeSelector) {
             return new MultiRootLayer<>(
                     rootLayerSupport,
                     rootKeyLayout,
                     dataLayout,
                     rootMappingCacheSize,
-                    created,
-                    cursorContext,
                     contextFactory,
                     treeNodeSelector);
         }

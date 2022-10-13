@@ -44,7 +44,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.stream.StreamSupport;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.bouncycastle.util.Arrays;
@@ -55,10 +54,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.ConsistencyFlags;
-import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -89,7 +86,8 @@ import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.SchemaLayouts;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
-import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -124,21 +122,23 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
         testDirectory.prepareDirectory(getClass(), "CorruptGBPTreeIT");
         neo4jHome = testDirectory.homePath();
         fs.mkdirs(neo4jHome);
-        dbmsAction(
-                neo4jHome,
-                fs,
-                // Data
-                db -> {
-                    indexWithStringData(db, label);
-                    databaseLayout = RecordDatabaseLayout.cast(((GraphDatabaseAPI) db).databaseLayout());
-                    setTokenIndexFiles(db);
-                    openOptions = ((GraphDatabaseAPI) db)
-                            .getDependencyResolver()
-                            .resolveDependency(StorageEngine.class)
-                            .getOpenOptions();
-                },
-                // Config
-                builder -> {});
+        var dbms = ((TestNeo4jDatabaseManagementServiceBuilder) new TestDatabaseManagementServiceBuilder(neo4jHome)
+                        .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs)))
+                .build();
+        try {
+            final GraphDatabaseService db = dbms.database(DEFAULT_DATABASE_NAME);
+            createIndex(db, label);
+            forceCheckpoint(db);
+            createStringData(db, label);
+            databaseLayout = RecordDatabaseLayout.cast(((GraphDatabaseAPI) db).databaseLayout());
+            setTokenIndexFiles(db);
+            openOptions = ((GraphDatabaseAPI) db)
+                    .getDependencyResolver()
+                    .resolveDependency(StorageEngine.class)
+                    .getOpenOptions();
+        } finally {
+            dbms.shutdown();
+        }
         sourceSnapshot = fs.snapshot();
     }
 
@@ -344,7 +344,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
                 result,
                 String.format(
                         "Pointer (%s) in tree node %d has pointer generation %d, but target node %d has a higher generation %d.",
-                        GBPTreePointerType.rightSibling(), targetNode.getValue(), 1, rightSibling.getValue(), 4));
+                        GBPTreePointerType.rightSibling(), targetNode.getValue(), 1, rightSibling.getValue(), 7));
     }
 
     @Test
@@ -826,27 +826,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
                 .runFullConsistencyCheck();
     }
 
-    /**
-     * Open dbms with schemaIndex as default index provider on provided file system abstraction and apply dbSetup to DEFAULT_DATABASE.
-     */
-    private static void dbmsAction(
-            Path neo4jHome,
-            FileSystemAbstraction fs,
-            Consumer<GraphDatabaseService> dbSetup,
-            Consumer<TestNeo4jDatabaseManagementServiceBuilder> dbConfiguration) {
-        TestNeo4jDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder(neo4jHome)
-                .setConfig(GraphDatabaseSettings.db_format, PageAligned.LATEST_NAME)
-                .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs));
-        dbConfiguration.accept(builder);
-        final DatabaseManagementService dbms = builder.build();
-        try {
-            final GraphDatabaseService db = dbms.database(DEFAULT_DATABASE_NAME);
-            dbSetup.accept(db);
-        } finally {
-            dbms.shutdown();
-        }
-    }
-
     private Path indexStatisticsStoreFile() {
         return databaseLayout.indexStatisticsStore();
     }
@@ -920,7 +899,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
         return treeFiles;
     }
 
-    private static void indexWithStringData(GraphDatabaseService db, Label label) {
+    private static void createStringData(GraphDatabaseService db, Label label) {
         String longString = longString();
 
         try (Transaction tx = db.beginTx()) {
@@ -933,11 +912,19 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
             }
             tx.commit();
         }
+    }
+
+    private static void createIndex(GraphDatabaseService db, Label label) {
         try (Transaction tx = db.beginTx()) {
             tx.schema().indexFor(label).on(propKey1).create();
             tx.commit();
         }
         awaitIndexes(db);
+    }
+
+    private static void forceCheckpoint(GraphDatabaseService db) throws IOException {
+        var checkPointer = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(CheckPointer.class);
+        checkPointer.tryCheckPoint(new SimpleTriggerInfo("Initial checkpoint"));
     }
 
     private static void awaitIndexes(GraphDatabaseService db) {

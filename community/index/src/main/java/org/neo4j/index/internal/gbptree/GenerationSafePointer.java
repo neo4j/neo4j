@@ -51,6 +51,9 @@ class GenerationSafePointer {
     static final int EMPTY_GENERATION = 0;
 
     static final long MIN_GENERATION = 1L;
+    static final long FIRST_STABLE_GENERATION = MIN_GENERATION;
+    static final long FIRST_UNSTABLE_GENERATION = MIN_GENERATION + 2;
+
     // unsigned int
     static final long MAX_GENERATION = 0xFFFFFFFFL;
     static final long GENERATION_MASK = 0xFFFFFFFFL;

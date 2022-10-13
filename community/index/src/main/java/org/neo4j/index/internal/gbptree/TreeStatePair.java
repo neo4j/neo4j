@@ -19,6 +19,8 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import static org.neo4j.index.internal.gbptree.GenerationSafePointer.FIRST_STABLE_GENERATION;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointer.FIRST_UNSTABLE_GENERATION;
 import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
 
 import java.io.IOException;
@@ -33,20 +35,24 @@ import org.neo4j.io.pagecache.PageCursorUtil;
  */
 final class TreeStatePair {
 
-    private TreeStatePair() {}
+    // Simulates the tree state before first checkpoint
+    private static final int MISSING_INT = -1;
+    private static final long MISSING_LONG = -1;
+    static final TreeState FIRST_TREE_STATE = new TreeState(
+            MISSING_LONG,
+            FIRST_STABLE_GENERATION,
+            FIRST_UNSTABLE_GENERATION,
+            MISSING_LONG,
+            MISSING_LONG,
+            MISSING_LONG,
+            MISSING_LONG,
+            MISSING_LONG,
+            MISSING_INT,
+            MISSING_INT,
+            false,
+            true);
 
-    /**
-     * Initialize state pages because new pages are expected to be allocated directly after
-     * the existing highest allocated page. Otherwise there'd be a hole between meta and root pages
-     * until they would have been written, which isn't guaranteed to be handled correctly by the page cache.
-     *
-     * @param cursor {@link PageCursor} assumed to be opened with write capabilities.
-     * @throws IOException on {@link PageCursor} error.
-     */
-    static void initializeStatePages(PageCursor cursor) throws IOException {
-        PageCursorUtil.goTo(cursor, "State page A", IdSpace.STATE_PAGE_A);
-        PageCursorUtil.goTo(cursor, "State page B", IdSpace.STATE_PAGE_B);
-    }
+    private TreeStatePair() {}
 
     /**
      * Reads the tree state pair, one from each of {@code pageIdA} and {@code pageIdB}, deciding their validity
@@ -74,6 +80,13 @@ final class TreeStatePair {
         } while (cursor.shouldRetry());
         checkOutOfBounds(cursor);
         return state;
+    }
+
+    static TreeState selectNewestValidOrFirst(Pair<TreeState, TreeState> states) {
+        if (neverCheckpointed(states)) {
+            return FIRST_TREE_STATE;
+        }
+        return selectNewestValidState(states);
     }
 
     /**
@@ -129,5 +142,9 @@ final class TreeStatePair {
 
         // return null communicating that this combination didn't result in any valid "newest" state
         return Optional.empty();
+    }
+
+    private static boolean neverCheckpointed(Pair<TreeState, TreeState> states) {
+        return states.getLeft().isEmpty() && states.getRight().isEmpty();
     }
 }

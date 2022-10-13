@@ -26,7 +26,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.index.internal.gbptree.RootLayerConfiguration.multipleRoots;
@@ -107,7 +106,6 @@ class MultiRootGBPTreeTest {
                 layout,
                 NO_MONITOR,
                 NO_HEADER_READER,
-                NO_HEADER_WRITER,
                 immediate(),
                 writable(),
                 getOpenOptions(),
@@ -435,6 +433,7 @@ class MultiRootGBPTreeTest {
     @Test
     void shouldIdentifyWrongRootLayoutOnOpen() throws IOException {
         // given
+        tree.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         stop();
 
         // when/then
@@ -447,7 +446,6 @@ class MultiRootGBPTreeTest {
                         layout,
                         NO_MONITOR,
                         NO_HEADER_READER,
-                        NO_HEADER_WRITER,
                         immediate(),
                         writable(),
                         getOpenOptions(),
@@ -462,6 +460,7 @@ class MultiRootGBPTreeTest {
     @Test
     void shouldIdentifyWrongDataLayoutOnOpen() throws IOException {
         // given
+        tree.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         stop();
 
         // when/then
@@ -474,7 +473,6 @@ class MultiRootGBPTreeTest {
                         wrongDataLayout,
                         NO_MONITOR,
                         NO_HEADER_READER,
-                        NO_HEADER_WRITER,
                         immediate(),
                         writable(),
                         getOpenOptions(),
@@ -502,7 +500,6 @@ class MultiRootGBPTreeTest {
                             dataLayout,
                             NO_MONITOR,
                             NO_HEADER_READER,
-                            NO_HEADER_WRITER,
                             immediate(),
                             writable(),
                             getOpenOptions(),

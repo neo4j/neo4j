@@ -31,6 +31,7 @@ import org.neo4j.index.internal.gbptree.Header;
  * @see HeaderWriter
  */
 public class HeaderReader implements Header.Reader {
+    boolean wasRead;
     long highId;
     long highestWrittenId;
     long generation;
@@ -38,6 +39,7 @@ public class HeaderReader implements Header.Reader {
 
     @Override
     public void read(ByteBuffer headerBytes) {
+        this.wasRead = true;
         this.highId = headerBytes.getLong();
         this.highestWrittenId = headerBytes.getLong();
         this.generation = headerBytes.getLong();

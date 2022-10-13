@@ -52,11 +52,22 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 abstract class RootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> implements TreeRootExchange {
     /**
      * Called on first startup when the GBPTree file gets created. Typically initializes the top-level root.
+     *
+     * @param firstRoot The first {@link Root} of the tree
      * @param cursorContext the {@link CursorContext}.
      * @throws IOException on I/O error.
      */
-    abstract void initializeAfterCreation(CursorContext cursorContext) throws IOException;
+    abstract void initializeAfterCreation(Root firstRoot, CursorContext cursorContext) throws IOException;
 
+    /**
+     * Called on startup when the GBPTree file already exists. Typically, verify metadata.
+     *
+     *
+     * @param root
+     * @param cursorContext the {@link CursorContext}.
+     * @throws IOException on I/O error.
+     */
+    abstract void initialize(Root root, CursorContext cursorContext) throws IOException;
     /**
      * Creates a root mapping from the given {@code rootKey} to a new data tree and initializes the data tree.
      * @param rootKey key which maps to the created data tree.

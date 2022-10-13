@@ -479,7 +479,7 @@ public final class GBPTreeCorruption {
     }
 
     private static FreeListIdProvider getFreelist(PagedFile pagedFile, TreeState treeState) {
-        FreeListIdProvider freelist = new FreeListIdProvider(pagedFile.payloadSize(), treeState.lastId());
+        FreeListIdProvider freelist = new FreeListIdProvider(pagedFile.payloadSize());
         freelist.initialize(
                 treeState.lastId(),
                 treeState.freeListWritePageId(),

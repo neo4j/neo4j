@@ -37,25 +37,16 @@ import org.neo4j.util.Preconditions;
 class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
     private final RootLayerSupport support;
     private final Layout<KEY, VALUE> layout;
+    private final TreeNodeSelector treeNodeSelector;
     private final TreeNode<KEY, VALUE> treeNode;
     private final SingleDataTree singleRootAccess;
     private volatile Root root;
 
-    SingleRootLayer(
-            RootLayerSupport support,
-            Layout<KEY, VALUE> layout,
-            boolean created,
-            CursorContext cursorContext,
-            TreeNodeSelector treeNodeSelector)
-            throws IOException {
+    SingleRootLayer(RootLayerSupport support, Layout<KEY, VALUE> layout, TreeNodeSelector treeNodeSelector) {
         this.support = support;
         this.layout = layout;
+        this.treeNodeSelector = treeNodeSelector;
 
-        if (created) {
-            support.writeMeta(null, layout, cursorContext, treeNodeSelector);
-        } else {
-            support.readMeta(cursorContext).verify(layout, (Layout<?, ?>) null, treeNodeSelector);
-        }
         var format = treeNodeSelector.selectByLayout(layout);
         OffloadStoreImpl<KEY, VALUE> offloadStore = support.buildOffload(layout);
         this.treeNode = format.create(support.payloadSize(), layout, offloadStore, support.idProvider());
@@ -73,8 +64,16 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
     }
 
     @Override
-    public void initializeAfterCreation(CursorContext cursorContext) throws IOException {
+    public void initializeAfterCreation(Root firstRoot, CursorContext cursorContext) throws IOException {
+        setRoot(firstRoot);
+        support.writeMeta(null, layout, cursorContext, treeNodeSelector);
         support.initializeNewRoot(root, treeNode, DATA_LAYER_FLAG, cursorContext);
+    }
+
+    @Override
+    void initialize(Root root, CursorContext cursorContext) throws IOException {
+        setRoot(root);
+        support.readMeta(cursorContext).verify(layout, (Layout<?, ?>) null, treeNodeSelector);
     }
 
     @Override

@@ -48,7 +48,7 @@ class PointIndexAccessor extends NativeIndexAccessor<PointKey> {
         super(databaseIndexContext, indexFiles, layout, descriptor, openOptions);
         this.spaceFillingCurveSettings = spaceFillingCurveSettings;
         this.configuration = configuration;
-        instantiateTree(recoveryCleanupWorkCollector, headerWriter);
+        instantiateTree(recoveryCleanupWorkCollector);
     }
 
     @Override

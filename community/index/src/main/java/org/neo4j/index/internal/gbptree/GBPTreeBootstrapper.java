@@ -22,7 +22,6 @@ package org.neo4j.index.internal.gbptree;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.ignore;
 import static org.neo4j.io.mem.MemoryAllocator.createAllocator;
@@ -100,7 +99,6 @@ public class GBPTreeBootstrapper implements Closeable {
                     layouts.dataLayout(),
                     NO_MONITOR,
                     NO_HEADER_READER,
-                    NO_HEADER_WRITER,
                     ignore(),
                     readOnlyChecker,
                     openOptions,

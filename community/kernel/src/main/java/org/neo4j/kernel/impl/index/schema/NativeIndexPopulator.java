@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -96,8 +95,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>> exte
         assertNotClosed();
 
         indexFiles.clear();
-        NativeIndexHeaderWriter headerWriter = new NativeIndexHeaderWriter(BYTE_POPULATING);
-        instantiateTree(RecoveryCleanupWorkCollector.immediate(), headerWriter);
+        instantiateTree(RecoveryCleanupWorkCollector.immediate());
 
         // true:  tree uniqueness is (value,entityId)
         // false: tree uniqueness is (value) <-- i.e. more strict
@@ -247,7 +245,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>> exte
 
     private void ensureTreeInstantiated() {
         if (tree == null) {
-            instantiateTree(RecoveryCleanupWorkCollector.ignore(), NO_HEADER_WRITER);
+            instantiateTree(RecoveryCleanupWorkCollector.ignore());
         }
     }
 

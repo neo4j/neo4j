@@ -129,10 +129,10 @@ class GBPTreeWriterTest {
             treeWriter.merge(new MutableLong(0), new MutableLong(1), ValueMergers.overwrite());
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
 
-            assertThat(cursorTracer.pins()).isEqualTo(5);
-            assertThat(cursorTracer.unpins()).isEqualTo(5);
-            assertThat(cursorTracer.hits()).isEqualTo(4);
-            assertThat(cursorTracer.faults()).isEqualTo(1);
+            assertThat(cursorTracer.pins()).isEqualTo(1);
+            assertThat(cursorTracer.unpins()).isEqualTo(1);
+            assertThat(cursorTracer.hits()).isEqualTo(1);
+            assertThat(cursorTracer.faults()).isEqualTo(0);
         }
     }
 
@@ -148,10 +148,10 @@ class GBPTreeWriterTest {
             treeWriter.put(new MutableLong(0), new MutableLong(1));
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
 
-            assertThat(cursorTracer.pins()).isEqualTo(5);
-            assertThat(cursorTracer.unpins()).isEqualTo(5);
-            assertThat(cursorTracer.hits()).isEqualTo(4);
-            assertThat(cursorTracer.faults()).isEqualTo(1);
+            assertThat(cursorTracer.pins()).isEqualTo(1);
+            assertThat(cursorTracer.unpins()).isEqualTo(1);
+            assertThat(cursorTracer.hits()).isEqualTo(1);
+            assertThat(cursorTracer.faults()).isEqualTo(0);
         }
     }
 
@@ -165,10 +165,10 @@ class GBPTreeWriterTest {
             treeWriter.put(new MutableLong(0), new MutableLong(0));
             var cursorTracer = cursorContext.getCursorTracer();
 
-            assertThat(cursorTracer.pins()).isEqualTo(5);
-            assertThat(cursorTracer.unpins()).isEqualTo(5);
-            assertThat(cursorTracer.hits()).isEqualTo(4);
-            assertThat(cursorTracer.faults()).isEqualTo(1);
+            assertThat(cursorTracer.pins()).isEqualTo(1);
+            assertThat(cursorTracer.unpins()).isEqualTo(1);
+            assertThat(cursorTracer.hits()).isEqualTo(1);
+            assertThat(cursorTracer.faults()).isEqualTo(0);
 
             ((DefaultPageCursorTracer) cursorTracer).setIgnoreCounterCheck(true);
             cursorTracer.reportEvents();
@@ -195,9 +195,9 @@ class GBPTreeWriterTest {
                 var treeWriter = gbpTree.writer(W_SPLIT_KEEP_ALL_RIGHT, cursorContext)) {
             treeWriter.remove(new MutableLong(0));
             var cursorTracer = cursorContext.getCursorTracer();
-            assertThat(cursorTracer.pins()).isEqualTo(2);
-            assertThat(cursorTracer.hits()).isEqualTo(2);
-            assertThat(cursorTracer.unpins()).isEqualTo(2);
+            assertThat(cursorTracer.pins()).isEqualTo(1);
+            assertThat(cursorTracer.hits()).isEqualTo(1);
+            assertThat(cursorTracer.unpins()).isEqualTo(1);
             assertThat(cursorTracer.faults()).isEqualTo(0);
         }
     }

@@ -162,6 +162,70 @@ class GBPTreeTest {
     /* Meta and state page tests */
 
     @Test
+    void shouldNeedRecreationIfNoCheckpointBeforeClose() throws Exception {
+        try (PageCache pageCache = createPageCache(defaultPageSize)) {
+            index(pageCache).build().close();
+        }
+
+        var monitor = new RecreationMonitor();
+        try (PageCache pageCache = createPageCache(defaultPageSize)) {
+            index(pageCache).with(monitor).build().close();
+        }
+        assertThat(monitor.noStoreFile.getValue()).isFalse();
+        assertThat(monitor.needRecreation.getValue()).isTrue();
+    }
+
+    @Test
+    void shouldNotNeedRecreationIfCheckpointBeforeClose() throws Exception {
+        try (PageCache pageCache = createPageCache(defaultPageSize);
+                var index = index(pageCache).build()) {
+            index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
+        }
+
+        var monitor = new RecreationMonitor();
+        try (PageCache pageCache = createPageCache(defaultPageSize)) {
+            index(pageCache).with(monitor).build().close();
+        }
+        assertThat(monitor.noStoreFile.getValue()).isFalse();
+        assertThat(monitor.needRecreation.getValue()).isFalse();
+    }
+
+    @Test
+    void shouldNotHaveStoreFileIfFailedDuringConstructor() throws Exception {
+        try (PageCache pageCache = createPageCache(defaultPageSize)) {
+            index(pageCache).with(new FailInConstructorMonitor()).build().close();
+        } catch (Exception e) {
+            // Ignore
+        }
+
+        var monitor = new RecreationMonitor();
+        try (PageCache pageCache = createPageCache(defaultPageSize)) {
+            index(pageCache).with(monitor).build().close();
+        }
+        assertThat(monitor.noStoreFile.getValue()).isTrue();
+        assertThat(monitor.needRecreation.getValue()).isFalse();
+    }
+
+    @Test
+    void shouldNeedRecreationIfCrashAfterSuccessfulConstructor() throws IOException {
+        try (EphemeralFileSystemAbstraction ephemeralFs = new EphemeralFileSystemAbstraction()) {
+            ephemeralFs.mkdirs(indexFile.getParent());
+            EphemeralFileSystemAbstraction snapshot;
+            try (var pageCache = pageCacheExtension.getPageCache(ephemeralFs);
+                    var ignore = index(pageCache).with(ephemeralFs).build()) {
+                snapshot = ephemeralFs.snapshot();
+            }
+
+            try (var pageCache = pageCacheExtension.getPageCache(snapshot)) {
+                var monitor = new RecreationMonitor();
+                index(pageCache).with(ephemeralFs).with(monitor).build().close();
+                assertThat(monitor.noStoreFile.getValue()).isFalse();
+                assertThat(monitor.needRecreation.getValue()).isTrue();
+            }
+        }
+    }
+
+    @Test
     void shouldReadWrittenMetaData() throws Exception {
         // GIVEN
         // open/close is enough
@@ -181,8 +245,9 @@ class GBPTreeTest {
     @Test
     void shouldFailToOpenOnDifferentLayout() throws Exception {
         // GIVEN
-        try (PageCache pageCache = createPageCache(defaultPageSize)) {
-            index(pageCache).build().close();
+        try (PageCache pageCache = createPageCache(defaultPageSize);
+                var index = index(pageCache).build()) {
+            index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
 
         // WHEN
@@ -196,8 +261,9 @@ class GBPTreeTest {
     @Test
     void shouldFailToOpenOnDifferentMajorVersion() throws Exception {
         // GIVEN
-        try (PageCache pageCache = createPageCache(defaultPageSize)) {
-            index(pageCache).build().close();
+        try (PageCache pageCache = createPageCache(defaultPageSize);
+                var index = index(pageCache).build()) {
+            index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
 
         // WHEN
@@ -211,8 +277,9 @@ class GBPTreeTest {
     @Test
     void shouldFailToOpenOnDifferentMinorVersion() throws Exception {
         // GIVEN
-        try (PageCache pageCache = createPageCache(defaultPageSize)) {
-            index(pageCache).build().close();
+        try (PageCache pageCache = createPageCache(defaultPageSize);
+                var index = index(pageCache).build()) {
+            index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
 
         // WHEN
@@ -244,8 +311,9 @@ class GBPTreeTest {
     void shouldFailOnOpenWithLargerPageSize() throws Exception {
         // GIVEN
         int pageSize = 2 * defaultPageSize;
-        try (PageCache pageCache = createPageCache(pageSize)) {
-            index(pageCache).build().close();
+        try (PageCache pageCache = createPageCache(pageSize);
+                var index = index(pageCache).build()) {
+            index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
 
         // WHEN
@@ -290,7 +358,9 @@ class GBPTreeTest {
         // GIVEN
         try (PageCache pageCache = createPageCache(defaultPageSize)) {
             var builder = index(pageCache);
-            builder.build().close();
+            try (var index = builder.build()) {
+                index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
+            }
 
             assertThatThrownBy(
                             () -> builder.with(longLayout().withFixedSize(false).build())
@@ -433,6 +503,7 @@ class GBPTreeTest {
         try (var controlledPageCache = createPageCache(defaultPageSize);
                 var index = index(controlledPageCache).build()) {
             assertThat(index.sizeInBytes()).isEqualTo(defaultPageSize * 5L);
+            index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
 
             // WHEN
             try (var writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
@@ -501,7 +572,7 @@ class GBPTreeTest {
     }
 
     @Test
-    void mustWriteHeaderOnInitialization() throws Exception {
+    void mustWriteHeaderOnFirstCheckpoint() throws Exception {
         // GIVEN
         byte[] headerBytes = new byte[12];
         random.nextBytes(headerBytes);
@@ -509,7 +580,9 @@ class GBPTreeTest {
 
         // WHEN
         try (PageCache pageCache = createPageCache(defaultPageSize)) {
-            index(pageCache).with(headerWriter).build().close();
+            try (var index = index(pageCache).build()) {
+                index.checkpoint(headerWriter, FileFlushEvent.NULL, NULL_CONTEXT);
+            }
 
             // THEN
             verifyHeader(pageCache, headerBytes);
@@ -523,7 +596,9 @@ class GBPTreeTest {
         random.nextBytes(expectedBytes);
         Consumer<PageCursor> headerWriter = pc -> pc.putBytes(expectedBytes);
         try (PageCache pageCache = createPageCache(defaultPageSize)) {
-            index(pageCache).with(headerWriter).build().close();
+            try (var index = index(pageCache).build()) {
+                index.checkpoint(headerWriter, FileFlushEvent.NULL, NULL_CONTEXT);
+            }
 
             // WHEN
             byte[] fraudulentBytes = new byte[12];
@@ -531,7 +606,9 @@ class GBPTreeTest {
                 random.nextBytes(fraudulentBytes);
             } while (Arrays.equals(expectedBytes, fraudulentBytes));
 
-            index(pageCache).with(headerWriter).build().close();
+            try (var index = index(pageCache).build()) {
+                index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
+            }
 
             // THEN
             verifyHeader(pageCache, expectedBytes);
@@ -544,7 +621,10 @@ class GBPTreeTest {
         random.nextBytes(initialHeader);
         Consumer<PageCursor> headerWriter = pc -> pc.putBytes(initialHeader);
         try (PageCache pageCache = createPageCache(defaultPageSize)) {
-            index(pageCache).with(headerWriter).build().close();
+            try (var index = index(pageCache).build()) {
+                index.checkpoint(headerWriter, FileFlushEvent.NULL, NULL_CONTEXT);
+            }
+            verifyHeader(pageCache, initialHeader);
 
             Pair<TreeState, TreeState> treeStatesBeforeOverwrite = readTreeStates(pageCache);
 
@@ -634,18 +714,6 @@ class GBPTreeTest {
 
     @Test
     void openWithReadHeaderMustThrowMetadataMismatchExceptionIfFileIsEmpty() throws Exception {
-        openMustThrowMetadataMismatchExceptionIfFileIsEmpty(pageCache -> GBPTree.readHeader(
-                pageCache, indexFile, NO_HEADER_READER, DEFAULT_DATABASE_NAME, NULL_CONTEXT, getOpenOptions()));
-    }
-
-    @Test
-    void openWithConstructorMustThrowMetadataMismatchExceptionIfFileIsEmpty() throws Exception {
-        openMustThrowMetadataMismatchExceptionIfFileIsEmpty(
-                pageCache -> index(pageCache).build());
-    }
-
-    private void openMustThrowMetadataMismatchExceptionIfFileIsEmpty(ThrowingConsumer<PageCache, IOException> opener)
-            throws Exception {
         // given an existing empty file
         try (PageCache pageCache = createPageCache(defaultPageSize)) {
             pageCache
@@ -656,48 +724,38 @@ class GBPTreeTest {
                             getOpenOptions().newWith(CREATE))
                     .close();
 
-            assertThatThrownBy(() -> opener.accept(pageCache)).isInstanceOf(MetadataMismatchException.class);
+            assertThatThrownBy(() -> GBPTree.readHeader(
+                            pageCache,
+                            indexFile,
+                            NO_HEADER_READER,
+                            DEFAULT_DATABASE_NAME,
+                            NULL_CONTEXT,
+                            getOpenOptions()))
+                    .isInstanceOf(MetadataMismatchException.class);
         }
     }
 
     @Test
     void readHeaderMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing() throws Exception {
-        openMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing(pageCache -> GBPTree.readHeader(
-                pageCache, indexFile, NO_HEADER_READER, DEFAULT_DATABASE_NAME, NULL_CONTEXT, Sets.immutable.empty()));
-    }
-
-    @Test
-    void constructorMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing() throws Exception {
-        openMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing(
-                pageCache -> index(pageCache).build());
-    }
-
-    private void openMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing(
-            ThrowingConsumer<PageCache, IOException> opener) throws Exception {
         // given an existing index with only the first page in it
         try (PageCache pageCache = createPageCache(defaultPageSize)) {
             index(pageCache).build().close();
             /*truncate right after the first page*/
             fileSystem.truncate(indexFile, defaultPageSize);
 
-            assertThatThrownBy(() -> opener.accept(pageCache)).isInstanceOf(MetadataMismatchException.class);
+            assertThatThrownBy(() -> GBPTree.readHeader(
+                            pageCache,
+                            indexFile,
+                            NO_HEADER_READER,
+                            DEFAULT_DATABASE_NAME,
+                            NULL_CONTEXT,
+                            Sets.immutable.empty()))
+                    .isInstanceOf(MetadataMismatchException.class);
         }
     }
 
     @Test
     void readHeaderMustThrowIOExceptionIfStatePagesAreAllZeros() throws Exception {
-        openMustThrowMetadataMismatchExceptionIfStatePagesAreAllZeros(pageCache -> GBPTree.readHeader(
-                pageCache, indexFile, NO_HEADER_READER, DEFAULT_DATABASE_NAME, NULL_CONTEXT, Sets.immutable.empty()));
-    }
-
-    @Test
-    void constructorMustThrowMetadataMismatchExceptionIfStatePagesAreAllZeros() throws Exception {
-        openMustThrowMetadataMismatchExceptionIfStatePagesAreAllZeros(
-                pageCache -> index(pageCache).build());
-    }
-
-    private void openMustThrowMetadataMismatchExceptionIfStatePagesAreAllZeros(
-            ThrowingConsumer<PageCache, IOException> opener) throws Exception {
         // given an existing index with all-zero state pages
         try (PageCache pageCache = createPageCache(defaultPageSize)) {
             index(pageCache).build().close();
@@ -709,7 +767,14 @@ class GBPTreeTest {
                 out.write(allZeroPage); // page B
             }
 
-            assertThatThrownBy(() -> opener.accept(pageCache)).isInstanceOf(MetadataMismatchException.class);
+            assertThatThrownBy(() -> GBPTree.readHeader(
+                            pageCache,
+                            indexFile,
+                            NO_HEADER_READER,
+                            DEFAULT_DATABASE_NAME,
+                            NULL_CONTEXT,
+                            Sets.immutable.empty()))
+                    .isInstanceOf(MetadataMismatchException.class);
         }
     }
 
@@ -721,8 +786,8 @@ class GBPTreeTest {
         Consumer<PageCursor> headerWriter = pc -> pc.putBytes(headerBytes);
         // WHEN
         try (PageCache pageCache = createPageCache(defaultPageSize);
-                GBPTree<MutableLong, MutableLong> ignore =
-                        index(pageCache).with(headerWriter).build()) {
+                GBPTree<MutableLong, MutableLong> index = index(pageCache).build()) {
+            index.checkpoint(headerWriter, FileFlushEvent.NULL, NULL_CONTEXT);
             byte[] readHeader = new byte[headerBytes.length];
             AtomicInteger length = new AtomicInteger();
             Header.Reader headerReader = headerData -> {
@@ -784,9 +849,7 @@ class GBPTreeTest {
                 }
             }));
             barrier.awaitUninterruptibly();
-            Future<?> checkpoint = executor.submit(throwing(() -> {
-                index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
-            }));
+            Future<?> checkpoint = executor.submit(throwing(() -> index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT)));
             shouldWait(checkpoint);
 
             // THEN
@@ -1036,8 +1099,7 @@ class GBPTreeTest {
     void shouldFailToCreateParallelWriterWhenWriterActive() throws IOException {
         try (PageCache pageCache = createPageCache(defaultPageSize);
                 GBPTree<MutableLong, MutableLong> index = index(pageCache).build()) {
-            try (Writer<MutableLong, MutableLong> singleWriter =
-                    index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
+            try (Writer<MutableLong, MutableLong> ignored = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 assertThatThrownBy(() -> executor.submit(() -> index.writer(NULL_CONTEXT))
                                 .get())
                         .hasCauseInstanceOf(IllegalStateException.class);
@@ -1050,7 +1112,7 @@ class GBPTreeTest {
     void shouldFailToGetWriterWhenParallelWritersActive() throws IOException {
         try (PageCache pageCache = createPageCache(defaultPageSize);
                 GBPTree<MutableLong, MutableLong> index = index(pageCache).build()) {
-            try (Writer<MutableLong, MutableLong> parallelWriter = index.writer(NULL_CONTEXT)) {
+            try (Writer<MutableLong, MutableLong> ignored = index.writer(NULL_CONTEXT)) {
                 assertThatThrownBy(() -> executor.submit(() -> index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT))
                                 .get())
                         .hasCauseInstanceOf(IllegalStateException.class);
@@ -1068,7 +1130,7 @@ class GBPTreeTest {
             List<Callable<Void>> writers = new ArrayList<>();
             for (int i = 0; i < count; i++) {
                 writers.add(() -> {
-                    try (var writer = index.writer(NULL_CONTEXT)) {
+                    try (var ignored = index.writer(NULL_CONTEXT)) {
                         goal.countDown();
                         goal.await();
                     }
@@ -1295,6 +1357,7 @@ class GBPTreeTest {
         // GIVEN
         try (PageCache pageCache = createPageCache(defaultPageSize);
                 GBPTree<MutableLong, MutableLong> index = index(pageCache).build()) {
+            index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
             insert(index, 0, 1);
 
             // no checkpoint
@@ -1378,6 +1441,7 @@ class GBPTreeTest {
         // GIVEN
         try (PageCache pageCache = createPageCache(defaultPageSize);
                 GBPTree<MutableLong, MutableLong> index = index(pageCache).build()) {
+            index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
             insert(index, 0, 1);
 
             // no checkpoint
@@ -1400,7 +1464,9 @@ class GBPTreeTest {
             ephemeralFs.mkdirs(indexFile.getParent());
             PageCache pageCache = pageCacheExtension.getPageCache(ephemeralFs);
             EphemeralFileSystemAbstraction snapshot;
-            try (GBPTree<MutableLong, MutableLong> index = index(pageCache).build()) {
+            try (GBPTree<MutableLong, MutableLong> index =
+                    index(pageCache).with(ephemeralFs).build()) {
+                index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
                 insert(index, 0, 1);
 
                 // WHEN
@@ -1412,7 +1478,7 @@ class GBPTreeTest {
             // THEN
             MonitorDirty monitorDirty = new MonitorDirty();
             pageCache = pageCacheExtension.getPageCache(snapshot);
-            index(pageCache).with(monitorDirty).build().close();
+            index(pageCache).with(ephemeralFs).with(monitorDirty).build().close();
             assertFalse(monitorDirty.cleanOnStart(), "Expected to be dirty on start after crash");
             pageCache.close();
         }
@@ -1423,6 +1489,7 @@ class GBPTreeTest {
         // GIVEN
         try (PageCache pageCache = createPageCache(defaultPageSize);
                 GBPTree<MutableLong, MutableLong> index = index(pageCache).build()) {
+            index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
             insert(index, 0, 1);
 
             // No checkpoint
@@ -1464,7 +1531,9 @@ class GBPTreeTest {
     void shouldThrowIfTreeStatePointToRootWithValidSuccessor() throws Exception {
         // GIVEN
         try (PageCache specificPageCache = createPageCache(defaultPageSize)) {
-            index(specificPageCache).build().close();
+            try (var index = index(specificPageCache).build()) {
+                index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
+            }
 
             // a tree state pointing to root with valid successor
             try (PagedFile pagedFile = specificPageCache.map(
@@ -1482,14 +1551,10 @@ class GBPTreeTest {
             }
 
             // WHEN
-            try (GBPTree<MutableLong, MutableLong> index =
-                    index(specificPageCache).build()) {
+            try (var index = index(specificPageCache).build()) {
                 assertThatThrownBy(
-                                () -> {
-                                    try (var unused = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
-                                        // nothing
-                                    }
-                                },
+                                () -> index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)
+                                        .close(),
                                 "Expected to throw because root pointed to by tree state should have a valid successor.")
                         .isInstanceOf(TreeInconsistencyException.class)
                         .hasMessageContaining(PointerChecking.WRITER_TRAVERSE_OLD_STATE_MESSAGE);
@@ -1781,7 +1846,7 @@ class GBPTreeTest {
             var cursorTracer = cursorContext.getCursorTracer();
             assertThat(cursorTracer.pins()).isEqualTo(5);
             assertThat(cursorTracer.unpins()).isEqualTo(5);
-            assertThat(cursorTracer.hits()).isEqualTo(5);
+            assertThat(cursorTracer.hits()).isEqualTo(3); // Page faults on state pages
         }
     }
 
@@ -1938,7 +2003,7 @@ class GBPTreeTest {
         // given
         try (PageCache pageCache = createPageCache(defaultPageSize);
                 GBPTree<MutableLong, MutableLong> index = index(pageCache).build()) {
-            try (Writer<MutableLong, MutableLong> writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
+            try (Writer<MutableLong, MutableLong> ignored = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
                 // when/then
                 assertThatThrownBy(() -> executor.submit(() -> index.writer(NULL_CONTEXT))
                                 .get())
@@ -1968,7 +2033,7 @@ class GBPTreeTest {
             }
 
             // then now it's OK
-            try (Writer<MutableLong, MutableLong> writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {}
+            try (Writer<MutableLong, MutableLong> ignored = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {}
         }
     }
 
@@ -2126,6 +2191,8 @@ class GBPTreeTest {
 
     private void makeDirty(PageCache pageCache) throws IOException {
         try (GBPTree<MutableLong, MutableLong> index = index(pageCache).build()) {
+            // Need a first checkpoint to be considered initialized
+            index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
             // Make dirty
             index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT).close();
         }
@@ -2266,6 +2333,28 @@ class GBPTreeTest {
 
         boolean cleanupCalled() {
             return cleanupCalled;
+        }
+    }
+
+    private static class RecreationMonitor extends Monitor.Adaptor {
+        private final MutableBoolean noStoreFile = new MutableBoolean();
+        private final MutableBoolean needRecreation = new MutableBoolean();
+
+        @Override
+        public void noStoreFile() {
+            noStoreFile.setTrue();
+        }
+
+        @Override
+        public void needRecreation() {
+            needRecreation.setTrue();
+        }
+    }
+
+    private static class FailInConstructorMonitor extends Monitor.Adaptor {
+        @Override
+        public void noStoreFile() {
+            throw new RuntimeException("You shall not construct");
         }
     }
 }

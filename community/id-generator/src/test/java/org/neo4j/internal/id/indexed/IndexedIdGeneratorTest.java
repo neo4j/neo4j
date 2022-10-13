@@ -997,10 +997,9 @@ class IndexedIdGeneratorTest {
                 assertThat(cursorTracer.pins()).isOne();
 
                 marker.markDeleted(1);
-
-                assertThat(cursorTracer.pins()).isGreaterThan(1);
-                assertThat(cursorTracer.unpins()).isGreaterThan(1);
             }
+            assertThat(cursorTracer.pins()).isGreaterThanOrEqualTo(1);
+            assertThat(cursorTracer.unpins()).isGreaterThanOrEqualTo(1);
         }
     }
 
@@ -1068,7 +1067,7 @@ class IndexedIdGeneratorTest {
             // 2 state pages involved into checkpoint (twice)
             assertThat(cursorTracer.pins()).isEqualTo(4);
             assertThat(cursorTracer.unpins()).isEqualTo(4);
-            assertThat(cursorTracer.hits()).isEqualTo(4);
+            assertThat(cursorTracer.hits()).isEqualTo(2);
         }
     }
 
