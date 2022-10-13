@@ -22,9 +22,12 @@ package org.neo4j.bolt.negotiation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
+import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
 class ProtocolVersionTest {
@@ -58,5 +61,66 @@ class ProtocolVersionTest {
 
                     assertEquals(expected, actual);
                 }));
+    }
+
+    @TestFactory
+    Stream<DynamicTest> shouldCheckVersionEquality() {
+        return versions()
+                .map(expected -> dynamicTest(expected.toString(), () -> {
+                    var copy = new ProtocolVersion(expected.major(), expected.minor(), expected.range());
+
+                    Assertions.assertThat(expected).isEqualTo(copy);
+
+                    versions().forEach(it -> {
+                        if (it.major() == expected.major()
+                                && it.minor() == expected.minor()
+                                && it.range() == expected.range()) {
+                            return;
+                        }
+
+                        Assertions.assertThat(expected)
+                                .describedAs("it does not equal a mismatching version")
+                                .isNotEqualTo(it);
+                    });
+                }));
+    }
+
+    @Test
+    void shouldCompareVersions() {
+        var versions = List.of(
+                new ProtocolVersion(4, 0),
+                new ProtocolVersion(4, 1),
+                new ProtocolVersion(4, 2, 2),
+                new ProtocolVersion(5, 0),
+                new ProtocolVersion(5, 1),
+                new ProtocolVersion(5, 2, 1),
+                new ProtocolVersion(5, 3));
+
+        for (var current : versions) {
+            var encounteredSelf = false;
+
+            for (var other : versions) {
+                if (other.equals(current)) {
+                    Assertions.assertThat(current.compareTo(other)).isEqualTo(0);
+                    Assertions.assertThat(other.compareTo(current)).isEqualTo(0);
+
+                    var copy = new ProtocolVersion(other.major(), other.minor(), other.range());
+
+                    Assertions.assertThat(current.compareTo(copy)).isEqualTo(0);
+                    Assertions.assertThat(copy.compareTo(current)).isEqualTo(0);
+
+                    encounteredSelf = true;
+                    continue;
+                }
+
+                if (!encounteredSelf) {
+                    Assertions.assertThat(current.compareTo(other)).isEqualTo(1);
+                    Assertions.assertThat(other.compareTo(current)).isEqualTo(-1);
+                } else {
+                    Assertions.assertThat(current.compareTo(other)).isEqualTo(-1);
+                    Assertions.assertThat(other.compareTo(current)).isEqualTo(1);
+                }
+            }
+        }
     }
 }
