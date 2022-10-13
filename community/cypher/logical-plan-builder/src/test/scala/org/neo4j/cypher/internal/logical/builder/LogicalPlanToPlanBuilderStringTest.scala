@@ -620,6 +620,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     "cartesianProduct",
     new TestPlanBuilder()
       .produceResults("x", "y")
+      .cartesianProduct(true)
+      .|.allNodeScan("z")
       .cartesianProduct()
       .|.allNodeScan("y", "x")
       .allNodeScan("x")
@@ -1068,6 +1070,10 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     "nodeByIdSeek",
     new TestPlanBuilder()
       .produceResults("x", "y")
+      .apply()
+      .|.nodeByIdSeek("m", Set.empty, "variable")
+      .apply()
+      .|.nodeByIdSeek("m", Set.empty, "var1", "var2")
       .apply()
       .|.nodeByIdSeek("y", Set("x"), 25)
       .nodeByIdSeek("x", Set(), 23, 22.0, -1)

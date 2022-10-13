@@ -2208,6 +2208,25 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     )
   }
 
+  test("should use count store for two count aggregations separated by a subquery") {
+    val query = """MATCH (n)
+                  |WITH count(n) as nodeCount
+                  |CALL {
+                  |  MATCH ()-[r:REL]->()
+                  |  RETURN count(r) as relCount
+                  |}
+                  |RETURN nodeCount, relCount;""".stripMargin
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("nodeCount", "relCount")
+        .cartesianProduct(true)
+        .|.relationshipCountFromCountStore("relCount", None, Seq("REL"), None)
+        .nodeCountFromCountStore("nodeCount", Seq(None))
+        .build()
+    )
+  }
+
   test("should get relationship count from store for a simple COUNT expression") {
     val plan = planner.plan("RETURN COUNT { ()-[]->() } AS result").stripProduceResults
     plan shouldBe planner.subPlanBuilder()

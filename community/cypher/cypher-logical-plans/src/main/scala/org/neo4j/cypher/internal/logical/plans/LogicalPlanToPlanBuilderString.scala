@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.NumberLiteral
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
@@ -963,6 +964,7 @@ object LogicalPlanToPlanBuilderString {
         val params =
           Seq(expressionStringifier(batchSize), onErrorBehaviour.toString) ++ maybeReportAs.toSeq
         params.mkString(", ")
+      case CartesianProduct(_, _, fromSubquery) => s"fromSubquery = $fromSubquery"
     }
     val plansWithContent2: PartialFunction[LogicalPlan, String] = {
       case MultiNodeIndexSeek(indexSeekLeafPlans: Seq[NodeIndexSeekLeafPlan]) =>
@@ -1262,11 +1264,15 @@ object LogicalPlanToPlanBuilderString {
   }
 
   private def idsStr(ids: SeekableArgs) = {
+    def stringify(expr: Expression): String = expr match {
+      case literal: NumberLiteral => expressionStringifier(literal)
+      case expr                   => wrapInQuotations(expressionStringifier(expr))
+    }
+
     val idsStr = ids match {
-      case SingleSeekableArg(expr)                    => expressionStringifier(expr)
-      case ManySeekableArgs(ListLiteral(expressions)) => expressions.map(expressionStringifier(_)).mkString(", ")
-      // This will not be working code, but can still be useful during debugging.
-      case ManySeekableArgs(expr) => expressionStringifier(expr)
+      case SingleSeekableArg(expr)                    => stringify(expr)
+      case ManySeekableArgs(ListLiteral(expressions)) => expressions.map(stringify).mkString(", ")
+      case ManySeekableArgs(expr)                     => stringify(expr)
     }
     idsStr
   }
