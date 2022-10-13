@@ -204,7 +204,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
   test("should give proper error message when trying to use Node Key constraint on community") {
     expectError(
       "CREATE CONSTRAINT FOR (n:Person) REQUIRE (n.firstname) IS NODE KEY",
-      String.format("Unable to create Constraint( type='NODE PROPERTY EXISTENCE', schema=(:Person {firstname}) ):%n" +
+      String.format("Unable to create Constraint( type='NODE KEY', schema=(:Person {firstname}) ):%n" +
         "Node Key constraint requires Neo4j Enterprise Edition")
     )
   }

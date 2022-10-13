@@ -138,7 +138,7 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
     private static CreateConstraintFailureException nodeKeyConstraintsNotAllowed(SchemaDescriptor descriptor) {
         // When creating a Node Key Constraint in Community Edition
         return new CreateConstraintFailureException(
-                ConstraintDescriptorFactory.existsForSchema(descriptor), ERROR_MESSAGE_NODE_KEY);
+                ConstraintDescriptorFactory.nodeKeyForSchema(descriptor), ERROR_MESSAGE_NODE_KEY);
     }
 
     @Override
