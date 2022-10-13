@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.common.Subject;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -61,7 +61,7 @@ public interface TransactionRepresentation extends CommandStream {
      * @return the subject associated with the transaction.
      * Typically an authenticated end user that created the transaction.
      */
-    AuthSubject getAuthSubject();
+    Subject getSubject();
 
     KernelVersion version();
 

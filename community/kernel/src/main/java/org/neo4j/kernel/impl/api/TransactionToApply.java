@@ -27,7 +27,6 @@ import java.util.function.LongConsumer;
 import org.neo4j.common.HexPrinter;
 import org.neo4j.common.Subject;
 import org.neo4j.internal.helpers.collection.Visitor;
-import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
@@ -117,15 +116,7 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable {
 
     @Override
     public Subject subject() {
-        if (transactionRepresentation.getAuthSubject() == AuthSubject.AUTH_DISABLED) {
-            return Subject.AUTH_DISABLED;
-        }
-
-        if (transactionRepresentation.getAuthSubject() == AuthSubject.ANONYMOUS) {
-            return Subject.ANONYMOUS;
-        }
-
-        return new Subject(transactionRepresentation.getAuthSubject().executingUser());
+        return transactionRepresentation.getSubject();
     }
 
     @Override

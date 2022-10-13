@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.checking;
 
+import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.TokenStore.NAME_STORE_BLOCK_SIZE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -27,7 +28,6 @@ import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -62,8 +62,7 @@ public class TransactionWriter {
             byte[] additionalHeader, long startTime, long lastCommittedTx, long committedTime) {
         prepareForCommit();
         PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation(allCommands());
-        representation.setHeader(
-                additionalHeader, startTime, lastCommittedTx, committedTime, -1, AuthSubject.ANONYMOUS);
+        representation.setHeader(additionalHeader, startTime, lastCommittedTx, committedTime, -1, ANONYMOUS);
         return representation;
     }
 

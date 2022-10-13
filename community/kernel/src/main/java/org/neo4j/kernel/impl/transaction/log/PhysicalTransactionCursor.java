@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
+import static org.neo4j.common.Subject.ANONYMOUS;
 
 import java.io.IOException;
 import java.util.ArrayList;

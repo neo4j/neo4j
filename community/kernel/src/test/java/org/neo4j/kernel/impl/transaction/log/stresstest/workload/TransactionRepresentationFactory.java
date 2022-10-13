@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.stresstest.workload;
 
 import static java.lang.System.currentTimeMillis;
-import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
+import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.util.ArrayList;

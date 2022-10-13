@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import org.neo4j.common.Subject;
+
 public interface AuthSubject {
     // TODO: Refine this API into something more polished
     AuthenticationResult getAuthenticationResult();
@@ -42,6 +44,16 @@ public interface AuthSubject {
      */
     default String authenticatedUser() {
         return executingUser();
+    }
+
+    default Subject userSubject() {
+        if (AuthSubject.AUTH_DISABLED == this) {
+            return Subject.AUTH_DISABLED;
+        } else if (AuthSubject.ANONYMOUS == this) {
+            return Subject.ANONYMOUS;
+        } else {
+            return new Subject(this.executingUser());
+        }
     }
 
     /**

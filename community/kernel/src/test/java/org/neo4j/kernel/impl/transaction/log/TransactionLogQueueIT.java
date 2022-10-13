@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.monitoring.PanicEventGenerator.NO_OP;
 
 import java.io.IOException;
@@ -33,7 +34,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.graphdb.DatabaseShutdownException;
-import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -93,7 +93,7 @@ class TransactionLogQueueIT {
     }
 
     @Test
-    void processMessagesByTheTransactionQueue() throws IOException, ExecutionException, InterruptedException {
+    void processMessagesByTheTransactionQueue() throws IOException {
         LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore);
         life.add(logFiles);
 
@@ -146,7 +146,7 @@ class TransactionLogQueueIT {
 
     private static TransactionToApply createTransaction() {
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation(List.of(new TestCommand()));
-        tx.setHeader(ArrayUtils.EMPTY_BYTE_ARRAY, 1, 2, 3, 4, AuthSubject.ANONYMOUS);
+        tx.setHeader(ArrayUtils.EMPTY_BYTE_ARRAY, 1, 2, 3, 4, ANONYMOUS);
         return new TransactionToApply(tx, CursorContext.NULL_CONTEXT, StoreCursors.NULL);
     }
 

@@ -25,8 +25,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import org.neo4j.common.Subject;
 import org.neo4j.internal.helpers.collection.Visitor;
-import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -37,7 +37,7 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     private long timeStarted;
     private long latestCommittedTxWhenStarted;
     private long timeCommitted;
-    private AuthSubject subject;
+    private Subject subject;
 
     /**
      * This is a bit of a smell since it's only used for coordinating transactions in a cluster.
@@ -56,7 +56,7 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
             long latestCommittedTxWhenStarted,
             long timeCommitted,
             int leaseId,
-            AuthSubject subject) {
+            Subject subject) {
         this(commands);
         setHeader(additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, leaseId, subject);
     }
@@ -71,7 +71,7 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
             long latestCommittedTxWhenStarted,
             long timeCommitted,
             int leaseId,
-            AuthSubject subject) {
+            Subject subject) {
         this.additionalHeader = additionalHeader;
         this.timeStarted = timeStarted;
         this.latestCommittedTxWhenStarted = latestCommittedTxWhenStarted;
@@ -116,7 +116,7 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     }
 
     @Override
-    public AuthSubject getAuthSubject() {
+    public Subject getSubject() {
         return subject;
     }
 

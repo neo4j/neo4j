@@ -46,6 +46,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.EntityType;
+import org.neo4j.common.Subject;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.DatabaseConfig;
@@ -63,7 +64,6 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.kernel.api.IndexMonitor;
-import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -623,7 +623,7 @@ public class Database extends AbstractDatabase {
                     storageEngine.metadataProvider().getLastClosedTransactionId(),
                     time,
                     leaseClient.leaseId(),
-                    AuthSubject.AUTH_DISABLED);
+                    Subject.AUTH_DISABLED);
             try (var storeCursors = storageEngine.createStorageCursors(CursorContext.NULL_CONTEXT)) {
                 TransactionToApply toApply =
                         new TransactionToApply(transactionRepresentation, CursorContext.NULL_CONTEXT, storeCursors);

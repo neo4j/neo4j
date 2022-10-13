@@ -916,7 +916,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                             lastTransactionIdWhenStarted,
                             timeCommitted,
                             leaseClient.leaseId(),
-                            securityContext.subject());
+                            securityContext.subject().userSubject());
 
                     // Commit the transaction
                     success = true;
