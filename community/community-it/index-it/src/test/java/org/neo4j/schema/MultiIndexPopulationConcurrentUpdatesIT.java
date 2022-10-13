@@ -54,7 +54,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -109,8 +108,6 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.storable.Values;
@@ -122,7 +119,7 @@ import org.neo4j.values.storable.Values;
 // [NodePropertyUpdate[4, prop:0 add:Volvo, labelsBefore:[], labelsAfter:[2]]]
 // [NodePropertyUpdate[5, prop:0 add:Ford, labelsBefore:[], labelsAfter:[2]]]
 // TODO: check count store counts
-@ImpermanentDbmsExtension(configurationCallback = "configuration")
+@ImpermanentDbmsExtension()
 public class MultiIndexPopulationConcurrentUpdatesIT {
     private static final String NAME_PROPERTY = "name";
     private static final String COUNTRY_LABEL = "country";
@@ -146,11 +143,6 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
     private Node car1;
     private Node car2;
     private Node[] otherNodes;
-
-    @ExtensionCallback
-    void configuration(TestDatabaseManagementServiceBuilder builder) {
-        builder.setConfig(GraphDatabaseInternalSettings.trigram_index, true);
-    }
 
     @AfterEach
     void tearDown() throws Throwable {

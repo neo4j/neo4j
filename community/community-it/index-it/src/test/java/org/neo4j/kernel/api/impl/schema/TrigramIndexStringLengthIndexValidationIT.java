@@ -21,19 +21,13 @@ package org.neo4j.kernel.api.impl.schema;
 
 import static org.neo4j.internal.schema.IndexType.TEXT;
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
 import org.neo4j.kernel.impl.api.LuceneIndexValueValidator;
 import org.neo4j.test.RandomSupport;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 public class TrigramIndexStringLengthIndexValidationIT extends StringLengthIndexValidationIT {
-    @Override
-    protected void additionalConfig(TestDatabaseManagementServiceBuilder builder) {
-        builder.setConfig(GraphDatabaseInternalSettings.trigram_index, true);
-    }
 
     @Override
     protected int getSingleKeySizeLimit(int payloadSize) {

@@ -19,18 +19,10 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.ExtensionCallback;
 
 public class TrigramIndexCreationTest extends TextIndexCreationTest {
-    @Override
-    @ExtensionCallback
-    void configuration(TestDatabaseManagementServiceBuilder builder) {
-        builder.setConfig(GraphDatabaseInternalSettings.trigram_index, true);
-    }
 
     @Override
     protected IndexProviderDescriptor getIndexProviderDescriptor() {

@@ -77,9 +77,7 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
         add(fulltextIndexProvider);
         add(rangeIndexProvider);
         add(pointIndexProvider);
-        if (trigramIndexProvider != null) {
-            add(trigramIndexProvider);
-        }
+        add(trigramIndexProvider);
         dependencies.resolveTypeDependencies(IndexProvider.class).forEach(this::add);
     }
 
@@ -100,7 +98,7 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
 
     @Override
     public IndexProvider getTextIndexProvider() {
-        return trigramIndexProvider != null ? trigramIndexProvider : textIndexProvider;
+        return trigramIndexProvider;
     }
 
     @Override

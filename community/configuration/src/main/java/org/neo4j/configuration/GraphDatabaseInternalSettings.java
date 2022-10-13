@@ -985,11 +985,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .addConstraint(min(0))
             .build();
 
-    @Internal
-    @Description("A feature toggle behind which trigram index is developed")
-    public static final Setting<Boolean> trigram_index =
-            newBuilder("internal.dbms.trigram_index", BOOL, true).build();
-
     public enum ExtractLiteral {
         ALWAYS,
         NEVER,

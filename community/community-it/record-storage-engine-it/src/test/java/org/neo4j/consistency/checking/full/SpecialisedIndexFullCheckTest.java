@@ -46,7 +46,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.RecordType;
@@ -131,7 +130,6 @@ class SpecialisedIndexFullCheckTest {
 
         @BeforeEach
         protected void setUp() {
-            settings.put(GraphDatabaseInternalSettings.trigram_index, true);
             fixture = createFixture();
         }
 

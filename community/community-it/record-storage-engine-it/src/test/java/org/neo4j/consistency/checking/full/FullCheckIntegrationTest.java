@@ -94,7 +94,6 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.LookupAccessorsFromRunningDb;
 import org.neo4j.consistency.RecordType;
@@ -226,7 +225,6 @@ public class FullCheckIntegrationTest {
 
     @BeforeEach
     protected void setUp() {
-        settings.put(GraphDatabaseInternalSettings.trigram_index, true);
         fixture = createFixture();
     }
 
