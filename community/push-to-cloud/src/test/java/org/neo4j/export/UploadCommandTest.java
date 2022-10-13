@@ -18,7 +18,10 @@ package org.neo4j.export;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -40,7 +43,6 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import org.apache.commons.io.output.NullOutputStream;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -106,70 +108,95 @@ class UploadCommandTest {
     }
 
     @Test
-    public void testBuildConsoleURLWithInvalidURL() {
+    public void testBuildConsoleURLWithInvalidURI() {
         // given
+        boolean devMode = false;
         Copier targetCommunicator = mockedTargetCommunicator();
         UploadCommand command = command()
                 .copier(targetCommunicator)
-                .console(PushToCloudConsole.fakeConsole("username", "password", false))
+                .console(PushToCloudConsole.fakeConsole("username", "password", devMode))
                 .build();
 
         // when
         CommandFailedException exception =
-                assertThrows(CommandFailedException.class, () -> command.buildConsoleURI("hello.local", false));
+                assertThrows(CommandFailedException.class, () -> command.buildConsoleURI("hello.local", devMode));
 
         // then
         assertEquals(exception.getMessage(), "Invalid Bolt URI 'hello.local'");
     }
 
     @Test
-    public void testBuildDevModeConsoleURLInNonDevMode() {
+    public void testBuildConsoleURInNonDevMode() {
         // given
+        boolean devMode = false;
         Copier targetCommunicator = mockedTargetCommunicator();
         UploadCommand command = command()
                 .copier(targetCommunicator)
-                .console(PushToCloudConsole.fakeConsole("username", "password", false))
+                .console(PushToCloudConsole.fakeConsole("username", "password", devMode))
                 .build();
 
         // when
         CommandFailedException exception = assertThrows(
                 CommandFailedException.class,
-                () -> command.buildConsoleURI("neo4j+s://rogue-env.databases.neo4j-env.io", false));
+                () -> command.buildConsoleURI("neo4j+s://rogue-env.databases.neo4j-env.io", devMode));
 
         // then
         assertEquals(exception.getMessage(), "Invalid Bolt URI 'neo4j+s://rogue-env.databases.neo4j-env.io'");
     }
 
     @Test
-    public void testBuildConsoleURLWithValidProdURL() {
+    public void testBuildConsoleURLWithValidProdURI() {
         // given
+        boolean devMode = false;
         Copier targetCommunicator = mockedTargetCommunicator();
         UploadCommand command = command()
                 .copier(targetCommunicator)
-                .console(PushToCloudConsole.fakeConsole("username", "password", false))
+                .console(PushToCloudConsole.fakeConsole("username", "password", devMode))
                 .build();
 
         // when
-        String consoleUrl = command.buildConsoleURI("neo4j+s://rogue.databases.neo4j.io", false);
+        String consoleUrl = command.buildConsoleURI("neo4j+s://rogue.databases.neo4j.io", devMode);
 
         // then
         assertEquals(consoleUrl, "https://console.neo4j.io/v1/databases/rogue");
     }
 
     @Test
-    public void testBuildValidConsoleURLInDevMode() {
+    public void testBuildValidConsoleURInDevMode() {
         // given
+        boolean devMode = true;
         Copier targetCommunicator = mockedTargetCommunicator();
         UploadCommand command = command()
                 .copier(targetCommunicator)
-                .console(PushToCloudConsole.fakeConsole("username", "password", false))
+                .console(PushToCloudConsole.fakeConsole("username", "password", devMode))
                 .build();
 
         // when
-        String consoleUrl = command.buildConsoleURI("neo4j+s://rogue-env.databases.neo4j-env.io", true);
+        String consoleUrl = command.buildConsoleURI("neo4j+s://rogue-env.databases.neo4j-env.io", devMode);
 
         // then
         assertEquals(consoleUrl, "https://console-env.neo4j-env.io/v1/databases/rogue");
+    }
+
+    @Test
+    public void testExceptionWithDevModeOnRealURI() {
+        // given
+        boolean devMode = true;
+        Copier targetCommunicator = mockedTargetCommunicator();
+        UploadCommand command = command()
+                .copier(targetCommunicator)
+                .console(PushToCloudConsole.fakeConsole("username", "password", devMode))
+                .build();
+
+        // when
+        CommandFailedException exception = assertThrows(
+                CommandFailedException.class,
+                () -> command.buildConsoleURI("neo4j+s://rogue.databases.neo4j.io", devMode));
+
+        // then
+        assertEquals(
+                "Expected to find an environment running in dev mode in bolt URI: neo4j+s://rogue.databases.neo4j.io",
+                exception.getMessage());
     }
 
     @Test
@@ -194,39 +221,6 @@ class UploadCommandTest {
     }
 
     @Test
-    void shouldFailWithInvalidUrl() {
-        // given
-        Copier targetCommunicator = mockedTargetCommunicator();
-        UploadCommand command = command()
-                .copier(targetCommunicator)
-                .console(PushToCloudConsole.fakeConsole("username", "password", false))
-                .build();
-
-        // when
-        String[] args = {DBNAME, "--from-path", dumpDir.toString(), "--to-uri", "neo4j://hello.local"};
-        int returnValue = new CommandLine(command).execute(args);
-
-        // then
-        assertNotEquals(0, returnValue, "Expected command to fail");
-    }
-
-    @Test
-    void shouldFailWithInvalidUrlInDevMode() {
-        // given
-        Copier targetCommunicator = mockedTargetCommunicator();
-        UploadCommand command = command()
-                .copier(targetCommunicator)
-                .console(PushToCloudConsole.fakeConsole("username", "password", true))
-                .build();
-        // when
-        String[] args = {DBNAME, "--from-path", dumpDir.toString(), "--to-uri", "neo4j://hello.local"};
-        int returnValue = new CommandLine(command).execute(args);
-
-        // then
-        assertNotEquals(0, returnValue, "Expected command to fail");
-    }
-
-    @Test
     void shouldPassWithNonProductionUrlInDevMode() {
         // given
         Copier targetCommunicator = mockedTargetCommunicator();
@@ -247,7 +241,45 @@ class UploadCommandTest {
         new CommandLine(command).execute(args);
         // then
         verify(targetCommunicator).checkSize(anyBoolean(), any(), anyLong(), any());
-        verify(targetCommunicator).copy(anyBoolean(), any(), any(), any(), eq(false), any());
+        verify(targetCommunicator)
+                .copy(
+                        anyBoolean(),
+                        eq("https://console-env.neo4j-env.io/v1/databases/ce768319"),
+                        any(),
+                        any(),
+                        eq(false),
+                        any());
+    }
+
+    @Test
+    void shouldPassWithRealUrl() {
+        // given
+        Copier targetCommunicator = mockedTargetCommunicator();
+        String password = "super-secret-password";
+        UploadCommand command = command()
+                .copier(targetCommunicator)
+                .console(PushToCloudConsole.fakeConsole("username", password, false))
+                .build();
+        String[] args = {
+            DBNAME,
+            "--from-path",
+            dumpDir.toString(),
+            "--to-password",
+            password,
+            "--to-uri",
+            "neo4j+s://ce768319.databases.neo4j.io"
+        };
+        new CommandLine(command).execute(args);
+        // then
+        verify(targetCommunicator).checkSize(anyBoolean(), any(), anyLong(), any());
+        verify(targetCommunicator)
+                .copy(
+                        anyBoolean(),
+                        eq("https://console.neo4j.io/v1/databases/ce768319"),
+                        any(),
+                        any(),
+                        eq(false),
+                        any());
     }
 
     @Test
@@ -314,18 +346,6 @@ class UploadCommandTest {
     }
 
     @Test
-    @Disabled("Test no longer semantic add tests to ensure both exist")
-    public void shouldNotAcceptBothDumpAndDatabaseNameAsSource() throws CommandFailedException {
-        // given
-        UploadCommand command = command().copier(mockedTargetCommunicator()).build();
-
-        // when
-        String[] args = {"--from-path", dumpDir.toString(), "--to-uri", SOME_EXAMPLE_BOLT_URI, DBNAME};
-        int returnValue = new CommandLine(command).execute(args);
-        assertNotEquals(0, returnValue, "Expected command to fail");
-    }
-
-    @Test
     public void shouldAcceptPasswordViaArgAndPromptForUsername() throws CommandFailedException {
         // given
         Copier targetCommunicator = mockedTargetCommunicator();
@@ -341,6 +361,8 @@ class UploadCommandTest {
             DBNAME, "--from-path", dumpDir.toString(), "--to-password", "pass", "--to-uri", SOME_EXAMPLE_BOLT_URI
         };
         new CommandLine(command).execute(args);
+
+        // then
         verify(targetCommunicator)
                 .authenticate(anyBoolean(), anyString(), eq("neo4j"), eq("pass".toCharArray()), anyBoolean());
     }
@@ -363,6 +385,7 @@ class UploadCommandTest {
                 .setResourceBundle(new MapResourceBundle(environment))
                 .execute(args);
 
+        // then
         verify(targetCommunicator)
                 .authenticate(anyBoolean(), anyString(), eq("neo4j"), eq("pass".toCharArray()), anyBoolean());
     }
@@ -382,8 +405,9 @@ class UploadCommandTest {
         String[] args = {
             DBNAME, "--from-path", dumpDir.toString(), "--to-user", "user", "--to-uri", SOME_EXAMPLE_BOLT_URI
         };
-
         new CommandLine(command).execute(args);
+
+        // then
         assertTrue(Files.exists(dump));
         verify(targetCommunicator)
                 .authenticate(anyBoolean(), anyString(), eq("user"), eq("abc".toCharArray()), anyBoolean());

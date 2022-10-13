@@ -203,6 +203,11 @@ public class UploadCommand extends AbstractAdminCommand {
         String databaseId = matcher.group(1);
         String environment = matcher.group(2);
         String domain = "";
+
+        if (devMode && environment == null) {
+            throw new CommandFailedException(
+                    "Expected to find an environment running in dev mode in bolt URI: " + boltURI);
+        }
         if (matcher.groupCount() == 5 && devMode) {
             domain = matcher.group(4);
         }
