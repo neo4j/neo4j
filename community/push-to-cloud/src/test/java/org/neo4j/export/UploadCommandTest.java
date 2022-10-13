@@ -18,8 +18,7 @@ package org.neo4j.export;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -106,6 +105,50 @@ class UploadCommandTest {
         new CommandLine(new DumpCommandProvider().createCommand(ctx)).execute(args);
     }
 
+
+    @Test
+    public void testBuildConsoleURLWithInvalidURL() {
+        // given
+        Copier targetCommunicator = mockedTargetCommunicator();
+        String username = "neo4j";
+        String password = "abc";
+        UploadCommand command = command()
+                .copier(targetCommunicator)
+                .console(PushToCloudConsole.fakeConsole(username, password, false))
+                .build();
+        CommandFailedException exception = assertThrows(CommandFailedException.class, () -> command.buildConsoleURI("hello.local", false));
+        assertEquals(exception.getMessage(), "Invalid Bolt URI 'hello.local'");
+    }
+
+    @Test
+    public void testBuildConsoleURLWithValidProdURL() {
+        // given
+        Copier targetCommunicator = mockedTargetCommunicator();
+        String username = "neo4j";
+        String password = "abc";
+        UploadCommand command = command()
+                .copier(targetCommunicator)
+                .console(PushToCloudConsole.fakeConsole(username, password, false))
+                .build();
+        String consoleUrl = command.buildConsoleURI("neo4j+s://rogue.databases.neo4j.io", false);
+        assertEquals(consoleUrl, "https://console.neo4j.io/v1/databases/rogue");
+    }
+
+
+    @Test
+    public void testBuildConsoleURLInDevMode() {
+        // given
+        Copier targetCommunicator = mockedTargetCommunicator();
+        String username = "neo4j";
+        String password = "abc";
+        UploadCommand command = command()
+                .copier(targetCommunicator)
+                .console(PushToCloudConsole.fakeConsole(username, password, false))
+                .build();
+        String consoleUrl = command.buildConsoleURI("neo4j+s://rogue-env.databases.neo4j-env.io", true);
+        assertEquals(consoleUrl, "https://console-env.neo4j-env.io/v1/databases/rogue");
+    }
+
     @Test
     public void shouldReadUsernameAndPasswordFromUserInput() {
         // given
@@ -135,8 +178,12 @@ class UploadCommandTest {
                 .copier(targetCommunicator)
                 .console(PushToCloudConsole.fakeConsole("username", "password", false))
                 .build();
+
+        // when
         String[] args = {DBNAME, "--from-path", dumpDir.toString(), "--to-uri", "neo4j://hello.local"};
         int returnValue = new CommandLine(command).execute(args);
+
+        // then
         assertNotEquals(0, returnValue, "Expected command to fail");
     }
 
@@ -148,8 +195,11 @@ class UploadCommandTest {
                 .copier(targetCommunicator)
                 .console(PushToCloudConsole.fakeConsole("username", "password", true))
                 .build();
+        // when
         String[] args = {DBNAME, "--from-path", dumpDir.toString(), "--to-uri", "neo4j://hello.local"};
         int returnValue = new CommandLine(command).execute(args);
+
+        // then
         assertNotEquals(0, returnValue, "Expected command to fail");
     }
 
@@ -176,6 +226,7 @@ class UploadCommandTest {
         verify(targetCommunicator).checkSize(anyBoolean(), any(), anyLong(), any());
         verify(targetCommunicator).copy(anyBoolean(), any(), any(), any(), eq(false), any());
     }
+
 
     @Test
     public void shouldUseNeo4jAsDefaultUsernameIfUserHitsEnter() {

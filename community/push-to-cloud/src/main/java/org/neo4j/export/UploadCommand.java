@@ -170,7 +170,7 @@ public class UploadCommand extends AbstractAdminCommand {
         }
     }
 
-    private String buildConsoleURI(String boltURI, boolean devMode) throws CommandFailedException {
+    String buildConsoleURI(String boltURI, boolean devMode) throws CommandFailedException {
         // A boltURI looks something like this:
         //
         //   bolt+routing://mydbid-myenvironment.databases.neo4j.io
