@@ -47,7 +47,7 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor.Decorator;
 public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
     /**
      * @return a new {@link CommandCreationContext} meant to be kept for multiple calls to
-     * {@link #createCommands(Collection, ReadableTransactionState, StorageReader, CommandCreationContext, ResourceLocker, LockTracer, Decorator, CursorContext, StoreCursors, MemoryTracker)}.
+     * {@link #createCommands(ReadableTransactionState, StorageReader, CommandCreationContext, ResourceLocker, LockTracer, Decorator, CursorContext, StoreCursors, MemoryTracker)}.
      * Must be {@link CommandCreationContext#close() closed} after used, before being discarded.
      */
     CommandCreationContext newCommandCreationContext(MemoryTracker memoryTracker);
@@ -68,7 +68,6 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
      * storage using {@link #apply(CommandsToApply, TransactionApplicationMode)}.
      * The reason this is separated like this is that the generated commands can be used for other things
      * than applying to storage, f.ex replicating to another storage engine.
-     * @param target {@link Collection} to put {@link StorageCommand commands} into.
      * @param state {@link ReadableTransactionState} representing logical store changes to generate commands for.
      * @param storageReader {@link StorageReader} to use for reading store state during creation of commands.
      * @param creationContext {@link CommandCreationContext} to use for do contextualized command creation e.g. id allocation.
@@ -84,8 +83,7 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
      * @param memoryTracker to report allocations to
      * @throws KernelException on known errors while creating commands.
      */
-    void createCommands(
-            Collection<StorageCommand> target,
+    List<StorageCommand> createCommands(
             ReadableTransactionState state,
             StorageReader storageReader,
             CommandCreationContext creationContext,

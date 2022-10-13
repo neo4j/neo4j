@@ -26,7 +26,6 @@ import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -262,10 +261,8 @@ public abstract class RecordStorageReaderTestBase {
     }
 
     private void apply(TxState txState) throws Exception {
-        List<StorageCommand> commands = new ArrayList<>();
         long txId = nextTxId.incrementAndGet();
-        storageEngine.createCommands(
-                commands,
+        List<StorageCommand> commands = storageEngine.createCommands(
                 txState,
                 commitReader,
                 commitContext,

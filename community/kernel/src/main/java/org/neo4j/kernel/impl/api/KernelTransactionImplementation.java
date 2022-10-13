@@ -44,8 +44,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
-import org.neo4j.collection.trackable.HeapTrackingArrayList;
-import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.LocalConfig;
@@ -137,7 +135,6 @@ import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.CommandCreationContext;
-import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
@@ -888,10 +885,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 lockClient.prepareForCommit();
 
                 // Gather up commands from the various sources
-                HeapTrackingArrayList<StorageCommand> extractedCommands =
-                        HeapTrackingCollections.newArrayList(memoryTracker);
-                storageEngine.createCommands(
-                        extractedCommands,
+                var extractedCommands = storageEngine.createCommands(
                         txState,
                         storageReader,
                         commandCreationContext,

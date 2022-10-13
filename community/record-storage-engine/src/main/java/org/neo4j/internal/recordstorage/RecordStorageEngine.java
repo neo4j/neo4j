@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static java.util.Collections.emptyList;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
 import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
@@ -38,6 +39,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
+import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -418,8 +420,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
      * @throws ConstraintValidationException if this transaction was set to create a constraint and some data violates that constraint.
      */
     @Override
-    public void createCommands(
-            Collection<StorageCommand> commands,
+    public List<StorageCommand> createCommands(
             ReadableTransactionState txState,
             StorageReader storageReader,
             CommandCreationContext commandCreationContext,
@@ -430,47 +431,48 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             StoreCursors storeCursors,
             MemoryTracker transactionMemoryTracker)
             throws KernelException {
-        if (txState != null) {
-            KernelVersion version = neoStores.getMetaDataStore().kernelVersion();
-
-            // We can make this cast here because we expected that the storageReader passed in here comes from
-            // this storage engine itself, anything else is considered a bug. And we do know the inner workings
-            // of the storage statements that we create.
-            RecordStorageCommandCreationContext creationContext =
-                    (RecordStorageCommandCreationContext) commandCreationContext;
-            LogCommandSerialization serialization = RecordStorageCommandReaderFactory.INSTANCE.get(version);
-            TransactionRecordState recordState = creationContext.createTransactionRecordState(
-                    locks,
-                    lockTracer,
-                    serialization,
-                    lockVerificationFactory.create(locks, txState, neoStores, schemaRuleAccess, storeCursors));
-
-            // Visit transaction state and populate these record state objects
-            TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor(
-                    recordState, schemaState, schemaRuleAccess, constraintSemantics, cursorContext, storeCursors);
-            CountsRecordState countsRecordState = new CountsRecordState(serialization);
-            txStateVisitor = additionalTxStateVisitor.apply(txStateVisitor);
-            txStateVisitor = new TransactionCountingStateVisitor(
-                    txStateVisitor, storageReader, txState, countsRecordState, cursorContext, storeCursors);
-            try (TxStateVisitor visitor = txStateVisitor) {
-                txState.accept(visitor);
-            }
-
-            // Convert record state into commands
-            recordState.extractCommands(commands, transactionMemoryTracker);
-            countsRecordState.extractCommands(commands, transactionMemoryTracker);
-
-            // Verify sufficient locks
-            CommandLockVerification commandLockVerification =
-                    commandLockVerificationFactory.create(locks, txState, neoStores, schemaRuleAccess, storeCursors);
-            commandLockVerification.verifySufficientlyLocked(commands);
-
-            unallocateIds(txState.addedAndRemovedNodes().getRemovedFromAdded(), RecordIdType.NODE, cursorContext);
-            unallocateIds(
-                    txState.addedAndRemovedRelationships().getRemovedFromAdded(),
-                    RecordIdType.RELATIONSHIP,
-                    cursorContext);
+        if (txState == null) {
+            return emptyList();
         }
+        var commands = HeapTrackingCollections.<StorageCommand>newArrayList(transactionMemoryTracker);
+        KernelVersion version = neoStores.getMetaDataStore().kernelVersion();
+
+        // We can make this cast here because we expected that the storageReader passed in here comes from
+        // this storage engine itself, anything else is considered a bug. And we do know the inner workings
+        // of the storage statements that we create.
+        RecordStorageCommandCreationContext creationContext =
+                (RecordStorageCommandCreationContext) commandCreationContext;
+        LogCommandSerialization serialization = RecordStorageCommandReaderFactory.INSTANCE.get(version);
+        TransactionRecordState recordState = creationContext.createTransactionRecordState(
+                locks,
+                lockTracer,
+                serialization,
+                lockVerificationFactory.create(locks, txState, neoStores, schemaRuleAccess, storeCursors));
+
+        // Visit transaction state and populate these record state objects
+        TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor(
+                recordState, schemaState, schemaRuleAccess, constraintSemantics, cursorContext, storeCursors);
+        CountsRecordState countsRecordState = new CountsRecordState(serialization);
+        txStateVisitor = additionalTxStateVisitor.apply(txStateVisitor);
+        txStateVisitor = new TransactionCountingStateVisitor(
+                txStateVisitor, storageReader, txState, countsRecordState, cursorContext, storeCursors);
+        try (TxStateVisitor visitor = txStateVisitor) {
+            txState.accept(visitor);
+        }
+
+        // Convert record state into commands
+        recordState.extractCommands(commands, transactionMemoryTracker);
+        countsRecordState.extractCommands(commands, transactionMemoryTracker);
+
+        // Verify sufficient locks
+        CommandLockVerification commandLockVerification =
+                commandLockVerificationFactory.create(locks, txState, neoStores, schemaRuleAccess, storeCursors);
+        commandLockVerification.verifySufficientlyLocked(commands);
+
+        unallocateIds(txState.addedAndRemovedNodes().getRemovedFromAdded(), RecordIdType.NODE, cursorContext);
+        unallocateIds(
+                txState.addedAndRemovedRelationships().getRemovedFromAdded(), RecordIdType.RELATIONSHIP, cursorContext);
+        return commands;
     }
 
     @Override

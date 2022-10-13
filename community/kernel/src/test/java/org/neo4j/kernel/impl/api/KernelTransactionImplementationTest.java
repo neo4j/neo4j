@@ -34,7 +34,6 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -54,7 +53,6 @@ import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionValidationFailed;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -399,14 +397,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
             String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer) throws Exception {
         // GIVEN a transaction starting at one point in time
         long startingTime = clock.millis();
-        doAnswer(invocation -> {
-                    Collection<StorageCommand> commands = invocation.getArgument(0);
-                    commands.add(mock(StorageCommand.class));
-                    return null;
-                })
-                .when(storageEngine)
-                .createCommands(
-                        any(Collection.class),
+        when(storageEngine.createCommands(
                         any(TransactionState.class),
                         any(StorageReader.class),
                         any(CommandCreationContext.class),
@@ -415,7 +406,8 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
                         any(TxStateVisitor.Decorator.class),
                         any(CursorContext.class),
                         any(StoreCursors.class),
-                        any(MemoryTracker.class));
+                        any(MemoryTracker.class)))
+                .thenReturn(List.of(mock(StorageCommand.class)));
 
         try (KernelTransactionImplementation transaction = newTransaction(loginContext(isWriteTx))) {
             transaction.initialize(

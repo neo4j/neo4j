@@ -332,8 +332,7 @@ class ParallelRecoveryVisitorTest {
         }
 
         @Override
-        public void createCommands(
-                Collection<StorageCommand> target,
+        public List<StorageCommand> createCommands(
                 ReadableTransactionState state,
                 StorageReader storageReader,
                 CommandCreationContext creationContext,

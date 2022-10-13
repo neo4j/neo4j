@@ -32,7 +32,6 @@ import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.function.ThrowingBiConsumer;
@@ -109,7 +108,6 @@ public class RecordStorageEngineTestUtils {
                 .accept(any());
         when(txState.addedAndRemovedNodes()).thenReturn(LongDiffSets.EMPTY);
         when(txState.addedAndRemovedRelationships()).thenReturn(LongDiffSets.EMPTY);
-        List<StorageCommand> commands = new ArrayList<>();
         NeoStores neoStores = storageEngine.testAccessNeoStores();
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
         CursorContext cursorContext = NULL_CONTEXT;
@@ -117,8 +115,7 @@ public class RecordStorageEngineTestUtils {
                         storageEngine.newCommandCreationContext(EmptyMemoryTracker.INSTANCE);
                 StoreCursors storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
             commandCreationContext.initialize(cursorContext, storeCursors);
-            storageEngine.createCommands(
-                    commands,
+            List<StorageCommand> commands = storageEngine.createCommands(
                     txState,
                     storageEngine.newReader(),
                     commandCreationContext,

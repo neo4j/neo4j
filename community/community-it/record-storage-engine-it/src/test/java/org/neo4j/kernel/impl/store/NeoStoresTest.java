@@ -49,7 +49,6 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.LongSupplier;
@@ -528,9 +527,7 @@ class NeoStoresTest {
         try (CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext(INSTANCE);
                 var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
             commandCreationContext.initialize(cursorContext, storeCursors);
-            List<StorageCommand> commands = new ArrayList<>();
-            storageEngine.createCommands(
-                    commands,
+            List<StorageCommand> commands = storageEngine.createCommands(
                     transactionState,
                     storageReader,
                     commandCreationContext,

@@ -41,7 +41,6 @@ import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -580,10 +579,8 @@ class BatchingNeoStoresTest {
             RecordStorageEngine storageEngine,
             StoreCursors storeCursors)
             throws Exception {
-        List<StorageCommand> commands = new ArrayList<>();
         try (RecordStorageReader storageReader = storageEngine.newReader()) {
-            storageEngine.createCommands(
-                    commands,
+            List<StorageCommand> commands = storageEngine.createCommands(
                     txState,
                     storageReader,
                     commandCreationContext,

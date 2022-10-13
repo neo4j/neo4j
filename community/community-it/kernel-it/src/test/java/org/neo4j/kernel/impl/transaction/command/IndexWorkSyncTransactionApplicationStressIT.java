@@ -33,7 +33,6 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.NO_DECORATION;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -201,9 +200,7 @@ class IndexWorkSyncTransactionApplicationStressIT {
             txState.nodeDoCreate(nodeId);
             txState.nodeDoAddLabel(descriptor.getLabelId(), nodeId);
             txState.nodeDoAddProperty(nodeId, descriptor.getPropertyId(), propertyValue(id, progress));
-            List<StorageCommand> commands = new ArrayList<>();
-            storageEngine.createCommands(
-                    commands,
+            List<StorageCommand> commands = storageEngine.createCommands(
                     txState,
                     reader,
                     creationContext,

@@ -30,8 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyCollection;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -49,7 +47,6 @@ import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.O
 import static org.neo4j.util.concurrent.Futures.combine;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -673,14 +670,7 @@ class KernelTransactionsTest {
         when(storageEngine.newReader()).thenReturn(firstReader, otherReaders);
         when(storageEngine.newCommandCreationContext(any())).thenReturn(mock(CommandCreationContext.class));
         when(storageEngine.createStorageCursors(any())).thenReturn(StoreCursors.NULL);
-        doAnswer(invocation -> {
-                    Collection<StorageCommand> argument = invocation.getArgument(0);
-                    argument.add(mock(StorageCommand.class));
-                    return null;
-                })
-                .when(storageEngine)
-                .createCommands(
-                        anyCollection(),
+        when(storageEngine.createCommands(
                         any(ReadableTransactionState.class),
                         any(StorageReader.class),
                         any(CommandCreationContext.class),
@@ -689,7 +679,8 @@ class KernelTransactionsTest {
                         any(TxStateVisitor.Decorator.class),
                         any(CursorContext.class),
                         any(StoreCursors.class),
-                        any(MemoryTracker.class));
+                        any(MemoryTracker.class)))
+                .thenReturn(List.of(mock(StorageCommand.class)));
 
         return newKernelTransactions(locks, storageEngine, commitProcess, testKernelTransactions, config);
     }

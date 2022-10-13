@@ -30,7 +30,6 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.NO_DECORATION;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -93,12 +92,10 @@ public class CommitProcessTracingIT {
             try (CommandCreationContext context = storageEngine.newCommandCreationContext(INSTANCE);
                     var storeCursors = storageEngine.createStorageCursors(CursorContext.NULL_CONTEXT)) {
                 context.initialize(cursorContext, storeCursors);
-                List<StorageCommand> commands = new ArrayList<>();
                 var txState = new TxState();
                 txState.nodeDoAddLabel(1, sourceId);
 
-                storageEngine.createCommands(
-                        commands,
+                List<StorageCommand> commands = storageEngine.createCommands(
                         txState,
                         reader,
                         context,

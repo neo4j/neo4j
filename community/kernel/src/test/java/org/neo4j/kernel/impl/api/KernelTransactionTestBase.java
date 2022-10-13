@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.api;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyCollection;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -30,7 +28,6 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -85,7 +82,6 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.MetadataProvider;
-import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -122,10 +118,7 @@ class KernelTransactionTestBase {
         when(storageEngine.newCommandCreationContext(any())).thenReturn(commandCreationContext);
         when(storageEngine.metadataProvider()).thenReturn(metadataProvider);
         when(storageEngine.createStorageCursors(any())).thenReturn(StoreCursors.NULL);
-        doAnswer(invocation -> ((Collection<StorageCommand>) invocation.getArgument(0)).add(new TestCommand()))
-                .when(storageEngine)
-                .createCommands(
-                        anyCollection(),
+        when(storageEngine.createCommands(
                         any(ReadableTransactionState.class),
                         any(StorageReader.class),
                         any(CommandCreationContext.class),
@@ -134,7 +127,8 @@ class KernelTransactionTestBase {
                         any(TxStateVisitor.Decorator.class),
                         any(CursorContext.class),
                         any(StoreCursors.class),
-                        any(MemoryTracker.class));
+                        any(MemoryTracker.class)))
+                .thenReturn(List.of(new TestCommand()));
     }
 
     public KernelTransactionImplementation newTransaction(long transactionTimeoutMillis) {
