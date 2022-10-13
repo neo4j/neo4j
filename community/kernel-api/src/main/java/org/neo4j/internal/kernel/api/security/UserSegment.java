@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import java.util.Objects;
+
 public class UserSegment implements Segment {
     private final String username;
 
@@ -32,6 +34,25 @@ public class UserSegment implements Segment {
             return username == null || username.equals(other.username);
         }
         return false;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        UserSegment that = (UserSegment) o;
+
+        return Objects.equals(username, that.username);
+    }
+
+    @Override
+    public int hashCode() {
+        return username != null ? username.hashCode() : 0;
     }
 
     @Override

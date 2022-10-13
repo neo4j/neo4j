@@ -32,7 +32,7 @@ public class RelTypeSegment implements Segment {
 
     @Override
     public int hashCode() {
-        return relType.hashCode();
+        return relType != null ? relType.hashCode() : 0;
     }
 
     @Override

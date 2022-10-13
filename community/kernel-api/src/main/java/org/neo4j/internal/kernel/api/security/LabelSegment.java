@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import java.util.Objects;
+
 public class LabelSegment implements Segment {
     private final String label;
 
@@ -31,24 +33,22 @@ public class LabelSegment implements Segment {
     }
 
     @Override
-    public int hashCode() {
-        return label.hashCode();
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        LabelSegment that = (LabelSegment) o;
+
+        return Objects.equals(label, that.label);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-
-        if (obj instanceof LabelSegment other) {
-            if (this.label == null) {
-                return other.label == null;
-            } else {
-                return this.label.equals(other.getLabel());
-            }
-        }
-        return false;
+    public int hashCode() {
+        return label != null ? label.hashCode() : 0;
     }
 
     @Override

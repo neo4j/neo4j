@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import java.util.Objects;
+
 public class ProcedureSegment implements Segment {
     private final String procedure;
 
@@ -36,6 +38,25 @@ public class ProcedureSegment implements Segment {
             return procedure == null || procedure.equals(other.procedure);
         }
         return false;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        ProcedureSegment that = (ProcedureSegment) o;
+
+        return Objects.equals(procedure, that.procedure);
+    }
+
+    @Override
+    public int hashCode() {
+        return procedure != null ? procedure.hashCode() : 0;
     }
 
     @Override

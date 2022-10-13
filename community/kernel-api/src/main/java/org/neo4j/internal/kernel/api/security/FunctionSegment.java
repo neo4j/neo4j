@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import java.util.Objects;
+
 public class FunctionSegment implements Segment {
     private final String function;
 
@@ -36,6 +38,25 @@ public class FunctionSegment implements Segment {
             return function == null || function.equals(other.function);
         }
         return false;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        FunctionSegment that = (FunctionSegment) o;
+
+        return Objects.equals(function, that.function);
+    }
+
+    @Override
+    public int hashCode() {
+        return function != null ? function.hashCode() : 0;
     }
 
     @Override
