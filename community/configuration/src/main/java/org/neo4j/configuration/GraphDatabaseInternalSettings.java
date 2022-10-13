@@ -510,12 +510,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
-    @Description("The default index provider used for managing full-text indexes. Only 'fulltext-1.0' is supported.")
-    public static final Setting<String> default_fulltext_provider = newBuilder(
-                    "internal.dbms.index.default_fulltext_provider", STRING, "fulltext-1.0")
-            .build();
-
-    @Internal
     @Description("If 'true', new database will be created without token indexes for labels and relationships.")
     public static final Setting<Boolean> skip_default_indexes_on_creation = newBuilder(
                     "internal.dbms.index.skip_default_indexes_on_creation", BOOL, false)

@@ -188,6 +188,7 @@ public final class SettingMigrators {
                 "unsupported.dbms.topology_graph_updater.enable",
                 "unsupported.dbms.uris.rest",
                 "unsupported.dbms.reserved.page.header.bytes",
+                "unsupported.dbms.index.default_fulltext_provider",
                 "cypher.default_language_version",
                 "dbms.logs.query.allocation_logging_enabled",
                 "dbms.track_query_allocation",
