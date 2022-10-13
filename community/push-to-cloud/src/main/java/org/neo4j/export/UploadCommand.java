@@ -189,7 +189,7 @@ public class UploadCommand extends AbstractAdminCommand {
         Pattern pattern;
         if (devMode) {
             pattern = Pattern.compile(
-                    "(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://([^-]+)(-(.+))?.databases.neo4j(-[a-z]*)?.io$");
+                    "(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://([^-]+)(-(.+))?.databases.neo4j(-(.+))?.io$");
         } else {
             pattern = Pattern.compile(
                     "(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://([^-]+)(-(.+))?.databases.neo4j.io$");
@@ -202,8 +202,13 @@ public class UploadCommand extends AbstractAdminCommand {
 
         String databaseId = matcher.group(1);
         String environment = matcher.group(2);
+        String domain = "";
+        if (matcher.groupCount() == 5 && devMode) {
+            domain = matcher.group(4);
+        }
         return String.format(
-                "https://console%s.neo4j.io/v1/databases/%s", environment == null ? "" : environment, databaseId);
+                "https://console%s.neo4j%s.io/v1/databases/%s",
+                environment == null ? "" : environment, domain, databaseId);
     }
 
     public DumpUploader makeDumpUploader(Path dump, String database) {
