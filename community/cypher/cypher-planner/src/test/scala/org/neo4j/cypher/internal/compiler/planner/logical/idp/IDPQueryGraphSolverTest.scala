@@ -1122,6 +1122,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
             argumentIds = Set("a")
           )
         )),
+        "anon_0",
         "EXISTS { MATCH (a), (x) }"
       )(pos)
 
@@ -1152,6 +1153,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
             argumentIds = Set("a")
           )
         )),
+        "anon_0",
         "EXISTS { MATCH (a), (x) }"
       )(pos)
 
