@@ -49,12 +49,12 @@ public class ConstraintDescriptorFactory {
         return uniqueForSchema(SchemaDescriptors.forLabel(labelId, propertyIds), indexType);
     }
 
-    public static NodeKeyConstraintDescriptor nodeKeyForLabel(int labelId, int... propertyIds) {
-        return nodeKeyForSchema(SchemaDescriptors.forLabel(labelId, propertyIds));
+    public static KeyConstraintDescriptor nodeKeyForLabel(int labelId, int... propertyIds) {
+        return keyForSchema(SchemaDescriptors.forLabel(labelId, propertyIds));
     }
 
-    public static NodeKeyConstraintDescriptor nodeKeyForLabel(IndexType indexType, int labelId, int... propertyIds) {
-        return nodeKeyForSchema(SchemaDescriptors.forLabel(labelId, propertyIds), indexType);
+    public static KeyConstraintDescriptor nodeKeyForLabel(IndexType indexType, int labelId, int... propertyIds) {
+        return keyForSchema(SchemaDescriptors.forLabel(labelId, propertyIds), indexType);
     }
 
     public static ConstraintDescriptor existsForSchema(SchemaDescriptor schema) {
@@ -84,11 +84,11 @@ public class ConstraintDescriptorFactory {
         return new ConstraintDescriptorImplementation(UNIQUE, schema, indexType);
     }
 
-    public static NodeKeyConstraintDescriptor nodeKeyForSchema(SchemaDescriptor schema) {
-        return new ConstraintDescriptorImplementation(UNIQUE_EXISTS, schema, IndexType.RANGE).asNodeKeyConstraint();
+    public static KeyConstraintDescriptor keyForSchema(SchemaDescriptor schema) {
+        return new ConstraintDescriptorImplementation(UNIQUE_EXISTS, schema, IndexType.RANGE).asKeyConstraint();
     }
 
-    public static NodeKeyConstraintDescriptor nodeKeyForSchema(SchemaDescriptor schema, IndexType indexType) {
-        return new ConstraintDescriptorImplementation(UNIQUE_EXISTS, schema, indexType).asNodeKeyConstraint();
+    public static KeyConstraintDescriptor keyForSchema(SchemaDescriptor schema, IndexType indexType) {
+        return new ConstraintDescriptorImplementation(UNIQUE_EXISTS, schema, indexType).asKeyConstraint();
     }
 }

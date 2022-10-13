@@ -112,7 +112,7 @@ public interface SchemaRule44 {
                     Preconditions.checkState(
                             indexType == IndexType.RANGE,
                             "Unsupported migration for constraint schema rule backed by BTREE index type. Id: " + id);
-                    constraint = ConstraintDescriptorFactory.nodeKeyForSchema(schema, indexType.convertIndexType());
+                    constraint = ConstraintDescriptorFactory.keyForSchema(schema, indexType.convertIndexType());
                     if (ownedIndex != null) {
                         constraint = constraint.withOwnedIndexId(ownedIndex);
                     }

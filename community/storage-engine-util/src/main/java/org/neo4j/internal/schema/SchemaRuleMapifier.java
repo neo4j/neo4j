@@ -275,7 +275,7 @@ public class SchemaRuleMapifier {
             }
 
             case "UNIQUE_EXISTS" -> {
-                constraint = ConstraintDescriptorFactory.nodeKeyForSchema(
+                constraint = ConstraintDescriptorFactory.keyForSchema(
                         schema, getIndexType(getString(PROP_INDEX_TYPE, props)));
 
                 if (ownedIndex.isPresent()) {

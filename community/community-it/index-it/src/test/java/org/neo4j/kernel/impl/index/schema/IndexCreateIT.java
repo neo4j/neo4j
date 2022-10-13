@@ -22,16 +22,18 @@ package org.neo4j.kernel.impl.index.schema;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.common.EntityType;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedLabelInSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInSchemaException;
@@ -49,24 +51,26 @@ public class IndexCreateIT extends KernelIntegrationTest {
                     IndexPrototype.uniqueForSchema(schema, schemaWrite.indexProviderByName(provider))
                             .withName(name));
 
-    @Test
-    void shouldCreateIndexWithSpecificExistingProviderName() throws KernelException {
-        shouldCreateWithSpecificExistingProviderName(INDEX_CREATOR);
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldCreateIndexWithSpecificExistingProviderName(EntityType entityType) throws KernelException {
+        shouldCreateWithSpecificExistingProviderName(INDEX_CREATOR, entityType);
     }
 
     @Test
     void shouldCreateUniquePropertyConstraintWithSpecificExistingProviderName() throws KernelException {
-        shouldCreateWithSpecificExistingProviderName(UNIQUE_CONSTRAINT_CREATOR);
+        shouldCreateWithSpecificExistingProviderName(UNIQUE_CONSTRAINT_CREATOR, EntityType.NODE);
     }
 
-    @Test
-    void shouldFailCreateIndexWithNonExistentProviderName() throws KernelException {
-        shouldFailWithNonExistentProviderName(INDEX_CREATOR);
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldFailCreateIndexWithNonExistentProviderName(EntityType entityType) throws KernelException {
+        shouldFailWithNonExistentProviderName(INDEX_CREATOR, entityType);
     }
 
     @Test
     void shouldFailCreateUniquePropertyConstraintWithNonExistentProviderName() throws KernelException {
-        shouldFailWithNonExistentProviderName(UNIQUE_CONSTRAINT_CREATOR);
+        shouldFailWithNonExistentProviderName(UNIQUE_CONSTRAINT_CREATOR, EntityType.NODE);
     }
 
     @Test
@@ -80,8 +84,8 @@ public class IndexCreateIT extends KernelIntegrationTest {
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
 
         // when
-        final FulltextSchemaDescriptor descriptor =
-                SchemaDescriptors.fulltext(EntityType.NODE, new int[] {labelId, labelId}, new int[] {propId});
+        final FulltextSchemaDescriptor descriptor = SchemaDescriptors.fulltext(
+                org.neo4j.common.EntityType.NODE, new int[] {labelId, labelId}, new int[] {propId});
         // then
         assertThrows(
                 RepeatedLabelInSchemaException.class,
@@ -100,7 +104,7 @@ public class IndexCreateIT extends KernelIntegrationTest {
 
         // when
         final FulltextSchemaDescriptor descriptor = SchemaDescriptors.fulltext(
-                EntityType.RELATIONSHIP, new int[] {relTypeId, relTypeId}, new int[] {propId});
+                org.neo4j.common.EntityType.RELATIONSHIP, new int[] {relTypeId, relTypeId}, new int[] {propId});
         // then
         assertThrows(
                 RepeatedRelationshipTypeInSchemaException.class,
@@ -118,18 +122,19 @@ public class IndexCreateIT extends KernelIntegrationTest {
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
 
         // when
-        final FulltextSchemaDescriptor descriptor =
-                SchemaDescriptors.fulltext(EntityType.NODE, new int[] {labelId}, new int[] {propId, propId});
+        final FulltextSchemaDescriptor descriptor = SchemaDescriptors.fulltext(
+                org.neo4j.common.EntityType.NODE, new int[] {labelId}, new int[] {propId, propId});
         // then
         assertThrows(
                 RepeatedPropertyInSchemaException.class,
                 () -> schemaWrite.indexCreate(IndexPrototype.forSchema(descriptor)));
     }
 
-    protected void shouldFailWithNonExistentProviderName(IndexCreator creator) throws KernelException {
+    protected void shouldFailWithNonExistentProviderName(IndexCreator creator, EntityType entityType)
+            throws KernelException {
         // given
         TokenWrite tokenWrite = tokenWriteInNewTransaction();
-        int labelId = tokenWrite.labelGetOrCreateForName("Label");
+        int entityTokenId = entityType.entityTokenGetOrCreate(tokenWrite);
         int propId = tokenWrite.propertyKeyGetOrCreateForName("property");
         commit();
 
@@ -139,18 +144,22 @@ public class IndexCreateIT extends KernelIntegrationTest {
         assertThrows(
                 IndexProviderNotFoundException.class,
                 () -> creator.create(
-                        schemaWrite, forLabel(labelId, propId), "something-completely-different", "index name"));
+                        schemaWrite,
+                        entityType.createSchemaDescriptor(entityTokenId, propId),
+                        "something-completely-different",
+                        "index name"));
     }
 
-    protected void shouldCreateWithSpecificExistingProviderName(IndexCreator creator) throws KernelException {
+    protected void shouldCreateWithSpecificExistingProviderName(IndexCreator creator, EntityType entityType)
+            throws KernelException {
         // given
         TokenWrite tokenWrite = tokenWriteInNewTransaction();
-        int labelId = tokenWrite.labelGetOrCreateForName("Label0");
+        int entityTokenId = entityType.entityTokenGetOrCreate(tokenWrite);
         int propId = tokenWrite.propertyKeyGetOrCreateForName("property");
         commit();
 
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
-        LabelSchemaDescriptor descriptor = forLabel(labelId, propId);
+        SchemaDescriptor descriptor = entityType.createSchemaDescriptor(entityTokenId, propId);
         String provider = RangeIndexProvider.DESCRIPTOR.name();
         String indexName = "index-0";
         creator.create(schemaWrite, descriptor, provider, indexName);
@@ -170,7 +179,38 @@ public class IndexCreateIT extends KernelIntegrationTest {
     }
 
     protected interface IndexCreator {
-        void create(SchemaWrite schemaWrite, LabelSchemaDescriptor descriptor, String providerName, String indexName)
+        void create(SchemaWrite schemaWrite, SchemaDescriptor descriptor, String providerName, String indexName)
                 throws KernelException;
+    }
+
+    interface EntityControl {
+        int entityTokenGetOrCreate(TokenWrite tokenWrite) throws KernelException;
+
+        SchemaDescriptor createSchemaDescriptor(int entityToken, int propertyKey);
+    }
+
+    protected enum EntityType implements EntityControl {
+        NODE {
+            @Override
+            public int entityTokenGetOrCreate(TokenWrite tokenWrite) throws KernelException {
+                return tokenWrite.labelGetOrCreateForName("Label0");
+            }
+
+            @Override
+            public SchemaDescriptor createSchemaDescriptor(int entityToken, int propertyKey) {
+                return forLabel(entityToken, propertyKey);
+            }
+        },
+        RELATIONSHIP {
+            @Override
+            public int entityTokenGetOrCreate(TokenWrite tokenWrite) throws KernelException {
+                return tokenWrite.relationshipTypeGetOrCreateForName("Type0");
+            }
+
+            @Override
+            public SchemaDescriptor createSchemaDescriptor(int entityToken, int propertyKey) {
+                return forRelType(entityToken, propertyKey);
+            }
+        }
     }
 }

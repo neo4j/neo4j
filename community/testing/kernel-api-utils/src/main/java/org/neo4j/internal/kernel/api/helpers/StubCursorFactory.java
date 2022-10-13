@@ -49,6 +49,7 @@ public class StubCursorFactory implements CursorFactory {
     private final Queue<NodeLabelIndexCursor> nodeLabelIndexCursors = new ArrayDeque<>();
     private final Queue<NodeLabelIndexCursor> fullNodeLabelIndexCursors = new ArrayDeque<>();
     private final Queue<RelationshipValueIndexCursor> relationshipValueIndexCursors = new ArrayDeque<>();
+    private final Queue<RelationshipValueIndexCursor> fullRelationshipValueIndexCursors = new ArrayDeque<>();
     private final Queue<RelationshipTypeIndexCursor> relationshipTypeIndexCursors = new ArrayDeque<>();
     private final Queue<RelationshipTypeIndexCursor> fullRelationshipTypeIndexCursors = new ArrayDeque<>();
 
@@ -125,6 +126,12 @@ public class StubCursorFactory implements CursorFactory {
     public RelationshipValueIndexCursor allocateRelationshipValueIndexCursor(
             CursorContext cursorContext, MemoryTracker memoryTracker) {
         return poll(relationshipValueIndexCursors);
+    }
+
+    @Override
+    public RelationshipValueIndexCursor allocateFullAccessRelationshipValueIndexCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker) {
+        return poll(fullRelationshipValueIndexCursors);
     }
 
     @Override

@@ -132,7 +132,8 @@ public interface Write {
      * @param relationship the internal relationship id.
      * @param properties added/changed/removed properties. A value of {@link Values#NO_VALUE} means the property should be removed.
      */
-    void relationshipApplyChanges(long relationship, IntObjectMap<Value> properties) throws EntityNotFoundException;
+    void relationshipApplyChanges(long relationship, IntObjectMap<Value> properties)
+            throws EntityNotFoundException, ConstraintValidationException;
 
     /**
      * Remove a property from a node
@@ -151,7 +152,8 @@ public interface Write {
      * @param value the value to set
      * @return The replaced value, or Values.NO_VALUE if the relationship did not have the property before
      */
-    Value relationshipSetProperty(long relationship, int propertyKey, Value value) throws EntityNotFoundException;
+    Value relationshipSetProperty(long relationship, int propertyKey, Value value)
+            throws EntityNotFoundException, ConstraintValidationException;
 
     /**
      * Remove a property from a relationship

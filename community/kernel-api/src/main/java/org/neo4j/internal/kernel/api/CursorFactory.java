@@ -56,6 +56,9 @@ public interface CursorFactory {
     NodeValueIndexCursor allocateFullAccessNodeValueIndexCursor(
             CursorContext cursorContext, MemoryTracker memoryTracker);
 
+    RelationshipValueIndexCursor allocateFullAccessRelationshipValueIndexCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker);
+
     NodeLabelIndexCursor allocateNodeLabelIndexCursor(CursorContext cursorContext);
 
     NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor(CursorContext cursorContext);

@@ -25,6 +25,7 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.token.api.TokenIdPrettyPrinter;
 
 public class RelationshipPropertyExistenceException extends ConstraintValidationException {
     private final RelationTypeSchemaDescriptor schema;
@@ -46,10 +47,20 @@ public class RelationshipPropertyExistenceException extends ConstraintValidation
 
     @Override
     public String getUserMessage(TokenNameLookup tokenNameLookup) {
+        boolean pluralProps = schema.getPropertyIds().length > 1;
+        String propertyNoun = pluralProps ? "properties" : "property";
+        String sep = pluralProps ? "" : "`";
+        String props = pluralProps
+                ? TokenIdPrettyPrinter.niceProperties(tokenNameLookup, schema.getPropertyIds())
+                : tokenNameLookup.propertyKeyGetName(schema.getPropertyId());
+
         return format(
-                "Relationship(%s) with type `%s` must have the property `%s`",
+                "Relationship(%s) with type `%s` must have the %s %s%s%s",
                 relationshipId,
                 tokenNameLookup.relationshipTypeGetName(schema.getRelTypeId()),
-                tokenNameLookup.propertyKeyGetName(schema.getPropertyId()));
+                propertyNoun,
+                sep,
+                props,
+                sep);
     }
 }

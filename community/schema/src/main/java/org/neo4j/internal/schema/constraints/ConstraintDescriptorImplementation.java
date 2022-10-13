@@ -20,6 +20,7 @@
 package org.neo4j.internal.schema.constraints;
 
 import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.ConstraintType.EXISTS;
 import static org.neo4j.internal.schema.SchemaUserDescription.TOKEN_ID_NAME_LOOKUP;
 
@@ -40,7 +41,7 @@ import org.neo4j.util.Preconditions;
 public class ConstraintDescriptorImplementation
         implements ConstraintDescriptor,
                 NodeExistenceConstraintDescriptor,
-                NodeKeyConstraintDescriptor,
+                KeyConstraintDescriptor,
                 RelExistenceConstraintDescriptor,
                 UniquenessConstraintDescriptor {
     private final ConstraintType type;
@@ -163,22 +164,32 @@ public class ConstraintDescriptorImplementation
     }
 
     @Override
-    public NodeKeyConstraintDescriptor asNodeKeyConstraint() {
-        if (!isNodeKeyConstraint()) {
-            throw conversionException(NodeKeyConstraintDescriptor.class);
-        }
-        return this;
+    public boolean isRelationshipKeyConstraint() {
+        return schema.entityType() == RELATIONSHIP && type == ConstraintType.UNIQUE_EXISTS;
     }
 
     @Override
     public boolean isIndexBackedConstraint() {
-        return isUniquenessConstraint() || isNodeKeyConstraint();
+        return isUniquenessConstraint() || isNodeKeyConstraint() || isRelationshipKeyConstraint();
     }
 
     @Override
     public IndexBackedConstraintDescriptor asIndexBackedConstraint() {
         if (!isIndexBackedConstraint()) {
             throw conversionException(IndexBackedConstraintDescriptor.class);
+        }
+        return this;
+    }
+
+    @Override
+    public boolean isKeyConstraint() {
+        return isNodeKeyConstraint() || isRelationshipKeyConstraint();
+    }
+
+    @Override
+    public KeyConstraintDescriptor asKeyConstraint() {
+        if (!isKeyConstraint()) {
+            throw conversionException(KeyConstraintDescriptor.class);
         }
         return this;
     }

@@ -99,10 +99,10 @@ public interface SchemaWrite {
     ConstraintDescriptor uniquePropertyConstraintCreate(IndexPrototype prototype) throws KernelException;
 
     /**
-     * Create node key constraint based on the given uniqueness index prototype.
+     * Create node/relationship key constraint based on the given uniqueness index prototype.
      * The given index prototype will be used for creating the uniqueness index backing the constraint.
      *
-     * @param prototype the index prototype for which to create a node key constraint.
+     * @param prototype the index prototype for which to create a node/relationship key constraint.
      * @return the created constraint.
      * @throws KernelException if the constraint cannot be created for some reason.
      */

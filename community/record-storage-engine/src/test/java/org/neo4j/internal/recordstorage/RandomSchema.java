@@ -182,10 +182,10 @@ public class RandomSchema implements Supplier<SchemaRule> {
                     .withId(ruleId)
                     .withOwnedIndexId(existingIndexId())
                     .withName(nextName());
-            case 4 -> ConstraintDescriptorFactory.nodeKeyForSchema(nextNodeSchema())
+            case 4 -> ConstraintDescriptorFactory.keyForSchema(nextNodeSchema())
                     .withId(ruleId)
                     .withName(nextName());
-            case 5 -> ConstraintDescriptorFactory.nodeKeyForSchema(nextNodeSchema())
+            case 5 -> ConstraintDescriptorFactory.keyForSchema(nextNodeSchema())
                     .withId(ruleId)
                     .withOwnedIndexId(existingIndexId())
                     .withName(nextName());

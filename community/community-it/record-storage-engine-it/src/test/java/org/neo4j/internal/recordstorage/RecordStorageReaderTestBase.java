@@ -38,8 +38,8 @@ import org.neo4j.internal.kernel.api.exceptions.RelationshipTypeIdNotFoundKernel
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
-import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -188,7 +188,7 @@ public abstract class RecordStorageReaderTestBase {
         TxState txState = new TxState();
         int labelId = getOrCreateLabelId(label);
         int propertyKeyId = getOrCreatePropertyKeyId(propertyKey);
-        NodeKeyConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForLabel(labelId, propertyKeyId);
+        KeyConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForLabel(labelId, propertyKeyId);
         constraint = constraint.withName(index.getName()).withOwnedIndexId(index.getId());
         txState.constraintDoAdd(constraint);
         apply(txState);

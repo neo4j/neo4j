@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.constraints;
 
+import static org.neo4j.common.EntityType.NODE;
+
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -34,7 +36,7 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
@@ -46,7 +48,7 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 @ServiceProvider
 public class StandardConstraintSemantics extends ConstraintSemantics {
     public static final String ERROR_MESSAGE_EXISTS = "Property existence constraint requires Neo4j Enterprise Edition";
-    public static final String ERROR_MESSAGE_NODE_KEY = "Node Key constraint requires Neo4j Enterprise Edition";
+    public static final String ERROR_MESSAGE_KEY_SUFFIX = "Key constraint requires Neo4j Enterprise Edition";
 
     protected final StandardConstraintRuleAccessor accessor = new StandardConstraintRuleAccessor();
 
@@ -64,9 +66,8 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
     }
 
     @Override
-    public void assertNodeKeyConstraintAllowed(LabelSchemaDescriptor descriptor)
-            throws CreateConstraintFailureException {
-        throw nodeKeyConstraintsNotAllowed(descriptor);
+    public void assertKeyConstraintAllowed(SchemaDescriptor descriptor) throws CreateConstraintFailureException {
+        throw keyConstraintsNotAllowed(descriptor);
     }
 
     @Override
@@ -77,7 +78,18 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
             LabelSchemaDescriptor descriptor,
             TokenNameLookup tokenNameLookup)
             throws CreateConstraintFailureException {
-        throw nodeKeyConstraintsNotAllowed(descriptor);
+        throw keyConstraintsNotAllowed(descriptor);
+    }
+
+    @Override
+    public void validateRelKeyConstraint(
+            RelationshipTypeIndexCursor allRelationships,
+            RelationshipScanCursor relCursor,
+            PropertyCursor propertyCursor,
+            RelationTypeSchemaDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException {
+        throw keyConstraintsNotAllowed(descriptor);
     }
 
     @Override
@@ -113,14 +125,11 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
 
     @Override
     public ConstraintDescriptor readConstraint(ConstraintDescriptor constraint) {
-        switch (constraint.type()) {
-            case EXISTS:
-                return readNonStandardConstraint(constraint, ERROR_MESSAGE_EXISTS);
-            case UNIQUE_EXISTS:
-                return readNonStandardConstraint(constraint, ERROR_MESSAGE_NODE_KEY);
-            default:
-                return constraint;
-        }
+        return switch (constraint.type()) {
+            case EXISTS -> readNonStandardConstraint(constraint, ERROR_MESSAGE_EXISTS);
+            case UNIQUE_EXISTS -> readNonStandardConstraint(constraint, keyConstraintErrorMessage(constraint.schema()));
+            default -> constraint;
+        };
     }
 
     protected ConstraintDescriptor readNonStandardConstraint(ConstraintDescriptor constraint, String errorMessage) {
@@ -135,10 +144,14 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
                 ConstraintDescriptorFactory.existsForSchema(descriptor), ERROR_MESSAGE_EXISTS);
     }
 
-    private static CreateConstraintFailureException nodeKeyConstraintsNotAllowed(SchemaDescriptor descriptor) {
-        // When creating a Node Key Constraint in Community Edition
+    private static String keyConstraintErrorMessage(SchemaDescriptor descriptor) {
+        return (descriptor.entityType() == NODE ? "Node " : "Relationship ") + ERROR_MESSAGE_KEY_SUFFIX;
+    }
+
+    private static CreateConstraintFailureException keyConstraintsNotAllowed(SchemaDescriptor descriptor) {
+        // When creating a Key Constraint in Community Edition
         return new CreateConstraintFailureException(
-                ConstraintDescriptorFactory.nodeKeyForSchema(descriptor), ERROR_MESSAGE_NODE_KEY);
+                ConstraintDescriptorFactory.keyForSchema(descriptor), keyConstraintErrorMessage(descriptor));
     }
 
     @Override
@@ -148,9 +161,9 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
     }
 
     @Override
-    public ConstraintDescriptor createNodeKeyConstraintRule(
-            long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId) throws CreateConstraintFailureException {
-        throw nodeKeyConstraintsNotAllowed(descriptor.schema());
+    public ConstraintDescriptor createKeyConstraintRule(long ruleId, KeyConstraintDescriptor descriptor, long indexId)
+            throws CreateConstraintFailureException {
+        throw keyConstraintsNotAllowed(descriptor.schema());
     }
 
     @Override
@@ -188,6 +201,16 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
             LabelSchemaDescriptor descriptor,
             TokenNameLookup tokenNameLookup)
             throws CreateConstraintFailureException {
-        throw nodeKeyConstraintsNotAllowed(descriptor);
+        throw keyConstraintsNotAllowed(descriptor);
+    }
+
+    @Override
+    public void validateRelKeyConstraint(
+            RelationshipScanCursor relCursor,
+            PropertyCursor propertyCursor,
+            RelationTypeSchemaDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException {
+        throw keyConstraintsNotAllowed(descriptor);
     }
 }

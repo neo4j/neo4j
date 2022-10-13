@@ -172,7 +172,13 @@ public class StubStorageCursors implements StorageReader {
 
     @Override
     public Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
-            long[] labels, int propertyKeyId, EntityType entityType) {
+            long[] tokens, int propertyKeyId, EntityType entityType) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
+            long[] tokens, int[] propertyKeyIds, EntityType entityType) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 

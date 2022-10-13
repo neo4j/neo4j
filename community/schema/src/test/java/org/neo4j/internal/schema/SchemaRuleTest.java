@@ -143,8 +143,7 @@ class SchemaRuleTest {
     private final ConstraintDescriptor uniqueLabelConstraint =
             ConstraintDescriptorFactory.uniqueForSchema(labelSchema, RANGE);
     private final ConstraintDescriptor existsLabelConstraint = ConstraintDescriptorFactory.existsForSchema(labelSchema);
-    private final ConstraintDescriptor nodeKeyConstraint =
-            ConstraintDescriptorFactory.nodeKeyForSchema(labelSchema, RANGE);
+    private final ConstraintDescriptor nodeKeyConstraint = ConstraintDescriptorFactory.keyForSchema(labelSchema, RANGE);
     private final ConstraintDescriptor existsRelTypeConstraint =
             ConstraintDescriptorFactory.existsForSchema(relTypeSchema);
     private final ConstraintDescriptor uniqueLabelConstraint2 =

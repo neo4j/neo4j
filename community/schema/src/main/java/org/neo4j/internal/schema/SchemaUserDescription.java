@@ -98,16 +98,11 @@ public final class SchemaUserDescription {
     }
 
     private static String constraintType(ConstraintType type, EntityType entityType) {
-        switch (type) {
-            case EXISTS:
-                return entityType.name() + " PROPERTY EXISTENCE";
-            case UNIQUE:
-                return "UNIQUENESS";
-            case UNIQUE_EXISTS:
-                return "NODE KEY";
-            default:
-                return type.name();
-        }
+        return switch (type) {
+            case EXISTS -> entityType.name() + " PROPERTY EXISTENCE";
+            case UNIQUE -> "UNIQUENESS";
+            case UNIQUE_EXISTS -> entityType.name() + " KEY";
+        };
     }
 
     private static void maybeAddId(long id, StringJoiner joiner) {

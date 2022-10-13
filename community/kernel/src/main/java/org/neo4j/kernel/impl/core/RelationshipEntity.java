@@ -48,6 +48,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -390,6 +391,8 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
 
         try {
             transaction.dataWrite().relationshipSetProperty(id, propertyKeyId, Values.of(value, false));
+        } catch (ConstraintValidationException e) {
+            throw new ConstraintViolationException(e.getUserMessage(transaction.tokenRead()), e);
         } catch (IllegalArgumentException e) {
             try {
                 transaction.rollback();

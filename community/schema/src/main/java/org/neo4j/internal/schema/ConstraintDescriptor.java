@@ -20,8 +20,8 @@
 package org.neo4j.internal.schema;
 
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
-import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 
@@ -72,14 +72,13 @@ public interface ConstraintDescriptor extends SchemaDescriptorSupplier, SchemaRu
 
     /**
      * Test if this constraint descriptor is a node key constraint.
-     * @return {@code true} if calling {@link #asNodeKeyConstraint()} would not throw.
      */
     boolean isNodeKeyConstraint();
 
     /**
-     * @return this constraint descriptor as a {@link NodeKeyConstraintDescriptor} if possible, or throw a {@link IllegalStateException}.
+     * Test if this constraint descriptor is a relationship key constraint.
      */
-    NodeKeyConstraintDescriptor asNodeKeyConstraint();
+    boolean isRelationshipKeyConstraint();
 
     /**
      * Test if this constraint descriptor is an index backed constraint descriptor.
@@ -91,6 +90,17 @@ public interface ConstraintDescriptor extends SchemaDescriptorSupplier, SchemaRu
      * @return this constraint descriptor as an {@link IndexBackedConstraintDescriptor} if possible, or throw a {@link IllegalStateException}.
      */
     IndexBackedConstraintDescriptor asIndexBackedConstraint();
+
+    /**
+     * Test if this constraint descriptor is a key constraint descriptor.
+     * @return {@code true} if calling {@link #asKeyConstraint()} would not throw.
+     */
+    boolean isKeyConstraint();
+
+    /**
+     * @return this constraint descriptor as an {@link KeyConstraintDescriptor} if possible, or throw a {@link IllegalStateException}.
+     */
+    KeyConstraintDescriptor asKeyConstraint();
 
     /**
      * Produce a copy of this constraint descriptor, that has the given id.

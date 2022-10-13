@@ -81,6 +81,7 @@ abstract class Read
                 org.neo4j.internal.kernel.api.Locks,
                 AssertOpen,
                 LockingNodeUniqueIndexSeek.UniqueNodeIndexSeeker<DefaultNodeValueIndexCursor>,
+                RelationshipUniqueIndexSeek.UniqueRelationshipIndexSeeker<DefaultRelationshipValueIndexCursor>,
                 QueryContext {
     protected final StorageReader storageReader;
     protected final DefaultPooledCursors cursors;
@@ -208,6 +209,16 @@ abstract class Read
     @Override // UniqueNodeIndexSeeker
     public void nodeIndexSeekWithFreshIndexReader(
             DefaultNodeValueIndexCursor cursor,
+            ValueIndexReader indexReader,
+            PropertyIndexQuery.ExactPredicate... query)
+            throws IndexNotApplicableKernelException {
+        cursor.setRead(this);
+        indexReader.query(cursor, this, getAccessMode(), unconstrained(), query);
+    }
+
+    @Override
+    public void relationshipIndexSeekWithFreshIndexReader(
+            DefaultRelationshipValueIndexCursor cursor,
             ValueIndexReader indexReader,
             PropertyIndexQuery.ExactPredicate... query)
             throws IndexNotApplicableKernelException {

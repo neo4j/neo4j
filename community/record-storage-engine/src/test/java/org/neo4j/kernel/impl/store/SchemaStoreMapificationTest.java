@@ -31,7 +31,7 @@ import static org.neo4j.internal.schema.IndexType.TEXT;
 import static org.neo4j.internal.schema.SchemaRuleMapifier.mapifySchemaRule;
 import static org.neo4j.internal.schema.SchemaRuleMapifier.unmapifySchemaRule;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForSchema;
-import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.nodeKeyForSchema;
+import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.keyForSchema;
 
 import java.util.Map;
 import org.junit.jupiter.api.RepeatedTest;
@@ -82,7 +82,7 @@ class SchemaStoreMapificationTest {
             .withName("uniqueLabelConstraint")
             .withId(1);
     private ConstraintDescriptor nodeKeyConstraint =
-            nodeKeyForSchema(labelSchema, TEXT).withName("nodeKeyConstraint").withId(1);
+            keyForSchema(labelSchema, TEXT).withName("nodeKeyConstraint").withId(1);
     private ConstraintDescriptor uniqueLabelConstraintWithType = ConstraintDescriptorFactory.uniqueForSchema(
                     labelSchema, RANGE)
             .withName("uniqueLabelConstraintWithType")
@@ -90,7 +90,7 @@ class SchemaStoreMapificationTest {
             .withId(1);
     private ConstraintDescriptor existsLabelConstraint =
             existsForSchema(labelSchema).withName("existsLabelConstraint").withId(1);
-    private ConstraintDescriptor nodeKeyConstraintWithType = nodeKeyForSchema(labelSchema, RANGE)
+    private ConstraintDescriptor nodeKeyConstraintWithType = keyForSchema(labelSchema, RANGE)
             .withName("nodeKeyConstraintWithType")
             .withOwnedIndexId(7)
             .withId(1);

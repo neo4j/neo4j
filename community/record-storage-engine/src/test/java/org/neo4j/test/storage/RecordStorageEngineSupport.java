@@ -36,7 +36,7 @@ import org.neo4j.internal.recordstorage.TransactionApplierFactoryChain;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.SchemaState;
-import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
@@ -142,8 +142,8 @@ public class RecordStorageEngineSupport {
             }
 
             @Override
-            public ConstraintDescriptor createNodeKeyConstraintRule(
-                    long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId) {
+            public ConstraintDescriptor createKeyConstraintRule(
+                    long ruleId, KeyConstraintDescriptor descriptor, long indexId) {
                 throw new UnsupportedOperationException("Not needed a.t.m.");
             }
 

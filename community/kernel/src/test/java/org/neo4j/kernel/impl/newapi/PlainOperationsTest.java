@@ -41,7 +41,7 @@ import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForRelType;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForSchema;
-import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.nodeKeyForSchema;
+import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.keyForSchema;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForSchema;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -78,8 +78,8 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
-import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -579,7 +579,7 @@ public class PlainOperationsTest extends OperationsTest {
     @Test
     void shouldReleaseAcquiredSchemaWriteLockIfNodeKeyConstraintCreationFails() throws Exception {
         // given
-        NodeKeyConstraintDescriptor constraint = nodeKeyForSchema(schema);
+        KeyConstraintDescriptor constraint = keyForSchema(schema);
         storageReaderWithConstraints(constraint);
         int labelId = schema.getLabelId();
         int propertyId = schema.getPropertyId();

@@ -49,6 +49,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     private FullAccessPropertyCursor fullAccessPropertyCursor;
     private DefaultNodeValueIndexCursor nodeValueIndexCursor;
     private FullAccessNodeValueIndexCursor fullAccessNodeValueIndexCursor;
+    private FullAccessRelationshipValueIndexCursor fullAccessRelationshipValueIndexCursor;
     private DefaultNodeLabelIndexCursor nodeLabelIndexCursor;
     private DefaultNodeLabelIndexCursor fullAccessNodeLabelIndexCursor;
     private DefaultRelationshipValueIndexCursor relationshipValueIndexCursor;
@@ -328,6 +329,28 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     }
 
     @Override
+    public FullAccessRelationshipValueIndexCursor allocateFullAccessRelationshipValueIndexCursor(
+            CursorContext cursorContext, MemoryTracker memoryTracker) {
+        if (fullAccessRelationshipValueIndexCursor == null) {
+            return trace(new FullAccessRelationshipValueIndexCursor(this::acceptFullAccess, memoryTracker));
+        }
+
+        try {
+            return acquire(fullAccessRelationshipValueIndexCursor);
+        } finally {
+            fullAccessRelationshipValueIndexCursor = null;
+        }
+    }
+
+    private void acceptFullAccess(DefaultRelationshipValueIndexCursor cursor) {
+        if (fullAccessRelationshipValueIndexCursor != null) {
+            fullAccessRelationshipValueIndexCursor.release();
+        }
+        cursor.removeTracer();
+        fullAccessRelationshipValueIndexCursor = (FullAccessRelationshipValueIndexCursor) cursor;
+    }
+
+    @Override
     public DefaultNodeLabelIndexCursor allocateNodeLabelIndexCursor(CursorContext cursorContext) {
         if (nodeLabelIndexCursor == null) {
             return trace(new DefaultNodeLabelIndexCursor(
@@ -509,6 +532,9 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         }
         if (fullAccessNodeValueIndexCursor != null) {
             fullAccessNodeValueIndexCursor.release();
+        }
+        if (fullAccessRelationshipValueIndexCursor != null) {
+            fullAccessRelationshipValueIndexCursor.release();
         }
         if (nodeLabelIndexCursor != null) {
             nodeLabelIndexCursor.release();

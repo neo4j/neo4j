@@ -20,7 +20,7 @@
 package org.neo4j.storageengine.api;
 
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 
 public class StandardConstraintRuleAccessor implements ConstraintRuleAccessor {
@@ -36,8 +36,7 @@ public class StandardConstraintRuleAccessor implements ConstraintRuleAccessor {
     }
 
     @Override
-    public ConstraintDescriptor createNodeKeyConstraintRule(
-            long ruleId, NodeKeyConstraintDescriptor constraint, long indexId) {
+    public ConstraintDescriptor createKeyConstraintRule(long ruleId, KeyConstraintDescriptor constraint, long indexId) {
         return constraint.withId(ruleId).withOwnedIndexId(indexId);
     }
 

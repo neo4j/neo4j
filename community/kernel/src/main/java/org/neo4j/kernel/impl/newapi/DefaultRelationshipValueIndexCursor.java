@@ -192,9 +192,13 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
     }
 
     public void release() {
-        relationshipScanCursor.close();
-        relationshipScanCursor.release();
-        propertyCursor.close();
-        propertyCursor.release();
+        if (relationshipScanCursor != null) {
+            relationshipScanCursor.close();
+            relationshipScanCursor.release();
+        }
+        if (propertyCursor != null) {
+            propertyCursor.close();
+            propertyCursor.release();
+        }
     }
 }

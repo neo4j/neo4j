@@ -26,7 +26,7 @@ import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 
 class ConstraintDescriptorTest extends SchemaRuleTestBase {
@@ -74,8 +74,8 @@ class ConstraintDescriptorTest extends SchemaRuleTestBase {
     @Test
     void shouldCreateNodeKeyConstraintWithOwnedIndex() {
         // GIVEN
-        NodeKeyConstraintDescriptor descriptor = nodeKeyForLabel(LABEL_ID, PROPERTY_ID_1);
-        NodeKeyConstraintDescriptor constraint = descriptor.withId(RULE_ID).withOwnedIndexId(RULE_ID_2);
+        KeyConstraintDescriptor descriptor = nodeKeyForLabel(LABEL_ID, PROPERTY_ID_1);
+        KeyConstraintDescriptor constraint = descriptor.withId(RULE_ID).withOwnedIndexId(RULE_ID_2);
 
         // THEN
         assertThat(constraint).isEqualTo(descriptor);

@@ -28,7 +28,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundExcepti
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaState;
-import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
@@ -148,7 +148,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter {
 
         switch (constraint.type()) {
             case UNIQUE -> visitAddedUniquenessConstraint(constraint.asUniquenessConstraint(), constraintId);
-            case UNIQUE_EXISTS -> visitAddedNodeKeyConstraint(constraint.asNodeKeyConstraint(), constraintId);
+            case UNIQUE_EXISTS -> visitAddedKeyConstraint(constraint.asKeyConstraint(), constraintId);
             case EXISTS -> {
                 ConstraintDescriptor rule = constraintSemantics.createExistenceConstraint(constraintId, constraint);
                 schemaStateChanger.createSchemaRule(recordState, rule);
@@ -167,12 +167,12 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter {
         schemaStateChanger.setConstraintIndexOwner(recordState, indexRule, constraintId);
     }
 
-    private void visitAddedNodeKeyConstraint(NodeKeyConstraintDescriptor uniqueConstraint, long constraintId)
+    private void visitAddedKeyConstraint(KeyConstraintDescriptor uniqueConstraint, long constraintId)
             throws KernelException {
         IndexDescriptor indexRule =
                 (IndexDescriptor) schemaStorage.loadSingleSchemaRule(uniqueConstraint.ownedIndexId(), storeCursors);
         ConstraintDescriptor constraint =
-                constraintSemantics.createNodeKeyConstraintRule(constraintId, uniqueConstraint, indexRule.getId());
+                constraintSemantics.createKeyConstraintRule(constraintId, uniqueConstraint, indexRule.getId());
         schemaStateChanger.createSchemaRule(recordState, constraint);
         schemaStateChanger.setConstraintIndexOwner(recordState, indexRule, constraintId);
     }

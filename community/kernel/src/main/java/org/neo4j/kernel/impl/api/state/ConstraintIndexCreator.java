@@ -73,18 +73,18 @@ public class ConstraintIndexCreator {
     }
 
     /**
-     * You MUST hold a label write lock before you call this method.
-     * However the label write lock is temporarily released while populating the index backing the constraint.
+     * You MUST hold a label/type write lock before you call this method.
+     * However the label/type write lock is temporarily released while populating the index backing the constraint.
      * It goes a little like this:
      * <ol>
      * <li>Prerequisite: Getting here means that there's an open schema transaction which has acquired the
-     * LABEL WRITE lock.</li>
+     * LABEL/TYPE WRITE lock.</li>
      * <li>Index schema rule which is backing the constraint is created in a nested mini-transaction
      * which doesn't acquire any locking, merely adds tx state and commits so that the index rule is applied
      * to the store, which triggers the index population</li>
-     * <li>Release the LABEL WRITE lock</li>
+     * <li>Release the LABEL/TYPE WRITE lock</li>
      * <li>Await index population to complete</li>
-     * <li>Acquire the LABEL WRITE lock (effectively blocking concurrent transactions changing
+     * <li>Acquire the LABEL/TYPE WRITE lock (effectively blocking concurrent transactions changing
      * data related to this constraint, and it so happens, most other transactions as well) and verify
      * the uniqueness of the built index</li>
      * <li>Verify property existence (if required)</li>
@@ -113,7 +113,7 @@ public class ConstraintIndexCreator {
         }
 
         boolean success = false;
-        boolean reacquiredLabelLock = false;
+        boolean reacquiredLock = false;
         Client locks = transaction.lockClient();
         ResourceType keyType = constraint.schema().keyType();
         long[] lockingKeys = constraint.schema().lockingKeys();
@@ -121,7 +121,7 @@ public class ConstraintIndexCreator {
             locks.acquireShared(transaction.lockTracer(), keyType, lockingKeys);
             IndexProxy proxy = indexingService.getIndexProxy(index);
 
-            // Release the LABEL WRITE lock during index population.
+            // Release the LABEL/TYPE WRITE lock during index population.
             // At this point the integrity of the constraint to be created was checked
             // while holding the lock and the index rule backing the soon-to-be-created constraint
             // has been created. Now it's just the population left, which can take a long time
@@ -131,11 +131,11 @@ public class ConstraintIndexCreator {
             log.debug("Constraint %s populated, starting verification.", constraintString);
 
             // Index population was successful, but at this point we don't know if the uniqueness constraint holds.
-            // Acquire LABEL WRITE lock and verify the constraints here in this user transaction
+            // Acquire LABEL/TYPE WRITE lock and verify the constraints here in this user transaction
             // and if everything checks out then it will be held until after the constraint has been
             // created and activated.
             locks.acquireExclusive(transaction.lockTracer(), keyType, lockingKeys);
-            reacquiredLabelLock = true;
+            reacquiredLock = true;
 
             indexingService.getIndexProxy(index).validate();
             validatePropertyExistenceConstraint(constraint, propertyExistenceEnforcer, index);
@@ -151,7 +151,7 @@ public class ConstraintIndexCreator {
             throw new CreateConstraintFailureException(constraint, e);
         } finally {
             if (!success) {
-                if (!reacquiredLabelLock) {
+                if (!reacquiredLock) {
                     locks.acquireExclusive(transaction.lockTracer(), keyType, lockingKeys);
                 }
 

@@ -21,7 +21,7 @@ package org.neo4j.storageengine.api;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 
 public interface ConstraintRuleAccessor {
@@ -30,7 +30,7 @@ public interface ConstraintRuleAccessor {
     ConstraintDescriptor createUniquenessConstraintRule(
             long ruleId, UniquenessConstraintDescriptor descriptor, long indexId);
 
-    ConstraintDescriptor createNodeKeyConstraintRule(long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId)
+    ConstraintDescriptor createKeyConstraintRule(long ruleId, KeyConstraintDescriptor descriptor, long indexId)
             throws CreateConstraintFailureException;
 
     ConstraintDescriptor createExistenceConstraint(long ruleId, ConstraintDescriptor descriptor)

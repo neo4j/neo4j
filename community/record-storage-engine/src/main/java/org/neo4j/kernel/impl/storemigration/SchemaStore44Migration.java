@@ -396,8 +396,7 @@ public class SchemaStore44Migration {
         if (constraint.constraintRuleType() == SchemaRule44.ConstraintRuleType.UNIQUE) {
             newConstraint = ConstraintDescriptorFactory.uniqueForSchema(constraint.schema(), rangeIndex.getIndexType());
         } else if (constraint.constraintRuleType() == SchemaRule44.ConstraintRuleType.UNIQUE_EXISTS) {
-            newConstraint =
-                    ConstraintDescriptorFactory.nodeKeyForSchema(constraint.schema(), rangeIndex.getIndexType());
+            newConstraint = ConstraintDescriptorFactory.keyForSchema(constraint.schema(), rangeIndex.getIndexType());
         } else {
             throw new IllegalStateException("We should never see non-index-backed constraint here, but got: "
                     + constraint.userDescription(dstTokensHolders));

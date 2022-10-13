@@ -59,7 +59,10 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader {
     Collection<IndexDescriptor> valueIndexesGetRelated(long[] tokens, int[] propertyKeyIds, EntityType entityType);
 
     Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
-            long[] labels, int propertyKeyId, EntityType entityType);
+            long[] tokens, int propertyKeyId, EntityType entityType);
+
+    Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
+            long[] tokens, int[] propertyKeyIds, EntityType entityType);
 
     Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
             long[] changedLabels,

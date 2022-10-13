@@ -72,7 +72,7 @@ class ConstraintDescriptorFactoryTest {
         assertThat(desc.type()).isEqualTo(ConstraintType.UNIQUE);
         assertThat(desc.schema()).isEqualTo(SchemaDescriptors.forLabel(LABEL_ID, 1));
 
-        desc = ConstraintDescriptorFactory.nodeKeyForSchema(SchemaDescriptors.forLabel(LABEL_ID, 1));
+        desc = ConstraintDescriptorFactory.keyForSchema(SchemaDescriptors.forLabel(LABEL_ID, 1));
         assertThat(desc.type()).isEqualTo(ConstraintType.UNIQUE_EXISTS);
         assertThat(desc.schema()).isEqualTo(SchemaDescriptors.forLabel(LABEL_ID, 1));
 
