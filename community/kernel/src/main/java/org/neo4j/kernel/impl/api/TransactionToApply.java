@@ -31,7 +31,6 @@ import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -74,7 +73,6 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable {
     // These fields are provided by commit process, storage engine, or recovery process
     private Commitment commitment;
     private LongConsumer closedCallback;
-    private LogPosition logPosition;
 
     /**
      * Used when committing a transaction that hasn't already gotten a transaction id assigned.
@@ -155,10 +153,6 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable {
         this.cursorContext.getVersionContext().initWrite(transactionId);
     }
 
-    public void logPosition(LogPosition position) {
-        this.logPosition = position;
-    }
-
     @Override
     public TransactionToApply next() {
         return nextTransactionInBatch;
@@ -179,7 +173,6 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable {
     public String toString() {
         TransactionRepresentation tr = this.transactionRepresentation;
         return "Transaction #" + transactionId
-                + (logPosition != null ? " at log position " + logPosition : " (no log position)")
                 + " {started "
                 + date(tr.getTimeStarted()) + ", committed "
                 + date(tr.getTimeCommitted()) + ", with "

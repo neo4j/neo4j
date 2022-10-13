@@ -53,7 +53,6 @@ final class RecoveryVisitor implements RecoveryApplier {
         var txId = transaction.getCommitEntry().getTxId();
         var tx = new TransactionToApply(txRepresentation, txId, cursorContext, storeCursors);
         tx.commitment(NO_COMMITMENT, txId);
-        tx.logPosition(transaction.getStartEntry().getStartPosition());
         storageEngine.apply(tx, mode);
         return false;
     }

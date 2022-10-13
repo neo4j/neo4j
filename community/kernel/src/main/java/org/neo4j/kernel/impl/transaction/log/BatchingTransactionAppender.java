@@ -89,7 +89,6 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
                             tx.transactionRepresentation(), transactionId, logAppendEvent, previousChecksum);
                     previousChecksum = commitment.getTransactionChecksum();
                     tx.commitment(commitment, transactionId);
-                    tx.logPosition(commitment.logPosition());
                     tx = tx.next();
                     lastTransactionId = transactionId;
                 }
