@@ -576,4 +576,7 @@ abstract class TreeNode<KEY, VALUE> {
      */
     abstract String checkMetaConsistency(
             PageCursor cursor, int keyCount, Type type, GBPTreeConsistencyCheckVisitor visitor);
+
+    <ROOT_KEY> void deepVisitValue(PageCursor cursor, int pos, GBPTreeVisitor<ROOT_KEY, KEY, VALUE> visitor)
+            throws IOException {}
 }

@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.PrintConfig;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.TokenPredicate;
@@ -122,6 +123,10 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
         TokenScanKey fromKey = new TokenScanKey(tokenId, rangeOf(rangeFrom));
         TokenScanKey toKey = new TokenScanKey(tokenId, rangeOf(rangeTo));
         return index.seek(fromKey, toKey, cursorContext);
+    }
+
+    public void printTree(PrintConfig printConfig) throws IOException {
+        index.printTree(printConfig, CursorContext.NULL_CONTEXT);
     }
 
     @Override

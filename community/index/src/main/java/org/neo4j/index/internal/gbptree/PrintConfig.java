@@ -30,6 +30,7 @@ public final class PrintConfig {
     private boolean printHeader;
     private boolean printFreelist;
     private boolean printOffload;
+    private boolean printHistory;
 
     private PrintConfig() {
         printStream = System.out;
@@ -78,6 +79,11 @@ public final class PrintConfig {
         return this;
     }
 
+    public PrintConfig printHistory() {
+        this.printHistory = true;
+        return this;
+    }
+
     PrintStream getPrintStream() {
         return printStream;
     }
@@ -104,5 +110,9 @@ public final class PrintConfig {
 
     boolean getPrintOffload() {
         return printOffload;
+    }
+
+    boolean getPrintHistory() {
+        return printHistory;
     }
 }

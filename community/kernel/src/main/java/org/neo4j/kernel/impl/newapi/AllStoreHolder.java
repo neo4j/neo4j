@@ -410,6 +410,11 @@ public abstract class AllStoreHolder extends Read {
         return indexingService.getIndexProxy(index).newValueReader();
     }
 
+    public TokenIndexReader newTokenIndexReader(IndexDescriptor index) throws IndexNotFoundKernelException {
+        assertValidIndex(index);
+        return indexingService.getIndexProxy(index).newTokenReader();
+    }
+
     @Override
     public IndexReadSession indexReadSession(IndexDescriptor index) throws IndexNotFoundKernelException {
         assertValidIndex(index);

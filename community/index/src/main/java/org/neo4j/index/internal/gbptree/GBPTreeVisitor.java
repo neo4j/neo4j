@@ -52,6 +52,12 @@ public interface GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> extends IdProvid
 
     void endTree(boolean dataTree);
 
+    void historyStart();
+
+    void historyEnd();
+
+    void historicalValue(long version, TreeNode.ValueHolder<DATA_VALUE> value);
+
     class Adaptor<ROOT_KEY, DATA_KEY, DATA_VALUE> implements GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> {
         @Override
         public void meta(Meta meta) {}
@@ -94,6 +100,15 @@ public interface GBPTreeVisitor<ROOT_KEY, DATA_KEY, DATA_VALUE> extends IdProvid
 
         @Override
         public void endTree(boolean dataTree) {}
+
+        @Override
+        public void historyStart() {}
+
+        @Override
+        public void historyEnd() {}
+
+        @Override
+        public void historicalValue(long version, TreeNode.ValueHolder<DATA_VALUE> value) {}
 
         @Override
         public void beginFreelistPage(long pageId) {}

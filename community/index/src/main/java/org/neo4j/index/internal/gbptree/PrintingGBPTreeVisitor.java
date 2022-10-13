@@ -33,6 +33,7 @@ public class PrintingGBPTreeVisitor<ROOT_KEY, KEY, VALUE> extends GBPTreeVisitor
     private final boolean printHeader;
     private final boolean printFreelist;
     private final boolean printOffload;
+    private final boolean printHistory;
 
     /**
      * Prints a {@link GBPTree} in human readable form, very useful for debugging.
@@ -47,6 +48,7 @@ public class PrintingGBPTreeVisitor<ROOT_KEY, KEY, VALUE> extends GBPTreeVisitor
         this.printHeader = printConfig.getPrintHeader();
         this.printFreelist = printConfig.getPrintFreelist();
         this.printOffload = printConfig.getPrintOffload();
+        this.printHistory = printConfig.getPrintHistory();
     }
 
     @Override
@@ -91,6 +93,27 @@ public class PrintingGBPTreeVisitor<ROOT_KEY, KEY, VALUE> extends GBPTreeVisitor
             out.print("=" + value);
         }
         out.print(" ");
+    }
+
+    @Override
+    public void historyStart() {
+        if (printHistory) {
+            out.print("History <");
+        }
+    }
+
+    @Override
+    public void historyEnd() {
+        if (printHistory) {
+            out.print(" > ");
+        }
+    }
+
+    @Override
+    public void historicalValue(long version, TreeNode.ValueHolder<VALUE> value) {
+        if (printHistory) {
+            out.print(" " + version + ":" + value);
+        }
     }
 
     @Override

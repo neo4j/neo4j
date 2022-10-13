@@ -1382,7 +1382,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
      * @throws IOException on I/O error.
      */
     @SuppressWarnings("SameParameterValue")
-    void printTree(PrintConfig printConfig, CursorContext cursorContext) throws IOException {
+    public void printTree(PrintConfig printConfig, CursorContext cursorContext) throws IOException {
         visit(new PrintingGBPTreeVisitor<>(printConfig), cursorContext);
     }
 
