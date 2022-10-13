@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -213,9 +214,7 @@ class TransactionLogAppendAndRotateIT {
             commands.add(new TestCommand(30));
             commands.add(new TestCommand(60));
         }
-        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation(commands);
-        tx.setHeader(new byte[0], 0, 0, 0, 0, ANONYMOUS);
-        return tx;
+        return new PhysicalTransactionRepresentation(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
     }
 
     private static class TestLogFileMonitor extends LogRotationMonitorAdapter {

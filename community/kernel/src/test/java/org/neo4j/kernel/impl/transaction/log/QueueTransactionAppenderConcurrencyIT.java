@@ -195,8 +195,8 @@ class QueueTransactionAppenderConcurrencyIT {
     }
 
     private static TransactionToApply createTransaction() {
-        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation(List.of(new TestCommand()));
-        tx.setHeader(ArrayUtils.EMPTY_BYTE_ARRAY, 1, 2, 3, 4, ANONYMOUS);
+        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation(
+                List.of(new TestCommand()), ArrayUtils.EMPTY_BYTE_ARRAY, 1, 2, 3, 4, ANONYMOUS);
         return new TransactionToApply(tx, CursorContext.NULL_CONTEXT, StoreCursors.NULL);
     }
 

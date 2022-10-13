@@ -170,10 +170,14 @@ class BatchingTransactionAppenderTest {
         final long timeStarted = 12345;
         long latestCommittedTxWhenStarted = nextTxId - 5;
         long timeCommitted = timeStarted + 10;
-        PhysicalTransactionRepresentation transactionRepresentation =
-                new PhysicalTransactionRepresentation(singleTestCommand());
-        transactionRepresentation.setHeader(
-                additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, -1, ANONYMOUS);
+        PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation(
+                singleTestCommand(),
+                additionalHeader,
+                timeStarted,
+                latestCommittedTxWhenStarted,
+                timeCommitted,
+                -1,
+                ANONYMOUS);
 
         LogEntryStart start = new LogEntryStart(0L, latestCommittedTxWhenStarted, 0, null, LogPosition.UNSPECIFIED);
         LogEntryCommit commit = new LogEntryCommit(nextTxId, 0L, BASE_TX_CHECKSUM);
@@ -214,10 +218,14 @@ class BatchingTransactionAppenderTest {
         final long timeStarted = 12345;
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
-        PhysicalTransactionRepresentation transactionRepresentation =
-                new PhysicalTransactionRepresentation(singleTestCommand());
-        transactionRepresentation.setHeader(
-                additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, -1, ANONYMOUS);
+        PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation(
+                singleTestCommand(),
+                additionalHeader,
+                timeStarted,
+                latestCommittedTxWhenStarted,
+                timeCommitted,
+                -1,
+                ANONYMOUS);
 
         when(transactionIdStore.getLastCommittedTransactionId()).thenReturn(latestCommittedTxWhenStarted);
 
@@ -333,9 +341,8 @@ class BatchingTransactionAppenderTest {
             long timeStarted,
             long latestCommittedTxWhenStarted,
             long timeCommitted) {
-        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation(commands);
-        tx.setHeader(additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, -1, ANONYMOUS);
-        return tx;
+        return new PhysicalTransactionRepresentation(
+                commands, additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, -1, ANONYMOUS);
     }
 
     private static List<StorageCommand> singleTestCommand() {

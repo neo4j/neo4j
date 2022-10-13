@@ -339,9 +339,14 @@ class PhysicalLogicalTransactionStoreTest {
             throws Exception {
         TransactionAppender appender = life.add(createTransactionAppender(
                 transactionIdStore, positionCache, logFiles, Config.defaults(), jobScheduler));
-        PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation(singleTestCommand());
-        transaction.setHeader(
-                additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, -1, ANONYMOUS);
+        PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation(
+                singleTestCommand(),
+                additionalHeader,
+                timeStarted,
+                latestCommittedTxWhenStarted,
+                timeCommitted,
+                -1,
+                ANONYMOUS);
         appender.append(new TransactionToApply(transaction, NULL_CONTEXT, StoreCursors.NULL), LogAppendEvent.NULL);
     }
 

@@ -33,21 +33,17 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 public class PhysicalTransactionRepresentation implements TransactionRepresentation {
     private final List<StorageCommand> commands;
-    private byte[] additionalHeader;
-    private long timeStarted;
-    private long latestCommittedTxWhenStarted;
-    private long timeCommitted;
-    private Subject subject;
-
+    private final long timeStarted;
+    private final long latestCommittedTxWhenStarted;
+    private final long timeCommitted;
+    private final Subject subject;
     /**
      * This is a bit of a smell since it's only used for coordinating transactions in a cluster.
      * We may want to refactor this design later on.
      */
-    private int leaseId;
+    private final int leaseId;
 
-    public PhysicalTransactionRepresentation(List<StorageCommand> commands) {
-        this.commands = commands;
-    }
+    private byte[] additionalHeader;
 
     public PhysicalTransactionRepresentation(
             List<StorageCommand> commands,
@@ -57,27 +53,17 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
             long timeCommitted,
             int leaseId,
             Subject subject) {
-        this(commands);
-        setHeader(additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, leaseId, subject);
-    }
-
-    public void setAdditionalHeader(byte[] additionalHeader) {
-        this.additionalHeader = additionalHeader;
-    }
-
-    public void setHeader(
-            byte[] additionalHeader,
-            long timeStarted,
-            long latestCommittedTxWhenStarted,
-            long timeCommitted,
-            int leaseId,
-            Subject subject) {
+        this.commands = commands;
         this.additionalHeader = additionalHeader;
         this.timeStarted = timeStarted;
         this.latestCommittedTxWhenStarted = latestCommittedTxWhenStarted;
         this.timeCommitted = timeCommitted;
         this.leaseId = leaseId;
         this.subject = subject;
+    }
+
+    public void setAdditionalHeader(byte[] additionalHeader) {
+        this.additionalHeader = additionalHeader;
     }
 
     @Override

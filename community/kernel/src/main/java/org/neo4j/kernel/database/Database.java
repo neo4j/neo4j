@@ -612,12 +612,11 @@ public class Database extends AbstractDatabase {
                 internalLogProvider);
 
         handler.registerUpgradeListener(commands -> {
-            PhysicalTransactionRepresentation transactionRepresentation =
-                    new PhysicalTransactionRepresentation(commands);
             long time = clock.millis();
             LeaseClient leaseClient = leaseService.newClient();
             leaseClient.ensureValid();
-            transactionRepresentation.setHeader(
+            PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation(
+                    commands,
                     EMPTY_BYTE_ARRAY,
                     time,
                     storageEngine.metadataProvider().getLastClosedTransactionId(),

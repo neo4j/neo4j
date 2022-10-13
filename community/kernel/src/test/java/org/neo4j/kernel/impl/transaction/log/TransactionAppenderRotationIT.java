@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import static java.util.Collections.singletonList;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -140,8 +141,8 @@ class TransactionAppenderRotationIT {
 
     private static TransactionToApply prepareTransaction() {
         List<StorageCommand> commands = createCommands();
-        PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation(commands);
-        transactionRepresentation.setHeader(new byte[0], 0, 0, 0, 0, ANONYMOUS);
+        PhysicalTransactionRepresentation transactionRepresentation =
+                new PhysicalTransactionRepresentation(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
         return new TransactionToApply(transactionRepresentation, NULL_CONTEXT, StoreCursors.NULL);
     }
 

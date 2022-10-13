@@ -537,8 +537,8 @@ class NeoStoresTest {
                     cursorContext,
                     storeCursors,
                     INSTANCE);
-            PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation(commands);
-            tx.setHeader(EMPTY_BYTE_ARRAY, -1, -1, -1, -1, AUTH_DISABLED);
+            PhysicalTransactionRepresentation tx =
+                    new PhysicalTransactionRepresentation(commands, EMPTY_BYTE_ARRAY, -1, -1, -1, -1, AUTH_DISABLED);
             storageEngine.apply(new TransactionToApply(tx, cursorContext, storeCursors), INTERNAL);
         }
     }

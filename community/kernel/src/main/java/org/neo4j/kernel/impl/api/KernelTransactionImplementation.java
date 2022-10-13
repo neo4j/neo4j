@@ -907,10 +907,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                  */
                 if (!extractedCommands.isEmpty()) {
                     // Finish up the whole transaction representation
-                    PhysicalTransactionRepresentation transactionRepresentation =
-                            new PhysicalTransactionRepresentation(extractedCommands);
                     long timeCommitted = clocks.systemClock().millis();
-                    transactionRepresentation.setHeader(
+                    PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation(
+                            extractedCommands,
                             EMPTY_BYTE_ARRAY,
                             startTimeMillis,
                             lastTransactionIdWhenStarted,

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.reverse;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -254,9 +255,7 @@ class ReversedSingleFileTransactionCursorTest {
             // The type of command doesn't matter here
             commands.add(new TestCommand());
         }
-        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation(commands);
-        tx.setHeader(new byte[0], 0, 0, 0, 0, ANONYMOUS);
-        return tx;
+        return new PhysicalTransactionRepresentation(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
     }
 
     private static class CorruptedLogEntryWriterFactory implements LogEntryWriterFactory {

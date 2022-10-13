@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.stresstest.workload;
 
 import static java.lang.System.currentTimeMillis;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
@@ -36,9 +37,14 @@ class TransactionRepresentationFactory {
     private final CommandGenerator commandGenerator = new CommandGenerator();
 
     TransactionToApply nextTransaction(long txId) {
-        PhysicalTransactionRepresentation representation =
-                new PhysicalTransactionRepresentation(createRandomCommands());
-        representation.setHeader(new byte[0], currentTimeMillis(), txId, currentTimeMillis(), 42, ANONYMOUS);
+        PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation(
+                createRandomCommands(),
+                EMPTY_BYTE_ARRAY,
+                currentTimeMillis(),
+                txId,
+                currentTimeMillis(),
+                42,
+                ANONYMOUS);
         return new TransactionToApply(representation, NULL_CONTEXT, StoreCursors.NULL);
     }
 

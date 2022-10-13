@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.recovery;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -1093,8 +1094,8 @@ class RecoveryCorruptedTransactionLogIT {
             List<StorageCommand> commands = new ArrayList<>();
             commands.add(new Command.PropertyCommand(new PropertyRecord(1), new PropertyRecord(2)));
             commands.add(new Command.NodeCommand(new NodeRecord(2), new NodeRecord(3)));
-            PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation(commands);
-            transaction.setHeader(new byte[0], 0, 0, 0, 0, ANONYMOUS);
+            PhysicalTransactionRepresentation transaction =
+                    new PhysicalTransactionRepresentation(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
             writer.append(transaction, 1000, BASE_TX_CHECKSUM);
         }
     }

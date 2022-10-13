@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import static java.util.Collections.singletonList;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -267,8 +268,8 @@ public class TransactionAppenderConcurrencyTest {
     }
 
     protected static TransactionToApply tx() {
-        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation(singletonList(new TestCommand()));
-        tx.setHeader(new byte[0], 0, 0, 0, 0, ANONYMOUS);
+        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation(
+                singletonList(new TestCommand()), EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
         return new TransactionToApply(tx, NULL_CONTEXT, StoreCursors.NULL);
     }
 

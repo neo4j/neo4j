@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -110,8 +111,8 @@ class InternalTransactionCommitProcessTest {
         StorageEngine storageEngine = mock(StorageEngine.class);
 
         TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(appender, storageEngine);
-        PhysicalTransactionRepresentation noCommandTx = new PhysicalTransactionRepresentation(Collections.emptyList());
-        noCommandTx.setHeader(new byte[0], -1, -1, -1, -1, ANONYMOUS);
+        PhysicalTransactionRepresentation noCommandTx = new PhysicalTransactionRepresentation(
+                Collections.emptyList(), EMPTY_BYTE_ARRAY, -1, -1, -1, -1, ANONYMOUS);
 
         // WHEN
 

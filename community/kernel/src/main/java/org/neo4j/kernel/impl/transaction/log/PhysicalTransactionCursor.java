@@ -83,8 +83,8 @@ public class PhysicalTransactionCursor implements TransactionCursor {
                 entries.add(command.getCommand());
             }
 
-            PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation(entries);
-            transaction.setHeader(
+            PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation(
+                    entries,
                     startEntry.getAdditionalHeader(),
                     startEntry.getTimeWritten(),
                     startEntry.getLastCommittedTxWhenTransactionStarted(),

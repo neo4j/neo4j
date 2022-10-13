@@ -61,9 +61,8 @@ public class TransactionWriter {
     public TransactionRepresentation representation(
             byte[] additionalHeader, long startTime, long lastCommittedTx, long committedTime) {
         prepareForCommit();
-        PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation(allCommands());
-        representation.setHeader(additionalHeader, startTime, lastCommittedTx, committedTime, -1, ANONYMOUS);
-        return representation;
+        return new PhysicalTransactionRepresentation(
+                allCommands(), additionalHeader, startTime, lastCommittedTx, committedTime, -1, ANONYMOUS);
     }
 
     public void propertyKey(int id, String key, boolean internal, int... dynamicIds) {
