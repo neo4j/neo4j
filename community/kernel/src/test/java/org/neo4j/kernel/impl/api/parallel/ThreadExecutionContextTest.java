@@ -25,10 +25,10 @@ import static org.mockito.Mockito.verify;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.IndexMonitor;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.api.OverridableSecurityContext;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.memory.MemoryTracker;
@@ -48,7 +48,7 @@ class ThreadExecutionContextTest {
 
         try (var executionContext = new ThreadExecutionContext(
                 contextFactory.create("tag"),
-                AccessMode.Static.READ,
+                mock(OverridableSecurityContext.class),
                 new ExecutionContextCursorTracer(mock(PageCacheTracer.class), "test"),
                 contextFactory.create("tx-tag"),
                 allStoreHolder,

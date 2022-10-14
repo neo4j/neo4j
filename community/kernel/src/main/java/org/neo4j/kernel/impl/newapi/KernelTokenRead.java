@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelExcep
 import org.neo4j.internal.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.AssertOpen;
+import org.neo4j.kernel.impl.api.OverridableSecurityContext;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
@@ -171,14 +172,17 @@ public abstract class KernelTokenRead implements TokenRead {
 
     public static class ForThreadExecutionContextScope extends KernelTokenRead {
 
-        private final AccessMode accessMode;
+        private final OverridableSecurityContext overridableSecurityContext;
         private final AssertOpen assertOpen;
 
         public ForThreadExecutionContextScope(
-                StorageReader store, TokenHolders tokenHolders, AccessMode accessMode, AssertOpen assertOpen) {
+                StorageReader store,
+                TokenHolders tokenHolders,
+                OverridableSecurityContext overridableSecurityContext,
+                AssertOpen assertOpen) {
             super(store, tokenHolders);
 
-            this.accessMode = accessMode;
+            this.overridableSecurityContext = overridableSecurityContext;
             this.assertOpen = assertOpen;
         }
 
@@ -189,7 +193,7 @@ public abstract class KernelTokenRead implements TokenRead {
 
         @Override
         AccessMode getAccessMode() {
-            return accessMode;
+            return overridableSecurityContext.currentSecurityContext().mode();
         }
     }
 }

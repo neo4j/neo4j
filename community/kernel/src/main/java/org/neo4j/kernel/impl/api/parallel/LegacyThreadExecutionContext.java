@@ -24,6 +24,7 @@ import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import java.lang.invoke.VarHandle;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -48,6 +49,7 @@ public class LegacyThreadExecutionContext implements ExecutionContext, AutoClose
     private final ExecutionContextCursorTracer cursorTracer;
     private final CursorContext ktxContext;
     private final ThreadExecutionContextRead contextRead;
+    private final Procedures contextProcedures;
     private final StoreCursors storageCursors;
     private final IndexMonitor monitor;
     private final MemoryTracker contextTracker;
@@ -72,6 +74,7 @@ public class LegacyThreadExecutionContext implements ExecutionContext, AutoClose
                 storageCursors,
                 config,
                 storageEngine.indexingBehaviour());
+        this.contextProcedures = ktx.procedures();
         this.monitor = monitor;
     }
 
@@ -88,6 +91,11 @@ public class LegacyThreadExecutionContext implements ExecutionContext, AutoClose
     @Override
     public Read dataRead() {
         return contextRead;
+    }
+
+    @Override
+    public Procedures procedures() {
+        return contextProcedures;
     }
 
     @Override

@@ -59,6 +59,7 @@ import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
@@ -74,6 +75,7 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.IndexReaderCache;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.OverridableSecurityContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -110,6 +112,7 @@ public abstract class AllStoreHolder extends Read {
     private final SchemaState schemaState;
     private final IndexingService indexingService;
     private final IndexStatisticsStore indexStatisticsStore;
+    private final GlobalProcedures globalProcedures;
     private final MemoryTracker memoryTracker;
     private final IndexReaderCache<ValueIndexReader> valueIndexReaderCache;
     private final IndexReaderCache<TokenIndexReader> tokenIndexReaderCache;
@@ -120,6 +123,7 @@ public abstract class AllStoreHolder extends Read {
             SchemaState schemaState,
             IndexingService indexingService,
             IndexStatisticsStore indexStatisticsStore,
+            GlobalProcedures globalProcedures,
             MemoryTracker memoryTracker,
             DefaultPooledCursors cursors,
             StoreCursors storageCursors,
@@ -134,6 +138,7 @@ public abstract class AllStoreHolder extends Read {
         this.indexingService = indexingService;
         this.indexStatisticsStore = indexStatisticsStore;
         this.memoryTracker = memoryTracker;
+        this.globalProcedures = globalProcedures;
     }
 
     @Override
@@ -899,11 +904,92 @@ public abstract class AllStoreHolder extends Read {
         return indexingService.getMonitor();
     }
 
+    @Override
+    public RawIterator<AnyValue[], ProcedureException> procedureCallRead(
+            int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
+        return procedureCaller().callProcedure(id, arguments, AccessMode.Static.READ, context);
+    }
+
+    @Override
+    public RawIterator<AnyValue[], ProcedureException> procedureCallWrite(
+            int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
+        return procedureCaller().callProcedure(id, arguments, AccessMode.Static.TOKEN_WRITE, context);
+    }
+
+    @Override
+    public RawIterator<AnyValue[], ProcedureException> procedureCallSchema(
+            int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
+        return procedureCaller().callProcedure(id, arguments, AccessMode.Static.SCHEMA, context);
+    }
+
+    @Override
+    public RawIterator<AnyValue[], ProcedureException> procedureCallDbms(
+            int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
+        return procedureCaller().callProcedure(id, arguments, AccessMode.Static.ACCESS, context);
+    }
+
+    @Override
+    public AnyValue functionCall(int id, AnyValue[] arguments) throws ProcedureException {
+        return procedureCaller().callFunction(id, arguments);
+    }
+
+    @Override
+    public AnyValue builtInFunctionCall(int id, AnyValue[] arguments) throws ProcedureException {
+        return procedureCaller().callBuiltInFunction(id, arguments);
+    }
+
+    @Override
+    public UserAggregator aggregationFunction(int id) throws ProcedureException {
+        return procedureCaller().createAggregationFunction(id);
+    }
+
+    @Override
+    public UserAggregator builtInAggregationFunction(int id) throws ProcedureException {
+        return procedureCaller().createBuiltInAggregationFunction(id);
+    }
+
+    @Override
+    public UserFunctionHandle functionGet(QualifiedName name) {
+        performCheckBeforeOperation();
+        return globalProcedures.function(name);
+    }
+
+    @Override
+    public Stream<UserFunctionSignature> functionGetAll() {
+        performCheckBeforeOperation();
+        return globalProcedures.getAllNonAggregatingFunctions();
+    }
+
+    @Override
+    public ProcedureHandle procedureGet(QualifiedName name) throws ProcedureException {
+        performCheckBeforeOperation();
+        return globalProcedures.procedure(name);
+    }
+
+    @Override
+    public Set<ProcedureSignature> proceduresGetAll() {
+        performCheckBeforeOperation();
+        return globalProcedures.getAllProcedures();
+    }
+
+    @Override
+    public UserFunctionHandle aggregationFunctionGet(QualifiedName name) {
+        performCheckBeforeOperation();
+        return globalProcedures.aggregationFunction(name);
+    }
+
+    @Override
+    public Stream<UserFunctionSignature> aggregationFunctionGetAll() {
+        performCheckBeforeOperation();
+        return globalProcedures.getAllAggregatingFunctions();
+    }
+
+    abstract ProcedureCaller procedureCaller();
+
     public static class ForTransactionScope extends AllStoreHolder {
 
         private final KernelTransactionImplementation ktx;
         private final ProcedureCaller procedureCaller;
-        private final GlobalProcedures globalProcedures;
 
         public ForTransactionScope(
                 StorageReader storageReader,
@@ -923,6 +1009,7 @@ public abstract class AllStoreHolder extends Read {
                     schemaState,
                     indexingService,
                     indexStatisticsStore,
+                    globalProcedures,
                     memoryTracker,
                     cursors,
                     ktx.storeCursors(),
@@ -930,8 +1017,7 @@ public abstract class AllStoreHolder extends Read {
                     ktx.lockTracer());
 
             this.ktx = ktx;
-            this.globalProcedures = globalProcedures;
-            this.procedureCaller = new ProcedureCaller(ktx, globalProcedures, databaseDependencies);
+            this.procedureCaller = new ProcedureCaller.ForTransactionScope(ktx, globalProcedures, databaseDependencies);
         }
 
         @Override
@@ -966,92 +1052,18 @@ public abstract class AllStoreHolder extends Read {
         }
 
         @Override
-        public RawIterator<AnyValue[], ProcedureException> procedureCallRead(
-                int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
-            return procedureCaller.callProcedure(id, arguments, AccessMode.Static.READ, context);
-        }
-
-        @Override
-        public RawIterator<AnyValue[], ProcedureException> procedureCallWrite(
-                int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
-            return procedureCaller.callProcedure(id, arguments, AccessMode.Static.TOKEN_WRITE, context);
-        }
-
-        @Override
-        public RawIterator<AnyValue[], ProcedureException> procedureCallSchema(
-                int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
-            return procedureCaller.callProcedure(id, arguments, AccessMode.Static.SCHEMA, context);
-        }
-
-        @Override
-        public RawIterator<AnyValue[], ProcedureException> procedureCallDbms(
-                int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
-            return procedureCaller.callProcedure(id, arguments, AccessMode.Static.ACCESS, context);
-        }
-
-        @Override
-        public AnyValue functionCall(int id, AnyValue[] arguments) throws ProcedureException {
-            return procedureCaller.callFunction(id, arguments);
-        }
-
-        @Override
-        public AnyValue builtInFunctionCall(int id, AnyValue[] arguments) throws ProcedureException {
-            return procedureCaller.callBuiltInFunction(id, arguments);
-        }
-
-        @Override
-        public UserAggregator aggregationFunction(int id) throws ProcedureException {
-            return procedureCaller.createAggregationFunction(id);
-        }
-
-        @Override
-        public UserAggregator builtInAggregationFunction(int id) throws ProcedureException {
-            return procedureCaller.createBuiltInAggregationFunction(id);
-        }
-
-        @Override
-        public UserFunctionHandle functionGet(QualifiedName name) {
-            performCheckBeforeOperation();
-            return globalProcedures.function(name);
-        }
-
-        @Override
-        public Stream<UserFunctionSignature> functionGetAll() {
-            performCheckBeforeOperation();
-            return globalProcedures.getAllNonAggregatingFunctions();
-        }
-
-        @Override
-        public ProcedureHandle procedureGet(QualifiedName name) throws ProcedureException {
-            performCheckBeforeOperation();
-            return globalProcedures.procedure(name);
-        }
-
-        @Override
-        public Set<ProcedureSignature> proceduresGetAll() {
-            performCheckBeforeOperation();
-            return globalProcedures.getAllProcedures();
-        }
-
-        @Override
-        public UserFunctionHandle aggregationFunctionGet(QualifiedName name) {
-            performCheckBeforeOperation();
-            return globalProcedures.aggregationFunction(name);
-        }
-
-        @Override
-        public Stream<UserFunctionSignature> aggregationFunctionGetAll() {
-            performCheckBeforeOperation();
-            return globalProcedures.getAllAggregatingFunctions();
+        ProcedureCaller procedureCaller() {
+            return procedureCaller;
         }
     }
 
     public static class ForThreadExecutionContextScope extends AllStoreHolder {
 
-        private final AccessMode accessMode;
+        private final OverridableSecurityContext overridableSecurityContext;
         private final CursorContext cursorContext;
         private final Locks.Client lockClient;
         private final AssertOpen assertOpen;
+        private final ProcedureCaller procedureCaller;
 
         public ForThreadExecutionContextScope(
                 StorageReader storageReader,
@@ -1059,30 +1071,40 @@ public abstract class AllStoreHolder extends Read {
                 SchemaState schemaState,
                 IndexingService indexingService,
                 IndexStatisticsStore indexStatisticsStore,
+                GlobalProcedures globalProcedures,
                 MemoryTracker memoryTracker,
+                Dependencies databaseDependencies,
                 DefaultPooledCursors cursors,
                 StoreCursors storageCursors,
                 CursorContext cursorContext,
                 StorageLocks storageLocks,
                 Locks.Client lockClient,
                 LockTracer lockTracer,
-                AccessMode accessMode,
-                AssertOpen assertOpen) {
+                OverridableSecurityContext overridableSecurityContext,
+                AssertOpen assertOpen,
+                SecurityAuthorizationHandler securityAuthorizationHandler) {
             super(
                     storageReader,
                     tokenRead,
                     schemaState,
                     indexingService,
                     indexStatisticsStore,
+                    globalProcedures,
                     memoryTracker,
                     cursors,
                     storageCursors,
                     storageLocks,
                     lockTracer);
-            this.accessMode = accessMode;
+            this.overridableSecurityContext = overridableSecurityContext;
             this.cursorContext = cursorContext;
             this.lockClient = lockClient;
             this.assertOpen = assertOpen;
+            this.procedureCaller = new ProcedureCaller.ForThreadExecutionContextScope(
+                    globalProcedures,
+                    databaseDependencies,
+                    overridableSecurityContext,
+                    assertOpen,
+                    securityAuthorizationHandler);
         }
 
         @Override
@@ -1091,85 +1113,6 @@ public abstract class AllStoreHolder extends Read {
             // This is currently a problematic operation for parallel execution, because it takes exclusive locks.
             // In transactions deadlocks is a problem for another day :) .
             throw new UnsupportedOperationException("Locking unique index seek not allowed during parallel execution");
-        }
-
-        // Functions and procedures are currently not supported for parallel execution
-        @Override
-        public UserFunctionHandle functionGet(QualifiedName name) {
-            throw new UnsupportedOperationException("Getting a function is not allowed during parallel execution");
-        }
-
-        @Override
-        public Stream<UserFunctionSignature> functionGetAll() {
-            throw new UnsupportedOperationException("Getting all functions is not allowed during parallel execution");
-        }
-
-        @Override
-        public UserFunctionHandle aggregationFunctionGet(QualifiedName name) {
-            throw new UnsupportedOperationException(
-                    "Getting an aggregation function is not allowed during parallel execution");
-        }
-
-        @Override
-        public Stream<UserFunctionSignature> aggregationFunctionGetAll() {
-            throw new UnsupportedOperationException(
-                    "Getting all aggregation functions is not allowed during parallel execution");
-        }
-
-        @Override
-        public ProcedureHandle procedureGet(QualifiedName name) throws ProcedureException {
-            throw new UnsupportedOperationException("Getting a procedure is not allowed during parallel execution");
-        }
-
-        @Override
-        public Set<ProcedureSignature> proceduresGetAll() {
-            throw new UnsupportedOperationException("Getting all procedures is not allowed during parallel execution");
-        }
-
-        @Override
-        public RawIterator<AnyValue[], ProcedureException> procedureCallRead(
-                int id, AnyValue[] arguments, ProcedureCallContext context) {
-            throw new UnsupportedOperationException("Invoking a procedure is not allowed during parallel execution");
-        }
-
-        @Override
-        public RawIterator<AnyValue[], ProcedureException> procedureCallWrite(
-                int id, AnyValue[] arguments, ProcedureCallContext context) {
-            throw new UnsupportedOperationException("Invoking a procedure is not allowed during parallel execution");
-        }
-
-        @Override
-        public RawIterator<AnyValue[], ProcedureException> procedureCallSchema(
-                int id, AnyValue[] arguments, ProcedureCallContext context) {
-            throw new UnsupportedOperationException("Invoking a procedure is not allowed during parallel execution");
-        }
-
-        @Override
-        public RawIterator<AnyValue[], ProcedureException> procedureCallDbms(
-                int id, AnyValue[] arguments, ProcedureCallContext context) {
-            throw new UnsupportedOperationException("Invoking a procedure is not allowed during parallel execution");
-        }
-
-        @Override
-        public AnyValue functionCall(int id, AnyValue[] arguments) {
-            throw new UnsupportedOperationException("Invoking a function is not allowed during parallel execution");
-        }
-
-        @Override
-        public AnyValue builtInFunctionCall(int id, AnyValue[] arguments) {
-            throw new UnsupportedOperationException("Invoking a function is not allowed during parallel execution");
-        }
-
-        @Override
-        public UserAggregator aggregationFunction(int id) {
-            throw new UnsupportedOperationException(
-                    "Invoking an aggregation function is not allowed during parallel execution");
-        }
-
-        @Override
-        public UserAggregator builtInAggregationFunction(int id) {
-            throw new UnsupportedOperationException(
-                    "Invoking an aggregation function is not allowed during parallel execution");
         }
 
         @Override
@@ -1190,7 +1133,7 @@ public abstract class AllStoreHolder extends Read {
 
         @Override
         AccessMode getAccessMode() {
-            return accessMode;
+            return overridableSecurityContext.currentSecurityContext().mode();
         }
 
         @Override
@@ -1201,6 +1144,11 @@ public abstract class AllStoreHolder extends Read {
         @Override
         public CursorContext cursorContext() {
             return cursorContext;
+        }
+
+        @Override
+        ProcedureCaller procedureCaller() {
+            return procedureCaller;
         }
     }
 }

@@ -25,18 +25,20 @@ import java.lang.invoke.VarHandle;
 import java.util.ArrayList;
 import java.util.List;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.ExecutionContext;
+import org.neo4j.kernel.impl.api.OverridableSecurityContext;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     private final CursorContext context;
-    private final AccessMode accessMode;
+    private final OverridableSecurityContext overridableSecurityContext;
     private final ExecutionContextCursorTracer cursorTracer;
     private final CursorContext ktxContext;
     private final AllStoreHolder.ForThreadExecutionContextScope allStoreHolder;
@@ -47,7 +49,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
 
     public ThreadExecutionContext(
             CursorContext context,
-            AccessMode accessMode,
+            OverridableSecurityContext overridableSecurityContext,
             ExecutionContextCursorTracer cursorTracer,
             CursorContext ktxContext,
             AllStoreHolder.ForThreadExecutionContextScope allStoreHolder,
@@ -56,7 +58,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
             MemoryTracker contextTracker,
             List<AutoCloseable> otherResources) {
         this.context = context;
-        this.accessMode = accessMode;
+        this.overridableSecurityContext = overridableSecurityContext;
         this.cursorTracer = cursorTracer;
         this.ktxContext = ktxContext;
         this.allStoreHolder = allStoreHolder;
@@ -73,11 +75,16 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
 
     @Override
     public AccessMode accessMode() {
-        return accessMode;
+        return overridableSecurityContext.currentSecurityContext().mode();
     }
 
     @Override
     public Read dataRead() {
+        return allStoreHolder;
+    }
+
+    @Override
+    public Procedures procedures() {
         return allStoreHolder;
     }
 

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -51,6 +52,11 @@ public interface ExecutionContext extends AutoCloseable {
      * {@link Read} implementation used for reads as part of this context
      */
     Read dataRead();
+
+    /**
+     * {@link Procedures} implementation used for procedure and function invocation as part of this context
+     */
+    Procedures procedures();
 
     /**
      * Execution context store cursors. They should be used only in the context of current execution context and should not be shared with any other context.

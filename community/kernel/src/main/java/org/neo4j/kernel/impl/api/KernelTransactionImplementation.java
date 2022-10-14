@@ -76,7 +76,6 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -189,7 +188,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile TransactionWriteState writeState;
     private AccessCapability accessCapability;
     private final KernelStatement currentStatement;
-    private SecurityContext securityContext;
+    private OverridableSecurityContext overridableSecurityContext;
     private volatile Locks.Client lockClient;
     private volatile long transactionSequenceNumber;
     private LeaseClient leaseClient;
@@ -326,7 +325,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 indexingService,
                 indexStatisticsStore,
                 tracers,
-                leaseService);
+                leaseService,
+                globalProcedures,
+                dependencies,
+                securityAuthorizationHandler);
         this.operations = new Operations(
                 allStoreHolder,
                 storageReader,
@@ -379,7 +381,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.timeoutMillis = transactionTimeout;
         this.lastTransactionIdWhenStarted = lastCommittedTx;
         this.transactionEvent = transactionTracer.beginTransaction(cursorContext);
-        this.securityContext = frozenSecurityContext;
+        this.overridableSecurityContext = new OverridableSecurityContext(frozenSecurityContext);
         this.transactionId = NOT_COMMITTED_TRANSACTION_ID;
         this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;
         this.clientInfo = clientInfo;
@@ -404,8 +406,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             IndexingService indexingService,
             IndexStatisticsStore indexStatisticsStore,
             DatabaseTracers tracers,
-            LeaseService leaseService) {
-        return (accessMode, transactionId, transactionCursorContext, assertOpen) -> {
+            LeaseService leaseService,
+            GlobalProcedures globalProcedures,
+            Dependencies dependencies,
+            SecurityAuthorizationHandler securityAuthorizationHandler) {
+        return (securityContext, transactionId, transactionCursorContext, assertOpen) -> {
             var executionContextCursorTracer = new ExecutionContextCursorTracer(
                     PageCacheTracer.NULL, ExecutionContextCursorTracer.TRANSACTION_EXECUTION_TAG);
             var executionContextCursorContext = contextFactory.create(executionContextCursorTracer);
@@ -421,27 +426,31 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             Locks.Client executionContextLockClient = locks.newClient();
             executionContextLockClient.initialize(
                     leaseService.newClient(), transactionId, executionContextMemoryTracker, config);
+            var overridableSecurityContext = new OverridableSecurityContext(securityContext);
             var executionContextTokenRead = new KernelTokenRead.ForThreadExecutionContextScope(
-                    executionContextStorageReader, tokenHolders, accessMode, assertOpen);
+                    executionContextStorageReader, tokenHolders, overridableSecurityContext, assertOpen);
             var executionContextRead = new AllStoreHolder.ForThreadExecutionContextScope(
                     executionContextStorageReader,
                     executionContextTokenRead,
                     schemaState,
                     indexingService,
                     indexStatisticsStore,
+                    globalProcedures,
                     executionContextMemoryTracker,
+                    dependencies,
                     executionContextPooledCursors,
                     executionContextStoreCursors,
                     executionContextCursorContext,
                     storageEngine.createStorageLocks(executionContextLockClient),
                     executionContextLockClient,
                     tracers.getLockTracer(),
-                    accessMode,
-                    assertOpen);
+                    overridableSecurityContext,
+                    assertOpen,
+                    securityAuthorizationHandler);
 
             return new ThreadExecutionContext(
                     executionContextCursorContext,
-                    accessMode,
+                    overridableSecurityContext,
                     executionContextCursorTracer,
                     transactionCursorContext,
                     executionContextRead,
@@ -549,7 +558,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         long transactionSequenceNumberWhenCreated = transactionSequenceNumber;
         return executionContextFactory.createNew(
-                securityContext.mode(), transactionSequenceNumber, cursorContext, () -> {
+                overridableSecurityContext.originalSecurityContext(), transactionSequenceNumber, cursorContext, () -> {
                     assertOpen();
                     // Since TX object is reused, let's check if this is still the same TX
                     if (transactionSequenceNumberWhenCreated != transactionSequenceNumber) {
@@ -609,16 +618,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public SecurityContext securityContext() {
-        if (securityContext == null) {
+        if (overridableSecurityContext == null) {
             throw new NotInTransactionException();
         }
-        return securityContext;
+        return overridableSecurityContext.currentSecurityContext();
     }
 
     @Override
     public AuthSubject subjectOrAnonymous() {
-        SecurityContext context = this.securityContext;
-        return context == null ? AuthSubject.ANONYMOUS : context.subject();
+        if (overridableSecurityContext == null) {
+            return AuthSubject.ANONYMOUS;
+        }
+        return this.overridableSecurityContext.currentSecurityContext().subject();
     }
 
     @Override
@@ -924,7 +935,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                             lastTransactionIdWhenStarted,
                             timeCommitted,
                             leaseClient.leaseId(),
-                            securityContext.subject().userSubject());
+                            overridableSecurityContext
+                                    .currentSecurityContext()
+                                    .subject()
+                                    .userSubject());
 
                     // Commit the transaction
                     success = true;
@@ -1131,7 +1145,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             lockClient.close();
             terminationReason = null;
             type = null;
-            securityContext = null;
+            overridableSecurityContext = null;
             transactionEvent = null;
             txState = null;
             collectionsFactory.release();
@@ -1193,9 +1207,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public Revertable overrideWith(SecurityContext context) {
-        SecurityContext oldContext = this.securityContext;
-        this.securityContext = context;
-        return () -> this.securityContext = oldContext;
+        var revertable = overridableSecurityContext.overrideWith(context);
+        return () -> revertable.close();
     }
 
     @Override
@@ -1467,7 +1480,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private interface ExecutionContextFactory {
 
         ExecutionContext createNew(
-                AccessMode accessMode,
+                SecurityContext securityContext,
                 long transactionId,
                 CursorContext transactionCursorContext,
                 AssertOpen assertOpen);
