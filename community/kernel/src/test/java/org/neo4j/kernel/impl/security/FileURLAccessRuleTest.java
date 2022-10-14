@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.kernel.impl.security.FileURLAccessRuleTest.ValidationStatus.ERR_ARG;
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessValidationError;
@@ -59,6 +61,43 @@ class FileURLAccessRuleTest {
                 .validate(config, url));
         assertThat(error.getMessage())
                 .isEqualTo("configuration property 'dbms.security.allow_csv_import_from_file_urls' is false");
+    }
+
+    /**
+     * In UTF-8 one could theoretically express the same unicode code point as a single-byte, or as a double, triple, or
+     * quadruple byte sequence. However, UTF-8 specifies that you should always use the shortest form possible and that
+     * it is forbidden to use a longer form than necessary. You can read more about overlong-encoding at
+     * <a href="https://en.wikipedia.org/wiki/UTF-8#Overlong_encodings">Wikipedia: UTF-8 Overlong</a> or at
+     * <a href="http://www.unicode.org/versions/corrigendum1.html">Unicode Corrigendum: UTF-8 Shortest Form</a>.
+     * <p>
+     * Despite being illegal, it is still a popular vulnerability because many pieces of software will decode overlong
+     * UTF-8 byte sequences to unexpected values.
+     * <p>
+     * You will find that our tests decode any overlong values to the
+     * <a href="https://www.fileformat.info/info/unicode/char/0fffd/index.htm">Unicode Replacement Character</a>.
+     * <p>
+     * We found it easier to test these sequences in a test which was separate from the main
+     * testWithAndWithoutTrailingSlash() the validation behave differently depending on the operating system and JVM
+     * being used.
+     */
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "file:/%C0%AFfile", // "/"
+                "file:/%C0%AE/file", // "."
+                "file:/%C0%AE%C0%AE/file", // ".."
+                "file:/%C0%AE%C0%AE%C0%AFfile", // "../"
+                "file:/%C0%AE%C0%AE%C0%AF%C0%AE%C0%AE%C0%AFfile", // "../../"
+                "file:/%C0%AE%C0%AE%C0%AF%C0%AE%C0%AE%C0%AFfile", // "../../"
+                "file:/%C0%AE%C0%AE%C0%AF%C0%AFfile", // "..//"
+            })
+    void testOverlongPathTraversalCharacters(String url) throws Exception {
+        URL accessURL = validate("/import", url);
+        // verify that the result begins with "/import/" so that we know it wasn't traversed out of
+        MatcherAssert.assertThat(accessURL.toString(), containsString("/import/"));
+        // verify that the result doesn't contain any path traversal characters ("%2" is the percent-encoded ".")
+        MatcherAssert.assertThat(accessURL.toString(), not(containsString(".")));
+        MatcherAssert.assertThat(accessURL.toString(), not(containsString("%2F")));
     }
 
     @ParameterizedTest
