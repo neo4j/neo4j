@@ -99,14 +99,8 @@ public record ProtocolVersion(short major, short minor, short range) implements 
 
     @Override
     public int compareTo(ProtocolVersion o) {
-        if (this.major != o.major) {
-            return Integer.signum(this.major - o.major);
-        }
-        if (this.minor != o.minor) {
-            return Integer.signum(this.minor - o.minor);
-        }
-
-        return 0;
+        int result = Short.compare(this.major, o.major);
+        return result != 0 ? result : Short.compare(this.minor, o.minor);
     }
 
     @Override

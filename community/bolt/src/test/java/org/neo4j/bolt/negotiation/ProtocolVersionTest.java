@@ -101,24 +101,24 @@ class ProtocolVersionTest {
 
             for (var other : versions) {
                 if (other.equals(current)) {
-                    Assertions.assertThat(current.compareTo(other)).isEqualTo(0);
-                    Assertions.assertThat(other.compareTo(current)).isEqualTo(0);
+                    Assertions.assertThat(current.compareTo(other)).isZero();
+                    Assertions.assertThat(other.compareTo(current)).isZero();
 
                     var copy = new ProtocolVersion(other.major(), other.minor(), other.range());
 
-                    Assertions.assertThat(current.compareTo(copy)).isEqualTo(0);
-                    Assertions.assertThat(copy.compareTo(current)).isEqualTo(0);
+                    Assertions.assertThat(current.compareTo(copy)).isZero();
+                    Assertions.assertThat(copy.compareTo(current)).isZero();
 
                     encounteredSelf = true;
                     continue;
                 }
 
                 if (!encounteredSelf) {
-                    Assertions.assertThat(current.compareTo(other)).isEqualTo(1);
-                    Assertions.assertThat(other.compareTo(current)).isEqualTo(-1);
+                    Assertions.assertThat(current.compareTo(other)).isPositive();
+                    Assertions.assertThat(other.compareTo(current)).isNegative();
                 } else {
-                    Assertions.assertThat(current.compareTo(other)).isEqualTo(-1);
-                    Assertions.assertThat(other.compareTo(current)).isEqualTo(1);
+                    Assertions.assertThat(current.compareTo(other)).isNegative();
+                    Assertions.assertThat(other.compareTo(current)).isPositive();
                 }
             }
         }
