@@ -63,13 +63,13 @@ final case class ExistsSubqueryPlannerWithCaching() extends ExistsSubqueryPlanne
   private def doPlan(
     subqueryRef: Ref[ExistsIRExpression],
     labelInfo: LabelInfo,
-    contextRef: CachedFunction.CacheKey[LogicalPlanningContext, Unit]
+    contextRef: CachedFunction.CacheKey[Unit, LogicalPlanningContext]
   ): LogicalPlan = {
     ExistsSubqueryPlanner.planInnerOfExistsSubquery(subqueryRef.value, labelInfo, contextRef.value)
   }
 
   private def computeContextCacheKey(context: LogicalPlanningContext)
-    : CachedFunction.CacheKey[LogicalPlanningContext, Unit] = {
+    : CachedFunction.CacheKey[Unit, LogicalPlanningContext] = {
     CachedFunction.CacheKey.computeFrom(context) {
       // when adding a new field to LogicalPlanningContext, consider if it should be added to the cache key
       case LogicalPlanningContext(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) =>

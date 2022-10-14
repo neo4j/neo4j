@@ -132,7 +132,7 @@ class CachedFunctionTest extends CypherFunSuite {
       i += 1
       123 + s.length
     }
-    def g(key: CacheKey[String, Int]) = f(key.value)
+    def g(key: CacheKey[Int, String]) = f(key.value)
     val cachedG = CachedFunction(g _)
     def cacheKey(s: String) = CacheKey.computeFrom(s)(_.length)
 

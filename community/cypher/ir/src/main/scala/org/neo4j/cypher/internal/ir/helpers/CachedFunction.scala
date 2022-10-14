@@ -65,11 +65,15 @@ object CachedFunction {
     (x1, x2, x3, x4, x5, x6, x7) => f(Tuple7(x1, x2, x3, x4, x5, x6, x7))
   }
 
-  final case class CacheKey[Value, Key](cacheKey: Key)(val value: Value)
+  /** Allows passing [[value]] into [[CachedFunction]] while only using [[cacheKey]] for cache lookup.
+   *
+   * Because [[value]] is passed via the second argument list, it is excluded from generated equals() and hashCode() methods.
+   */
+  final case class CacheKey[Key, Value](cacheKey: Key)(val value: Value)
 
   object CacheKey {
 
-    def computeFrom[Value, Key](value: Value)(f: Value => Key): CacheKey[Value, Key] = {
+    def computeFrom[Key, Value](value: Value)(f: Value => Key): CacheKey[Key, Value] = {
       CacheKey(f(value))(value)
     }
   }
