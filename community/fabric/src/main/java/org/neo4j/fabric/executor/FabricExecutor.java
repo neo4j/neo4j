@@ -329,15 +329,9 @@ public class FabricExecutor {
 
             var transactionMode = getTransactionMode(fragment.queryType(), graph.toString());
 
-            var location = ctx.getOrComputeLocation(
-                    graph,
-                    () -> catalogManager.locationOf(
-                            ctx.getSessionDatabaseReference(),
-                            graph,
-                            transactionMode.requiresWrite(),
-                            routingContext.isServerRoutingEnabled()));
-
             MapValue parameters = addParamsFromRecord(queryParams, argumentValues, asJava(fragment.parameters()));
+
+            var location = this.ctx.locationOf(graph, transactionMode.requiresWrite());
 
             if (location instanceof Location.Local local) {
                 FragmentResult input = run(fragment.input(), argument);

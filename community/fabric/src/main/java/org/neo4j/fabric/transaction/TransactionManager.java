@@ -106,7 +106,8 @@ public class TransactionManager extends LifecycleAdapter {
                 errorReporter,
                 this,
                 fabricConfig,
-                catalogManager.currentCatalog());
+                catalogManager.currentCatalog(),
+                catalogManager);
 
         openTransactions.add(fabricTransaction);
         transactionMonitor.startMonitoringTransaction(fabricTransaction, transactionInfo);

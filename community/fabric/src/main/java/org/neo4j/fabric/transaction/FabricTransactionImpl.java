@@ -22,7 +22,6 @@ package org.neo4j.fabric.transaction;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -39,6 +38,7 @@ import org.neo4j.cypher.internal.util.CancellationChecker;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.eval.Catalog;
+import org.neo4j.fabric.eval.CatalogManager;
 import org.neo4j.fabric.executor.Exceptions;
 import org.neo4j.fabric.executor.FabricException;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
@@ -66,7 +66,6 @@ public class FabricTransactionImpl
     private final FabricTransactionInfo transactionInfo;
     private final TransactionBookmarkManager bookmarkManager;
     private final Catalog catalogSnapshot;
-    private final Map<Catalog.Graph, Location> locationCache;
     private final ErrorReporter errorReporter;
     private final TransactionManager transactionManager;
     private final FabricConfig fabricConfig;
@@ -79,6 +78,7 @@ public class FabricTransactionImpl
     private StatementLifecycle lastSubmittedStatement;
 
     private SingleDbTransaction writingTransaction;
+    private LocationCache locationCache;
 
     FabricTransactionImpl(
             FabricTransactionInfo transactionInfo,
@@ -88,15 +88,17 @@ public class FabricTransactionImpl
             ErrorReporter errorReporter,
             TransactionManager transactionManager,
             FabricConfig fabricConfig,
-            Catalog catalogSnapshot) {
+            Catalog catalogSnapshot,
+            CatalogManager catalogManager) {
         this.transactionInfo = transactionInfo;
         this.errorReporter = errorReporter;
         this.transactionManager = transactionManager;
         this.fabricConfig = fabricConfig;
         this.bookmarkManager = bookmarkManager;
         this.catalogSnapshot = catalogSnapshot;
-        this.locationCache = new HashMap<>();
         this.id = ID_GENERATOR.incrementAndGet();
+
+        this.locationCache = new LocationCache(catalogManager, transactionInfo);
 
         try {
             remoteTransactionContext = remoteExecutor.startTransactionContext(this, transactionInfo, bookmarkManager);
@@ -165,8 +167,8 @@ public class FabricTransactionImpl
     }
 
     @Override
-    public Location getOrComputeLocation(Catalog.Graph graph, Supplier<Location> locationOf) {
-        return locationCache.computeIfAbsent(graph, g -> locationOf.get());
+    public Location locationOf(Catalog.Graph graph, Boolean requireWritable) {
+        return locationCache.locationOf(graph, requireWritable);
     }
 
     @Override

@@ -22,7 +22,6 @@ package org.neo4j.fabric.transaction;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import org.neo4j.cypher.internal.util.CancellationChecker;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.eval.Catalog;
@@ -68,7 +67,7 @@ public interface FabricTransaction {
 
         DatabaseReference getSessionDatabaseReference();
 
-        Location getOrComputeLocation(Catalog.Graph graph, Supplier<Location> locationOf);
+        Location locationOf(Catalog.Graph graph, Boolean requireWritable);
     }
 
     Catalog getCatalogSnapshot();
