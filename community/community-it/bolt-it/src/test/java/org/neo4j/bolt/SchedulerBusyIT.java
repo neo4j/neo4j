@@ -19,9 +19,12 @@
  */
 package org.neo4j.bolt;
 
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
@@ -88,6 +91,28 @@ public class SchedulerBusyIT {
         BoltConnectionAssertions.assertThat(connection).receivesSuccess();
     }
 
+    private static void eventuallyEstablishNewConnection(
+            BoltWire wire, TransportConnection connection, Duration retryDuration) throws Exception {
+        var success = false;
+        var timeout = Instant.now().toEpochMilli() + retryDuration.toMillis();
+
+        while (!success && Instant.now().toEpochMilli() < timeout) {
+            try {
+                connection.send(wire.hello());
+                BoltConnectionAssertions.assertThat(connection).receivesSuccess();
+                success = true;
+            } catch (AssertionError error) {
+                connection.send(wire.reset());
+                BoltConnectionAssertions.assertThat(connection).receivesSuccess();
+                Thread.sleep(500);
+            }
+        }
+
+        if (!success) {
+            fail("Failed to establish connection within timeout " + retryDuration);
+        }
+    }
+
     @TransportTest
     void shouldReportFailureWhenAllThreadsInThreadPoolAreBusy(
             BoltWire wire,
@@ -127,7 +152,7 @@ public class SchedulerBusyIT {
             @Authenticated TransportConnection connection2,
             @Negotiated TransportConnection connection3,
             @Negotiated TransportConnection connection4)
-            throws IOException {
+            throws Exception {
         // saturate the thread pool using autocommit transactions (this works since open transactions currently force
         // Bolt to stick to the worker thread until closed or timed out)
         enterStreaming(wire, connection1);
@@ -137,17 +162,13 @@ public class SchedulerBusyIT {
         exitStreaming(wire, connection1);
 
         // send another request on a third connection in order to generate a new job submission
-        connection3.send(wire.hello());
-
-        BoltConnectionAssertions.assertThat(connection3).receivesSuccess();
+        eventuallyEstablishNewConnection(wire, connection3, Duration.ofMinutes(2));
 
         // free up another slot for the new connection
         exitStreaming(wire, connection2);
 
         // send another request on a fourth connection in order to generate a new job submission
-        connection4.send(wire.hello());
-
-        BoltConnectionAssertions.assertThat(connection4).receivesSuccess();
+        eventuallyEstablishNewConnection(wire, connection4, Duration.ofMinutes(2));
     }
 
     @TransportTest
