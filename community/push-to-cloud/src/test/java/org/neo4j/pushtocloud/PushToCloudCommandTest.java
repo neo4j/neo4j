@@ -51,7 +51,9 @@ import org.neo4j.test.utils.TestDirectory;
 
 import static java.util.Objects.requireNonNull;
 import static java.lang.String.format;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -111,6 +113,103 @@ class PushToCloudCommandTest
     }
 
     @Test
+    public void testBuildConsoleURLWithInvalidURI() throws IOException
+    {
+        // given
+        boolean devMode = false;
+        Copier targetCommunicator = mockedTargetCommunicator();
+        PushToCloudCommand command = command()
+                .copier(targetCommunicator)
+                .console(PushToCloudConsole.fakeConsole("username", "password", devMode))
+                .build();
+
+        // when
+        CommandFailedException exception =
+                assertThrows(CommandFailedException.class, () -> command.buildConsoleURI("hello.local", devMode));
+
+        // then
+        assertEquals(exception.getMessage(), "Invalid Bolt URI 'hello.local'");
+    }
+
+    @Test
+    public void testBuildConsoleURInNonDevMode() throws IOException
+    {
+        // given
+        boolean devMode = false;
+        Copier targetCommunicator = mockedTargetCommunicator();
+        PushToCloudCommand command = command()
+                .copier(targetCommunicator)
+                .console(PushToCloudConsole.fakeConsole("username", "password", devMode))
+                .build();
+
+        // when
+        CommandFailedException exception = assertThrows(
+                CommandFailedException.class,
+                () -> command.buildConsoleURI("neo4j+s://rogue-env.databases.neo4j-env.io", devMode));
+
+        // then
+        assertEquals(exception.getMessage(), "Invalid Bolt URI 'neo4j+s://rogue-env.databases.neo4j-env.io'");
+    }
+
+    @Test
+    public void testBuildConsoleURLWithValidProdURI() throws IOException
+    {
+        // given
+        boolean devMode = false;
+        Copier targetCommunicator = mockedTargetCommunicator();
+        PushToCloudCommand command = command()
+                .copier(targetCommunicator)
+                .console(PushToCloudConsole.fakeConsole("username", "password", devMode))
+                .build();
+
+        // when
+        String consoleUrl = command.buildConsoleURI("neo4j+s://rogue.databases.neo4j.io", devMode);
+
+        // then
+        assertEquals(consoleUrl, "https://console.neo4j.io/v1/databases/rogue");
+    }
+
+    @Test
+    public void testBuildValidConsoleURInDevMode() throws IOException
+    {
+        // given
+        boolean devMode = true;
+        Copier targetCommunicator = mockedTargetCommunicator();
+        PushToCloudCommand command = command()
+                .copier(targetCommunicator)
+                .console(PushToCloudConsole.fakeConsole("username", "password", devMode))
+                .build();
+
+        // when
+        String consoleUrl = command.buildConsoleURI("neo4j+s://rogue-env.databases.neo4j-env.io", devMode);
+
+        // then
+        assertEquals(consoleUrl, "https://console-env.neo4j-env.io/v1/databases/rogue");
+    }
+
+    @Test
+    public void testExceptionWithDevModeOnRealURI() throws IOException
+    {
+        // given
+        boolean devMode = true;
+        Copier targetCommunicator = mockedTargetCommunicator();
+        PushToCloudCommand command = command()
+                .copier(targetCommunicator)
+                .console(PushToCloudConsole.fakeConsole("username", "password", devMode))
+                .build();
+
+        // when
+        CommandFailedException exception = assertThrows(
+                CommandFailedException.class,
+                () -> command.buildConsoleURI("neo4j+s://rogue.databases.neo4j.io", devMode));
+
+        // then
+        assertEquals(
+                "Expected to find an environment running in dev mode in bolt URI: neo4j+s://rogue.databases.neo4j.io",
+                exception.getMessage());
+    }
+
+    @Test
     public void shouldReadUsernameAndPasswordFromUserInput() throws Exception
     {
         // given
@@ -119,7 +218,7 @@ class PushToCloudCommandTest
         String password = "abc";
         PushToCloudCommand command = command()
                 .copier( targetCommunicator )
-                .console( PushToCloudConsole.fakeConsole( username, password ) )
+                .console( PushToCloudConsole.fakeConsole( username, password, false ) )
                 .build();
 
         // when
@@ -304,7 +403,7 @@ class PushToCloudCommandTest
 
         PushToCloudCommand command = command()
                 .copier( targetCommunicator )
-                .console( PushToCloudConsole.fakeConsole( username, "tomte" ) )
+                .console( PushToCloudConsole.fakeConsole( username, "tomte", false ) )
                 .build();
 
         Path dump = this.dump;
@@ -324,7 +423,7 @@ class PushToCloudCommandTest
         Copier targetCommunicator = mockedTargetCommunicator();
         String username = "neo4j";
 
-        PushToCloudCommand command = command().copier( targetCommunicator ).console( PushToCloudConsole.fakeConsole( username, "tomte" ) ).build();
+        PushToCloudCommand command = command().copier( targetCommunicator ).console( PushToCloudConsole.fakeConsole( username, "tomte", false ) ).build();
 
         Path dump = this.dump;
         // when
@@ -347,7 +446,7 @@ class PushToCloudCommandTest
         String password = "abc";
         PushToCloudCommand command = command()
                 .copier( targetCommunicator )
-                .console( PushToCloudConsole.fakeConsole( username, password ) )
+                .console( PushToCloudConsole.fakeConsole( username, password, false ) )
                 .build();
 
         Path dump = this.dump;
@@ -371,7 +470,7 @@ class PushToCloudCommandTest
         String password = "abc";
         PushToCloudCommand command = command()
                 .copier( targetCommunicator )
-                .console( PushToCloudConsole.fakeConsole( username, password ) )
+                .console( PushToCloudConsole.fakeConsole( username, password, false ) )
                 .build();
 
         Path dump = this.dump;
@@ -395,7 +494,7 @@ class PushToCloudCommandTest
         String password = "abc";
         PushToCloudCommand command = command()
                 .copier( targetCommunicator )
-                .console( PushToCloudConsole.fakeConsole( username, password ) )
+                .console( PushToCloudConsole.fakeConsole( username, password, false ) )
                 .build();
 
         // when
@@ -418,7 +517,7 @@ class PushToCloudCommandTest
         String password = "abc";
         PushToCloudCommand command = command()
                 .copier( targetCommunicator )
-                .console( PushToCloudConsole.fakeConsole( username, password ) )
+                .console( PushToCloudConsole.fakeConsole( username, password, false ) )
                 .build();
 
         // when
@@ -504,6 +603,56 @@ class PushToCloudCommandTest
     }
 
     @Test
+    public void shouldPassWithNonProductionUrlInDevMode() throws IOException, CommandFailedException
+    {
+        // given
+        Copier copier = mock( Copier.class );
+        PushToCloudCommand command = command().copier( copier ).console(PushToCloudConsole.fakeConsole("username", "password", true)).build();
+
+        // when
+        String[] args = {
+                "--dump", dump.toString(),
+                "--bolt-uri", "bolt+routing://mydbid-env.databases.neo4j-env.io"};
+        new CommandLine( command ).execute( args );
+        // then
+
+        verify(copier).checkSize(anyBoolean(), any(), anyLong(), any());
+        verify(copier)
+                .copy(
+                        anyBoolean(),
+                        eq("https://console-env.neo4j-env.io/v1/databases/mydbid"),
+                        any(),
+                        any(),
+                        eq(false),
+                        any());
+    }
+
+    @Test
+    public void shouldPassWithRealUrl() throws IOException, CommandFailedException
+    {
+        // given
+        Copier copier = mock( Copier.class );
+        PushToCloudCommand command = command().copier( copier ).console(PushToCloudConsole.fakeConsole("username", "password", false)).build();
+
+        // when
+        String[] args = {
+                "--dump", dump.toString(),
+                "--bolt-uri", "bolt+routing://mydbid.databases.neo4j.io"};
+        new CommandLine( command ).execute( args );
+        // then
+
+        verify(copier).checkSize(anyBoolean(), any(), anyLong(), any());
+        verify(copier)
+                .copy(
+                        anyBoolean(),
+                        eq("https://console.neo4j.io/v1/databases/mydbid"),
+                        any(),
+                        any(),
+                        eq(false),
+                        any());
+    }
+
+    @Test
     public void shouldAuthenticateBeforeDumping() throws CommandFailedException, IOException
     {
         // given
@@ -572,7 +721,7 @@ class PushToCloudCommandTest
         private ExecutionContext executionContext = ctx;
         private DumpCreator dumpCreator = mockedDumpCreator();
         private Copier targetCommunicator;
-        private PushToCloudConsole console = PushToCloudConsole.fakeConsole( "tomte", "tomtar" );
+        private PushToCloudConsole console = PushToCloudConsole.fakeConsole( "tomte", "tomtar", false);
 
         Builder copier( Copier targetCommunicator )
         {

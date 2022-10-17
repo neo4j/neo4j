@@ -58,6 +58,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 
 public class PushToCloudCommand extends AbstractCommand
 {
+    private static final String DEV_MODE_VAR_NAME = "NEO4J_P2C_DEV_MODE";
     private final Copier copier;
     private final DumpCreator dumpCreator;
     private final PushToCloudConsole cons;
@@ -129,8 +130,8 @@ public class PushToCloudCommand extends AbstractCommand
             {
                 pass = password.toCharArray();
             }
-
-            String consoleURL = buildConsoleURI( boltURI );
+            boolean devMode = cons.readDevMode(DEV_MODE_VAR_NAME);
+            String consoleURL = buildConsoleURI( boltURI, devMode);
             String bearerToken = copier.authenticate( verbose, consoleURL, username, pass, overwrite );
 
             Uploader uploader = prepareUploader( dump, database, tmpDumpFile );
@@ -154,7 +155,7 @@ public class PushToCloudCommand extends AbstractCommand
         }
     }
 
-    private String buildConsoleURI( String boltURI ) throws CommandFailedException
+    String buildConsoleURI( String boltURI, boolean devMode ) throws CommandFailedException
     {
         // A boltURI looks something like this:
         //
@@ -162,7 +163,8 @@ public class PushToCloudCommand extends AbstractCommand
         //                  <─┬──><──────┬─────>
         //                    │          └──────── environment
         //                    └─────────────────── database id
-        //
+        // When running in a dev environment it can also be of the form
+        // bolt+routing://mydbid-myenv.databases.neo4j-myenv.io
         // Constructing a console URI takes elements from the bolt URI and places them inside this URI:
         //
         //   https://console<environment>.neo4j.io/v1/databases/<database id>
@@ -171,8 +173,19 @@ public class PushToCloudCommand extends AbstractCommand
         //
         //   bolt+routing://rogue.databases.neo4j.io  --> https://console.neo4j.io/v1/databases/rogue
         //   bolt+routing://rogue-mattias.databases.neo4j.io  --> https://console-mattias.neo4j.io/v1/databases/rogue
-
-        Pattern pattern = Pattern.compile( "(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://([^-]+)(-(.+))?.databases.neo4j.io$" );
+        //  bolt+routing://mydbid-myenv.databases.neo4j-myenv.io ->
+        //  https://console-env.neo4j.env-io/v1/databases/rogue
+        Pattern pattern;
+        if ( devMode )
+        {
+            pattern = Pattern.compile(
+                    "(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://([^-]+)(-(.+))?.databases.neo4j(-(.+))?.io$");
+        }
+        else
+        {
+            pattern = Pattern.compile(
+                    "(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://([^-]+)(-(.+))?.databases.neo4j.io$");
+        }
         Matcher matcher = pattern.matcher( boltURI );
         if ( !matcher.matches() )
         {
@@ -181,7 +194,19 @@ public class PushToCloudCommand extends AbstractCommand
 
         String databaseId = matcher.group( 1 );
         String environment = matcher.group( 2 );
-        return String.format( "https://console%s.neo4j.io/v1/databases/%s", environment == null ? "" : environment, databaseId );
+        String domain = "";
+
+        if ( devMode && environment == null )
+        {
+            throw new CommandFailedException(
+                    "Expected to find an environment running in dev mode in bolt URI: " + boltURI );
+        }
+        if ( matcher.groupCount() == 5 && devMode )
+        {
+            domain = matcher.group(4);
+        }
+        return String.format("https://console%s.neo4j%s.io/v1/databases/%s",
+                environment == null ? "" : environment, domain, databaseId);
     }
 
     private Uploader prepareUploader( Path dump, NormalizedDatabaseName database, Path to ) throws CommandFailedException
