@@ -23,10 +23,15 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.IndependenceCombiner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
@@ -39,7 +44,19 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.collection.mutable
 
-class PatternRelationshipMultiplierCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
+class NodeConnectionMultiplierCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
+
+  implicit private val cardModel: CardinalityModel = new CardinalityModel {
+
+    override def apply(
+      queryPart: PlannerQueryPart,
+      labelInfo: LabelInfo,
+      relTypeInfo: RelTypeInfo,
+      semanticTable: SemanticTable,
+      indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+      cardinalityModel: CardinalityModel
+    ): Cardinality = ???
+  }
 
   test("should return zero if there are no nodes with the given labels") {
     val stats: GraphStatistics = mock[GraphStatistics]
@@ -47,11 +64,11 @@ class PatternRelationshipMultiplierCalculatorTest extends CypherFunSuite with As
     when(stats.nodesAllCardinality()).thenReturn(Cardinality.EMPTY)
     when(stats.patternStepCardinality(any(), any(), any())).thenReturn(Cardinality.EMPTY)
 
-    val calculator = PatternRelationshipMultiplierCalculator(stats, IndependenceCombiner)
+    val calculator = NodeConnectionMultiplierCalculator(stats, IndependenceCombiner)
     val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
     implicit val semanticTable: SemanticTable = new SemanticTable(resolvedLabelNames = mutable.Map("L" -> LabelId(0)))
-    val result = calculator.relationshipMultiplier(relationship, Map("a" -> Set(labelName("L"))))
+    val result = calculator.nodeConnectionMultiplier(relationship, Map("a" -> Set(labelName("L"))))
 
     result should equal(Multiplier.ZERO)
   }
@@ -62,11 +79,11 @@ class PatternRelationshipMultiplierCalculatorTest extends CypherFunSuite with As
     when(stats.nodesAllCardinality()).thenReturn(Cardinality.SINGLE)
     when(stats.patternStepCardinality(any(), any(), any())).thenReturn(Cardinality.SINGLE)
 
-    val calculator = PatternRelationshipMultiplierCalculator(stats, IndependenceCombiner)
+    val calculator = NodeConnectionMultiplierCalculator(stats, IndependenceCombiner)
     val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
     implicit val semanticTable: SemanticTable = new SemanticTable(resolvedLabelNames = mutable.Map("L" -> LabelId(0)))
-    val result = calculator.relationshipMultiplier(relationship, Map("a" -> Set(labelName("L"))))
+    val result = calculator.nodeConnectionMultiplier(relationship, Map("a" -> Set(labelName("L"))))
 
     result should equal(Multiplier.ONE)
   }
@@ -77,12 +94,12 @@ class PatternRelationshipMultiplierCalculatorTest extends CypherFunSuite with As
     when(stats.nodesAllCardinality()).thenReturn(Cardinality.SINGLE)
     when(stats.patternStepCardinality(any(), any(), any())).thenReturn(Cardinality.SINGLE)
 
-    val calculator = PatternRelationshipMultiplierCalculator(stats, IndependenceCombiner)
+    val calculator = NodeConnectionMultiplierCalculator(stats, IndependenceCombiner)
     val relationship =
       PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, VarPatternLength(33, Some(33)))
 
     implicit val semanticTable: SemanticTable = new SemanticTable(resolvedLabelNames = mutable.Map("L" -> LabelId(0)))
-    val result = calculator.relationshipMultiplier(relationship, Map("a" -> Set(labelName("L"))))
+    val result = calculator.nodeConnectionMultiplier(relationship, Map("a" -> Set(labelName("L"))))
 
     // one node which has a single relationship to itself. Given the relationship uniqueness, we should get some result between 0 and 1, but not larger than 1
     result should be >= Multiplier.ZERO
@@ -95,7 +112,7 @@ class PatternRelationshipMultiplierCalculatorTest extends CypherFunSuite with As
     when(stats.nodesAllCardinality()).thenReturn(Cardinality(10))
     when(stats.patternStepCardinality(any(), any(), any())).thenReturn(Cardinality(42))
 
-    val calculator = PatternRelationshipMultiplierCalculator(stats, IndependenceCombiner)
+    val calculator = NodeConnectionMultiplierCalculator(stats, IndependenceCombiner)
     val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
     val labels = new mutable.HashMap[String, LabelId]()
@@ -103,7 +120,7 @@ class PatternRelationshipMultiplierCalculatorTest extends CypherFunSuite with As
     val labelInfo = Map("a" -> labels.keys.map(labelName(_)).toSet)
 
     implicit val semanticTable: SemanticTable = new SemanticTable(resolvedLabelNames = labels)
-    val result = calculator.relationshipMultiplier(relationship, labelInfo)
+    val result = calculator.nodeConnectionMultiplier(relationship, labelInfo)
 
     result should be >= Multiplier.ONE
   }
@@ -116,7 +133,7 @@ class PatternRelationshipMultiplierCalculatorTest extends CypherFunSuite with As
     val directions = Seq(SemanticDirection.INCOMING, SemanticDirection.OUTGOING, SemanticDirection.BOTH)
     for (direction <- directions) withClue(direction) {
       val minimizedStats = new MinimumGraphStatistics(stats)
-      val calculator = PatternRelationshipMultiplierCalculator(minimizedStats, IndependenceCombiner)
+      val calculator = NodeConnectionMultiplierCalculator(minimizedStats, IndependenceCombiner)
       val unknownTypeRel = PatternRelationship(
         "r",
         ("a", "b"),
@@ -134,8 +151,8 @@ class PatternRelationshipMultiplierCalculatorTest extends CypherFunSuite with As
 
       implicit val semanticTable: SemanticTable =
         new SemanticTable(resolvedRelTypeNames = mutable.Map("KNOWN" -> RelTypeId(0)))
-      val unknownRelCardinality = calculator.relationshipMultiplier(unknownTypeRel, Map.empty)
-      val knownRelCardinality = calculator.relationshipMultiplier(knownTypeRel, Map.empty)
+      val unknownRelCardinality = calculator.nodeConnectionMultiplier(unknownTypeRel, Map.empty)
+      val knownRelCardinality = calculator.nodeConnectionMultiplier(knownTypeRel, Map.empty)
 
       unknownRelCardinality should equal(knownRelCardinality)
     }

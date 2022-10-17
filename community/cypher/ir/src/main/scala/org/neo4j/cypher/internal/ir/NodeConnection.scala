@@ -19,11 +19,15 @@
  */
 package org.neo4j.cypher.internal.ir
 
+import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.util.Repetition
+
 /**
  * Part of a pattern that is connecting nodes (as in "connected components").
  * This is a generalisation of relationships to be able to plan quantified path patterns using the same algorithm.
  */
-trait NodeConnection {
+sealed trait NodeConnection {
 
   val left: String
   val right: String
@@ -44,4 +48,115 @@ trait NodeConnection {
         s"Did not provide either side as an argument to otherSide. Rel: $this, argument: $node"
       )
     }
+}
+
+final case class PatternRelationship(
+  name: String,
+  nodes: (String, String),
+  dir: SemanticDirection,
+  types: Seq[RelTypeName],
+  length: PatternLength
+) extends NodeConnection {
+
+  def directionRelativeTo(node: String): SemanticDirection = if (node == left) dir else dir.reversed
+
+  override lazy val coveredIds: Set[String] = Set(name, left, right)
+
+  override val left: String = nodes._1
+  override val right: String = nodes._2
+
+  def inOrder: (String, String) = dir match {
+    case SemanticDirection.INCOMING => (right, left)
+    case _                          => (left, right)
+  }
+
+  override def toString: String = {
+    val lArrow = if (dir == SemanticDirection.INCOMING) "<" else ""
+    val rArrow = if (dir == SemanticDirection.OUTGOING) ">" else ""
+    val typesStr =
+      if (types.isEmpty) {
+        ""
+      } else {
+        types.map(_.name).mkString(":", "|", "")
+      }
+    val lengthStr = length match {
+      case SimplePatternLength              => ""
+      case VarPatternLength(1, None)        => "*"
+      case VarPatternLength(x, None)        => s"*$x.."
+      case VarPatternLength(min, Some(max)) => s"*$min..$max"
+    }
+    s"(${nodes._1})$lArrow-[$name$typesStr$lengthStr]-$rArrow(${nodes._2})"
+  }
+}
+
+object PatternRelationship {
+  implicit val byName: Ordering[PatternRelationship] = Ordering.by { patternRel: PatternRelationship => patternRel.name }
+}
+
+sealed trait PatternLength {
+  def implicitPatternNodeCount: Int
+  def isSimple: Boolean
+}
+
+case object SimplePatternLength extends PatternLength {
+  def isSimple = true
+
+  def implicitPatternNodeCount: Int = 0
+}
+
+final case class VarPatternLength(min: Int, max: Option[Int]) extends PatternLength {
+  def isSimple = false
+
+  def implicitPatternNodeCount: Int = max.getOrElse(VarPatternLength.STAR_LENGTH)
+}
+
+object VarPatternLength {
+  val STAR_LENGTH = 16
+
+  def unlimited: VarPatternLength = VarPatternLength(1, None)
+
+  def fixed(length: Int): VarPatternLength = VarPatternLength(length, Some(length))
+}
+
+/**
+ * Describes the connection between two juxtaposed nodes - one inside of a [[QuantifiedPathPattern]]
+ * and the other one outside.
+ */
+case class NodeBinding(inner: String, outer: String) {
+  override def toString: String = s"(inner=$inner, outer=$outer)"
+}
+
+/**
+ * Describes a variable that is exposed from a [[QuantifiedPath]].
+ *
+ * @param singletonName the name of the singleton variable inside the QuantifiedPath.
+ * @param groupName     the name of the group variable exposed outside of the QuantifiedPath.
+ */
+case class VariableGrouping(singletonName: String, groupName: String) {
+  override def toString: String = s"(singletonName=$singletonName, groupName=$groupName)"
+}
+
+final case class QuantifiedPathPattern(
+                                        leftBinding: NodeBinding,
+                                        rightBinding: NodeBinding,
+                                        pattern: QueryGraph,
+                                        repetition: Repetition,
+                                        nodeVariableGroupings: Set[VariableGrouping],
+                                        relationshipVariableGroupings: Set[VariableGrouping]
+                                      ) extends NodeConnection {
+
+  override val left: String = leftBinding.outer
+  override val right: String = rightBinding.outer
+
+  override val nodes: (String, String) = (left, right)
+
+  override lazy val coveredIds: Set[String] = coveredNodeIds ++ groupings
+
+  override def toString: String = {
+    s"QPP($leftBinding, $rightBinding, $pattern, $repetition, $nodeVariableGroupings, $relationshipVariableGroupings)"
+  }
+
+  val dependencies: Set[String] = pattern.dependencies
+
+  val groupings: Set[String] = nodeVariableGroupings.map(_.groupName) ++ relationshipVariableGroupings.map(_.groupName)
 }

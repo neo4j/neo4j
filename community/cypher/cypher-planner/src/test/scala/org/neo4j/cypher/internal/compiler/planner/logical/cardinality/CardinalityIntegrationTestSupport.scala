@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningSupport
@@ -86,7 +87,10 @@ trait CardinalityIntegrationTestSupport extends StatisticsBackedLogicalPlanningS
 
   def queryShouldHaveCardinality(query: String, expectedCardinality: Double): Unit = {
     queryShouldHaveCardinality(
-      plannerBuilder().setExecutionModel(ExecutionModel.Volcano).build(),
+      plannerBuilder()
+        .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
+        .setExecutionModel(ExecutionModel.Volcano)
+        .build(),
       query,
       expectedCardinality
     )
@@ -98,7 +102,10 @@ trait CardinalityIntegrationTestSupport extends StatisticsBackedLogicalPlanningS
     expectedCardinality: Double
   ): Unit = {
     planShouldHaveCardinality(
-      plannerBuilder().setExecutionModel(ExecutionModel.Volcano).build(),
+      plannerBuilder()
+        .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
+        .setExecutionModel(ExecutionModel.Volcano)
+        .build(),
       query,
       findPlanId,
       expectedCardinality

@@ -820,4 +820,31 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .allNodeScan("n")
       .build()
   }
+
+  test("Should start with higher cardinality label if first expansion is cheaper") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(110)
+      .setAllRelationshipsCardinality(1000)
+      .setLabelCardinality("B", 100)
+      .setLabelCardinality("C", 10)
+      .setRelationshipCardinality("(:B)-[:R]->(:C)", 2)
+      .setRelationshipCardinality("(:B)-[:R]->()", 2)
+      .setRelationshipCardinality("()-[:R]->(:C)", 200)
+      .setRelationshipCardinality("()-[:R]->()", 1000)
+      .enablePrintCostComparisons()
+      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
+      .build()
+
+    val query = "MATCH (b1:B) ( (b2:B)-[r:R]->(c2:C) ){3} (c1:C) RETURN *"
+
+    val plan = planner.plan(query).stripProduceResults
+
+    // TODO full plan assertion
+    plan.printLogicalPlanBuilderString()
+    plan.leftmostLeaf should equal(
+      planner.subPlanBuilder()
+        .nodeByLabelScan("b1", "B")
+        .build()
+    )
+  }
 }

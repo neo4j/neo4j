@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.subqueryCardinalityToExistsSelectivity
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.PatternRelationshipMultiplierCalculator.uniquenessSelectivityForNRels
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.uniquenessSelectivityForNRels
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Create
@@ -767,6 +767,12 @@ abstract class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunS
   test("varlength 1..1 should be equal to non-varlength") {
     queryShouldHaveCardinality("MATCH (:A)-[r1:T1]->(:B)", varLength1_1)
     queryShouldHaveCardinality("MATCH (a:A)-[r:T1*1..1]->(b:B)", varLength1_1)
+  }
+
+  test("QPP 1..1 should be equal to non-QPP") {
+    queryShouldHaveCardinality("MATCH (:A)-[r1:T1]->(:B)", varLength1_1)
+    queryShouldHaveCardinality("MATCH (:A) ( ()-[r:T1]->() ){1} (:B)", varLength1_1)
+    queryShouldHaveCardinality("MATCH (:A) ( (:A)-[r:T1]->(:B) ){1} (:B)", varLength1_1)
   }
 
   test("varlength 0..1 should equal sum of 0..0 and 1..1") {

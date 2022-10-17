@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCal
 import org.neo4j.cypher.internal.compiler.planner.logical.StatisticsBackedCardinalityModel.CardinalityAndInput
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
+import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Cardinality
@@ -42,7 +44,7 @@ case class AssumeIndependenceQueryGraphCardinalityModel(
 
   implicit private val numericMultiplier: NumericMultiplier.type = NumericMultiplier
 
-  private val relMultiplierCalculator = PatternRelationshipMultiplierCalculator(planContext.statistics, combiner)
+  private val nodeConnectionMultiplierCalculator = NodeConnectionMultiplierCalculator(planContext.statistics, combiner)
 
   override def apply(
     queryGraph: QueryGraph,
@@ -158,11 +160,12 @@ case class AssumeIndependenceQueryGraphCardinalityModel(
         cardinalityModel
       )
 
-    val patternRelationships = qg.patternRelationships.toIndexedSeq
-    val patternMultipliers = patternRelationships.map(r =>
-      if (qg.argumentIds.contains(r.name)) Multiplier.ONE
-      else relMultiplierCalculator.relationshipMultiplier(r, labels)(semanticTable)
-    )
+    val nodeConnections = qg.nodeConnections.toIndexedSeq
+    val patternMultipliers = nodeConnections
+      .filter {
+        case r: PatternRelationship if qg.argumentIds.contains(r.name) => false
+        case _                                                         => true
+      }.map(nodeConnectionMultiplierCalculator.nodeConnectionMultiplier(_, labels)(semanticTable, cardinalityModel))
 
     patternMultipliers.product * expressionSelectivity
   }
