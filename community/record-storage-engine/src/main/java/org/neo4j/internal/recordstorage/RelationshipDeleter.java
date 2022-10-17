@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.ResourceLocker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications.RelationshipBatch;
 
 /**
@@ -74,11 +75,12 @@ class RelationshipDeleter {
             RecordAccessSet recordChanges,
             RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
             MappedNodeDataLookup nodeDataLookup,
+            MemoryTracker memoryTracker,
             ResourceLocker locks) {
         deletions.forEach((id, type, startNode, endNode, noProperties) -> {
             RelationshipRecord record =
                     recordChanges.getRelRecords().getOrLoad(id, null).forChangingLinkage();
-            propertyChainDeleter.deletePropertyChain(record, recordChanges.getPropertyRecords());
+            propertyChainDeleter.deletePropertyChain(record, recordChanges.getPropertyRecords(), memoryTracker);
             disconnectRelationship(record, recordChanges.getRelRecords());
             updateNodesForDeletedRelationship(record, recordChanges, groupDegreesUpdater, nodeDataLookup, locks);
             record.setInUse(false);

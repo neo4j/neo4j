@@ -279,7 +279,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionMonitor = transactionMonitor;
         this.transactionExecutionMonitor = transactionExecutionMonitor;
         this.storageReader = storageEngine.newReader();
-        this.commandCreationContext = storageEngine.newCommandCreationContext(memoryTracker);
+        this.commandCreationContext = storageEngine.newCommandCreationContext();
         this.namedDatabaseId = namedDatabaseId;
         this.storageEngine = storageEngine;
         this.pool = pool;
@@ -916,7 +916,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         storageReader,
                         commandCreationContext,
                         lockTracer(),
-                        this::enforceConstraints,
+                        tx -> enforceConstraints(tx, memoryTracker),
                         cursorContext,
                         transactionalCursors,
                         memoryTracker);
@@ -1253,7 +1253,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return statistics;
     }
 
-    private TxStateVisitor enforceConstraints(TxStateVisitor txStateVisitor) {
+    private TxStateVisitor enforceConstraints(TxStateVisitor txStateVisitor, MemoryTracker memoryTracker) {
         return constraintSemantics.decorateTxStateVisitor(
                 storageReader,
                 operations.dataRead(),

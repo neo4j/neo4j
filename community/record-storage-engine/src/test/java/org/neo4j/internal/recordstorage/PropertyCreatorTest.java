@@ -108,7 +108,7 @@ class PropertyCreatorTest {
                 cursorContext,
                 PROPERTY_CURSOR,
                 storeCursors);
-        creator = new PropertyCreator(propertyStore, new PropertyTraverser(), cursorContext, INSTANCE);
+        creator = new PropertyCreator(propertyStore, new PropertyTraverser(), cursorContext);
     }
 
     @AfterEach
@@ -397,7 +397,7 @@ class PropertyCreatorTest {
     }
 
     private void setProperty(int key, Object value) {
-        creator.primitiveSetProperty(primitive, key, Values.of(value), records);
+        creator.primitiveSetProperty(primitive, key, Values.of(value), records, INSTANCE);
     }
 
     private void assertChain(ExpectedRecord... expectedRecords) {

@@ -44,7 +44,6 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 class RecordStorageCommandCreationContext implements CommandCreationContext {
     private final NeoStores neoStores;
     private final Config config;
-    private final MemoryTracker memoryTracker;
     private final PropertyStore propertyStore;
     private final TokenNameLookup tokenNameLookup;
     private final InternalLogProvider logProvider;
@@ -70,15 +69,13 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
             InternalLogProvider logProvider,
             int denseNodeThreshold,
             BooleanSupplier relaxedLockingForDenseNodes,
-            Config config,
-            MemoryTracker memoryTracker) {
+            Config config) {
         this.tokenNameLookup = tokenNameLookup;
         this.logProvider = logProvider;
         this.denseNodeThreshold = denseNodeThreshold;
         this.relaxedLockingForDenseNodes = relaxedLockingForDenseNodes;
         this.neoStores = neoStores;
         this.config = config;
-        this.memoryTracker = memoryTracker;
         this.propertyStore = neoStores.getPropertyStore();
     }
 
@@ -98,14 +95,7 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
                 new RelationshipGroupGetter(neoStores.getRelationshipGroupStore(), cursorContext);
         PropertyTraverser propertyTraverser = new PropertyTraverser();
         this.propertyDeleter = new PropertyDeleter(
-                propertyTraverser,
-                neoStores,
-                tokenNameLookup,
-                logProvider,
-                config,
-                cursorContext,
-                memoryTracker,
-                storeCursors);
+                propertyTraverser, neoStores, tokenNameLookup, logProvider, config, cursorContext, storeCursors);
         this.propertyCreator = new PropertyCreator(
                 new StandardDynamicRecordAllocator(
                         propertyStore.getStringStore(),
@@ -115,8 +105,7 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
                         propertyStore.getArrayStore().getRecordDataSize()),
                 propertyStore,
                 propertyTraverser,
-                cursorContext,
-                memoryTracker);
+                cursorContext);
     }
 
     private long nextId(StoreType storeType) {
@@ -164,6 +153,7 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
             ResourceLocker locks,
             LockTracer lockTracer,
             LogCommandSerialization commandSerialization,
+            MemoryTracker memoryTracker,
             LoadMonitor monitor) {
         RecordChangeSet recordChangeSet = new RecordChangeSet(loaders, memoryTracker, monitor, storeCursors);
         RelationshipModifier relationshipModifier = new RelationshipModifier(

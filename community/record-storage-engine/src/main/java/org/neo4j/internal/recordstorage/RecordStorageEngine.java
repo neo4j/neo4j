@@ -382,15 +382,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     @Override
-    public RecordStorageCommandCreationContext newCommandCreationContext(MemoryTracker memoryTracker) {
+    public RecordStorageCommandCreationContext newCommandCreationContext() {
         return new RecordStorageCommandCreationContext(
                 neoStores,
                 tokenHolders,
                 internalLogProvider,
                 denseNodeThreshold,
                 this::relaxedLockingForDenseNodes,
-                config,
-                memoryTracker);
+                config);
     }
 
     @Override
@@ -428,12 +427,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             Decorator additionalTxStateVisitor,
             CursorContext cursorContext,
             StoreCursors storeCursors,
-            MemoryTracker transactionMemoryTracker)
+            MemoryTracker memoryTracker)
             throws KernelException {
         if (txState == null) {
             return emptyList();
         }
-        var commands = HeapTrackingCollections.<StorageCommand>newArrayList(transactionMemoryTracker);
+        var commands = HeapTrackingCollections.<StorageCommand>newArrayList(memoryTracker);
         KernelVersion version = neoStores.getMetaDataStore().kernelVersion();
 
         // We can make this cast here because we expected that the storageReader passed in here comes from
@@ -447,6 +446,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                 locks,
                 lockTracer,
                 serialization,
+                memoryTracker,
                 lockVerificationFactory.create(locks, txState, neoStores, schemaRuleAccess, storeCursors));
 
         // Visit transaction state and populate these record state objects
@@ -460,8 +460,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             txState.accept(visitor);
         }
         // Convert record state into commands
-        recordState.extractCommands(commands, transactionMemoryTracker);
-        countsRecordState.extractCommands(commands, transactionMemoryTracker);
+        recordState.extractCommands(commands, memoryTracker);
+        countsRecordState.extractCommands(commands, memoryTracker);
 
         // Verify sufficient locks
         CommandLockVerification commandLockVerification =

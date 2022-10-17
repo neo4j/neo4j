@@ -37,20 +37,9 @@ public class PropertyCreator {
     private final PropertyStore propertyStore;
     private final PropertyTraverser traverser;
     private final CursorContext cursorContext;
-    private final MemoryTracker memoryTracker;
 
-    public PropertyCreator(
-            PropertyStore propertyStore,
-            PropertyTraverser traverser,
-            CursorContext cursorContext,
-            MemoryTracker memoryTracker) {
-        this(
-                propertyStore.getStringStore(),
-                propertyStore.getArrayStore(),
-                propertyStore,
-                traverser,
-                cursorContext,
-                memoryTracker);
+    public PropertyCreator(PropertyStore propertyStore, PropertyTraverser traverser, CursorContext cursorContext) {
+        this(propertyStore.getStringStore(), propertyStore.getArrayStore(), propertyStore, traverser, cursorContext);
     }
 
     PropertyCreator(
@@ -58,22 +47,21 @@ public class PropertyCreator {
             DynamicRecordAllocator arrayRecordAllocator,
             PropertyStore propertyStore,
             PropertyTraverser traverser,
-            CursorContext cursorContext,
-            MemoryTracker memoryTracker) {
+            CursorContext cursorContext) {
         this.stringRecordAllocator = stringRecordAllocator;
         this.arrayRecordAllocator = arrayRecordAllocator;
         this.propertyStore = propertyStore;
         this.traverser = traverser;
         this.cursorContext = cursorContext;
-        this.memoryTracker = memoryTracker;
     }
 
     public <P extends PrimitiveRecord> void primitiveSetProperty(
             RecordProxy<P, ?> primitiveRecordChange,
             int propertyKey,
             Value value,
-            RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords) {
-        PropertyBlock block = encodePropertyValue(propertyKey, value);
+            RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords,
+            MemoryTracker memoryTracker) {
+        PropertyBlock block = encodePropertyValue(propertyKey, value, memoryTracker);
         P primitive = primitiveRecordChange.forReadingLinkage();
         assert traverser.assertPropertyChain(primitive, propertyRecords);
 
@@ -197,7 +185,7 @@ public class PropertyCreator {
         }
     }
 
-    private PropertyBlock encodePropertyValue(int propertyKey, Value value) {
+    private PropertyBlock encodePropertyValue(int propertyKey, Value value, MemoryTracker memoryTracker) {
         PropertyBlock block = new PropertyBlock();
         PropertyStore.encodeValue(
                 block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator, cursorContext, memoryTracker);

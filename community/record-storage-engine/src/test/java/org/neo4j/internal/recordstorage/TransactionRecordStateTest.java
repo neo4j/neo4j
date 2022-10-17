@@ -1853,7 +1853,6 @@ class TransactionRecordStateTest {
                 NullLogProvider.getInstance(),
                 Config.defaults(),
                 NULL_CONTEXT,
-                INSTANCE,
                 storeCursors);
         return new TransactionRecordState(
                 neoStores,
@@ -1867,7 +1866,7 @@ class TransactionRecordStateTest {
                         true,
                         NULL_CONTEXT,
                         EmptyMemoryTracker.INSTANCE),
-                new PropertyCreator(neoStores.getPropertyStore(), propertyTraverser, NULL_CONTEXT, INSTANCE),
+                new PropertyCreator(neoStores.getPropertyStore(), propertyTraverser, NULL_CONTEXT),
                 propertyDeleter,
                 NULL_CONTEXT,
                 storeCursors,

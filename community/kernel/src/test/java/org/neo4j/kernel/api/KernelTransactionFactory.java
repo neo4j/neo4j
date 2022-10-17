@@ -83,7 +83,7 @@ public final class KernelTransactionFactory {
         StorageEngine storageEngine = mock(StorageEngine.class);
         StorageReader storageReader = mock(StorageReader.class);
         when(storageEngine.newReader()).thenReturn(storageReader);
-        when(storageEngine.newCommandCreationContext(any())).thenReturn(mock(CommandCreationContext.class));
+        when(storageEngine.newCommandCreationContext()).thenReturn(mock(CommandCreationContext.class));
         when(storageEngine.createStorageCursors(any())).thenReturn(StoreCursors.NULL);
 
         Dependencies dependencies = new Dependencies();

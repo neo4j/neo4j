@@ -315,7 +315,7 @@ class ParallelRecoveryVisitorTest {
         // vvv these methods are not used by the recovery visitor vvv
 
         @Override
-        public CommandCreationContext newCommandCreationContext(MemoryTracker memoryTracker) {
+        public CommandCreationContext newCommandCreationContext() {
             throw new UnsupportedOperationException();
         }
 

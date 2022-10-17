@@ -50,7 +50,7 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
      * {@link #createCommands(ReadableTransactionState, StorageReader, CommandCreationContext, ResourceLocker, LockTracer, Decorator, CursorContext, StoreCursors, MemoryTracker)}.
      * Must be {@link CommandCreationContext#close() closed} after used, before being discarded.
      */
-    CommandCreationContext newCommandCreationContext(MemoryTracker memoryTracker);
+    CommandCreationContext newCommandCreationContext();
 
     StorageLocks createStorageLocks(ResourceLocker locker);
 

@@ -29,6 +29,7 @@ import static org.neo4j.kernel.impl.api.FlatRelationshipModifications.singleDele
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +42,6 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 class RelationshipDeleterTest {
@@ -63,7 +63,6 @@ class RelationshipDeleterTest {
                 NullLogProvider.getInstance(),
                 Config.defaults(),
                 CursorContext.NULL_CONTEXT,
-                EmptyMemoryTracker.INSTANCE,
                 StoreCursors.NULL);
         deleter = new RelationshipDeleter(
                 relationshipGroupGetter, propertyDeleter, DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH);
@@ -98,6 +97,7 @@ class RelationshipDeleterTest {
                 recordChanges,
                 mock(RelationshipGroupDegreesStore.Updater.class),
                 mock(MappedNodeDataLookup.class),
+                INSTANCE,
                 IGNORE);
 
         // then relA should be updated with correct degrees, i.e. from 3 -> 2 on both its chains
@@ -140,6 +140,7 @@ class RelationshipDeleterTest {
                 recordChanges,
                 mock(RelationshipGroupDegreesStore.Updater.class),
                 groupLookup,
+                INSTANCE,
                 IGNORE);
 
         // then relA should be updated with correct degrees, i.e. from 3 -> 2 on both its chains

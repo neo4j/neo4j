@@ -111,8 +111,7 @@ public class RecordStorageEngineTestUtils {
         NeoStores neoStores = storageEngine.testAccessNeoStores();
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
         CursorContext cursorContext = NULL_CONTEXT;
-        try (RecordStorageCommandCreationContext commandCreationContext =
-                        storageEngine.newCommandCreationContext(EmptyMemoryTracker.INSTANCE);
+        try (RecordStorageCommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext();
                 StoreCursors storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
             commandCreationContext.initialize(
                     cursorContext,

@@ -115,6 +115,7 @@ public class RelationshipModifier {
                     recordChanges,
                     groupDegreesUpdater,
                     nodeDataLookup,
+                    memoryTracker,
                     locks /*no lock tracing because no blocking acquisitions*/);
         }
     }

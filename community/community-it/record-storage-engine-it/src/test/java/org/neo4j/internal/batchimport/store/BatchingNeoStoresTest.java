@@ -547,7 +547,7 @@ class BatchingNeoStoresTest {
             // Create the relationship type token
             TxState txState = new TxState();
             NeoStores neoStores = storageEngine.testAccessNeoStores();
-            try (CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext(INSTANCE);
+            try (CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext();
                     var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
                 commandCreationContext.initialize(
                         NULL_CONTEXT,

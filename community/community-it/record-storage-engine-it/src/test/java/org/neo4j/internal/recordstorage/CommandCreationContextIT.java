@@ -26,7 +26,6 @@ import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.FlatRelationshipModifications.singleCreate;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -95,7 +94,7 @@ public class CommandCreationContextIT {
             ToLongFunction<CommandCreationContext> idReservation) {
         try (var cursorContext = contextFactory.create("trackPageCacheAccessOnIdReservation")) {
             prepareIdGenerator(storeProvider.apply(neoStores).getIdGenerator());
-            try (var creationContext = storageEngine.newCommandCreationContext(INSTANCE)) {
+            try (var creationContext = storageEngine.newCommandCreationContext()) {
                 creationContext.initialize(
                         cursorContext,
                         StoreCursors.NULL,
@@ -113,7 +112,7 @@ public class CommandCreationContextIT {
     @MethodSource("commandOperations")
     void trackMemoryAllocationInCommandCreationContext(BiConsumer<TransactionRecordState, ContextHolder> operation) {
         var memoryTracker = new LocalMemoryTracker();
-        try (var commandCreationContext = storageEngine.newCommandCreationContext(memoryTracker);
+        try (var commandCreationContext = storageEngine.newCommandCreationContext();
                 var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
             commandCreationContext.initialize(
                     NULL_CONTEXT,
@@ -123,7 +122,11 @@ public class CommandCreationContextIT {
                     ResourceLocker.IGNORE,
                     () -> LockTracer.NONE);
             var recordState = commandCreationContext.createTransactionRecordState(
-                    IGNORE, LockTracer.NONE, LATEST_LOG_SERIALIZATION, RecordAccess.LoadMonitor.NULL_MONITOR);
+                    IGNORE,
+                    LockTracer.NONE,
+                    LATEST_LOG_SERIALIZATION,
+                    memoryTracker,
+                    RecordAccess.LoadMonitor.NULL_MONITOR);
             long heapBefore = memoryTracker.estimatedHeapMemory();
             for (int i = 1; i < 1024; i++) {
                 operation.accept(recordState, new ContextHolder(nodeId, relationshipId, i));

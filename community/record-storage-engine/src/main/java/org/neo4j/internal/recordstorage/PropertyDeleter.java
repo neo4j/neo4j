@@ -58,7 +58,6 @@ public class PropertyDeleter {
     private final InternalLogProvider logProvider;
     private final Config config;
     private final CursorContext cursorContext;
-    private final MemoryTracker memoryTracker;
     private final StoreCursors storeCursors;
 
     public PropertyDeleter(
@@ -68,7 +67,6 @@ public class PropertyDeleter {
             InternalLogProvider logProvider,
             Config config,
             CursorContext cursorContext,
-            MemoryTracker memoryTracker,
             StoreCursors storeCursors) {
         this.traverser = traverser;
         this.neoStores = neoStores;
@@ -76,12 +74,13 @@ public class PropertyDeleter {
         this.logProvider = logProvider;
         this.config = config;
         this.cursorContext = cursorContext;
-        this.memoryTracker = memoryTracker;
         this.storeCursors = storeCursors;
     }
 
     public void deletePropertyChain(
-            PrimitiveRecord primitive, RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords) {
+            PrimitiveRecord primitive,
+            RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords,
+            MemoryTracker memoryTracker) {
         long nextProp = primitive.getNextProp();
         MutableLongSet seenPropertyIds = null;
         int count = 0;
@@ -112,11 +111,11 @@ public class PropertyDeleter {
             // This property chain, or a dynamic value record chain contains a record which is not in use, so it's
             // somewhat broken.
             // Abort reading the chain, but don't fail the deletion of this property record chain.
-            logInconsistentPropertyChain(primitive, "unused record", e);
+            logInconsistentPropertyChain(primitive, memoryTracker, "unused record", e);
         } catch (InconsistentDataReadException e) {
             // This property chain, or a dynamic value record chain contains a cycle.
             // Abort reading the chain, but don't fail the deletion of this property record chain.
-            logInconsistentPropertyChain(primitive, "cycle", e);
+            logInconsistentPropertyChain(primitive, memoryTracker, "cycle", e);
         }
         primitive.setNextProp(Record.NO_NEXT_PROPERTY.intValue());
     }
@@ -135,7 +134,8 @@ public class PropertyDeleter {
         }
     }
 
-    private void logInconsistentPropertyChain(PrimitiveRecord primitive, String causeMessage, Throwable cause) {
+    private void logInconsistentPropertyChain(
+            PrimitiveRecord primitive, MemoryTracker memoryTracker, String causeMessage, Throwable cause) {
         if (!config.get(GraphDatabaseInternalSettings.log_inconsistent_data_deletion)) {
             return;
         }

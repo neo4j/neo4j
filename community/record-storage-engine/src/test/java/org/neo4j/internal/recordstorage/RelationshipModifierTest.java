@@ -129,7 +129,6 @@ class RelationshipModifierTest {
                 NullLogProvider.getInstance(),
                 Config.defaults(),
                 CursorContext.NULL_CONTEXT,
-                EmptyMemoryTracker.INSTANCE,
                 StoreCursors.NULL);
         modifier = new RelationshipModifier(
                 relationshipGroupGetter,

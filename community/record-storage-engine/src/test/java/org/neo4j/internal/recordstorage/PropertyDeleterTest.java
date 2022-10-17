@@ -136,7 +136,6 @@ class PropertyDeleterTest {
                 logProvider,
                 config,
                 NULL_CONTEXT,
-                INSTANCE,
                 storeCursors);
     }
 
@@ -178,7 +177,7 @@ class PropertyDeleterTest {
 
         // when
         DirectRecordAccessSet changes = new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT);
-        deleter.deletePropertyChain(node, changes.getPropertyRecords());
+        deleter.deletePropertyChain(node, changes.getPropertyRecords(), INSTANCE);
         changes.commit();
 
         // then
@@ -227,7 +226,7 @@ class PropertyDeleterTest {
 
         // when
         DirectRecordAccessSet changes = new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT);
-        deleter.deletePropertyChain(node, changes.getPropertyRecords());
+        deleter.deletePropertyChain(node, changes.getPropertyRecords(), INSTANCE);
         changes.commit();
 
         // then
@@ -259,7 +258,7 @@ class PropertyDeleterTest {
 
         // when
         DirectRecordAccessSet changes = new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT);
-        deleter.deletePropertyChain(node, changes.getPropertyRecords());
+        deleter.deletePropertyChain(node, changes.getPropertyRecords(), INSTANCE);
         changes.commit();
 
         // then
@@ -288,7 +287,7 @@ class PropertyDeleterTest {
 
         // when
         DirectRecordAccessSet changes = new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT);
-        deleter.deletePropertyChain(node, changes.getPropertyRecords());
+        deleter.deletePropertyChain(node, changes.getPropertyRecords(), INSTANCE);
         changes.commit();
 
         // then
@@ -326,7 +325,7 @@ class PropertyDeleterTest {
 
         // when
         DirectRecordAccessSet changes = new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT);
-        deleter.deletePropertyChain(node, changes.getPropertyRecords());
+        deleter.deletePropertyChain(node, changes.getPropertyRecords(), INSTANCE);
         changes.commit();
 
         // then

@@ -666,7 +666,7 @@ class KernelTransactionsTest {
 
         StorageEngine storageEngine = mock(StorageEngine.class);
         when(storageEngine.newReader()).thenReturn(firstReader, otherReaders);
-        when(storageEngine.newCommandCreationContext(any())).thenReturn(mock(CommandCreationContext.class));
+        when(storageEngine.newCommandCreationContext()).thenReturn(mock(CommandCreationContext.class));
         when(storageEngine.createStorageCursors(any())).thenReturn(StoreCursors.NULL);
         when(storageEngine.createCommands(
                         any(ReadableTransactionState.class),

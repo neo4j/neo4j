@@ -114,7 +114,7 @@ class KernelTransactionTestBase {
     public void before() throws Exception {
         collectionsFactory = Mockito.spy(new TestCollectionsFactory());
         when(storageEngine.newReader()).thenReturn(storageReader);
-        when(storageEngine.newCommandCreationContext(any())).thenReturn(commandCreationContext);
+        when(storageEngine.newCommandCreationContext()).thenReturn(commandCreationContext);
         when(storageEngine.metadataProvider()).thenReturn(metadataProvider);
         when(storageEngine.createStorageCursors(any())).thenReturn(StoreCursors.NULL);
         when(storageEngine.createCommands(
