@@ -178,6 +178,8 @@ public class UploadCommand extends AbstractAdminCommand {
         //                    │          └──────── environment
         //                    └─────────────────── database id
         //
+        // When running in a dev environment it can also be of the form
+        // bolt+routing://mydbid-myenv.databases.neo4j-myenv.io
         // Constructing a console URI takes elements from the bolt URI and places them inside this URI:
         //
         //   https://console<environment>.neo4j.io/v1/databases/<database id>
@@ -186,6 +188,8 @@ public class UploadCommand extends AbstractAdminCommand {
         //
         //   bolt+routing://rogue.databases.neo4j.io  --> https://console.neo4j.io/v1/databases/rogue
         //   bolt+routing://rogue-mattias.databases.neo4j.io  --> https://console-mattias.neo4j.io/v1/databases/rogue
+        //   bolt+routing://rogue-myenv.databases.neo4j-myenv.io  -->
+        // https://console-myenv.neo4j-myenv.io/v1/databases/rogue
         Pattern pattern;
         if (devMode) {
             pattern = Pattern.compile(
