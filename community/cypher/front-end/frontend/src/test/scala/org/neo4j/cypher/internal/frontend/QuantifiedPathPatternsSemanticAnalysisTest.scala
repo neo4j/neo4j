@@ -22,7 +22,6 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.symbols.CTPath
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
@@ -124,6 +123,12 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
     )
   }
 
+  test("MATCH shortestPath((n)-[]->+({s: 1})) RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldBe Seq(
+      "shortestPath(...) requires a pattern containing a single relationship"
+    )
+  }
+
   // minimum node count
   test("MATCH ((a)-[]->(b)){0,} RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
@@ -215,10 +220,9 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
     )
   }
 
-  ignore("MATCH ((a)-->(b)-[r]->*(c))+ RETURN count(*)") {
+  test("MATCH ((a)-->(b)-[r]->*(c))+ RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "Quantified path patterns are not allowed to be nested.",
-      "Mixing variable-length relationships ('-[*]-') with quantified relationships ('()-->*()') or quantified path patterns ('(()-->())*') is not allowed."
+      "Quantified path patterns are not allowed to be nested."
     )
   }
 
@@ -230,13 +234,14 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
   }
 
   // relationship quantification
-  ignore("MATCH (a)-[*]->+(b) RETURN count(*)") {
+  test("MATCH (a)-[*]->+(b) RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "Variable length relationships cannot be quantified."
+      "Variable length relationships cannot be part of a quantified path pattern.",
+      "Mixing variable-length relationships ('-[*]-') with quantified relationships ('()-->*()') or quantified path patterns ('(()-->())*') is not allowed."
     )
   }
 
-  ignore("MATCH (a)-[r]->*(b) RETURN count(*)") {
+  test("MATCH (a)-[r]->*(b) RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
   }
 
@@ -301,11 +306,11 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
     )
   }
 
-  ignore("MATCH ((a)-[b]->(c))* (d)-[b]->+(f) RETURN count(*)") {
-    // this example contains a quantified relationship
+  test("MATCH ((a)-[b]->(c))* (d)-[b]->+(f) RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "The variable `b` occurs in a quantified path pattern as well as a variable length relationship and needs to be renamed.",
-      "Variable `a` already declared"
+      "The variable `b` occurs in multiple quantified path patterns and needs to be renamed.",
+      "Variable `b` already declared",
+      "Cannot use the same relationship variable 'b' for multiple relationships"
     )
   }
 
@@ -517,32 +522,22 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
 
   // ... on same element pattern
   test("MATCH ()-[r:A*]->*() RETURN r") {
-    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
-    the[SyntaxException].thrownBy(
-      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
-    ).getMessage should include("Invalid input '*': expected \"(\"")
-    // runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-    //   "Mixing variable-length relationships ('-[*]-') with quantified relationships ('()-->*()') or quantified path patterns ('(()-->())*') is not allowed."
-    // )
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+      "Variable length relationships cannot be part of a quantified path pattern.",
+      "Mixing variable-length relationships ('-[*]-') with quantified relationships ('()-->*()') or quantified path patterns ('(()-->())*') is not allowed."
+    )
   }
 
   test("MATCH ()-[r:A*1..2]->{1,2}() RETURN r") {
-    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
-    the[SyntaxException].thrownBy(
-      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
-    ).getMessage should include("Invalid input '{': expected \"(\"")
-    // runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-    //   "Mixing variable-length relationships ('-[*]-') with quantified relationships ('()-->*()') or quantified path patterns ('(()-->())*') is not allowed. This relationship can be expressed as '-[r:A]->{1,2}'"
-    // )
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+      "Variable length relationships cannot be part of a quantified path pattern.",
+      "Mixing variable-length relationships ('-[*]-') with quantified relationships ('()-->*()') or quantified path patterns ('(()-->())*') is not allowed."
+    )
   }
 
   // ... in different statements
   test("MATCH (s)-[:A*2..2]->(n) MATCH (n)-[:B]->{2}(t) RETURN s.p AS sp, t.p AS tp") {
-    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
-    the[SyntaxException].thrownBy(
-      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
-    ).getMessage should include("Invalid input '{': expected \"(\"")
-    // runSemanticAnalysis().errors shouldBe empty
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldBe empty
   }
 
   // pattern comprehension

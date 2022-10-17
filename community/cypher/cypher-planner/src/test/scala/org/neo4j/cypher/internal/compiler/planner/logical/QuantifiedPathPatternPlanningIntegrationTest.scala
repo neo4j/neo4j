@@ -721,4 +721,66 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     val plan = planner.plan(query).stripProduceResults
     plan.folder.treeFindByClass[AssertIsNode] should be(None)
   }
+
+  test("should plan quantified relationship") {
+    val query =
+      s"""
+         |MATCH (n)-[r]->+(m)
+         |RETURN n, m
+         |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    val `(n)-[r]->+(m)` = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "n",
+      end = "m",
+      innerStart = "anon_0",
+      innerEnd = "anon_1",
+      groupNodes = Set(),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set(),
+      previouslyBoundRelationshipGroups = Set()
+    )
+
+    plan shouldBe planner.subPlanBuilder()
+      .trail(`(n)-[r]->+(m)`)
+      .|.expandAll("(anon_0)-[r]->(anon_1)")
+      .|.argument("anon_0")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("should plan quantified relationship with predicates") {
+    val query =
+      s"""
+         |MATCH (n)-[r:R WHERE r.prop > 123]->{2,5}(m)
+         |RETURN n, m
+         |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    val `(n)-[r:R WHERE r.prop > 123]->{2,5}(m)` = TrailParameters(
+      min = 2,
+      max = UpperBound.Limited(5),
+      start = "n",
+      end = "m",
+      innerStart = "anon_0",
+      innerEnd = "anon_1",
+      groupNodes = Set(),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set(),
+      previouslyBoundRelationshipGroups = Set()
+    )
+
+    plan shouldBe planner.subPlanBuilder()
+      .trail(`(n)-[r:R WHERE r.prop > 123]->{2,5}(m)`)
+      .|.filter("r.prop > 123")
+      .|.expandAll("(anon_0)-[r:R]->(anon_1)")
+      .|.argument("anon_0")
+      .allNodeScan("n")
+      .build()
+  }
+
 }

@@ -2238,10 +2238,22 @@ PATTERN ShortestPathPattern() :
     | t=<ALL_SHORTEST_PATH> <LPAREN> p=EveryPathPattern() <RPAREN> { return astFactory.allShortestPathsPattern( pos( t ), p ); }
 }
 
+PATTERN_ATOM MaybeQuantifiedRelationshipPattern() :
+{
+  REL_PATTERN rel;
+  PATTERN_QUANTIFIER q = null;
+}
+{
+    rel=RelationshipPattern() [q=Quantifier()]
+    {
+        return astFactory.maybeQuantifiedRelationshipPattern(rel, q);
+    }
+}
+
 PATTERN EveryPathPattern() :
 {
     NODE_PATTERN n;
-    REL_PATTERN r;
+    PATTERN_ATOM r;
     PATTERN_ATOM parenthesizedAtom;
     List<PATTERN_ATOM> patternAtoms = new ArrayList<>();
     labelExpressionStack.push(ExpectBar.DO_NOT_EXPECT_BAR);
@@ -2253,7 +2265,7 @@ PATTERN EveryPathPattern() :
                 (
                     n=NodePattern() { patternAtoms.add( n ); }
                     (
-                        LOOKAHEAD( 2 ) r=RelationshipPattern() { patternAtoms.add( r ); }
+                        LOOKAHEAD( 2 ) r=MaybeQuantifiedRelationshipPattern() { patternAtoms.add( r ); }
                         n=NodePattern() { patternAtoms.add( n ); }
                     )*
                 ) |

@@ -709,6 +709,11 @@ public class NullAstFactory
     }
 
     @Override
+    public NULL maybeQuantifiedRelationshipPattern(NULL rel, NULL quantifier) {
+        return null;
+    }
+
+    @Override
     public NULL loadCsvClause(NULL p, boolean headers, NULL source, NULL v, String fieldTerminator) {
         return null;
     }

@@ -361,6 +361,11 @@ public class LiteralInterpreter
     }
 
     @Override
+    public NULL maybeQuantifiedRelationshipPattern(NULL rel, NULL quantifier) {
+        throw new UnsupportedOperationException("maybeQuantifiedRelationshipPattern is not a literal");
+    }
+
+    @Override
     public NULL loadCsvClause(NULL p, boolean headers, Object source, Object v, String fieldTerminator) {
         throw new UnsupportedOperationException("loadCsvClause is not a literal");
     }

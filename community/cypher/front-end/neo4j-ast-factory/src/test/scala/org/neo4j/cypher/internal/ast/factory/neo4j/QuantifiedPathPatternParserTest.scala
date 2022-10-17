@@ -330,39 +330,47 @@ class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite with JavaccP
     }
   }
 
-  // quantified relationships are not implemented, yet
-  test("MATCH (a)-->+(c)") {
-    failsToParse
+  test("MATCH (a)-->+(b)") {
+    gives {
+      match_(pathConcatenation(
+        nodePat(Some("a")),
+        quantifiedPath(relationshipChain(nodePat(), relPat(), nodePat()), plusQuantifier),
+        nodePat(Some("b"))
+      ))
+    }
   }
 
-  // quantified relationships are not implemented, yet
-  ignore("MATCH (a)-->+(b)") {
+  test("MATCH (a)<-[r]-*(b)") {
     gives {
-      Match(
-        optional = false,
-        Pattern(Seq(
-          EveryPath(nodePat(Some("a"))),
-          EveryPath(PathConcatenation(Seq(
-            RelationshipChain(
-              nodePat(Some("b")),
-              relPat(direction = BOTH),
-              nodePat(Some("c"))
-            )(pos),
-            QuantifiedPath(
-              EveryPath(RelationshipChain(
-                nodePat(Some("d")),
-                relPat(direction = BOTH),
-                nodePat(Some("e"))
-              )(pos)),
-              StarQuantifier()(pos),
-              None
-            )(pos),
-            nodePat(Some("f"))
-          ))(pos))
-        ))(pos),
-        hints = Seq.empty,
-        where = None
-      )(pos)
+      match_(pathConcatenation(
+        nodePat(Some("a")),
+        quantifiedPath(
+          relationshipChain(nodePat(), relPat(Some("r"), direction = SemanticDirection.INCOMING), nodePat()),
+          starQuantifier
+        ),
+        nodePat(Some("b"))
+      ))
+    }
+  }
+
+  test("MATCH (n)-[r:!REL WHERE r.prop > 123]->{2,}(m)") {
+    gives {
+      match_(pathConcatenation(
+        nodePat(Some("n")),
+        quantifiedPath(
+          relationshipChain(
+            nodePat(),
+            relPat(
+              name = Some("r"),
+              labelExpression = Some(labelNegation(labelRelTypeLeaf("REL"))),
+              predicates = Some(greaterThan(prop("r", "prop"), literal(123)))
+            ),
+            nodePat()
+          ),
+          IntervalQuantifier(Some(literalUnsignedInt(2)), None)(pos)
+        ),
+        nodePat(Some("m"))
+      ))
     }
   }
 

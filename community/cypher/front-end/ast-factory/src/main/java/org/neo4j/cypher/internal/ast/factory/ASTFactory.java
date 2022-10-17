@@ -252,6 +252,8 @@ public interface ASTFactory<
     PATTERN_ATOM parenthesizedPathPattern(
             POS p, PATTERN internalPattern, EXPRESSION where, PATH_PATTERN_QUANTIFIER quantifier);
 
+    PATTERN_ATOM maybeQuantifiedRelationshipPattern(REL_PATTERN rel, PATH_PATTERN_QUANTIFIER quantifier);
+
     CLAUSE loadCsvClause(POS p, boolean headers, EXPRESSION source, VARIABLE v, String fieldTerminator);
 
     CLAUSE foreachClause(POS p, VARIABLE v, EXPRESSION list, List<CLAUSE> clauses);

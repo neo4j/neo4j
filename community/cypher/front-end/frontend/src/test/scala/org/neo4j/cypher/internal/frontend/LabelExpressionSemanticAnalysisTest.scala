@@ -519,19 +519,11 @@ class OtherLabelExpressionSemanticAnalysisTest
 
   // All GPM
   test("MATCH ()-[r:A&B]->*() RETURN r") {
-    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
-    the[SyntaxException].thrownBy(
-      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
-    ).getMessage should include("Invalid input '*': expected \"(\"")
-    // runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
   }
 
   test("MATCH (n:(A&B)|C)-[]->+() RETURN n") {
-    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
-    the[SyntaxException].thrownBy(
-      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
-    ).getMessage should include("Invalid input '+': expected \"(\"")
-    // runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
   }
 
   test("MATCH p = SHORTEST 2 PATHS ()-[]-{1,5}() RETURN p") {
@@ -548,11 +540,7 @@ class OtherLabelExpressionSemanticAnalysisTest
   }
 
   test("MATCH (n)-[r*]-(m) MATCH (n)-[]->+() RETURN m,n,r") {
-    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
-    the[SyntaxException].thrownBy(
-      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
-    ).getMessage should include("Invalid input '+': expected \"(\"")
-    // runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
   }
 
   test("MATCH p = shortestPath(()-[*1..5]-()) MATCH q = SHORTEST 2 PATHS ()-[]-{1,5}() RETURN nodes(p), nodes(q)") {
@@ -574,20 +562,8 @@ class OtherLabelExpressionSemanticAnalysisTest
   }
 
   // GPM and non-GPM in unrelated features
-  test("MATCH p = shortestPath((n)-[]->+({s: 1})) RETURN p") {
-    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
-    the[SyntaxException].thrownBy(
-      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
-    ).getMessage should include("Invalid input '+': expected \"(\"")
-    // runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
-  }
-
   test("MATCH (m)-[]->+(n:R) RETURN m, n") {
-    // quantified relationships are not implemented yet. Once this is the case, please change to the test below
-    the[SyntaxException].thrownBy(
-      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns)
-    ).getMessage should include("Invalid input '+': expected \"(\"")
-    // runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
   }
 
   test("MATCH ((a:A:B)-[]->(b) WHERE a.p < b.p)+ RETURN count(*)") {
