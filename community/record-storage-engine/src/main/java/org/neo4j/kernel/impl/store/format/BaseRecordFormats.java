@@ -75,38 +75,6 @@ public abstract class BaseRecordFormats implements RecordFormats {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (!(obj instanceof RecordFormats other)) {
-            return false;
-        }
-
-        return majorVersion() == other.majorVersion()
-                && minorVersion() == other.minorVersion()
-                && node().equals(other.node())
-                && relationship().equals(other.relationship())
-                && relationshipGroup().equals(other.relationshipGroup())
-                && property().equals(other.property())
-                && labelToken().equals(other.labelToken())
-                && relationshipTypeToken().equals(other.relationshipTypeToken())
-                && propertyKeyToken().equals(other.propertyKeyToken())
-                && dynamic().equals(other.dynamic());
-    }
-
-    @Override
-    public int hashCode() {
-        int hashCode = 17;
-        hashCode = 31 * hashCode + node().hashCode();
-        hashCode = 31 * hashCode + relationship().hashCode();
-        hashCode = 31 * hashCode + relationshipGroup().hashCode();
-        hashCode = 31 * hashCode + property().hashCode();
-        hashCode = 31 * hashCode + labelToken().hashCode();
-        hashCode = 31 * hashCode + relationshipTypeToken().hashCode();
-        hashCode = 31 * hashCode + propertyKeyToken().hashCode();
-        hashCode = 31 * hashCode + dynamic().hashCode();
-        return hashCode;
-    }
-
-    @Override
     public String toString() {
         return String.format(
                 "RecordFormat:%s[%s-%d.%d]",
