@@ -95,6 +95,13 @@ public abstract class AbstractAdminCommand extends AbstractCommand {
         return configs;
     }
 
+    @Override
+    protected List<Path> configFiles() {
+        List<Path> commandConfigs = getCommandConfigs();
+        commandConfigs.addAll(super.configFiles());
+        return commandConfigs;
+    }
+
     @SuppressWarnings("resource")
     private boolean configFileExists(Path path) {
         return ctx.fs().fileExists(path) && !ctx.fs().isDirectory(path);

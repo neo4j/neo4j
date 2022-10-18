@@ -91,6 +91,46 @@ class AdminCommandConfigurationTest {
         assertThat(errBuffer.toString()).contains("additional-config.conf does not exist");
     }
 
+    @Test
+    void shouldListConfigFilesIfVerbose() throws Exception {
+        Path neo4jConfig = neo4jConfig();
+        Path adminConfig = adminConfig();
+        Path commandConfig = commandConfig();
+        Path additionalConfig = additionalConfig();
+        creteConfigFile(neo4jConfig, pagecache_memory.name() + "=1MB");
+        creteConfigFile(commandConfig, pagecache_memory.name() + "=3MB");
+        creteConfigFile(adminConfig, pagecache_memory.name() + "=2MB");
+        creteConfigFile(additionalConfig, pagecache_memory.name() + "=4MB");
+        runTestCommand("--verbose", "--additional-config", additionalConfig.toString());
+
+        assertThat(outBuffer.toString())
+                .containsSubsequence(
+                        "Configuration files used (ordered by priority)",
+                        additionalConfig.toString(),
+                        commandConfig.toString(),
+                        adminConfig.toString(),
+                        neo4jConfig.toString());
+    }
+
+    @Test
+    void shouldOnlyListExistingConfigFiles() throws Exception {
+        Path neo4jConfig = neo4jConfig();
+        Path adminConfig = adminConfig();
+        Path commandConfig = commandConfig();
+        Path additionalConfig = additionalConfig();
+        creteConfigFile(adminConfig, pagecache_memory.name() + "=2MB");
+        creteConfigFile(additionalConfig, pagecache_memory.name() + "=4MB");
+        runTestCommand("--verbose", "--additional-config", additionalConfig.toString());
+
+        String output = outBuffer.toString();
+        assertThat(output)
+                .containsSubsequence(
+                        "Configuration files used (ordered by priority)",
+                        additionalConfig.toString(),
+                        adminConfig.toString());
+        assertThat(output).doesNotContain(neo4jConfig.toString(), commandConfig.toString());
+    }
+
     private void creteConfigFile(Path path, String... lines) throws IOException {
         Files.createDirectories(path.getParent());
 

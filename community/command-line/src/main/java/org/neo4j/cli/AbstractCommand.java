@@ -22,7 +22,11 @@ package org.neo4j.cli;
 import static java.util.Objects.requireNonNull;
 
 import java.io.PrintStream;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.diagnostics.providers.SystemDiagnostics;
 import org.neo4j.kernel.internal.Version;
 import picocli.CommandLine.Command;
@@ -69,10 +73,20 @@ public abstract class AbstractCommand implements Callable<Integer> {
 
     protected abstract void execute() throws Exception;
 
+    protected List<Path> configFiles() {
+        ArrayList<Path> config = new ArrayList<>();
+        Path defaultConf = ctx.confDir().resolve(Config.DEFAULT_CONFIG_FILE_NAME);
+        if (ctx.fs().fileExists(defaultConf)) {
+            config.add(defaultConf);
+        }
+        return config;
+    }
+
     @Override
     public Integer call() throws Exception {
         if (verbose) {
             printVerboseHeader();
+            printConfigInformation();
         }
         try {
             execute();
@@ -92,5 +106,13 @@ public abstract class AbstractCommand implements Callable<Integer> {
         PrintStream out = ctx.out();
         out.println("neo4j " + Version.getNeo4jVersion());
         SystemDiagnostics.JAVA_VIRTUAL_MACHINE.dump(out::println);
+    }
+
+    private void printConfigInformation() {
+        PrintStream out = ctx.out();
+        out.println("Configuration files used (ordered by priority):");
+        configFiles().forEach(file -> out.println(file.toAbsolutePath()));
+        // There could be none if neo4j.conf doesn't exist, let's have an end line to make it more obvious
+        out.println("--------------------");
     }
 }
