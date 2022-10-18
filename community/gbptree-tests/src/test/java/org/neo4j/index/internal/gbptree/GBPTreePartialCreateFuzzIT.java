@@ -21,15 +21,12 @@ package org.neo4j.index.internal.gbptree;
 
 import static java.lang.ProcessBuilder.Redirect.INHERIT;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.ThreadLocalRandom;
-import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -77,20 +74,6 @@ class GBPTreePartialCreateFuzzIT {
 
         // then reading it should either work or throw IOException
         SimpleLongLayout layout = longLayout().build();
-
-        // check readHeader
-        try {
-            GBPTree.readHeader(
-                    pageCache,
-                    file,
-                    NO_HEADER_READER,
-                    testDirectory.homePath().getFileName().toString(),
-                    NULL_CONTEXT,
-                    Sets.immutable.empty());
-        } catch (MetadataMismatchException | IOException e) {
-            // It's OK if the process was destroyed
-            assertNotEquals(0, exitCode);
-        }
 
         // check constructor
         try {
