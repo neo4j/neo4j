@@ -353,6 +353,19 @@ class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite with JavaccP
     }
   }
 
+  test("MATCH (a)-[r]-+(b)") {
+    gives {
+      match_(pathConcatenation(
+        nodePat(Some("a")),
+        quantifiedPath(
+          relationshipChain(nodePat(), relPat(Some("r"), direction = SemanticDirection.BOTH), nodePat()),
+          plusQuantifier
+        ),
+        nodePat(Some("b"))
+      ))
+    }
+  }
+
   test("MATCH (n)-[r:!REL WHERE r.prop > 123]->{2,}(m)") {
     gives {
       match_(pathConcatenation(
