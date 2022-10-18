@@ -82,6 +82,7 @@ import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.NaN
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
+import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.Null
@@ -102,6 +103,7 @@ import org.neo4j.cypher.internal.expressions.ReduceExpression
 import org.neo4j.cypher.internal.expressions.ReduceExpression.AccumulatorExpressionTypeMismatchMessageGenerator
 import org.neo4j.cypher.internal.expressions.ReduceScope
 import org.neo4j.cypher.internal.expressions.RegexMatch
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.StartsWith
@@ -438,9 +440,15 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         SemanticPatternCheck.declareVariables(Pattern.SemanticContext.Expression)(x.pattern) chain
           SemanticPatternCheck.check(Pattern.SemanticContext.Expression)(x.pattern) chain
           when(x.pattern.element.folder.treeExists {
-            case le: LabelExpression if le.containsGpmSpecificLabelExpression => true
+            case node: NodePattern if node.labelExpression.exists(_.containsGpmSpecificLabelExpression) => true
           }) {
             error("Label expressions in shortestPath are not allowed in expression", x.position)
+          } chain
+          when(x.pattern.element.folder.treeExists {
+            case relationship: RelationshipPattern
+              if relationship.labelExpression.exists(_.containsGpmSpecificRelTypeExpression) => true
+          }) {
+            error("Relationship type expressions in shortestPath are not allowed in expression", x.position)
           } chain
           specifyType(if (x.pattern.single) CTPath else CTList(CTPath), x)
 

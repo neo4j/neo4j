@@ -197,6 +197,18 @@ class OtherLabelExpressionSemanticAnalysisTest
     runSemanticAnalysis().errors shouldBe empty
   }
 
+  test("MATCH (n), (m) WITH shortestPath((n)-[:A|B|C*]->(m)) AS p RETURN length(p) AS result") {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
+  test("MATCH (n), (m) WITH shortestPath((n)-[:!A&!B*]->(m)) AS p RETURN length(p) AS result") {
+    runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
+      "Variable length relationships must not use relationship type expressions.",
+      "Relationship type expressions in patterns are not allowed in expression, but only in MATCH clause",
+      "Relationship type expressions in shortestPath are not allowed in expression"
+    )
+  }
+
   test("MATCH (a), (b) RETURN [(a:A|B)-[:REL*]->(b:B|C) | 1] AS p") {
     runSemanticAnalysis().errors shouldBe empty
   }
