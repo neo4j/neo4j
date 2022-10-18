@@ -175,7 +175,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.logging.log4j.Log4jLogProvider;
-import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -2902,28 +2902,31 @@ public class FullCheckIntegrationTest {
         LookupAccessorsFromRunningDb accessorLookup =
                 new LookupAccessorsFromRunningDb(dependencyResolver.resolveDependency(IndexingService.class));
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
-        new RecordStorageConsistencyChecker(
-                        dependencyResolver.resolveDependency(FileSystemAbstraction.class),
-                        RecordDatabaseLayout.convert(fixture.databaseLayout()),
-                        dependencyResolver.resolveDependency(PageCache.class),
-                        dependencyResolver
-                                .resolveDependency(RecordStorageEngine.class)
-                                .testAccessNeoStores(),
-                        dependencyResolver.resolveDependency(IndexProviderMap.class),
-                        accessorLookup,
-                        dependencyResolver.resolveDependency(IdGeneratorFactory.class),
-                        summary,
-                        ProgressMonitorFactory.NONE,
-                        config(),
-                        4,
-                        logProvider.getLog("test"),
-                        false,
-                        ConsistencyFlags.ALL,
-                        memoryLimiter,
-                        EmptyMemoryTracker.INSTANCE,
-                        new CursorContextFactory(cacheTracer, EMPTY),
-                        cacheTracer)
-                .check();
+
+        LocalMemoryTracker memoryTracker = new LocalMemoryTracker();
+        try (RecordStorageConsistencyChecker checker = new RecordStorageConsistencyChecker(
+                dependencyResolver.resolveDependency(FileSystemAbstraction.class),
+                RecordDatabaseLayout.convert(fixture.databaseLayout()),
+                dependencyResolver.resolveDependency(PageCache.class),
+                dependencyResolver.resolveDependency(RecordStorageEngine.class).testAccessNeoStores(),
+                dependencyResolver.resolveDependency(IndexProviderMap.class),
+                accessorLookup,
+                dependencyResolver.resolveDependency(IdGeneratorFactory.class),
+                summary,
+                ProgressMonitorFactory.NONE,
+                config(),
+                4,
+                logProvider.getLog("test"),
+                false,
+                ConsistencyFlags.ALL,
+                memoryLimiter,
+                memoryTracker,
+                new CursorContextFactory(cacheTracer, EMPTY),
+                cacheTracer)) {
+            checker.check();
+        }
+        assertThat(memoryTracker.usedNativeMemory()).isZero();
+        assertThat(memoryTracker.estimatedHeapMemory()).isZero();
         return summary;
     }
 

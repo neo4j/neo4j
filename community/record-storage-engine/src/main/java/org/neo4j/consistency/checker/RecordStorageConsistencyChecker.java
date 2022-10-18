@@ -50,6 +50,7 @@ import org.neo4j.consistency.statistics.Counts;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
@@ -63,6 +64,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -119,6 +121,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
     private final ProgressMonitorFactory.MultiPartBuilder progress;
     private final IndexAccessors indexAccessors;
     private final InconsistencyReport report;
+    private final ByteArray cacheAccessMemory;
 
     public RecordStorageConsistencyChecker(
             FileSystemAbstraction fileSystem,
@@ -170,8 +173,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
                 DEFAULT_IDS_PER_CHUNK);
         RecordLoading recordLoading = new RecordLoading(neoStores);
         this.limiter = instantiateMemoryLimiter(memoryLimit);
-        this.cacheAccess = new DefaultCacheAccess(
-                DefaultCacheAccess.defaultByteArray(limiter.rangeSize(), memoryTracker), Counts.NONE, numberOfThreads);
+        this.cacheAccessMemory = DefaultCacheAccess.defaultByteArray(limiter.rangeSize(), memoryTracker);
+        this.cacheAccess = new DefaultCacheAccess(cacheAccessMemory, Counts.NONE, numberOfThreads);
         this.observedCounts = new CountsState(neoStores, cacheAccess, memoryTracker);
         this.progress = progressFactory.multipleParts("Consistency check");
         this.indexAccessors = instantiateIndexAccessors(neoStores, indexProviders, tokenHolders, config);
@@ -379,8 +382,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
     @Override
     public void close() {
         context.cancel();
-        observedCounts.close();
-        indexAccessors.close();
+        IOUtils.closeAllUnchecked(observedCounts, indexAccessors, cacheAccessMemory);
     }
 
     private void checkCounts() {
