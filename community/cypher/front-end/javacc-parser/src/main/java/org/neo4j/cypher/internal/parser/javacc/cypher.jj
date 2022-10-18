@@ -2246,7 +2246,14 @@ PATTERN_ATOM MaybeQuantifiedRelationshipPattern() :
 {
     rel=RelationshipPattern() [q=Quantifier()]
     {
-        return astFactory.maybeQuantifiedRelationshipPattern(rel, q);
+        if ( q == null )
+        {
+            return rel;
+        }
+        else
+        {
+            return astFactory.quantifiedRelationship(rel, q);
+        }
     }
 }
 

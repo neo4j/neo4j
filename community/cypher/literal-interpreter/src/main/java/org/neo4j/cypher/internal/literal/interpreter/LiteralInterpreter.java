@@ -361,8 +361,8 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL maybeQuantifiedRelationshipPattern(NULL rel, NULL quantifier) {
-        throw new UnsupportedOperationException("maybeQuantifiedRelationshipPattern is not a literal");
+    public NULL quantifiedRelationship(NULL rel, NULL quantifier) {
+        throw new UnsupportedOperationException("quantifiedRelationship is not a literal");
     }
 
     @Override

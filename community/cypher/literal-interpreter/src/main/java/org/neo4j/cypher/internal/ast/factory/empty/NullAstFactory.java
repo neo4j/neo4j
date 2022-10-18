@@ -709,7 +709,7 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL maybeQuantifiedRelationshipPattern(NULL rel, NULL quantifier) {
+    public NULL quantifiedRelationship(NULL rel, NULL quantifier) {
         return null;
     }
 

@@ -933,24 +933,20 @@ class Neo4jASTFactory(query: String)
     }
   }
 
-  override def maybeQuantifiedRelationshipPattern(
+  override def quantifiedRelationship(
     rel: RelationshipPattern,
     quantifier: GraphPatternQuantifier
   ): PatternAtom = {
-    if (quantifier == null) {
-      rel
-    } else {
-      // represent -[rel]->+ as (()-[rel]->())+
-      val pos = rel.position
-      val pattern = EveryPath(
-        RelationshipChain(
-          NodePattern(None, None, None, None)(pos),
-          rel,
-          NodePattern(None, None, None, None)(pos)
-        )(pos)
-      )
-      parenthesizedPathPattern(pos, pattern, where = null, quantifier)
-    }
+    // represent -[rel]->+ as (()-[rel]->())+
+    val pos = rel.position
+    val pattern = EveryPath(
+      RelationshipChain(
+        NodePattern(None, None, None, None)(pos),
+        rel,
+        NodePattern(None, None, None, None)(pos)
+      )(pos)
+    )
+    parenthesizedPathPattern(pos, pattern, where = null, quantifier)
   }
 
   // EXPRESSIONS
