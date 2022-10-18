@@ -202,7 +202,6 @@ public class Database extends AbstractDatabase {
     private final ConstraintSemantics constraintSemantics;
     private final GlobalProcedures globalProcedures;
     private final IOControllerService ioControllerService;
-    private final SystemNanoClock clock;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final Locks locks;
@@ -254,7 +253,8 @@ public class Database extends AbstractDatabase {
                 context.getDatabaseLogService(),
                 context.getScheduler(),
                 context.getDatabaseAvailabilityGuardFactory(),
-                context.getDatabaseHealthFactory());
+                context.getDatabaseHealthFactory(),
+                context.getClock());
 
         this.databaseLayout = context.getDatabaseLayout();
         this.idGeneratorFactory = context.getIdGeneratorFactory();
@@ -269,7 +269,6 @@ public class Database extends AbstractDatabase {
         this.constraintSemantics = context.getConstraintSemantics();
         this.globalProcedures = context.getGlobalProcedures();
         this.ioControllerService = context.getIoControllerService();
-        this.clock = context.getClock();
         this.accessCapabilityFactory = context.getAccessCapabilityFactory();
 
         this.idController = context.getIdController();

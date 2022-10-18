@@ -28,6 +28,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.ResourceIterator;
@@ -35,6 +36,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.Kernel;
+import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.api.TransactionRegistry;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -55,6 +57,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.ElementIdMapper;
@@ -72,6 +75,7 @@ public abstract class AbstractDatabase extends LifecycleAdapter implements Lifec
     protected final Monitors parentMonitors;
     protected final DatabaseLogService databaseLogService;
     protected final DatabaseLogProvider internalLogProvider;
+    protected final SystemNanoClock clock;
     protected final DatabaseLogProvider userLogProvider;
     protected final InternalLog internalLog;
     protected final JobScheduler scheduler;
@@ -91,7 +95,8 @@ public abstract class AbstractDatabase extends LifecycleAdapter implements Lifec
             DatabaseLogService databaseLogService,
             JobScheduler scheduler,
             LongFunction<DatabaseAvailabilityGuard> databaseAvailabilityGuardFactory,
-            Factory<DatabaseHealth> databaseHealthFactory) {
+            Factory<DatabaseHealth> databaseHealthFactory,
+            SystemNanoClock clock) {
         this.globalDependencies = globalDependencies;
         this.namedDatabaseId = namedDatabaseId;
         this.databaseConfig = databaseConfig;
@@ -99,6 +104,7 @@ public abstract class AbstractDatabase extends LifecycleAdapter implements Lifec
         this.parentMonitors = monitors;
         this.databaseLogService = databaseLogService;
         this.internalLogProvider = databaseLogService.getInternalLogProvider();
+        this.clock = clock;
         this.internalLog = internalLogProvider.getLog(getClass());
         this.userLogProvider = databaseLogService.getUserLogProvider();
         this.scheduler = scheduler;
@@ -217,10 +223,26 @@ public abstract class AbstractDatabase extends LifecycleAdapter implements Lifec
         var transactionRegistry = transactionRegistry();
         transactionRegistry.terminateTransactions();
 
-        while (transactionRegistry.haveClosingTransaction()) {
+        var maxWaitTime = databaseConfig.get(GraphDatabaseSettings.shutdown_transaction_end_timeout);
+        var endTime = clock.millis() + maxWaitTime.toMillis();
+        boolean haveClosingTransactions;
+        while ((haveClosingTransactions = transactionRegistry.haveClosingTransaction()) && clock.millis() < endTime) {
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
         }
-        internalLog.info("All transactions are closed.");
+
+        var numClosingTransactions = haveClosingTransactions
+                ? transactionRegistry.executingTransactions().stream()
+                        .filter(KernelTransactionHandle::isClosing)
+                        .count()
+                : 0;
+        if (numClosingTransactions > 0) {
+            internalLog.info(
+                    "There are still %d transactions closing after the max wait time of %s elapsed. "
+                            + "This may result in a need for recovery on next start",
+                    numClosingTransactions, maxWaitTime);
+        } else {
+            internalLog.info("All transactions are closed.");
+        }
     }
 
     public Config getConfig() {
