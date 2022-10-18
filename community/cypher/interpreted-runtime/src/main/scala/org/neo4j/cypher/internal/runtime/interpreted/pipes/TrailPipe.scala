@@ -49,10 +49,15 @@ case class TrailState(
   groupNodes: HeapTrackingArrayList[ListValue],
   groupRelationships: HeapTrackingArrayList[ListValue],
   relationshipsSeen: HeapTrackingLongHashSet,
-  iterations: Int
-) extends AutoCloseable {
+  iterations: Int,
+  closeGroupsOnClose: Boolean
+) {
 
   def close(): Unit = {
+    if (closeGroupsOnClose) {
+      groupNodes.close()
+      groupRelationships.close()
+    }
     relationshipsSeen.close()
   }
 }
@@ -103,7 +108,15 @@ case class TrailPipe(
                     relationshipsSeen.add(castOrFail[VirtualRelationshipValue](i.next()).id())
                   }
                 }
-                stack.push(TrailState(startNode.id(), emptyGroupNodes, emptyGroupRelationships, relationshipsSeen, 1))
+                stack.push(TrailState(
+                  startNode.id(),
+                  emptyGroupNodes,
+                  emptyGroupRelationships,
+                  relationshipsSeen,
+                  iterations = 1,
+                  // empty groups are reused for every argument, so can not be closed until the whole query finishes
+                  closeGroupsOnClose = false
+                ))
               }
               new PrefetchingIterator[CypherRow] {
                 private var innerResult: ClosingIterator[CypherRow] = ClosingIterator.empty
@@ -151,7 +164,8 @@ case class TrailPipe(
                           newGroupNodes,
                           newGroupRels,
                           newSet,
-                          trailState.iterations + 1
+                          trailState.iterations + 1,
+                          closeGroupsOnClose = true
                         ))
                       }
                     }

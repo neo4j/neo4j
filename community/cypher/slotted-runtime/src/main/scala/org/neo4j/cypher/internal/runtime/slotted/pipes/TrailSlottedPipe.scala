@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.PrefetchingIterator
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.ReadableRow
+import org.neo4j.cypher.internal.runtime.WritableRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeWithSource
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -44,6 +45,7 @@ import org.neo4j.cypher.internal.runtime.slotted.helpers.NullChecker
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.memory.MemoryTracker
+import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
@@ -104,14 +106,42 @@ case class TrailSlottedPipe(
     input.flatMap {
       outerRow =>
         {
+          def newResultRowWithEmptyGroups(innerEndNode: Long): Some[SlottedRow] = {
+            val resultRow = SlottedRow(slots)
+            resultRow.copyFrom(outerRow, argumentSize.nLongs, argumentSize.nReferences)
+            TrailSlottedPipe.writeResultColumnsWithProvidedGroups(
+              emptyGroupNodes,
+              emptyGroupRelationships,
+              innerEndNode,
+              resultRow,
+              groupNodeSetters,
+              groupRelSetters,
+              endOffset
+            )
+            Some(resultRow)
+          }
+
           def newResultRow(
-            groupNodes: HeapTrackingArrayList[ListValue],
-            groupRelationships: HeapTrackingArrayList[ListValue],
+            rhsInnerRow: CypherRow,
+            prevRepetitionGroupNodes: HeapTrackingArrayList[ListValue],
+            prevRepetitionGroupRelationships: HeapTrackingArrayList[ListValue],
             innerEndNode: Long
           ): Some[SlottedRow] = {
             val resultRow = SlottedRow(slots)
             resultRow.copyFrom(outerRow, argumentSize.nLongs, argumentSize.nReferences)
-            writeGroupVariables(groupNodes, groupRelationships, innerEndNode, resultRow)
+            TrailSlottedPipe.writeResultColumns(
+              prevRepetitionGroupNodes,
+              prevRepetitionGroupRelationships,
+              innerEndNode,
+              rhsInnerRow,
+              resultRow,
+              groupNodeGetters,
+              groupRelGetters,
+              groupNodeSetters,
+              groupRelSetters,
+              endOffset,
+              queryContext
+            )
             Some(resultRow)
           }
 
@@ -138,7 +168,15 @@ case class TrailSlottedPipe(
                   relationshipsSeen.add(castOrFail[VirtualRelationshipValue](i.next()).id())
                 }
               }
-              stack.push(TrailState(startNode, emptyGroupNodes, emptyGroupRelationships, relationshipsSeen, 1))
+              stack.push(TrailState(
+                startNode,
+                emptyGroupNodes,
+                emptyGroupRelationships,
+                relationshipsSeen,
+                iterations = 1,
+                // empty groups are reused for every argument, so can not be closed until the whole query finishes
+                closeGroupsOnClose = false
+              ))
             }
             new PrefetchingIterator[CypherRow] {
               private var innerResult: ClosingIterator[CypherRow] = ClosingIterator.empty
@@ -157,14 +195,10 @@ case class TrailSlottedPipe(
               def produceNext(): Option[CypherRow] = {
                 if (emitFirst) {
                   emitFirst = false
-                  newResultRow(emptyGroupNodes, emptyGroupRelationships, startNode)
+                  newResultRowWithEmptyGroups(startNode)
                 } else if (innerResult.hasNext) {
                   val row = innerResult.next()
                   val innerEndNode = getInnerEndNodeFunction.applyAsLong(row)
-                  val newGroupNodes =
-                    computeNodeGroupVariables(groupNodeGetters, trailState.groupNodes, row, queryContext, tracker)
-                  val newGroupRels =
-                    computeRelGroupVariables(groupRelGetters, trailState.groupRelationships, row, queryContext, tracker)
                   if (repetition.max.isGreaterThan(trailState.iterations)) {
                     val newSet = HeapTrackingCollections.newLongSet(tracker, trailState.relationshipsSeen)
 
@@ -172,7 +206,6 @@ case class TrailSlottedPipe(
                     var i = 0
                     while (allRelationshipsUnique && i < innerRelGetters.length) {
                       val r = innerRelGetters(i)
-                      // TODO optimization: allRelationships is a superset of RHS rels, we should only check RHS rels as only they can change
                       if (!newSet.add(r.applyAsLong(row))) {
                         allRelationshipsUnique = false
                       }
@@ -182,16 +215,30 @@ case class TrailSlottedPipe(
                     if (allRelationshipsUnique) {
                       stack.push(TrailState(
                         innerEndNode,
-                        newGroupNodes,
-                        newGroupRels,
+                        computeNodeGroupVariables(groupNodeGetters, trailState.groupNodes, row, queryContext, tracker),
+                        computeRelGroupVariables(
+                          groupRelGetters,
+                          trailState.groupRelationships,
+                          row,
+                          queryContext,
+                          tracker
+                        ),
                         newSet,
-                        trailState.iterations + 1
+                        trailState.iterations + 1,
+                        closeGroupsOnClose = true
                       ))
+                    } else {
+                      newSet.close()
                     }
                   }
                   // if iterated long enough emit, otherwise recurse
                   if (trailState.iterations >= repetition.min) {
-                    newResultRow(newGroupNodes, newGroupRels, innerEndNode)
+                    newResultRow(
+                      row,
+                      trailState.groupNodes,
+                      trailState.groupRelationships,
+                      innerEndNode
+                    )
                   } else {
                     produceNext()
                   }
@@ -209,7 +256,6 @@ case class TrailSlottedPipe(
                     var i = 0
                     while (relationshipsAreUnique && i < innerRelGetters.length) {
                       val r = innerRelGetters(i)
-                      // TODO optimization: allRelationships is a superset of RHS rels, we should only check RHS rels as only they can change
                       if (trailState.relationshipsSeen.contains(r.applyAsLong(row))) {
                         relationshipsAreUnique = false
                       }
@@ -219,6 +265,10 @@ case class TrailSlottedPipe(
                   })
                   produceNext()
                 } else {
+                  if (trailState != null) {
+                    trailState.close()
+                    trailState = null
+                  }
                   None
                 }
               }
@@ -259,24 +309,60 @@ case class TrailSlottedPipe(
     }
     res
   }
+}
 
-  private def writeGroupVariables(
-    newGroupNodes: HeapTrackingArrayList[ListValue],
-    newGroupRels: HeapTrackingArrayList[ListValue],
+object TrailSlottedPipe {
+
+  private def writeResultColumns(
+    groupNodes: HeapTrackingArrayList[ListValue],
+    groupRels: HeapTrackingArrayList[ListValue],
     innerEndNode: Long,
-    row: CypherRow
+    rhsInnerRow: ReadableRow,
+    resultRow: WritableRow,
+    groupNodeGetters: Array[ToLongFunction[ReadableRow]],
+    groupRelGetters: Array[ToLongFunction[ReadableRow]],
+    groupNodeSetters: Array[(WritableRow, AnyValue) => Unit],
+    groupRelSetters: Array[(WritableRow, AnyValue) => Unit],
+    endOffset: Int,
+    queryContext: QueryContext
+  ): Unit = {
+    var i = 0
+    while (i < groupNodeGetters.length) {
+      val nodeGroup = groupNodes.get(i).append(queryContext.nodeById(groupNodeGetters(i).applyAsLong(rhsInnerRow)))
+      groupNodeSetters(i)(resultRow, nodeGroup)
+      i += 1
+    }
+
+    i = 0
+    while (i < groupRelGetters.length) {
+      val relGroup = groupRels.get(i).append(queryContext.relationshipById(groupRelGetters(i).applyAsLong(rhsInnerRow)))
+      groupRelSetters(i)(resultRow, relGroup)
+      i += 1
+    }
+
+    resultRow.setLongAt(endOffset, innerEndNode)
+  }
+
+  private def writeResultColumnsWithProvidedGroups(
+    groupNodes: HeapTrackingArrayList[ListValue],
+    groupRels: HeapTrackingArrayList[ListValue],
+    innerEndNode: Long,
+    resultRow: WritableRow,
+    groupNodeSetters: Array[(WritableRow, AnyValue) => Unit],
+    groupRelSetters: Array[(WritableRow, AnyValue) => Unit],
+    endOffset: Int
   ): Unit = {
     var i = 0
     while (i < groupNodeSetters.length) {
-      groupNodeSetters(i)(row, newGroupNodes.get(i))
+      groupNodeSetters(i)(resultRow, groupNodes.get(i))
       i += 1
     }
     i = 0
     while (i < groupRelSetters.length) {
-      groupRelSetters(i)(row, newGroupRels.get(i))
+      groupRelSetters(i)(resultRow, groupRels.get(i))
       i += 1
     }
-    row.setLongAt(endOffset, innerEndNode)
+    resultRow.setLongAt(endOffset, innerEndNode)
   }
 }
 
