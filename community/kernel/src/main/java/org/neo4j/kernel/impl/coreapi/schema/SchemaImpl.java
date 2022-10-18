@@ -528,7 +528,7 @@ public class SchemaImpl implements Schema {
         // internal storage engine API.
         if (constraint.isNodePropertyExistenceConstraint()
                 || constraint.isNodeKeyConstraint()
-                || constraint.isUniquenessConstraint()) {
+                || constraint.isNodeUniquenessConstraint()) {
             SchemaDescriptor schemaDescriptor = constraint.schema();
             int[] entityTokenIds = schemaDescriptor.getEntityTokenIds();
             Label[] labels = new Label[entityTokenIds.length];
@@ -540,7 +540,7 @@ public class SchemaImpl implements Schema {
                     .toArray(String[]::new);
             if (constraint.isNodePropertyExistenceConstraint()) {
                 return new NodePropertyExistenceConstraintDefinition(actions, constraint, labels[0], propertyKeys);
-            } else if (constraint.isUniquenessConstraint()) {
+            } else if (constraint.isNodeUniquenessConstraint()) {
                 return new UniquenessConstraintDefinition(
                         actions, constraint, new IndexDefinitionImpl(actions, null, labels, propertyKeys, true));
             } else {

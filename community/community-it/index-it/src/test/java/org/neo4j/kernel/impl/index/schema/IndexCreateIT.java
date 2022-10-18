@@ -27,6 +27,7 @@ import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedRelationshipTypeInSchemaException;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 public class IndexCreateIT extends KernelIntegrationTest {
     private static final IndexCreator INDEX_CREATOR =
@@ -51,15 +53,24 @@ public class IndexCreateIT extends KernelIntegrationTest {
                     IndexPrototype.uniqueForSchema(schema, schemaWrite.indexProviderByName(provider))
                             .withName(name));
 
+    @Override
+    protected TestDatabaseManagementServiceBuilder configure(
+            TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder) {
+        return super.configure(
+                databaseManagementServiceBuilder.setConfig(GraphDatabaseInternalSettings.rel_unique_constraints, true));
+    }
+
     @ParameterizedTest
     @EnumSource(EntityType.class)
     void shouldCreateIndexWithSpecificExistingProviderName(EntityType entityType) throws KernelException {
         shouldCreateWithSpecificExistingProviderName(INDEX_CREATOR, entityType);
     }
 
-    @Test
-    void shouldCreateUniquePropertyConstraintWithSpecificExistingProviderName() throws KernelException {
-        shouldCreateWithSpecificExistingProviderName(UNIQUE_CONSTRAINT_CREATOR, EntityType.NODE);
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldCreateUniquePropertyConstraintWithSpecificExistingProviderName(EntityType entityType)
+            throws KernelException {
+        shouldCreateWithSpecificExistingProviderName(UNIQUE_CONSTRAINT_CREATOR, entityType);
     }
 
     @ParameterizedTest
@@ -68,9 +79,11 @@ public class IndexCreateIT extends KernelIntegrationTest {
         shouldFailWithNonExistentProviderName(INDEX_CREATOR, entityType);
     }
 
-    @Test
-    void shouldFailCreateUniquePropertyConstraintWithNonExistentProviderName() throws KernelException {
-        shouldFailWithNonExistentProviderName(UNIQUE_CONSTRAINT_CREATOR, EntityType.NODE);
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldFailCreateUniquePropertyConstraintWithNonExistentProviderName(EntityType entityType)
+            throws KernelException {
+        shouldFailWithNonExistentProviderName(UNIQUE_CONSTRAINT_CREATOR, entityType);
     }
 
     @Test

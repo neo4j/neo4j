@@ -60,10 +60,14 @@ public interface ConstraintDescriptor extends SchemaDescriptorSupplier, SchemaRu
     NodeExistenceConstraintDescriptor asNodePropertyExistenceConstraint();
 
     /**
-     * Test if this constraint descriptor is a uniqueness constraint.
-     * @return {@code true} if calling {@link #asUniquenessConstraint()} would not throw.
+     * Test if this constraint descriptor is a node uniqueness constraint.
      */
-    boolean isUniquenessConstraint();
+    boolean isNodeUniquenessConstraint();
+
+    /**
+     * Test if this constraint descriptor is a relationship uniqueness constraint.
+     */
+    boolean isRelationshipUniquenessConstraint();
 
     /**
      * @return this constraint descriptor as a {@link UniquenessConstraintDescriptor} if possible, or throw a {@link IllegalStateException}.

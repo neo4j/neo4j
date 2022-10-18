@@ -146,13 +146,18 @@ public class ConstraintDescriptorImplementation
     }
 
     @Override
-    public boolean isUniquenessConstraint() {
+    public boolean isNodeUniquenessConstraint() {
         return schema.entityType() == NODE && type == ConstraintType.UNIQUE;
     }
 
     @Override
+    public boolean isRelationshipUniquenessConstraint() {
+        return schema.entityType() == RELATIONSHIP && type == ConstraintType.UNIQUE;
+    }
+
+    @Override
     public UniquenessConstraintDescriptor asUniquenessConstraint() {
-        if (!isUniquenessConstraint()) {
+        if (!isNodeUniquenessConstraint() && !isRelationshipUniquenessConstraint()) {
             throw conversionException(UniquenessConstraintDescriptor.class);
         }
         return this;
@@ -170,7 +175,10 @@ public class ConstraintDescriptorImplementation
 
     @Override
     public boolean isIndexBackedConstraint() {
-        return isUniquenessConstraint() || isNodeKeyConstraint() || isRelationshipKeyConstraint();
+        return isNodeUniquenessConstraint()
+                || isRelationshipUniquenessConstraint()
+                || isNodeKeyConstraint()
+                || isRelationshipKeyConstraint();
     }
 
     @Override

@@ -1545,6 +1545,13 @@ public class Operations implements Write, SchemaWrite {
     @Override
     public ConstraintDescriptor uniquePropertyConstraintCreate(IndexPrototype prototype) throws KernelException {
         SchemaDescriptor schema = prototype.schema();
+
+        if (schema.entityType() == RELATIONSHIP) {
+            if (!relationshipUniquenessConstraintEnabled) {
+                throw new UnsupportedOperationException("Relationship uniqueness constraints are not supported yet");
+            }
+        }
+
         exclusiveSchemaLock(schema);
         ktx.assertOpen();
         prototype = ensureIndexPrototypeHasIndexProvider(prototype);
@@ -1565,14 +1572,6 @@ public class Operations implements Write, SchemaWrite {
             exclusiveSchemaUnlock(
                     schema); // Try not to hold on to exclusive schema locks when we don't strictly need them.
             throw e;
-        }
-
-        // Block since relationship uniqueness constraints don't exist yet
-        if (prototype.schema().isRelationshipTypeSchemaDescriptor()) {
-            throw new CreateConstraintFailureException(
-                    constraint,
-                    "Cannot create backing constraint index using a relationship type schema: "
-                            + prototype.schema().userDescription(token));
         }
 
         // Create constraints

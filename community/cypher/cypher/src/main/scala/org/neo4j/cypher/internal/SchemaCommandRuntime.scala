@@ -378,7 +378,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     assertion match {
       case NodePropertyExistence         => c => c.isNodePropertyExistenceConstraint
       case RelationshipPropertyExistence => c => c.isRelationshipPropertyExistenceConstraint
-      case Uniqueness                    => c => c.isUniquenessConstraint
+      case Uniqueness                    => c => c.isNodeUniquenessConstraint
       case NodeKey                       => c => c.isNodeKeyConstraint
     }
 

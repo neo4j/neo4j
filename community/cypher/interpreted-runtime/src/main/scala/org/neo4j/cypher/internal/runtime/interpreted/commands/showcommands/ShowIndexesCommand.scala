@@ -208,7 +208,7 @@ object ShowIndexesCommand {
         val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
 
         maybeConstraint match {
-          case Some(constraint) if constraint.isUniquenessConstraint =>
+          case Some(constraint) if constraint.isNodeUniquenessConstraint =>
             val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
             val optionsString = s"{indexConfig: {}, indexProvider: '$providerName'}"
             constraintCommand(labelsOrTypesWithColons, escapedNodeProperties, "IS UNIQUE", optionsString)
