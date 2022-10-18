@@ -234,6 +234,49 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10, transactionsCommitted = 5)
   }
 
+  test("should handle RHS with R/W dependencies on both branches of union - with aggregation on top") {
+    // given
+    val nodeCountA = 7
+    val nodeCountB = 5
+    val nodeCountC = 3
+    val batchSize = 2
+
+    given {
+      for (_ <- 0 until nodeCountA) yield runtimeTestSupport.tx.createNode(Label.label("A"))
+      for (_ <- 0 until nodeCountB) yield runtimeTestSupport.tx.createNode(Label.label("B"))
+      for (_ <- 0 until nodeCountC) yield runtimeTestSupport.tx.createNode(Label.label("C"))
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .aggregation(Seq.empty, Seq("count(*) AS x"))
+      .transactionApply(batchSize = batchSize)
+      .|.union()
+      .|.|.create(createNode("cc", "C"))
+      .|.|.eager()
+      .|.|.nodeByLabelScan("c", "C")
+      .|.create(createNode("bb", "B"))
+      .|.eager()
+      .|.nodeByLabelScan("b", "B")
+      .nodeByLabelScan("a", "A")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val expectedCount = (nodeCountB + nodeCountC) * (Math.pow(2, nodeCountA).toInt - 1)
+    val expectedCommits = (nodeCountA + (nodeCountA % batchSize)) / batchSize + 1 // +1 is for outer transaction
+    runtimeResult should beColumns("x")
+      .withSingleRow(expectedCount)
+      .withStatistics(
+        nodesCreated = expectedCount,
+        labelsAdded = expectedCount,
+        transactionsCommitted = expectedCommits
+      )
+  }
+
   test("data from returning subqueries should be accessible") {
     val query = new LogicalQueryBuilder(this)
       .produceResults("prop")

@@ -413,4 +413,41 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
         .withNoRows()
         .withStatistics(nodesCreated = sizeHint, labelsAdded = sizeHint))
   }
+
+  test("should handle RHS with R/W dependencies on both branches of union - with aggregation on top of Apply") {
+    // given
+    val nodeCountA = 7
+    val nodeCountB = 3
+    val nodeCountC = 5
+
+    given {
+      for (_ <- 0 until nodeCountA) yield runtimeTestSupport.tx.createNode(Label.label("A"))
+      for (_ <- 0 until nodeCountB) yield runtimeTestSupport.tx.createNode(Label.label("B"))
+      for (_ <- 0 until nodeCountC) yield runtimeTestSupport.tx.createNode(Label.label("C"))
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .aggregation(Seq.empty, Seq("count(*) AS x"))
+      .subqueryForeach()
+      .|.union()
+      .|.|.create(createNode("cc", "C"))
+      .|.|.eager()
+      .|.|.nodeByLabelScan("c", "C")
+      .|.create(createNode("bb", "B"))
+      .|.eager()
+      .|.nodeByLabelScan("b", "B")
+      .nodeByLabelScan("a", "A")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val expectedRhsCount = (nodeCountB + nodeCountC) * (Math.pow(2, nodeCountA).toInt - 1)
+    runtimeResult should beColumns("x")
+      .withSingleRow(nodeCountA)
+      .withStatistics(nodesCreated = expectedRhsCount, labelsAdded = expectedRhsCount)
+  }
 }
