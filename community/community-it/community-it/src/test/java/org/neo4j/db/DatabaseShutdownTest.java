@@ -29,8 +29,12 @@ import java.nio.file.Path;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.DatabaseEventContext;
 import org.neo4j.graphdb.event.DatabaseEventListenerAdapter;
+import org.neo4j.graphdb.event.TransactionData;
+import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -50,11 +54,14 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.test.Barrier;
+import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.time.SystemNanoClock;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -90,6 +97,47 @@ class DatabaseShutdownTest
         managementService.shutdown();
 
         assertEquals( 2, shutdownHandler.shutdownCounter() );
+    }
+
+    @Test
+    void shouldLimitWaitingForClosingTransactionsOnShutdown() throws Exception
+    {
+        // given
+        var dbms = new TestDatabaseManagementServiceBuilder( databaseLayout ).setFileSystem( fs ).build();
+        var db = dbms.database( DEFAULT_DATABASE_NAME );
+        var barrier = new Barrier.Control();
+        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<Void>()
+        {
+            @Override
+            public Void beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService )
+            {
+                barrier.reached();
+                return null;
+            }
+        } );
+
+        // when
+        try ( var t2 = new OtherThreadExecutor( "T2" ) )
+        {
+            var txFuture = t2.executeDontWait( () ->
+            {
+                try ( var tx = db.beginTx() )
+                {
+                    tx.createNode();
+                    tx.commit();
+                }
+                return null;
+            } );
+
+            barrier.await();
+
+            // then dbms.shutdown() can complete
+            dbms.shutdown();
+
+            barrier.release();
+            // The transaction that will try to continue to commit after dbms has been shut down will fail one way or another.
+            assertThatThrownBy(txFuture::get).isNotNull();
+        }
     }
 
     private static class TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush extends TestDatabaseManagementServiceBuilder
