@@ -186,6 +186,7 @@ public final class UnsafeUtil {
      * This has the memory visibility semantics of a volatile read followed by a volatile write.
      */
     public static long getAndAddLong(Object obj, long offset, long delta) {
+        checkAccess(obj, offset, Long.BYTES);
         return unsafe.getAndAddLong(obj, offset, delta);
     }
 
@@ -196,6 +197,7 @@ public final class UnsafeUtil {
      * If this method returns true, then it has the memory visibility semantics of a volatile read followed by a volatile write.
      */
     public static boolean compareAndSwapLong(Object obj, long offset, long expected, long update) {
+        checkAccess(obj, offset, Long.BYTES);
         return unsafe.compareAndSwapLong(obj, offset, expected, update);
     }
 
@@ -203,14 +205,16 @@ public final class UnsafeUtil {
      * Atomically exchanges provided <code>newValue</code> with the current value of field or array element, with
      * provided <code>offset</code>.
      */
-    public static long getAndSetLong(Object object, long offset, long newValue) {
-        return unsafe.getAndSetLong(object, offset, newValue);
+    public static long getAndSetLong(Object obj, long offset, long newValue) {
+        checkAccess(obj, offset, Long.BYTES);
+        return unsafe.getAndSetLong(obj, offset, newValue);
     }
 
     /**
      * Atomically set field or array element to a maximum between current value and provided <code>newValue</code>
      */
     public static void compareAndSetMaxLong(Object object, long fieldOffset, long newValue) {
+        checkAccess(object, fieldOffset, Long.BYTES);
         long currentValue;
         do {
             currentValue = UnsafeUtil.getLongVolatile(object, fieldOffset);
@@ -285,6 +289,12 @@ public final class UnsafeUtil {
         }
     }
 
+    private static void checkAccess(Object object, long pointer, long size) {
+        if (CHECK_NATIVE_ACCESS && nativeAccessCheckEnabled && object == null) {
+            doCheckAccess(pointer, size);
+        }
+    }
+
     private static void doCheckAccess(long pointer, long size) {
         long boundary = pointer + size;
         Allocation allocation = lastUsedAllocation.get();
@@ -353,10 +363,12 @@ public final class UnsafeUtil {
     }
 
     public static void putByte(Object obj, long offset, byte value) {
+        checkAccess(obj, offset, Byte.BYTES);
         unsafe.putByte(obj, offset, value);
     }
 
     public static byte getByte(Object obj, long offset) {
+        checkAccess(obj, offset, Byte.BYTES);
         return unsafe.getByte(obj, offset);
     }
 
@@ -401,6 +413,7 @@ public final class UnsafeUtil {
     }
 
     public static long getLongVolatile(Object obj, long offset) {
+        checkAccess(obj, offset, Long.BYTES);
         return unsafe.getLongVolatile(obj, offset);
     }
 
@@ -442,6 +455,8 @@ public final class UnsafeUtil {
      * where {@code null} object bases imply that the offset is an absolute address.
      */
     public static void copyMemory(Object srcBase, long srcOffset, Object destBase, long destOffset, long bytes) {
+        checkAccess(srcBase, srcOffset, bytes);
+        checkAccess(destBase, destOffset, bytes);
         unsafe.copyMemory(srcBase, srcOffset, destBase, destOffset, bytes);
     }
 
