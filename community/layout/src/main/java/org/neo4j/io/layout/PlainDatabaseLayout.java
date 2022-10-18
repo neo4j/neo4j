@@ -76,7 +76,7 @@ public class PlainDatabaseLayout implements DatabaseLayout {
     }
 
     @Override
-    public Path quarantineMarkerFile() {
+    public Path quarantineFile() {
         return databaseDirectory().resolve(QUARANTINE_MARKER_FILENAME);
     }
 

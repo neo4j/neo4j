@@ -60,7 +60,7 @@ public interface DatabaseLayout {
 
     Path databaseLockFile();
 
-    Path quarantineMarkerFile();
+    Path quarantineFile();
 
     String getDatabaseName();
 

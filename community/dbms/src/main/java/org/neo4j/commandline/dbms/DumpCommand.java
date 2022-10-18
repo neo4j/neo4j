@@ -263,7 +263,7 @@ public class DumpCommand extends AbstractAdminCommand {
             var format = DumpFormatSelector.selectFormat(ctx.err());
             var lockFile = databaseLayout.databaseLockFile().getFileName().toString();
             var quarantineMarkerFile =
-                    databaseLayout.quarantineMarkerFile().getFileName().toString();
+                    databaseLayout.quarantineFile().getFileName().toString();
             var out = openDumpStream(databaseName, target);
             dumper.dump(
                     databasePath,
