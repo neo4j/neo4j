@@ -46,7 +46,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
   test("bad node variable") {
     expectSyntaxError(
       "match (a) where id(a) = 0 match (a)-[WORKED_ON]-, return a",
-      "Invalid input ',': expected ",
+      "Invalid input ',': expected",
       48
     )
   }
