@@ -36,54 +36,32 @@ public abstract class LogCommandSerialization implements CommandReader {
             commandType = channel.get();
         } while (commandType == CommandReader.NONE);
 
-        switch (commandType) {
-            case NeoCommandType.NODE_COMMAND:
-                return readNodeCommand(channel);
-            case NeoCommandType.PROP_COMMAND:
-                return readPropertyCommand(channel);
-            case NeoCommandType.PROP_INDEX_COMMAND:
-                return readPropertyKeyTokenCommand(channel);
-            case NeoCommandType.REL_COMMAND:
-                return readRelationshipCommand(channel);
-            case NeoCommandType.REL_TYPE_COMMAND:
-                return readRelationshipTypeTokenCommand(channel);
-            case NeoCommandType.LABEL_KEY_COMMAND:
-                return readLabelTokenCommand(channel);
-            case NeoCommandType.REL_GROUP_COMMAND:
-                return readRelationshipGroupCommand(channel);
-            case NeoCommandType.REL_GROUP_EXTENDED_COMMAND:
-                return readRelationshipGroupExtendedCommand(channel);
-            case NeoCommandType.UPDATE_RELATIONSHIP_COUNTS_COMMAND:
-                return readRelationshipCountsCommand(channel);
-            case NeoCommandType.UPDATE_NODE_COUNTS_COMMAND:
-                return readNodeCountsCommand(channel);
-            case NeoCommandType.SCHEMA_RULE_COMMAND:
-                return readSchemaRuleCommand(channel);
-            case NeoCommandType.LEGACY_SCHEMA_RULE_COMMAND:
-                return readLegacySchemaRuleCommand(channel);
-            case NeoCommandType.NEOSTORE_COMMAND:
-                return readNeoStoreCommand(channel);
-            case NeoCommandType.META_DATA_COMMAND:
-                return readMetaDataCommand(channel);
-            case NeoCommandType.UPDATE_GROUP_DEGREE_COMMAND:
-                return readGroupDegreeCommand(channel);
+        return switch (commandType) {
+            case NeoCommandType.NODE_COMMAND -> readNodeCommand(channel);
+            case NeoCommandType.PROP_COMMAND -> readPropertyCommand(channel);
+            case NeoCommandType.PROP_INDEX_COMMAND -> readPropertyKeyTokenCommand(channel);
+            case NeoCommandType.REL_COMMAND -> readRelationshipCommand(channel);
+            case NeoCommandType.REL_TYPE_COMMAND -> readRelationshipTypeTokenCommand(channel);
+            case NeoCommandType.LABEL_KEY_COMMAND -> readLabelTokenCommand(channel);
+            case NeoCommandType.REL_GROUP_COMMAND -> readRelationshipGroupCommand(channel);
+            case NeoCommandType.REL_GROUP_EXTENDED_COMMAND -> readRelationshipGroupExtendedCommand(channel);
+            case NeoCommandType.UPDATE_RELATIONSHIP_COUNTS_COMMAND -> readRelationshipCountsCommand(channel);
+            case NeoCommandType.UPDATE_NODE_COUNTS_COMMAND -> readNodeCountsCommand(channel);
+            case NeoCommandType.SCHEMA_RULE_COMMAND -> readSchemaRuleCommand(channel);
+            case NeoCommandType.LEGACY_SCHEMA_RULE_COMMAND -> readLegacySchemaRuleCommand(channel);
+            case NeoCommandType.NEOSTORE_COMMAND -> readNeoStoreCommand(channel);
+            case NeoCommandType.META_DATA_COMMAND -> readMetaDataCommand(channel);
+            case NeoCommandType.UPDATE_GROUP_DEGREE_COMMAND -> readGroupDegreeCommand(channel);
 
                 // legacy indexes
-            case NeoCommandType.INDEX_DEFINE_COMMAND:
-                return readIndexDefineCommand(channel);
-            case NeoCommandType.INDEX_ADD_COMMAND:
-                return readIndexAddNodeCommand(channel);
-            case NeoCommandType.INDEX_ADD_RELATIONSHIP_COMMAND:
-                return readIndexAddRelationshipCommand(channel);
-            case NeoCommandType.INDEX_REMOVE_COMMAND:
-                return readIndexRemoveCommand(channel);
-            case NeoCommandType.INDEX_DELETE_COMMAND:
-                return readIndexDeleteCommand(channel);
-            case NeoCommandType.INDEX_CREATE_COMMAND:
-                return readIndexCreateCommand(channel);
-            default:
-                throw unknownCommandType(commandType, channel);
-        }
+            case NeoCommandType.INDEX_DEFINE_COMMAND -> readIndexDefineCommand(channel);
+            case NeoCommandType.INDEX_ADD_COMMAND -> readIndexAddNodeCommand(channel);
+            case NeoCommandType.INDEX_ADD_RELATIONSHIP_COMMAND -> readIndexAddRelationshipCommand(channel);
+            case NeoCommandType.INDEX_REMOVE_COMMAND -> readIndexRemoveCommand(channel);
+            case NeoCommandType.INDEX_DELETE_COMMAND -> readIndexDeleteCommand(channel);
+            case NeoCommandType.INDEX_CREATE_COMMAND -> readIndexCreateCommand(channel);
+            default -> throw unknownCommandType(commandType, channel);
+        };
     }
 
     protected Command readNeoStoreCommand(ReadableChannel channel) throws IOException {

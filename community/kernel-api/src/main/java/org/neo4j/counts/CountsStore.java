@@ -19,12 +19,7 @@
  */
 package org.neo4j.counts;
 
-import java.io.IOException;
-import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.FileFlushEvent;
-import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
  * Store and accessor of entity counts. Counts changes revolves around one or a combination of multiple tokens and are applied as deltas.
@@ -32,51 +27,10 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
  * set of changes during recovery. Changes are applied by making calls to {@link CountsAccessor.Updater} from {@link #apply(long, CursorContext)}.
  */
 public interface CountsStore extends CountsStorage, CountsAccessor {
-    CountsStore NULL_INSTANCE = new NullCountsStore();
-
     /**
      * @param txId id of the transaction that produces the changes that are being applied.
      * @param cursorContext underlying page cursor context
      * @return an updater where count deltas are being applied onto.
      */
     CountsAccessor.Updater apply(long txId, CursorContext cursorContext);
-
-    class NullCountsStore implements CountsStore {
-        @Override
-        public Updater apply(long txId, CursorContext cursorContext) {
-            return CountsAccessor.NO_OP_UPDATER;
-        }
-
-        @Override
-        public void close() { // no-op
-        }
-
-        @Override
-        public void start(CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker)
-                throws IOException { // no-op
-        }
-
-        @Override
-        public void checkpoint(FileFlushEvent flushEvent, CursorContext cursorContext) throws IOException { // no-op
-        }
-
-        @Override
-        public long nodeCount(int labelId, CursorContext cursorContext) {
-            return 0;
-        }
-
-        @Override
-        public long relationshipCount(int startLabelId, int typeId, int endLabelId, CursorContext cursorContext) {
-            return 0;
-        }
-
-        @Override
-        public void accept(CountsVisitor visitor, CursorContext cursorContext) { // no-op
-        }
-
-        @Override
-        public boolean consistencyCheck(ReporterFactory reporterFactory, CursorContext cursorContext) {
-            return true;
-        }
-    }
 }

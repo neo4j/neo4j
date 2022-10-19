@@ -494,9 +494,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         // MetaDataStore
         LogCommandSerialization serialization = RecordStorageCommandReaderFactory.INSTANCE.get(versionToUpgradeTo);
 
-        var commands = new ArrayList<StorageCommand>();
-        commands.add(new Command.MetaDataCommand(serialization, before, after));
-        return commands;
+        return List.of(new Command.MetaDataCommand(serialization, before, after));
     }
 
     @Override

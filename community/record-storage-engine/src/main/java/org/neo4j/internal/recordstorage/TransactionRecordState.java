@@ -68,7 +68,6 @@ import org.neo4j.lock.ResourceLocker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications;
 import org.neo4j.util.VisibleForTesting;
@@ -599,10 +598,6 @@ public class TransactionRecordState implements RecordState {
             }
         }
         return null;
-    }
-
-    public interface PropertyReceiver<P extends StorageProperty> {
-        void receive(P property, long propertyRecordId);
     }
 
     private static class DegreesUpdater implements RelationshipGroupDegreesStore.Updater {

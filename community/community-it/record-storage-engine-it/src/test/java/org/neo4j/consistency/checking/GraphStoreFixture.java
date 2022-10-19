@@ -27,7 +27,6 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Map;
@@ -41,14 +40,10 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.LookupAccessorsFromRunningDb;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.store.DirectStoreAccess;
-import org.neo4j.counts.CountsAccessor;
-import org.neo4j.counts.CountsStore;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -57,7 +52,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -101,7 +95,6 @@ public abstract class GraphStoreFixture implements AutoCloseable {
     private DirectStoreAccess directStoreAccess;
     private final long[] highIds = new long[StoreType.values().length];
 
-    private PageCache pageCache;
     private final TestDirectory testDirectory;
 
     private DatabaseManagementService managementService;
@@ -111,8 +104,6 @@ public abstract class GraphStoreFixture implements AutoCloseable {
     private NeoStores neoStores;
     private IndexingService indexingService;
     private RecordStorageEngine storageEngine;
-    private CountsAccessor countsStore;
-    private RelationshipGroupDegreesStore groupDegreesStore;
     private StoreCursors storeCursors;
 
     protected GraphStoreFixture(TestDirectory testDirectory) {
@@ -148,10 +139,7 @@ public abstract class GraphStoreFixture implements AutoCloseable {
                 dependencyResolver.resolveDependency(IndexProviderMap.class),
                 dependencyResolver.resolveDependency(TokenHolders.class),
                 dependencyResolver.resolveDependency(IdGeneratorFactory.class));
-        countsStore = storageEngine.countsAccessor();
         storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT);
-        groupDegreesStore = storageEngine.relationshipGroupDegreesStore();
-        pageCache = dependencyResolver.resolveDependency(PageCache.class);
     }
 
     @Override
@@ -179,14 +167,6 @@ public abstract class GraphStoreFixture implements AutoCloseable {
 
     public DirectStoreAccess directStoreAccess() {
         return directStoreAccess;
-    }
-
-    public ThrowingSupplier<CountsStore, IOException> counts() {
-        return () -> (CountsStore) countsStore;
-    }
-
-    public ThrowingSupplier<RelationshipGroupDegreesStore, IOException> groupDegrees() {
-        return () -> groupDegreesStore;
     }
 
     public GraphDatabaseAPI database() {
@@ -525,20 +505,12 @@ public abstract class GraphStoreFixture implements AutoCloseable {
             writer.create(relationship);
         }
 
-        public void update(RelationshipRecord before, RelationshipRecord after) {
-            writer.update(before, after);
-        }
-
         public void delete(RelationshipRecord relationship) {
             writer.delete(relationship);
         }
 
         public void create(RelationshipGroupRecord group) {
             writer.create(group);
-        }
-
-        public void update(RelationshipGroupRecord before, RelationshipGroupRecord after) {
-            writer.update(before, after);
         }
 
         public void delete(RelationshipGroupRecord group) {
