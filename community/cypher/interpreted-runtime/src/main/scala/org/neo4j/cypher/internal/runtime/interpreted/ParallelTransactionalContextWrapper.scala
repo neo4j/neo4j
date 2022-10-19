@@ -42,6 +42,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.ExecutionContext
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.database.NamedDatabaseId
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -55,13 +56,14 @@ class ParallelTransactionalContextWrapper(
   private[this] val tc: TransactionalContext,
   private[this] val threadSafeCursors: CursorFactory
 ) extends TransactionalContextWrapper {
+
   // TODO: Make parallel transaction use safe.
   //       We want all methods going through kernelExecutionContext when it is supported instead of through tc.kernelTransaction, which is not thread-safe
   private[this] val kernelExecutionContext: ExecutionContext = tc.kernelTransaction.createExecutionContext()
 
   override def createKernelExecutionContext(): ExecutionContext = tc.kernelTransaction.createExecutionContext()
 
-  override def commitTransaction(): Unit = unsupported
+  override def commitTransaction(): Unit = unsupported()
 
   override def kernelQueryContext: QueryContext = kernelExecutionContext.queryContext
 
@@ -89,7 +91,7 @@ class ParallelTransactionalContextWrapper(
 
   override def schemaWrite: SchemaWrite = unsupported()
 
-  override def procedures: Procedures = tc.kernelTransaction.procedures() // kernelExecutionContext.procedures()
+  override def procedures: Procedures = kernelExecutionContext.procedures()
 
   override def securityContext: SecurityContext =
     tc.kernelTransaction.securityContext() // kernelExecutionContext.securityContext()
