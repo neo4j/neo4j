@@ -19,11 +19,28 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.factory.primitive.IntSets;
-import org.eclipse.collections.impl.factory.primitive.LongLists;
-import org.junit.jupiter.api.Test;
+import static java.time.Duration.ofMillis;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_buffered_flush_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_flush_buffer_size_in_pages;
+import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
+import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_TRANSIENT;
+import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer.Evict;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -36,13 +53,19 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.function.IntSupplier;
-
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.pagecache.ConfigurableIOBufferFactory;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.DelegatingStoreChannel;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
@@ -73,29 +96,7 @@ import org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer.Fault;
 import org.neo4j.memory.ScopedMemoryTracker;
-
-import static java.time.Duration.ofMillis;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_buffered_flush_enabled;
-import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_flush_buffer_size_in_pages;
-import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
-import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_TRANSIENT;
-import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer.Evict;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import org.neo4j.test.Race;
 
 public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 {
@@ -1591,6 +1592,59 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                 }
 
                 throwException.setFalse();
+            }
+        } );
+    }
+
+    @RepeatedTest( 50 )
+    void racePageFileCloseAndEviction()
+    {
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        {
+            assumeTrue(
+                    fs.getClass() == EphemeralFileSystemAbstraction.class,
+                    "This test is very slow on real file system" );
+
+            var pages = 10;
+            try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL ) )
+            {
+                var race = new Race();
+                race.addContestant( Race.throwing( () ->
+                                                   {
+                                                       try
+                                                       {
+                                                           for ( int i = 0; i < 1000; i++ )
+                                                           {
+                                                               try ( PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
+                                                               {
+                                                                   try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+                                                                   {
+                                                                       for ( int k = 0; k < pages; k++ )
+                                                                       {
+                                                                           cursor.next();
+                                                                           cursor.putLong( 101010101 );
+                                                                       }
+                                                                   }
+                                                               }
+                                                           }
+                                                       }
+                                                       catch ( CacheLiveLockException ignore )
+                                                       {
+                                                       }
+                                                       finally
+                                                       {
+                                                           // to stop the other contestant
+                                                           pageCache.close();
+                                                       }
+                                                   } ) );
+                race.addContestant( Race.throwing( () ->
+                                                   {
+                                                       try ( var evictionRunEvent = PageCacheTracer.NULL.beginPageEvictions( 1000 ) )
+                                                       {
+                                                           pageCache.evictPages( 1000, 0, evictionRunEvent );
+                                                       }
+                                                   } ) );
+                race.go();
             }
         } );
     }

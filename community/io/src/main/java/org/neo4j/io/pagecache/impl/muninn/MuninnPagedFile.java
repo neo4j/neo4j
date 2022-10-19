@@ -19,13 +19,17 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import static java.util.Arrays.fill;
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.util.FeatureToggles.flag;
+import static org.neo4j.util.FeatureToggles.getInteger;
+
 import java.io.Flushable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Path;
-
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCursor;
@@ -43,11 +47,6 @@ import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
-
-import static java.util.Arrays.fill;
-import static java.util.Objects.requireNonNull;
-import static org.neo4j.util.FeatureToggles.flag;
-import static org.neo4j.util.FeatureToggles.getInteger;
 
 final class MuninnPagedFile extends PageList implements PagedFile, Flushable
 {
@@ -316,7 +315,6 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                             }
                             totalPages++;
                         }
-                        TRANSLATION_TABLE_ARRAY.setVolatile( chunk, chunkIndex, UNMAPPED_TTE );
                     }
                 }
             }
