@@ -432,20 +432,6 @@ public abstract class BaseTopologyGraphDbmsModelIT {
         return referenceNode;
     }
 
-    protected Node createCompositeReferenceForDatabase(
-            Transaction tx, String name, String targetName, RemoteUri uri, UUID uuid) {
-        var referenceNode = tx.createNode(COMPOSITE_DATABASE_LABEL, DATABASE_NAME_LABEL);
-        referenceNode.setProperty(PRIMARY_PROPERTY, false);
-        referenceNode.setProperty(NAMESPACE_PROPERTY, DEFAULT_NAMESPACE);
-        referenceNode.setProperty(DATABASE_NAME_PROPERTY, name);
-        referenceNode.setProperty(TARGET_NAME_PROPERTY, targetName);
-        var uriString =
-                String.format("%s://%s", uri.getScheme(), uri.getAddresses().get(0));
-        referenceNode.setProperty(URL_PROPERTY, uriString);
-        referenceNode.setProperty(VERSION_PROPERTY, uuid.toString());
-        return referenceNode;
-    }
-
     protected Node createDriverSettingsForExternalAlias(
             Transaction tx, Node externalRefNode, DriverSettings driverSettings) {
         var settingsNode = tx.createNode(DRIVER_SETTINGS_LABEL);
