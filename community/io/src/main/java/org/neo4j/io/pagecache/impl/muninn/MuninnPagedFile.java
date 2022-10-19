@@ -344,7 +344,6 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                             }
                             totalPages++;
                         }
-                        TRANSLATION_TABLE_ARRAY.setVolatile(chunk, chunkIndex, UNMAPPED_TTE);
                     }
                 }
             }

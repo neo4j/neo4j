@@ -62,6 +62,7 @@ import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.pagecache.ConfigurableIOBufferFactory;
@@ -69,6 +70,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.DelegatingStoreChannel;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
@@ -105,6 +107,7 @@ import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer.Fault;
 import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
+import org.neo4j.test.Race;
 
 public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     private static final long X = 0xCAFEBABEDEADBEEFL;
@@ -1681,6 +1684,44 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 }
 
                 throwException.setFalse();
+            }
+        });
+    }
+
+    @RepeatedTest(50)
+    void racePageFileCloseAndEviction() {
+        assertTimeoutPreemptively(ofMillis(SEMI_LONG_TIMEOUT_MILLIS), () -> {
+            assumeTrue(
+                    fs.getClass() == EphemeralFileSystemAbstraction.class,
+                    "This test is very slow on real file system");
+
+            var pages = 10;
+            try (MuninnPageCache pageCache = createPageCache(fs, 2, PageCacheTracer.NULL)) {
+                var race = new Race();
+                race.addContestant(Race.throwing(() -> {
+                    try {
+                        for (int i = 0; i < 1000; i++) {
+                            try (PagedFile pagedFile = map(pageCache, file("a"), 8 + reservedBytes)) {
+                                try (PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                                    for (int k = 0; k < pages; k++) {
+                                        cursor.next();
+                                        cursor.putLong(101010101);
+                                    }
+                                }
+                            }
+                        }
+                    } catch (CacheLiveLockException ignore) {
+                    } finally {
+                        // to stop the other contestant
+                        pageCache.close();
+                    }
+                }));
+                race.addContestant(Race.throwing(() -> {
+                    try (var evictionRunEvent = PageCacheTracer.NULL.beginPageEvictions(1000)) {
+                        pageCache.evictPages(1000, 0, evictionRunEvent);
+                    }
+                }));
+                race.go();
             }
         });
     }

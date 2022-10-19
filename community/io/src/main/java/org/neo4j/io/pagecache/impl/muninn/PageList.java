@@ -178,6 +178,7 @@ class PageList implements PageReferenceTranslator {
      * page.
      */
     long deref(int pageId) {
+        assert pageId >= 0 && pageId < pageCount : "PageId out of range: " + pageId + ". PageCount: " + pageCount;
         //noinspection UnnecessaryLocalVariable
         long id = pageId; // convert to long to avoid int multiplication
         return baseAddress + (id * META_DATA_BYTES_PER_PAGE);
