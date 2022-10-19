@@ -27,6 +27,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -53,6 +54,7 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     private JobHandle<?> jobHandle;
     private volatile boolean running;
     private final Lock maintenanceLock = new ReentrantLock();
+    private volatile DatabaseReadOnlyChecker databaseReadOnlyChecker;
 
     public BufferedIdController(
             BufferingIdGeneratorFactory bufferingIdGeneratorFactory,
@@ -100,6 +102,11 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
 
     @Override
     public void maintenance() {
+        if (databaseReadOnlyChecker.isReadOnly()) {
+            // Avoid doing this when in read-only mode since it may incur I/O and added space on disk
+            return;
+        }
+
         maintenanceLock.lock();
         try {
             if (running) {
@@ -121,8 +128,10 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
             Config config,
             Supplier<TransactionSnapshot> snapshotSupplier,
             IdFreeCondition condition,
-            MemoryTracker memoryTracker)
+            MemoryTracker memoryTracker,
+            DatabaseReadOnlyChecker databaseReadOnlyChecker)
             throws IOException {
         bufferingIdGeneratorFactory.initialize(fs, baseBufferPath, config, snapshotSupplier, condition, memoryTracker);
+        this.databaseReadOnlyChecker = databaseReadOnlyChecker;
     }
 }

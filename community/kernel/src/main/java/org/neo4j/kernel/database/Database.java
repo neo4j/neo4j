@@ -419,7 +419,8 @@ public class Database extends AbstractDatabase {
                 databaseConfig,
                 () -> kernelModule.kernelTransactions().get(),
                 s -> kernelModule.kernelTransactions().eligibleForFreeing(s),
-                otherDatabaseMemoryTracker);
+                otherDatabaseMemoryTracker,
+                readOnlyDatabaseChecker);
 
         storageEngine = storageEngineFactory.instantiate(
                 fs,

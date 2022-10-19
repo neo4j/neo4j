@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.memory.MemoryTracker;
@@ -57,6 +58,7 @@ public interface IdController extends Lifecycle {
             Config config,
             Supplier<TransactionSnapshot> snapshotSupplier,
             IdFreeCondition condition,
-            MemoryTracker memoryTracker)
+            MemoryTracker memoryTracker,
+            DatabaseReadOnlyChecker databaseReadOnlyChecker)
             throws IOException;
 }
