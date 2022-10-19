@@ -49,7 +49,7 @@ abstract class RecordRelationshipCursor extends RelationshipRecord
 
     @Override
     public long entityReference() {
-        return getId();
+        return inUse() ? getId() : NO_ID;
     }
 
     @Override

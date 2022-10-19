@@ -20,15 +20,13 @@
 package org.neo4j.internal.recordstorage;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
 import java.util.HashSet;
@@ -56,13 +54,13 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.RandomSupport;
+import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
-@PageCacheExtension
-@Neo4jLayoutExtension
+@EphemeralPageCacheExtension
+@EphemeralNeo4jLayoutExtension
 @ExtendWith(RandomExtension.class)
 class RecordRelationshipScanCursorTest {
     private static final long RELATIONSHIP_ID = 1L;
@@ -103,8 +101,10 @@ class RecordRelationshipScanCursorTest {
 
         try (RecordRelationshipScanCursor cursor = createRelationshipCursor()) {
             cursor.single(RELATIONSHIP_ID);
-            assertTrue(cursor.next());
-            assertEquals(RELATIONSHIP_ID, cursor.entityReference());
+            assertThat(cursor.next()).isTrue();
+            assertThat(cursor.entityReference()).isEqualTo(RELATIONSHIP_ID);
+            assertThat(cursor.next()).isFalse();
+            assertThat(cursor.entityReference()).isEqualTo(NO_ID);
         }
     }
 
@@ -118,7 +118,8 @@ class RecordRelationshipScanCursorTest {
 
         try (RecordRelationshipScanCursor cursor = createRelationshipCursor()) {
             cursor.single(RELATIONSHIP_ID);
-            assertFalse(cursor.next());
+            assertThat(cursor.next()).isFalse();
+            assertThat(cursor.entityReference()).isEqualTo(NO_ID);
         }
     }
 
@@ -174,6 +175,7 @@ class RecordRelationshipScanCursorTest {
             for (int i = 0, n = random.nextInt(2, 10); i < n; i++) {
                 assertThat(rels.scanBatch(scan, Long.MAX_VALUE)).isFalse();
             }
+            assertThat(rels.entityReference()).isEqualTo(NO_ID);
         }
     }
 
@@ -182,10 +184,13 @@ class RecordRelationshipScanCursorTest {
             cursor.scan();
             while (cursor.next()) {
                 // then
-                assertTrue(expected.remove(cursor.entityReference()), cursor.toString());
+                assertThat(expected.remove(cursor.entityReference()))
+                        .as(cursor.toString())
+                        .isTrue();
             }
+            assertThat(cursor.entityReference()).isEqualTo(NO_ID);
         }
-        assertTrue(expected.isEmpty());
+        assertThat(expected).isEmpty();
     }
 
     private static void createRelationshipRecord(

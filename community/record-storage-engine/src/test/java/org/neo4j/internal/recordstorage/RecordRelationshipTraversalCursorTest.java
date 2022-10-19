@@ -19,9 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.of;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -32,6 +30,7 @@ import static org.neo4j.internal.recordstorage.RecordNodeCursor.relationshipsRef
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
+import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
@@ -43,10 +42,10 @@ import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.eclipse.collections.api.factory.Sets;
-import org.eclipse.collections.api.set.primitive.IntSet;
-import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -73,12 +72,12 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.RelationshipDirection;
+import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
-@PageCacheExtension
-@Neo4jLayoutExtension
+@EphemeralPageCacheExtension
+@EphemeralNeo4jLayoutExtension
 public class RecordRelationshipTraversalCursorTest {
     protected static final long NULL = Record.NULL_REFERENCE.longValue();
     protected static final long FIRST_OWNING_NODE = 1;
@@ -166,11 +165,9 @@ public class RecordRelationshipTraversalCursorTest {
         try (RecordRelationshipTraversalCursor cursor = getNodeRelationshipCursor()) {
             cursor.init(FIRST_OWNING_NODE, reference, ALL_RELATIONSHIPS);
             while (cursor.next()) {
-                assertEquals(
-                        expectedRelationshipIds[relationshipIndex++],
-                        cursor.entityReference(),
-                        "Should load next relationship in a sequence");
+                assertThat(cursor.entityReference()).isEqualTo(expectedRelationshipIds[relationshipIndex++]);
             }
+            assertThat(cursor.entityReference()).isEqualTo(NO_ID);
         }
     }
 
@@ -185,7 +182,8 @@ public class RecordRelationshipTraversalCursorTest {
             cursor.init(FIRST_OWNING_NODE, NO_NEXT_RELATIONSHIP.intValue(), ALL_RELATIONSHIPS);
 
             // THEN
-            assertFalse(cursor.next());
+            assertThat(cursor.next()).isFalse();
+            assertThat(cursor.entityReference()).isEqualTo(NO_ID);
         }
     }
 
@@ -287,22 +285,51 @@ public class RecordRelationshipTraversalCursorTest {
         }
     }
 
+    @Test
+    void shouldHaveCorrectEntityReferenceAfterLastDeleted() {
+        // given
+        var count = 4;
+        var reference = createRelationshipStructure(false, homogenousRelationships(count, 1, OUTGOING));
+        try (var cursor = getNodeRelationshipCursor()) {
+            cursor.init(FIRST_OWNING_NODE, reference, ALL_RELATIONSHIPS);
+            long lastId = -1;
+            while (cursor.next()) {
+                lastId = cursor.entityReference();
+            }
+            // delete the last one in the chain
+            unUseRecord(lastId);
+        }
+
+        // when
+        try (var cursor = getNodeRelationshipCursor()) {
+            cursor.init(FIRST_OWNING_NODE, reference, ALL_RELATIONSHIPS);
+            int countAfterDeletion = 0;
+            while (cursor.next()) {
+                countAfterDeletion++;
+            }
+            assertThat(countAfterDeletion).isEqualTo(count - 1);
+            assertThat(cursor.entityReference()).isEqualTo(NO_ID);
+        }
+    }
+
     private static void assertRelationships(
             RecordRelationshipTraversalCursor cursor, int count, Direction direction, int... types) {
-        IntSet expectedTypes = IntSets.immutable.of(types);
+        var expectedTypes = IntStream.of(types).boxed().collect(Collectors.toSet());
         int found = 0;
         while (cursor.next()) {
             found++;
-            assertTrue(expectedTypes.contains(cursor.type()));
+            assertThat(cursor.type()).isIn(expectedTypes);
             switch (direction) {
-                case OUTGOING -> assertEquals(FIRST_OWNING_NODE, cursor.sourceNodeReference());
-                case INCOMING -> assertEquals(FIRST_OWNING_NODE, cursor.targetNodeReference());
-                case BOTH -> assertTrue(FIRST_OWNING_NODE == cursor.sourceNodeReference()
-                        || FIRST_OWNING_NODE == cursor.targetNodeReference());
+                case OUTGOING -> assertThat(cursor.sourceNodeReference()).isEqualTo(FIRST_OWNING_NODE);
+                case INCOMING -> assertThat(cursor.targetNodeReference()).isEqualTo(FIRST_OWNING_NODE);
+                case BOTH -> assertThat(FIRST_OWNING_NODE == cursor.sourceNodeReference()
+                                || FIRST_OWNING_NODE == cursor.targetNodeReference())
+                        .isTrue();
                 default -> throw new UnsupportedOperationException(direction.name());
             }
         }
-        assertEquals(count, found);
+        assertThat(found).isEqualTo(count);
+        assertThat(cursor.entityReference()).isEqualTo(NO_ID);
     }
 
     protected void unUseRecord(long recordId) {
