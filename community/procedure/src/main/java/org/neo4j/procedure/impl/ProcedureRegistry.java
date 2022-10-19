@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.api.procedure.Context;
+import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.AnyValue;
 
 public class ProcedureRegistry {
@@ -316,5 +317,12 @@ public class ProcedureRegistry {
         }
         ids = Arrays.copyOfRange(ids, 0, count);
         return ids;
+    }
+
+    @VisibleForTesting
+    public void unregister(QualifiedName name) {
+        procedures.unregister(name);
+        functions.unregister(name);
+        aggregationFunctions.unregister(name);
     }
 }

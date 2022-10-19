@@ -30,18 +30,13 @@ import org.junit.jupiter.api.function.Executable
 import org.neo4j.cypher.internal.util.test_helpers.DenylistEntry
 import org.neo4j.cypher.internal.util.test_helpers.FeatureTest
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.opencypher.tools.tck.api.ExpectError
 import org.opencypher.tools.tck.api.Scenario
 
 import java.net.URI
 import java.net.URL
 import java.nio.charset.StandardCharsets
-import java.nio.file.FileSystems
-import java.nio.file.Files
-import java.nio.file.NoSuchFileException
-import java.nio.file.Path
-import java.nio.file.Paths
+import java.nio.file._
 import java.util
 
 import scala.collection.mutable
@@ -59,11 +54,11 @@ trait ScenarioTestHelper extends FeatureTest {
 
   def config: TestConfig
 
-  def graphDatabaseFactory(): TestDatabaseManagementServiceBuilder
-
   def dbConfigPerFeature(featureName: String): collection.Map[Setting[_], AnyRef]
 
   def useBolt: Boolean
+
+  def dbProvider(): TestDatabaseProvider
 
   final override def denylist: Seq[DenylistEntry] =
     config.denylist.map(parseDenylist).getOrElse(Seq.empty[DenylistEntry])
@@ -75,7 +70,7 @@ trait ScenarioTestHelper extends FeatureTest {
       Try {
         scenario(Neo4jAdapter(
           config.executionPrefix,
-          graphDatabaseFactory(),
+          dbProvider(),
           dbConfigPerFeature(scenario.featureName),
           useBolt
         )).run()
@@ -116,7 +111,7 @@ trait ScenarioTestHelper extends FeatureTest {
   final override def runScenario(scenario: Scenario): Seq[Executable] = {
     val runnable = scenario(Neo4jAdapter(
       config.executionPrefix,
-      graphDatabaseFactory(),
+      dbProvider(),
       dbConfigPerFeature(scenario.featureName),
       useBolt
     ))
@@ -136,8 +131,12 @@ trait ScenarioTestHelper extends FeatureTest {
 
   @Disabled
   def generateDenylist(): Unit = {
-    printComputedDenylist(scenarios, config, graphDatabaseFactory)
+    printComputedDenylist(scenarios, config, dbProvider())
     fail("Do not forget to add @Disabled to this method")
+  }
+
+  def releaseResources(): Unit = {
+    dbProvider().close()
   }
 }
 
@@ -213,7 +212,7 @@ object ScenarioTestHelper {
   private def printComputedDenylist(
     scenarios: Seq[Scenario],
     config: TestConfig,
-    graphDatabaseFactory: () => TestDatabaseManagementServiceBuilder,
+    dbProvider: TestDatabaseProvider,
     useBolt: Boolean = false
   ): Unit = {
     // Sometime this method doesn't print its progress output (but is actually working (Do not cancel)!).
@@ -223,7 +222,7 @@ object ScenarioTestHelper {
     val denylist = scenarios.zipWithIndex.flatMap { case (scenario, index) =>
       val isFailure = Try(scenario(Neo4jAdapter(
         config.executionPrefix,
-        graphDatabaseFactory(),
+        dbProvider,
         defaultTestConfig(scenario.featureName),
         useBolt
       )).run()).isFailure

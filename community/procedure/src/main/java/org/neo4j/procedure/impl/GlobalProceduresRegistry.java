@@ -351,4 +351,9 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
         // And register built-in procedures
         builtin.accept(this);
     }
+
+    @VisibleForTesting
+    public void unregister(QualifiedName name) {
+        registry.unregister(name);
+    }
 }

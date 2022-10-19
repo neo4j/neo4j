@@ -34,6 +34,7 @@ import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.kernel.api.Kernel
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.procedure.GlobalProcedures
+import org.neo4j.kernel.impl.api.KernelTransactions
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query.QueryExecutionEngine
 
@@ -99,6 +100,7 @@ case class FeatureDatabaseManagementService(
   private val executorFactory: CypherExecutorFactory,
   private val databaseName: Option[String] = None
 ) {
+  def closeFactory(): Unit = executorFactory.close()
 
   private val database: GraphDatabaseFacade =
     databaseManagementService.database(databaseName.getOrElse(DEFAULT_DATABASE_NAME)).asInstanceOf[GraphDatabaseFacade]
@@ -117,6 +119,29 @@ case class FeatureDatabaseManagementService(
   def registerProcedure(procedure: Class[_]): Unit = globalProcedures.registerProcedure(procedure)
 
   def clearQueryCaches(): Unit = executionEngine.clearQueryCaches()
+
+  def terminateAllTransactions(): Unit = {
+    database.getDependencyResolver.resolveDependency(classOf[KernelTransactions]).terminateTransactions()
+  }
+
+  def dropIndexesAndConstraints(): Unit = {
+    val tx = database.beginTx()
+    try {
+      val schema = tx.schema()
+      schema.getConstraints.forEach(c => c.drop());
+      schema.getIndexes.forEach(i => i.drop());
+      tx.commit()
+    } finally {
+      tx.close()
+    }
+  }
+
+  def unregisterProcedures(): Unit = {
+    globalProcedures.unregister(new org.neo4j.internal.kernel.api.procs.QualifiedName(
+      Array[String]("test", "my"),
+      "proc"
+    ))
+  }
 
   def begin(): CypherExecutorTransaction = cypherExecutor.beginTransaction()
 

@@ -120,6 +120,8 @@ class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers 
     ))
   }
 
+  override def releaseResources(): Unit = {}
+
   /**
    * "RETURN a" might be round-tripped to "RETURN `a`"
    * This is an acceptable diversion caused by the Prettifier,

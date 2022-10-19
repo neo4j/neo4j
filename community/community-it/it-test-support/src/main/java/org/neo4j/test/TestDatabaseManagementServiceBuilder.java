@@ -146,6 +146,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
                 .setDefault(GraphDatabaseInternalSettings.track_cursor_close, true)
                 .setDefault(GraphDatabaseInternalSettings.netty_server_shutdown_quiet_period, 0)
                 .setDefault(GraphDatabaseInternalSettings.netty_server_shutdown_timeout, Duration.ofSeconds(3))
+                .setDefault(GraphDatabaseSettings.query_cache_size, 10)
                 .setDefault(GraphDatabaseInternalSettings.additional_lock_verification, true)
                 .setDefault(GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks, true)
                 .setDefault(GraphDatabaseInternalSettings.vm_pause_monitor_enabled, false)

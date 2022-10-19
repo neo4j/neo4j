@@ -36,7 +36,12 @@ abstract class BaseTCKTests extends BaseFeatureTest {
   lazy val scenarios: Seq[Scenario] =
     filterScenarios(BaseFeatureTestHolder.allTckScenarios, categoryToRun, featureToRun, scenarioToRun)
 
-  override def graphDatabaseFactory(): TestDatabaseManagementServiceBuilder = new TestDatabaseManagementServiceBuilder()
+  private val provider: TestDatabaseProvider =
+    new TestDatabaseProvider(() => new TestDatabaseManagementServiceBuilder())
+
+  override def dbProvider(): TestDatabaseProvider = {
+    provider
+  }
 
   override def dbConfigPerFeature(featureName: String): collection.Map[Setting[_], AnyRef] =
     defaultTestConfig(featureName)

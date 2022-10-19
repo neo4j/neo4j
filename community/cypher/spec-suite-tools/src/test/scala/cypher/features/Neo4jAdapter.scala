@@ -21,17 +21,14 @@ package cypher.features
 
 import cypher.features.Neo4jExceptionToExecutionFailed.convert
 import org.neo4j.configuration.Config
-import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings.cypher_hints_error
 import org.neo4j.configuration.connectors.BoltConnector
 import org.neo4j.configuration.helpers.SocketAddress
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.testing.api.StatementResult
 import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
 import org.neo4j.cypher.testing.impl.driver.DriverCypherExecutorFactory
 import org.neo4j.cypher.testing.impl.embedded.EmbeddedCypherExecutorFactory
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.opencypher.tools.tck.api.ExecQuery
 import org.opencypher.tools.tck.api.Graph
 import org.opencypher.tools.tck.api.QueryType
@@ -41,7 +38,6 @@ import org.opencypher.tools.tck.values.CypherValue
 import java.lang.Boolean.TRUE
 
 import scala.jdk.CollectionConverters.MapHasAsJava
-import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -59,7 +55,7 @@ object Neo4jAdapter {
 
   def apply(
     executionPrefix: String,
-    graphDatabaseFactory: TestDatabaseManagementServiceBuilder,
+    databaseProvider: TestDatabaseProvider,
     dbConfig: collection.Map[Setting[_], Object],
     useBolt: Boolean
   ): Neo4jAdapter = {
@@ -68,7 +64,7 @@ object Neo4jAdapter {
         BoltConnector.listen_address -> new SocketAddress("localhost", 0)
       ))
         .asInstanceOf[Map[Setting[_], Object]]
-    val managementService = createManagementService(enhancedConfig, graphDatabaseFactory)
+    val managementService = databaseProvider.get(enhancedConfig)
     val config = Config.newBuilder().set(enhancedConfig.asJava).build()
     val executorFactory =
       if (useBolt) {
@@ -78,13 +74,6 @@ object Neo4jAdapter {
       }
     val dbms = FeatureDatabaseManagementService(managementService, executorFactory)
     new Neo4jAdapter(dbms, executionPrefix)
-  }
-
-  private def createManagementService(
-    config: collection.Map[Setting[_], Object],
-    graphDatabaseFactory: TestDatabaseManagementServiceBuilder
-  ) = {
-    graphDatabaseFactory.impermanent().setConfig(config.asJava).build()
   }
 }
 
@@ -125,6 +114,11 @@ class Neo4jAdapter(var dbms: FeatureDatabaseManagementService, executionPrefix: 
 
   override def close(): Unit = {
     deleteTemporaryFiles()
-    dbms.shutdown()
+    dbms.terminateAllTransactions()
+    dbms.dropIndexesAndConstraints()
+    dbms.unregisterProcedures()
+    dbms.execute("MATCH (n) DETACH DELETE (n)", Map.empty, r => r.consume())
+    dbms.clearQueryCaches()
+    dbms.closeFactory()
   }
 }

@@ -16,8 +16,10 @@
  */
 package org.neo4j.cypher.internal.util.test_helpers
 
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.function.Executable
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
@@ -31,6 +33,7 @@ import scala.collection.JavaConverters.asJavaCollectionConverter
  * Use this class to run tests for Cucumber scenarios.
  */
 @Execution(ExecutionMode.CONCURRENT)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class FeatureTest {
 
   /**
@@ -57,6 +60,8 @@ abstract class FeatureTest {
    */
   def runScenario(scenario: Scenario): Seq[Executable]
 
+  def releaseResources(): Unit
+
   @TestFactory
   def runTests(): util.Collection[DynamicTest] = {
     val (expectFail, expectPass) = scenarios.partition(s => denylist.exists(_.isDenylisted(s)))
@@ -73,5 +78,10 @@ abstract class FeatureTest {
       executable <- runScenario(scenario)
     } yield DynamicTest.dynamicTest(name, executable)
     (expectPassTests ++ expectFailTests).asJavaCollection
+  }
+
+  @AfterAll
+  def afterAll(): Unit = {
+    releaseResources()
   }
 }

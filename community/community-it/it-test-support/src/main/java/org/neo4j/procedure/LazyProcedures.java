@@ -248,6 +248,14 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
     }
 
     @Override
+    public void unregister(QualifiedName name) {
+        var procedures = globalProcedures;
+        if (procedures != null) {
+            procedures.unregister(name);
+        }
+    }
+
+    @Override
     public void accept(Supplier<GlobalProcedures> procedureSupplier) {
         requireNonNull(procedureSupplier);
         if (initializer != null) {

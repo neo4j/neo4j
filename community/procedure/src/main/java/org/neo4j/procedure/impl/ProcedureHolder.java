@@ -91,4 +91,13 @@ class ProcedureHolder<T> {
         String lowercaseName = name.name().toLowerCase();
         return new QualifiedName(lowerCaseNamespace, lowercaseName);
     }
+
+    public void unregister(QualifiedName name) {
+        Integer idObejct = name2Id(name);
+        if (idObejct != null) {
+            store.remove(idObejct.intValue());
+        }
+        nameToId.remove(name);
+        caseInsensitiveName2Id.remove(toLowerCaseName(name));
+    }
 }

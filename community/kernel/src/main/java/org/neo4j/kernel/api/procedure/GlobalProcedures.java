@@ -34,6 +34,7 @@ import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.AnyValue;
 
 public interface GlobalProcedures {
@@ -98,4 +99,8 @@ public interface GlobalProcedures {
     UserAggregator createAggregationFunction(Context ctx, int id) throws ProcedureException;
 
     <T> ThrowingFunction<Context, T, ProcedureException> lookupComponentProvider(Class<T> cls, boolean safe);
+
+    @VisibleForTesting
+    // Allow tests to unregister some procedures so far intended only for tests usages
+    void unregister(QualifiedName name);
 }

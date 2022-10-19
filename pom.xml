@@ -75,7 +75,7 @@
     <test.runner.jvm.settings.additional/>
     <test.runner.jvm.settings.db.format/>
     <test.runner.jvm.settings>
-      -Xmx2G
+      -Xmx${test.vm.heap.size}
       -XX:+UseG1GC
       -XX:-OmitStackTraceInFastThrow
       -XX:+HeapDumpOnOutOfMemoryError
@@ -111,6 +111,7 @@
     <default.jupiter.test.timeout>20m</default.jupiter.test.timeout>
     <default.jupiter.test.mode>same_thread</default.jupiter.test.mode>
     <excludedTestGroups/>
+    <test.vm.heap.size>2G</test.vm.heap.size>
     <forkCounts>1</forkCounts>
     <multiversion.store>false</multiversion.store>
     <parallel.tests>false</parallel.tests>
