@@ -135,9 +135,16 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor) extends CacheF
 
   def getCacheSizeOf(kind: String): Long = {
     caches.get(kind) match {
-      case Some(cache) => cache.estimatedSize()
-      case None        => 0L
+      case Some(cache) =>
+        cache.cleanUp()
+        cache.estimatedSize()
+      case None => 0L
     }
+  }
+
+  // Call this to get better cache statistics
+  def cleanUpCache(kind: String): Unit = {
+    caches.get(kind).foreach(_.cleanUp())
   }
 
   def createCache[K <: AnyRef, V <: AnyRef](size: Int, cacheKind: String): Cache[K, V] = {
