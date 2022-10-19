@@ -200,7 +200,18 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
             }
           }
 
+        def checkNoQuantifiedPatterns: SemanticCheck = {
+          x.element.folder.treeCollect {
+            case qp: QuantifiedPath =>
+              SemanticError(
+                s"${x.name}(...) contains quantified pattern. This is currently not supported.",
+                qp.position
+              )
+          }
+        }
+
         checkContext chain
+          checkNoQuantifiedPatterns chain
           checkContainsSingle chain
           checkKnownEnds chain
           checkLength chain
