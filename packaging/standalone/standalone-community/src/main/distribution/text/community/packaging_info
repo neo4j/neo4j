@@ -1,0 +1,3 @@
+Version: #{neo4j.version}
+Edition: Community
+Package Type: tar
