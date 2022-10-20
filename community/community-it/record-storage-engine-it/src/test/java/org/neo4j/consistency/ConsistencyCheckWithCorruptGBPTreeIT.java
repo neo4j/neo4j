@@ -53,6 +53,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -84,6 +85,7 @@ import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.SchemaLayouts;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
+import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -121,6 +123,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
         neo4jHome = testDirectory.homePath();
         fs.mkdirs(neo4jHome);
         var dbms = ((TestNeo4jDatabaseManagementServiceBuilder) new TestDatabaseManagementServiceBuilder(neo4jHome)
+                        .setConfig(GraphDatabaseSettings.db_format, FormatFamily.ALIGNED.name())
                         .setFileSystem(new UncloseableDelegatingFileSystemAbstraction(fs)))
                 .build();
         try {
