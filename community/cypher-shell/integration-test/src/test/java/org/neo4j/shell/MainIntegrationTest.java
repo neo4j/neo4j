@@ -1177,6 +1177,8 @@ class MainIntegrationTest {
 
     private Matcher<String> containsDatabaseIsUnavailable(String name) {
         return anyOf(
-                containsString("database is unavailable"), containsString("Database '" + name + "' is unavailable"));
+                containsString("database is unavailable"),
+                containsString("Database '" + name + "' is unavailable"),
+                containsString("database is not currently available"));
     }
 }
