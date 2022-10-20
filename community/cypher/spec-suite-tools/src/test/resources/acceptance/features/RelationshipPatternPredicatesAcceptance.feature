@@ -106,7 +106,7 @@ Feature: RelationshipPatternPredicates
       WITH 1 AS x
       RETURN [(a:A)-[r:R WHERE r.prop > x]-(b:B) | r.prop] AS result
       """
-    Then the result should be, in any order:
+    Then the result should be (ignoring element order for lists):
       | result |
       | [2, 3] |
     And no side effects
