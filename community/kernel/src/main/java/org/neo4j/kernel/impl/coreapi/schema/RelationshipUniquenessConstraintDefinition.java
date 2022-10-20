@@ -25,8 +25,8 @@ import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 
-public class UniquenessConstraintDefinition extends NodeConstraintDefinition {
-    public UniquenessConstraintDefinition(
+public class RelationshipUniquenessConstraintDefinition extends RelationshipConstraintDefinition {
+    public RelationshipUniquenessConstraintDefinition(
             InternalSchemaActions actions, ConstraintDescriptor constraint, IndexDefinition indexDefinition) {
         super(actions, constraint, indexDefinition);
     }
@@ -34,15 +34,15 @@ public class UniquenessConstraintDefinition extends NodeConstraintDefinition {
     @Override
     public ConstraintType getConstraintType() {
         assertInUnterminatedTransaction();
-        return ConstraintType.UNIQUENESS;
+        return ConstraintType.RELATIONSHIP_UNIQUENESS;
     }
 
     @Override
     public String toString() {
         return format(
-                "FOR (%1$s:%2$s) REQUIRE %3$s IS UNIQUE",
-                label.name().toLowerCase(),
-                label.name(),
-                propertyText(label.name().toLowerCase()));
+                "FOR ()-[%s:%s]-() REQUIRE %s IS UNIQUE",
+                relationshipType.name().toLowerCase(),
+                relationshipType.name(),
+                propertyText(relationshipType.name().toLowerCase()));
     }
 }

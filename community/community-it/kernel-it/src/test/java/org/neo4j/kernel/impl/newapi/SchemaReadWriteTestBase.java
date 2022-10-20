@@ -40,6 +40,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -53,6 +54,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -655,30 +657,39 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         }
     }
 
-    @Test
-    void shouldCreateUniquePropertyConstraint() throws Exception {
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldCreateUniquePropertyConstraint(EntityType entityType) throws Exception {
         ConstraintDescriptor constraint;
+        int entityToken = entityType.selectEntityToken(label, type);
         try (KernelTransaction transaction = beginTransaction()) {
-            constraint =
-                    transaction.schemaWrite().uniquePropertyConstraintCreate(uniqueForSchema(forLabel(label, prop1)));
+            constraint = transaction
+                    .schemaWrite()
+                    .uniquePropertyConstraintCreate(
+                            uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop1)));
             transaction.commit();
         }
 
         try (KernelTransaction transaction = beginTransaction()) {
             SchemaRead schemaRead = transaction.schemaRead();
             assertTrue(schemaRead.constraintExists(constraint));
-            assertThat(asList(schemaRead.constraintsGetForLabel(label))).isEqualTo(singletonList(constraint));
-            assertThat(asList(schemaRead.snapshot().constraintsGetForLabel(label)))
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead, entityToken)))
+                    .isEqualTo(singletonList(constraint));
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead.snapshot(), entityToken)))
                     .isEqualTo(singletonList(constraint));
         }
     }
 
-    @Test
-    void shouldDropUniquePropertyConstraint() throws Exception {
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldDropUniquePropertyConstraint(EntityType entityType) throws Exception {
         ConstraintDescriptor constraint;
+        int entityToken = entityType.selectEntityToken(label, type);
         try (KernelTransaction transaction = beginTransaction()) {
-            constraint =
-                    transaction.schemaWrite().uniquePropertyConstraintCreate(uniqueForSchema(forLabel(label, prop1)));
+            constraint = transaction
+                    .schemaWrite()
+                    .uniquePropertyConstraintCreate(
+                            uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop1)));
             transaction.commit();
         }
 
@@ -690,8 +701,9 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try (KernelTransaction transaction = beginTransaction()) {
             SchemaRead schemaRead = transaction.schemaRead();
             assertFalse(schemaRead.constraintExists(constraint));
-            assertThat(asList(schemaRead.constraintsGetForLabel(label))).isEmpty();
-            assertThat(asList(schemaRead.snapshot().constraintsGetForLabel(label)))
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead, entityToken)))
+                    .isEmpty();
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead.snapshot(), entityToken)))
                     .isEmpty();
         }
     }
@@ -719,14 +731,16 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         }
     }
 
-    @Test
-    void shouldFailToCreateUniqueConstraintIfExistingIndex() throws Exception {
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldFailToCreateUniqueConstraintIfExistingIndex(EntityType entityType) throws Exception {
         // Given
+        int entityToken = entityType.selectEntityToken(label, type);
         try (KernelTransaction transaction = beginTransaction()) {
             transaction
                     .schemaWrite()
-                    .indexCreate(
-                            IndexPrototype.forSchema(forLabel(label, prop1)).withName("my index"));
+                    .indexCreate(IndexPrototype.forSchema(entityType.createSchemaDescriptor(entityToken, prop1))
+                            .withName("my index"));
             transaction.commit();
         }
 
@@ -735,23 +749,28 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             assertThrows(SchemaKernelException.class, () -> transaction
                     .schemaWrite()
                     .uniquePropertyConstraintCreate(
-                            uniqueForSchema(forLabel(label, prop1)).withName("constraint name")));
+                            uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop1))
+                                    .withName("constraint name")));
             assertThrows(SchemaKernelException.class, () -> transaction
                     .schemaWrite()
                     .uniquePropertyConstraintCreate(
-                            uniqueForSchema(forLabel(label, prop2)).withName("my index")));
+                            uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop2))
+                                    .withName("my index")));
             transaction.commit();
         }
     }
 
-    @Test
-    void shouldFailToCreateIndexIfExistingUniqueConstraint() throws Exception {
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldFailToCreateIndexIfExistingUniqueConstraint(EntityType entityType) throws Exception {
         // Given
+        int entityToken = entityType.selectEntityToken(label, type);
         try (KernelTransaction transaction = beginTransaction()) {
             transaction
                     .schemaWrite()
                     .uniquePropertyConstraintCreate(
-                            uniqueForSchema(forLabel(label, prop1)).withName("constraint name"));
+                            uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop1))
+                                    .withName("constraint name"));
             transaction.commit();
         }
 
@@ -759,25 +778,28 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try (KernelTransaction transaction = beginTransaction()) {
             assertThrows(SchemaKernelException.class, () -> transaction
                     .schemaWrite()
-                    .indexCreate(
-                            IndexPrototype.forSchema(forLabel(label, prop1)).withName("my index")));
+                    .indexCreate(IndexPrototype.forSchema(entityType.createSchemaDescriptor(entityToken, prop1))
+                            .withName("my index")));
             assertThrows(SchemaKernelException.class, () -> transaction
                     .schemaWrite()
-                    .indexCreate(
-                            IndexPrototype.forSchema(forLabel(label, prop2)).withName("constraint name")));
+                    .indexCreate(IndexPrototype.forSchema(entityType.createSchemaDescriptor(entityToken, prop2))
+                            .withName("constraint name")));
             transaction.commit();
         }
     }
 
-    @Test
-    void shouldFailToDropIndexIfExistingUniqueConstraint() throws Exception {
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldFailToDropIndexIfExistingUniqueConstraint(EntityType entityType) throws Exception {
         // Given
+        int entityToken = entityType.selectEntityToken(label, type);
         String schemaName = "constraint name";
         try (KernelTransaction transaction = beginTransaction()) {
             transaction
                     .schemaWrite()
                     .uniquePropertyConstraintCreate(
-                            uniqueForSchema(forLabel(label, prop1)).withName(schemaName));
+                            uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop1))
+                                    .withName(schemaName));
             transaction.commit();
         }
 
@@ -790,15 +812,18 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         }
     }
 
-    @Test
-    void shouldFailToDropIndexByNameIfExistingUniqueConstraint() throws Exception {
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldFailToDropIndexByNameIfExistingUniqueConstraint(EntityType entityType) throws Exception {
         // Given
+        int entityToken = entityType.selectEntityToken(label, type);
         String schemaName = "constraint name";
         try (KernelTransaction transaction = beginTransaction()) {
             transaction
                     .schemaWrite()
                     .uniquePropertyConstraintCreate(
-                            uniqueForSchema(forLabel(label, prop1)).withName(schemaName));
+                            uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop1))
+                                    .withName(schemaName));
             transaction.commit();
         }
 
@@ -810,17 +835,13 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         }
     }
 
-    @Test
-    void shouldFailToCreateUniqueConstraintIfConstraintNotSatisfied() throws Exception {
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldFailToCreateUniqueConstraintIfConstraintNotSatisfied(EntityType entityType) throws Exception {
         // Given
+        int entityToken = entityType.selectEntityToken(label, type);
         try (KernelTransaction transaction = beginTransaction()) {
-            Write write = transaction.dataWrite();
-            long node1 = write.nodeCreate();
-            write.nodeAddLabel(node1, label);
-            write.nodeSetProperty(node1, prop1, Values.intValue(42));
-            long node2 = write.nodeCreate();
-            write.nodeAddLabel(node2, label);
-            write.nodeSetProperty(node2, prop1, Values.intValue(42));
+            entityType.createDataInconsistentWithConstraintOnSchema(transaction, entityToken, prop1);
             transaction.commit();
         }
 
@@ -828,18 +849,22 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try (KernelTransaction transaction = beginTransaction()) {
             assertThrows(SchemaKernelException.class, () -> transaction
                     .schemaWrite()
-                    .uniquePropertyConstraintCreate(uniqueForSchema(forLabel(label, prop1))));
+                    .uniquePropertyConstraintCreate(
+                            uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop1))));
         }
     }
 
-    @Test
-    void shouldSeeUniqueConstraintFromTransaction() throws Exception {
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldSeeUniqueConstraintFromTransaction(EntityType entityType) throws Exception {
         ConstraintDescriptor existing;
+        int entityToken = entityType.selectEntityToken(label, type);
         try (KernelTransaction transaction = beginTransaction()) {
             existing = transaction
                     .schemaWrite()
                     .uniquePropertyConstraintCreate(
-                            uniqueForSchema(forLabel(label, prop1)).withName("existing constraint"));
+                            uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop1))
+                                    .withName("existing constraint"));
             transaction.commit();
         }
 
@@ -848,14 +873,18 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             ConstraintDescriptor newConstraint = transaction
                     .schemaWrite()
                     .uniquePropertyConstraintCreate(
-                            uniqueForSchema(forLabel(label, prop2)).withName("new constraint"));
+                            uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop2))
+                                    .withName("new constraint"));
             SchemaRead schemaRead = transaction.schemaRead();
             SchemaReadCore after = schemaRead.snapshot();
             assertTrue(schemaRead.constraintExists(existing));
             assertTrue(schemaRead.constraintExists(newConstraint));
-            assertThat(asList(schemaRead.constraintsGetForLabel(label))).contains(existing, newConstraint);
-            assertThat(asList(before.constraintsGetForLabel(label))).contains(existing, newConstraint);
-            assertThat(asList(after.constraintsGetForLabel(label))).contains(existing, newConstraint);
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead, entityToken)))
+                    .contains(existing, newConstraint);
+            assertThat(asList(entityType.constraintsGetForEntityToken(before, entityToken)))
+                    .contains(existing, newConstraint);
+            assertThat(asList(entityType.constraintsGetForEntityToken(after, entityToken)))
+                    .contains(existing, newConstraint);
             assertThat(before.constraintGetForName("existing constraint")).isEqualTo(existing);
             assertThat(after.constraintGetForName("existing constraint")).isEqualTo(existing);
             assertThat(before.constraintGetForName("new constraint")).isEqualTo(newConstraint);
@@ -863,12 +892,16 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         }
     }
 
-    @Test
-    void shouldNotSeeDroppedUniqueConstraintFromTransaction() throws Exception {
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldNotSeeDroppedUniqueConstraintFromTransaction(EntityType entityType) throws Exception {
         ConstraintDescriptor existing;
+        int entityToken = entityType.selectEntityToken(label, type);
         try (KernelTransaction transaction = beginTransaction()) {
-            existing =
-                    transaction.schemaWrite().uniquePropertyConstraintCreate(uniqueForSchema(forLabel(label, prop1)));
+            existing = transaction
+                    .schemaWrite()
+                    .uniquePropertyConstraintCreate(
+                            uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop1)));
             transaction.commit();
         }
 
@@ -877,35 +910,46 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             transaction.schemaWrite().constraintDrop(existing);
             SchemaRead schemaRead = transaction.schemaRead();
             assertFalse(schemaRead.constraintExists(existing));
-            assertThat(asList(schemaRead.constraintsGetForLabel(label))).isEmpty();
-            assertThat(asList(schemaRead.snapshot().constraintsGetForLabel(label)))
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead, entityToken)))
                     .isEmpty();
-            assertThat(asList(before.constraintsGetForLabel(label))).isEmpty();
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead.snapshot(), entityToken)))
+                    .isEmpty();
+            assertThat(asList(entityType.constraintsGetForEntityToken(before, entityToken)))
+                    .isEmpty();
         }
     }
 
-    @Test
-    void shouldCreateNodeKeyConstraint() throws Exception {
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldCreateKeyConstraint(EntityType entityType) throws Exception {
         ConstraintDescriptor constraint;
+        int entityToken = entityType.selectEntityToken(label, type);
         try (KernelTransaction transaction = beginTransaction()) {
-            constraint = transaction.schemaWrite().keyConstraintCreate(uniqueForSchema(forLabel(label, prop1)));
+            constraint = transaction
+                    .schemaWrite()
+                    .keyConstraintCreate(uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop1)));
             transaction.commit();
         }
 
         try (KernelTransaction transaction = beginTransaction()) {
             SchemaRead schemaRead = transaction.schemaRead();
             assertTrue(schemaRead.constraintExists(constraint));
-            assertThat(asList(schemaRead.constraintsGetForLabel(label))).isEqualTo(singletonList(constraint));
-            assertThat(asList(schemaRead.snapshot().constraintsGetForLabel(label)))
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead, entityToken)))
+                    .isEqualTo(singletonList(constraint));
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead.snapshot(), entityToken)))
                     .isEqualTo(singletonList(constraint));
         }
     }
 
-    @Test
-    void shouldDropNodeKeyConstraint() throws Exception {
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldDropKeyConstraint(EntityType entityType) throws Exception {
         ConstraintDescriptor constraint;
+        int entityToken = entityType.selectEntityToken(label, type);
         try (KernelTransaction transaction = beginTransaction()) {
-            constraint = transaction.schemaWrite().keyConstraintCreate(uniqueForSchema(forLabel(label, prop1)));
+            constraint = transaction
+                    .schemaWrite()
+                    .keyConstraintCreate(uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop1)));
             transaction.commit();
         }
 
@@ -917,37 +961,41 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try (KernelTransaction transaction = beginTransaction()) {
             SchemaRead schemaRead = transaction.schemaRead();
             assertFalse(schemaRead.constraintExists(constraint));
-            assertThat(asList(schemaRead.constraintsGetForLabel(label))).isEmpty();
-            assertThat(asList(schemaRead.snapshot().constraintsGetForLabel(label)))
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead, entityToken)))
+                    .isEmpty();
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead.snapshot(), entityToken)))
                     .isEmpty();
         }
     }
 
-    @Test
-    void shouldFailToCreateNodeKeyConstraintIfConstraintNotSatisfied() throws Exception {
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldFailToCreateKeyConstraintIfConstraintNotSatisfied(EntityType entityType) throws Exception {
         // Given
+        int entityToken = entityType.selectEntityToken(label, type);
         try (KernelTransaction transaction = beginTransaction()) {
-            Write write = transaction.dataWrite();
-            long node = write.nodeCreate();
-            write.nodeAddLabel(node, label);
+            entityType.createDataInconsistentWithExistenceConstraintOnSchema(transaction, entityToken);
             transaction.commit();
         }
 
         // When
         try (KernelTransaction transaction = beginTransaction()) {
-            assertThrows(
-                    SchemaKernelException.class,
-                    () -> transaction.schemaWrite().keyConstraintCreate(uniqueForSchema(forLabel(label, prop1))));
+            assertThrows(SchemaKernelException.class, () -> transaction
+                    .schemaWrite()
+                    .keyConstraintCreate(uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop1))));
         }
     }
 
-    @Test
-    void shouldSeeNodeKeyConstraintFromTransaction() throws Exception {
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldSeeKeyConstraintFromTransaction(EntityType entityType) throws Exception {
         ConstraintDescriptor existing;
+        int entityToken = entityType.selectEntityToken(label, type);
         try (KernelTransaction transaction = beginTransaction()) {
             existing = transaction
                     .schemaWrite()
-                    .keyConstraintCreate(uniqueForSchema(forLabel(label, prop1)).withName("existing constraint"));
+                    .keyConstraintCreate(uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop1))
+                            .withName("existing constraint"));
             transaction.commit();
         }
 
@@ -955,24 +1003,30 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             SchemaReadCore before = transaction.schemaRead().snapshot();
             ConstraintDescriptor newConstraint = transaction
                     .schemaWrite()
-                    .keyConstraintCreate(uniqueForSchema(forLabel(label, prop2)).withName("new constraint"));
+                    .keyConstraintCreate(uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop2))
+                            .withName("new constraint"));
             SchemaRead schemaRead = transaction.schemaRead();
             assertTrue(schemaRead.constraintExists(existing));
             assertTrue(schemaRead.constraintExists(newConstraint));
-            assertThat(asList(schemaRead.constraintsGetForLabel(label))).contains(existing, newConstraint);
-            assertThat(asList(schemaRead.snapshot().constraintsGetForLabel(label)))
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead, entityToken)))
                     .contains(existing, newConstraint);
-            assertThat(asList(before.constraintsGetForLabel(label))).contains(existing, newConstraint);
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead.snapshot(), entityToken)))
+                    .contains(existing, newConstraint);
+            assertThat(asList(entityType.constraintsGetForEntityToken(before, entityToken)))
+                    .contains(existing, newConstraint);
         }
     }
 
-    @Test
-    void shouldNotSeeDroppedNodeKeyConstraintFromTransaction() throws Exception {
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldNotSeeDroppedKeyConstraintFromTransaction(EntityType entityType) throws Exception {
         ConstraintDescriptor existing;
+        int entityToken = entityType.selectEntityToken(label, type);
         try (KernelTransaction transaction = beginTransaction()) {
             existing = transaction
                     .schemaWrite()
-                    .keyConstraintCreate(uniqueForSchema(forLabel(label, prop1)).withName("constraint name"));
+                    .keyConstraintCreate(uniqueForSchema(entityType.createSchemaDescriptor(entityToken, prop1))
+                            .withName("constraint name"));
             transaction.commit();
         }
 
@@ -981,10 +1035,12 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             transaction.schemaWrite().constraintDrop(existing);
             SchemaRead schemaRead = transaction.schemaRead();
             assertFalse(schemaRead.constraintExists(existing));
-            assertThat(asList(schemaRead.constraintsGetForLabel(label))).isEmpty();
-            assertThat(asList(schemaRead.snapshot().constraintsGetForLabel(label)))
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead, entityToken)))
                     .isEmpty();
-            assertThat(asList(before.constraintsGetForLabel(label))).isEmpty();
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead.snapshot(), entityToken)))
+                    .isEmpty();
+            assertThat(asList(entityType.constraintsGetForEntityToken(before, entityToken)))
+                    .isEmpty();
         }
     }
 
@@ -1209,117 +1265,6 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             assertThat(asList(schemaRead.snapshot().constraintsGetForLabel(label)))
                     .isEmpty();
             assertThat(asList(before.constraintsGetForLabel(label))).isEmpty();
-        }
-    }
-
-    @Test
-    void shouldCreateRelationshipKeyConstraint() throws Exception {
-        ConstraintDescriptor constraint;
-        try (KernelTransaction transaction = beginTransaction()) {
-            constraint = transaction.schemaWrite().keyConstraintCreate(uniqueForSchema(forRelType(type, prop1)));
-            transaction.commit();
-        }
-
-        try (KernelTransaction transaction = beginTransaction()) {
-            SchemaRead schemaRead = transaction.schemaRead();
-            assertTrue(schemaRead.constraintExists(constraint));
-            assertThat(asList(schemaRead.constraintsGetForRelationshipType(type)))
-                    .isEqualTo(singletonList(constraint));
-            assertThat(asList(schemaRead.snapshot().constraintsGetForRelationshipType(type)))
-                    .isEqualTo(singletonList(constraint));
-        }
-    }
-
-    @Test
-    void shouldDropRelKeyConstraint() throws Exception {
-        ConstraintDescriptor constraint;
-        try (KernelTransaction transaction = beginTransaction()) {
-            constraint = transaction.schemaWrite().keyConstraintCreate(uniqueForSchema(forRelType(type, prop1)));
-            transaction.commit();
-        }
-
-        try (KernelTransaction transaction = beginTransaction()) {
-            transaction.schemaWrite().constraintDrop(constraint);
-            transaction.commit();
-        }
-
-        try (KernelTransaction transaction = beginTransaction()) {
-            SchemaRead schemaRead = transaction.schemaRead();
-            assertFalse(schemaRead.constraintExists(constraint));
-            assertThat(asList(schemaRead.constraintsGetForRelationshipType(type)))
-                    .isEmpty();
-            assertThat(asList(schemaRead.snapshot().constraintsGetForRelationshipType(type)))
-                    .isEmpty();
-        }
-    }
-
-    @Test
-    void shouldFailToCreateRelKeyConstraintIfConstraintNotSatisfied() throws Exception {
-        // Given
-        try (KernelTransaction transaction = beginTransaction()) {
-            Write write = transaction.dataWrite();
-            long node = write.nodeCreate();
-            write.relationshipCreate(node, type, node);
-            transaction.commit();
-        }
-
-        // When
-        try (KernelTransaction transaction = beginTransaction()) {
-            assertThrows(
-                    SchemaKernelException.class,
-                    () -> transaction.schemaWrite().keyConstraintCreate(uniqueForSchema(forRelType(type, prop1))));
-        }
-    }
-
-    @Test
-    void shouldSeeRelKeyConstraintFromTransaction() throws Exception {
-        ConstraintDescriptor existing;
-        try (KernelTransaction transaction = beginTransaction()) {
-            existing = transaction
-                    .schemaWrite()
-                    .keyConstraintCreate(
-                            uniqueForSchema(forRelType(type, prop1)).withName("existing constraint"));
-            transaction.commit();
-        }
-
-        try (KernelTransaction transaction = beginTransaction()) {
-            SchemaReadCore before = transaction.schemaRead().snapshot();
-            ConstraintDescriptor newConstraint = transaction
-                    .schemaWrite()
-                    .keyConstraintCreate(
-                            uniqueForSchema(forRelType(type, prop2)).withName("new constraint"));
-            SchemaRead schemaRead = transaction.schemaRead();
-            assertTrue(schemaRead.constraintExists(existing));
-            assertTrue(schemaRead.constraintExists(newConstraint));
-            assertThat(asList(schemaRead.constraintsGetForRelationshipType(type)))
-                    .contains(existing, newConstraint);
-            assertThat(asList(schemaRead.snapshot().constraintsGetForRelationshipType(type)))
-                    .contains(existing, newConstraint);
-            assertThat(asList(before.constraintsGetForRelationshipType(type))).contains(existing, newConstraint);
-        }
-    }
-
-    @Test
-    void shouldNotSeeDroppedRelKeyConstraintFromTransaction() throws Exception {
-        ConstraintDescriptor existing;
-        try (KernelTransaction transaction = beginTransaction()) {
-            existing = transaction
-                    .schemaWrite()
-                    .keyConstraintCreate(
-                            uniqueForSchema(forRelType(type, prop1)).withName("constraint name"));
-            transaction.commit();
-        }
-
-        try (KernelTransaction transaction = beginTransaction()) {
-            SchemaReadCore before = transaction.schemaRead().snapshot();
-            transaction.schemaWrite().constraintDrop(existing);
-            SchemaRead schemaRead = transaction.schemaRead();
-            assertFalse(schemaRead.constraintExists(existing));
-            assertThat(asList(schemaRead.constraintsGetForRelationshipType(type)))
-                    .isEmpty();
-            assertThat(asList(schemaRead.snapshot().constraintsGetForRelationshipType(type)))
-                    .isEmpty();
-            assertThat(asList(before.constraintsGetForRelationshipType(type))).isEmpty();
         }
     }
 
@@ -1657,6 +1602,97 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try (KernelTransaction tx = beginTransaction()) {
             assertThrows(SchemaKernelException.class, () -> tx.schemaWrite()
                     .keyConstraintCreate(uniqueForSchema(forLabel(label, prop1, prop1))));
+        }
+    }
+
+    interface EntityControl {
+        int selectEntityToken(int label, int type);
+
+        SchemaDescriptor createSchemaDescriptor(int entityToken, int propertyKey);
+
+        Iterator<ConstraintDescriptor> constraintsGetForEntityToken(SchemaReadCore schemaRead, int entityToken);
+
+        void createDataInconsistentWithConstraintOnSchema(KernelTransaction tx, int entityToken, int propertyKey)
+                throws KernelException;
+
+        void createDataInconsistentWithExistenceConstraintOnSchema(KernelTransaction tx, int entityToken)
+                throws KernelException;
+    }
+
+    protected enum EntityType implements EntityControl {
+        NODE {
+            @Override
+            public int selectEntityToken(int label, int type) {
+                return label;
+            }
+
+            @Override
+            public SchemaDescriptor createSchemaDescriptor(int entityToken, int propertyKey) {
+                return forLabel(entityToken, propertyKey);
+            }
+
+            @Override
+            public Iterator<ConstraintDescriptor> constraintsGetForEntityToken(
+                    SchemaReadCore schemaRead, int entityToken) {
+                return schemaRead.constraintsGetForLabel(entityToken);
+            }
+
+            @Override
+            public void createDataInconsistentWithConstraintOnSchema(
+                    KernelTransaction tx, int entityToken, int propertyKey) throws KernelException {
+                Write write = tx.dataWrite();
+                long node1 = write.nodeCreate();
+                write.nodeAddLabel(node1, entityToken);
+                write.nodeSetProperty(node1, propertyKey, Values.intValue(42));
+                long node2 = write.nodeCreate();
+                write.nodeAddLabel(node2, entityToken);
+                write.nodeSetProperty(node2, propertyKey, Values.intValue(42));
+            }
+
+            @Override
+            public void createDataInconsistentWithExistenceConstraintOnSchema(KernelTransaction tx, int entityToken)
+                    throws KernelException {
+                Write write = tx.dataWrite();
+                long node = write.nodeCreate();
+                write.nodeAddLabel(node, entityToken);
+            }
+        },
+        RELATIONSHIP {
+            @Override
+            public int selectEntityToken(int label, int type) {
+                return type;
+            }
+
+            @Override
+            public SchemaDescriptor createSchemaDescriptor(int entityToken, int propertyKey) {
+                return forRelType(entityToken, propertyKey);
+            }
+
+            @Override
+            public Iterator<ConstraintDescriptor> constraintsGetForEntityToken(
+                    SchemaReadCore schemaRead, int entityToken) {
+                return schemaRead.constraintsGetForRelationshipType(entityToken);
+            }
+
+            @Override
+            public void createDataInconsistentWithConstraintOnSchema(
+                    KernelTransaction tx, int entityToken, int propertyKey) throws KernelException {
+                Write write = tx.dataWrite();
+                long node1 = write.nodeCreate();
+                long rel1 = write.relationshipCreate(node1, entityToken, node1);
+                write.relationshipSetProperty(rel1, propertyKey, Values.intValue(42));
+                long node2 = write.nodeCreate();
+                long rel2 = write.relationshipCreate(node2, entityToken, node2);
+                write.relationshipSetProperty(rel2, propertyKey, Values.intValue(42));
+            }
+
+            @Override
+            public void createDataInconsistentWithExistenceConstraintOnSchema(KernelTransaction tx, int entityToken)
+                    throws KernelException {
+                Write write = tx.dataWrite();
+                long node = write.nodeCreate();
+                write.relationshipCreate(node, entityToken, node);
+            }
         }
     }
 }

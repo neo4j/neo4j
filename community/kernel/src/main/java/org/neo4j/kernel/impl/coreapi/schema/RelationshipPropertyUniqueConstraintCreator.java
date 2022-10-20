@@ -24,38 +24,38 @@ import static org.neo4j.kernel.impl.coreapi.schema.IndexCreatorImpl.copyAndAdd;
 
 import java.util.List;
 import java.util.Map;
-import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.IndexConfig;
 
-public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreator {
+public class RelationshipPropertyUniqueConstraintCreator extends BaseRelationshipConstraintCreator {
     private final List<String> propertyKeys;
 
-    NodePropertyUniqueConstraintCreator(
+    RelationshipPropertyUniqueConstraintCreator(
             InternalSchemaActions internalCreator,
             String name,
-            Label label,
+            RelationshipType type,
             List<String> propertyKeys,
             IndexType indexType,
             IndexConfig indexConfig) {
-        super(internalCreator, name, label, indexType, indexConfig);
+        super(internalCreator, name, type, indexType, indexConfig);
         this.propertyKeys = propertyKeys;
     }
 
     @Override
-    public final NodePropertyUniqueConstraintCreator assertPropertyIsUnique(String propertyKey) {
-        return new NodePropertyUniqueConstraintCreator(
-                actions, name, label, copyAndAdd(propertyKeys, propertyKey), indexType, indexConfig);
+    public final RelationshipPropertyUniqueConstraintCreator assertPropertyIsUnique(String propertyKey) {
+        return new RelationshipPropertyUniqueConstraintCreator(
+                actions, name, type, copyAndAdd(propertyKeys, propertyKey), indexType, indexConfig);
     }
 
     @Override
     public ConstraintCreator assertPropertyExists(String propertyKey) {
         List<String> keys = List.of(propertyKey);
         if (propertyKeys.equals(keys)) {
-            return new NodeKeyConstraintCreator(actions, name, label, propertyKeys, indexType, indexConfig);
+            return new RelationshipKeyConstraintCreator(actions, name, type, propertyKeys, indexType, indexConfig);
         }
         throw new UnsupportedOperationException(
                 "You cannot create a constraint on two different sets of property keys: " + propertyKeys + " vs. "
@@ -63,26 +63,28 @@ public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreat
     }
 
     @Override
-    public ConstraintCreator assertPropertyIsNodeKey(String propertyKey) {
+    public ConstraintCreator assertPropertyIsRelationshipKey(String propertyKey) {
         return assertPropertyExists(propertyKey);
     }
 
     @Override
     public ConstraintCreator withName(String name) {
-        return new NodePropertyUniqueConstraintCreator(actions, name, label, propertyKeys, indexType, indexConfig);
+        return new RelationshipPropertyUniqueConstraintCreator(
+                actions, name, type, propertyKeys, indexType, indexConfig);
     }
 
     @Override
     public ConstraintCreator withIndexType(IndexType indexType) {
-        return new NodePropertyUniqueConstraintCreator(actions, name, label, propertyKeys, indexType, indexConfig);
+        return new RelationshipPropertyUniqueConstraintCreator(
+                actions, name, type, propertyKeys, indexType, indexConfig);
     }
 
     @Override
     public ConstraintCreator withIndexConfiguration(Map<IndexSetting, Object> indexConfiguration) {
-        return new NodePropertyUniqueConstraintCreator(
+        return new RelationshipPropertyUniqueConstraintCreator(
                 actions,
                 name,
-                label,
+                type,
                 propertyKeys,
                 indexType,
                 toIndexConfigFromIndexSettingObjectMap(indexConfiguration));
@@ -92,8 +94,8 @@ public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreat
     public final ConstraintDefinition create() {
         assertInUnterminatedTransaction();
 
-        IndexDefinitionImpl definition =
-                new IndexDefinitionImpl(actions, null, new Label[] {label}, propertyKeys.toArray(new String[0]), true);
-        return actions.createNodePropertyUniquenessConstraint(definition, name, indexType, indexConfig);
+        IndexDefinitionImpl definition = new IndexDefinitionImpl(
+                actions, null, new RelationshipType[] {type}, propertyKeys.toArray(new String[0]), true);
+        return actions.createRelationshipPropertyUniquenessConstraint(definition, name, indexType, indexConfig);
     }
 }

@@ -526,9 +526,7 @@ public class SchemaImpl implements Schema {
         // constraint type introduced to mimic the public ConstraintType, but that would be a duplicate of it
         // essentially. Checking instanceof here is OK-ish since the objects it checks here are part of the
         // internal storage engine API.
-        if (constraint.isNodePropertyExistenceConstraint()
-                || constraint.isNodeKeyConstraint()
-                || constraint.isNodeUniquenessConstraint()) {
+        if (constraint.schema().isLabelSchemaDescriptor()) {
             SchemaDescriptor schemaDescriptor = constraint.schema();
             int[] entityTokenIds = schemaDescriptor.getEntityTokenIds();
             Label[] labels = new Label[entityTokenIds.length];
@@ -541,13 +539,13 @@ public class SchemaImpl implements Schema {
             if (constraint.isNodePropertyExistenceConstraint()) {
                 return new NodePropertyExistenceConstraintDefinition(actions, constraint, labels[0], propertyKeys);
             } else if (constraint.isNodeUniquenessConstraint()) {
-                return new UniquenessConstraintDefinition(
+                return new NodeUniquenessConstraintDefinition(
                         actions, constraint, new IndexDefinitionImpl(actions, null, labels, propertyKeys, true));
-            } else {
+            } else if (constraint.isNodeKeyConstraint()) {
                 return new NodeKeyConstraintDefinition(
                         actions, constraint, new IndexDefinitionImpl(actions, null, labels, propertyKeys, true));
             }
-        } else if (constraint.isRelationshipPropertyExistenceConstraint() || constraint.isRelationshipKeyConstraint()) {
+        } else if (constraint.schema().isRelationshipTypeSchemaDescriptor()) {
             RelationTypeSchemaDescriptor descriptor = constraint.schema().asRelationshipTypeSchemaDescriptor();
             RelationshipType relationshipType = withName(tokenRead.relationshipTypeGetName(descriptor.getRelTypeId()));
             if (constraint.isRelationshipPropertyExistenceConstraint()) {
@@ -560,11 +558,19 @@ public class SchemaImpl implements Schema {
             String[] propertyKeys = Arrays.stream(descriptor.getPropertyIds())
                     .mapToObj(tokenRead::propertyKeyGetName)
                     .toArray(String[]::new);
-            return new RelationshipKeyConstraintDefinition(
-                    actions,
-                    constraint,
-                    new IndexDefinitionImpl(
-                            actions, null, new RelationshipType[] {relationshipType}, propertyKeys, true));
+            if (constraint.isRelationshipKeyConstraint()) {
+                return new RelationshipKeyConstraintDefinition(
+                        actions,
+                        constraint,
+                        new IndexDefinitionImpl(
+                                actions, null, new RelationshipType[] {relationshipType}, propertyKeys, true));
+            } else if (constraint.isRelationshipUniquenessConstraint()) {
+                return new RelationshipUniquenessConstraintDefinition(
+                        actions,
+                        constraint,
+                        new IndexDefinitionImpl(
+                                actions, null, new RelationshipType[] {relationshipType}, propertyKeys, true));
+            }
         }
         throw new IllegalArgumentException("Unknown constraint " + constraint);
     }
@@ -688,7 +694,7 @@ public class SchemaImpl implements Schema {
         }
 
         @Override
-        public ConstraintDefinition createPropertyUniquenessConstraint(
+        public ConstraintDefinition createNodePropertyUniquenessConstraint(
                 IndexDefinition indexDefinition, String name, IndexType indexType, IndexConfig indexConfig) {
             if (indexDefinition.isMultiTokenIndex()) {
                 throw new ConstraintViolationException(
@@ -696,19 +702,73 @@ public class SchemaImpl implements Schema {
                                 + "That is, only a single label is supported, but the following labels were provided: "
                                 + labelNameList(indexDefinition.getLabels(), "", "."));
             }
+            return createPropertyUniquenessConstraint(
+                    indexDefinition,
+                    name,
+                    indexType,
+                    indexConfig,
+                    (tokenWrite, indexDef) -> {
+                        int labelId = tokenWrite.labelGetOrCreateForName(
+                                single(indexDefinition.getLabels()).name());
+                        int[] propertyKeyIds = getOrCreatePropertyKeyIds(tokenWrite, indexDefinition);
+                        return forLabel(labelId, propertyKeyIds);
+                    },
+                    NodeUniquenessConstraintDefinition::new);
+        }
+
+        @Override
+        public ConstraintDefinition createRelationshipPropertyUniquenessConstraint(
+                IndexDefinition indexDefinition, String name, IndexType indexType, IndexConfig indexConfig) {
+            if (indexDefinition.isMultiTokenIndex()) {
+                throw new ConstraintViolationException(
+                        "A property uniqueness constraint does not support multi-token index definitions. "
+                                + "That is, only a single relationship type is supported, but the following "
+                                + "relationship types were provided: "
+                                + relTypeNameList(indexDefinition.getRelationshipTypes(), "", "."));
+            }
+            return createPropertyUniquenessConstraint(
+                    indexDefinition,
+                    name,
+                    indexType,
+                    indexConfig,
+                    (tokenWrite, indexDef) -> {
+                        int typeId = tokenWrite.relationshipTypeGetOrCreateForName(
+                                single(indexDefinition.getRelationshipTypes()).name());
+                        int[] propertyKeyIds = getOrCreatePropertyKeyIds(tokenWrite, indexDefinition);
+                        return forRelType(typeId, propertyKeyIds);
+                    },
+                    RelationshipUniquenessConstraintDefinition::new);
+        }
+
+        @FunctionalInterface
+        private interface SchemaDescriptorCreator {
+            SchemaDescriptor create(TokenWrite tokenWrite, IndexDefinition indexDefinition) throws KernelException;
+        }
+
+        @FunctionalInterface
+        private interface ConstraintDefinitionCreator {
+            ConstraintDefinition create(
+                    InternalSchemaActions actions, ConstraintDescriptor constraint, IndexDefinition indexDefinition)
+                    throws KernelException;
+        }
+
+        private ConstraintDefinition createPropertyUniquenessConstraint(
+                IndexDefinition indexDefinition,
+                String name,
+                IndexType indexType,
+                IndexConfig indexConfig,
+                SchemaDescriptorCreator createSchemaDescriptor,
+                ConstraintDefinitionCreator createConstraintDefinition) {
             assertConstraintableIndexType("Property uniqueness", indexType);
             try {
                 TokenWrite tokenWrite = transaction.tokenWrite();
-                int labelId = tokenWrite.labelGetOrCreateForName(
-                        single(indexDefinition.getLabels()).name());
-                int[] propertyKeyIds = getOrCreatePropertyKeyIds(tokenWrite, indexDefinition);
-                LabelSchemaDescriptor schema = forLabel(labelId, propertyKeyIds);
+                SchemaDescriptor schema = createSchemaDescriptor.create(tokenWrite, indexDefinition);
                 IndexPrototype prototype = IndexPrototype.uniqueForSchema(schema)
                         .withName(name)
                         .withIndexType(fromPublicApi(indexType))
                         .withIndexConfig(indexConfig);
                 ConstraintDescriptor constraint = transaction.schemaWrite().uniquePropertyConstraintCreate(prototype);
-                return new UniquenessConstraintDefinition(this, constraint, indexDefinition);
+                return createConstraintDefinition.create(this, constraint, indexDefinition);
             } catch (AlreadyConstrainedException
                     | CreateConstraintFailureException
                     | AlreadyIndexedException
@@ -742,32 +802,18 @@ public class SchemaImpl implements Schema {
                                 + labelNameList(indexDefinition.getLabels(), "", "."));
             }
             assertConstraintableIndexType("Node key", indexType);
-            try {
-                TokenWrite tokenWrite = transaction.tokenWrite();
-                int labelId = tokenWrite.labelGetOrCreateForName(
-                        single(indexDefinition.getLabels()).name());
-                int[] propertyKeyIds = getOrCreatePropertyKeyIds(tokenWrite, indexDefinition);
-                LabelSchemaDescriptor schema = forLabel(labelId, propertyKeyIds);
-                IndexPrototype prototype = IndexPrototype.uniqueForSchema(schema)
-                        .withName(name)
-                        .withIndexType(fromPublicApi(indexType))
-                        .withIndexConfig(indexConfig);
-                ConstraintDescriptor constraint = transaction.schemaWrite().keyConstraintCreate(prototype);
-                return new NodeKeyConstraintDefinition(this, constraint, indexDefinition);
-            } catch (AlreadyConstrainedException
-                    | CreateConstraintFailureException
-                    | AlreadyIndexedException
-                    | RepeatedSchemaComponentException e) {
-                throw new ConstraintViolationException(e.getUserMessage(transaction.tokenRead()), e);
-            } catch (IllegalTokenNameException e) {
-                throw new IllegalArgumentException(e);
-            } catch (TokenCapacityExceededKernelException e) {
-                throw new IllegalStateException(e);
-            } catch (InvalidTransactionTypeKernelException | SchemaKernelException e) {
-                throw new ConstraintViolationException(e.getMessage(), e);
-            } catch (KernelException e) {
-                throw new TransactionFailureException("Unknown error trying to create token ids", e);
-            }
+            return createKeyConstraint(
+                    indexDefinition,
+                    name,
+                    indexType,
+                    indexConfig,
+                    (tokenWrite, indexDef) -> {
+                        int labelId = tokenWrite.labelGetOrCreateForName(
+                                single(indexDefinition.getLabels()).name());
+                        int[] propertyKeyIds = getOrCreatePropertyKeyIds(tokenWrite, indexDefinition);
+                        return forLabel(labelId, propertyKeyIds);
+                    },
+                    NodeKeyConstraintDefinition::new);
         }
 
         @Override
@@ -781,18 +827,36 @@ public class SchemaImpl implements Schema {
                                 + relTypeNameList(indexDefinition.getRelationshipTypes(), "", "."));
             }
             assertConstraintableIndexType("Relationship key", indexType);
+            return createKeyConstraint(
+                    indexDefinition,
+                    name,
+                    indexType,
+                    indexConfig,
+                    (tokenWrite, indexDef) -> {
+                        int typeId = tokenWrite.relationshipTypeGetOrCreateForName(
+                                single(indexDef.getRelationshipTypes()).name());
+                        int[] propertyKeyIds = getOrCreatePropertyKeyIds(tokenWrite, indexDefinition);
+                        return forRelType(typeId, propertyKeyIds);
+                    },
+                    RelationshipKeyConstraintDefinition::new);
+        }
+
+        private ConstraintDefinition createKeyConstraint(
+                IndexDefinition indexDefinition,
+                String name,
+                IndexType indexType,
+                IndexConfig indexConfig,
+                SchemaDescriptorCreator schemaDescriptorCreator,
+                ConstraintDefinitionCreator constraintDefinitionCreator) {
             try {
                 TokenWrite tokenWrite = transaction.tokenWrite();
-                int typeId = tokenWrite.relationshipTypeGetOrCreateForName(
-                        single(indexDefinition.getRelationshipTypes()).name());
-                int[] propertyKeyIds = getOrCreatePropertyKeyIds(tokenWrite, indexDefinition);
-                RelationTypeSchemaDescriptor schema = forRelType(typeId, propertyKeyIds);
+                SchemaDescriptor schema = schemaDescriptorCreator.create(tokenWrite, indexDefinition);
                 IndexPrototype prototype = IndexPrototype.uniqueForSchema(schema)
                         .withName(name)
                         .withIndexType(fromPublicApi(indexType))
                         .withIndexConfig(indexConfig);
                 ConstraintDescriptor constraint = transaction.schemaWrite().keyConstraintCreate(prototype);
-                return new RelationshipKeyConstraintDefinition(this, constraint, indexDefinition);
+                return constraintDefinitionCreator.create(this, constraint, indexDefinition);
             } catch (AlreadyConstrainedException
                     | CreateConstraintFailureException
                     | AlreadyIndexedException

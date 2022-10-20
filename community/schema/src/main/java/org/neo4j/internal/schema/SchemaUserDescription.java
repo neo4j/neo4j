@@ -100,7 +100,7 @@ public final class SchemaUserDescription {
     private static String constraintType(ConstraintType type, EntityType entityType) {
         return switch (type) {
             case EXISTS -> entityType.name() + " PROPERTY EXISTENCE";
-            case UNIQUE -> "UNIQUENESS";
+            case UNIQUE -> entityType == NODE ? "UNIQUENESS" : entityType.name() + " UNIQUENESS";
             case UNIQUE_EXISTS -> entityType.name() + " KEY";
         };
     }

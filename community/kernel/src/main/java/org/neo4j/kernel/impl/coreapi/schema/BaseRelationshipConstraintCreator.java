@@ -44,7 +44,8 @@ public class BaseRelationshipConstraintCreator extends AbstractConstraintCreator
 
     @Override
     public ConstraintCreator assertPropertyIsUnique(String propertyKey) {
-        throw new UnsupportedOperationException("Uniqueness constraints are not supported on relationships.");
+        return new RelationshipPropertyUniqueConstraintCreator(
+                actions, name, type, List.of(propertyKey), indexType, indexConfig);
     }
 
     @Override

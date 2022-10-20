@@ -49,7 +49,10 @@ public interface InternalSchemaActions {
 
     void dropIndexDefinitions(IndexDefinition indexDefinition);
 
-    ConstraintDefinition createPropertyUniquenessConstraint(
+    ConstraintDefinition createNodePropertyUniquenessConstraint(
+            IndexDefinition indexDefinition, String name, IndexType indexType, IndexConfig indexConfig);
+
+    ConstraintDefinition createRelationshipPropertyUniquenessConstraint(
             IndexDefinition indexDefinition, String name, IndexType indexType, IndexConfig indexConfig);
 
     ConstraintDefinition createNodeKeyConstraint(
