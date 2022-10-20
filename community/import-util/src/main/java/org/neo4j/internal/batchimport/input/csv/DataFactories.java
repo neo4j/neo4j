@@ -236,7 +236,6 @@ public class DataFactories {
                         properties.put(entry.name(), entry);
                         break;
 
-                    case ID:
                     case START_ID:
                     case END_ID:
                     case TYPE:

@@ -224,16 +224,18 @@ public class DataFactoriesTest {
     }
 
     @Test
-    public void shouldFailForDuplicateIdHeaderEntries() {
+    public void shouldHandleDuplicateIdHeaderEntries() {
         // GIVEN
         CharSeeker seeker = seeker("one:id\ttwo:id");
         IdType idType = IdType.ACTUAL;
         Extractors extractors = new Extractors('\t');
 
-        var e = assertThrows(DuplicateHeaderException.class, () -> defaultFormatNodeFileHeader()
-                .create(seeker, TABS, idType, groups));
-        assertEquals(entry("one", Type.ID, globalGroup, extractors.long_()), e.getFirst());
-        assertEquals(entry("two", Type.ID, globalGroup, extractors.long_()), e.getOther());
+        var header = defaultFormatNodeFileHeader().create(seeker, TABS, idType, groups);
+        assertArrayEquals(
+                array(
+                        entry("one", Type.ID, globalGroup, extractors.long_()),
+                        entry("two", Type.ID, globalGroup, extractors.long_())),
+                header.entries());
     }
 
     @Test

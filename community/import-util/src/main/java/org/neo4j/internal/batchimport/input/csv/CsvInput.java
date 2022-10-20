@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.ToIntFunction;
 import org.neo4j.collection.RawIterator;
@@ -60,6 +61,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenConstants;
+import org.neo4j.util.Preconditions;
 
 /**
  * Provides {@link Input} from data contained in tabular/csv form. Expects factories for instantiating
@@ -164,6 +166,36 @@ public class CsvInput implements Input {
                             && data.decorator() == NO_DECORATOR) {
                         monitor.noNodeLabelsSpecified(dataStream.sourceDescription());
                     }
+
+                    var numIdColumns = Arrays.stream(header.entries())
+                            .filter(e -> e.type() == Type.ID)
+                            .count();
+                    if (numIdColumns > 1) {
+                        Preconditions.checkState(
+                                idType == IdType.STRING,
+                                "Having multiple :ID columns requires idType:" + IdType.STRING);
+                    }
+                    var numIdColumnsGroups = Arrays.stream(header.entries())
+                            .filter(e -> e.type() == Type.ID)
+                            .map(Header.Entry::group)
+                            .distinct()
+                            .count();
+                    Preconditions.checkState(
+                            numIdColumnsGroups <= 1,
+                            "There are multiple :ID columns, but they are referring different groups");
+                    var numNamedIdColumns = Arrays.stream(header.entries())
+                            .filter(e -> e.type() == Type.ID)
+                            .filter(e -> e.name() != null)
+                            .count();
+                    var numDistinctlyNamedIdColumns = Arrays.stream(header.entries())
+                            .filter(e -> e.type() == Type.ID)
+                            .map(Header.Entry::name)
+                            .filter(Objects::nonNull)
+                            .distinct()
+                            .count();
+                    Preconditions.checkState(
+                            numNamedIdColumns == numDistinctlyNamedIdColumns,
+                            "Cannot store composite IDs as properties, only individual parts");
                 }
             }
 

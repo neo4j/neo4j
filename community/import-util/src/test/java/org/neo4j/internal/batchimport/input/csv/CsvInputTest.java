@@ -20,10 +20,12 @@
 package org.neo4j.internal.batchimport.input.csv;
 
 import static java.lang.String.format;
+import static java.nio.charset.Charset.defaultCharset;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -69,10 +71,13 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringReader;
-import java.nio.charset.Charset;
+import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -110,6 +115,7 @@ import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.csv.Header.Monitor;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -270,9 +276,9 @@ class CsvInputTest {
         // WHEN
         try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
             // THEN
-            assertNextNode(nodes, 1L, new Object[] {"unit", "ultralisk", "kills", 10}, labels("ZERG"));
-            assertNextNode(nodes, 2L, new Object[] {"unit", "corruptor"}, labels("ZERG"));
-            assertNextNode(nodes, 3L, new Object[] {"unit", "mutalisk", "kills", 3}, labels("ZERG"));
+            assertNextNode(nodes, 1L, properties("unit", "ultralisk", "kills", 10), labels("ZERG"));
+            assertNextNode(nodes, 2L, properties("unit", "corruptor"), labels("ZERG"));
+            assertNextNode(nodes, 3L, properties("unit", "mutalisk", "kills", 3), labels("ZERG"));
             assertFalse(readNext(nodes));
         }
     }
@@ -296,8 +302,8 @@ class CsvInputTest {
         // WHEN
         try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
             // THEN
-            assertNextNode(nodes, 1L, new Object[] {"name", "zergling"}, labels());
-            assertNextNode(nodes, 2L, new Object[] {"name", "scv"}, labels());
+            assertNextNode(nodes, 1L, properties("name", "zergling"), labels());
+            assertNextNode(nodes, 2L, properties("name", "scv"), labels());
             assertFalse(readNext(nodes));
         }
     }
@@ -383,9 +389,9 @@ class CsvInputTest {
 
         // WHEN/THEN
         try (InputIterator relationships = input.relationships(EMPTY).iterator()) {
-            assertNextRelationship(relationships, 0L, 1L, defaultType, InputEntity.NO_PROPERTIES);
-            assertNextRelationship(relationships, 1L, 2L, customType, InputEntity.NO_PROPERTIES);
-            assertNextRelationship(relationships, 2L, 1L, defaultType, InputEntity.NO_PROPERTIES);
+            assertNextRelationship(relationships, 0L, 1L, defaultType, emptyMap());
+            assertNextRelationship(relationships, 1L, 2L, customType, emptyMap());
+            assertNextRelationship(relationships, 2L, 1L, defaultType, emptyMap());
             assertFalse(readNext(relationships));
         }
     }
@@ -410,8 +416,8 @@ class CsvInputTest {
         // WHEN
         try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
             // THEN
-            assertNextNode(nodes, null, null, new Object[] {"name", "Mattias", "level", 1}, labels());
-            assertNextNode(nodes, null, null, new Object[] {"name", "Johan", "level", 2}, labels());
+            assertNextNode(nodes, null, null, properties("name", "Mattias", "level", 1), labels());
+            assertNextNode(nodes, null, null, properties("name", "Johan", "level", 2), labels());
             assertFalse(readNext(nodes));
         }
     }
@@ -437,8 +443,8 @@ class CsvInputTest {
         // WHEN
         try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
             // THEN
-            assertNextNode(nodes, "abc", new Object[] {"name", "Mattias", "level", 1}, labels());
-            assertNextNode(nodes, null, null, new Object[] {"name", "Johan", "level", 2}, labels());
+            assertNextNode(nodes, "abc", properties("name", "Mattias", "level", 1), labels());
+            assertNextNode(nodes, null, null, properties("name", "Johan", "level", 2), labels());
             assertFalse(readNext(nodes));
         }
     }
@@ -464,8 +470,8 @@ class CsvInputTest {
         // WHEN
         try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
             // THEN
-            assertNextNode(nodes, "abc", new Object[] {"id", "abc", "name", "Mattias", "level", 1}, labels());
-            assertNextNode(nodes, null, null, new Object[] {"name", "Johan", "level", 2}, labels());
+            assertNextNode(nodes, "abc", properties("id", "abc", "name", "Mattias", "level", 1), labels());
+            assertNextNode(nodes, null, null, properties("name", "Johan", "level", 2), labels());
             assertFalse(readNext(nodes));
         }
     }
@@ -492,8 +498,8 @@ class CsvInputTest {
         // WHEN
         try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
             // THEN
-            assertNextNode(nodes, null, 0L, new Object[] {"name", "Mattias", "level", 1}, labels());
-            assertNextNode(nodes, null, 1L, new Object[] {"name", "Johan", "level", 2}, labels());
+            assertNextNode(nodes, null, 0L, properties("name", "Mattias", "level", 1), labels());
+            assertNextNode(nodes, null, 1L, properties("name", "Johan", "level", 2), labels());
             assertFalse(readNext(nodes));
         }
     }
@@ -520,8 +526,8 @@ class CsvInputTest {
         // WHEN
         try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
             // THEN
-            assertNextNode(nodes, 0L, new Object[] {"name", "Mattias"}, labels());
-            assertNextNode(nodes, 1L, new Object[] {"name", "Johan", "extra", "Additional"}, labels());
+            assertNextNode(nodes, 0L, properties("name", "Mattias"), labels());
+            assertNextNode(nodes, 1L, properties("name", "Johan", "extra", "Additional"), labels());
             assertFalse(readNext(nodes));
         }
     }
@@ -548,8 +554,8 @@ class CsvInputTest {
         // WHEN
         try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
             // THEN
-            assertNextNode(nodes, 0L, new Object[] {"name", "Mattias"}, labels());
-            assertNextNode(nodes, 1L, new Object[] {"name", "Johan", "extra", 10}, labels());
+            assertNextNode(nodes, 0L, properties("name", "Mattias"), labels());
+            assertNextNode(nodes, 1L, properties("name", "Johan", "extra", 10), labels());
             assertFalse(readNext(nodes));
         }
     }
@@ -578,16 +584,20 @@ class CsvInputTest {
             assertNextNode(
                     nodes,
                     0L,
-                    new Object[] {
-                        "name", "Mattias", "point", Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 2.7, 3.2)
-                    },
+                    properties(
+                            "name",
+                            "Mattias",
+                            "point",
+                            Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 2.7, 3.2)),
                     labels());
             assertNextNode(
                     nodes,
                     1L,
-                    new Object[] {
-                        "name", "Johan", "point", Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, 5, -4.2, 0.01)
-                    },
+                    properties(
+                            "name",
+                            "Johan",
+                            "point",
+                            Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, 5, -4.2, 0.01)),
                     labels());
             assertFalse(readNext(nodes));
         }
@@ -645,9 +655,11 @@ class CsvInputTest {
             assertNextNode(
                     nodes,
                     0L,
-                    new Object[] {
-                        "name", "Johan", "point", Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, 5, -4.2, 0.01)
-                    },
+                    properties(
+                            "name",
+                            "Johan",
+                            "point",
+                            Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, 5, -4.2, 0.01)),
                     labels());
             assertFalse(readNext(nodes));
         }
@@ -676,7 +688,7 @@ class CsvInputTest {
             assertNextNode(
                     nodes,
                     0L,
-                    new Object[] {"name", "Johan", "point", Values.pointValue(CoordinateReferenceSystem.WGS_84, 1, 2)},
+                    properties("name", "Johan", "point", Values.pointValue(CoordinateReferenceSystem.WGS_84, 1, 2)),
                     labels());
             assertFalse(readNext(nodes));
         }
@@ -702,8 +714,8 @@ class CsvInputTest {
         // WHEN
         try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
             // THEN
-            assertNextNode(nodes, 0L, new Object[] {"name", "Mattias", "date", DateValue.date(2018, 2, 27)}, labels());
-            assertNextNode(nodes, 1L, new Object[] {"name", "Johan", "date", DateValue.date(2018, 3, 1)}, labels());
+            assertNextNode(nodes, 0L, properties("name", "Mattias", "date", DateValue.date(2018, 2, 27)), labels());
+            assertNextNode(nodes, 1L, properties("name", "Johan", "date", DateValue.date(2018, 3, 1)), labels());
             assertFalse(readNext(nodes));
         }
     }
@@ -730,17 +742,11 @@ class CsvInputTest {
         try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
             // THEN
             assertNextNode(
-                    nodes,
-                    0L,
-                    new Object[] {"name", "Mattias", "time", TimeValue.time(13, 37, 0, 0, "+00:00")},
-                    labels());
+                    nodes, 0L, properties("name", "Mattias", "time", TimeValue.time(13, 37, 0, 0, "+00:00")), labels());
             assertNextNode(
-                    nodes,
-                    1L,
-                    new Object[] {"name", "Johan", "time", TimeValue.time(16, 20, 1, 0, "+00:00")},
-                    labels());
+                    nodes, 1L, properties("name", "Johan", "time", TimeValue.time(16, 20, 1, 0, "+00:00")), labels());
             assertNextNode(
-                    nodes, 2L, new Object[] {"name", "Bob", "time", TimeValue.time(7, 30, 0, 0, "-05:00")}, labels());
+                    nodes, 2L, properties("name", "Bob", "time", TimeValue.time(7, 30, 0, 0, "-05:00")), labels());
             assertFalse(readNext(nodes));
         }
     }
@@ -768,17 +774,11 @@ class CsvInputTest {
         try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
             // THEN
             assertNextNode(
-                    nodes,
-                    0L,
-                    new Object[] {"name", "Mattias", "time", TimeValue.time(13, 37, 0, 0, "+02:00")},
-                    labels());
+                    nodes, 0L, properties("name", "Mattias", "time", TimeValue.time(13, 37, 0, 0, "+02:00")), labels());
             assertNextNode(
-                    nodes,
-                    1L,
-                    new Object[] {"name", "Johan", "time", TimeValue.time(16, 20, 1, 0, "+02:00")},
-                    labels());
+                    nodes, 1L, properties("name", "Johan", "time", TimeValue.time(16, 20, 1, 0, "+02:00")), labels());
             assertNextNode(
-                    nodes, 2L, new Object[] {"name", "Bob", "time", TimeValue.time(7, 30, 0, 0, "-05:00")}, labels());
+                    nodes, 2L, properties("name", "Bob", "time", TimeValue.time(7, 30, 0, 0, "-05:00")), labels());
             assertFalse(readNext(nodes));
         }
     }
@@ -809,18 +809,17 @@ class CsvInputTest {
             assertNextNode(
                     nodes,
                     0L,
-                    new Object[] {"name", "Mattias", "time", DateTimeValue.datetime(2018, 2, 27, 13, 37, 0, 0, "+00:00")
-                    },
+                    properties("name", "Mattias", "time", DateTimeValue.datetime(2018, 2, 27, 13, 37, 0, 0, "+00:00")),
                     labels());
             assertNextNode(
                     nodes,
                     1L,
-                    new Object[] {"name", "Johan", "time", DateTimeValue.datetime(2018, 3, 1, 16, 20, 1, 0, "+00:00")},
+                    properties("name", "Johan", "time", DateTimeValue.datetime(2018, 3, 1, 16, 20, 1, 0, "+00:00")),
                     labels());
             assertNextNode(
                     nodes,
                     2L,
-                    new Object[] {"name", "Bob", "time", DateTimeValue.datetime(1981, 5, 11, 7, 30, 0, 0, "-05:00")},
+                    properties("name", "Bob", "time", DateTimeValue.datetime(1981, 5, 11, 7, 30, 0, 0, "-05:00")),
                     labels());
             assertFalse(readNext(nodes));
         }
@@ -852,21 +851,25 @@ class CsvInputTest {
             assertNextNode(
                     nodes,
                     0L,
-                    new Object[] {
-                        "name", "Mattias", "time", DateTimeValue.datetime(2018, 2, 27, 13, 37, 0, 0, "Europe/Stockholm")
-                    },
+                    properties(
+                            "name",
+                            "Mattias",
+                            "time",
+                            DateTimeValue.datetime(2018, 2, 27, 13, 37, 0, 0, "Europe/Stockholm")),
                     labels());
             assertNextNode(
                     nodes,
                     1L,
-                    new Object[] {
-                        "name", "Johan", "time", DateTimeValue.datetime(2018, 3, 1, 16, 20, 1, 0, "Europe/Stockholm")
-                    },
+                    properties(
+                            "name",
+                            "Johan",
+                            "time",
+                            DateTimeValue.datetime(2018, 3, 1, 16, 20, 1, 0, "Europe/Stockholm")),
                     labels());
             assertNextNode(
                     nodes,
                     2L,
-                    new Object[] {"name", "Bob", "time", DateTimeValue.datetime(1981, 5, 11, 7, 30, 0, 0, "-05:00")},
+                    properties("name", "Bob", "time", DateTimeValue.datetime(1981, 5, 11, 7, 30, 0, 0, "-05:00")),
                     labels());
             assertFalse(readNext(nodes));
         }
@@ -893,15 +896,9 @@ class CsvInputTest {
         try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
             // THEN
             assertNextNode(
-                    nodes,
-                    0L,
-                    new Object[] {"name", "Mattias", "time", LocalTimeValue.localTime(13, 37, 0, 0)},
-                    labels());
+                    nodes, 0L, properties("name", "Mattias", "time", LocalTimeValue.localTime(13, 37, 0, 0)), labels());
             assertNextNode(
-                    nodes,
-                    1L,
-                    new Object[] {"name", "Johan", "time", LocalTimeValue.localTime(16, 20, 1, 0)},
-                    labels());
+                    nodes, 1L, properties("name", "Johan", "time", LocalTimeValue.localTime(16, 20, 1, 0)), labels());
             assertFalse(readNext(nodes));
         }
     }
@@ -930,13 +927,12 @@ class CsvInputTest {
             assertNextNode(
                     nodes,
                     0L,
-                    new Object[] {"name", "Mattias", "time", LocalDateTimeValue.localDateTime(2018, 2, 27, 13, 37, 0, 0)
-                    },
+                    properties("name", "Mattias", "time", LocalDateTimeValue.localDateTime(2018, 2, 27, 13, 37, 0, 0)),
                     labels());
             assertNextNode(
                     nodes,
                     1L,
-                    new Object[] {"name", "Johan", "time", LocalDateTimeValue.localDateTime(2018, 3, 1, 16, 20, 1, 0)},
+                    properties("name", "Johan", "time", LocalDateTimeValue.localDateTime(2018, 3, 1, 16, 20, 1, 0)),
                     labels());
             assertFalse(readNext(nodes));
         }
@@ -965,12 +961,12 @@ class CsvInputTest {
             assertNextNode(
                     nodes,
                     0L,
-                    new Object[] {"name", "Mattias", "duration", DurationValue.duration(3, 0, 13 * 3600 + 37 * 60, 0)},
+                    properties("name", "Mattias", "duration", DurationValue.duration(3, 0, 13 * 3600 + 37 * 60, 0)),
                     labels());
             assertNextNode(
                     nodes,
                     1L,
-                    new Object[] {"name", "Johan", "duration", DurationValue.duration(-12, 0, 4 * 3600 + 20 * 60, 0)},
+                    properties("name", "Johan", "duration", DurationValue.duration(-12, 0, 4 * 3600 + 20 * 60, 0)),
                     labels());
             assertFalse(readNext(nodes));
         }
@@ -1167,9 +1163,9 @@ class CsvInputTest {
 
         // WHEN
         try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
-            assertNextNode(nodes, 1L, new Object[] {"other", 10}, labels("Person"));
-            assertNextNode(nodes, 2L, new Object[] {"other", 111}, labels("Person"));
-            assertNextNode(nodes, 3L, new Object[] {"other", 12}, labels("Person"));
+            assertNextNode(nodes, 1L, properties("other", 10), labels("Person"));
+            assertNextNode(nodes, 2L, properties("other", 111), labels("Person"));
+            assertNextNode(nodes, 3L, properties("other", 12), labels("Person"));
             assertFalse(readNext(nodes));
         }
     }
@@ -1196,9 +1192,9 @@ class CsvInputTest {
 
         // WHEN
         try (InputIterator relationships = input.relationships(EMPTY).iterator()) {
-            assertNextRelationship(relationships, 1L, 2L, "KNOWS", new Object[] {"other", 10});
-            assertNextRelationship(relationships, 2L, 3L, "KNOWS", new Object[] {"other", 111});
-            assertNextRelationship(relationships, 3L, 4L, "KNOWS", new Object[] {"other", 12});
+            assertNextRelationship(relationships, 1L, 2L, "KNOWS", properties("other", 10));
+            assertNextRelationship(relationships, 2L, 3L, "KNOWS", properties("other", 111));
+            assertNextRelationship(relationships, 3L, 4L, "KNOWS", properties("other", 12));
             assertFalse(readNext(relationships));
         }
     }
@@ -1248,7 +1244,7 @@ class CsvInputTest {
 
         // WHEN/THEN
         try (InputIterator nodes = input.nodes(EMPTY).iterator()) {
-            assertNextNode(nodes, 1L, InputEntity.NO_PROPERTIES, labels());
+            assertNextNode(nodes, 1L, emptyMap(), labels());
             assertNextNode(
                     nodes, 2L, properties("sprop", new String[] {"a", "b"}, "lprop", new long[] {10, 20}), labels());
             assertFalse(readNext(nodes));
@@ -1777,15 +1773,12 @@ class CsvInputTest {
     @Test
     void shouldReportDuplicateNodeHeader() throws FileNotFoundException {
         // GIVEN
-        Path file = directory.file("node-header");
-        try (PrintWriter writer = new PrintWriter(file.toFile())) {
-            writer.println(":ID,name:string,name");
-        }
+        Path file = writeFile("node-header", ":ID,name:string,name");
 
         // WHEN
         try {
             new CsvInput(
-                    datas(DataFactories.data(NO_DECORATOR, Charset.defaultCharset(), file)),
+                    datas(DataFactories.data(NO_DECORATOR, defaultCharset(), file)),
                     defaultFormatNodeFileHeader(),
                     datas(),
                     defaultFormatRelationshipFileHeader(),
@@ -1804,17 +1797,14 @@ class CsvInputTest {
     @Test
     void shouldReportDuplicateRelationshipHeader() throws FileNotFoundException {
         // GIVEN
-        Path file = directory.file("relationship-header");
-        try (PrintWriter writer = new PrintWriter(file.toFile())) {
-            writer.println(":START_ID,:TYPE,:END_ID,:TYPE,name:string");
-        }
+        Path file = writeFile("relationship-header", ":START_ID,:TYPE,:END_ID,:TYPE,name:string");
 
         // WHEN
         try {
             new CsvInput(
                     datas(),
                     defaultFormatNodeFileHeader(),
-                    datas(DataFactories.data(NO_DECORATOR, Charset.defaultCharset(), file)),
+                    datas(DataFactories.data(NO_DECORATOR, defaultCharset(), file)),
                     defaultFormatRelationshipFileHeader(),
                     STRING,
                     COMMAS,
@@ -1832,13 +1822,10 @@ class CsvInputTest {
     @Test
     void shouldThrowOnReferencedNodeSchemaWithoutExplicitLabelOptionData() throws FileNotFoundException {
         // given
-        Path file = directory.file("relationship-header");
-        try (PrintWriter writer = new PrintWriter(file.toFile())) {
-            writer.println("myId:ID(Person)\tname:string\t:LABEL");
-        }
+        Path file = writeFile("relationship-header", "myId:ID(Person)\tname:string\t:LABEL");
 
         try (var input = new CsvInput(
-                datas(DataFactories.data(NO_DECORATOR, Charset.defaultCharset(), file)),
+                datas(DataFactories.data(NO_DECORATOR, defaultCharset(), file)),
                 defaultFormatNodeFileHeader(),
                 datas(),
                 defaultFormatRelationshipFileHeader(),
@@ -1852,7 +1839,7 @@ class CsvInputTest {
                     tokenHolder(Map.of("myId", 4)), tokenHolder(Map.of("Person", 2)), tokenHolder(Map.of()));
 
             // then
-            Assertions.assertThatThrownBy(() -> input.referencedNodeSchema(tokenHolders))
+            assertThatThrownBy(() -> input.referencedNodeSchema(tokenHolders))
                     .hasMessageContaining("No label was specified");
         }
     }
@@ -1860,13 +1847,10 @@ class CsvInputTest {
     @Test
     void shouldParseReferencedNodeSchemaWithExplicitLabelOptionData() throws FileNotFoundException {
         // given
-        Path file = directory.file("relationship-header");
-        try (PrintWriter writer = new PrintWriter(file.toFile())) {
-            writer.println("myId:ID(My Group){label:Person}\tname:string\t:LABEL");
-        }
+        Path file = writeFile("relationship-header", "myId:ID(My Group){label:Person}\tname:string\t:LABEL");
 
         try (var input = new CsvInput(
-                datas(DataFactories.data(NO_DECORATOR, Charset.defaultCharset(), file)),
+                datas(DataFactories.data(NO_DECORATOR, defaultCharset(), file)),
                 defaultFormatNodeFileHeader(),
                 datas(),
                 defaultFormatRelationshipFileHeader(),
@@ -1883,6 +1867,82 @@ class CsvInputTest {
             // then
             Assertions.assertThat(schema).isEqualTo(Map.of("My Group", SchemaDescriptors.forLabel(2, 4)));
         }
+    }
+
+    @Test
+    void shouldHandleMultipleNodeIdColumns() throws IOException {
+        // given
+        var file = writeFile("nodes", "id1:ID,id2:ID,name,:LABEL", "ABC,123,First,Person", "ABC,456,Second,Person");
+
+        try (var input = new CsvInput(
+                datas(DataFactories.data(NO_DECORATOR, defaultCharset(), file)),
+                defaultFormatNodeFileHeader(),
+                datas(),
+                defaultFormatRelationshipFileHeader(),
+                STRING,
+                COMMAS,
+                false,
+                NO_MONITOR,
+                INSTANCE)) {
+            try (var nodes = input.nodes(Collector.STRICT).iterator()) {
+                assertNextNode(
+                        nodes, "ABC123", properties("id1", "ABC", "id2", "123", "name", "First"), Set.of("Person"));
+                assertNextNode(
+                        nodes, "ABC456", properties("id1", "ABC", "id2", "456", "name", "Second"), Set.of("Person"));
+                assertFalse(readNext(nodes));
+            }
+        }
+    }
+
+    @Test
+    void shouldFailOnStoringMultipleCompositeIdColumnsInSameProperty() throws IOException {
+        // given
+        var file = writeFile("nodes", "id:ID,id:ID,name,:LABEL", "ABC,123,First,Person", "ABC,456,Second,Person");
+
+        // when/then
+        assertThatThrownBy(() -> new CsvInput(
+                        datas(DataFactories.data(NO_DECORATOR, defaultCharset(), file)),
+                        defaultFormatNodeFileHeader(),
+                        datas(),
+                        defaultFormatRelationshipFileHeader(),
+                        STRING,
+                        COMMAS,
+                        false,
+                        NO_MONITOR,
+                        INSTANCE))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Cannot store composite IDs");
+    }
+
+    @Test
+    void shouldFailOnCompositeIdColumnsForDifferntGroups() throws IOException {
+        // given
+        var file = writeFile(
+                "nodes", ":ID(group1),:ID(group2),name,:LABEL", "ABC,123,First,Person", "ABC,456,Second,Person");
+
+        // when/then
+        assertThatThrownBy(() -> new CsvInput(
+                        datas(DataFactories.data(NO_DECORATOR, defaultCharset(), file)),
+                        defaultFormatNodeFileHeader(),
+                        datas(),
+                        defaultFormatRelationshipFileHeader(),
+                        STRING,
+                        COMMAS,
+                        false,
+                        NO_MONITOR,
+                        INSTANCE))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("referring different groups");
+    }
+
+    private Path writeFile(String name, String... lines) throws FileNotFoundException {
+        Path file = directory.file(name);
+        try (PrintWriter writer = new PrintWriter(file.toFile())) {
+            for (String line : lines) {
+                writer.println(line);
+            }
+        }
+        return file;
     }
 
     private TokenHolder tokenHolder(Map<String, Integer> tokens) {
@@ -1912,8 +1972,7 @@ class CsvInputTest {
     private static Input.Estimates calculateEstimatesOnSingleFileNodeData(IdType idType, Path nodeDataFile)
             throws IOException {
         Input input = new CsvInput(
-                dataIterable(
-                        config -> undecorated(() -> Readables.individualFiles(Charset.defaultCharset(), nodeDataFile))),
+                dataIterable(config -> undecorated(() -> Readables.individualFiles(defaultCharset(), nodeDataFile))),
                 defaultFormatNodeFileHeader(),
                 emptyList(),
                 defaultFormatRelationshipFileHeader(),
@@ -1984,7 +2043,7 @@ class CsvInputTest {
     }
 
     private void assertNextRelationship(
-            InputIterator relationship, Object startNode, Object endNode, String type, Object[] properties)
+            InputIterator relationship, Object startNode, Object endNode, String type, Map<String, Object> properties)
             throws IOException {
         assertRelationship(relationship, globalGroup, startNode, globalGroup, endNode, type, properties);
     }
@@ -1996,7 +2055,7 @@ class CsvInputTest {
             Group endNodeGroup,
             Object endNode,
             String type,
-            Object[] properties)
+            Map<String, Object> properties)
             throws IOException {
         assertTrue(readNext(data));
         assertEquals(startNodeGroup, visitor.startIdGroup);
@@ -2004,21 +2063,45 @@ class CsvInputTest {
         assertEquals(endNodeGroup, visitor.endIdGroup);
         assertEquals(endNode, visitor.endId());
         assertEquals(type, visitor.stringType);
-        assertArrayEquals(properties, visitor.properties());
+        assertPropertiesEquals(properties, visitor.propertiesAsMap());
     }
 
-    private void assertNextNode(InputIterator data, Object id, Object[] properties, Set<String> labels)
+    private void assertNextNode(InputIterator data, Object id, Map<String, Object> properties, Set<String> labels)
             throws IOException {
         assertNextNode(data, globalGroup, id, properties, labels);
     }
 
-    private void assertNextNode(InputIterator data, Group group, Object id, Object[] properties, Set<String> labels)
+    private void assertNextNode(
+            InputIterator data, Group group, Object id, Map<String, Object> properties, Set<String> labels)
             throws IOException {
         assertTrue(readNext(data));
         assertEquals(group, visitor.idGroup);
         assertEquals(id, visitor.id());
-        assertArrayEquals(properties, visitor.properties());
         assertEquals(labels, asSet(visitor.labels()));
+        assertPropertiesEquals(properties, visitor.propertiesAsMap());
+    }
+
+    private void assertPropertiesEquals(Map<String, Object> expected, Map<String, Object> actual) {
+        // Do this more complicated assert to handle primitive array equality
+        assertEquals(primitiveArraysAsLists(expected), primitiveArraysAsLists(actual));
+    }
+
+    private Map<String, Object> primitiveArraysAsLists(Map<String, Object> map) {
+        Map<String, Object> result = new HashMap<>();
+        for (var entry : map.entrySet()) {
+            var value = entry.getValue();
+            var cls = value.getClass();
+            if (cls.isArray()) {
+                List<Object> listValue = new ArrayList<>();
+                var length = Array.getLength(value);
+                for (var i = 0; i < length; i++) {
+                    listValue.add(Array.get(value, i));
+                }
+                value = listValue;
+            }
+            result.put(entry.getKey(), value);
+        }
+        return result;
     }
 
     private boolean readNext(InputIterator data) throws IOException {
@@ -2043,8 +2126,8 @@ class CsvInputTest {
         return chunk.next(visitor);
     }
 
-    private static Object[] properties(Object... keysAndValues) {
-        return keysAndValues;
+    private static Map<String, Object> properties(Object... keysAndValues) {
+        return MapUtil.map(keysAndValues);
     }
 
     private static Set<String> labels(String... labels) {

@@ -45,6 +45,7 @@ public class CsvInputParser implements Closeable {
     private final int delimiter;
     private final Collector badCollector;
     private final Extractor<String> stringExtractor;
+    private final IdValueBuilder idValueBuilder = new IdValueBuilder();
 
     private long lineNumber;
 
@@ -70,6 +71,7 @@ public class CsvInputParser implements Closeable {
         Header.Entry[] entries = header.entries();
         try {
             boolean doContinue = true;
+            idValueBuilder.clear();
             for (i = 0; i < entries.length && doContinue; i++) {
                 entry = entries[i];
                 if (!seeker.seek(mark, delimiter)) {
@@ -93,11 +95,8 @@ public class CsvInputParser implements Closeable {
                 doContinue = switch (entry.type()) {
                     case ID -> switch (idType) {
                         case STRING, INTEGER -> {
-                            var result = visitor.id(value, entry.group());
-                            if (entry.name() != null) {
-                                result = visitor.property(entry.name(), value);
-                            }
-                            yield result;
+                            idValueBuilder.part(value, entry);
+                            yield true;
                         }
                         case ACTUAL -> visitor.id((Long) value);
                     };
@@ -119,6 +118,14 @@ public class CsvInputParser implements Closeable {
                 if (mark.isEndOfLine()) {
                     // We're at the end of the line, break and return an entity with what we have.
                     break;
+                }
+            }
+
+            // Feed the aggregated :ID columns data after all columns have been processed
+            doContinue = visitor.id(idValueBuilder.value(), idValueBuilder.group());
+            if (doContinue) {
+                for (var idPropertyValue : idValueBuilder.idPropertyValues()) {
+                    doContinue = visitor.property(idPropertyValue.name(), idPropertyValue.value());
                 }
             }
 
