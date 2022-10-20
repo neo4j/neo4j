@@ -142,7 +142,9 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor) extends CacheF
     }
   }
 
-  // Call this to get better cache statistics
+  /**
+   * Call this to get better cache statistics
+   */
   def cleanUpCache(kind: String): Unit = {
     caches.get(kind).foreach(_.cleanUp())
   }
