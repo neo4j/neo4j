@@ -261,8 +261,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 memoryTracker,
                 readOnlyChecker,
                 logTailMetadata,
-                new CommandLockVerification.Factory.RealFactory(config),
-                LockVerificationMonitor.Factory.defaultFactory(config),
+                LockVerificationFactory.select(config),
                 contextFactory,
                 pageCacheTracer);
     }

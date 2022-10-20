@@ -56,8 +56,7 @@ import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.internal.recordstorage.CommandLockVerification;
-import org.neo4j.internal.recordstorage.LockVerificationMonitor;
+import org.neo4j.internal.recordstorage.LockVerificationFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexConfigCompleter;
@@ -540,8 +539,7 @@ class BatchingNeoStoresTest {
                     INSTANCE,
                     writable(),
                     EMPTY_LOG_TAIL,
-                    CommandLockVerification.Factory.IGNORE,
-                    LockVerificationMonitor.Factory.IGNORE,
+                    LockVerificationFactory.NONE,
                     CONTEXT_FACTORY,
                     PageCacheTracer.NULL));
             // Create the relationship type token

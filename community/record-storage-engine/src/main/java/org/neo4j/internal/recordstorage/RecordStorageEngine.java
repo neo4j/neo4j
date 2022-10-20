@@ -149,8 +149,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     private final IdGeneratorFactory idGeneratorFactory;
     private final CursorContextFactory contextFactory;
     private final MemoryTracker otherMemoryTracker;
-    private final CommandLockVerification.Factory commandLockVerificationFactory;
-    private final LockVerificationMonitor.Factory lockVerificationFactory;
+    private final LockVerificationFactory lockVerificationFactory;
     private final GBPTreeCountsStore countsStore;
     private final RelationshipGroupDegreesStore groupDegreesStore;
     private final int denseNodeThreshold;
@@ -183,8 +182,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             MemoryTracker otherMemoryTracker,
             DatabaseReadOnlyChecker readOnlyChecker,
             LogTailMetadata logTailMetadata,
-            CommandLockVerification.Factory commandLockVerificationFactory,
-            LockVerificationMonitor.Factory lockVerificationFactory,
+            LockVerificationFactory lockVerificationFactory,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer) {
         this.databaseLayout = databaseLayout;
@@ -198,7 +196,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         this.idGeneratorFactory = idGeneratorFactory;
         this.contextFactory = contextFactory;
         this.otherMemoryTracker = otherMemoryTracker;
-        this.commandLockVerificationFactory = commandLockVerificationFactory;
         this.lockVerificationFactory = lockVerificationFactory;
 
         StoreFactory factory = new StoreFactory(
@@ -447,7 +444,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                 lockTracer,
                 serialization,
                 memoryTracker,
-                lockVerificationFactory.create(locks, txState, neoStores, schemaRuleAccess, storeCursors));
+                lockVerificationFactory.createLockVerification(
+                        locks, txState, neoStores, schemaRuleAccess, storeCursors));
 
         // Visit transaction state and populate these record state objects
         TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor(
@@ -464,8 +462,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         countsRecordState.extractCommands(commands, memoryTracker);
 
         // Verify sufficient locks
-        CommandLockVerification commandLockVerification =
-                commandLockVerificationFactory.create(locks, txState, neoStores, schemaRuleAccess, storeCursors);
+        CommandLockVerification commandLockVerification = lockVerificationFactory.createCommandVerification(
+                locks, txState, neoStores, schemaRuleAccess, storeCursors);
         commandLockVerification.verifySufficientlyLocked(commands);
 
         unallocateIds(txState.addedAndRemovedNodes().getRemovedFromAdded(), RecordIdType.NODE, cursorContext);

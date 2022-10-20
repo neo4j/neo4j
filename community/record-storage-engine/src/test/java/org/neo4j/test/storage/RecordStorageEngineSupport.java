@@ -31,8 +31,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.recordstorage.CommandLockVerification;
-import org.neo4j.internal.recordstorage.LockVerificationMonitor;
+import org.neo4j.internal.recordstorage.LockVerificationFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.TransactionApplierFactoryChain;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -259,8 +258,7 @@ public class RecordStorageEngineSupport {
                     EmptyMemoryTracker.INSTANCE,
                     DatabaseReadOnlyChecker.writable(),
                     EMPTY_LOG_TAIL,
-                    CommandLockVerification.Factory.IGNORE,
-                    LockVerificationMonitor.Factory.IGNORE,
+                    LockVerificationFactory.NONE,
                     new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
                     PageCacheTracer.NULL);
             this.transactionApplierTransformer = transactionApplierTransformer;

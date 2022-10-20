@@ -35,8 +35,6 @@ import static org.neo4j.util.Preconditions.checkState;
 
 import java.util.Objects;
 import java.util.function.LongFunction;
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.recordstorage.RecordAccess.LoadMonitor;
@@ -240,25 +238,6 @@ public class LockVerificationMonitor implements LoadMonitor {
                     before,
                     stored);
         }
-    }
-
-    public interface Factory {
-        RecordAccess.LoadMonitor create(
-                ResourceLocker locks,
-                ReadableTransactionState txState,
-                NeoStores neoStores,
-                SchemaRuleAccess schemaRuleAccess,
-                StoreCursors storeCursors);
-
-        static Factory defaultFactory(Config config) {
-            boolean enabled = config.get(GraphDatabaseInternalSettings.additional_lock_verification);
-            return enabled
-                    ? (locks, txState, neoStores, schemaRuleAccess, storeCursors) -> new LockVerificationMonitor(
-                            locks, txState, new NeoStoresLoader(neoStores, schemaRuleAccess, storeCursors))
-                    : IGNORE;
-        }
-
-        Factory IGNORE = (locks, txState, neoStores, schemaRuleAccess, storeCursors) -> LoadMonitor.NULL_MONITOR;
     }
 
     public interface StoreLoader {

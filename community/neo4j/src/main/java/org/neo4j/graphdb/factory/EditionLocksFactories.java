@@ -19,11 +19,14 @@
  */
 package org.neo4j.graphdb.factory;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
+
 import org.eclipse.jetty.util.StringUtil;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.LocksFactory;
+import org.neo4j.kernel.impl.locking.NoLocksFactory;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiLocksFactory;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
@@ -41,14 +44,18 @@ public final class EditionLocksFactories {
 
     public static LocksFactory createLockFactory(Config config, LogService logService) {
         InternalLog lockFactoriesLog = logService.getInternalLog(EditionLocksFactories.class);
-        LocksFactory locksFactory =
-                getLocksFactory(config.get(GraphDatabaseInternalSettings.lock_manager), lockFactoriesLog);
+        LocksFactory locksFactory = getLocksFactory(config, lockFactoriesLog);
         lockFactoriesLog.info("Locking implementation '" + locksFactory.getName() + "' selected.");
         return locksFactory;
     }
 
-    private static LocksFactory getLocksFactory(String key, InternalLog lockFactoriesLog) {
+    private static LocksFactory getLocksFactory(Config config, InternalLog lockFactoriesLog) {
+        if ("multiversion".equals(config.get(db_format))) {
+            return NoLocksFactory.INSTANCE;
+        }
+
         // we can have community lock manager configured in the wild. Ignore that and log warning message.
+        String key = config.get(GraphDatabaseInternalSettings.lock_manager);
         var factoryKey = checkForOldCommunityValue(lockFactoriesLog, key);
         if (StringUtil.isEmpty(factoryKey)) {
             return Services.loadByPriority(LocksFactory.class)

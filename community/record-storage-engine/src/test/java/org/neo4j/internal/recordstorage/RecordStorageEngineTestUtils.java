@@ -88,8 +88,7 @@ public class RecordStorageEngineTestUtils {
                 EmptyMemoryTracker.INSTANCE,
                 writable(),
                 EMPTY_LOG_TAIL,
-                CommandLockVerification.Factory.IGNORE,
-                LockVerificationMonitor.Factory.IGNORE,
+                LockVerificationFactory.NONE,
                 new CursorContextFactory(cacheTracer, EMPTY),
                 cacheTracer);
     }

@@ -71,8 +71,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.indexed.IndexedIdGenerator;
-import org.neo4j.internal.recordstorage.CommandLockVerification;
-import org.neo4j.internal.recordstorage.LockVerificationMonitor;
+import org.neo4j.internal.recordstorage.LockVerificationFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -504,8 +503,7 @@ class NeoStoresTest {
                 INSTANCE,
                 writable(),
                 EMPTY_LOG_TAIL,
-                CommandLockVerification.Factory.IGNORE,
-                LockVerificationMonitor.Factory.IGNORE,
+                LockVerificationFactory.NONE,
                 CONTEXT_FACTORY,
                 PageCacheTracer.NULL);
         life = new LifeSupport();

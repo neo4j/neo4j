@@ -28,8 +28,6 @@ import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
 import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP;
 
 import java.util.Collection;
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.recordstorage.LockVerificationMonitor.NeoStoresLoader;
 import org.neo4j.internal.recordstorage.LockVerificationMonitor.StoreLoader;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -144,40 +142,6 @@ public interface CommandLockVerification {
 
         private void assertLocked(long id, ResourceType resource, LockType type, AbstractBaseRecord record) {
             LockVerificationMonitor.assertLocked(locks, id, resource, type, record);
-        }
-    }
-
-    interface Factory {
-
-        Factory IGNORE =
-                (locker, txState, storageReader, schemaRuleAccess, storeCursors) -> CommandLockVerification.IGNORE;
-
-        CommandLockVerification create(
-                ResourceLocker locker,
-                ReadableTransactionState txState,
-                NeoStores neoStores,
-                SchemaRuleAccess schemaRuleAccess,
-                StoreCursors storeCursors);
-
-        class RealFactory implements Factory {
-            private final Config config;
-
-            RealFactory(Config config) {
-                this.config = config;
-            }
-
-            @Override
-            public CommandLockVerification create(
-                    ResourceLocker locker,
-                    ReadableTransactionState txState,
-                    NeoStores neoStores,
-                    SchemaRuleAccess schemaRuleAccess,
-                    StoreCursors storeCursors) {
-                boolean enabled = config.get(GraphDatabaseInternalSettings.additional_lock_verification);
-                return enabled
-                        ? new RealChecker(locker, txState, neoStores, schemaRuleAccess, storeCursors)
-                        : CommandLockVerification.IGNORE;
-            }
         }
     }
 }
