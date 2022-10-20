@@ -22,10 +22,53 @@ package org.neo4j.internal.kernel.api.procs;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.values.AnyValue;
 
+/**
+ * We will only create a single reduce but when called from parallel runtime it can in turn span many updaters.
+ *
+ * <p>Example usage: A simple sum-aggregator:
+ *
+ * <pre>{@code
+ *   class SumReducer implements UserAggregationReducer {
+ *         private final AtomicLong globalSum = new AtomicLong(0L);
+ *
+ *         @Override
+ *         public UserAggregationUpdater newUpdater() throws ProcedureException {
+ *             return new SumUpdater();
+ *         }
+ *
+ *         @Override
+ *         public AnyValue result() throws ProcedureException {
+ *             return Values.longValue(globalSum.get());
+ *         }
+ *
+ *         class SumUpdater implements UserAggregationUpdater {
+ *             private long localSum;
+ *
+ *             @Override
+ *             public void update(AnyValue[] input) throws ProcedureException {
+ *                 if (input[0] instanceof NumberValue value) {
+ *                     localSum += value.longValue();
+ *                 }
+ *             }
+ *
+ *             @Override
+ *             public void applyUpdates() throws ProcedureException {
+ *                 globalSum.addAndGet(localSum);
+ *             }
+ *         }
+ *     }*
+ * }</pre>
+ */
 public interface UserAggregationReducer {
 
-    // Will create many updaters
+    /**
+     * Creates an updater responsible for updating and report back the result of the aggregation
+     * @return an upater
+     */
     UserAggregationUpdater newUpdater() throws ProcedureException;
 
+    /**
+     * @return the result of the aggregation
+     */
     AnyValue result() throws ProcedureException;
 }

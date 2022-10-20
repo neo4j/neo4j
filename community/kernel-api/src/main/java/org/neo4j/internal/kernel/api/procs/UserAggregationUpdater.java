@@ -22,12 +22,55 @@ package org.neo4j.internal.kernel.api.procs;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.values.AnyValue;
 
-// Will be called from a single thread
+/**
+ * Will only be called from a single thread at-a-time. There is not a need for the updater to use locks or volatile state.
+ *
+ * <p>Example usage: A simple sum-aggregator:
+ *
+ * <pre>{@code
+ *   class SumReducer implements UserAggregationReducer {
+ *         private final AtomicLong globalSum = new AtomicLong(0L);
+ *
+ *         @Override
+ *         public UserAggregationUpdater newUpdater() throws ProcedureException {
+ *             return new SumUpdater();
+ *         }
+ *
+ *         @Override
+ *         public AnyValue result() throws ProcedureException {
+ *             return Values.longValue(globalSum.get());
+ *         }
+ *
+ *         class SumUpdater implements UserAggregationUpdater {
+ *             private long localSum;
+ *
+ *             @Override
+ *             public void update(AnyValue[] input) throws ProcedureException {
+ *                 if (input[0] instanceof NumberValue value) {
+ *                     localSum += value.longValue();
+ *                 }
+ *             }
+ *
+ *             @Override
+ *             public void applyUpdates() throws ProcedureException {
+ *                 globalSum.addAndGet(localSum);
+ *             }
+ *         }
+ *     }*
+ * }</pre>
+ */
 public interface UserAggregationUpdater {
-    // called many times
+
+    /**
+     * Will be called multiple times but only from a single thread at-a-time
+     * @param input the input to the aggregation function
+     */
     void update(AnyValue[] input) throws ProcedureException;
 
-    // can be called more than once, however
-    // a call to applyUpdates will always be the last thing
+    /**
+     * Can be called multiple times, but there is a guarantee that the last interaction with the updater will always be to call applyUpdates.
+     *
+     * If the updater maintains state
+     */
     void applyUpdates() throws ProcedureException;
 }
