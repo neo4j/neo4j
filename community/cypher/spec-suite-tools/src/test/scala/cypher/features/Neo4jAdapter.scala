@@ -21,9 +21,11 @@ package cypher.features
 
 import cypher.features.Neo4jExceptionToExecutionFailed.convert
 import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings.cypher_hints_error
 import org.neo4j.configuration.connectors.BoltConnector
 import org.neo4j.configuration.helpers.SocketAddress
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.testing.api.StatementResult
 import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
 import org.neo4j.cypher.testing.impl.driver.DriverCypherExecutorFactory
@@ -38,6 +40,7 @@ import org.opencypher.tools.tck.values.CypherValue
 import java.lang.Boolean.TRUE
 
 import scala.jdk.CollectionConverters.MapHasAsJava
+import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -50,6 +53,11 @@ object Neo4jAdapter {
   val defaultTestConfigValues: collection.Map[Setting[_], Object] = Map[Setting[_], Object](cypher_hints_error -> TRUE)
 
   def featureDependentSettings(featureName: String): collection.Map[Setting[_], Object] = featureName match {
+    case "QuantifiedPathPatternAcceptance" => Map[Setting[_], Object](
+        GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features -> Set(
+          SemanticFeature.QuantifiedPathPatterns.productPrefix
+        ).asJava
+      )
     case _ => Map.empty
   }
 
