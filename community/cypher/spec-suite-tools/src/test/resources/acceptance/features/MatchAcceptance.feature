@@ -407,7 +407,7 @@ Feature: MatchAcceptance
       | false                                                                    |
       | [ 1, 2, 3 ]                                                              |
       | [ 1.0, 2.0, 3.0 ]                                                        |
-      | duration("P1D")                                                           |
+      | duration("P1D")                                                          |
       | [ localdatetime('2015185T19:32:24'), localdatetime('2016185T19:32:24') ] |
       | [ 1.0, 2]                                                                |
 
