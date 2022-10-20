@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.EmptyDependencyResolver;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -35,6 +37,7 @@ public class DatabaseIndexContext {
     final String monitorTag;
     final DatabaseReadOnlyChecker readOnlyChecker;
     final String databaseName;
+    final DependencyResolver dependencyResolver;
 
     private DatabaseIndexContext(
             PageCache pageCache,
@@ -44,7 +47,8 @@ public class DatabaseIndexContext {
             DatabaseReadOnlyChecker readOnlyChecker,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
-            String databaseName) {
+            String databaseName,
+            DependencyResolver dependencyResolver) {
         this.pageCache = pageCache;
         this.fileSystem = fileSystem;
         this.monitors = monitors;
@@ -53,6 +57,7 @@ public class DatabaseIndexContext {
         this.contextFactory = contextFactory;
         this.pageCacheTracer = pageCacheTracer;
         this.databaseName = databaseName;
+        this.dependencyResolver = dependencyResolver;
     }
 
     /**
@@ -93,6 +98,7 @@ public class DatabaseIndexContext {
         private Monitors monitors;
         private String monitorTag;
         private DatabaseReadOnlyChecker readOnlyChecker;
+        private DependencyResolver dependencyResolver;
 
         private Builder(
                 PageCache pageCache,
@@ -108,6 +114,7 @@ public class DatabaseIndexContext {
             this.monitors = new Monitors();
             this.monitorTag = "";
             this.readOnlyChecker = DatabaseReadOnlyChecker.writable();
+            this.dependencyResolver = EmptyDependencyResolver.EMPTY_RESOLVER;
         }
 
         /**
@@ -143,6 +150,16 @@ public class DatabaseIndexContext {
             return this;
         }
 
+        /**
+         * Default is empty resolver.
+         * @param dependencyResolver database {@link DependencyResolver} that can be used by index to look up components.
+         * @return {@link Builder this builder}
+         */
+        public Builder withDependencyResolver(DependencyResolver dependencyResolver) {
+            this.dependencyResolver = dependencyResolver;
+            return this;
+        }
+
         public DatabaseIndexContext build() {
             return new DatabaseIndexContext(
                     pageCache,
@@ -152,7 +169,8 @@ public class DatabaseIndexContext {
                     readOnlyChecker,
                     contextFactory,
                     pageCacheTracer,
-                    databaseName);
+                    databaseName,
+                    dependencyResolver);
         }
     }
 }

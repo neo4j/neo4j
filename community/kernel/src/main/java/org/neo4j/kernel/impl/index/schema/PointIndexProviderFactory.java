@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
 import java.nio.file.Path;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -63,7 +64,8 @@ public class PointIndexProviderFactory extends AbstractIndexProviderFactory<Poin
             TokenHolders tokenHolders,
             JobScheduler scheduler,
             CursorContextFactory contextFactory,
-            PageCacheTracer pageCacheTracer) {
+            PageCacheTracer pageCacheTracer,
+            DependencyResolver dependencyResolver) {
         return create(
                 pageCache,
                 databaseLayout.databaseDirectory(),
@@ -75,7 +77,8 @@ public class PointIndexProviderFactory extends AbstractIndexProviderFactory<Poin
                 recoveryCleanupWorkCollector,
                 contextFactory,
                 pageCacheTracer,
-                databaseLayout.getDatabaseName());
+                databaseLayout.getDatabaseName(),
+                dependencyResolver);
     }
 
     @VisibleForTesting
@@ -90,13 +93,15 @@ public class PointIndexProviderFactory extends AbstractIndexProviderFactory<Poin
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
-            String databaseName) {
+            String databaseName,
+            DependencyResolver dependencyResolver) {
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider(storeDir);
         DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder(
                         pageCache, fs, contextFactory, pageCacheTracer, databaseName)
                 .withMonitors(monitors)
                 .withTag(monitorTag)
                 .withReadOnlyChecker(readOnlyChecker)
+                .withDependencyResolver(dependencyResolver)
                 .build();
         return new PointIndexProvider(databaseIndexContext, directoryStructure, recoveryCleanupWorkCollector, config);
     }

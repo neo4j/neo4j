@@ -42,6 +42,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
+import org.neo4j.common.EmptyDependencyResolver;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
@@ -157,7 +158,8 @@ class FulltextIndexEntryUpdateTest {
                         tokenHolders,
                         jobScheduler,
                         contextFactory,
-                        cacheTracer);
+                        cacheTracer,
+                        EmptyDependencyResolver.EMPTY_RESOLVER);
         life.add(provider);
         life.start();
 

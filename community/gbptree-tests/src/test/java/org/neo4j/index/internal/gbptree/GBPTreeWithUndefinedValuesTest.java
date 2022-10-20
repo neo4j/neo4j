@@ -32,6 +32,7 @@ import org.assertj.core.api.Condition;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -216,7 +217,7 @@ public class GBPTreeWithUndefinedValuesTest {
                         int pageSize,
                         Layout<KEY, VALUE> layout,
                         OffloadStore<KEY, VALUE> offloadStore,
-                        IdProvider idProvider) {
+                        DependencyResolver dependencyResolver) {
                     return new TreeNodeFixedSize<>(pageSize, layout) {
                         @Override
                         void keyValueAt(

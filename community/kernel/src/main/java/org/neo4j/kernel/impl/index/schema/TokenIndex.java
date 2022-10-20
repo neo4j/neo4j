@@ -27,6 +27,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
@@ -109,6 +110,7 @@ public class TokenIndex implements ConsistencyCheckable {
     private final String databaseName;
     private final CursorContextFactory contextFactory;
     private final ImmutableSet<OpenOption> openOptions;
+    private final DependencyResolver dependencyResolver;
     /**
      * The actual index which backs this token index.
      */
@@ -152,6 +154,7 @@ public class TokenIndex implements ConsistencyCheckable {
         this.databaseName = databaseIndexContext.databaseName;
         this.contextFactory = databaseIndexContext.contextFactory;
         this.pageCacheTracer = databaseIndexContext.pageCacheTracer;
+        this.dependencyResolver = databaseIndexContext.dependencyResolver;
         this.indexFiles = indexFiles;
         this.tokenStoreName = descriptor.getName();
         this.monitoringDescriptor = descriptor;
@@ -174,7 +177,8 @@ public class TokenIndex implements ConsistencyCheckable {
                 databaseName,
                 tokenStoreName,
                 contextFactory,
-                pageCacheTracer);
+                pageCacheTracer,
+                dependencyResolver);
     }
 
     void instantiateUpdater() {

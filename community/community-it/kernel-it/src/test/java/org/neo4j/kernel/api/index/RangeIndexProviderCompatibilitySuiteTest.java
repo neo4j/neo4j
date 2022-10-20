@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.mockito.Mockito;
 import org.neo4j.annotations.documented.ReporterFactories;
+import org.neo4j.common.EmptyDependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
@@ -66,7 +67,8 @@ class RangeIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderComp
                 recoveryCleanupWorkCollector,
                 NULL_CONTEXT_FACTORY,
                 NULL,
-                DEFAULT_DATABASE_NAME);
+                DEFAULT_DATABASE_NAME,
+                EmptyDependencyResolver.EMPTY_RESOLVER);
     }
 
     @Override

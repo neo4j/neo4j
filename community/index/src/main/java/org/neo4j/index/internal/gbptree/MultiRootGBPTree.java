@@ -55,6 +55,8 @@ import java.util.function.LongSupplier;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.EmptyDependencyResolver;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.ConsistencyCheckState;
 import org.neo4j.index.internal.gbptree.Header.Reader;
@@ -534,19 +536,19 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
      * </ul>
      * </ul>
      *
-     * @param pageCache {@link PageCache} to use to map index file
-     * @param fileSystem {@link FileSystemAbstraction} to use when doing file operations on index file.
-     * @param indexFile {@link Path} containing the actual index
-     * @param layout {@link Layout} to use in the tree, this must match the existing layout
-     * we're just opening the index
-     * @param monitor {@link Monitor} for monitoring {@link GBPTree}.
-     * @param headerReader reads header data, previously written using {@link #checkpoint( Consumer, FileFlushEvent, CursorContext)}
-     * or {@link #close()}
+     * @param pageCache                    {@link PageCache} to use to map index file
+     * @param fileSystem
+     * @param indexFile                    {@link Path} containing the actual index
+     * @param layout                       {@link Layout} to use in the tree, this must match the existing layout
+     *                                     we're just opening the index
+     * @param monitor                      {@link Monitor} for monitoring {@link GBPTree}.
+     * @param headerReader                 reads header data, previously written using {@link #checkpoint(Consumer, FileFlushEvent, CursorContext)}
+     *                                     or {@link #close()}
      * @param recoveryCleanupWorkCollector collects recovery cleanup jobs for execution after recovery.
-     * @param readOnlyChecker database readonly mode checker.
-     * @param databaseName name of the database this tree belongs to.
-     * @param name name of the tree that will be used when describing work related to this tree.
-     * @throws UncheckedIOException on page cache error
+     * @param readOnlyChecker              database readonly mode checker.
+     * @param databaseName                 name of the database this tree belongs to.
+     * @param name                         name of the tree that will be used when describing work related to this tree.
+     * @throws UncheckedIOException      on page cache error
      * @throws MetadataMismatchException if meta information does not match constructor parameters or meta page is missing
      */
     public MultiRootGBPTree(
@@ -564,6 +566,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             CursorContextFactory contextFactory,
             RootLayerConfiguration<ROOT_KEY> rootLayerConfiguration,
             PageCacheTracer pageCacheTracer,
+            DependencyResolver dependencyResolver,
             TreeNodeLayoutFactory treeNodeLayoutFactory)
             throws MetadataMismatchException {
         this.indexFile = indexFile;
@@ -606,7 +609,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
                     name,
                     treeNodeSelector);
             this.rootLayer = rootLayerConfiguration.buildRootLayer(
-                    rootLayerSupport, layout, created, contextFactory, treeNodeSelector);
+                    rootLayerSupport, layout, contextFactory, treeNodeSelector, dependencyResolver);
 
             // Create or load state
             if (created) {
@@ -662,6 +665,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
                 contextFactory,
                 rootLayerConfiguration,
                 pageCacheTracer,
+                EmptyDependencyResolver.EMPTY_RESOLVER,
                 TreeNodeLayoutFactory.getInstance());
     }
 

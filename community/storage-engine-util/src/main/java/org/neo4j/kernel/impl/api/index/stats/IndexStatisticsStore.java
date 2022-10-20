@@ -43,6 +43,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -136,7 +137,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
                     GBPTree.NO_HEADER_READER,
                     recoveryCleanupWorkCollector,
                     readOnlyChecker,
-                    openOptions,
+                    openOptions.newWithout(PageCacheOpenOptions.MULTI_VERSIONED),
                     databaseName,
                     "Statistics store",
                     contextFactory,

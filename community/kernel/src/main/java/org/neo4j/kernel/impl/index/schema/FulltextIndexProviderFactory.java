@@ -23,6 +23,7 @@ import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.directory
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
 import java.nio.file.Path;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -68,7 +69,8 @@ public class FulltextIndexProviderFactory extends AbstractIndexProviderFactory<F
             TokenHolders tokenHolders,
             JobScheduler scheduler,
             CursorContextFactory contextFactory,
-            PageCacheTracer pageCacheTracer) {
+            PageCacheTracer pageCacheTracer,
+            DependencyResolver dependencyResolver) {
         DirectoryFactory directoryFactory = directoryFactory(fs);
         IndexDirectoryStructure.Factory directoryStructureFactory =
                 subProviderDirectoryStructure(databaseLayout.databaseDirectory());

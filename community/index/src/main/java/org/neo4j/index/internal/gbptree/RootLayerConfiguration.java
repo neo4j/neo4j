@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.index.internal.gbptree.RootMappingLayout.RootMappingValue;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 
@@ -38,9 +39,9 @@ public abstract sealed class RootLayerConfiguration<ROOT_KEY>
     abstract <VALUE, KEY> RootLayer<ROOT_KEY, KEY, VALUE> buildRootLayer(
             RootLayerSupport rootLayerSupport,
             Layout<KEY, VALUE> dataLayout,
-            boolean created,
             CursorContextFactory contextFactory,
-            TreeNodeSelector treeNodeSelector)
+            TreeNodeSelector treeNodeSelector,
+            DependencyResolver dependencyResolver)
             throws IOException;
 
     abstract Layout<ROOT_KEY, RootMappingValue> rootLayout();
@@ -51,10 +52,10 @@ public abstract sealed class RootLayerConfiguration<ROOT_KEY>
         <VALUE, KEY> RootLayer<SingleRoot, KEY, VALUE> buildRootLayer(
                 RootLayerSupport rootLayerSupport,
                 Layout<KEY, VALUE> dataLayout,
-                boolean created,
                 CursorContextFactory contextFactory,
-                TreeNodeSelector treeNodeSelector) {
-            return new SingleRootLayer<>(rootLayerSupport, dataLayout, treeNodeSelector);
+                TreeNodeSelector treeNodeSelector,
+                DependencyResolver dependencyResolver) {
+            return new SingleRootLayer<>(rootLayerSupport, dataLayout, treeNodeSelector, dependencyResolver);
         }
 
         @Override
@@ -76,16 +77,17 @@ public abstract sealed class RootLayerConfiguration<ROOT_KEY>
         <VALUE, KEY> RootLayer<ROOT_KEY, KEY, VALUE> buildRootLayer(
                 RootLayerSupport rootLayerSupport,
                 Layout<KEY, VALUE> dataLayout,
-                boolean created,
                 CursorContextFactory contextFactory,
-                TreeNodeSelector treeNodeSelector) {
+                TreeNodeSelector treeNodeSelector,
+                DependencyResolver dependencyResolver) {
             return new MultiRootLayer<>(
                     rootLayerSupport,
                     rootKeyLayout,
                     dataLayout,
                     rootMappingCacheSize,
                     contextFactory,
-                    treeNodeSelector);
+                    treeNodeSelector,
+                    dependencyResolver);
         }
 
         @Override

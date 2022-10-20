@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
@@ -52,7 +53,8 @@ public abstract class AbstractIndexProviderFactory<T extends IndexProvider> {
             TokenHolders tokenHolders,
             JobScheduler scheduler,
             CursorContextFactory contextFactory,
-            PageCacheTracer pageCacheTracer) {
+            PageCacheTracer pageCacheTracer,
+            DependencyResolver dependencyResolver) {
         if (HostedOnMode.SINGLE != mode) {
             // if running as part of cluster indexes should be writable to allow catchup process to accept transactions
             readOnlyChecker = DatabaseReadOnlyChecker.writable();
@@ -73,7 +75,8 @@ public abstract class AbstractIndexProviderFactory<T extends IndexProvider> {
                 tokenHolders,
                 scheduler,
                 contextFactory,
-                pageCacheTracer);
+                pageCacheTracer,
+                dependencyResolver);
     }
 
     protected abstract Class<?> loggingClass();
@@ -93,5 +96,6 @@ public abstract class AbstractIndexProviderFactory<T extends IndexProvider> {
             TokenHolders tokenHolders,
             JobScheduler scheduler,
             CursorContextFactory contextFactory,
-            PageCacheTracer pageCacheTracer);
+            PageCacheTracer pageCacheTracer,
+            DependencyResolver dependencyResolver);
 }

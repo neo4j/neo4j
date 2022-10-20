@@ -29,6 +29,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -42,14 +43,18 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
     private final SingleDataTree singleRootAccess;
     private volatile Root root;
 
-    SingleRootLayer(RootLayerSupport support, Layout<KEY, VALUE> layout, TreeNodeSelector treeNodeSelector) {
+    SingleRootLayer(
+            RootLayerSupport support,
+            Layout<KEY, VALUE> layout,
+            TreeNodeSelector treeNodeSelector,
+            DependencyResolver dependencyResolver) {
         this.support = support;
         this.layout = layout;
         this.treeNodeSelector = treeNodeSelector;
 
         var format = treeNodeSelector.selectByLayout(layout);
         OffloadStoreImpl<KEY, VALUE> offloadStore = support.buildOffload(layout);
-        this.treeNode = format.create(support.payloadSize(), layout, offloadStore, support.idProvider());
+        this.treeNode = format.create(support.payloadSize(), layout, offloadStore, dependencyResolver);
         this.singleRootAccess = new SingleDataTree();
     }
 

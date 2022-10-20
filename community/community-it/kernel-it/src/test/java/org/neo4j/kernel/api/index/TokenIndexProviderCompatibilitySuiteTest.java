@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.UUID;
 import org.mockito.Mockito;
+import org.neo4j.common.EmptyDependencyResolver;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
@@ -77,6 +78,7 @@ class TokenIndexProviderCompatibilitySuiteTest extends SpecialisedIndexProviderC
                 recoveryCleanupWorkCollector,
                 databaseLayout,
                 NULL_CONTEXT_FACTORY,
-                NULL);
+                NULL,
+                EmptyDependencyResolver.EMPTY_RESOLVER);
     }
 }

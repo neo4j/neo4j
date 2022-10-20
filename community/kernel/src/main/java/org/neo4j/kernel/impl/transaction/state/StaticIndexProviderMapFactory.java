@@ -107,7 +107,8 @@ public class StaticIndexProviderMapFactory {
                         tokenHolders,
                         scheduler,
                         contextFactory,
-                        pageCacheTracer));
+                        pageCacheTracer,
+                        dependencies));
 
         var textIndexProvider = life.add(new TextIndexProviderFactory()
                 .create(
@@ -123,7 +124,8 @@ public class StaticIndexProviderMapFactory {
                         tokenHolders,
                         scheduler,
                         contextFactory,
-                        pageCacheTracer));
+                        pageCacheTracer,
+                        dependencies));
 
         var fulltextIndexProvider = life.add(new FulltextIndexProviderFactory()
                 .create(
@@ -139,7 +141,8 @@ public class StaticIndexProviderMapFactory {
                         tokenHolders,
                         scheduler,
                         contextFactory,
-                        pageCacheTracer));
+                        pageCacheTracer,
+                        dependencies));
 
         var rangeIndexProvider = life.add(new RangeIndexProviderFactory()
                 .create(
@@ -155,7 +158,8 @@ public class StaticIndexProviderMapFactory {
                         tokenHolders,
                         scheduler,
                         contextFactory,
-                        pageCacheTracer));
+                        pageCacheTracer,
+                        dependencies));
 
         var pointIndexProvider = life.add(new PointIndexProviderFactory()
                 .create(
@@ -171,7 +175,8 @@ public class StaticIndexProviderMapFactory {
                         tokenHolders,
                         scheduler,
                         contextFactory,
-                        pageCacheTracer));
+                        pageCacheTracer,
+                        dependencies));
 
         var trigramIndexProvider = life.add(new TrigramIndexProviderFactory()
                 .create(
@@ -187,7 +192,8 @@ public class StaticIndexProviderMapFactory {
                         tokenHolders,
                         scheduler,
                         contextFactory,
-                        pageCacheTracer));
+                        pageCacheTracer,
+                        dependencies));
 
         return new StaticIndexProviderMap(
                 tokenIndexProvider,

@@ -60,6 +60,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.common.EmptyDependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -328,7 +329,8 @@ public class DatabaseCompositeIndexAccessorTest {
                         new TokenHolders(null, null, null),
                         jobScheduler,
                         new CursorContextFactory(cacheTracer, EMPTY),
-                        cacheTracer))
+                        cacheTracer,
+                        EmptyDependencyResolver.EMPTY_RESOLVER))
                 .collect(Collectors.toList());
     }
 

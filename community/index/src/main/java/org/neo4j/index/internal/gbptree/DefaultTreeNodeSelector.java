@@ -19,6 +19,8 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.neo4j.common.DependencyResolver;
+
 /**
  * Able to select implementation of {@link TreeNode} to use in different scenarios, should be used in favor of directly
  * instantiating {@link TreeNode} instances.
@@ -30,7 +32,10 @@ public class DefaultTreeNodeSelector {
     private static final TreeNodeSelector.Factory FIXED = new TreeNodeSelector.Factory() {
         @Override
         public <KEY, VALUE> TreeNode<KEY, VALUE> create(
-                int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore, IdProvider idProvider) {
+                int pageSize,
+                Layout<KEY, VALUE> layout,
+                OffloadStore<KEY, VALUE> offloadStore,
+                DependencyResolver dependencyResolver) {
             return new TreeNodeFixedSize<>(pageSize, layout);
         }
 
@@ -51,7 +56,10 @@ public class DefaultTreeNodeSelector {
     private static final TreeNodeSelector.Factory DYNAMIC = new TreeNodeSelector.Factory() {
         @Override
         public <KEY, VALUE> TreeNode<KEY, VALUE> create(
-                int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore, IdProvider idProvider) {
+                int pageSize,
+                Layout<KEY, VALUE> layout,
+                OffloadStore<KEY, VALUE> offloadStore,
+                DependencyResolver dependencyResolver) {
             return new TreeNodeDynamicSize<>(pageSize, layout, offloadStore);
         }
 

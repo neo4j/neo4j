@@ -39,6 +39,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.index.internal.gbptree.RootMappingLayout.RootMappingValue;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -81,7 +82,8 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             Layout<DATA_KEY, DATA_VALUE> dataLayout,
             int rootCacheSizeInBytes,
             CursorContextFactory contextFactory,
-            TreeNodeSelector treeNodeSelector) {
+            TreeNodeSelector treeNodeSelector,
+            DependencyResolver dependencyResolver) {
         Preconditions.checkState(
                 hashCodeSeemsImplemented(rootLayout), "Root layout doesn't seem to have a hashCode() implementation");
 
@@ -97,9 +99,9 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         var format = treeNodeSelector.selectByLayout(dataLayout);
         OffloadStoreImpl<ROOT_KEY, RootMappingValue> rootOffloadStore = support.buildOffload(this.rootLayout);
         OffloadStoreImpl<DATA_KEY, DATA_VALUE> dataOffloadStore = support.buildOffload(dataLayout);
-        this.rootTreeNode = rootMappingFormat.create(
-                support.payloadSize(), this.rootLayout, rootOffloadStore, support.idProvider());
-        this.dataTreeNode = format.create(support.payloadSize(), dataLayout, dataOffloadStore, support.idProvider());
+        this.rootTreeNode =
+                rootMappingFormat.create(support.payloadSize(), this.rootLayout, rootOffloadStore, dependencyResolver);
+        this.dataTreeNode = format.create(support.payloadSize(), dataLayout, dataOffloadStore, dependencyResolver);
     }
 
     private boolean hashCodeSeemsImplemented(Layout<ROOT_KEY, RootMappingValue> rootLayout) {

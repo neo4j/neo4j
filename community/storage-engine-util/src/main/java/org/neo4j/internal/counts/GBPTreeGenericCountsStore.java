@@ -62,6 +62,7 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.counts.CountsHeader.Reader;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -213,7 +214,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
                     headerReader,
                     recoveryCollector,
                     readOnlyChecker,
-                    openOptions,
+                    openOptions.newWithout(PageCacheOpenOptions.MULTI_VERSIONED),
                     databaseName,
                     name,
                     contextFactory,
@@ -547,7 +548,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
                 headerReader,
                 RecoveryCleanupWorkCollector.ignore(),
                 readOnly(),
-                openOptions,
+                openOptions.newWithout(PageCacheOpenOptions.MULTI_VERSIONED),
                 databaseName,
                 name,
                 contextFactory,

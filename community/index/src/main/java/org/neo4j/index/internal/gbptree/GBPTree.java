@@ -26,6 +26,8 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.List;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.EmptyDependencyResolver;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -71,6 +73,7 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
                 name,
                 contextFactory,
                 pageCacheTracer,
+                EmptyDependencyResolver.EMPTY_RESOLVER,
                 TreeNodeLayoutFactory.getInstance());
     }
 
@@ -88,6 +91,41 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
             String name,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
+            DependencyResolver dependencyResolver)
+            throws MetadataMismatchException {
+        this(
+                pageCache,
+                fileSystem,
+                indexFile,
+                layout,
+                monitor,
+                headerReader,
+                recoveryCleanupWorkCollector,
+                readOnlyChecker,
+                openOptions,
+                databaseName,
+                name,
+                contextFactory,
+                pageCacheTracer,
+                dependencyResolver,
+                TreeNodeLayoutFactory.getInstance());
+    }
+
+    public GBPTree(
+            PageCache pageCache,
+            FileSystemAbstraction fileSystem,
+            Path indexFile,
+            Layout<KEY, VALUE> layout,
+            Monitor monitor,
+            Header.Reader headerReader,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            ImmutableSet<OpenOption> openOptions,
+            String databaseName,
+            String name,
+            CursorContextFactory contextFactory,
+            PageCacheTracer pageCacheTracer,
+            DependencyResolver dependencyResolver,
             TreeNodeLayoutFactory treeNodeLayoutFactory)
             throws MetadataMismatchException {
         super(
@@ -105,6 +143,7 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
                 contextFactory,
                 singleRoot(),
                 pageCacheTracer,
+                dependencyResolver,
                 treeNodeLayoutFactory);
         access = rootLayer.access(SingleRoot.SINGLE_ROOT);
     }

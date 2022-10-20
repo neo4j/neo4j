@@ -19,6 +19,8 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.neo4j.common.DependencyResolver;
+
 /**
  * Able to select implementation of {@link TreeNode} to use in different scenarios, should be used in favor of directly
  * instantiating {@link TreeNode} instances.
@@ -40,14 +42,17 @@ public interface TreeNodeSelector {
         /**
          * Instantiates a {@link TreeNode} of a specific format and version that this factory represents.
          *
-         * @param pageSize   page size, i.e. size of tree nodes.
-         * @param layout     {@link Layout} that will be used in this format.
-         * @param offloadStore {@link OffloadStore} that could be used for larger entries
-         * @param idProvider {@link IdProvider} that could be used for allocating pages for extra data
+         * @param pageSize           page size, i.e. size of tree nodes.
+         * @param layout             {@link Layout} that will be used in this format.
+         * @param offloadStore       {@link OffloadStore} that could be used for larger entries
+         * @param dependencyResolver {@link DependencyResolver} to access various database components
          * @return the instantiated {@link TreeNode}.
          */
         <KEY, VALUE> TreeNode<KEY, VALUE> create(
-                int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore, IdProvider idProvider);
+                int pageSize,
+                Layout<KEY, VALUE> layout,
+                OffloadStore<KEY, VALUE> offloadStore,
+                DependencyResolver dependencyResolver);
 
         /**
          * Specifies the format identifier of the physical layout of tree nodes.

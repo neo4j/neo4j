@@ -29,6 +29,8 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.EmptyDependencyResolver;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -57,6 +59,7 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
     private PageCacheTracer pageCacheTracer = NULL;
     private ImmutableSet<OpenOption> openOptions = immutable.empty();
     private TreeNodeLayoutFactory treeNodeLayoutFactory = TreeNodeLayoutFactory.getInstance();
+    private DependencyResolver dependencyResolver = EmptyDependencyResolver.EMPTY_RESOLVER;
 
     public GBPTreeBuilder(
             PageCache pageCache, FileSystemAbstraction fileSystem, Path path, Layout<KEY, VALUE> dataLayout) {
@@ -130,6 +133,11 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
         return this;
     }
 
+    public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(DependencyResolver dependencyResolver) {
+        this.dependencyResolver = dependencyResolver;
+        return this;
+    }
+
     public GBPTreeBuilder<ROOT_KEY, KEY, VALUE> with(TreeNodeLayoutFactory treeNodeLayoutFactory) {
         this.treeNodeLayoutFactory = treeNodeLayoutFactory;
         return this;
@@ -152,6 +160,7 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
                 "test tree",
                 cursorContextFactory,
                 pageCacheTracer,
+                dependencyResolver,
                 treeNodeLayoutFactory);
     }
 
@@ -172,6 +181,7 @@ public class GBPTreeBuilder<ROOT_KEY, KEY, VALUE> {
                 cursorContextFactory,
                 RootLayerConfiguration.multipleRoots(rootLayout, (int) kibiBytes(10)),
                 pageCacheTracer,
+                dependencyResolver,
                 treeNodeLayoutFactory);
     }
 }

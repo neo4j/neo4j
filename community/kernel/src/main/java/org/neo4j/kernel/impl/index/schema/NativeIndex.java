@@ -27,6 +27,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
@@ -55,6 +56,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
     private final CursorContextFactory contextFactory;
     private final ImmutableSet<OpenOption> openOptions;
     final PageCacheTracer pageCacheTracer;
+    private final DependencyResolver dependencyResolver;
 
     protected GBPTree<KEY, NullValue> tree;
 
@@ -72,6 +74,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
         this.databaseName = databaseIndexContext.databaseName;
         this.contextFactory = databaseIndexContext.contextFactory;
         this.pageCacheTracer = databaseIndexContext.pageCacheTracer;
+        this.dependencyResolver = databaseIndexContext.dependencyResolver;
         this.indexFiles = indexFiles;
         this.layout = layout;
         this.descriptor = descriptor;
@@ -95,7 +98,8 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
                 databaseName,
                 descriptor.getName(),
                 contextFactory,
-                pageCacheTracer);
+                pageCacheTracer,
+                dependencyResolver);
         afterTreeInstantiation(tree);
     }
 

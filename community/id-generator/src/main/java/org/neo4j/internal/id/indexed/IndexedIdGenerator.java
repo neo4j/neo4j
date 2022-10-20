@@ -61,6 +61,7 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -405,7 +406,7 @@ public class IndexedIdGenerator implements IdGenerator {
                     headerReader,
                     recoveryCleanupWorkCollector,
                     readOnlyChecker,
-                    openOptions,
+                    openOptions.newWithout(PageCacheOpenOptions.MULTI_VERSIONED),
                     databaseName,
                     "Indexed ID generator",
                     contextFactory,
@@ -702,7 +703,7 @@ public class IndexedIdGenerator implements IdGenerator {
                 NO_HEADER_READER,
                 immediate(),
                 readOnly(),
-                openOptions,
+                openOptions.newWithout(PageCacheOpenOptions.MULTI_VERSIONED),
                 DEFAULT_DATABASE_NAME,
                 "Indexed ID generator",
                 contextFactory,

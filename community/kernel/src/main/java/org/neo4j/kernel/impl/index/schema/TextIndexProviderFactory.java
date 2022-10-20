@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.directoryFactory;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -63,7 +64,8 @@ public class TextIndexProviderFactory extends AbstractIndexProviderFactory<TextI
             TokenHolders tokenHolders,
             JobScheduler scheduler,
             CursorContextFactory contextFactory,
-            PageCacheTracer pageCacheTracer) {
+            PageCacheTracer pageCacheTracer,
+            DependencyResolver dependencyResolver) {
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider(databaseLayout.databaseDirectory());
         return new TextIndexProvider(
                 fs, directoryFactory(fs), directoryStructure, monitors, config, readOnlyDatabaseChecker);

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
 import java.nio.file.Path;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -63,7 +64,8 @@ public class TokenIndexProviderFactory extends AbstractIndexProviderFactory<Toke
             TokenHolders tokenHolders,
             JobScheduler scheduler,
             CursorContextFactory contextFactory,
-            PageCacheTracer pageCacheTracer) {
+            PageCacheTracer pageCacheTracer,
+            DependencyResolver dependencyResolver) {
         return create(
                 pageCache,
                 databaseLayout.databaseDirectory(),
@@ -74,7 +76,8 @@ public class TokenIndexProviderFactory extends AbstractIndexProviderFactory<Toke
                 recoveryCleanupWorkCollector,
                 databaseLayout,
                 contextFactory,
-                pageCacheTracer);
+                pageCacheTracer,
+                dependencyResolver);
     }
 
     @VisibleForTesting
@@ -88,13 +91,15 @@ public class TokenIndexProviderFactory extends AbstractIndexProviderFactory<Toke
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseLayout databaseLayout,
             CursorContextFactory contextFactory,
-            PageCacheTracer pageCacheTracer) {
+            PageCacheTracer pageCacheTracer,
+            DependencyResolver dependencyResolver) {
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider(storeDir);
         DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder(
                         pageCache, fs, contextFactory, pageCacheTracer, databaseLayout.getDatabaseName())
                 .withMonitors(monitors)
                 .withTag(monitorTag)
                 .withReadOnlyChecker(readOnlyChecker)
+                .withDependencyResolver(dependencyResolver)
                 .build();
         return new TokenIndexProvider(
                 databaseIndexContext, directoryStructure, recoveryCleanupWorkCollector, databaseLayout);

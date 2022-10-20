@@ -43,6 +43,11 @@ public interface VersionStorage extends AutoCloseable {
         public void patchSnapshotChain(MuninnPageCursor pageCursor) {}
 
         @Override
+        public VersionStorageAccessor accessor() {
+            return VersionStorageAccessor.EMPTY_ACCESSOR;
+        }
+
+        @Override
         public void close() {}
     };
 
@@ -72,6 +77,11 @@ public interface VersionStorage extends AutoCloseable {
      * @param pageCursor user supplied write cursor.
      */
     void patchSnapshotChain(MuninnPageCursor pageCursor);
+
+    /**
+     * @return accessor that can allocate pages in version storage and provide PageCursor access to them
+     */
+    VersionStorageAccessor accessor();
 
     /**
      * Provide total size of versioned store
