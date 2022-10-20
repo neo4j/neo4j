@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.DoubleLiteral
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
 import org.neo4j.cypher.internal.expressions.IntegerLiteral
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.ListOfLiteralWriter
@@ -79,7 +80,8 @@ object literalReplacement {
       _: CallClause =>
       acc => TraverseChildren(acc)
     case _: Clause |
-      _: Limit =>
+      _: Limit |
+      _: GraphPatternQuantifier =>
       acc => SkipChildren(acc)
     case n: NodePattern =>
       acc => SkipChildren(n.properties.folder.treeFold(acc)(literalMatcher(state)))

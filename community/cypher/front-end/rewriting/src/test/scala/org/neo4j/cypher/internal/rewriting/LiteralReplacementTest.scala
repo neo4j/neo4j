@@ -62,6 +62,10 @@ class LiteralReplacementTest extends CypherFunSuite {
     assertDoesNotRewrite(s"RETURN false as result")
   }
 
+  test("should not extract quantifier literals in quantified path patterns") {
+    assertDoesNotRewrite(s"MATCH ((a)-->(b)){1, 2} RETURN *")
+  }
+
   test("should extract literals in match clause") {
     assertRewrite("MATCH ({a:1})", "MATCH ({a:$`  AUTOINT0`})", Map("  AUTOINT0" -> 1))
     assertRewrite("MATCH ({a:1.1})", "MATCH ({a:$`  AUTODOUBLE0`})", Map("  AUTODOUBLE0" -> 1.1))
