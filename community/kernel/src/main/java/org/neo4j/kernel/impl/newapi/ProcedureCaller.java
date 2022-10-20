@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import static java.lang.String.format;
+import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
+
 import java.time.Clock;
 import java.util.function.Supplier;
-
 import org.neo4j.collection.RawIterator;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -46,9 +48,6 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
-
-import static java.lang.String.format;
-import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 
 public abstract class ProcedureCaller {
 
@@ -325,11 +324,21 @@ public abstract class ProcedureCaller {
         @Override
         public UserAggregationReducer createAggregationFunction(int id) throws ProcedureException {
             performCheckBeforeOperation();
-            checkAggregationFunctionAccessMode(id);
-            // In ForThreadExecutionContextScope we never inject the transaction so there is no need to
-            // neither boost nor restrict access withing the function call
-            return globalProcedures.createAggregationFunction(
-                    prepareContext(securityContext(), ProcedureCallContext.EMPTY), id);
+            AccessMode mode = checkAggregationFunctionAccessMode(id);
+            // The FULL access mode returns true on all shouldBoost-calls,
+            // but it doesn't need any boost here since it already supports all read operations.
+            boolean overrideAccessMode = mode != AccessMode.Static.FULL
+                    && mode.shouldBoostAggregatingFunction(id).allowsAccess();
+            if (overrideAccessMode) {
+                return createGenericAggregator(true, mode, id);
+            } else {
+                // Generally, functions have the access mode restricted to READ during their invocation.
+                // That is actually a quite expensive operation to do for every update call of an aggregation function.
+                // Since only read operations are currently supported during parallel execution,
+                // the expensive access mode restricting is not needed for execution context API.
+                return globalProcedures.createAggregationFunction(
+                        prepareContext(securityContext(), ProcedureCallContext.EMPTY), id);
+            }
         }
 
         @Override

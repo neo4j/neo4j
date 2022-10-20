@@ -29,7 +29,7 @@ import org.neo4j.values.AnyValue;
  *
  * <pre>{@code
  *   class SumReducer implements UserAggregationReducer {
- *         private final AtomicLong globalSum = new AtomicLong(0L);
+ *         private final LongAdder globalSum = new LongAdder();
  *
  *         @Override
  *         public UserAggregationUpdater newUpdater() throws ProcedureException {
@@ -38,7 +38,7 @@ import org.neo4j.values.AnyValue;
  *
  *         @Override
  *         public AnyValue result() throws ProcedureException {
- *             return Values.longValue(globalSum.get());
+ *             return Values.longValue(globalSum.sum());
  *         }
  *
  *         class SumUpdater implements UserAggregationUpdater {
@@ -54,9 +54,10 @@ import org.neo4j.values.AnyValue;
  *             @Override
  *             public void applyUpdates() throws ProcedureException {
  *                 globalSum.addAndGet(localSum);
+ *                 localSum = 0;
  *             }
  *         }
- *     }*
+ *     }
  * }</pre>
  */
 public interface UserAggregationUpdater {
