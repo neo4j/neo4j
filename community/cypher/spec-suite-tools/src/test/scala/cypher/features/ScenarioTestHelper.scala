@@ -72,7 +72,8 @@ trait ScenarioTestHelper extends FeatureTest {
           config.executionPrefix,
           dbProvider(),
           dbConfigPerFeature(scenario.featureName),
-          useBolt
+          useBolt,
+          scenario
         )).run()
       } match {
         case Success(_) =>
@@ -113,7 +114,8 @@ trait ScenarioTestHelper extends FeatureTest {
       config.executionPrefix,
       dbProvider(),
       dbConfigPerFeature(scenario.featureName),
-      useBolt
+      useBolt,
+      scenario
     ))
     val executable: Executable = () => runnable.run()
     Seq(executable)
@@ -224,7 +226,8 @@ object ScenarioTestHelper {
         config.executionPrefix,
         dbProvider,
         defaultTestConfig(scenario.featureName),
-        useBolt
+        useBolt,
+        scenario
       )).run()).isFailure
       print(s"Processing scenario ${index + 1}/$numberOfScenarios\n")
       Console.out.flush() // to make sure we see progress

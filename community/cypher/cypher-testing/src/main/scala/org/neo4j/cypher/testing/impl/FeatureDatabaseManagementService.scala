@@ -31,6 +31,7 @@ import org.neo4j.cypher.testing.impl.driver.DriverCypherExecutorFactory
 import org.neo4j.cypher.testing.impl.embedded.EmbeddedCypherExecutorFactory
 import org.neo4j.cypher.testing.impl.http.HttpCypherExecutorFactory
 import org.neo4j.dbms.api.DatabaseManagementService
+import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.kernel.api.Kernel
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.procedure.GlobalProcedures
@@ -136,11 +137,8 @@ case class FeatureDatabaseManagementService(
     }
   }
 
-  def unregisterProcedures(): Unit = {
-    globalProcedures.unregister(new org.neo4j.internal.kernel.api.procs.QualifiedName(
-      Array[String]("test", "my"),
-      "proc"
-    ))
+  def unregisterProcedures(procedures: Seq[QualifiedName]): Unit = {
+    procedures.foreach(globalProcedures.unregister)
   }
 
   def begin(): CypherExecutorTransaction = cypherExecutor.beginTransaction()

@@ -31,9 +31,12 @@ import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
 import org.neo4j.cypher.testing.impl.driver.DriverCypherExecutorFactory
 import org.neo4j.cypher.testing.impl.embedded.EmbeddedCypherExecutorFactory
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.opencypher.tools.tck.api.ExecQuery
 import org.opencypher.tools.tck.api.Graph
 import org.opencypher.tools.tck.api.QueryType
+import org.opencypher.tools.tck.api.RegisterProcedure
+import org.opencypher.tools.tck.api.Scenario
 import org.opencypher.tools.tck.api.StringRecords
 import org.opencypher.tools.tck.values.CypherValue
 
@@ -65,7 +68,8 @@ object Neo4jAdapter {
     executionPrefix: String,
     databaseProvider: TestDatabaseProvider,
     dbConfig: collection.Map[Setting[_], Object],
-    useBolt: Boolean
+    useBolt: Boolean,
+    scenario: Scenario
   ): Neo4jAdapter = {
     val enhancedConfig =
       (dbConfig ++ _root_.scala.collection.Map(BoltConnector.enabled -> true) ++ _root_.scala.collection.Map(
@@ -81,11 +85,12 @@ object Neo4jAdapter {
         EmbeddedCypherExecutorFactory(managementService, config)
       }
     val dbms = FeatureDatabaseManagementService(managementService, executorFactory)
-    new Neo4jAdapter(dbms, executionPrefix)
+    new Neo4jAdapter(dbms, executionPrefix, scenario)
   }
 }
 
-class Neo4jAdapter(var dbms: FeatureDatabaseManagementService, executionPrefix: String) extends Graph
+class Neo4jAdapter(var dbms: FeatureDatabaseManagementService, executionPrefix: String, scenario: Scenario)
+    extends Graph
     with Neo4jProcedureAdapter with Neo4jCsvFileCreationAdapter {
   private val explainPrefix = "EXPLAIN\n"
 
@@ -124,9 +129,18 @@ class Neo4jAdapter(var dbms: FeatureDatabaseManagementService, executionPrefix: 
     deleteTemporaryFiles()
     dbms.terminateAllTransactions()
     dbms.dropIndexesAndConstraints()
-    dbms.unregisterProcedures()
+    dbms.unregisterProcedures(registeredProcedures())
     dbms.execute("MATCH (n) DETACH DELETE (n)", Map.empty, r => r.consume())
     dbms.clearQueryCaches()
     dbms.closeFactory()
+  }
+
+  private def registeredProcedures(): Seq[QualifiedName] = {
+    scenario.steps.collect { case RegisterProcedure(signature, _, _) => parseSignatureName(signature) }
+  }
+
+  private def parseSignatureName(signature: String): QualifiedName = {
+    val parts = signature.takeWhile(_ != '(').split('.')
+    new QualifiedName(parts.take(parts.length - 1), parts.last)
   }
 }
