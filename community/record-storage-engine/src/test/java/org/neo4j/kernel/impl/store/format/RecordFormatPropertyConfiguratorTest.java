@@ -84,7 +84,7 @@ class RecordFormatPropertyConfiguratorTest {
         assertEquals(e.getMessage(), "Block size should be bigger then " + MINIMAL_BLOCK_SIZE);
     }
 
-    private class ResizableRecordFormats implements RecordFormats {
+    private static class ResizableRecordFormats implements RecordFormats {
         private final int dynamicRecordHeaderSize;
 
         ResizableRecordFormats(int dynamicRecordHeaderSize) {

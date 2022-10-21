@@ -52,7 +52,7 @@ public abstract class PageAlignedTestFormat extends BaseRecordFormats implements
     private int majorFormatVersion;
     private int minorFormatVersion;
 
-    public PageAlignedTestFormat(String name, int majorFormatVersion, int minorFormatVersion) {
+    protected PageAlignedTestFormat(String name, int majorFormatVersion, int minorFormatVersion) {
         super(ALIGNED_V5_0, new RecordFormatFamilyCapability(FormatFamily.ALIGNED));
         this.name = name;
         this.majorFormatVersion = majorFormatVersion;
@@ -140,10 +140,10 @@ public abstract class PageAlignedTestFormat extends BaseRecordFormats implements
 
     @ServiceProvider
     public static class WithMinorVersionBump extends PageAlignedTestFormat {
-
+        public static final RecordFormats RECORD_FORMATS = new WithMinorVersionBump();
         public static final String NAME = "Page-Aligned-Format-With-Minor-Version-Bump";
 
-        public WithMinorVersionBump() {
+        private WithMinorVersionBump() {
             super(
                     NAME,
                     PageAlignedV5_0.RECORD_FORMATS.majorVersion(),
@@ -152,16 +152,16 @@ public abstract class PageAlignedTestFormat extends BaseRecordFormats implements
 
         @Override
         public RecordFormats newInstance() {
-            return new WithMinorVersionBump();
+            return RECORD_FORMATS;
         }
     }
 
     @ServiceProvider
     public static class WithMajorVersionBump extends PageAlignedTestFormat {
-
+        public static final RecordFormats RECORD_FORMATS = new WithMajorVersionBump();
         public static final String NAME = "Page-Aligned-Format-With-Major-Version-Bump";
 
-        public WithMajorVersionBump() {
+        private WithMajorVersionBump() {
             super(
                     NAME,
                     PageAlignedV5_0.RECORD_FORMATS.majorVersion() + 1,
@@ -170,7 +170,7 @@ public abstract class PageAlignedTestFormat extends BaseRecordFormats implements
 
         @Override
         public RecordFormats newInstance() {
-            return new WithMajorVersionBump();
+            return RECORD_FORMATS;
         }
     }
 }

@@ -41,7 +41,7 @@ public class StandardV4_3 extends BaseRecordFormats {
     public static final RecordFormats RECORD_FORMATS = new StandardV4_3();
     public static final String NAME = FormatFamily.STANDARD.name() + "V4_3";
 
-    public StandardV4_3() {
+    private StandardV4_3() {
         super(STANDARD_V4_3, new RecordFormatFamilyCapability(FormatFamily.STANDARD), Index44Compatibility.INSTANCE);
     }
 

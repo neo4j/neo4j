@@ -231,13 +231,13 @@ class StoreMigratorTest {
                         any(),
                         any(),
                         argThat(new VersionMatcher(Standard.LATEST_RECORD_FORMATS)),
-                        argThat(new VersionMatcher(new PageAlignedTestFormat.WithMajorVersionBump())),
+                        argThat(new VersionMatcher(PageAlignedTestFormat.WithMajorVersionBump.RECORD_FORMATS)),
                         any(),
                         any());
         verify(observingParticipant).moveMigratedFiles(any(), any(), any(), any());
         verify(observingParticipant).cleanup(any(DatabaseLayout.class));
 
-        verifyDbStartAndFormat(new PageAlignedTestFormat.WithMajorVersionBump());
+        verifyDbStartAndFormat(PageAlignedTestFormat.WithMajorVersionBump.RECORD_FORMATS);
 
         assertFalse(migrationDirPresent());
     }
@@ -271,26 +271,26 @@ class StoreMigratorTest {
                 .moveMigratedFiles(
                         any(),
                         any(),
-                        argThat(new VersionMatcher(new StandardFormatWithMinorVersionBump())),
-                        argThat(new VersionMatcher(new PageAlignedTestFormat.WithMajorVersionBump())));
+                        argThat(new VersionMatcher(StandardFormatWithMinorVersionBump.RECORD_FORMATS)),
+                        argThat(new VersionMatcher(PageAlignedTestFormat.WithMajorVersionBump.RECORD_FORMATS)));
         verify(observingParticipant)
                 .migrate(
                         any(),
                         any(),
                         any(),
-                        argThat(new VersionMatcher(new StandardFormatWithMinorVersionBump())),
-                        argThat(new VersionMatcher(new PageAlignedTestFormat.WithMajorVersionBump())),
+                        argThat(new VersionMatcher(StandardFormatWithMinorVersionBump.RECORD_FORMATS)),
+                        argThat(new VersionMatcher(PageAlignedTestFormat.WithMajorVersionBump.RECORD_FORMATS)),
                         any(),
                         any());
         verify(observingParticipant)
                 .moveMigratedFiles(
                         any(),
                         any(),
-                        argThat(new VersionMatcher(new StandardFormatWithMinorVersionBump())),
-                        argThat(new VersionMatcher(new PageAlignedTestFormat.WithMajorVersionBump())));
+                        argThat(new VersionMatcher(StandardFormatWithMinorVersionBump.RECORD_FORMATS)),
+                        argThat(new VersionMatcher(PageAlignedTestFormat.WithMajorVersionBump.RECORD_FORMATS)));
         verify(observingParticipant, times(2)).cleanup(any(DatabaseLayout.class));
 
-        verifyDbStartAndFormat(new PageAlignedTestFormat.WithMajorVersionBump());
+        verifyDbStartAndFormat(PageAlignedTestFormat.WithMajorVersionBump.RECORD_FORMATS);
 
         assertFalse(migrationDirPresent());
     }
@@ -326,13 +326,13 @@ class StoreMigratorTest {
                         any(),
                         any(),
                         argThat(new VersionMatcher(Standard.LATEST_RECORD_FORMATS)),
-                        argThat(new VersionMatcher(new StandardFormatWithMinorVersionBump())),
+                        argThat(new VersionMatcher(StandardFormatWithMinorVersionBump.RECORD_FORMATS)),
                         any(),
                         any());
         verify(observingParticipant).moveMigratedFiles(any(), any(), any(), any());
         verify(observingParticipant).cleanup(any(DatabaseLayout.class));
 
-        verifyDbStartAndFormat(new StandardFormatWithMinorVersionBump());
+        verifyDbStartAndFormat(StandardFormatWithMinorVersionBump.RECORD_FORMATS);
 
         assertFalse(migrationDirPresent());
     }
@@ -366,7 +366,7 @@ class StoreMigratorTest {
                 .isInstanceOf(UnableToMigrateException.class)
                 .hasMessageContaining("A partially complete migration to "
                         + userVersionString(PageAligned.LATEST_RECORD_FORMATS) + " found when trying to migrate to "
-                        + userVersionString(new PageAlignedTestFormat.WithMinorVersionBump()));
+                        + userVersionString(PageAlignedTestFormat.WithMinorVersionBump.RECORD_FORMATS));
     }
 
     private String userVersionString(RecordFormats format) {

@@ -348,7 +348,7 @@ class RecordStorageMigratorIT {
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         CursorContextFactory contextFactory = new CursorContextFactory(cacheTracer, EmptyVersionContextSupplier.EMPTY);
 
-        StandardFormatWithMinorVersionBump toFormat = new StandardFormatWithMinorVersionBump();
+        RecordFormats toFormat = StandardFormatWithMinorVersionBump.RECORD_FORMATS;
         RecordStoreVersion versionToMigrateFrom = new RecordStoreVersion(Standard.LATEST_RECORD_FORMATS);
         RecordStoreVersion versionToMigrateTo = new RecordStoreVersion(toFormat);
 

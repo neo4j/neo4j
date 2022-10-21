@@ -26,11 +26,10 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV5_0;
 
 @ServiceProvider
 public class StandardFormatWithMinorVersionBump extends StandardV5_0 implements RecordFormats.Factory {
+    public static final RecordFormats RECORD_FORMATS = new StandardFormatWithMinorVersionBump();
     public static final String NAME = "Standard-Format-With-Minor-Version-Bump";
 
-    public StandardFormatWithMinorVersionBump() {
-        super();
-    }
+    private StandardFormatWithMinorVersionBump() {}
 
     @Override
     public int minorVersion() {
@@ -54,6 +53,6 @@ public class StandardFormatWithMinorVersionBump extends StandardV5_0 implements 
 
     @Override
     public RecordFormats newInstance() {
-        return new StandardFormatWithMinorVersionBump();
+        return RECORD_FORMATS;
     }
 }
