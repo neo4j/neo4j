@@ -145,7 +145,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   private[this] var runtimeTestParameters: RuntimeTestParameters = _
 
   def setRuntimeTestParameters(params: RuntimeTestParameters): Unit = {
-    require(runtimeTestSupport == null)
+    require(runtimeTestSupport == null) // We expect this to be called before we construct runtimeTestSupport
     runtimeTestParameters = params
   }
 

@@ -103,8 +103,8 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
   private val contextFactory = Neo4jTransactionalContextFactory.create(cypherGraphDb)
   private lazy val txIdStore = resolver.resolveDependency(classOf[TransactionIdStore])
 
-  private var _tx: InternalTransaction = _
-  private var _txContext: TransactionalContext = _
+  private[this] var _tx: InternalTransaction = _
+  private[this] var _txContext: TransactionalContext = _
 
   private[this] var runtimeTestParameters: RuntimeTestParameters = RuntimeTestParameters()
 
@@ -189,7 +189,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
         private def printConfig(): Unit = {
           val nl = System.lineSeparator()
           if (shouldPrint) {
-            print("\nTest config:\n${edition.configs.mkString(nl)}${nl}\n\n")
+            print(s"${nl}Test config:${nl}${edition.configs.mkString(nl)}${nl}${nl}${nl}")
             shouldPrint = false
           }
         }
@@ -205,7 +205,6 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
           override def onRecordCompleted(): Unit = {
             count += 1L;
             if (count == n) {
-              println("TERMINATE")
               _tx.terminate()
             }
           }

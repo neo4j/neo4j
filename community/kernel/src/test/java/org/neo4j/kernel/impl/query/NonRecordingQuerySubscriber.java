@@ -20,62 +20,34 @@
 package org.neo4j.kernel.impl.query;
 
 import org.neo4j.graphdb.QueryStatistics;
-import org.neo4j.values.AnyValue;
 
 /**
  * A QuerySubscriber that only counts completed records.
  *
  * NOTE: This does not consume records with something like Blackhole, so should not be used for CPU profiling.
  */
-public class NonRecordingQuerySubscriber implements QuerySubscriber {
+public class NonRecordingQuerySubscriber extends ProbingQuerySubscriber implements QuerySubscriber {
     private Throwable throwable;
     private QueryStatistics statistics;
     private long count;
 
-    private final QuerySubscriberProbe probe;
-
     public NonRecordingQuerySubscriber(QuerySubscriberProbe probe) {
-        this.probe = probe;
+        super(probe);
     }
 
     public NonRecordingQuerySubscriber() {
-        this.probe = null;
-    }
-
-    @Override
-    public void onResult(int numberOfFields) {
-        if (probe != null) {
-            probe.onResult(numberOfFields);
-        }
-    }
-
-    @Override
-    public void onRecord() {
-        if (probe != null) {
-            probe.onRecord();
-        }
-    }
-
-    @Override
-    public void onField(int offset, AnyValue value) {
-        if (probe != null) {
-            probe.onField(offset, value);
-        }
+        super();
     }
 
     @Override
     public void onRecordCompleted() {
-        if (probe != null) {
-            probe.onRecordCompleted();
-        }
+        super.onRecordCompleted();
         count++;
     }
 
     @Override
     public void onError(Throwable throwable) {
-        if (probe != null) {
-            probe.onError(throwable);
-        }
+        super.onError(throwable);
         if (this.throwable == null) {
             this.throwable = throwable;
         }
@@ -83,9 +55,7 @@ public class NonRecordingQuerySubscriber implements QuerySubscriber {
 
     @Override
     public void onResultCompleted(QueryStatistics statistics) {
-        if (probe != null) {
-            probe.onResultCompleted(statistics);
-        }
+        super.onResultCompleted(statistics);
         this.statistics = statistics;
     }
 

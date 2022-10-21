@@ -25,58 +25,41 @@ import java.util.List;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.values.AnyValue;
 
-public class RecordingQuerySubscriber implements QuerySubscriber {
+public class RecordingQuerySubscriber extends ProbingQuerySubscriber implements QuerySubscriber {
     private List<AnyValue[]> all = new ArrayList<>();
     private AnyValue[] current;
     private Throwable throwable;
     private QueryStatistics statistics = QueryStatistics.EMPTY;
 
-    private final QuerySubscriberProbe probe;
-
     public RecordingQuerySubscriber(QuerySubscriberProbe probe) {
-        this.probe = probe;
+        super(probe);
     }
 
     public RecordingQuerySubscriber() {
-        this.probe = null;
+        super();
     }
 
     @Override
     public void onResult(int numberOfFields) {
-        if (probe != null) {
-            probe.onResult(numberOfFields);
-        }
+        super.onResult(numberOfFields);
         this.current = new AnyValue[numberOfFields];
     }
 
     @Override
-    public void onRecord() {
-        if (probe != null) {
-            probe.onRecord();
-        }
-    }
-
-    @Override
     public void onField(int offset, AnyValue value) {
-        if (probe != null) {
-            probe.onField(offset, value);
-        }
+        super.onField(offset, value);
         current[offset] = value;
     }
 
     @Override
     public void onRecordCompleted() {
-        if (probe != null) {
-            probe.onRecordCompleted();
-        }
+        super.onRecordCompleted();
         all.add(Arrays.copyOf(current, current.length));
     }
 
     @Override
     public void onError(Throwable throwable) {
-        if (probe != null) {
-            probe.onError(throwable);
-        }
+        super.onError(throwable);
         if (this.throwable == null) {
             this.throwable = throwable;
         }
@@ -84,9 +67,7 @@ public class RecordingQuerySubscriber implements QuerySubscriber {
 
     @Override
     public void onResultCompleted(QueryStatistics statistics) {
-        if (probe != null) {
-            probe.onResultCompleted(statistics);
-        }
+        super.onResultCompleted(statistics);
         this.statistics = statistics;
     }
 

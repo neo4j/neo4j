@@ -34,5 +34,5 @@ case class PrintEveryNRows(
   everyNRows: Long,
   messagePrefix: String = "Result row #",
   printRowCount: Boolean = true,
-  messageSuffix: String = "\n"
+  messageSuffix: String = System.lineSeparator()
 )
