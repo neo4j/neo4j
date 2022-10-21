@@ -23,11 +23,11 @@ import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.FilterExpressions
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.ReadsAndWrites
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
+import org.neo4j.cypher.internal.ir.CreatesNoPropertyKeys
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
 import org.neo4j.cypher.internal.ir.EagernessReason.UnknownPropertyReadSetConflict
-import org.neo4j.cypher.internal.ir.helpers.LabelExpressionEvaluator
-import org.neo4j.cypher.internal.ir.helpers.LabelExpressionEvaluator.NodesToCheckOverlap
+import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.util.Ref
@@ -107,11 +107,11 @@ object ConflictFinder {
           readsAndWrites.reads.filterExpressions
         )((x, _) => x)
       labelSet <- labelCombinations
-      if LabelExpressionEvaluator.labelAndPropertyExpressionEvaluator(
-        expression,
-        NodesToCheckOverlap(None, variable.name),
-        labelSet.map(_.name)
-      ).getOrElse(true)
+      if (CreateOverlaps.overlap(Seq(expression), labelSet.map(_.name), CreatesNoPropertyKeys) match {
+        case CreateOverlaps.NoPropertyOverlap => false
+        case CreateOverlaps.NoLabelOverlap    => false
+        case _: CreateOverlaps.Overlap        => true
+      })
       readPlan <- readPlans
       if isValidConflict(readPlan, writePlan, wholePlan)
     } {

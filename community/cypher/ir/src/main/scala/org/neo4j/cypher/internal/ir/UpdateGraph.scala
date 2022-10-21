@@ -30,8 +30,8 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.StableIdentifier
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.UnstableIdentifier
-import org.neo4j.cypher.internal.ir.helpers.LabelExpressionEvaluator.NodesToCheckOverlap
-import org.neo4j.cypher.internal.ir.helpers.LabelExpressionEvaluator.labelAndPropertyExpressionEvaluator
+import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps
+import org.neo4j.cypher.internal.ir.helpers.overlaps.DeleteOverlaps
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 import scala.annotation.tailrec
@@ -289,40 +289,6 @@ trait UpdateGraph {
   }
 
   /**
-   * Uses an expression evaluator to figure out if we have a label overlap.
-   * For example, if we have `CREATE (:A:B)` we need to solve the predicates given labels A and B (and no other labels).
-   * For predicates which contains non label expressions we default to true.
-   *
-   * If we have multiple predicates, we will only have an overlap if all predicates are evaluated to true.
-   * For example, if we have `MATCH (n) WHERE n:A AND n:B CREATE (:A)` we don't need to insert an eager since the predicate `(n:B)` will be evaluated to false.
-   *
-   * @param qgWithInfo
-   * @param possibleLabelCombinations A set of all possible combinations of Labels
-   * @param nodes                     The nodes we are checking overlaps between
-   * @return
-   */
-  private def labelExpressionsOverlap(
-    selectedQg: QueryGraph,
-    possibleLabelCombinations: Set[Set[LabelName]],
-    nodes: NodesToCheckOverlap,
-    propertiesToCreate: Option[CreatesPropertyKeys] = None
-  ): Boolean = {
-    val updatingQg = getMaybeQueryGraph.toSet
-    val predicates = updatingQg.flatMap(qg =>
-      qg.selections.predicates.map(_.expr) ++
-        qg.optionalMatches.map(_.selections).flatMap(_.predicates).map(_.expr)
-    ) ++
-      selectedQg.selections.predicates.map(_.expr) ++
-      selectedQg.optionalMatches.map(_.selections).flatMap(_.predicates).map(_.expr)
-
-    predicates.forall { expression =>
-      possibleLabelCombinations.exists(labels =>
-        labelAndPropertyExpressionEvaluator(expression, nodes, labels.map(_.name), propertiesToCreate).getOrElse(true)
-      )
-    }
-  }
-
-  /**
    * Uses an expression evaluator to figure out if we have a label or a property overlap.
    * For example, if we have `CREATE (:A:B{prop:foo})` we need to solve the predicates given labels A, B and prop (and no other labels or properties).
    * For predicates which contains non label expressions or properties we default to true.
@@ -342,16 +308,28 @@ trait UpdateGraph {
     nodes: NodesToCheckOverlap,
     propertiesToCreate: CreatesPropertyKeys
   ): Boolean = {
-    val predicates = qgWithInfo.queryGraph.selections.predicates.map(_.expr) ++
-      qgWithInfo.queryGraph.optionalMatches.map(_.selections).flatMap(_.predicates).map(_.expr)
-
-    predicates.forall { expression =>
-      possibleLabelCombinations.exists(labels =>
-        labelAndPropertyExpressionEvaluator(expression, nodes, labels.map(_.name), Some(propertiesToCreate)).getOrElse(
-          true
-        )
+    val selections =
+      Selections(
+        qgWithInfo.queryGraph.selections.predicates ++
+          qgWithInfo.queryGraph.optionalMatches.flatMap(_.selections.predicates)
       )
+
+    val unstableNodePredicates = selections.predicatesGiven(Set(nodes.matchedNode)).toList
+
+    possibleLabelCombinations.exists { labelsToCreate =>
+      val overlap = CreateOverlaps.overlap(unstableNodePredicates, labelsToCreate.map(_.name), propertiesToCreate)
+      overlap match {
+        case CreateOverlaps.NoPropertyOverlap                                                 => false
+        case CreateOverlaps.NoLabelOverlap                                                    => false
+        case CreateOverlaps.Overlap(unprocessedExpressions, propertiesOverlap, labelsOverlap) => true
+      }
     }
+  }
+
+  private case class NodesToCheckOverlap(updatedNode: Option[String], matchedNode: String) {
+
+    def contains(node: String): Boolean =
+      updatedNode.contains(node) || matchedNode == node
   }
 
   // if we do match delete and merge we always need to be eager
@@ -559,21 +537,20 @@ trait UpdateGraph {
     qgWithInfo: QgWithLeafInfo,
     unstableNode: QgWithLeafInfo.Identifier,
     deletedNode: QgWithLeafInfo.Identifier
-  ) = {
-    val updatingQg = getMaybeQueryGraph.toSet
-    val unstableLabels = qgWithInfo.queryGraph.allPossibleLabelsOnNode(unstableNode.name)
-    val labelsInDeleteExpression = qgWithInfo.allPossibleLabelsOnNode(deletedNode.name) ++ updatingQg.flatMap(
-      _.allPossibleLabelsOnNode(deletedNode.name)
-    )
-    val uniqueLabels = unstableLabels ++ labelsInDeleteExpression
-    lazy val allSubsetsOfAllLabels = uniqueLabels.subsets()
-    lazy val nodes = NodesToCheckOverlap(Some(deletedNode.name), unstableNode.name)
-    // LabelSizeLimit is used to limit the size of the subsets because they are exponential in complexity.
-    val labelSizeLimit = 3
+  ): Boolean = {
+    val selections =
+      qgWithInfo.queryGraph.allSelections ++
+        getMaybeQueryGraph.map(_.allSelections).getOrElse(Selections.empty)
 
-    uniqueLabels.size > labelSizeLimit ||
-    allSubsetsOfAllLabels.isEmpty ||
-    allSubsetsOfAllLabels.exists(labels => labelExpressionsOverlap(qgWithInfo.queryGraph, Set(labels), nodes))
+    val unstableNodePredicates = selections.predicatesGiven(Set(unstableNode.name)).toList
+    val deletedNodePredicates = selections.predicatesGiven(Set(deletedNode.name)).toList
+
+    val overlap = DeleteOverlaps.overlap(unstableNodePredicates, deletedNodePredicates)
+
+    overlap match {
+      case DeleteOverlaps.NoLabelOverlap                                 => false
+      case DeleteOverlaps.Overlap(unprocessedExpressions, labelsOverlap) => true
+    }
   }
 
   def removeLabelOverlap(qgWithInfo: QgWithLeafInfo)(implicit

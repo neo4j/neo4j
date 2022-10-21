@@ -21,10 +21,12 @@ package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LessThan
+import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -54,6 +56,7 @@ import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setProperty
+import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.collection.immutable.ListSet
@@ -120,9 +123,11 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("no overlap when properties don't overlap and no label on read GQ, but a label on write QG") {
-    // MATCH (a {foo: 42}) CREATE (a:L)
-    val selections =
-      Selections.from(In(Variable("a")(pos), Property(Variable("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos))
+    // MATCH (a {foo: 42}) CREATE (b:L)
+    val selections = Selections.from(In(
+      Property(Variable("a")(pos), PropertyKeyName("foo")(pos))(pos),
+      ListLiteral(List(SignedDecimalIntegerLiteral("42")(pos)))(pos)
+    )(pos))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
@@ -130,21 +135,27 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("Don't overlap when properties don't overlap but labels explicitly do for simple predicates") {
-    // MATCH (a:L {foo: 42}) CREATE (a:L) assuming `a` is unstable
+    // MATCH (a:L {foo: 42}) CREATE (b:L) assuming `a` is unstable
     val selections = Selections.from(Seq(
-      In(Variable("a")(pos), Property(Variable("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos),
+      In(
+        Property(Variable("a")(pos), PropertyKeyName("foo")(pos))(pos),
+        ListLiteral(List(SignedDecimalIntegerLiteral("42")(pos)))(pos)
+      )(pos),
       HasLabels(Variable("a")(pos), Seq(LabelName("L")(pos)))(pos)
     ))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe ListSet()
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe empty
   }
 
   test("Overlap when properties don't overlap but labels explicitly do for difficult predicates") {
-    // MATCH (a:L {foo < 42}) CREATE (a:L) assuming `a` is unstable
+    // MATCH (a:L) WHERE a.foo < 42 CREATE (b:L) assuming `a` is unstable
+    val variable = Variable("a")(pos)
+    val property = Property(variable, PropertyKeyName("foo")(pos))(pos)
+    val lessThan = LessThan(property, SignedDecimalIntegerLiteral("42")(pos))(pos)
     val selections = Selections.from(Seq(
-      LessThan(Variable("a")(pos), Property(Variable("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos),
+      AndedPropertyInequalities(variable, property, NonEmptyList(lessThan)),
       HasLabels(Variable("a")(pos), Seq(LabelName("L")(pos)))(pos)
     ))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
@@ -198,7 +209,10 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
   test("no overlap when reading and writing same rel types but matching on rel property") {
     // MATCH (a)-[r:T1 {foo: 42}]->(b)  CREATE (a)-[r2:T1]->(b)
     val selections =
-      Selections.from(In(Variable("a")(pos), Property(Variable("r")(pos), PropertyKeyName("foo")(pos))(pos))(pos))
+      Selections.from(In(
+        Property(Variable("r")(pos), PropertyKeyName("foo")(pos))(pos),
+        ListLiteral(List(SignedDecimalIntegerLiteral("42")(pos)))(pos)
+      )(pos))
     val qg = QueryGraph(
       patternRelationships =
         Set(PatternRelationship(
@@ -218,7 +232,10 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
   test("overlap when reading and writing same property and rel type") {
     // MATCH (a)-[r:T1 {foo: 42}]->(b)  CREATE (a)-[r2:T1]->(b)
     val selections =
-      Selections.from(In(Variable("a")(pos), Property(Variable("r")(pos), PropertyKeyName("foo")(pos))(pos))(pos))
+      Selections.from(In(
+        Property(Variable("r")(pos), PropertyKeyName("foo")(pos))(pos),
+        ListLiteral(List(SignedDecimalIntegerLiteral("42")(pos)))(pos)
+      )(pos))
     val qg = QueryGraph(
       patternRelationships =
         Set(PatternRelationship(

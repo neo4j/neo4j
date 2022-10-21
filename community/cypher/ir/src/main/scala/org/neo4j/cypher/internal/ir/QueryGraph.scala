@@ -273,20 +273,22 @@ case class QueryGraph(
     inlinedRelTypes(rel) ++ whereClauseTypes ++ whereClauseLabelOrTypes
   }
 
+  private def traverseAllQueryGraphs[A](f: QueryGraph => Set[A]): Set[A] =
+    f(this) ++
+      optionalMatches.flatMap(_.traverseAllQueryGraphs(f)) ++
+      quantifiedPathPatterns.flatMap(_.pattern.traverseAllQueryGraphs(f))
+
   def allPossibleLabelsOnNode(node: String): Set[LabelName] =
-    possibleLabelsOnNode(node) ++
-      optionalMatches.flatMap(_.allPossibleLabelsOnNode(node)) ++
-      quantifiedPathPatterns.flatMap(_.pattern.allPossibleLabelsOnNode(node))
+    traverseAllQueryGraphs(_.possibleLabelsOnNode(node))
 
   def allPossibleTypesOnRel(rel: String): Set[RelTypeName] =
-    possibleTypesOnRel(rel) ++
-      optionalMatches.flatMap(_.allPossibleTypesOnRel(rel)) ++
-      quantifiedPathPatterns.flatMap(_.pattern.allPossibleTypesOnRel(rel))
+    traverseAllQueryGraphs(_.possibleTypesOnRel(rel))
 
   def allKnownPropertiesOnIdentifier(idName: String): Set[PropertyKeyName] =
-    knownProperties(idName) ++
-      optionalMatches.flatMap(_.allKnownPropertiesOnIdentifier(idName)) ++
-      quantifiedPathPatterns.flatMap(_.pattern.allKnownPropertiesOnIdentifier(idName))
+    traverseAllQueryGraphs(_.knownProperties(idName))
+
+  def allSelections: Selections =
+    Selections(traverseAllQueryGraphs(_.selections.predicates))
 
   def coveredIdsForPatterns: Set[String] = {
     val patternRelIds = nodeConnections.flatMap(_.coveredIds)
