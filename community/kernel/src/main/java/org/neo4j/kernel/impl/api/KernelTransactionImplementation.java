@@ -34,6 +34,7 @@ import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.g
 import static org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace.NONE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
+import java.time.Clock;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
@@ -173,7 +175,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final StorageReader storageReader;
     private final CommandCreationContext commandCreationContext;
     private final NamedDatabaseId namedDatabaseId;
-    private final ClockContext clocks;
+    private final TransactionClockContext clocks;
     private final AccessCapabilityFactory accessCapabilityFactory;
     private final ConstraintSemantics constraintSemantics;
     private final TransactionMemoryPool transactionMemoryPool;
@@ -283,7 +285,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.namedDatabaseId = namedDatabaseId;
         this.storageEngine = storageEngine;
         this.pool = pool;
-        this.clocks = new ClockContext(clock);
+        this.clocks = new TransactionClockContext(clock);
         this.transactionTracer = tracers.getDatabaseTracer();
         this.leaseService = leaseService;
         this.currentStatement =
@@ -416,7 +418,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             GlobalProcedures globalProcedures,
             Dependencies dependencies,
             SecurityAuthorizationHandler securityAuthorizationHandler) {
-        return (securityContext, transactionId, transactionCursorContext, assertOpen) -> {
+        return (securityContext, transactionId, transactionCursorContext, clockContextSupplier, assertOpen) -> {
             var executionContextCursorTracer = new ExecutionContextCursorTracer(
                     PageCacheTracer.NULL, ExecutionContextCursorTracer.TRANSACTION_EXECUTION_TAG);
             var executionContextCursorContext = contextFactory.create(executionContextCursorTracer);
@@ -452,7 +454,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     tracers.getLockTracer(),
                     overridableSecurityContext,
                     assertOpen,
-                    securityAuthorizationHandler);
+                    securityAuthorizationHandler,
+                    clockContextSupplier);
 
             return new ThreadExecutionContext(
                     executionContextCursorContext,
@@ -563,8 +566,22 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         long transactionSequenceNumberWhenCreated = transactionSequenceNumber;
+        // Currently, the execution context is statement scoped and we rely on that by simply obtaining
+        // the statement clock when it is created and the statement clock is immutable for the entire life of the
+        // execution context.
+        // For the same reason, execution context can be created only when there is an active statement.
+        if (clocks.statementClock() == null) {
+            throw new IllegalStateException("Execution context must be created when there is an active statement");
+        }
+        var statementClock =
+                new ExecutionContextClock(clocks.systemClock(), clocks.transactionClock(), clocks.statementClock());
+
         return executionContextFactory.createNew(
-                overridableSecurityContext.originalSecurityContext(), transactionSequenceNumber, cursorContext, () -> {
+                overridableSecurityContext.originalSecurityContext(),
+                transactionSequenceNumber,
+                cursorContext,
+                () -> statementClock,
+                () -> {
                     assertOpen();
                     // Since TX object is reused, let's check if this is still the same TX
                     if (transactionSequenceNumberWhenCreated != transactionSequenceNumber) {
@@ -1418,7 +1435,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public ClockContext clocks() {
+    public TransactionClockContext clocks() {
         return clocks;
     }
 
@@ -1488,6 +1505,26 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 SecurityContext securityContext,
                 long transactionId,
                 CursorContext transactionCursorContext,
+                Supplier<ClockContext> clockContextSupplier,
                 AssertOpen assertOpen);
+    }
+
+    private record ExecutionContextClock(Clock systemClock, Clock transactionClock, Clock statementClock)
+            implements ClockContext {
+
+        @Override
+        public Clock systemClock() {
+            return systemClock;
+        }
+
+        @Override
+        public Clock transactionClock() {
+            return transactionClock;
+        }
+
+        @Override
+        public Clock statementClock() {
+            return statementClock;
+        }
     }
 }

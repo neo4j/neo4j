@@ -76,7 +76,7 @@ class StatementLifecycleTest {
         var statement = new KernelStatement(
                 transaction,
                 LockTracer.NONE,
-                new ClockContext(),
+                new TransactionClockContext(),
                 new AtomicReference<>(CpuClock.NOT_AVAILABLE),
                 from(DEFAULT_DATABASE_NAME, UUID.randomUUID()),
                 Config.defaults(GraphDatabaseInternalSettings.track_tx_statement_close, true));

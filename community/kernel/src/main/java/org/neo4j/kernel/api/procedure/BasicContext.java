@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.ValueMapper;
@@ -36,6 +37,7 @@ public class BasicContext implements Context {
     private final DependencyResolver resolver;
     private final InternalTransaction transaction;
     private final SecurityContext securityContext;
+    private final ClockContext clockContext;
     private final ValueMapper<Object> valueMapper;
     private final Thread thread;
     private final ProcedureCallContext procedureCallContext;
@@ -44,12 +46,14 @@ public class BasicContext implements Context {
             DependencyResolver resolver,
             InternalTransaction transaction,
             SecurityContext securityContext,
+            ClockContext clockContext,
             ValueMapper<Object> valueMapper,
             Thread thread,
             ProcedureCallContext procedureCallContext) {
         this.resolver = resolver;
         this.transaction = transaction;
         this.securityContext = securityContext;
+        this.clockContext = clockContext;
         this.valueMapper = valueMapper;
         this.thread = thread;
         this.procedureCallContext = procedureCallContext;
@@ -92,20 +96,17 @@ public class BasicContext implements Context {
 
     @Override
     public Clock systemClock() throws ProcedureException {
-        return throwIfNull(
-                "SystemClock", transaction.kernelTransaction(), t -> t.clocks().systemClock());
+        return throwIfNull("SystemClock", clockContext, ClockContext::systemClock);
     }
 
     @Override
     public Clock statementClock() throws ProcedureException {
-        return throwIfNull("StatementClock", transaction.kernelTransaction(), t -> t.clocks()
-                .statementClock());
+        return throwIfNull("StatementClock", clockContext, ClockContext::statementClock);
     }
 
     @Override
     public Clock transactionClock() throws ProcedureException {
-        return throwIfNull("TransactionClock", transaction.kernelTransaction(), t -> t.clocks()
-                .transactionClock());
+        return throwIfNull("TransactionClock", clockContext, ClockContext::transactionClock);
     }
 
     @Override
@@ -136,6 +137,7 @@ public class BasicContext implements Context {
         private DependencyResolver resolver;
         private InternalTransaction transaction;
         private SecurityContext securityContext = SecurityContext.AUTH_DISABLED;
+        private ClockContext clockContext;
         private Thread thread = Thread.currentThread();
         private ValueMapper<Object> valueMapper;
         private ProcedureCallContext procedureCallContext;
@@ -155,6 +157,11 @@ public class BasicContext implements Context {
             return this;
         }
 
+        public ContextBuilder withClock(ClockContext clockContext) {
+            this.clockContext = clockContext;
+            return this;
+        }
+
         public ContextBuilder withProcedureCallContext(ProcedureCallContext procedureContext) {
             this.procedureCallContext = procedureContext;
             return this;
@@ -165,7 +172,8 @@ public class BasicContext implements Context {
             requireNonNull(securityContext);
             requireNonNull(valueMapper);
             requireNonNull(thread);
-            return new BasicContext(resolver, transaction, securityContext, valueMapper, thread, procedureCallContext);
+            return new BasicContext(
+                    resolver, transaction, securityContext, clockContext, valueMapper, thread, procedureCallContext);
         }
     }
 }

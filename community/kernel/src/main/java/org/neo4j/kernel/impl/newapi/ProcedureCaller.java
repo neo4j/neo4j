@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.newapi;
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 
+import java.time.Clock;
+import java.util.function.Supplier;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -36,6 +38,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.OverridableSecurityContext;
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextValueMapper;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
@@ -142,6 +145,7 @@ public abstract class ProcedureCaller {
                 .withTransaction(maybeInternalTransaction())
                 .withSecurityContext(securityContext)
                 .withProcedureCallContext(procedureContext)
+                .withClock(clockContext())
                 .context();
     }
 
@@ -154,6 +158,8 @@ public abstract class ProcedureCaller {
     abstract void performCheckBeforeOperation();
 
     abstract SecurityAuthorizationHandler securityAuthorizationHandler();
+
+    abstract ClockContext clockContext();
 
     abstract ValueMapper<Object> createValueMapper();
 
@@ -182,6 +188,28 @@ public abstract class ProcedureCaller {
         @Override
         SecurityAuthorizationHandler securityAuthorizationHandler() {
             return ktx.securityAuthorizationHandler();
+        }
+
+        @Override
+        ClockContext clockContext() {
+            // This needs to be lazy, because transactions from virtual databases don't have clock context.
+            return new ClockContext() {
+
+                @Override
+                public Clock systemClock() {
+                    return ktx.clocks().systemClock();
+                }
+
+                @Override
+                public Clock transactionClock() {
+                    return ktx.clocks().transactionClock();
+                }
+
+                @Override
+                public Clock statementClock() {
+                    return ktx.clocks().statementClock();
+                }
+            };
         }
 
         @Override
@@ -271,18 +299,21 @@ public abstract class ProcedureCaller {
         private final OverridableSecurityContext overridableSecurityContext;
         private final AssertOpen assertOpen;
         private final SecurityAuthorizationHandler securityAuthorizationHandler;
+        private final Supplier<ClockContext> clockContextSupplier;
 
         ForThreadExecutionContextScope(
                 GlobalProcedures globalProcedures,
                 DependencyResolver databaseDependencies,
                 OverridableSecurityContext overridableSecurityContext,
                 AssertOpen assertOpen,
-                SecurityAuthorizationHandler securityAuthorizationHandler) {
+                SecurityAuthorizationHandler securityAuthorizationHandler,
+                Supplier<ClockContext> clockContextSupplier) {
             super(globalProcedures, databaseDependencies);
 
             this.overridableSecurityContext = overridableSecurityContext;
             this.assertOpen = assertOpen;
             this.securityAuthorizationHandler = securityAuthorizationHandler;
+            this.clockContextSupplier = clockContextSupplier;
         }
 
         @Override
@@ -325,6 +356,11 @@ public abstract class ProcedureCaller {
         @Override
         SecurityAuthorizationHandler securityAuthorizationHandler() {
             return securityAuthorizationHandler;
+        }
+
+        @Override
+        ClockContext clockContext() {
+            return clockContextSupplier.get();
         }
 
         @Override

@@ -30,6 +30,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.RawIterator;
@@ -73,6 +74,7 @@ import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.IndexReaderCache;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.OverridableSecurityContext;
@@ -1082,7 +1084,8 @@ public abstract class AllStoreHolder extends Read {
                 LockTracer lockTracer,
                 OverridableSecurityContext overridableSecurityContext,
                 AssertOpen assertOpen,
-                SecurityAuthorizationHandler securityAuthorizationHandler) {
+                SecurityAuthorizationHandler securityAuthorizationHandler,
+                Supplier<ClockContext> clockContextSupplier) {
             super(
                     storageReader,
                     tokenRead,
@@ -1104,7 +1107,8 @@ public abstract class AllStoreHolder extends Read {
                     databaseDependencies,
                     overridableSecurityContext,
                     assertOpen,
-                    securityAuthorizationHandler);
+                    securityAuthorizationHandler,
+                    clockContextSupplier);
         }
 
         @Override

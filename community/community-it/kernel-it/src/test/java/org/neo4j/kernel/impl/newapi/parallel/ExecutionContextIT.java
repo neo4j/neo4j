@@ -43,6 +43,7 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.ExecutionContext;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.KernelTransactions;
@@ -240,7 +241,8 @@ public class ExecutionContextIT {
     void testTransactionTerminationCheck() {
         try (Transaction transaction = databaseAPI.beginTx()) {
             var ktx = (KernelTransactionImplementation) ((InternalTransaction) transaction).kernelTransaction();
-            try (var executionContext = ktx.createNewExecutionContext()) {
+            try (Statement statement = ktx.acquireStatement();
+                    var executionContext = ktx.createNewExecutionContext()) {
                 try {
                     var read = executionContext.dataRead();
                     ktx.markForTermination(Status.Transaction.Terminated);
@@ -260,7 +262,9 @@ public class ExecutionContextIT {
         KernelTransactionImplementation originalKtx;
         try (Transaction transaction = databaseAPI.beginTx()) {
             originalKtx = (KernelTransactionImplementation) ((InternalTransaction) transaction).kernelTransaction();
-            executionContext = originalKtx.createNewExecutionContext();
+            try (Statement statement = originalKtx.acquireStatement()) {
+                executionContext = originalKtx.createNewExecutionContext();
+            }
         }
 
         List<Transaction> transactions = new ArrayList<>();

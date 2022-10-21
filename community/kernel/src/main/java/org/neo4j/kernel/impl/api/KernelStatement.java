@@ -84,14 +84,14 @@ public class KernelStatement extends CloseableResourceManager implements AssertO
     private volatile ExecutingQuery executingQuery;
     private final LockTracer systemLockTracer;
     private final Deque<StackTraceElement[]> statementOpenCloseCalls;
-    private final ClockContext clockContext;
+    private final TransactionClockContext clockContext;
     private long initialStatementHits;
     private long initialStatementFaults;
 
     public KernelStatement(
             KernelTransactionImplementation transaction,
             LockTracer systemLockTracer,
-            ClockContext clockContext,
+            TransactionClockContext clockContext,
             AtomicReference<CpuClock> cpuClockRef,
             NamedDatabaseId namedDatabaseId,
             Config config) {
@@ -280,7 +280,7 @@ public class KernelStatement extends CloseableResourceManager implements AssertO
         }
     }
 
-    public ClockContext clocks() {
+    public TransactionClockContext clocks() {
         return clockContext;
     }
 

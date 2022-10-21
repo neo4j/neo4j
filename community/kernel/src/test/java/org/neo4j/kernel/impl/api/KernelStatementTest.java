@@ -166,7 +166,7 @@ class KernelStatementTest {
         return new KernelStatement(
                 transaction,
                 LockTracer.NONE,
-                new ClockContext(),
+                new TransactionClockContext(),
                 cpuClockRef,
                 from(DEFAULT_DATABASE_NAME, UUID.randomUUID()),
                 Config.defaults(GraphDatabaseInternalSettings.track_tx_statement_close, true));

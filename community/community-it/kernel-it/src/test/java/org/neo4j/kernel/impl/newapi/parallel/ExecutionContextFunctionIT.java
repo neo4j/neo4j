@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.internal.kernel.api.security.AccessMode.Static.FULL;
 
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -45,6 +46,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
@@ -63,6 +65,7 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -216,6 +219,7 @@ class ExecutionContextFunctionIT {
     @Test
     void closedTransactionShouldBeDetectedOnUserFunctionInvocation() {
         try (Transaction transaction = db.beginTx();
+                Statement statement = acquireStatement(transaction);
                 ExecutionContext executionContext = createExecutionContext(transaction)) {
             try {
                 var handle = executionContext.procedures().functionGet(getName("plus"));
@@ -258,6 +262,7 @@ class ExecutionContextFunctionIT {
     @Test
     void closedTransactionShouldBeDetectedOnUserAggregationFunctionInvocation() {
         try (Transaction transaction = db.beginTx();
+                Statement statement = acquireStatement(transaction);
                 ExecutionContext executionContext = createExecutionContext(transaction)) {
             try {
                 var handle = executionContext.procedures().aggregationFunctionGet(getName("sum"));
@@ -282,8 +287,54 @@ class ExecutionContextFunctionIT {
         });
     }
 
+    @Test
+    void testRealClockTemporalFunction() throws ProcedureException {
+        doWithExecutionContext((ktx, executionContext) -> {
+            ZonedDateTime referenceDateTime = ZonedDateTime.now();
+            var handle = executionContext.procedures().functionGet(new QualifiedName(List.of("datetime"), "realtime"));
+            AnyValue result = executionContext.procedures().builtInFunctionCall(handle.id(), new AnyValue[0]);
+            assertThat(result).isInstanceOf(DateTimeValue.class);
+            assertThat(((DateTimeValue) result).asObjectCopy()).isAfter(referenceDateTime);
+        });
+    }
+
+    @Test
+    void testTransactionClockTemporalFunction() throws ProcedureException {
+        doWithExecutionContext((ktx, executionContext) -> {
+            var handle =
+                    executionContext.procedures().functionGet(new QualifiedName(List.of("datetime"), "transaction"));
+            AnyValue result = executionContext.procedures().builtInFunctionCall(handle.id(), new AnyValue[0]);
+            assertThat(result)
+                    .isEqualTo(DateTimeValue.datetime(
+                            ZonedDateTime.now(ktx.clocks().transactionClock())));
+        });
+    }
+
+    @Test
+    void testStatementClockTemporalFunction() throws ProcedureException {
+        doWithExecutionContext((ktx, executionContext) -> {
+            var handle = executionContext.procedures().functionGet(new QualifiedName(List.of("datetime"), "statement"));
+            AnyValue result = executionContext.procedures().builtInFunctionCall(handle.id(), new AnyValue[0]);
+            assertThat(result)
+                    .isEqualTo(DateTimeValue.datetime(
+                            ZonedDateTime.now(ktx.clocks().statementClock())));
+        });
+    }
+
+    @Test
+    void testDefaultClockTemporalFunction() throws ProcedureException {
+        doWithExecutionContext((ktx, executionContext) -> {
+            var handle = executionContext.procedures().functionGet(new QualifiedName(List.of(), "datetime"));
+            AnyValue result = executionContext.procedures().builtInFunctionCall(handle.id(), new AnyValue[0]);
+            assertThat(result)
+                    .isEqualTo(DateTimeValue.datetime(
+                            ZonedDateTime.now(ktx.clocks().statementClock())));
+        });
+    }
+
     void doWithExecutionContext(ExecutionContextLogic executionContextLogic) throws ProcedureException {
         try (Transaction transaction = db.beginTx();
+                Statement statement = acquireStatement(transaction);
                 ExecutionContext executionContext = createExecutionContext(transaction)) {
             try {
                 executionContextLogic.doWithExecutionContext(executionContext);
@@ -291,6 +342,24 @@ class ExecutionContextFunctionIT {
                 executionContext.complete();
             }
         }
+    }
+
+    void doWithExecutionContext(ExecutionContextLogic2 executionContextLogic) throws ProcedureException {
+        try (Transaction transaction = db.beginTx();
+                Statement statement = acquireStatement(transaction);
+                ExecutionContext executionContext = createExecutionContext(transaction)) {
+            try {
+                executionContextLogic.doWithExecutionContext(
+                        ((KernelTransactionImplementation) ((InternalTransaction) transaction).kernelTransaction()),
+                        executionContext);
+            } finally {
+                executionContext.complete();
+            }
+        }
+    }
+
+    private Statement acquireStatement(Transaction transaction) {
+        return ((InternalTransaction) transaction).kernelTransaction().acquireStatement();
     }
 
     private AnyValue invokeUserFunction(ExecutionContext executionContext, String name, AnyValue... args)
@@ -327,6 +396,12 @@ class ExecutionContextFunctionIT {
     private interface ExecutionContextLogic {
 
         void doWithExecutionContext(ExecutionContext executionContext) throws ProcedureException;
+    }
+
+    private interface ExecutionContextLogic2 {
+
+        void doWithExecutionContext(KernelTransactionImplementation ktx, ExecutionContext executionContext)
+                throws ProcedureException;
     }
 
     public static class BasicTestFunctions {
