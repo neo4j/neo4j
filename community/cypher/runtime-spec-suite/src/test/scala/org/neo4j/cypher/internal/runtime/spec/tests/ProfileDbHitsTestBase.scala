@@ -386,12 +386,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then
-    val expectedDbHits: Int = runtimeUsed match {
-      case Slotted | Interpreted | Pipelined => sizeHint
-      case Parallel                          => 2 * sizeHint
-    }
-
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe expectedDbHits
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe sizeHint
   }
 
   test("should profile dbHits of directed relationship type scan") {
@@ -436,7 +431,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val expectedDbHits: Int = runtimeUsed match {
       case Slotted | Interpreted => sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/
       case Pipelined             => sizeHint + 1
-      case Parallel              => 2 * sizeHint
+      case Parallel              => sizeHint
     }
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe expectedDbHits
   }
@@ -628,11 +623,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then
-    val expectedDbHits = runtimeUsed match {
-      case Interpreted | Slotted | Pipelined => sizeHint / 10 + 1
-      case Parallel                          => 2 * (sizeHint / 10) + 1
-    }
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe expectedDbHits
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe sizeHint / 10 + 1
   }
 
   test("should profile dbHits of node by id") {
