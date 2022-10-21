@@ -343,7 +343,7 @@ class FullScanStoreViewTest {
 
         assertThatTracing(graphDb)
                 .record(pins(3).noFaults())
-                .freki(pins(3).noFaults())
+                .freki(pins(4).noFaults())
                 .matches(pageCacheTracer);
     }
 
