@@ -119,7 +119,7 @@ Feature: IsEmptyFunctionAcceptance
     Given an empty graph
     And having executed:
     """
-    CREATE ()--()
+    CREATE ()-[:REL]->()
     """
     When executing query:
       """

@@ -394,7 +394,7 @@ Feature: MatchAcceptance
     When executing query:
       """
       MATCH(a:A) WITH a.prop as prop
-      MATCH (b:B) <-- ( prop )
+      MATCH (b:B)<--( prop )
       RETURN b
       """
     Then a SyntaxError should be raised at compile time: VariableTypeConflict
@@ -407,7 +407,7 @@ Feature: MatchAcceptance
       | false                                                                    |
       | [ 1, 2, 3 ]                                                              |
       | [ 1.0, 2.0, 3.0 ]                                                        |
-      | duration("1D")                                                           |
+      | duration("P1D")                                                           |
       | [ localdatetime('2015185T19:32:24'), localdatetime('2016185T19:32:24') ] |
       | [ 1.0, 2]                                                                |
 
