@@ -142,8 +142,8 @@ class SnapshotExecutionTest {
         var e = assertThrows(
                 TransientException.class, () -> driver.session().run(query).list());
         assertThat(e)
-                .hasMessageContaining("Unable to get clean data snapshot for query 'MATCH (`f`:`First`)")
-                .hasMessageContaining("RETURN `f` AS `f`, (`s`).`number` AS `s`' that performs updates.");
+                .hasMessageContaining("Unable to get clean data snapshot for query 'MATCH (f:First)")
+                .hasMessageContaining("RETURN f, s.number AS s' that performs updates.");
     }
 
     // As hard as it might be to believe, we actually had a bug in this area.
