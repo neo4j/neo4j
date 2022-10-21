@@ -249,10 +249,8 @@ public class SecurityAuthorizationHandler {
                 "%s%n%nThe credentials you provided were valid, but must be changed before you can use this instance. "
                         + "If this is the first time you are using Neo4j, this is to ensure you are not using the default credentials in production. "
                         + "If you are not using default credentials, you are getting this message because an administrator requires a password change.%n"
-                        + "Changing your password is easy to do via the Neo4j Browser.%n"
-                        + "If you are connecting via a shell or programmatically via a driver, "
-                        + "just issue a `ALTER CURRENT USER SET PASSWORD FROM 'current password' TO 'new password'` "
-                        + "statement against the system database in the current session, and then restart your driver with the new password configured.",
+                        + "To change your password, issue an `ALTER CURRENT USER SET PASSWORD FROM 'current password' TO 'new password'` "
+                        + "statement against the system database.",
                 message);
     }
 }
