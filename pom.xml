@@ -144,8 +144,8 @@
     <amazon-sdk.version>1.12.301</amazon-sdk.version>
     <guava.version>31.1-jre</guava.version>
     <awaitility.version>4.2.0</awaitility.version>
-    <log4j.version>2.18.0</log4j.version>
-    <slf4j.version>2.0.1</slf4j.version>
+    <log4j.version>2.19.0</log4j.version>
+    <slf4j.version>2.0.3</slf4j.version>
     <neo4j-java-driver.version>5.1.0</neo4j-java-driver.version>
     <skip-scalastyle>false</skip-scalastyle>
   </properties>
@@ -380,7 +380,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>3.3.0</version>
           <executions>
             <!-- Augment default jar with url -->
             <execution>
@@ -662,7 +662,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.3.0</version>
+          <version>3.4.0</version>
           <dependencies>
             <dependency>
               <groupId>org.ow2.asm</groupId>
@@ -679,7 +679,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>3.3.0</version>
+          <version>3.4.2</version>
           <configuration>
             <tarLongFileMode>gnu</tarLongFileMode>
           </configuration>
@@ -975,7 +975,7 @@
       <dependency>
         <groupId>org.codehaus.jettison</groupId>
         <artifactId>jettison</artifactId>
-        <version>1.5.0</version>
+        <version>1.5.1</version>
       </dependency>
       <dependency>
         <groupId>net.java.dev.jna</groupId>
@@ -1069,7 +1069,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-bom</artifactId>
-        <version>2020.0.23</version>
+        <version>2020.0.24</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -1369,7 +1369,7 @@
       <dependency>
         <groupId>com.github.luben</groupId>
         <artifactId>zstd-jni</artifactId>
-        <version>1.5.2-4</version>
+        <version>1.5.2-5</version>
       </dependency>
 
       <!--
@@ -1379,7 +1379,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
-        <version>4.1.82.Final</version>
+        <version>4.1.84.Final</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
