@@ -170,6 +170,11 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory {
         }
 
         @Override
+        public boolean hasOnlySingleIds() {
+            return true;
+        }
+
+        @Override
         public long nextId(CursorContext cursorContext) {
             return EMPTY_ID;
         }

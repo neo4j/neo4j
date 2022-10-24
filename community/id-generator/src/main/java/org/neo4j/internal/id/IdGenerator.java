@@ -109,6 +109,11 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
     IdType idType();
 
     /**
+     * @return whether this ID generator can only allocate/reuse single IDs.
+     */
+    boolean hasOnlySingleIds();
+
+    /**
      * Allows iteration over free ids in the generator, see {@link #freeIdsIterator(long, long)}
      * @throws IOException
      */
@@ -293,6 +298,11 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         @Override
         public IdType idType() {
             return delegate.idType();
+        }
+
+        @Override
+        public boolean hasOnlySingleIds() {
+            return delegate.hasOnlySingleIds();
         }
 
         @Override

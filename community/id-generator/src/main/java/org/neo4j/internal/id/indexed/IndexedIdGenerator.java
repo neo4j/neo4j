@@ -287,6 +287,7 @@ public class IndexedIdGenerator implements IdGenerator {
     private final IdRangeMerger defaultMerger;
     private final IdRangeMerger recoveryMerger;
     private final boolean readOnly;
+    private final IdSlotDistribution slotDistribution;
     private final PageCacheTracer pageCacheTracer;
     private final CursorContextFactory contextFactory;
 
@@ -315,6 +316,7 @@ public class IndexedIdGenerator implements IdGenerator {
         this.path = path;
         this.readOnly = readOnly;
         this.contextFactory = contextFactory;
+        this.slotDistribution = slotDistribution;
         this.pageCacheTracer = tracer;
         int cacheCapacity = idType.highActivity() && allowLargeIdCaches ? LARGE_CACHE_CAPACITY : SMALL_CACHE_CAPACITY;
         this.idType = idType;
@@ -620,6 +622,11 @@ public class IndexedIdGenerator implements IdGenerator {
     @Override
     public IdType idType() {
         return idType;
+    }
+
+    @Override
+    public boolean hasOnlySingleIds() {
+        return slotDistribution.maxSlotSize() == 1;
     }
 
     @Override

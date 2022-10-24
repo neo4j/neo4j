@@ -117,6 +117,11 @@ class ReadOnlyHighIdGenerator implements IdGenerator {
     }
 
     @Override
+    public boolean hasOnlySingleIds() {
+        return true;
+    }
+
+    @Override
     public boolean consistencyCheck(ReporterFactory reporterFactory, CursorContext cursorContext) {
         return true;
     }

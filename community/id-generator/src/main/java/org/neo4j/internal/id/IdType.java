@@ -21,11 +21,6 @@ package org.neo4j.internal.id;
 
 public interface IdType {
     /**
-     * @return {@code true} if this {@link IdType} represents data about schema, otherwise {@code false}.
-     */
-    boolean isSchemaType();
-
-    /**
      * @return whether there's a high activity of id allocations/deallocations for this type.
      */
     boolean highActivity();

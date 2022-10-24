@@ -81,7 +81,7 @@ import org.neo4j.values.storable.RandomValues;
 @Timeout(value = 20, unit = MINUTES)
 class ReuseStorageSpaceIT {
     // Data size control center
-    private static final int DATA_SIZE = 1_000;
+    private static final int DATA_SIZE_PER_TRANSACTION = 10;
     private static final int CREATION_THREADS = Runtime.getRuntime().availableProcessors();
     private static final int NUMBER_OF_TRANSACTIONS_PER_THREAD = 100;
 
@@ -267,7 +267,6 @@ class ReuseStorageSpaceIT {
         Race race = new Race();
         AtomicLong createdNodes = new AtomicLong();
         AtomicLong createdRelationships = new AtomicLong();
-        int dataSizePerTransaction = DATA_SIZE / NUMBER_OF_TRANSACTIONS_PER_THREAD / CREATION_THREADS;
         AtomicLong nextSeed = new AtomicLong(seed);
         race.addContestants(
                 CREATION_THREADS,
@@ -278,7 +277,7 @@ class ReuseStorageSpaceIT {
                     for (int t = 0; t < NUMBER_OF_TRANSACTIONS_PER_THREAD; t++) {
                         try (Transaction tx = db.beginTx()) {
                             // Nodes
-                            Node[] nodes = new Node[dataSizePerTransaction];
+                            Node[] nodes = new Node[DATA_SIZE_PER_TRANSACTION];
                             for (int n = 0; n < nodes.length; n++) {
                                 Node node = nodes[n] =
                                         tx.createNode(labels(random.selection(TOKENS, 0, TOKENS.length, false)));
@@ -352,7 +351,10 @@ class ReuseStorageSpaceIT {
             IdGeneratorFactory idGeneratorFactory =
                     db.getDependencyResolver().resolveDependency(IdGeneratorFactory.class);
             idGeneratorFactory.visit(idGenerator -> {
-                sizes.put(idGenerator.idType().name(), idGenerator.getHighId());
+                if (idGenerator.hasOnlySingleIds()) {
+                    sizes.put(idGenerator.idType().name(), idGenerator.getHighId());
+                }
+                // Otherwise there's no way we can guarantee perfect ID reuse
             });
         }
 

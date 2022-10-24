@@ -29,9 +29,4 @@ public enum SchemaIdType implements IdType {
     public boolean highActivity() {
         return false;
     }
-
-    @Override
-    public boolean isSchemaType() {
-        return true;
-    }
 }

@@ -171,11 +171,6 @@ class RecoveryIT {
         public boolean highActivity() {
             return false;
         }
-
-        @Override
-        public boolean isSchemaType() {
-            return false;
-        }
     };
 
     @Inject
