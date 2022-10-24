@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.RepeatedTest;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -79,6 +80,8 @@ abstract class UpdateDeletedRelationshipIndexBase {
                 try (Transaction tx = db.beginTx()) {
                     operation.run(tx, id);
                     tx.commit();
+                } catch (TransientTransactionFailureException e) {
+                    // OK
                 }
             }));
         }
