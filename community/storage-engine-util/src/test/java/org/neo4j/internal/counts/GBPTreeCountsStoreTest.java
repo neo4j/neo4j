@@ -20,7 +20,9 @@
 package org.neo4j.internal.counts;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -85,15 +87,48 @@ class GBPTreeCountsStoreTest {
     }
 
     @Test
+    void failToApplySameTransactionTwice() {
+        long txId = BASE_TX_ID + 1;
+
+        try (var updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
+            updater.incrementNodeCount(LABEL_ID_1, 10);
+        }
+        assertThatThrownBy(() -> {
+                    try (var updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
+                        updater.incrementNodeCount(LABEL_ID_1, 10);
+                    }
+                })
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("but highest gap-free is");
+    }
+
+    @Test
+    void applySeveralChunksOfSameTransaction() {
+        long txId = BASE_TX_ID + 1;
+
+        assertDoesNotThrow(() -> {
+            for (int i = 0; i < 100; i++) {
+                try (var updater = countsStore.apply(txId, false, NULL_CONTEXT)) {
+                    updater.incrementNodeCount(LABEL_ID_1, 10);
+                }
+            }
+
+            try (var updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
+                updater.incrementNodeCount(LABEL_ID_1, 10);
+            }
+        });
+    }
+
+    @Test
     void shouldUpdateAndReadSomeCounts() throws IOException {
         // given
         long txId = BASE_TX_ID;
-        try (CountsAccessor.Updater updater = countsStore.apply(++txId, NULL_CONTEXT)) {
+        try (CountsAccessor.Updater updater = countsStore.apply(++txId, true, NULL_CONTEXT)) {
             updater.incrementNodeCount(LABEL_ID_1, 10);
             updater.incrementRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 3);
             updater.incrementRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, 7);
         }
-        try (CountsAccessor.Updater updater = countsStore.apply(++txId, NULL_CONTEXT)) {
+        try (CountsAccessor.Updater updater = countsStore.apply(++txId, true, NULL_CONTEXT)) {
             updater.incrementNodeCount(LABEL_ID_1, 5); // now at 15
             updater.incrementRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 2); // now at 5
         }
@@ -106,7 +141,7 @@ class GBPTreeCountsStoreTest {
         assertEquals(7, countsStore.relationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, NULL_CONTEXT));
 
         // and when
-        try (CountsAccessor.Updater updater = countsStore.apply(++txId, NULL_CONTEXT)) {
+        try (CountsAccessor.Updater updater = countsStore.apply(++txId, true, NULL_CONTEXT)) {
             updater.incrementNodeCount(LABEL_ID_1, -7);
             updater.incrementRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, -5);
             updater.incrementRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, -2);
@@ -162,7 +197,7 @@ class GBPTreeCountsStoreTest {
     void shouldDumpCountsStore() throws IOException {
         // given
         long txId = BASE_TX_ID + 1;
-        try (CountsAccessor.Updater updater = countsStore.apply(txId, NULL_CONTEXT)) {
+        try (CountsAccessor.Updater updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
             updater.incrementNodeCount(LABEL_ID_1, 10);
             updater.incrementRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 3);
             updater.incrementRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, 7);
@@ -193,7 +228,7 @@ class GBPTreeCountsStoreTest {
     }
 
     private void incrementNodeCount(long txId, int labelId, int delta) {
-        try (CountsAccessor.Updater updater = countsStore.apply(txId, NULL_CONTEXT)) {
+        try (CountsAccessor.Updater updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
             updater.incrementNodeCount(labelId, delta);
         }
     }

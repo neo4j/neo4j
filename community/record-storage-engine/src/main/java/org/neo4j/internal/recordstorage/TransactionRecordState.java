@@ -36,7 +36,7 @@ import java.util.function.Function;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
-import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
+import org.neo4j.internal.counts.Updater;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command.Mode;
@@ -600,7 +600,7 @@ public class TransactionRecordState implements RecordState {
         return null;
     }
 
-    private static class DegreesUpdater implements RelationshipGroupDegreesStore.Updater {
+    private static class DegreesUpdater implements Updater {
         private MutableLongObjectMap<MutableLong> degrees;
 
         @Override

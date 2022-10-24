@@ -20,7 +20,9 @@
 package org.neo4j.internal.counts;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -45,7 +47,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder;
-import org.neo4j.internal.counts.RelationshipGroupDegreesStore.Updater;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -88,16 +89,49 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
     }
 
     @Test
+    void failToApplySameTransactionTwice() {
+        long txId = BASE_TX_ID + 1;
+
+        try (Updater updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
+            updater.increment(GROUP_ID_1, OUTGOING, 10);
+        }
+        assertThatThrownBy(() -> {
+                    try (Updater updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
+                        updater.increment(GROUP_ID_1, OUTGOING, 10);
+                    }
+                })
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("but highest gap-free is");
+    }
+
+    @Test
+    void applySeveralChunksOfSameTransaction() {
+        long txId = BASE_TX_ID + 1;
+
+        assertDoesNotThrow(() -> {
+            for (int i = 0; i < 100; i++) {
+                try (Updater updater = countsStore.apply(txId, false, NULL_CONTEXT)) {
+                    updater.increment(GROUP_ID_1, OUTGOING, 10);
+                }
+            }
+
+            try (Updater updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
+                updater.increment(GROUP_ID_1, OUTGOING, 10);
+            }
+        });
+    }
+
+    @Test
     void shouldUpdateAndReadSomeCounts() throws IOException {
         // given
         long txId = BASE_TX_ID;
-        try (Updater updater = countsStore.apply(++txId, NULL_CONTEXT)) {
+        try (Updater updater = countsStore.apply(++txId, true, NULL_CONTEXT)) {
             updater.increment(GROUP_ID_1, OUTGOING, 10);
             updater.increment(GROUP_ID_1, INCOMING, 3);
             updater.increment(GROUP_ID_2, OUTGOING, 7);
             updater.increment(GROUP_ID_2, LOOP, 14);
         }
-        try (Updater updater = countsStore.apply(++txId, NULL_CONTEXT)) {
+        try (Updater updater = countsStore.apply(++txId, true, NULL_CONTEXT)) {
             updater.increment(GROUP_ID_1, OUTGOING, 5); // now at 15
             updater.increment(GROUP_ID_1, INCOMING, 2); // now at 5
         }
@@ -111,7 +145,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
         assertEquals(14, countsStore.degree(GROUP_ID_2, LOOP, NULL_CONTEXT));
 
         // and when
-        try (Updater updater = countsStore.apply(++txId, NULL_CONTEXT)) {
+        try (Updater updater = countsStore.apply(++txId, true, NULL_CONTEXT)) {
             updater.increment(GROUP_ID_1, OUTGOING, -7);
             updater.increment(GROUP_ID_1, INCOMING, -5);
             updater.increment(GROUP_ID_2, OUTGOING, -2);
@@ -166,7 +200,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
     void shouldDumpCountsStore() throws IOException {
         // given
         long txId = BASE_TX_ID + 1;
-        try (Updater updater = countsStore.apply(txId, NULL_CONTEXT)) {
+        try (Updater updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
             updater.increment(GROUP_ID_1, OUTGOING, 10);
             updater.increment(GROUP_ID_1, INCOMING, 3);
             updater.increment(GROUP_ID_2, LOOP, 7);
@@ -194,7 +228,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest {
     }
 
     private void increment(long txId, long groupId, RelationshipDirection direction, int delta) {
-        try (Updater updater = countsStore.apply(txId, NULL_CONTEXT)) {
+        try (Updater updater = countsStore.apply(txId, true, NULL_CONTEXT)) {
             updater.increment(groupId, direction, delta);
         }
     }

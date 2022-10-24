@@ -58,7 +58,7 @@ import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
 import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
-import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
+import org.neo4j.internal.counts.Updater;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
 import org.neo4j.io.ByteUnit;
@@ -475,10 +475,7 @@ class RecordStorageMigratorIT {
         }
         var noGroupsRebuildAssertion = new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder() {
             @Override
-            public void rebuild(
-                    RelationshipGroupDegreesStore.Updater updater,
-                    CursorContext cursorContext,
-                    MemoryTracker memoryTracker) {
+            public void rebuild(Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
                 throw new IllegalStateException("Rebuild should not be required");
             }
 
@@ -582,10 +579,7 @@ class RecordStorageMigratorIT {
         var groupDegreesStoreNeedsRebuild = new MutableBoolean();
         var groupsRebuildAssertion = new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder() {
             @Override
-            public void rebuild(
-                    RelationshipGroupDegreesStore.Updater updater,
-                    CursorContext cursorContext,
-                    MemoryTracker memoryTracker) {
+            public void rebuild(Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
                 groupDegreesStoreNeedsRebuild.setTrue();
             }
 
@@ -752,7 +746,7 @@ class RecordStorageMigratorIT {
         })) {
             store.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
             for (long txId = fromTxId + 1; txId <= toTxId; txId++) {
-                store.apply(txId, NULL_CONTEXT).close();
+                store.apply(txId, true, NULL_CONTEXT).close();
             }
             store.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
@@ -762,10 +756,7 @@ class RecordStorageMigratorIT {
                 openOptions,
                 new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder() {
                     @Override
-                    public void rebuild(
-                            RelationshipGroupDegreesStore.Updater updater,
-                            CursorContext cursorContext,
-                            MemoryTracker memoryTracker) {
+                    public void rebuild(Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
                         // Do nothing
                     }
 
@@ -776,7 +767,7 @@ class RecordStorageMigratorIT {
                 })) {
             store.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
             for (long txId = fromTxId + 1; txId <= toTxId; txId++) {
-                store.apply(txId, NULL_CONTEXT).close();
+                store.apply(txId, true, NULL_CONTEXT).close();
             }
             store.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }

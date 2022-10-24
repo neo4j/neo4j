@@ -69,7 +69,7 @@ import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
-import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
+import org.neo4j.internal.counts.Updater;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -752,7 +752,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             countsStore.start(context, StoreCursors.NULL, memoryTracker);
             if (countsUpToDate.isTrue()) {
                 for (long txId = txIdBeforeMigration + 1; txId <= txIdAfterMigration; txId++) {
-                    countsStore.apply(txId, context).close();
+                    countsStore.apply(txId, true, context).close();
                 }
                 countsStore.checkpoint(flushEvent, context);
             }
@@ -761,10 +761,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
         var degreesUpToDate = new MutableBoolean(true);
         var degreesBuilder = new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder() {
             @Override
-            public void rebuild(
-                    RelationshipGroupDegreesStore.Updater updater,
-                    CursorContext cursorContext,
-                    MemoryTracker memoryTracker) {
+            public void rebuild(Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
                 degreesUpToDate.setFalse();
             }
 
@@ -792,7 +789,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             degreesStore.start(context, StoreCursors.NULL, EmptyMemoryTracker.INSTANCE);
             if (degreesUpToDate.isTrue()) {
                 for (long txId = txIdBeforeMigration + 1; txId <= txIdAfterMigration; txId++) {
-                    degreesStore.apply(txId, context).close();
+                    degreesStore.apply(txId, true, context).close();
                 }
                 degreesStore.checkpoint(flushEvent, context);
             }

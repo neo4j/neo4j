@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
+import org.neo4j.internal.counts.Updater;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -95,7 +95,7 @@ class RelationshipDeleterTest {
         deleter.relationshipDelete(
                 singleDelete(relB, type, startNode, otherNode1).deletions(),
                 recordChanges,
-                mock(RelationshipGroupDegreesStore.Updater.class),
+                mock(Updater.class),
                 mock(MappedNodeDataLookup.class),
                 INSTANCE,
                 IGNORE);
@@ -138,7 +138,7 @@ class RelationshipDeleterTest {
         deleter.relationshipDelete(
                 singleDelete(relB, type, node, node).deletions(),
                 recordChanges,
-                mock(RelationshipGroupDegreesStore.Updater.class),
+                mock(Updater.class),
                 groupLookup,
                 INSTANCE,
                 IGNORE);

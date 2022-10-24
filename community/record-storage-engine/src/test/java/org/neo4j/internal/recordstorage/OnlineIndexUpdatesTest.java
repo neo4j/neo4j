@@ -46,7 +46,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
-import org.neo4j.counts.CountsStore;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
@@ -453,7 +452,7 @@ class OnlineIndexUpdatesTest {
                         false);
     }
 
-    private static Lifecycle wrapInLifecycle(CountsStore countsStore) {
+    private static Lifecycle wrapInLifecycle(GBPTreeCountsStore countsStore) {
         return new LifecycleAdapter() {
             @Override
             public void start() throws IOException {

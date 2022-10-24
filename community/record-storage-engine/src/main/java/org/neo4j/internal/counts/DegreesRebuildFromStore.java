@@ -90,8 +90,7 @@ public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesS
     }
 
     @Override
-    public void rebuild(
-            RelationshipGroupDegreesStore.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
+    public void rebuild(Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
         if (neoStores.getRelationshipGroupStore().isEmpty()) {
             return;
         }
@@ -226,7 +225,7 @@ public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesS
             return (int) group;
         }
 
-        void writeTo(RelationshipGroupDegreesStore.Updater updater) {
+        void writeTo(Updater updater) {
             for (long node = 0; node < highNodeId; node++) {
                 long groupIndex = nodeCache.get(node);
                 while (groupIndex != -1) {

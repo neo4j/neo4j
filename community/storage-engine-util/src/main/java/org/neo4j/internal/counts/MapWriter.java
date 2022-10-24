@@ -36,12 +36,19 @@ public class MapWriter implements CountUpdater.CountWriter {
     private final OutOfOrderSequence idSequence;
     private final long txId;
     private final Function<CountsKey, AtomicLong> defaultToStoredCount;
+    private final boolean closeSequence;
 
-    MapWriter(ToLongFunction<CountsKey> storeLookup, CountsChanges changes, OutOfOrderSequence idSequence, long txId) {
+    MapWriter(
+            ToLongFunction<CountsKey> storeLookup,
+            CountsChanges changes,
+            OutOfOrderSequence idSequence,
+            long txId,
+            boolean closeSequence) {
         this.changes = changes;
         this.idSequence = idSequence;
         this.txId = txId;
-        defaultToStoredCount = k -> new AtomicLong(storeLookup.applyAsLong(k));
+        this.defaultToStoredCount = k -> new AtomicLong(storeLookup.applyAsLong(k));
+        this.closeSequence = closeSequence;
     }
 
     @Override
@@ -51,6 +58,8 @@ public class MapWriter implements CountUpdater.CountWriter {
 
     @Override
     public void close() {
-        idSequence.offer(txId, EMPTY_LONG_ARRAY);
+        if (closeSequence) {
+            idSequence.offer(txId, EMPTY_LONG_ARRAY);
+        }
     }
 }

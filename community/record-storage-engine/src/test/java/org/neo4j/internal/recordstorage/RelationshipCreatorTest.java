@@ -43,7 +43,7 @@ import static org.neo4j.internal.recordstorage.RecordBuilders.tPrev;
 import static org.neo4j.internal.recordstorage.RecordBuilders.to;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
+import org.neo4j.internal.counts.Updater;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.FlatRelationshipModifications;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -203,12 +203,7 @@ class RelationshipCreatorTest {
 
         FlatRelationshipModifications data = new FlatRelationshipModifications(
                 new FlatRelationshipModifications.RelationshipData(nextRelId(givenState), 0, fromNode, toNode));
-        logic.modifyRelationships(
-                data,
-                changeset,
-                mock(RelationshipGroupDegreesStore.Updater.class),
-                ResourceLocker.IGNORE,
-                LockTracer.NONE);
+        logic.modifyRelationships(data, changeset, mock(Updater.class), ResourceLocker.IGNORE, LockTracer.NONE);
     }
 
     private static long nextRelId(AbstractBaseRecord[] existingRecords) {

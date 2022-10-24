@@ -54,7 +54,7 @@ import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
 import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
-import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
+import org.neo4j.internal.counts.Updater;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
@@ -444,9 +444,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
                         new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder() {
                             @Override
                             public void rebuild(
-                                    RelationshipGroupDegreesStore.Updater updater,
-                                    CursorContext cursorContext,
-                                    MemoryTracker memoryTracker) {
+                                    Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {
                                 throw new UnsupportedOperationException(
                                         "Counts store needed rebuild, consistency checker will instead report broken or missing store");
                             }

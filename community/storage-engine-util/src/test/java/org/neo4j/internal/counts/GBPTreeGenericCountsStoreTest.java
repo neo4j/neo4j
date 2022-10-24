@@ -23,6 +23,7 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,6 +36,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.counts.CountsAccessor.NO_OP_UPDATER;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.nodeKey;
@@ -73,6 +75,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.InvalidCountException;
 import org.neo4j.internal.counts.GBPTreeGenericCountsStore.Rebuilder;
 import org.neo4j.internal.helpers.Exceptions;
@@ -200,7 +203,7 @@ class GBPTreeGenericCountsStoreTest {
                 CONTEXT_FACTORY.create(pageCacheTracer.createPageCursorTracer("tracePageCacheAccessOnApply"));
         assertZeroTracer(cursorContext);
 
-        try (CountUpdater updater = countsStore.updater(1 + BASE_TX_ID, cursorContext)) {
+        try (CountUpdater updater = countsStore.updater(1 + BASE_TX_ID, true, cursorContext)) {
             updater.increment(nodeKey(LABEL_ID_1), 10);
             updater.increment(relationshipKey(LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2), 3);
             updater.increment(relationshipKey(LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2), 7);
@@ -212,15 +215,48 @@ class GBPTreeGenericCountsStoreTest {
     }
 
     @Test
+    void failToApplySameTransactionTwice() {
+        long txId = BASE_TX_ID + 1;
+
+        try (var updater = countsStore.updater(txId, true, NULL_CONTEXT)) {
+            updater.increment(nodeKey(LABEL_ID_1), 10);
+        }
+        assertThatThrownBy(() -> {
+                    try (var updater = countsStore.updater(txId, true, NULL_CONTEXT)) {
+                        updater.increment(nodeKey(LABEL_ID_1), 10);
+                    }
+                })
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("but highest gap-free is");
+    }
+
+    @Test
+    void applySeveralChunksOfSameTransaction() {
+        long txId = BASE_TX_ID + 1;
+
+        assertDoesNotThrow(() -> {
+            for (int i = 0; i < 100; i++) {
+                try (var updater = countsStore.updater(txId, false, NULL_CONTEXT)) {
+                    updater.increment(nodeKey(LABEL_ID_1), 10);
+                }
+            }
+
+            try (var updater = countsStore.updater(txId, true, NULL_CONTEXT)) {
+                updater.increment(nodeKey(LABEL_ID_1), 10);
+            }
+        });
+    }
+
+    @Test
     void shouldUpdateAndReadSomeCounts() throws IOException {
         // given
         long txId = BASE_TX_ID;
-        try (CountUpdater updater = countsStore.updater(++txId, NULL_CONTEXT)) {
+        try (CountUpdater updater = countsStore.updater(++txId, true, NULL_CONTEXT)) {
             updater.increment(nodeKey(LABEL_ID_1), 10);
             updater.increment(relationshipKey(LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2), 3);
             updater.increment(relationshipKey(LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2), 7);
         }
-        try (CountUpdater updater = countsStore.updater(++txId, NULL_CONTEXT)) {
+        try (CountUpdater updater = countsStore.updater(++txId, true, NULL_CONTEXT)) {
             updater.increment(nodeKey(LABEL_ID_1), 5); // now at 15
             updater.increment(relationshipKey(LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2), 2); // now at 5
         }
@@ -235,7 +271,7 @@ class GBPTreeGenericCountsStoreTest {
                 7, countsStore.read(relationshipKey(LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2), NULL_CONTEXT));
 
         // and when
-        try (CountUpdater updater = countsStore.updater(++txId, NULL_CONTEXT)) {
+        try (CountUpdater updater = countsStore.updater(++txId, true, NULL_CONTEXT)) {
             updater.increment(nodeKey(LABEL_ID_1), -7);
             updater.increment(relationshipKey(LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2), -5);
             updater.increment(relationshipKey(LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2), -2);
@@ -253,11 +289,11 @@ class GBPTreeGenericCountsStoreTest {
     void shouldReturnTrueWhenGoingToAndFromZero() {
         long txId = BASE_TX_ID;
         CountsKey key = nodeKey(LABEL_ID_1);
-        try (CountUpdater updater = countsStore.updater(++txId, NULL_CONTEXT)) {
+        try (CountUpdater updater = countsStore.updater(++txId, true, NULL_CONTEXT)) {
             assertThat(updater.increment(key, 1)).isTrue(); // 0->1 true
             assertThat(updater.increment(key, 1)).isFalse(); // 1->2 false
         }
-        try (CountUpdater updater = countsStore.updater(++txId, NULL_CONTEXT)) {
+        try (CountUpdater updater = countsStore.updater(++txId, true, NULL_CONTEXT)) {
             assertThat(updater.increment(key, -1)).isFalse(); // 2->1 false
             assertThat(updater.increment(key, -1)).isTrue(); // 1->0 true
         }
@@ -276,7 +312,7 @@ class GBPTreeGenericCountsStoreTest {
 
         // Start at some number > 0 so that we can do negative deltas now and then
         long baseCount = 10_000;
-        try (CountUpdater initialApplier = countsStore.updater(nextTxId.incrementAndGet(), NULL_CONTEXT)) {
+        try (CountUpdater initialApplier = countsStore.updater(nextTxId.incrementAndGet(), true, NULL_CONTEXT)) {
             for (int s = -1; s < HIGH_TOKEN_ID; s++) {
                 initialApplier.increment(nodeKey(s), baseCount);
                 for (int t = -1; t < HIGH_TOKEN_ID; t++) {
@@ -440,8 +476,8 @@ class GBPTreeGenericCountsStoreTest {
     @Test
     void checkpointShouldWaitForApplyingTransactionsToClose() throws Exception {
         // given
-        CountUpdater updater1 = countsStore.updater(BASE_TX_ID + 1, NULL_CONTEXT);
-        CountUpdater updater2 = countsStore.updater(BASE_TX_ID + 2, NULL_CONTEXT);
+        CountUpdater updater1 = countsStore.updater(BASE_TX_ID + 1, true, NULL_CONTEXT);
+        CountUpdater updater2 = countsStore.updater(BASE_TX_ID + 2, true, NULL_CONTEXT);
 
         try (OtherThreadExecutor checkpointer = new OtherThreadExecutor("Checkpointer", 1, MINUTES)) {
             // when
@@ -463,7 +499,7 @@ class GBPTreeGenericCountsStoreTest {
     @Test
     void checkpointShouldBlockApplyingNewTransactions() throws Exception {
         // given
-        CountUpdater updaterBeforeCheckpoint = countsStore.updater(BASE_TX_ID + 1, NULL_CONTEXT);
+        CountUpdater updaterBeforeCheckpoint = countsStore.updater(BASE_TX_ID + 1, true, NULL_CONTEXT);
 
         final AtomicReference<CountUpdater> updater = new AtomicReference<>();
         try (OtherThreadExecutor checkpointer = new OtherThreadExecutor("Checkpointer", 1, MINUTES);
@@ -475,7 +511,7 @@ class GBPTreeGenericCountsStoreTest {
 
             // and when trying to open another applier it must wait
             Future<Void> applierAfterCheckpoint = applier.executeDontWait(() -> {
-                updater.set(countsStore.updater(BASE_TX_ID + 2, NULL_CONTEXT));
+                updater.set(countsStore.updater(BASE_TX_ID + 2, true, NULL_CONTEXT));
                 return null;
             });
             applier.waitUntilWaiting();
@@ -526,7 +562,7 @@ class GBPTreeGenericCountsStoreTest {
         countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
 
         // then
-        assertDoesNotThrow(() -> countsStore.updater(BASE_TX_ID + 1, NULL_CONTEXT));
+        assertDoesNotThrow(() -> countsStore.updater(BASE_TX_ID + 1, true, NULL_CONTEXT));
     }
 
     @Test
@@ -544,7 +580,7 @@ class GBPTreeGenericCountsStoreTest {
     @Test
     void shouldNotSeeOutdatedCountsOnCheckpoint() throws Throwable {
         // given
-        try (CountUpdater updater = countsStore.updater(BASE_TX_ID + 1, NULL_CONTEXT)) {
+        try (CountUpdater updater = countsStore.updater(BASE_TX_ID + 1, true, NULL_CONTEXT)) {
             updater.increment(nodeKey(LABEL_ID_1), 10);
             updater.increment(relationshipKey(LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2), 3);
             updater.increment(relationshipKey(LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2), 7);
@@ -590,7 +626,7 @@ class GBPTreeGenericCountsStoreTest {
     @Test
     void shouldDeleteAndMarkForRebuildOnCorruptStore() throws Exception {
         // given
-        try (CountUpdater updater = countsStore.updater(BASE_TX_ID + 1, NULL_CONTEXT)) {
+        try (CountUpdater updater = countsStore.updater(BASE_TX_ID + 1, true, NULL_CONTEXT)) {
             updater.increment(nodeKey(LABEL_ID_1), 9);
         }
         closeCountsStore();
@@ -662,7 +698,7 @@ class GBPTreeGenericCountsStoreTest {
     void shouldHandleInvalidCountValues() throws IOException {
         // given
         long txId = BASE_TX_ID;
-        try (CountUpdater updater = countsStore.updater(++txId, NULL_CONTEXT)) {
+        try (CountUpdater updater = countsStore.updater(++txId, true, NULL_CONTEXT)) {
             updater.increment(nodeKey(LABEL_ID_1), -5);
             updater.increment(nodeKey(LABEL_ID_2), 10);
         }
@@ -670,7 +706,7 @@ class GBPTreeGenericCountsStoreTest {
         // write the illegal value to the tree
         countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
 
-        try (CountUpdater updater = countsStore.updater(++txId, NULL_CONTEXT)) {
+        try (CountUpdater updater = countsStore.updater(++txId, true, NULL_CONTEXT)) {
             updater.increment(nodeKey(LABEL_ID_1), 10); // this will be just ignored
             updater.increment(nodeKey(LABEL_ID_2), 5); // now at 15
         }
@@ -698,7 +734,7 @@ class GBPTreeGenericCountsStoreTest {
     void shouldRebuildOnMismatchingLastCommittedTxId() throws IOException {
         // given some pre-state
         long countsStoreTxId = BASE_TX_ID + 1;
-        try (CountUpdater updater = countsStore.updater(countsStoreTxId, NULL_CONTEXT)) {
+        try (CountUpdater updater = countsStore.updater(countsStoreTxId, true, NULL_CONTEXT)) {
             updater.increment(nodeKey(1), 1);
         }
 
@@ -727,11 +763,11 @@ class GBPTreeGenericCountsStoreTest {
         // given some pre-state
         long countsStoreTxId = BASE_TX_ID + 1;
         CountsKey key = nodeKey(1);
-        try (CountUpdater updater = countsStore.updater(countsStoreTxId, NULL_CONTEXT)) {
+        try (CountUpdater updater = countsStore.updater(countsStoreTxId, true, NULL_CONTEXT)) {
             updater.increment(key, 1);
         }
         // leaving a gap intentionally
-        try (CountUpdater updater = countsStore.updater(countsStoreTxId + 2, NULL_CONTEXT)) {
+        try (CountUpdater updater = countsStore.updater(countsStoreTxId + 2, true, NULL_CONTEXT)) {
             updater.increment(key, 3);
         }
         countsStore.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
@@ -755,10 +791,10 @@ class GBPTreeGenericCountsStoreTest {
                 false,
                 NO_MONITOR);
         // and do recovery
-        try (CountUpdater updater = countsStore.updater(countsStoreTxId + 1, NULL_CONTEXT)) {
+        try (CountUpdater updater = countsStore.updater(countsStoreTxId + 1, true, NULL_CONTEXT)) {
             updater.increment(key, 7);
         }
-        assertThat(countsStore.updater(countsStoreTxId + 2, NULL_CONTEXT)).isNull(); // already applied
+        assertThat(countsStore.updater(countsStoreTxId + 2, true, NULL_CONTEXT)).isNull(); // already applied
         countsStore.start(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
 
         // then
@@ -773,7 +809,7 @@ class GBPTreeGenericCountsStoreTest {
     }
 
     private void incrementNodeCount(long txId, int labelId, int delta) {
-        try (CountUpdater updater = countsStore.updater(txId, NULL_CONTEXT)) {
+        try (CountUpdater updater = countsStore.updater(txId, true, NULL_CONTEXT)) {
             if (updater != null) {
                 updater.increment(nodeKey(labelId), delta);
             }
@@ -819,7 +855,7 @@ class GBPTreeGenericCountsStoreTest {
      */
     private void generateAndApplyTransaction(ConcurrentMap<CountsKey, AtomicLong> expected, long txId) {
         Random rng = new Random(random.seed() + txId);
-        try (CountUpdater updater = countsStore.updater(txId, NULL_CONTEXT)) {
+        try (CountUpdater updater = countsStore.updater(txId, true, NULL_CONTEXT)) {
             if (updater != null) {
                 int numberOfKeys = rng.nextInt(10);
                 for (int j = 0; j < numberOfKeys; j++) {
@@ -873,21 +909,28 @@ class GBPTreeGenericCountsStoreTest {
 
     private void instantiateCountsStore(Rebuilder builder, boolean readOnly, GBPTreeGenericCountsStore.Monitor monitor)
             throws IOException {
-        countsStore = new GBPTreeGenericCountsStore(
-                pageCache,
-                countsStoreFile(),
-                fs,
-                immediate(),
-                builder,
-                readOnly,
-                "test",
-                monitor,
-                DEFAULT_DATABASE_NAME,
-                randomMaxCacheSize(),
-                NullLogProvider.getInstance(),
-                CONTEXT_FACTORY,
-                PageCacheTracer.NULL,
-                getOpenOptions());
+        countsStore =
+                new GBPTreeGenericCountsStore(
+                        pageCache,
+                        countsStoreFile(),
+                        fs,
+                        immediate(),
+                        builder,
+                        readOnly,
+                        "test",
+                        monitor,
+                        DEFAULT_DATABASE_NAME,
+                        randomMaxCacheSize(),
+                        NullLogProvider.getInstance(),
+                        CONTEXT_FACTORY,
+                        PageCacheTracer.NULL,
+                        getOpenOptions()) {
+
+                    @Override
+                    public CountsAccessor.Updater apply(long txId, boolean isLast, CursorContext cursorContext) {
+                        return NO_OP_UPDATER;
+                    }
+                };
     }
 
     protected ImmutableSet<OpenOption> getOpenOptions() {

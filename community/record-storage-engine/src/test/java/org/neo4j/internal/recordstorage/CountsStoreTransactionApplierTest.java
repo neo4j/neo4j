@@ -20,6 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -28,8 +29,9 @@ import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.counts.CountsAccessor;
-import org.neo4j.counts.CountsStore;
+import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
+import org.neo4j.internal.counts.Updater;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
@@ -37,12 +39,12 @@ class CountsStoreTransactionApplierTest {
     @Test
     void shouldNotifyCacheAccessOnHowManyUpdatesOnCountsWeHadSoFar() throws Exception {
         // GIVEN
-        final CountsStore counts = mock(CountsStore.class);
+        final GBPTreeCountsStore counts = mock(GBPTreeCountsStore.class);
         final CountsAccessor.Updater updater = mock(CountsAccessor.Updater.class);
-        when(counts.apply(anyLong(), any(CursorContext.class))).thenReturn(updater);
+        when(counts.apply(anyLong(), anyBoolean(), any(CursorContext.class))).thenReturn(updater);
         final RelationshipGroupDegreesStore groupDegreesStore = mock(RelationshipGroupDegreesStore.class);
-        when(groupDegreesStore.apply(anyLong(), any(CursorContext.class)))
-                .thenReturn(mock(RelationshipGroupDegreesStore.Updater.class));
+        when(groupDegreesStore.apply(anyLong(), anyBoolean(), any(CursorContext.class)))
+                .thenReturn(mock(Updater.class));
         final CountsStoreTransactionApplierFactory applier =
                 new CountsStoreTransactionApplierFactory(counts, groupDegreesStore);
 

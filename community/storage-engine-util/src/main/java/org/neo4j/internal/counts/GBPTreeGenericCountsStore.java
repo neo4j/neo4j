@@ -75,7 +75,7 @@ import org.neo4j.util.concurrent.OutOfOrderSequence;
  * A "counts store" backed by {@link GBPTree}. It solves the problem of incrementing/decrementing counts for arbitrary keys, while at the same time
  * being persistent and minimizing contention from concurrent writers.
  *
- * Updates that are {@link #updater(long, CursorContext) applied} are relative values (e.g. +10 or -5) and counts are read as their absolute values.
+ * Updates that are {@link #updater(long, boolean, CursorContext) applied} are relative values (e.g. +10 or -5) and counts are read as their absolute values.
  * Multiple transactions can update counts concurrently where counts are CAS:ed to minimize contention.
  * Updates between {@link #checkpoint(FileFlushEvent, CursorContext) checkpoints} are kept in an internal {@link CountsChanges} map and only written
  * as part of a checkpoint. Checkpoint has a very short critical section where it switches over to a new {@link CountsChanges} instance
@@ -85,7 +85,7 @@ import org.neo4j.util.concurrent.OutOfOrderSequence;
  * Data flow wise updates are accumulated and written in each checkpoint. Reads are served from the tree or directly from {@link CountsChanges}
  * if there's changes to that particular key.
  */
-public class GBPTreeGenericCountsStore implements CountsStorage {
+public abstract class GBPTreeGenericCountsStore<T> implements CountsStorage<T> {
     public static final Monitor NO_MONITOR = txId -> {};
     private static final long NEEDS_REBUILDING_HIGH_ID = 0;
     private static final String OPEN_COUNT_STORE_TAG = "openCountStore";
@@ -252,7 +252,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
 
     // === Writes ===
 
-    protected CountUpdater updater(long txId, CursorContext cursorContext) {
+    protected CountUpdater updater(long txId, boolean isLast, CursorContext cursorContext) {
         // In order to keep the cache limited then check if we need to flush to the tree
         if (txId % 10 == 0) {
             // Although it's somewhat costly to check map size so only do it every N transaction.
@@ -286,7 +286,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage {
             return null;
         }
         return new CountUpdater(
-                new MapWriter(key -> readCountFromTree(key, cursorContext), changes, idSequence, txId), lock);
+                new MapWriter(key -> readCountFromTree(key, cursorContext), changes, idSequence, txId, isLast), lock);
     }
 
     /**

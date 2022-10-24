@@ -26,14 +26,7 @@ import org.neo4j.storageengine.api.RelationshipDirection;
 /**
  * Store for degrees of relationship chains for dense nodes. Relationship group record ID plus relationship direction forms the key for the counts.
  */
-public interface RelationshipGroupDegreesStore extends CountsStorage {
-    /**
-     * @param txId for which transaction ID the changes will be made.
-     * @param cursorContext page cache access context
-     * @return an {@link Updater} which is able to make counts updates.
-     */
-    Updater apply(long txId, CursorContext cursorContext);
-
+public interface RelationshipGroupDegreesStore extends CountsStorage<Updater> {
     /**
      * @param groupId the relationship group ID to look for.
      * @param direction the direction to look for.
@@ -48,20 +41,6 @@ public interface RelationshipGroupDegreesStore extends CountsStorage {
      * @param cursorContext page cache access context.
      */
     void accept(GroupDegreeVisitor visitor, CursorContext cursorContext);
-
-    interface Updater extends AutoCloseable {
-        @Override
-        void close();
-
-        /**
-         * Changes the degree of the given groupId and direction.
-         *
-         * @param groupId the relationship group ID to make the change for.
-         * @param direction the direction to make the change for.
-         * @param delta delta value to apply, can be either positive or negative.
-         */
-        void increment(long groupId, RelationshipDirection direction, long delta);
-    }
 
     interface GroupDegreeVisitor {
         /**

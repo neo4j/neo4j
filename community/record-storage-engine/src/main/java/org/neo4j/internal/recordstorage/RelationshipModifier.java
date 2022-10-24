@@ -39,7 +39,7 @@ import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.neo4j.collection.trackable.HeapTrackingLongObjectHashMap;
-import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
+import org.neo4j.internal.counts.Updater;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -89,7 +89,7 @@ public class RelationshipModifier {
     public void modifyRelationships(
             RelationshipModifications modifications,
             RecordAccessSet recordChanges,
-            RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
+            Updater groupDegreesUpdater,
             ResourceLocker locks,
             LockTracer lockTracer) {
         /*

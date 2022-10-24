@@ -43,7 +43,7 @@ import org.neo4j.storageengine.api.RelationshipDirection;
  * {@link RelationshipGroupDegreesStore} backed by the {@link GBPTree}.
  * @see GBPTreeGenericCountsStore
  */
-public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsStore
+public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsStore<Updater>
         implements RelationshipGroupDegreesStore {
     private static final String NAME = "Relationship group degrees store";
     static final byte TYPE_DEGREE = (byte) 3;
@@ -81,8 +81,8 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
     }
 
     @Override
-    public Updater apply(long txId, CursorContext cursorContext) {
-        CountUpdater updater = updater(txId, cursorContext);
+    public Updater apply(long txId, boolean isLast, CursorContext cursorContext) {
+        CountUpdater updater = updater(txId, isLast, cursorContext);
         return updater != null ? new DegreeUpdater(updater) : NO_OP_UPDATER;
     }
 
@@ -214,10 +214,7 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
         }
 
         @Override
-        public void rebuild(
-                RelationshipGroupDegreesStore.Updater updater,
-                CursorContext cursorContext,
-                MemoryTracker memoryTracker) {}
+        public void rebuild(Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker) {}
 
         @Override
         public long lastCommittedTxId() {

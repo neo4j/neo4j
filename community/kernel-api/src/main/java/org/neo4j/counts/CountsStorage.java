@@ -26,7 +26,15 @@ import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-public interface CountsStorage extends AutoCloseable, ConsistencyCheckable {
+public interface CountsStorage<T> extends AutoCloseable, ConsistencyCheckable {
+
+    /**
+     * @param txId id of the transaction that produces the changes that are being applied.
+     * @param cursorContext underlying page cursor context
+     * @return an updater where count deltas are being applied onto.
+     */
+    T apply(long txId, boolean isLast, CursorContext cursorContext);
+
     /**
      * Closes this counts store so that no more changes can be made and no more counts can be read.
      */

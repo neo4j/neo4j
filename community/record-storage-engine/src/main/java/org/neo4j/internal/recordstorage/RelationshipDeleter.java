@@ -32,7 +32,7 @@ import static org.neo4j.lock.ResourceTypes.NODE;
 import static org.neo4j.lock.ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE;
 import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP;
 
-import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
+import org.neo4j.internal.counts.Updater;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -73,7 +73,7 @@ class RelationshipDeleter {
     void relationshipDelete(
             RelationshipBatch deletions,
             RecordAccessSet recordChanges,
-            RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
+            Updater groupDegreesUpdater,
             MappedNodeDataLookup nodeDataLookup,
             MemoryTracker memoryTracker,
             ResourceLocker locks) {
@@ -122,7 +122,7 @@ class RelationshipDeleter {
     private void updateNodesForDeletedRelationship(
             RelationshipRecord rel,
             RecordAccessSet recordChanges,
-            RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
+            Updater groupDegreesUpdater,
             MappedNodeDataLookup nodeDataLookup,
             ResourceLocker locks) {
         boolean loop = rel.getFirstNode() == rel.getSecondNode();
@@ -150,7 +150,7 @@ class RelationshipDeleter {
     private void updateNodeForDeletedRelationship(
             RelationshipRecord rel,
             RecordAccessSet recordChanges,
-            RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
+            Updater groupDegreesUpdater,
             long nodeId,
             boolean updateDegree,
             MappedNodeDataLookup nodeDataLookup,
