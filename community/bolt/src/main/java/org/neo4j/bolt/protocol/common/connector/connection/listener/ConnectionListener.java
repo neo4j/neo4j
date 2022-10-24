@@ -22,8 +22,10 @@ package org.neo4j.bolt.protocol.common.connector.connection.listener;
 import io.netty.channel.ChannelPipeline;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
+import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.values.virtual.MapValue;
 
 /**
  * Provides hooks for various events within the connection lifecycle.
@@ -149,6 +151,23 @@ public interface ConnectionListener {
      * @param db a database name.
      */
     default void onDefaultDatabaseSelected(String db) {}
+
+    /**
+     * Handles a successful result for a given request.
+     */
+    default void onResponseSuccess(MapValue metadata) {}
+
+    /**
+     * Handles a failure result for a given request.
+     *
+     * @param error a status code.
+     */
+    default void onResponseFailed(Error error) {}
+
+    /**
+     * Handles an ignored result for a given request.
+     */
+    default void onResponseIgnored() {}
 
     /**
      * Handles the scheduled closure of the connection.

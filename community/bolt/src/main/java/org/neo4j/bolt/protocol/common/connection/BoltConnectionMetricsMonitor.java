@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.protocol.common.connection;
 
+import org.neo4j.kernel.api.exceptions.Status;
+
 public interface BoltConnectionMetricsMonitor {
     void connectionOpened();
 
@@ -33,6 +35,12 @@ public interface BoltConnectionMetricsMonitor {
     void messageProcessingCompleted(long processingTime);
 
     void messageProcessingFailed();
+
+    void responseSuccess();
+
+    void responseIgnored();
+
+    void responseFailed(Status status);
 
     void connectionClosed();
 }

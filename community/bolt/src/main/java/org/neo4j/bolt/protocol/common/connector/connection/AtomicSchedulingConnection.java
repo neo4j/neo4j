@@ -171,6 +171,8 @@ public class AtomicSchedulingConnection extends AbstractConnection {
 
                 userLog.error(message);
 
+                this.notifyListenersSafely("requestResultFailure", listener -> listener.onResponseFailed(error));
+
                 this.channel.writeAndFlush(new FailureMessage(error.status(), error.message(), false));
                 this.close();
             }

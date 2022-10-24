@@ -182,7 +182,7 @@ public final class BoltConnectionAssertions
 
     public BoltConnectionAssertions receivesIgnored(int n) {
         for (var i = 0; i < n; ++i) {
-            this.receivesSuccess();
+            this.receivesIgnored();
         }
 
         return this;

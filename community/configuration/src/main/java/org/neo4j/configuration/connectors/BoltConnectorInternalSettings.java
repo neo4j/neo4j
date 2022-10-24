@@ -167,4 +167,9 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration 
     public static final Setting<Boolean> netty_message_merge_cumulator = newBuilder(
                     "internal.dbms.bolt.netty_message_merge_cumulator", BOOL, false)
             .build();
+
+    @Internal
+    @Description("Enable/disable generation of response metrics")
+    public static final Setting<Boolean> enable_response_metrics =
+            newBuilder("internal.server.bolt.response_metrics", BOOL, false).build();
 }

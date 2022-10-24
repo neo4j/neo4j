@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.encoder.DiscardingRecordMessageWriter;
 import org.neo4j.bolt.protocol.common.message.encoder.RecordMessageWriter;
@@ -92,16 +93,24 @@ public class ResultHandler implements ResponseHandler {
                 if (!f.isSuccess()) {
                     throw f.cause();
                 }
+
+                this.connection.notifyListenersSafely("requestResultIgnored", ConnectionListener::onResponseIgnored);
             } else if (error != null) {
                 publishError(error);
+
+                this.connection.notifyListenersSafely(
+                        "requestResultFailure", listener -> listener.onResponseFailed(error));
             } else {
-                var f = connection
-                        .writeAndFlush(new SuccessMessage(getMetadata()))
-                        .sync();
+                var metadata = getMetadata();
+
+                var f = connection.writeAndFlush(new SuccessMessage(metadata)).sync();
 
                 if (!f.isSuccess()) {
                     throw f.cause();
                 }
+
+                this.connection.notifyListenersSafely(
+                        "requestResultSuccess", listener -> listener.onResponseSuccess(metadata));
             }
         } catch (Throwable ex) {
             throw new BoltStreamingWriteException("Failed to finalize batch: Cannot write result response", ex);

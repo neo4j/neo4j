@@ -113,7 +113,7 @@ public abstract class AbstractStateMachine implements StateMachine {
     protected void after() {
         if (connectionState.getResponseHandler() != null) {
             try {
-                Error pendingError = connectionState.getPendingError();
+                var pendingError = connectionState.getPendingError();
                 if (pendingError != null) {
                     connectionState.markFailed(pendingError);
                 }
@@ -312,6 +312,7 @@ public abstract class AbstractStateMachine implements StateMachine {
 
     private void fail(Error error) {
         spi.reportError(error);
+
         if (state == failedState) {
             connectionState.markIgnored();
         } else {

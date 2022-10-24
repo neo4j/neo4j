@@ -51,6 +51,7 @@ import org.neo4j.bolt.protocol.common.connector.executor.ThreadPoolExecutorServi
 import org.neo4j.bolt.protocol.common.connector.listener.AuthenticationTimeoutConnectorListener;
 import org.neo4j.bolt.protocol.common.connector.listener.KeepAliveConnectorListener;
 import org.neo4j.bolt.protocol.common.connector.listener.MetricsConnectorListener;
+import org.neo4j.bolt.protocol.common.connector.listener.ResponseMetricsConnectorListener;
 import org.neo4j.bolt.protocol.common.connector.netty.DomainSocketNettyConnector;
 import org.neo4j.bolt.protocol.common.connector.netty.SocketNettyConnector;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
@@ -413,6 +414,10 @@ public class BoltServer extends LifecycleAdapter {
     private void registerConnector(Connector connector) {
         // append a listener which handles the creation of metrics
         connector.registerListener(new MetricsConnectorListener(metricsMonitor));
+
+        if (config.get(BoltConnectorInternalSettings.enable_response_metrics)) {
+            connector.registerListener(new ResponseMetricsConnectorListener(metricsMonitor));
+        }
 
         // if an authentication timeout has been configured, we'll register a listener which appends the necessary
         // timeout handlers with the network pipelines upon connection creation
