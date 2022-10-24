@@ -33,10 +33,12 @@ import org.neo4j.dbms.database.SystemGraphComponents
 import org.neo4j.dbms.systemgraph.CommunityTopologyGraphComponent
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog
+import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.logging.NullLogProvider
 import org.neo4j.server.security.auth.InMemoryUserRepository
 import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent
+import org.neo4j.storageengine.api.MetadataProvider
 import org.scalatest.OptionValues
 import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 
@@ -269,6 +271,9 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DATABASE $db YIELD *", dbDefaultMap).toList.head
 
     // THEN
+    val db = managementService.database(DEFAULT_DATABASE_NAME).asInstanceOf[GraphDatabaseAPI]
+    val format =
+      db.getDependencyResolver.resolveDependency(classOf[MetadataProvider]).getStoreId.getStoreVersionUserString
     result should have size 25
     result should contain.allOf(
       "name" -> DEFAULT_DATABASE_NAME,
@@ -284,7 +289,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
       "currentSecondariesCount" -> 0,
       "requestedPrimariesCount" -> null,
       "requestedSecondariesCount" -> null,
-      "store" -> "record-aligned-1.1",
+      "store" -> format,
       "lastCommittedTxn" -> null,
       "replicationLag" -> 0,
       "constituents" -> Seq.empty
