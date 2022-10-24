@@ -26,6 +26,7 @@ import org.neo4j.graphdb.Relationship
 import org.neo4j.internal.collector.DataCollectorMatchers.beCypher
 import org.neo4j.internal.collector.DataCollectorMatchers.beListWithoutOrder
 import org.neo4j.internal.collector.DataCollectorMatchers.beMapContaining
+import org.neo4j.token.TokenHolders
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
@@ -524,10 +525,14 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
 
     // then
+    val tokens = graph.getDependencyResolver.resolveDependency(classOf[TokenHolders]).propertyKeyTokens
+    val age = tokens.getIdByName("age")
+    val p = tokens.getIdByName("p")
+
     res.toList should beListWithoutOrder(
       querySection("MATCH (:L0)-[:R0]->(:L1)-[:R1]->(:L2) RETURN 1"),
       querySection("MATCH (var0:L0) USING SCAN var0:LoR0 RETURN 1"),
-      querySection("MATCH ({p11: 42}), ({p10: 43}) RETURN 1")
+      querySection(s"MATCH ({p$p: 42}), ({p$age: 43}) RETURN 1")
     )
   }
 
@@ -669,15 +674,20 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
 
     // then
+    val tokens = graph.getDependencyResolver.resolveDependency(classOf[TokenHolders]).propertyKeyTokens
+    val p0 = tokens.getIdByName("prop")
+    val p1 = tokens.getIdByName("prop1")
+    val p2 = tokens.getIdByName("prop2")
+
     res.toList should beListWithoutOrder(
-      querySection("CREATE INDEX index0 FOR (var0:L0) ON (var0.p10)"),
-      querySection("CREATE INDEX index0 FOR ()-[var0:R0]-() ON (var0.p11, var0.p12)"),
-      querySection("CREATE TEXT INDEX index0 FOR (var0:L0) ON (var0.p10)"),
-      querySection("CREATE TEXT INDEX index0 FOR ()-[var0:R0]-() ON (var0.p10)"),
-      querySection("CREATE POINT INDEX index0 FOR (var0:L0) ON (var0.p10)"),
-      querySection("CREATE POINT INDEX index0 FOR ()-[var0:R0]-() ON (var0.p10)"),
-      querySection("CREATE FULLTEXT INDEX index0 FOR (var0:L0) ON EACH [var0.p10]"),
-      querySection("CREATE FULLTEXT INDEX index0 FOR ()-[var0:R1|R2]-() ON EACH [var0.p10]"),
+      querySection(s"CREATE INDEX index0 FOR (var0:L0) ON (var0.p$p0)"),
+      querySection(s"CREATE INDEX index0 FOR ()-[var0:R0]-() ON (var0.p$p1, var0.p$p2)"),
+      querySection(s"CREATE TEXT INDEX index0 FOR (var0:L0) ON (var0.p$p0)"),
+      querySection(s"CREATE TEXT INDEX index0 FOR ()-[var0:R0]-() ON (var0.p$p0)"),
+      querySection(s"CREATE POINT INDEX index0 FOR (var0:L0) ON (var0.p$p0)"),
+      querySection(s"CREATE POINT INDEX index0 FOR ()-[var0:R0]-() ON (var0.p$p0)"),
+      querySection(s"CREATE FULLTEXT INDEX index0 FOR (var0:L0) ON EACH [var0.p$p0]"),
+      querySection(s"CREATE FULLTEXT INDEX index0 FOR ()-[var0:R1|R2]-() ON EACH [var0.p$p0]"),
       querySection("CREATE LOOKUP INDEX index0 IF NOT EXISTS FOR (var0) ON EACH labels(var0)"),
       querySection("CREATE LOOKUP INDEX index0 IF NOT EXISTS FOR ()-[var0]-() ON EACH type(var0)"),
       querySection("DROP INDEX index0")
@@ -693,8 +703,9 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
 
     // then
+    val p = graph.getDependencyResolver.resolveDependency(classOf[TokenHolders]).propertyKeyTokens.getIdByName("prop")
     res.toList should beListWithoutOrder(
-      querySection("CREATE CONSTRAINT constraint0 FOR (var0:L0) REQUIRE (var0.p10) IS UNIQUE"),
+      querySection(s"CREATE CONSTRAINT constraint0 FOR (var0:L0) REQUIRE (var0.p$p) IS UNIQUE"),
       querySection("DROP CONSTRAINT constraint0")
     )
   }

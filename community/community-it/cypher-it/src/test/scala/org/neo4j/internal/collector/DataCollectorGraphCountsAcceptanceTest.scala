@@ -24,6 +24,7 @@ import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.GraphIcing
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.schema.IndexType
+import org.neo4j.token.TokenHolders
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
@@ -212,7 +213,22 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
     ).head
 
     // then
-    assertSteelfaceGraphCounts(res, TokenNames("L0", "L1", "L2", "R0", "R1", "p10", "p11", "p12", "p13", "p14"))
+    val tokens = graph.getDependencyResolver.resolveDependency(classOf[TokenHolders]).propertyKeyTokens
+    assertSteelfaceGraphCounts(
+      res,
+      TokenNames(
+        "L0",
+        "L1",
+        "L2",
+        "R0",
+        "R1",
+        "p" + tokens.getIdByName("email"),
+        "p" + tokens.getIdByName("lastName"),
+        "p" + tokens.getIdByName("firstName"),
+        "p" + tokens.getIdByName("number"),
+        "p" + tokens.getIdByName("hotel")
+      )
+    )
   }
 
   case class TokenNames(
