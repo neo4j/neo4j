@@ -68,11 +68,11 @@ public class PageCacheTracerAssertions {
             return this;
         }
 
-        public void matches(PageCacheTracer pageCacheTracer) {
+        public void matches(PageCacheCounters pageCacheTracer) {
             forCorrectStorageEngine().assertMatches(pageCacheTracer);
         }
 
-        public void matches(PageCursorTracer pageCursorTracer) {
+        public void matches(PageCursorCounters pageCursorTracer) {
             forCorrectStorageEngine().assertMatches(pageCursorTracer);
         }
 
